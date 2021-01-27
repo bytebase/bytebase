@@ -10,8 +10,8 @@
     <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
       Attention
     </h3>
-    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+    <div class="overflow-x-auto">
+      <div class="py-2 align-middle inline-block min-w-full">
         <PipelineTable :pipelineList="filteredList(state.attentionList)" />
       </div>
     </div>
@@ -19,8 +19,8 @@
     <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
       Subscribed
     </h3>
-    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+    <div class="overflow-x-auto">
+      <div class="py-2 align-middle inline-block min-w-full">
         <PipelineTable :pipelineList="filteredList(state.subscribeList)" />
       </div>
     </div>
@@ -28,8 +28,8 @@
     <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
       Recently Closed
     </h3>
-    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+    <div class="overflow-x-auto">
+      <div class="py-2 align-middle inline-block min-w-full">
         <PipelineTable :pipelineList="filteredList(state.closeList)" />
       </div>
     </div>
