@@ -1,7 +1,9 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
   <nav class="bg-white border-b border-block-border">
-    <DashboardHeader />
+    <div class="max-w-full mx-auto px-6">
+      <DashboardHeader />
+    </div>
   </nav>
 
   <main>
