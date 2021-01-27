@@ -2,18 +2,13 @@ import { defineAsyncComponent } from "vue";
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import ThreeColumnView from "../views/ThreeColumnView.vue";
-import MainContent from "../views/MainContent.vue";
 import MainSidebar from "../views/MainSidebar.vue";
-import EmptyView from "../views/EmptyView.vue";
 import ActivitySidebar from "../views/ActivitySidebar.vue";
 import Home from "../views/Home.vue";
-import ActionbarHome from "../views/ActionbarHome.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
-import MasterDetail from "../views/MasterDetail.vue";
 import { store } from "../store";
-import { Group, Project } from "../types";
 
 const HOME_MODULE = "workspace.home";
 const SIGNIN_MODULE = "auth.signin";
@@ -157,16 +152,6 @@ const routes: Array<RouteRecordRaw> = [
                 ),
                 props: true,
               },
-              {
-                // Use absolute path to specify the whole path while still leverages the nested route
-                path: "/:groupSlug/:projectSlug/setting",
-                name: "setting.workspace.project",
-                meta: { displayName: "Setting" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspaceProject.vue")
-                ),
-                props: true,
-              },
             ],
           },
           {
@@ -190,44 +175,6 @@ const routes: Array<RouteRecordRaw> = [
                 () => import("../views/PipelineDetail.vue")
               ),
               leftSidebar: MainSidebar,
-            },
-            props: { actionbar: true, content: true },
-          },
-          {
-            path: ":groupSlug",
-            name: "workspace.group",
-            meta: { displayName: "Dashboard" },
-            components: {
-              actionbar: defineAsyncComponent(
-                () => import("../views/ActionbarGroup.vue")
-              ),
-              content: defineAsyncComponent(
-                () => import("../views/GroupDashboard.vue")
-              ),
-            },
-            props: { actionbar: true, content: true },
-          },
-          {
-            path: ":groupSlug/setting",
-            name: "workspace.group.setting",
-            meta: { displayName: "Setting" },
-            components: {
-              actionbar: EmptyView,
-              content: defineAsyncComponent(
-                () => import("../views/GroupSetting.vue")
-              ),
-            },
-            props: { actionbar: true, content: true },
-          },
-          {
-            path: ":groupSlug/:projectSlug/repository",
-            name: "workspace.project.repository",
-            meta: { displayName: "Repository" },
-            components: {
-              actionbar: EmptyView,
-              content: defineAsyncComponent(
-                () => import("../views/RepositoryDashboard.vue")
-              ),
             },
             props: { actionbar: true, content: true },
           },
@@ -290,8 +237,6 @@ router.beforeEach((to, from, next) => {
 
   const routerSlug = store.getters["router/routeSlug"](to);
   const pipelineId = routerSlug.pipelineId;
-  const groupSlug = routerSlug.groupSlug;
-  const projectSlug = routerSlug.projectSlug;
 
   console.log("RouterSlug:", routerSlug);
 
@@ -310,57 +255,5 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  store
-    .dispatch("group/fetchGroupListForUser", loginUser.id)
-    .then((list: Group[]) => {
-      let matchedGroup;
-      if (groupSlug) {
-        matchedGroup = list.find(
-          (group: Group) => group.attributes.slug === groupSlug
-        );
-      }
-
-      if (!matchedGroup) {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        return;
-      }
-
-      // If no project path is specified, just go to group default page
-      if (!projectSlug || to.name === "workspace.group.setting") {
-        next();
-        return;
-      }
-
-      let matchedProject;
-      store
-        .dispatch("project/fetchProjectListForGroup", matchedGroup.id)
-        .then((list: Project[]) => {
-          matchedProject = list.find(
-            (project: Project) => project.attributes.slug === projectSlug
-          );
-
-          if (!matchedProject) {
-            next({
-              name: "error.404",
-              replace: false,
-            });
-            return;
-          }
-
-          next();
-          return;
-        })
-        .catch((error: Error) => {
-          console.log("error", typeof error);
-          next(error);
-          return;
-        });
-    })
-    .catch((error: Error) => {
-      next(error);
-      return;
-    });
+  next();
 });
