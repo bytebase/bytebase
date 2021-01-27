@@ -167,6 +167,18 @@ const routes: Array<RouteRecordRaw> = [
             props: { actionbar: true, content: true },
           },
           {
+            path: "instance",
+            name: "workspace.instance",
+            meta: { displayName: "Instance" },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/InstanceDashboard.vue")
+              ),
+              leftSidebar: MainSidebar,
+            },
+            props: { actionbar: true, content: true },
+          },
+          {
             path: "pipeline/:pipelineId",
             name: "workspace.pipeline.detail",
             meta: { displayName: "Pipeline" },
