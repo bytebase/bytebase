@@ -1,7 +1,7 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
-  <div class="h-full flex overflow-hidden bg-white">
-    <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
+  <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
+  <div class="h-full flex overflow-hidden">
     <div v-if="state.showMobileOverlay" class="lg:hidden">
       <div class="fixed inset-0 flex z-40">
         <!--
@@ -88,40 +88,36 @@
     </div>
 
     <!-- Static sidebar for desktop -->
-    <div class="hidden lg:flex lg:flex-shrink-0">
+    <aside class="hidden lg:flex lg:flex-shrink-0">
       <div class="flex flex-col w-64">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
-        <div
-          class="flex flex-col h-0 flex-1 border-r border-gray-200 bg-gray-100"
-        >
-          <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <router-view name="leftSidebar" />
-          </div>
-          <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <a href="#" class="flex-shrink-0 w-full group block">
-              <div class="flex items-center">
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
-                <a href="/" class="ml-1 text-sm">Help &amp; Feedback</a>
-              </div>
-            </a>
-          </div>
+        <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+          <router-view name="leftSidebar" />
+        </div>
+        <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <a href="#" class="flex-shrink-0 w-full group block">
+            <div class="flex items-center">
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <a href="/" class="ml-1 text-sm">Help &amp; Feedback</a>
+            </div>
+          </a>
         </div>
       </div>
-    </div>
-    <div class="flex flex-col min-w-0 flex-1 overflow-hidden">
+    </aside>
+    <div class="flex flex-col min-w-0 flex-1">
       <div class="lg:hidden">
         <div
           class="flex items-center justify-start bg-gray-50 border-b border-gray-200 px-4 py-1.5"
@@ -156,22 +152,20 @@
           </div>
         </div>
       </div>
-      <div class="flex-grow w-full mx-auto lg:flex">
-        <!-- Left sidebar & main wrapper -->
-        <div class="flex-1 min-w-0 bg-white lg:flex">
-          <div class="bg-white lg:min-w-0 lg:flex-1">
-            <div class="hidden lg:block px-4 py-3">
-              <Breadcrumb />
-            </div>
+      <main class="w-full mx-auto lg:flex overflow-y-auto">
+        <!-- main wrapper -->
+        <div class="lg:min-w-0 lg:flex-1">
+          <div class="hidden lg:block px-4">
+            <Breadcrumb />
+          </div>
 
-            <div class="h-full overflow-y-auto">
-              <!-- Start main area-->
-              <router-view name="content" />
-              <!-- End main area -->
-            </div>
+          <div class="flex-grow w-full h-full">
+            <!-- Start main area-->
+            <router-view name="content" />
+            <!-- End main area -->
           </div>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>

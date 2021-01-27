@@ -1,17 +1,13 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
-  <div class="relative h-screen flex flex-col">
+  <div class="relative h-screen overflow-hidden flex flex-col">
     <nav class="bg-white border-b border-block-border">
       <div class="max-w-full mx-auto px-6">
         <DashboardHeader />
       </div>
     </nav>
 
-    <main class="flex flex-grow">
-      <div class="max-w-full">
-        <router-view name="body" />
-      </div>
-    </main>
+    <router-view name="body" />
   </div>
 </template>
 

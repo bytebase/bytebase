@@ -1,6 +1,6 @@
 <template>
   <!-- Navigation -->
-  <nav class="flex-1 flex flex-col mt-2 px-3 overflow-y-auto">
+  <nav class="px-2">
     <div class="space-y-1">
       <router-link
         to="/"

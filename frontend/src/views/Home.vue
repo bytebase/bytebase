@@ -1,35 +1,37 @@
 <template>
-  <div class="px-2 py-2 border-b">
-    <BBTableTabFilter
-      :itemList="state.environmentFilterList"
-      :selectedIndex="state.selectedFilterIndex"
-      @select-index="selectFilter"
-    />
-  </div>
-  <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-    Attention
-  </h3>
-  <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-    <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-      <PipelineTable :pipelineList="filteredList(state.attentionList)" />
+  <div class="flex flex-col">
+    <div class="px-2 py-2 border-b">
+      <BBTableTabFilter
+        :itemList="state.environmentFilterList"
+        :selectedIndex="state.selectedFilterIndex"
+        @select-index="selectFilter"
+      />
     </div>
-  </div>
-
-  <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-    Subscribed
-  </h3>
-  <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-    <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-      <PipelineTable :pipelineList="filteredList(state.subscribeList)" />
+    <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
+      Attention
+    </h3>
+    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+        <PipelineTable :pipelineList="filteredList(state.attentionList)" />
+      </div>
     </div>
-  </div>
 
-  <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-    Recently Closed
-  </h3>
-  <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-    <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-      <PipelineTable :pipelineList="filteredList(state.closeList)" />
+    <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
+      Subscribed
+    </h3>
+    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+        <PipelineTable :pipelineList="filteredList(state.subscribeList)" />
+      </div>
+    </div>
+
+    <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
+      Recently Closed
+    </h3>
+    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+        <PipelineTable :pipelineList="filteredList(state.closeList)" />
+      </div>
     </div>
   </div>
 </template>
