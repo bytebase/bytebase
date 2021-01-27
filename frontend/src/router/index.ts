@@ -56,13 +56,11 @@ const routes: Array<RouteRecordRaw> = [
         name: "workspace.inbox",
         meta: { displayName: "Inbox" },
         component: defineAsyncComponent(() => import("../views/Inbox.vue")),
-        props: { actionbar: true, content: true },
       },
       {
         path: "",
         name: HOME_MODULE,
         component: ThreeColumnView,
-
         children: [
           {
             path: "",
@@ -73,7 +71,11 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: MainSidebar,
               rightSidebar: ActivitySidebar,
             },
-            props: { actionbar: true, content: true },
+            props: {
+              content: true,
+              leftSidebar: true,
+              rightSidebar: true,
+            },
           },
           {
             path: "setting",
@@ -86,6 +88,10 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: defineAsyncComponent(
                 () => import("../views/SettingSidebar.vue")
               ),
+              props: {
+                content: true,
+                leftSidebar: true,
+              },
             },
             children: [
               {
@@ -164,7 +170,7 @@ const routes: Array<RouteRecordRaw> = [
               ),
               leftSidebar: MainSidebar,
             },
-            props: { actionbar: true, content: true },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "instance",
@@ -176,7 +182,7 @@ const routes: Array<RouteRecordRaw> = [
               ),
               leftSidebar: MainSidebar,
             },
-            props: { actionbar: true, content: true },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "pipeline/:pipelineId",
@@ -188,7 +194,7 @@ const routes: Array<RouteRecordRaw> = [
               ),
               leftSidebar: MainSidebar,
             },
-            props: { actionbar: true, content: true },
+            props: { content: true, leftSidebar: true },
           },
         ],
       },
