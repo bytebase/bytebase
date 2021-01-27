@@ -219,7 +219,7 @@ const routes: Array<RouteRecordRaw> = [
               ),
               leftSidebar: MainSidebar,
             },
-            props: { content: true, leftSidebar: true },
+            props: { content: true },
           },
         ],
       },
