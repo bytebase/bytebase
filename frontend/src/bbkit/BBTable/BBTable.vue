@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden border-t border-b border-block-border">
+  <div class="border-t border-b border-block-border">
     <table class="min-w-full divide-y divide-block-border">
       <thead v-if="showHeader" class="bg-gray-50">
         <tr>
