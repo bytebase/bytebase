@@ -40,24 +40,6 @@ const routes: Array<RouteRecordRaw> = [
     component: DashboardLayout,
     children: [
       {
-        path: "404",
-        name: "error.404",
-        meta: { displayName: "404" },
-        component: defineAsyncComponent(() => import("../views/Page404.vue")),
-      },
-      {
-        path: "500",
-        name: "error.500",
-        meta: { displayName: "500" },
-        component: defineAsyncComponent(() => import("../views/Page500.vue")),
-      },
-      {
-        path: "inbox",
-        name: "workspace.inbox",
-        meta: { displayName: "Inbox" },
-        component: defineAsyncComponent(() => import("../views/Inbox.vue")),
-      },
-      {
         path: "",
         name: HOME_MODULE,
         component: ThreeColumnView,
@@ -75,6 +57,49 @@ const routes: Array<RouteRecordRaw> = [
               content: true,
               leftSidebar: true,
               rightSidebar: true,
+            },
+          },
+          {
+            path: "404",
+            name: "error.404",
+            meta: { displayName: "404" },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/Page404.vue")
+              ),
+              leftSidebar: MainSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
+            path: "500",
+            name: "error.500",
+            meta: { displayName: "500" },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/Page500.vue")
+              ),
+              leftSidebar: MainSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
+            path: "inbox",
+            name: "workspace.inbox",
+            meta: { displayName: "Inbox" },
+            components: {
+              content: defineAsyncComponent(() => import("../views/Inbox.vue")),
+              leftSidebar: MainSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
             },
           },
           {
