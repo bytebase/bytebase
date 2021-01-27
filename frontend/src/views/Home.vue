@@ -7,32 +7,32 @@
         @select-index="selectFilter"
       />
     </div>
-    <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-      Attention
-    </h3>
-    <div class="overflow-x-auto">
-      <div class="py-2 align-middle inline-block min-w-full">
-        <PipelineTable :pipelineList="filteredList(state.attentionList)" />
+    <template
+      v-for="(item, index) in [
+        {
+          title: 'Attention',
+          list: state.attentionList,
+        },
+        {
+          title: 'Subscribed',
+          list: state.subscribeList,
+        },
+        {
+          title: 'Recently Closed',
+          list: state.closeList,
+        },
+      ]"
+      :key="index"
+    >
+      <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
+        {{ item.title }}
+      </h3>
+      <div class="overflow-x-auto">
+        <div class="py-2 align-middle inline-block min-w-full">
+          <PipelineTable :pipelineList="filteredList(item.list)" />
+        </div>
       </div>
-    </div>
-
-    <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-      Subscribed
-    </h3>
-    <div class="overflow-x-auto">
-      <div class="py-2 align-middle inline-block min-w-full">
-        <PipelineTable :pipelineList="filteredList(state.subscribeList)" />
-      </div>
-    </div>
-
-    <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-      Recently Closed
-    </h3>
-    <div class="overflow-x-auto">
-      <div class="py-2 align-middle inline-block min-w-full">
-        <PipelineTable :pipelineList="filteredList(state.closeList)" />
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
