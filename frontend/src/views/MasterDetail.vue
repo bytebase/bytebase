@@ -63,7 +63,7 @@
               /></router-link>
               <ProfileDropdown />
             </div>
-            <router-view name="leftsidebar" />
+            <router-view name="leftSidebar" />
             <div
               class="flex-shrink-0 flex flex-row border-t border-block-border p-3 text-gray-700"
             >
@@ -97,7 +97,7 @@
             <ProfileDropdown />
           </div>
         </div>
-        <router-view name="leftsidebar" />
+        <router-view name="leftSidebar" />
         <div
           class="flex-shrink-0 flex flex-row border-t border-block-border p-3 text-gray-700"
         >

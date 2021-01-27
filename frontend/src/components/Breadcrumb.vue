@@ -1,6 +1,6 @@
 <template>
-  <ol class="flex items-center space-x-2">
-    <li v-for="(item, index) in breadcrumbList" :key="index">
+  <nav class="flex" aria-label="Breadcrumb">
+    <div v-for="(item, index) in breadcrumbList" :key="index">
       <div class="flex items-center space-x-2">
         <svg
           v-if="index > 0"
@@ -59,8 +59,8 @@
           </svg>
         </button>
       </div>
-    </li>
-  </ol>
+    </div>
+  </nav>
 </template>
 
 <script lang="ts">

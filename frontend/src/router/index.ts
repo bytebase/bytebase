@@ -1,5 +1,7 @@
 import { defineAsyncComponent } from "vue";
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
+import DashboardLayout from "../layouts/DashboardLayout.vue";
+import ThreeColumnView from "../views/ThreeColumnView.vue";
 import MainContent from "../views/MainContent.vue";
 import MainSidebar from "../views/MainSidebar.vue";
 import EmptyView from "../views/EmptyView.vue";
@@ -40,157 +42,142 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
     name: HOME_MODULE,
-    component: MasterDetail,
+    component: DashboardLayout,
     children: [
       {
         path: "404",
         name: "error.404",
         meta: { displayName: "404" },
-        components: {
-          content: defineAsyncComponent(() => import("../views/Page404.vue")),
-          leftsidebar: MainSidebar,
-          rightsidebar: ActivitySidebar,
-        },
+        component: defineAsyncComponent(() => import("../views/Page404.vue")),
       },
       {
         path: "500",
         name: "error.500",
         meta: { displayName: "500" },
-        components: {
-          content: defineAsyncComponent(() => import("../views/Page500.vue")),
-          leftsidebar: MainSidebar,
-          rightsidebar: ActivitySidebar,
-        },
+        component: defineAsyncComponent(() => import("../views/Page500.vue")),
       },
       {
         path: "inbox",
         name: "workspace.inbox",
         meta: { displayName: "Inbox" },
-        components: {
-          content: defineAsyncComponent(() => import("../views/Inbox.vue")),
-          leftsidebar: MainSidebar,
-          rightsidebar: ActivitySidebar,
-        },
+        component: defineAsyncComponent(() => import("../views/Inbox.vue")),
         props: { actionbar: true, content: true },
-      },
-      {
-        path: "environment",
-        name: "workspace.environment",
-        meta: { displayName: "Environment" },
-        components: {
-          content: defineAsyncComponent(
-            () => import("../views/EnvironmentDashboard.vue")
-          ),
-          leftsidebar: MainSidebar,
-          rightsidebar: ActivitySidebar,
-        },
-        props: { actionbar: true, content: true },
-      },
-      {
-        path: "setting",
-        name: "setting",
-        meta: { displayName: "Setting" },
-        components: {
-          content: defineAsyncComponent(() => import("../views/Setting.vue")),
-          leftsidebar: defineAsyncComponent(
-            () => import("../views/SettingSidebar.vue")
-          ),
-          rightsidebar: ActivitySidebar,
-        },
-        children: [
-          {
-            path: "",
-            name: "setting.accountprofile",
-            meta: { displayName: "Account Profile" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingAccountProfile.vue")
-            ),
-            alias: "account/profile",
-            props: true,
-          },
-          {
-            path: "general",
-            name: "setting.workspace.general",
-            meta: { displayName: "General" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspaceGeneral.vue")
-            ),
-            props: true,
-          },
-          {
-            path: "agent",
-            name: "setting.workspace.agent",
-            meta: { displayName: "Agents" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspaceAgent.vue")
-            ),
-            props: true,
-          },
-          {
-            path: "member",
-            name: "setting.workspace.member",
-            meta: { displayName: "Members" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspaceMember.vue")
-            ),
-            props: true,
-          },
-          {
-            path: "plan",
-            name: "setting.workspace.plan",
-            meta: { displayName: "Plans" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspacePlan.vue")
-            ),
-            props: true,
-          },
-          {
-            path: "billing",
-            name: "setting.workspace.billing",
-            meta: { displayName: "Billings" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspaceBilling.vue")
-            ),
-            props: true,
-          },
-          {
-            path: "integration/slack",
-            name: "setting.workspace.integration.slack",
-            meta: { displayName: "Slack" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspaceIntegrationSlack.vue")
-            ),
-            props: true,
-          },
-          {
-            // Use absolute path to specify the whole path while still leverages the nested route
-            path: "/:groupSlug/:projectSlug/setting",
-            name: "setting.workspace.project",
-            meta: { displayName: "Setting" },
-            component: defineAsyncComponent(
-              () => import("../views/SettingWorkspaceProject.vue")
-            ),
-            props: true,
-          },
-        ],
       },
       {
         path: "",
         name: HOME_MODULE,
-        components: {
-          content: MainContent,
-          leftsidebar: MainSidebar,
-          rightsidebar: ActivitySidebar,
-        },
+        component: ThreeColumnView,
 
         children: [
           {
             path: "",
             name: HOME_MODULE,
-            meta: { displayName: "Home" },
+            meta: { displayName: "Home", rightSidebar: true },
             components: {
-              actionbar: ActionbarHome,
               content: Home,
+              leftSidebar: MainSidebar,
+              rightSidebar: ActivitySidebar,
+            },
+            props: { actionbar: true, content: true },
+          },
+          {
+            path: "setting",
+            name: "setting",
+            meta: { displayName: "Setting" },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/Setting.vue")
+              ),
+              leftSidebar: defineAsyncComponent(
+                () => import("../views/SettingSidebar.vue")
+              ),
+            },
+            children: [
+              {
+                path: "",
+                name: "setting.accountprofile",
+                meta: { displayName: "Account Profile" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingAccountProfile.vue")
+                ),
+                alias: "account/profile",
+                props: true,
+              },
+              {
+                path: "general",
+                name: "setting.workspace.general",
+                meta: { displayName: "General" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspaceGeneral.vue")
+                ),
+                props: true,
+              },
+              {
+                path: "agent",
+                name: "setting.workspace.agent",
+                meta: { displayName: "Agents" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspaceAgent.vue")
+                ),
+                props: true,
+              },
+              {
+                path: "member",
+                name: "setting.workspace.member",
+                meta: { displayName: "Members" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspaceMember.vue")
+                ),
+                props: true,
+              },
+              {
+                path: "plan",
+                name: "setting.workspace.plan",
+                meta: { displayName: "Plans" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspacePlan.vue")
+                ),
+                props: true,
+              },
+              {
+                path: "billing",
+                name: "setting.workspace.billing",
+                meta: { displayName: "Billings" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspaceBilling.vue")
+                ),
+                props: true,
+              },
+              {
+                path: "integration/slack",
+                name: "setting.workspace.integration.slack",
+                meta: { displayName: "Slack" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspaceIntegrationSlack.vue")
+                ),
+                props: true,
+              },
+              {
+                // Use absolute path to specify the whole path while still leverages the nested route
+                path: "/:groupSlug/:projectSlug/setting",
+                name: "setting.workspace.project",
+                meta: { displayName: "Setting" },
+                component: defineAsyncComponent(
+                  () => import("../views/SettingWorkspaceProject.vue")
+                ),
+                props: true,
+              },
+            ],
+          },
+          {
+            path: "environment",
+            name: "workspace.environment",
+            meta: { displayName: "Environment" },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/EnvironmentDashboard.vue")
+              ),
+              leftSidebar: MainSidebar,
             },
             props: { actionbar: true, content: true },
           },
@@ -199,10 +186,10 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.pipeline.detail",
             meta: { displayName: "Pipeline" },
             components: {
-              actionbar: EmptyView,
               content: defineAsyncComponent(
                 () => import("../views/PipelineDetail.vue")
               ),
+              leftSidebar: MainSidebar,
             },
             props: { actionbar: true, content: true },
           },
@@ -253,8 +240,7 @@ const routes: Array<RouteRecordRaw> = [
 export const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes,
-  linkActiveClass: "text-gray-900 bg-link-hover",
-  linkExactActiveClass: "text-gray-900 bg-link-hover",
+  linkExactActiveClass: "bg-link-hover",
 });
 
 router.beforeEach((to, from, next) => {

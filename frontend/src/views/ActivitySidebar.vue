@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-6 pb-2">
+  <div class="pl-6 pt-6 pb-2">
     <h2 class="text-sm leading-5 font-semibold">Activity</h2>
   </div>
   <div>
@@ -29,7 +29,7 @@
 
       <!-- More items... -->
     </ul>
-    <div class="py-4 text-sm leading-5 border-t border-block-border">
+    <div class="pl-6 py-4 text-sm leading-5 border-t border-block-border">
       <a href="#" class="link">View all activity &rarr;</a>
     </div>
   </div>

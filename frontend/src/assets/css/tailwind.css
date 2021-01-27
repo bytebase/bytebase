@@ -36,6 +36,10 @@
   @apply text-normal-text hover:underline;
 }
 
+.iconlink {
+  @apply text-normal-text hover:bg-link-hover focus:outline-none;
+}
+
 .sidebar-link {
   @apply text-normal-text hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none;
 }
