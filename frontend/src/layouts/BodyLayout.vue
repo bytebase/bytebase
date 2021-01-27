@@ -97,7 +97,7 @@
         </div>
       </div>
     </aside>
-    <div class="flex flex-col min-w-0 flex-1">
+    <div class="flex flex-col min-w-0 flex-1 border-l border-block-border">
       <!-- Static sidebar for mobile -->
       <aside class="lg:hidden">
         <div
