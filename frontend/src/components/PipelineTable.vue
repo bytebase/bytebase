@@ -88,6 +88,9 @@ export default {
           title: "ID",
         },
         {
+          title: "Type",
+        },
+        {
           title: "Status",
         },
         {
