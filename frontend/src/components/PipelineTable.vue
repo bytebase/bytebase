@@ -6,7 +6,7 @@
     @click-row="clickPipeline"
   >
     <template v-slot:body="{ rowData: pipeline }">
-      <BBTableCell class="w-1/12">
+      <BBTableCell class="w-1/12 hidden lg:table-cell">
         <span class="">#{{ pipeline.id }}</span>
       </BBTableCell>
       <BBTableCell class="w-1/12">
@@ -26,10 +26,10 @@
       <BBTableCell class="w-2/12">
         <BBStepBar :stepList="stageList(pipeline)" />
       </BBTableCell>
-      <BBTableCell class="w-1/12">
+      <BBTableCell class="w-1/12 hidden lg:table-cell">
         <BBAvatar :username="`Darth Vader`"> </BBAvatar>
       </BBTableCell>
-      <BBTableCell class="w-1/12 hidden md:table-cell">
+      <BBTableCell class="w-1/12 hidden lg:table-cell">
         {{ humanize(pipeline.attributes.createdTs) }}
       </BBTableCell>
     </template>
