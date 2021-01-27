@@ -4,7 +4,7 @@
 
 <script lang="ts">
 export default {
-  name: "Setting",
+  name: "SettingLayout",
   components: {},
   setup(props, ctx) {},
 };

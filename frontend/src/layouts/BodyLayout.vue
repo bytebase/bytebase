@@ -197,7 +197,7 @@ interface LocalState {
 }
 
 export default {
-  name: "ThreeColumnView",
+  name: "BodyLayout",
   components: {
     Breadcrumb,
   },
@@ -206,6 +206,8 @@ export default {
       showMobileOverlay: false,
     });
 
+    // For now, only the home page needs the right sidebar.
+    // So this is easier than creating a dedicate layout.
     const showRightSidebar = computed(() => {
       return useRouter().currentRoute.value.meta.rightSidebar;
     });

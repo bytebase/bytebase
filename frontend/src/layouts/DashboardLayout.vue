@@ -8,13 +8,12 @@
 
   <main>
     <div class="max-w-full">
-      <router-view />
+      <router-view name="body" />
     </div>
   </main>
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 
 export default {

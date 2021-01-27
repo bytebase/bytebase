@@ -1,7 +1,7 @@
 import { defineAsyncComponent } from "vue";
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
-import ThreeColumnView from "../views/ThreeColumnView.vue";
+import BodyLayout from "../layouts/BodyLayout.vue";
 import MainSidebar from "../views/MainSidebar.vue";
 import ActivitySidebar from "../views/ActivitySidebar.vue";
 import Home from "../views/Home.vue";
@@ -42,7 +42,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "",
         name: HOME_MODULE,
-        component: ThreeColumnView,
+        components: { body: BodyLayout },
         children: [
           {
             path: "",
@@ -108,7 +108,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: { displayName: "Setting" },
             components: {
               content: defineAsyncComponent(
-                () => import("../views/Setting.vue")
+                () => import("../layouts/SettingLayout.vue")
               ),
               leftSidebar: defineAsyncComponent(
                 () => import("../views/SettingSidebar.vue")
