@@ -136,6 +136,4 @@ export interface RepositoryState {
 // UI
 export interface RouterSlug {
   pipelineId?: PipelineId;
-  groupSlug?: string;
-  projectSlug?: string;
 }
