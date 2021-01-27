@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "name": "Bob (Owner and Developer)",
+    "email": "bob@example.com",
+    "passwordHash": "aaa"
+  },
+  {
+    "id": "2",
+    "name": "Alice (DBA)",
+    "email": "alice@example.com",
+    "passwordHash": "aaa"
+  },
+  {
+    "id": "3",
+    "name": "Tom (Developer)",
+    "email": "tom@example.com",
+    "passwordHash": "aaa"
+  },
+  {
+    "id": "4",
+    "name": "Mary (DBA)",
+    "email": "mary@example.com",
+    "passwordHash": "aaa"
+  },
+  {
+    "id": "5",
+    "name": "Jane (Developer)",
+    "email": "jane@example.com",
+    "passwordHash": "aaa"
+  }
+]

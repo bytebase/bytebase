@@ -1,0 +1,41 @@
+:root {
+  --color-accent: #111827;
+  --color-accent-hover: #374151;
+  --color-accent-text: #ffffff;
+
+  --color-normal: #f5f7f9;
+  --color-normal-hover: #9ca3af;
+  --color-normal-text: #24292e;
+
+  --color-error: #dc2626;
+  --color-error-hover: #b91v1v;
+
+  --color-link-hover: #e5e7eb;
+
+  --color-block-border: #e5e7eb;
+  --color-control-border: #d1d5db;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.btn-primary {
+  @apply border border-transparent rounded-md text-accent-text bg-accent hover:bg-accent-hover disabled:bg-accent disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
+.btn-normal {
+  @apply border border-control-border rounded-md text-normal-text bg-normal hover:bg-normal-hover disabled:bg-normal disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
+.btn-danger {
+  @apply border border-transparent rounded-md text-accent-text bg-error hover:bg-error-hover disabled:bg-error disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
+.link {
+  @apply text-normal-text hover:underline;
+}
+
+.sidebar-link {
+  @apply text-normal-text hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none;
+}

@@ -1,0 +1,30 @@
+{
+  "name": "bytebase",
+  "version": "0.0.0",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@tailwindcss/forms": "^0.2.1",
+    "autoprefixer": "^9",
+    "axios": "^0.20.0",
+    "faker": "^5.1.0",
+    "focus-visible": "^5.2.0",
+    "lodash-es": "^4.17.20",
+    "miragejs": "^0.1.41",
+    "moment": "^2.29.1",
+    "postcss": "^7",
+    "postcss-focus-visible": "^5.0.0",
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat",
+    "vue": "^3.0.0",
+    "vue-router": "^4.0.0-0",
+    "vuex": "^4.0.0-beta.4"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.4",
+    "@vue/compiler-sfc": "^3.0.0-rc.1",
+    "vite": "^1.0.0-rc.1"
+  }
+}

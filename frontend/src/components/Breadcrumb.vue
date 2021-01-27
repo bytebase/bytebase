@@ -1,0 +1,154 @@
+<template>
+  <ol class="flex items-center space-x-2">
+    <li v-for="(item, index) in breadcrumbList" :key="index">
+      <div class="flex items-center space-x-2">
+        <svg
+          v-if="index > 0"
+          class="flex-shrink-0 h-5 w-5 text-gray-400"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <router-link
+          v-if="item.path"
+          :to="item.path"
+          class="link"
+          active-class="link"
+          exact-active-class="link"
+          >{{ item.name }}</router-link
+        >
+        <div v-else>
+          {{ item.name }}
+        </div>
+        <button
+          v-if="index == breadcrumbList.length - 1"
+          class="relative focus:outline-none"
+          type="button"
+          @click.prevent="toggleBookmark"
+        >
+          <svg
+            v-if="state.bookmarked"
+            class="h-6 w-6 text-yellow-300 hover:text-yellow-400"
+            x-description="Heroicon name: star"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+            ></path>
+          </svg>
+          <svg
+            v-else
+            class="h-6 w-6 text-gray-300 hover:text-gray-400"
+            x-description="Heroicon name: star"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+    </li>
+  </ol>
+</template>
+
+<script lang="ts">
+import { reactive, computed } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { RouterSlug } from "../types";
+
+interface LocalState {
+  bookmarked: boolean;
+}
+
+interface BreadcrumbItem {
+  name: string;
+  path?: string;
+}
+
+export default {
+  name: "Breadcrumb",
+  components: {},
+  setup(props, ctx) {
+    const store = useStore();
+
+    const state = reactive<LocalState>({
+      bookmarked: Math.random() > 0.5,
+    });
+
+    const breadcrumbList = computed(() => {
+      const currentRoute = useRouter().currentRoute.value;
+      const routeSlug: RouterSlug = store.getters["router/routeSlug"](
+        currentRoute
+      );
+      const pipelineId = routeSlug.pipelineId;
+      const groupSlug = routeSlug.groupSlug;
+      const projectSlug = routeSlug.projectSlug;
+      const list: Array<BreadcrumbItem> = [];
+      if (pipelineId) {
+        list.push({
+          name: "Pipeline",
+        });
+        list.push({
+          name: pipelineId,
+          path: "/pipeline/" + pipelineId,
+        });
+      } else if (groupSlug) {
+        list.push({
+          name: groupSlug,
+          path: "/" + groupSlug,
+        });
+        if (
+          projectSlug &&
+          currentRoute.name?.toString().startsWith("workspace.project")
+        ) {
+          list.push({
+            name: projectSlug,
+            path: "/" + groupSlug + "/" + projectSlug,
+          });
+          if (pipelineId) {
+            list.push({
+              name: "Pipeline",
+              path: "/" + groupSlug + "/" + projectSlug + "/pipeline",
+            });
+            list.push({
+              name: pipelineId,
+              path:
+                "/" + groupSlug + "/" + projectSlug + "/pipeline/" + pipelineId,
+            });
+          }
+        }
+        if (currentRoute.meta.displayName) {
+          list.push({
+            name: currentRoute.meta.displayName,
+            path: currentRoute.path,
+          });
+        }
+      }
+      return list;
+    });
+
+    const toggleBookmark = () => {
+      state.bookmarked = !state.bookmarked;
+    };
+
+    return {
+      state,
+      breadcrumbList,
+      toggleBookmark,
+    };
+  },
+};
+</script>
