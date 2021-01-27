@@ -3,7 +3,6 @@ import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BodyLayout from "../layouts/BodyLayout.vue";
 import MainSidebar from "../views/MainSidebar.vue";
-import ActivitySidebar from "../views/ActivitySidebar.vue";
 import Home from "../views/Home.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -47,16 +46,14 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "",
             name: HOME_MODULE,
-            meta: { displayName: "Home", rightSidebar: true },
+            meta: { displayName: "Home" },
             components: {
               content: Home,
               leftSidebar: MainSidebar,
-              rightSidebar: ActivitySidebar,
             },
             props: {
               content: true,
               leftSidebar: true,
-              rightSidebar: true,
             },
           },
           {

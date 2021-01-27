@@ -171,17 +171,6 @@
             </div>
           </div>
         </div>
-
-        <div
-          v-if="showRightSidebar"
-          class="bg-gray-50 lg:flex-shrink-0 lg:border-l lg:border-gray-200"
-        >
-          <div class="h-full py-6 lg:w-80">
-            <!-- Start right column area -->
-            <router-view name="rightSidebar" />
-            <!-- End right column area -->
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -206,15 +195,8 @@ export default {
       showMobileOverlay: false,
     });
 
-    // For now, only the home page needs the right sidebar.
-    // So this is easier than creating a dedicate layout.
-    const showRightSidebar = computed(() => {
-      return useRouter().currentRoute.value.meta.rightSidebar;
-    });
-
     return {
       state,
-      showRightSidebar,
     };
   },
 };
