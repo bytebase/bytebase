@@ -1,6 +1,6 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
-  <div class="h-screen flex overflow-hidden bg-white">
+  <div class="h-full flex overflow-hidden bg-white">
     <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
     <div v-if="state.showMobileOverlay" class="lg:hidden">
       <div class="fixed inset-0 flex z-40">
@@ -164,7 +164,7 @@
               <Breadcrumb />
             </div>
 
-            <div class="h-full overflow-hidden">
+            <div class="h-full overflow-y-auto">
               <!-- Start main area-->
               <router-view name="content" />
               <!-- End main area -->
