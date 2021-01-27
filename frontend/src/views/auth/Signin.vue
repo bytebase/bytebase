@@ -4,6 +4,13 @@
   Read the documentation to get started: https://tailwindui.com/documentation
 -->
   <div class="bg-normal min-h-screen flex">
+    <div class="hidden lg:block relative w-0 flex-1">
+      <img
+        class="absolute inset-0 h-full w-full object-cover"
+        src="../../assets/signin-splash.jpeg"
+        alt=""
+      />
+    </div>
     <div
       class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24"
     >
@@ -109,13 +116,6 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="hidden lg:block relative w-0 flex-1">
-      <img
-        class="absolute inset-0 h-full w-full object-cover"
-        src="../../assets/signin-splash.jpeg"
-        alt=""
-      />
     </div>
   </div>
 </template>
