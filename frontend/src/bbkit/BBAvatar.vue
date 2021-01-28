@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex font-normal tracking-wide justify-center items-center select-none"
+    class="flex tracking-wide justify-center items-center select-none"
     :class="textClass"
     :style="[style]"
   >
@@ -31,11 +31,12 @@ const BACKGROUND_COLOR_LIST: string[] = [
   "#FB7185",
 ];
 
-type SizeType = "normal" | "large";
+type SizeType = "small" | "normal" | "large";
 
 const sizeClassMap: Map<SizeType, string> = new Map([
-  ["normal", "w-8 h-8 text-sm"],
-  ["large", "w-24 h-24 text-4xl"],
+  ["small", "w-6 h-6 text-xs font-light"],
+  ["normal", "w-8 h-8 text-sm font-normal"],
+  ["large", "w-24 h-24 text-4xl font-medium"],
 ]);
 
 export default {
