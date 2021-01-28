@@ -39,15 +39,16 @@ const workspacesSeeder = (server) => {
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
 
+  // Generate random name so we can easily test different avatar background
   for (let i = 0; i < 15; i++) {
     server.create("pipeline", {
       creator: {
         id: ws1Dev1.id,
-        name: ws1Dev1.name,
+        name: faker.fake("{{name.findName}}"),
       },
       assignee: {
         id: ws1Owner.id,
-        name: ws1Owner.name,
+        name: faker.fake("{{name.findName}}"),
       },
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillStage(environmentList1),
@@ -59,11 +60,11 @@ const workspacesSeeder = (server) => {
     server.create("pipeline", {
       creator: {
         id: ws1Owner.id,
-        name: ws1Owner.name,
+        name: faker.fake("{{name.findName}}"),
       },
       assignee: {
         id: ws1DBA.id,
-        name: ws1DBA.name,
+        name: faker.fake("{{name.findName}}"),
       },
       subscriberIdList: [ws1Dev2.id],
       ...fillStage(environmentList1),
@@ -75,11 +76,11 @@ const workspacesSeeder = (server) => {
     server.create("pipeline", {
       creator: {
         id: ws1Dev2.id,
-        name: ws1Dev2.name,
+        name: faker.fake("{{name.findName}}"),
       },
       assignee: {
         id: ws1DBA.id,
-        name: ws1DBA.name,
+        name: faker.fake("{{name.findName}}"),
       },
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillStage(environmentList1),
@@ -90,11 +91,11 @@ const workspacesSeeder = (server) => {
   server.create("pipeline", {
     creator: {
       id: ws2Dev.id,
-      name: ws2Dev.name,
+      name: faker.fake("{{name.findName}}"),
     },
     assignee: {
       id: ws2DBA.id,
-      name: ws2DBA.name,
+      name: faker.fake("{{name.findName}}"),
     },
     ...fillStage(environmentList2),
     workspace: workspace2,
@@ -227,7 +228,6 @@ const workspacesSeeder = (server) => {
 
 const fillStage = (environmentList) => {
   const i = Math.floor(Math.random() * 5);
-
   if (i % 5 == 0) {
     return {
       status: "PENDING",
