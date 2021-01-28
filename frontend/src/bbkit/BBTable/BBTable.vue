@@ -41,9 +41,9 @@
               <tr>
                 <td
                   :colspan="columnList.length"
-                  class="text-center text-gray-400 font-normal"
+                  class="text-center text-gray-400"
                 >
-                  Empty
+                  -
                 </td>
               </tr>
             </template>
