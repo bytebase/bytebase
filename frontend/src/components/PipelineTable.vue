@@ -6,13 +6,13 @@
     @click-row="clickPipeline"
   >
     <template v-slot:body="{ rowData: pipeline }">
-      <BBTableCell class="w-1/12 hidden lg:table-cell">
+      <BBTableCell class="w-16 hidden lg:table-cell text-gray-500">
         <span class="">#{{ pipeline.id }}</span>
       </BBTableCell>
-      <BBTableCell class="w-1/12">
+      <BBTableCell class="w-16">
         <span class="">{{ pipeline.attributes.type }}</span>
       </BBTableCell>
-      <BBTableCell class="w-1/12">
+      <BBTableCell class="w-16">
         <span
           class="px-2 inline-flex text-xs font-semibold rounded-full"
           :class="statusMap[pipeline.attributes.status].class"
@@ -20,16 +20,16 @@
           {{ statusMap[pipeline.attributes.status].name }}
         </span>
       </BBTableCell>
-      <BBTableCell class="w-5/12">
+      <BBTableCell class="w-auto">
         {{ pipeline.attributes.name }}
       </BBTableCell>
-      <BBTableCell class="w-2/12">
+      <BBTableCell class="w-32">
         <BBStepBar :stepList="stageList(pipeline)" />
       </BBTableCell>
-      <BBTableCell class="w-1/12 hidden lg:table-cell">
+      <BBTableCell class="w-8 hidden lg:table-cell">
         <BBAvatar :username="pipeline.attributes.assignee.name"> </BBAvatar>
       </BBTableCell>
-      <BBTableCell class="w-1/12 hidden lg:table-cell">
+      <BBTableCell class="w-24 hidden lg:table-cell">
         {{ humanize(pipeline.attributes.createdTs) }}
       </BBTableCell>
     </template>
