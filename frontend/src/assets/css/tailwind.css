@@ -7,12 +7,16 @@
   --color-normal-hover: #9ca3af;
   --color-normal-text: #24292e;
 
+  /* red-600 */
   --color-error: #dc2626;
+  /* red-700 */
   --color-error-hover: #b91c1c;
-
+  /* gray-200 */
   --color-link-hover: #e5e7eb;
 
+  /* gray-200 */
   --color-block-border: #e5e7eb;
+  /* gray-300 */
   --color-control-border: #d1d5db;
 }
 

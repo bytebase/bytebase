@@ -22,10 +22,59 @@
       </BBTableCell>
       <BBTableCell class="w-16">
         <span
-          class="px-2 py-1 inline-flex text-xs font-semibold rounded-full"
+          class="relative w-6 h-6 flex items-center justify-center rounded-full"
           :class="statusMap[pipeline.attributes.status].class"
         >
-          {{ statusMap[pipeline.attributes.status].name }}
+          <template v-if="pipeline.attributes.status == `PENDING`">
+            <span
+              class="h-2.5 w-2.5 bg-gray-300 rounded-full"
+              aria-hidden="true"
+            ></span>
+          </template>
+          <template v-else-if="pipeline.attributes.status == `RUNNING`">
+            <span
+              class="h-2.5 w-2.5 bg-blue-600 rounded-full"
+              aria-hidden="true"
+            ></span>
+          </template>
+          <template v-else-if="pipeline.attributes.status == `DONE`">
+            <svg
+              class="w-5 h-5"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </template>
+          <template v-else-if="pipeline.attributes.status == `FAILED`">
+            <span
+              class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
+              aria-hidden="true"
+              >!</span
+            >
+          </template>
+          <template v-else-if="pipeline.attributes.status == `CANCELED`">
+            <svg
+              class="w-5 h-5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              >
+              <path
+                fill-rule="evenodd"
+                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+          </template>
         </span>
       </BBTableCell>
       <BBTableCell class="w-auto">
@@ -35,7 +84,8 @@
         <BBStepBar :stepList="stageList(pipeline)" />
       </BBTableCell>
       <BBTableCell class="w-8 hidden lg:table-cell">
-        <BBAvatar :username="pipeline.attributes.assignee.name"> </BBAvatar>
+        <BBAvatar :size="`small`" :username="pipeline.attributes.assignee.name">
+        </BBAvatar>
       </BBTableCell>
       <BBTableCell class="w-24 hidden lg:table-cell">
         {{ humanize(pipeline.attributes.createdTs) }}
@@ -63,25 +113,27 @@ interface LocalState {
 }
 
 const statusMap = {
-  CREATED: {
-    name: "Created",
-    class: "bg-green-200 text-green-800",
+  PENDING: {
+    name: "Pending",
+    class: "bg-white border-2 border-gray-300 hover:border-gray-400",
   },
   RUNNING: {
     name: "Running",
-    class: "bg-yellow-200 text-yellow-800",
+    class:
+      "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700",
   },
   DONE: {
     name: "Done",
-    class: "bg-blue-200 text-blue-800",
+    class: "bg-green-600 hover:bg-green-700 text-white",
   },
   FAILED: {
     name: "Failed",
-    class: "bg-red-200 text-red-800",
+    class: "bg-error text-white hover:text-white hover:bg-error-hover",
   },
   CANCELED: {
     name: "Canceled",
-    class: "bg-gray-200 text-gray-800",
+    class:
+      "bg-white border-2 text-gray-500 border-gray-500 hover:text-gray-600 hover:border-gray-600",
   },
 };
 
@@ -126,7 +178,7 @@ export default {
 
     const stageList = function (pipeline: Pipeline): BBStep[] {
       return pipeline.attributes.stageProgressList.map((stageProgress) => {
-        let stepStatus: BBStepStatus = "CREATED";
+        let stepStatus: BBStepStatus = "PENDING";
         switch (stageProgress.status) {
           case "RUNNING":
             stepStatus = "RUNNING";
@@ -137,8 +189,8 @@ export default {
           case "FAILED":
             stepStatus = "FAILED";
             break;
-          case "CREATED":
-            stepStatus = "CREATED";
+          case "PENDING":
+            stepStatus = "PENDING";
             break;
           case "CANCELED":
             stepStatus = "CANCELED";

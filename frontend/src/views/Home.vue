@@ -67,15 +67,13 @@ export default {
           for (const pipeline of pipelineList) {
             if (
               pipeline.attributes.assignee.id === currentUser!.id &&
-              (pipeline.attributes.status === "CREATED" ||
-                pipeline.attributes.status === "RUNNING" ||
+              (pipeline.attributes.status === "RUNNING" ||
                 pipeline.attributes.status === "FAILED")
             ) {
               state.attentionList.push(pipeline);
             } else if (
               pipeline.attributes.subscriberIdList.includes(currentUser!.id) &&
-              (pipeline.attributes.status === "CREATED" ||
-                pipeline.attributes.status === "RUNNING" ||
+              (pipeline.attributes.status === "RUNNING" ||
                 pipeline.attributes.status === "FAILED")
             ) {
               state.subscribeList.push(pipeline);

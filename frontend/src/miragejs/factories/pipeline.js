@@ -15,7 +15,7 @@ export default {
       return Date.now() - scaleFactor * 3600 * 20 * 1000;
     },
     status() {
-      return "CREATED";
+      return "RUNNING";
     },
     type() {
       let dice = Math.random();

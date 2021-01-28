@@ -229,28 +229,28 @@ const fillStage = (environmentList) => {
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
     return {
-      status: "CREATED",
+      status: "RUNNING",
       currentStageId: environmentList[0].id,
       stageProgressList: [
         {
           stageId: environmentList[0].id,
           stageName: environmentList[0].name,
-          status: "CREATED",
+          status: "RUNNING",
         },
         {
           stageId: environmentList[1].id,
           stageName: environmentList[1].name,
-          status: "CREATED",
+          status: "PENDING",
         },
         {
           stageId: environmentList[2].id,
           stageName: environmentList[2].name,
-          status: "CREATED",
+          status: "PENDING",
         },
         {
           stageId: environmentList[3].id,
           stageName: environmentList[3].name,
-          status: "CREATED",
+          status: "PENDING",
         },
       ],
     };
@@ -277,7 +277,7 @@ const fillStage = (environmentList) => {
         {
           stageId: environmentList[3].id,
           stageName: environmentList[3].name,
-          status: "CREATED",
+          status: "PENDING",
         },
       ],
     };
@@ -326,12 +326,12 @@ const fillStage = (environmentList) => {
         {
           stageId: environmentList[2].id,
           stageName: environmentList[2].name,
-          status: "CREATED",
+          status: "PENDING",
         },
         {
           stageId: environmentList[3].id,
           stageName: environmentList[3].name,
-          status: "CREATED",
+          status: "PENDING",
         },
       ],
     };
