@@ -1,5 +1,5 @@
 <template>
-  <td class="table-cell px-4 py-2 whitespace-nowrap text-sm leading-5">
+  <td class="table-cell px-4 py-2 text-sm leading-5">
     <slot />
   </td>
 </template>
