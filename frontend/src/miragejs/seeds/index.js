@@ -229,6 +229,7 @@ const fillStage = (environmentList) => {
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
     return {
+      status: "CREATED",
       currentStageId: environmentList[0].id,
       stageProgressList: [
         {
@@ -255,6 +256,7 @@ const fillStage = (environmentList) => {
     };
   } else if (i % 5 == 1) {
     return {
+      status: "RUNNING",
       currentStageId: environmentList[2].id,
       stageProgressList: [
         {
@@ -281,6 +283,7 @@ const fillStage = (environmentList) => {
     };
   } else if (i % 5 == 2) {
     return {
+      status: "DONE",
       currentStageId: environmentList[3].id,
       stageProgressList: [
         {
@@ -307,6 +310,7 @@ const fillStage = (environmentList) => {
     };
   } else if (i % 5 == 3) {
     return {
+      status: "FAILED",
       currentStageId: environmentList[1].id,
       stageProgressList: [
         {
@@ -333,6 +337,7 @@ const fillStage = (environmentList) => {
     };
   } else {
     return {
+      status: "CANCELED",
       currentStageId: environmentList[3].id,
       stageProgressList: [
         {

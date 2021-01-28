@@ -14,18 +14,8 @@ export default {
       const scaleFactor = Math.random() * i;
       return Date.now() - scaleFactor * 3600 * 20 * 1000;
     },
-    status(i) {
-      if (i % 5 == 0) {
-        return "CREATED";
-      } else if (i % 5 == 1) {
-        return "RUNNING";
-      } else if (i % 5 == 2) {
-        return "DONE";
-      } else if (i % 5 == 3) {
-        return "FAILED";
-      } else {
-        return "CANCELED";
-      }
+    status() {
+      return "CREATED";
     },
     type() {
       let dice = Math.random();
