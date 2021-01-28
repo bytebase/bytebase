@@ -13,15 +13,32 @@
         >
           <template v-if="pipeline.attributes.status == `PENDING`">
             <span
-              class="h-3 w-3 bg-gray-300 rounded-full"
+              class="h-2 w-2 bg-blue-600 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
           <template v-else-if="pipeline.attributes.status == `RUNNING`">
-            <span
-              class="h-2 w-2 bg-blue-600 rounded-full"
-              aria-hidden="true"
-            ></span>
+            <svg
+              class="h-6 w-6"
+              style="animation: spin 2.5s linear infinite"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
           </template>
           <template v-else-if="pipeline.attributes.status == `DONE`">
             <svg
@@ -113,12 +130,12 @@ interface LocalState {
 const statusMap = {
   PENDING: {
     name: "Pending",
-    class: "bg-white border-2 border-gray-300 hover:border-gray-400",
+    class:
+      "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700",
   },
   RUNNING: {
     name: "Running",
-    class:
-      "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700",
+    class: "bg-white text-blue-600 hover:text-blue-700 hover:border-blue-700",
   },
   DONE: {
     name: "Done",
@@ -176,8 +193,14 @@ export default {
 
     const stageList = function (pipeline: Pipeline): BBStep[] {
       return pipeline.attributes.stageProgressList.map((stageProgress) => {
-        let stepStatus: BBStepStatus = "PENDING";
+        let stepStatus: BBStepStatus = "CREATED";
         switch (stageProgress.status) {
+          case "CREATED":
+            stepStatus = "CREATED";
+            break;
+          case "PENDING":
+            stepStatus = "PENDING";
+            break;
           case "RUNNING":
             stepStatus = "RUNNING";
             break;
@@ -186,9 +209,6 @@ export default {
             break;
           case "FAILED":
             stepStatus = "FAILED";
-            break;
-          case "PENDING":
-            stepStatus = "PENDING";
             break;
           case "CANCELED":
             stepStatus = "CANCELED";

@@ -27,13 +27,14 @@ export type Pipeline = ResourceObject & {
     title: string;
     createdTs: number;
     lastUpdatedTs: number;
-    status: "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+    status: "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
     type: "DDL" | "DML" | "AUTH";
     currentStageId: string;
     stageProgressList: {
       stageId: string;
       stageName: string;
       status:
+        | "CREATED"
         | "PENDING"
         | "RUNNING"
         | "DONE"
