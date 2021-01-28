@@ -12,14 +12,6 @@ export type ProjectId = string;
 
 export type EnvironmentId = string;
 
-// Various Fully-Qualified Id
-export type FQPipelineId = {
-  id: PipelineId;
-  // id alone is globally unique, projectId is for constructing API path
-  // since Pipeline resource is under Project resource.
-  projectId: ProjectId;
-};
-
 // Models
 export type User = ResourceObject & {};
 export type NewUser = Omit<ResourceObject, "id">;
