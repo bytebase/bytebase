@@ -6,55 +6,38 @@
     @click-row="clickPipeline"
   >
     <template v-slot:body="{ rowData: pipeline }">
-      <BBTableCell class="w-16 hidden lg:table-cell text-gray-500">
-        <span class="">#{{ pipeline.id }}</span>
-      </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell :leftPadding="4" class="w-4 table-cell">
         <span
-          class="border border-gray-500 px-1 text-gray-600 text-xs font-semibold"
-        >
-          {{
-            pipeline.attributes.type == "AUTH"
-              ? capitalize(pipeline.attributes.type)
-              : pipeline.attributes.type
-          }}</span
-        >
-      </BBTableCell>
-      <BBTableCell class="w-16">
-        <span
-          class="relative w-6 h-6 flex items-center justify-center rounded-full"
+          class="w-5 h-5 flex items-center justify-center rounded-full"
           :class="statusMap[pipeline.attributes.status].class"
         >
           <template v-if="pipeline.attributes.status == `PENDING`">
             <span
-              class="h-2.5 w-2.5 bg-gray-300 rounded-full"
+              class="h-3 w-3 bg-gray-300 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
           <template v-else-if="pipeline.attributes.status == `RUNNING`">
             <span
-              class="h-2.5 w-2.5 bg-blue-600 rounded-full"
+              class="h-2 w-2 bg-blue-600 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
           <template v-else-if="pipeline.attributes.status == `DONE`">
             <svg
-              class="w-5 h-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
+              class="w-3 h-3"
               fill="currentColor"
-              aria-hidden="true"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
+                d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"
+              ></path>
             </svg>
           </template>
           <template v-else-if="pipeline.attributes.status == `FAILED`">
             <span
-              class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
+              class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
               aria-hidden="true"
               >!</span
             >
@@ -77,17 +60,32 @@
           </template>
         </span>
       </BBTableCell>
-      <BBTableCell class="w-auto">
+
+      <BBTableCell class="w-4 table-cell text-gray-500">
+        <span class="">#{{ pipeline.id }}</span>
+      </BBTableCell>
+      <BBTableCell :rightPadding="0" class="w-4">
+        <span
+          class="border border-gray-500 px-1 text-gray-600 text-xs font-semibold"
+        >
+          {{
+            pipeline.attributes.type == "AUTH"
+              ? capitalize(pipeline.attributes.type)
+              : pipeline.attributes.type
+          }}</span
+        >
+      </BBTableCell>
+      <BBTableCell :leftPadding="1" class="w-auto">
         {{ pipeline.attributes.name }}
       </BBTableCell>
-      <BBTableCell class="w-32">
+      <BBTableCell class="w-32 hidden sm:table-cell">
         <BBStepBar :stepList="stageList(pipeline)" />
       </BBTableCell>
-      <BBTableCell class="w-8 hidden lg:table-cell">
+      <BBTableCell class="w-4 hidden sm:table-cell">
         <BBAvatar :size="`small`" :username="pipeline.attributes.assignee.name">
         </BBAvatar>
       </BBTableCell>
-      <BBTableCell class="w-24 hidden lg:table-cell">
+      <BBTableCell :rightPadding="4" class="w-24 hidden md:table-cell">
         {{ humanize(pipeline.attributes.createdTs) }}
       </BBTableCell>
     </template>
@@ -124,7 +122,7 @@ const statusMap = {
   },
   DONE: {
     name: "Done",
-    class: "bg-green-600 hover:bg-green-700 text-white",
+    class: "bg-accent text-white",
   },
   FAILED: {
     name: "Failed",
@@ -133,7 +131,7 @@ const statusMap = {
   CANCELED: {
     name: "Canceled",
     class:
-      "bg-white border-2 text-gray-500 border-gray-500 hover:text-gray-600 hover:border-gray-600",
+      "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500",
   },
 };
 
@@ -150,13 +148,13 @@ export default {
     const state = reactive<LocalState>({
       columnList: [
         {
+          title: "Status",
+        },
+        {
           title: "ID",
         },
         {
           title: "Type",
-        },
-        {
-          title: "Status",
         },
         {
           title: "Title",

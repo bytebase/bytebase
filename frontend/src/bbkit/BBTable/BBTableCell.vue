@@ -1,5 +1,8 @@
 <template>
-  <td class="table-cell px-4 py-2 text-sm leading-5">
+  <td
+    class="table-cell text-sm leading-5 py-2"
+    :class="`pl-` + leftPadding + ` pr-` + rightPadding"
+  >
     <slot />
   </td>
 </template>
@@ -9,7 +12,16 @@ import { computed, reactive } from "vue";
 
 export default {
   name: "BBTableCell",
-  props: {},
+  props: {
+    leftPadding: {
+      type: Number,
+      default: 2,
+    },
+    rightPadding: {
+      type: Number,
+      default: 2,
+    },
+  },
   setup(props, ctx) {},
 };
 </script>

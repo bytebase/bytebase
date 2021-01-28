@@ -114,7 +114,7 @@ export default {
         case "FAILED":
           return "bg-error text-white hover:text-white hover:bg-error-hover";
         case "CANCELED":
-          return "bg-white border-2 text-gray-500 border-gray-500 hover:text-gray-600 hover:border-gray-600";
+          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
         case "SKIPPED":
           return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
       }
