@@ -67,8 +67,12 @@ export default {
           }
         }
       }
-      initials = initials.substr(0, 3).toUpperCase();
-      return initials;
+      if (initials.length <= 2) {
+        return initials;
+      }
+      // If there are more than 2 initials, we will pick the first and last initial.
+      // Displaying > 2 letters in a circle doesn't look good.
+      return (initials[0] + initials[initials.length - 1]).toUpperCase();
     });
 
     const backgroundColor = computed(() => {
