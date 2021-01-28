@@ -11,7 +11,7 @@
         </div>
         <router-link
           :to="step.link()"
-          class="group relative w-8 h-8 flex items-center justify-center rounded-full"
+          class="relative w-8 h-8 flex items-center justify-center rounded-full"
           :class="stepClass(step.status)"
         >
           <template v-if="step.status == `CREATED`">
