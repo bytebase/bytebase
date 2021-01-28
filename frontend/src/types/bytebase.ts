@@ -49,8 +49,14 @@ export type Pipeline = ResourceObject & {
         | "CANCELED"
         | "SKIPPED";
     }[];
-    creatorId: string;
-    assigneeId: string;
+    creator: {
+      id: string;
+      name: string;
+    };
+    assignee: {
+      id: string;
+      name: string;
+    };
     subscriberIdList: Array<string>;
   };
 };

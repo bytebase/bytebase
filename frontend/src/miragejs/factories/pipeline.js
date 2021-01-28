@@ -49,11 +49,17 @@ export default {
         },
       ];
     },
-    creatorId() {
-      return 100;
+    creator() {
+      return {
+        id: "100",
+        name: "John Appleseed",
+      };
     },
-    assigneeId() {
-      return 200;
+    assignee() {
+      return {
+        id: "200",
+        name: "Jim Gray",
+      };
     },
     subscriberIdList() {
       return new Array();

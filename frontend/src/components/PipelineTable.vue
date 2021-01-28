@@ -27,7 +27,7 @@
         <BBStepBar :stepList="stageList(pipeline)" />
       </BBTableCell>
       <BBTableCell class="w-1/12 hidden lg:table-cell">
-        <BBAvatar :username="`Darth Vader`"> </BBAvatar>
+        <BBAvatar :username="pipeline.attributes.assignee.name"> </BBAvatar>
       </BBTableCell>
       <BBTableCell class="w-1/12 hidden lg:table-cell">
         {{ humanize(pipeline.attributes.createdTs) }}

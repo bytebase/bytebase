@@ -54,8 +54,8 @@ export default function routes() {
       return schema.pipelines.where((pipeline) => {
         return (
           pipeline.workspaceId == WORKSPACE_ID &&
-          (pipeline.creatorId == userId ||
-            pipeline.assigneeId == userId ||
+          (pipeline.creator.id == userId ||
+            pipeline.assignee.id == userId ||
             pipeline.subscriberIdList.includes(userId))
         );
       });

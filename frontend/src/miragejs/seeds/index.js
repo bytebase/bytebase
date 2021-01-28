@@ -1,3 +1,5 @@
+import faker from "faker";
+
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
  */
@@ -39,8 +41,14 @@ const workspacesSeeder = (server) => {
 
   for (let i = 0; i < 15; i++) {
     server.create("pipeline", {
-      creatorId: ws1Dev1.id,
-      assigneeId: ws1Owner.id,
+      creator: {
+        id: ws1Dev1.id,
+        name: ws1Dev1.name,
+      },
+      assignee: {
+        id: ws1Owner.id,
+        name: ws1Owner.name,
+      },
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -49,8 +57,14 @@ const workspacesSeeder = (server) => {
 
   for (let i = 0; i < 15; i++) {
     server.create("pipeline", {
-      creatorId: ws1Owner.id,
-      assigneeId: ws1DBA.id,
+      creator: {
+        id: ws1Owner.id,
+        name: ws1Owner.name,
+      },
+      assignee: {
+        id: ws1DBA.id,
+        name: ws1DBA.name,
+      },
       subscriberIdList: [ws1Dev2.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -59,8 +73,14 @@ const workspacesSeeder = (server) => {
 
   for (let i = 0; i < 15; i++) {
     server.create("pipeline", {
-      creatorId: ws1Dev2.id,
-      assigneeId: ws1DBA.id,
+      creator: {
+        id: ws1Dev2.id,
+        name: ws1Dev2.name,
+      },
+      assignee: {
+        id: ws1DBA.id,
+        name: ws1DBA.name,
+      },
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -68,8 +88,14 @@ const workspacesSeeder = (server) => {
   }
 
   server.create("pipeline", {
-    creatorId: ws2Dev.id,
-    assigneeId: ws2DBA.id,
+    creator: {
+      id: ws2Dev.id,
+      name: ws2Dev.name,
+    },
+    assignee: {
+      id: ws2DBA.id,
+      name: ws2DBA.name,
+    },
     ...fillStage(environmentList2),
     workspace: workspace2,
   });
