@@ -66,7 +66,7 @@ export default {
           state.closeList = [];
           for (const pipeline of pipelineList) {
             if (
-              pipeline.attributes.assigneeId === currentUser!.id &&
+              pipeline.attributes.assignee.id === currentUser!.id &&
               (pipeline.attributes.status === "CREATED" ||
                 pipeline.attributes.status === "RUNNING" ||
                 pipeline.attributes.status === "FAILED")
@@ -80,7 +80,7 @@ export default {
             ) {
               state.subscribeList.push(pipeline);
             } else if (
-              pipeline.attributes.creatorId === currentUser!.id &&
+              pipeline.attributes.creator.id === currentUser!.id &&
               (pipeline.attributes.status === "DONE" ||
                 pipeline.attributes.status === "CANCELED")
             ) {
