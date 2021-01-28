@@ -1,38 +1,19 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-2 py-2 border-b">
+    <div class="px-2 py-2">
       <BBTableTabFilter
         :itemList="state.environmentFilterList"
         :selectedIndex="state.selectedFilterIndex"
         @select-index="selectFilter"
       />
     </div>
-    <template
-      v-for="(item, index) in [
-        {
-          title: 'Attention',
-          list: state.attentionList,
-        },
-        {
-          title: 'Subscribed',
-          list: state.subscribeList,
-        },
-        {
-          title: 'Recently Closed',
-          list: state.closeList,
-        },
+    <PipelineTable
+      :pipelineSectionList="[
+        { title: 'Attention', list: filteredList(state.attentionList) },
+        { title: 'Subscribed', list: filteredList(state.subscribeList) },
+        { title: 'Recently Closed', list: filteredList(state.closeList) },
       ]"
-      :key="index"
-    >
-      <h3 class="mt-4 pl-4 text-base leading-6 font-medium text-gray-900">
-        {{ item.title }}
-      </h3>
-      <div class="overflow-x-auto">
-        <div class="py-2 align-middle inline-block min-w-full">
-          <PipelineTable :pipelineList="filteredList(item.list)" />
-        </div>
-      </div>
-    </template>
+    />
   </div>
 </template>
 

@@ -1,7 +1,7 @@
 <template>
   <BBTable
     :columnList="state.columnList"
-    :dataSource="pipelineList"
+    :sectionDataSource="pipelineSectionList"
     :showHeader="false"
     @click-row="clickPipeline"
   >
@@ -40,8 +40,12 @@
 import { reactive, PropType } from "vue";
 import { useRouter } from "vue-router";
 import moment from "moment";
-import { BBTableColumn, BBStep, BBStepStatus } from "../bbkit/types";
-import { UserStateSymbol } from "./ProvideUser.vue";
+import {
+  BBTableColumn,
+  BBTableSectionDataSource,
+  BBStep,
+  BBStepStatus,
+} from "../bbkit/types";
 import { Pipeline } from "../types";
 
 interface LocalState {
@@ -76,9 +80,9 @@ export default {
   name: "PipelineTable",
   components: {},
   props: {
-    pipelineList: {
+    pipelineSectionList: {
       required: true,
-      type: Object as PropType<Pipeline[]>,
+      type: Object as PropType<BBTableSectionDataSource<Pipeline>[]>,
     },
   },
   setup(props, ctx) {
@@ -155,8 +159,10 @@ export default {
       return time.format("MMM D YYYY");
     };
 
-    const clickPipeline = function (index: number) {
-      router.push(`/pipeline/${props.pipelineList[index].id}`);
+    const clickPipeline = function (section: number, row: number) {
+      router.push(
+        `/pipeline/${props.pipelineSectionList[section].list[row].id}`
+      );
     };
 
     return {
