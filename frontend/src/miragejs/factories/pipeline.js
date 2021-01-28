@@ -34,7 +34,7 @@ export default {
       } else if (dice < 0.66) {
         return "DML";
       } else {
-        return "OTHER";
+        return "AUTH";
       }
     },
     currentStageId() {
