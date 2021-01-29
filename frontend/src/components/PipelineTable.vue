@@ -70,16 +70,12 @@
       <BBTableCell class="w-4 table-cell text-gray-500">
         <span class="">#{{ pipeline.id }}</span>
       </BBTableCell>
-      <BBTableCell :rightPadding="0" class="w-4">
+      <BBTableCell :rightPadding="1" class="w-4">
         <span
-          class="border border-gray-500 px-1 text-gray-600 text-xs font-semibold"
+          class="flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-mono bg-gray-500 text-white"
         >
-          {{
-            pipeline.attributes.type == "AUTH"
-              ? capitalize(pipeline.attributes.type)
-              : pipeline.attributes.type
-          }}</span
-        >
+          {{ pipeline.attributes.type }}
+        </span>
       </BBTableCell>
       <BBTableCell :leftPadding="1" class="w-auto">
         {{ pipeline.attributes.name }}
@@ -100,7 +96,6 @@
 <script lang="ts">
 import { reactive, PropType } from "vue";
 import { useRouter } from "vue-router";
-import capitalize from "lodash-es/capitalize";
 import moment from "moment";
 import {
   BBTableColumn,
@@ -238,7 +233,6 @@ export default {
       statusMap,
       stageList,
       humanize,
-      capitalize,
       clickPipeline,
     };
   },
