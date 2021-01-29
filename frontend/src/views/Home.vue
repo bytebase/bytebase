@@ -3,7 +3,7 @@
     <div class="p-4">
       <QuickActionPanel />
     </div>
-    <div class="px-2 py-2">
+    <div class="px-2 py-1 border-t">
       <BBTableTabFilter
         :itemList="state.environmentFilterList"
         :selectedIndex="state.selectedFilterIndex"
