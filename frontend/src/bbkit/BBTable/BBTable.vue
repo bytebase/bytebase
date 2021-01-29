@@ -10,7 +10,7 @@
             v-for="(column, index) in columnList"
             :key="index"
             scope="col"
-            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
           >
             {{ column.title }}
           </th>
