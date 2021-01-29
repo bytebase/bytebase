@@ -26,7 +26,7 @@
       <button
         v-for="(item, index) in itemList"
         :key="index"
-        class="focus:outline-none px-3 py-2 font-medium text-sm rounded-md"
+        class="focus:outline-none px-3 py-1 font-medium text-sm rounded-md"
         :class="buttonClass(index == selectedIndex)"
         @click.prevent="$emit('select-index', index)"
       >
