@@ -13,7 +13,7 @@
         >
           <template v-if="pipeline.attributes.status == `PENDING`">
             <span
-              class="h-2 w-2 bg-blue-600 rounded-full"
+              class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
@@ -141,7 +141,7 @@ const statusMap = {
   },
   DONE: {
     name: "Done",
-    class: "bg-accent text-white",
+    class: "bg-accent hover:bg-accent-hover text-white",
   },
   FAILED: {
     name: "Failed",
