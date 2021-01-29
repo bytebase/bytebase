@@ -98,12 +98,11 @@
       <BBTableCell :leftPadding="1" class="w-auto">
         {{ pipeline.attributes.name }}
       </BBTableCell>
-      <BBTableCell class="w-32 hidden sm:table-cell">
+      <BBTableCell class="w-12 hidden sm:table-cell">
         <BBStepBar :stepList="stageList(pipeline)" />
       </BBTableCell>
-      <BBTableCell class="w-4 hidden sm:table-cell">
-        <BBAvatar :size="`small`" :username="pipeline.attributes.assignee.name">
-        </BBAvatar>
+      <BBTableCell class="w-36 hidden sm:table-cell">
+        {{ pipeline.attributes.assignee.name }}
       </BBTableCell>
       <BBTableCell :rightPadding="4" class="w-24 hidden md:table-cell">
         {{ humanize(pipeline.attributes.createdTs) }}
