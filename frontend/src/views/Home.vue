@@ -9,9 +9,24 @@
     </div>
     <PipelineTable
       :pipelineSectionList="[
-        { title: 'Attention', list: filteredList(state.attentionList) },
-        { title: 'Subscribed', list: filteredList(state.subscribeList) },
-        { title: 'Recently Closed', list: filteredList(state.closeList) },
+        {
+          title: 'Attention',
+          list: filteredList(state.attentionList).sort((a, b) => {
+            return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
+          }),
+        },
+        {
+          title: 'Subscribed',
+          list: filteredList(state.subscribeList).sort((a, b) => {
+            return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
+          }),
+        },
+        {
+          title: 'Recently Closed',
+          list: filteredList(state.closeList).sort((a, b) => {
+            return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
+          }),
+        },
       ]"
     />
   </div>
