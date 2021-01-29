@@ -91,7 +91,7 @@
         {{ pipeline.attributes.assignee.name }}
       </BBTableCell>
       <BBTableCell :rightPadding="4" class="w-24 hidden md:table-cell">
-        {{ humanize(pipeline.attributes.createdTs) }}
+        {{ humanize(pipeline.attributes.lastUpdatedTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -172,7 +172,7 @@ export default {
           title: "Assignee",
         },
         {
-          title: "Created",
+          title: "Updated",
         },
       ],
       dataSource: [],
