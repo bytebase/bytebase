@@ -24,7 +24,7 @@ export default {
       } else if (dice < 0.66) {
         return "DML";
       } else {
-        return "AUTH";
+        return "OPS";
       }
     },
     currentStageId() {
