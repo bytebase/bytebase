@@ -2,7 +2,7 @@
   <BBTable
     :columnList="state.columnList"
     :sectionDataSource="pipelineSectionList"
-    :showHeader="false"
+    :showHeader="true"
     @click-row="clickPipeline"
   >
     <template v-slot:body="{ rowData: pipeline }">
