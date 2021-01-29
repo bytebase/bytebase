@@ -1,9 +1,9 @@
 <template>
-  <div class="overflow-hidden grid grid-cols-2 gap-2 sm:inline-flex">
-    <div class="flex flex-col items-center w-32">
+  <div class="overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
+    <div class="flex flex-col items-center w-28">
       <button class="btn-icon">
         <span
-          class="inline-flex items-center p-3 bg-blue-500 hover:bg-blue-600 rounded-full"
+          class="inline-flex items-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
         >
           <svg
             class="w-6 h-6 text-white"
@@ -26,10 +26,10 @@
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-32">
+    <div class="flex flex-col items-center w-28">
       <button class="btn-icon">
         <span
-          class="inline-flex items-center justify-center p-3 bg-blue-500 hover:bg-blue-600 rounded-full"
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
         >
           <svg
             class="w-6 h-6 text-white"
@@ -50,14 +50,14 @@
       <h3
         class="mt-1 text-center text-base font-normal text-accent tracking-tight"
       >
-        Invite User
+        Manage User
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-32">
+    <div class="flex flex-col items-center w-28">
       <button class="btn-icon">
         <span
-          class="inline-flex items-center justify-center p-3 bg-blue-500 hover:bg-blue-600 rounded-full"
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
         >
           <svg
             class="w-6 h-6 text-white"
@@ -78,14 +78,42 @@
       <h3
         class="mt-1 text-center text-base font-normal text-accent tracking-tight"
       >
-        Query Data
+        Query
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-32">
+    <div class="flex flex-col items-center w-28">
       <button class="btn-icon">
         <span
-          class="inline-flex items-center justify-center p-3 bg-blue-500 hover:bg-blue-600 rounded-full"
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
+        >
+          <svg
+            class="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            ></path>
+          </svg>
+        </span>
+      </button>
+      <h3
+        class="mt-1 text-center text-base font-normal text-accent tracking-tight"
+      >
+        Edit Data
+      </h3>
+    </div>
+
+    <div class="flex flex-col items-center w-28">
+      <button class="btn-icon">
+        <span
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
         >
           <svg
             class="w-6 h-6 text-white"
@@ -104,8 +132,32 @@
         </span>
       </button>
       <h3 class="mt-1 text-center text-base font-normal text-accent">
-        Change Schema
+        Edit Schema
       </h3>
+    </div>
+
+    <div class="flex flex-col items-center w-28">
+      <button class="btn-icon">
+        <span
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
+        >
+          <svg
+            class="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+            ></path>
+          </svg>
+        </span>
+      </button>
+      <h3 class="mt-1 text-center text-base font-normal text-accent">Ticket</h3>
     </div>
   </div>
 </template>
