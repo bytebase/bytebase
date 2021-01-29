@@ -1,5 +1,8 @@
 <template>
   <div class="flex flex-col">
+    <div class="p-4">
+      <QuickActionPanel />
+    </div>
     <div class="px-2 py-2">
       <BBTableTabFilter
         :itemList="state.environmentFilterList"
@@ -35,6 +38,7 @@
 <script lang="ts">
 import { watchEffect, computed, inject, reactive, PropType } from "vue";
 import PipelineTable from "../components/PipelineTable.vue";
+import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
@@ -58,6 +62,7 @@ export default {
   name: "Home",
   components: {
     PipelineTable,
+    QuickActionPanel,
   },
   props: {},
   setup(props, ctx) {
