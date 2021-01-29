@@ -109,7 +109,7 @@
             <span class="pl-2 bg-normal text-gray-500"> New to Bytebase? </span>
             <router-link
               to="signup"
-              class="text-accent bg-normal px-2 font-medium hover:underline focus:outline-none focus:underline"
+              class="text-blue-600 bg-normal px-2 font-medium hover:underline focus:outline-none focus:underline"
             >
               Sign up
             </router-link>

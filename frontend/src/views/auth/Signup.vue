@@ -102,7 +102,7 @@
             </span>
             <router-link
               to="signin"
-              class="text-accent bg-normal px-2 font-medium hover:underline focus:outline-none focus:underline"
+              class="text-blue-600 bg-normal px-2 font-medium hover:underline focus:outline-none focus:underline"
             >
               Sign in
             </router-link>
