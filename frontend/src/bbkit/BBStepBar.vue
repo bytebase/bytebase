@@ -16,13 +16,13 @@
         >
           <template v-if="step.status == `CREATED`">
             <span
-              class="h-2.5 w-2.5 bg-gray-300 rounded-full"
+              class="h-2.5 w-2.5 bg-gray-300 hover:bg-gray-400 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
           <template v-if="step.status == `PENDING`">
             <span
-              class="h-2.5 w-2.5 bg-blue-600 rounded-full"
+              class="h-2.5 w-2.5 bg-blue-600 hover:bg-blue-700 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
