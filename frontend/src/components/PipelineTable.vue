@@ -13,7 +13,7 @@
         >
           <template v-if="pipeline.attributes.status == `PENDING`">
             <span
-              class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
+              class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
