@@ -15,20 +15,22 @@ import isEmpty from "lodash-es/isEmpty";
 import { hashCode } from "./BBUtil";
 
 const BACKGROUND_COLOR_LIST: string[] = [
-  "#94A3B8",
-  "#F87171",
-  "#FB923C",
-  "#FACC15",
-  "#A3E635",
-  "#4ADE80",
-  "#34D399",
-  "#22D3EE",
-  "#60A5FA",
-  "#818CF8",
-  "#A78BFA",
-  "#E879F9",
-  "#F472B6",
-  "#FB7185",
+  "#64748B",
+  "#EF4444",
+  "#F97316",
+  "#EAB308",
+  "#84CC16",
+  "#22C55E",
+  "#10B981",
+  "#06B6D4",
+  "#0EA5E9",
+  "#3B82F6",
+  "#6366F1",
+  "#8B5CF6",
+  "#A855F7",
+  "#D946EF",
+  "#EC4899",
+  "#F43F5E",
 ];
 
 type SizeType = "small" | "normal" | "large";
@@ -54,6 +56,9 @@ export default {
       type: Boolean,
       default: true,
     },
+    backgroundColor: {
+      type: String,
+    },
   },
   setup(props, ctx) {
     const initials = computed(() => {
@@ -77,9 +82,12 @@ export default {
     });
 
     const backgroundColor = computed(() => {
-      return BACKGROUND_COLOR_LIST[
-        (hashCode(props.username) & 0xfffffff) % BACKGROUND_COLOR_LIST.length
-      ];
+      return (
+        props.backgroundColor ||
+        BACKGROUND_COLOR_LIST[
+          (hashCode(props.username) & 0xfffffff) % BACKGROUND_COLOR_LIST.length
+        ]
+      );
     });
 
     const style = computed(() => {
