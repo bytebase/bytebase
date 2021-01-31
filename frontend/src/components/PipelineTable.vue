@@ -96,13 +96,13 @@
 <script lang="ts">
 import { reactive, PropType } from "vue";
 import { useRouter } from "vue-router";
-import moment from "moment";
 import {
   BBTableColumn,
   BBTableSectionDataSource,
   BBStep,
   BBStepStatus,
 } from "../bbkit/types";
+import { humanize } from "../utils";
 import { Pipeline } from "../types";
 
 interface LocalState {
@@ -209,17 +209,6 @@ export default {
           },
         };
       });
-    };
-
-    const humanize = function (ts: number) {
-      const time = moment.utc(ts);
-      if (moment().year() == time.year()) {
-        if (moment().dayOfYear() == time.dayOfYear()) {
-          return time.format("HH:mm");
-        }
-        return time.format("MMM D");
-      }
-      return time.format("MMM D YYYY");
     };
 
     const clickPipeline = function (section: number, row: number) {
