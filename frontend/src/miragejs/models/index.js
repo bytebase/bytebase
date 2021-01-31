@@ -22,6 +22,7 @@ export default {
     workspaceRole: hasMany(),
     pipeline: hasMany(),
     environment: hasMany(),
+    instance: hasMany(),
   }),
 
   workspaceRole: Model.extend({
@@ -53,6 +54,10 @@ export default {
   }),
 
   environment: Model.extend({
+    workspace: belongsTo(),
+  }),
+
+  instance: Model.extend({
     workspace: belongsTo(),
   }),
 

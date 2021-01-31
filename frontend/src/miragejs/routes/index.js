@@ -172,6 +172,39 @@ export default function routes() {
     return schema.environments.find(request.params.environmentId).destroy();
   });
 
+  this.get("/environment", function (schema, request) {
+    return schema.environments
+      .where((environment) => {
+        return environment.workspaceId == WORKSPACE_ID;
+      })
+      .sort((a, b) => a.order - b.order);
+  });
+
+  this.post("/instance", function (schema, request) {
+    let order = 0;
+    const list = schema.instances.where((instance) => {
+      return instance.workspaceId == WORKSPACE_ID;
+    });
+    if (list.length > 0) {
+      order = list.sort((a, b) => b.order - a.order).models[0].order + 1;
+    }
+    const newInstance = {
+      ...this.normalizedRequestAttrs("instance"),
+      workspaceId: WORKSPACE_ID,
+      order,
+    };
+    return schema.instances.create(newInstance);
+  });
+
+  this.patch("/instance/:instanceId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("instance");
+    return schema.instances.find(request.params.instanceId).update(attrs);
+  });
+
+  this.delete("/instance/:instanceId", function (schema, request) {
+    return schema.instances.find(request.params.instanceId).destroy();
+  });
+
   this.get("/bookmark", function (schema, request) {
     return schema.bookmarks.where({
       workspaceId: WORKSPACE_ID,

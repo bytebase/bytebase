@@ -20,6 +20,17 @@ const getters = {
         pipelineId: pipelineComponents[1],
       };
     }
+
+    // /instance/<<instance-id>>
+    // Total 2 elements, 2nd element is the pipeline id
+    const instanceComponents = currentRoute.path.match(
+      "/instance/([0-9a-zA-Z_]+)"
+    ) || ["/", undefined];
+    if (instanceComponents[1]) {
+      return {
+        instanceId: instanceComponents[1],
+      };
+    }
     return {};
   },
 };

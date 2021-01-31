@@ -7,6 +7,7 @@ import user from "./user";
 import bookmark from "./bookmark";
 import project from "./project";
 import environment from "./environment";
+import instance from "./instance";
 import repository from "./repository";
 import job from "./job";
 import step from "./step";
@@ -29,6 +30,7 @@ export default {
   ...bookmark,
   ...project,
   ...environment,
+  ...instance,
   ...repository,
   ...job,
   ...step,

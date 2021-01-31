@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
     <div class="flex flex-col items-center w-28">
-      <button class="btn-icon">
+      <router-link to="/instance/new" class="btn-icon">
         <span
           class="inline-flex items-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
         >
@@ -20,7 +20,7 @@
             ></path>
           </svg>
         </span>
-      </button>
+      </router-link>
       <h3 class="mt-1 text-base font-normal text-accent tracking-tight">
         Add Instance
       </h3>

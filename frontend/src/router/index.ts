@@ -207,6 +207,18 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
+            path: "instance/:instanceId",
+            name: "workspace.instance.detail",
+            meta: { displayName: "Instance" },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/InstanceDetail.vue")
+              ),
+              leftSidebar: MainSidebar,
+            },
+            props: { content: true },
+          },
+          {
             path: "pipeline/:pipelineId",
             name: "workspace.pipeline.detail",
             meta: { displayName: "Pipeline" },
@@ -269,6 +281,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.environment" ||
+    to.name === "workspace.instance" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();

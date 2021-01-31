@@ -12,6 +12,8 @@ export type ProjectId = string;
 
 export type EnvironmentId = string;
 
+export type InstanceId = string;
+
 // Models
 export type User = ResourceObject & {};
 export type NewUser = Omit<ResourceObject, "id">;
@@ -67,6 +69,18 @@ export type Environment = ResourceObject & {
   };
 };
 export type NewEnvironment = Omit<ResourceObject, "id">;
+
+export type Instance = ResourceObject & {
+  attributes: {
+    name: string;
+    host: string;
+    port?: string;
+    username?: string;
+    password?: string;
+    database?: string;
+  };
+};
+export type NewInstance = Omit<ResourceObject, "id">;
 
 export type Group = ResourceObject & {};
 export type NewGroup = Omit<ResourceObject, "id">;
@@ -128,6 +142,10 @@ export interface EnvironmentState {
   environmentList: Environment[];
 }
 
+export interface InstanceState {
+  instanceList: Instance[];
+}
+
 export interface RepositoryState {
   repositoryByProject: Map<ProjectId, Repository>;
 }
@@ -135,4 +153,5 @@ export interface RepositoryState {
 // UI
 export interface RouterSlug {
   pipelineId?: PipelineId;
+  instanceId?: InstanceId;
 }

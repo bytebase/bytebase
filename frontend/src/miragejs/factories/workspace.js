@@ -10,6 +10,13 @@ export default {
       return "ws" + (i + 1);
     },
     afterCreate(workspace, server) {
+      for (let i = 0; i < 4; i++) {
+        server.create("instance", {
+          workspace,
+          name: workspace.name + " instance" + i + faker.fake("{{lorem.word}}"),
+        });
+      }
+
       server.create("activity", {
         workspace,
         name: workspace.name + " activity1 " + faker.fake("{{lorem.word}}"),
