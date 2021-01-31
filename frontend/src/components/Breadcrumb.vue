@@ -114,22 +114,29 @@ export default {
         currentRoute
       );
       const pipelineId = routeSlug.pipelineId;
+      const instanceId = routeSlug.instanceId;
       const list: Array<BreadcrumbItem> = [];
       if (pipelineId) {
         list.push({
-          name: "Pipeline",
-        });
-        list.push({
-          name: pipelineId,
+          name: "Pipeline #" + pipelineId,
           path: "/pipeline/" + pipelineId,
         });
-      } else {
-        // if (currentRoute.meta.displayName) {
-        //   list.push({
-        //     name: currentRoute.meta.displayName,
-        //     path: currentRoute.path,
-        //   });
-        // }
+      } else if (instanceId) {
+        list.push({
+          name: "Instance",
+          path: "/instance",
+        });
+        list.push({
+          name: instanceId,
+          path: "/instance/" + instanceId,
+        });
+      } else if (currentRoute.path != "/") {
+        if (currentRoute.meta.displayName) {
+          list.push({
+            name: currentRoute.meta.displayName,
+            path: currentRoute.path,
+          });
+        }
       }
       return list;
     });

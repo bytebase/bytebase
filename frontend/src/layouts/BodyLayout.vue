@@ -130,7 +130,7 @@
               </svg>
             </button>
           </div>
-          <div class="ml-4">
+          <div v-if="!isHome" class="ml-4">
             <Breadcrumb />
           </div>
         </div>
@@ -138,7 +138,7 @@
       <main class="w-full mx-auto lg:flex overflow-y-auto">
         <!-- main wrapper -->
         <div class="lg:min-w-0 lg:flex-1">
-          <div class="hidden lg:block px-4">
+          <div v-if="!isHome" class="hidden lg:block px-4 mt-4">
             <Breadcrumb />
           </div>
 
@@ -168,12 +168,19 @@ export default {
     Breadcrumb,
   },
   setup(props, ctx) {
+    const router = useRouter();
+
     const state = reactive<LocalState>({
       showMobileOverlay: false,
     });
 
+    const isHome = computed(() => {
+      return router.currentRoute.value.path == "/";
+    });
+
     return {
       state,
+      isHome,
     };
   },
 };
