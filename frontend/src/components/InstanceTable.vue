@@ -15,7 +15,11 @@
         <span class="">{{ instance.attributes.name }}</span>
       </BBTableCell>
       <BBTableCell class="w-24">
-        {{ instance.attributes.host }}:{{ instance.attributes.port }}
+        <template v-if="instance.attributes.port"
+          >{{ instance.attributes.host }}:{{
+            instance.attributes.port
+          }}</template
+        ><template v-else>{{ instance.attributes.host }}</template>
       </BBTableCell>
     </template>
   </BBTable>
