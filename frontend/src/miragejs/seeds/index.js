@@ -1,3 +1,5 @@
+import faker from "faker";
+
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
  */
@@ -9,6 +11,7 @@ const workspacesSeeder = (server) => {
   // resources from different workspaces.
   const workspace2 = server.schema.workspaces.find(101);
 
+  // Environment
   let environmentList1 = [];
   for (let i = 0; i < 4; i++) {
     environmentList1.push(
@@ -29,6 +32,22 @@ const workspacesSeeder = (server) => {
   }
   workspace2.update({ environment: environmentList2 });
 
+  // Instance
+  for (let i = 0; i < 4; i++) {
+    server.create("instance", {
+      workspace: workspace1,
+      name: "ws1 instance " + i + " " + faker.fake("{{lorem.word}}"),
+    });
+  }
+
+  for (let i = 0; i < 4; i++) {
+    server.create("instance", {
+      workspace: workspace2,
+      name: "ws2 instance " + i + " " + faker.fake("{{lorem.word}}"),
+    });
+  }
+
+  // Pipeline
   const ws1Owner = server.schema.users.find(1);
   const ws1DBA = server.schema.users.find(2);
   const ws1Dev1 = server.schema.users.find(3);

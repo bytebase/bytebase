@@ -1,13 +1,17 @@
 import axios from "axios";
-import { InstanceId, Instance, InstanceState } from "../../types";
+import { UserId, InstanceId, Instance, InstanceState } from "../../types";
 
 const state: () => InstanceState = () => ({
   instanceList: [],
+  instanceById: new Map(),
 });
 
 const getters = {
   instanceList: (state: InstanceState) => () => {
     return state.instanceList;
+  },
+  instanceById: (state: InstanceState) => (instanceId: InstanceId) => {
+    return state.instanceById.get(instanceId);
   },
 };
 
@@ -15,11 +19,18 @@ const actions = {
   async fetchInstanceList({ commit }: any) {
     const instanceList = (await axios.get(`/api/instance`)).data.data;
 
-    commit("setInstanceList", {
-      instanceList,
-    });
+    commit("setInstanceList", { instanceList });
 
     return instanceList;
+  },
+
+  async fetchInstanceById({ commit }: any, instanceId: InstanceId) {
+    const instance = (await axios.get(`/api/instance/${instanceId}`)).data.data;
+    commit("setInstanceById", {
+      instanceId,
+      instance,
+    });
+    return instance;
   },
 
   async createInstance(
@@ -92,6 +103,18 @@ const mutations = {
     }
   ) {
     state.instanceList = instanceList;
+  },
+  setInstanceById(
+    state: InstanceState,
+    {
+      instanceId,
+      instance,
+    }: {
+      instanceId: InstanceId;
+      instance: Instance;
+    }
+  ) {
+    state.instanceById.set(instanceId, instance);
   },
   appendInstance(
     state: InstanceState,

@@ -13,6 +13,17 @@ export default {
         return "prod env " + i;
       }
     },
+    environmentName(i) {
+      if (i == 0) {
+        return "dev env";
+      } else if (i == 1) {
+        return "test env";
+      } else if (i == 2) {
+        return "staging env";
+      } else {
+        return "prod env " + i;
+      }
+    },
     host(i) {
       if (i == 0) {
         return "localhost";
@@ -34,15 +45,6 @@ export default {
       } else {
         return "5432";
       }
-    },
-    username() {
-      return "root";
-    },
-    password() {
-      return "root";
-    },
-    database() {
-      return "";
     },
   }),
 };

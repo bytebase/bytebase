@@ -3,6 +3,7 @@ import activity from "./modules/activity";
 import bookmark from "./modules/bookmark";
 import project from "./modules/project";
 import environment from "./modules/environment";
+import instance from "./modules/instance";
 import repository from "./modules/repository";
 import auth from "./modules/auth";
 import group from "./modules/group";
@@ -18,6 +19,7 @@ export const store: Store<any> = createStore({
     bookmark,
     project,
     environment,
+    instance,
     repository,
     auth,
     group,

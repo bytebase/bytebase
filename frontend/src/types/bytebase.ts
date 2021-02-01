@@ -73,6 +73,7 @@ export type NewEnvironment = Omit<ResourceObject, "id">;
 export type Instance = ResourceObject & {
   attributes: {
     name: string;
+    environmentName: string;
     host: string;
     port?: string;
     username?: string;
@@ -144,6 +145,7 @@ export interface EnvironmentState {
 
 export interface InstanceState {
   instanceList: Instance[];
+  instanceById: Map<InstanceId, Instance>;
 }
 
 export interface RepositoryState {

@@ -1,10 +1,12 @@
 [
   {
     "id": "1",
+    "name": "workspace1",
     "slug": "ws1"
   },
   {
     "id": "101",
+    "name": "workspace2",
     "slug": "ws101"
   }
 ]

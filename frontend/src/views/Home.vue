@@ -42,7 +42,7 @@ import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { Environment, Pipeline } from "../types";
+import { User, Environment, Pipeline } from "../types";
 import environment from "../store/modules/environment";
 
 interface EnvironmentFilter {
@@ -75,7 +75,7 @@ export default {
     });
     const store = useStore();
     const router = useRouter();
-    const currentUser = inject<Pipeline>(UserStateSymbol);
+    const currentUser = inject<User>(UserStateSymbol);
 
     const preparePipelineList = () => {
       store

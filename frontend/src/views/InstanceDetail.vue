@@ -192,7 +192,6 @@ import { computed, onMounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
-import InstanceForm from "../components/InstanceForm.vue";
 import { Instance, NewInstance } from "../types";
 
 interface LocalState {
@@ -205,9 +204,7 @@ interface LocalState {
 export default {
   name: "InstanceDetail",
   emits: ["delete"],
-  components: {
-    InstanceForm,
-  },
+  components: {},
   props: {
     instanceId: {
       required: true,
@@ -249,7 +246,7 @@ export default {
         },
       };
     } else {
-      assignInstance(store.getters["instance/instanceById"]);
+      assignInstance(store.getters["instance/instanceById"](props.instanceId));
     }
 
     const valueChanged = computed(() => {

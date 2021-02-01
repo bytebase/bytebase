@@ -14,8 +14,10 @@ export default function routes() {
 
   this.namespace = "api";
 
+  // User
   this.get("/user/:id");
 
+  // Auth
   this.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");
     const user = schema.users.findBy({
@@ -45,6 +47,7 @@ export default function routes() {
     return schema.users.create(signupInfo);
   });
 
+  // Pipeline
   this.get("/pipeline", function (schema, request) {
     const {
       queryParams: { userid: userId },
@@ -75,29 +78,7 @@ export default function routes() {
     );
   });
 
-  this.get("/group", function (schema, request) {
-    const {
-      queryParams: { userid: userId },
-    } = request;
-
-    if (userId) {
-      return schema.groups.where((group) => {
-        return (
-          group.workspaceId == WORKSPACE_ID &&
-          group.groupRoleIds?.find((roleId) => {
-            return schema.groupRoles.where({
-              userId,
-              groupId: group.id,
-            });
-          })
-        );
-      });
-    }
-    return schema.groups.where({
-      workspaceId: WORKSPACE_ID,
-    });
-  });
-
+  // environment
   this.get("/environment", function (schema, request) {
     return schema.environments
       .where((environment) => {
@@ -172,26 +153,32 @@ export default function routes() {
     return schema.environments.find(request.params.environmentId).destroy();
   });
 
-  this.get("/environment", function (schema, request) {
-    return schema.environments
-      .where((environment) => {
-        return environment.workspaceId == WORKSPACE_ID;
-      })
-      .sort((a, b) => a.order - b.order);
+  // Instance
+  this.get("/instance", function (schema, request) {
+    return schema.instances.where((instance) => {
+      return instance.workspaceId == WORKSPACE_ID;
+    });
+  });
+
+  this.get("/instance/:id", function (schema, request) {
+    const instance = schema.instances.find(request.params.id);
+    if (instance) {
+      return instance;
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Instance " + request.params.id + " not found" }
+    );
   });
 
   this.post("/instance", function (schema, request) {
-    let order = 0;
     const list = schema.instances.where((instance) => {
       return instance.workspaceId == WORKSPACE_ID;
     });
-    if (list.length > 0) {
-      order = list.sort((a, b) => b.order - a.order).models[0].order + 1;
-    }
     const newInstance = {
       ...this.normalizedRequestAttrs("instance"),
       workspaceId: WORKSPACE_ID,
-      order,
     };
     return schema.instances.create(newInstance);
   });
@@ -205,18 +192,45 @@ export default function routes() {
     return schema.instances.find(request.params.instanceId).destroy();
   });
 
+  // Bookmark
   this.get("/bookmark", function (schema, request) {
     return schema.bookmarks.where({
       workspaceId: WORKSPACE_ID,
     });
   });
 
+  // Activity
   this.get("/activity", function (schema, request) {
     return schema.activities.where({
       workspaceId: WORKSPACE_ID,
     });
   });
 
+  // Group
+  this.get("/group", function (schema, request) {
+    const {
+      queryParams: { userid: userId },
+    } = request;
+
+    if (userId) {
+      return schema.groups.where((group) => {
+        return (
+          group.workspaceId == WORKSPACE_ID &&
+          group.groupRoleIds?.find((roleId) => {
+            return schema.groupRoles.where({
+              userId,
+              groupId: group.id,
+            });
+          })
+        );
+      });
+    }
+    return schema.groups.where({
+      workspaceId: WORKSPACE_ID,
+    });
+  });
+
+  // Project
   this.get("/project", function (schema, request) {
     const {
       queryParams: { groupid: groupId, userid: userId },

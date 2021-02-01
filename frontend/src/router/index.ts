@@ -290,6 +290,7 @@ router.beforeEach((to, from, next) => {
 
   const routerSlug = store.getters["router/routeSlug"](to);
   const pipelineId = routerSlug.pipelineId;
+  const instanceId = routerSlug.instanceId;
 
   console.log("RouterSlug:", routerSlug);
 
@@ -297,6 +298,21 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("pipeline/fetchPipelineById", pipelineId)
       .then((pipeline) => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+      });
+    return;
+  }
+
+  if (instanceId) {
+    store
+      .dispatch("instance/fetchInstanceById", instanceId)
+      .then((instance) => {
         next();
       })
       .catch((error) => {
