@@ -130,14 +130,13 @@ export default {
           name: instanceId,
           path: "/instance/" + instanceId,
         });
-      } else if (currentRoute.path != "/") {
-        if (currentRoute.meta.displayName) {
-          list.push({
-            name: currentRoute.meta.displayName,
-            path: currentRoute.path,
-          });
-        }
+      } else if (currentRoute.meta.breadcrumbName) {
+        list.push({
+          name: currentRoute.meta.breadcrumbName,
+          path: currentRoute.path,
+        });
       }
+
       return list;
     });
 
