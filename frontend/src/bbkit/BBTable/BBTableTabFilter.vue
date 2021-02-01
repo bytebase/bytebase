@@ -12,40 +12,40 @@
       "
     >
       <option
-        v-for="(item, index) in itemList"
+        v-for="(item, index) in tabList"
         :key="index"
         :value="index"
         :selected="index == selectedIndex"
       >
-        {{ item.title }}
+        {{ item }}
       </option>
     </select>
   </div>
   <div class="hidden sm:block">
     <div class="flex space-x-4" aria-label="Tabs">
       <button
-        v-for="(item, index) in itemList"
+        v-for="(item, index) in tabList"
         :key="index"
         class="px-3 py-1 rounded-md text-normal-text font-normal text-sm focus:outline-none"
         :class="buttonClass(index == selectedIndex)"
         @click.prevent="$emit('select-index', index)"
       >
-        {{ item.title }}
+        {{ item }}
       </button>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { PropType } from "vue";
 
 export default {
   name: "BBTableTabFilter",
   emits: ["select-index"],
   props: {
-    itemList: {
+    tabList: {
       required: true,
-      type: Array,
+      type: Object as PropType<String[]>,
     },
     selectedIndex: {
       required: true,

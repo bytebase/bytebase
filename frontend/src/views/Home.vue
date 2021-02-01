@@ -4,11 +4,7 @@
       <QuickActionPanel />
     </div>
     <div class="px-2 py-1 border-t">
-      <BBTableTabFilter
-        :itemList="state.environmentFilterList"
-        :selectedIndex="state.selectedFilterIndex"
-        @select-index="selectFilter"
-      />
+      <EnvironmentTabFilter @select-environment="selectEnvironment" />
     </div>
     <PipelineTable
       :pipelineSectionList="[
@@ -36,31 +32,26 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, inject, reactive, PropType } from "vue";
+import { watchEffect, inject, reactive } from "vue";
+import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import PipelineTable from "../components/PipelineTable.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { User, Environment, Pipeline } from "../types";
-import environment from "../store/modules/environment";
-
-interface EnvironmentFilter {
-  id: string;
-  title: string;
-}
 
 interface LocalState {
   attentionList: Pipeline[];
   subscribeList: Pipeline[];
   closeList: Pipeline[];
-  environmentFilterList: EnvironmentFilter[];
-  selectedFilterIndex: number;
+  selectedEnvironment?: Environment;
 }
 
 export default {
   name: "Home",
   components: {
+    EnvironmentTabFilter,
     PipelineTable,
     QuickActionPanel,
   },
@@ -70,8 +61,6 @@ export default {
       attentionList: [],
       subscribeList: [],
       closeList: [],
-      environmentFilterList: [],
-      selectedFilterIndex: 0,
     });
     const store = useStore();
     const router = useRouter();
@@ -113,57 +102,28 @@ export default {
         });
     };
 
-    const prepareEnvironmentList = () => {
-      store
-        .dispatch("environment/fetchEnvironmentList")
-        .then((list: Environment[]) => {
-          state.environmentFilterList = [
-            {
-              id: "",
-              title: "All",
-            },
-            ...list
-              .map((environment) => {
-                return {
-                  id: environment.id,
-                  title: environment.attributes.name,
-                };
-              })
-              // Usually env is ordered by ascending importantance, thus we rervese the order to put
-              // more important ones first.
-              .reverse(),
-          ];
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    const selectFilter = (index: number) => {
-      state.selectedFilterIndex = index;
+    const selectEnvironment = (environment: Environment) => {
+      state.selectedEnvironment = environment;
     };
 
     const filteredList = (list: Pipeline[]) => {
-      if (state.selectedFilterIndex == 0) {
+      if (!state.selectedEnvironment) {
         // Select "All"
         return list;
       }
       return list.filter((pipeline) => {
         return (
-          pipeline.attributes.currentStageId ==
-          state.environmentFilterList[state.selectedFilterIndex].id
+          pipeline.attributes.currentStageId == state.selectedEnvironment!.id
         );
       });
     };
 
     watchEffect(preparePipelineList);
 
-    watchEffect(prepareEnvironmentList);
-
     return {
       state,
       filteredList,
-      selectFilter,
+      selectEnvironment,
     };
   },
 };
