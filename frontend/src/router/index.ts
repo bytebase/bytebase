@@ -307,6 +307,10 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceId) {
+    if (instanceId.toUpperCase() == "NEW") {
+      next();
+      return;
+    }
     store
       .dispatch("instance/fetchInstanceById", instanceId)
       .then((instance) => {
