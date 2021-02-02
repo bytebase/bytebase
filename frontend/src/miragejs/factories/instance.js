@@ -13,9 +13,6 @@ export default {
         return "prod env " + i;
       }
     },
-    environmentId() {
-      return "-1";
-    },
     externalLink() {
       return "google.com";
     },
@@ -40,6 +37,13 @@ export default {
       } else {
         return "5432";
       }
+    },
+    afterCreate(instance, server) {
+      server.create("datasource", {
+        instance,
+        name: instance.name + " ds1",
+        type: "ADMIN",
+      });
     },
   }),
 };

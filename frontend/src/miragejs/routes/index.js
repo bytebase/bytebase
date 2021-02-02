@@ -173,9 +173,6 @@ export default function routes() {
   });
 
   this.post("/instance", function (schema, request) {
-    const list = schema.instances.where((instance) => {
-      return instance.workspaceId == WORKSPACE_ID;
-    });
     const newInstance = {
       ...this.normalizedRequestAttrs("instance"),
       workspaceId: WORKSPACE_ID,
@@ -191,6 +188,88 @@ export default function routes() {
   this.delete("/instance/:instanceId", function (schema, request) {
     return schema.instances.find(request.params.instanceId).destroy();
   });
+
+  // Data Source
+  this.get("/instance/:instanceId/datasource", function (schema, request) {
+    const instance = schema.instances.find(request.params.instanceId);
+    if (instance) {
+      return schema.datasources.where((dataSource) => {
+        return dataSource.instanceId == instance.id;
+      });
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Instance " + request.params.instanceId + " not found" }
+    );
+  });
+
+  this.get("/instance/:instanceId/datasource", function (schema, request) {
+    const instance = schema.instances.find(request.params.instanceId);
+    if (instance) {
+      const dataSource = schema.datasources.find(request.params.id);
+      if (dataSource) {
+        return dataSource;
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Data Source " + request.params.id + " not found" }
+      );
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Instance " + request.params.instanceId + " not found" }
+    );
+  });
+
+  this.post("/instance/:instanceId/datasource", function (schema, request) {
+    const instance = schema.instances.find(request.params.instanceId);
+    if (instance) {
+      const newDataSource = {
+        ...this.normalizedRequestAttrs("datasource"),
+        instanceId: request.params.instanceId,
+      };
+      return schema.datasources.create(newDataSource);
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Instance " + request.params.instanceId + " not found" }
+    );
+  });
+
+  this.patch(
+    "/instance/:instanceId/datasource/:id",
+    function (schema, request) {
+      const instance = schema.instances.find(request.params.instanceId);
+      if (instance) {
+        const attrs = this.normalizedRequestAttrs("datasource");
+        return schema.datasources.find(request.params.id).update(attrs);
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Instance " + request.params.instanceId + " not found" }
+      );
+    }
+  );
+
+  this.delete(
+    "/instance/:instanceId/datasource/:id",
+    function (schema, request) {
+      const instance = schema.instances.find(request.params.instanceId);
+      if (instance) {
+        return schema.datasources.find(request.params.id).destroy();
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Instance " + request.params.instanceId + " not found" }
+      );
+    }
+  );
 
   // Bookmark
   this.get("/bookmark", function (schema, request) {

@@ -8,6 +8,7 @@ import bookmark from "./bookmark";
 import project from "./project";
 import environment from "./environment";
 import instance from "./instance";
+import datasource from "./datasource";
 import repository from "./repository";
 import job from "./job";
 import step from "./step";
@@ -31,6 +32,7 @@ export default {
   ...project,
   ...environment,
   ...instance,
+  ...datasource,
   ...repository,
   ...job,
   ...step,

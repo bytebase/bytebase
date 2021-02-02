@@ -59,6 +59,11 @@ export default {
 
   instance: Model.extend({
     workspace: belongsTo(),
+    datasource: hasMany(),
+  }),
+
+  datasource: Model.extend({
+    instance: belongsTo(),
   }),
 
   project: Model.extend({
