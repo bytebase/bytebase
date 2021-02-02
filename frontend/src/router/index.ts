@@ -46,6 +46,16 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "",
             name: HOME_MODULE,
+            meta: {
+              quickActionList: [
+                "instance.add",
+                "user.manage",
+                "datasource.query",
+                "datasource.data.edit",
+                "datasource.schema.edit",
+                "ticket.create",
+              ],
+            },
             components: {
               content: Home,
               leftSidebar: MainSidebar,
@@ -194,7 +204,10 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "instance",
             name: "workspace.instance",
-            meta: { breadcrumbName: "Instance" },
+            meta: {
+              breadcrumbName: "Instance",
+              quickActionList: ["instance.add"],
+            },
             components: {
               content: defineAsyncComponent(
                 () => import("../views/InstanceDashboard.vue")

@@ -138,11 +138,14 @@
       <main class="w-full mx-auto lg:flex overflow-y-auto">
         <!-- main wrapper -->
         <div class="lg:min-w-0 lg:flex-1">
-          <div v-if="!isHome" class="hidden lg:block px-4 mt-4">
+          <div v-if="!isHome" class="hidden lg:block mx-3 mt-4">
             <Breadcrumb />
           </div>
+          <div v-if="quickActionList" class="mx-3 mt-4">
+            <QuickActionPanel :quickActionList="quickActionList" />
+          </div>
 
-          <div class="flex-grow w-full h-full">
+          <div class="flex-grow w-full h-full mt-4">
             <!-- Start main area-->
             <router-view name="content" />
             <!-- End main area -->
@@ -157,6 +160,7 @@
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
+import QuickActionPanel from "../components/QuickActionPanel.vue";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -166,6 +170,7 @@ export default {
   name: "BodyLayout",
   components: {
     Breadcrumb,
+    QuickActionPanel,
   },
   setup(props, ctx) {
     const router = useRouter();
@@ -178,9 +183,14 @@ export default {
       return router.currentRoute.value.path == "/";
     });
 
+    const quickActionList = computed(() => {
+      return router.currentRoute.value.meta.quickActionList;
+    });
+
     return {
       state,
       isHome,
+      quickActionList,
     };
   },
 };

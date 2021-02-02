@@ -1,8 +1,5 @@
 <template>
   <div class="flex flex-col">
-    <div class="p-4">
-      <QuickActionPanel />
-    </div>
     <div class="px-2 py-1 border-t">
       <EnvironmentTabFilter @select-environment="selectEnvironment" />
     </div>
@@ -14,7 +11,6 @@
 import { watchEffect, reactive } from "vue";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
 
@@ -28,7 +24,6 @@ export default {
   components: {
     EnvironmentTabFilter,
     InstanceTable,
-    QuickActionPanel,
   },
   setup(props, ctx) {
     const state = reactive<LocalState>({

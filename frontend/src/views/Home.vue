@@ -1,8 +1,5 @@
 <template>
   <div class="flex flex-col">
-    <div class="p-4">
-      <QuickActionPanel />
-    </div>
     <div class="px-2 py-1 border-t">
       <EnvironmentTabFilter @select-environment="selectEnvironment" />
     </div>
@@ -35,7 +32,6 @@
 import { watchEffect, inject, reactive } from "vue";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import PipelineTable from "../components/PipelineTable.vue";
-import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
@@ -53,7 +49,6 @@ export default {
   components: {
     EnvironmentTabFilter,
     PipelineTable,
-    QuickActionPanel,
   },
   props: {},
   setup(props, ctx) {

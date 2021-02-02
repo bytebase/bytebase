@@ -1,6 +1,9 @@
 <template>
   <div class="overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
-    <div class="flex flex-col items-center w-28">
+    <div
+      v-if="quickActionList.includes('instance.add')"
+      class="flex flex-col items-center w-28"
+    >
       <router-link to="/instance/new" class="btn-icon">
         <span
           class="inline-flex items-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -26,7 +29,10 @@
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-28">
+    <div
+      v-if="quickActionList.includes('user.manage')"
+      class="flex flex-col items-center w-28"
+    >
       <button class="btn-icon">
         <span
           class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -54,7 +60,10 @@
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-28">
+    <div
+      v-if="quickActionList.includes('datasource.query')"
+      class="flex flex-col items-center w-28"
+    >
       <button class="btn-icon">
         <span
           class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -82,7 +91,10 @@
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-28">
+    <div
+      v-if="quickActionList.includes('datasource.data.edit')"
+      class="flex flex-col items-center w-28"
+    >
       <button class="btn-icon">
         <span
           class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -110,7 +122,10 @@
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-28">
+    <div
+      v-if="quickActionList.includes('datasource.schema.edit')"
+      class="flex flex-col items-center w-28"
+    >
       <button class="btn-icon">
         <span
           class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -136,7 +151,10 @@
       </h3>
     </div>
 
-    <div class="flex flex-col items-center w-28">
+    <div
+      v-if="quickActionList.includes('ticket.create')"
+      class="flex flex-col items-center w-28"
+    >
       <button class="btn-icon">
         <span
           class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -163,8 +181,16 @@
 </template>
 
 <script lang="ts">
+import { PropType } from "vue";
+
 export default {
   name: "QuickActionPanel",
   setup() {},
+  props: {
+    quickActionList: {
+      required: true,
+      type: Object as PropType<String[]>,
+    },
+  },
 };
 </script>
