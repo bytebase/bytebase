@@ -22,7 +22,12 @@ if (process.env.NODE_ENV === "development") {
   makeServer();
 }
 
-createApp(App)
+const app = createApp(App);
+
+// Allow template to access window object
+app.config.globalProperties.window = window;
+
+app
   .use(store)
   .use(router)
   .component("BBAlert", BBAlert)
