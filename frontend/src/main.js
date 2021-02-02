@@ -26,6 +26,8 @@ const app = createApp(App);
 
 // Allow template to access window object
 app.config.globalProperties.window = window;
+// Allow template to access console object
+app.config.globalProperties.console = console;
 
 app
   .use(store)
