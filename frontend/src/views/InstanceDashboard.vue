@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-2 py-1 border-t">
+    <div class="px-2 py-1">
       <EnvironmentTabFilter @select-environment="selectEnvironment" />
     </div>
     <InstanceTable :instanceList="filteredList(state.instanceList)" />
