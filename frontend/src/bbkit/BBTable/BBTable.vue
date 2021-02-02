@@ -10,7 +10,8 @@
             v-for="(column, index) in columnList"
             :key="index"
             scope="col"
-            class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            class="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            :class="index == 0 ? 'pl-4' : 'pl-2'"
           >
             {{ column.title }}
           </th>
