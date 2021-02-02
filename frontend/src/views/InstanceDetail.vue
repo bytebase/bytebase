@@ -338,7 +338,7 @@ export default {
     });
 
     const goBack = () => {
-      router.push(store.getters["router/backPath"]());
+      router.go(-1);
     };
 
     const doUpdate = (newInstance: Instance) => {
