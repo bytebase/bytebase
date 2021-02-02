@@ -6,10 +6,8 @@
     @click-row="clickInstance"
   >
     <template v-slot:body="{ rowData: instance }">
-      <BBTableCell :leftPadding="1" class="w-24">
-        <span class="flex justify-center">
-          {{ instance.attributes.environmentName }}
-        </span>
+      <BBTableCell :leftPadding="4" class="w-36">
+        {{ instance.attributes.environmentName }}
       </BBTableCell>
       <BBTableCell class="w-96">
         <span class="">{{ instance.attributes.name }}</span>
