@@ -9,6 +9,16 @@ const getters = {
   environmentList: (state: EnvironmentState) => () => {
     return state.environmentList;
   },
+  environmentById: (state: EnvironmentState) => (
+    environmentId: EnvironmentId
+  ) => {
+    for (const environment of state.environmentList) {
+      if (environment.id == environmentId) {
+        return environment;
+      }
+    }
+    return null;
+  },
 };
 
 const actions = {

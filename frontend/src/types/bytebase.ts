@@ -73,7 +73,8 @@ export type NewEnvironment = Omit<ResourceObject, "id">;
 export type Instance = ResourceObject & {
   attributes: {
     name: string;
-    environmentName: string;
+    environmentId: string;
+    externalLink?: string;
     host: string;
     port?: string;
     username?: string;

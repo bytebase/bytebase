@@ -37,6 +37,7 @@ const workspacesSeeder = (server) => {
     server.create("instance", {
       workspace: workspace1,
       name: "ws1 instance " + i + " " + faker.fake("{{lorem.word}}"),
+      environmentId: environmentList1[i].id,
     });
   }
 
@@ -44,6 +45,7 @@ const workspacesSeeder = (server) => {
     server.create("instance", {
       workspace: workspace2,
       name: "ws2 instance " + i + " " + faker.fake("{{lorem.word}}"),
+      environmentId: environmentList2[i].id,
     });
   }
 

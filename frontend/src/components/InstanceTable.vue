@@ -7,10 +7,10 @@
   >
     <template v-slot:body="{ rowData: instance }">
       <BBTableCell :leftPadding="4" class="w-36">
-        {{ instance.attributes.environmentName }}
+        {{ environmentName(instance.attributes.environmentId) }}
       </BBTableCell>
       <BBTableCell class="w-96">
-        <span class="">{{ instance.attributes.name }}</span>
+        {{ instance.attributes.name }}</span>
       </BBTableCell>
       <BBTableCell class="w-24">
         <template v-if="instance.attributes.port"
@@ -25,10 +25,11 @@
 
 <script lang="ts">
 import { reactive, PropType } from "vue";
+import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
 import { humanize } from "../utils";
-import { Instance } from "../types";
+import { EnvironmentId, Instance } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
@@ -45,6 +46,8 @@ export default {
     },
   },
   setup(props, ctx) {
+    const store = useStore();
+  
     const state = reactive<LocalState>({
       columnList: [
         {
@@ -66,10 +69,15 @@ export default {
       router.push(`/instance/${props.instanceList[row].id}`);
     };
 
+    const environmentName = function (id: EnvironmentId) {
+      return store.getters["environment/environmentById"](id)?.attributes.name;
+    }
+
     return {
       state,
       humanize,
       clickInstance,
+      environmentName,
     };
   },
 };

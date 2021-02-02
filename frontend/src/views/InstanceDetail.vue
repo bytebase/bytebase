@@ -14,12 +14,13 @@ input[type="number"] {
 
 <template>
   <form
-    class="px-4 space-y-6 divide-y divide-gray-200"
+    class="px-4 space-y-6 divide-y divide-control-border"
     @submit.prevent="doUpdate(state.instance)"
   >
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+    <!-- Instance Name -->
+    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
-        <label for="name" class="text-lg leading-6 font-medium text-gray-900">
+        <label for="name" class="text-sm font-medium text-gray-700">
           Instance Name <span style="color: red">*</span>
         </label>
         <input
@@ -27,23 +28,29 @@ input[type="number"] {
           id="name"
           name="name"
           type="text"
-          class="shadow-sm mt-4 focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+          class="shadow-sm mt-1 focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
           :value="state.instance.attributes.name"
           @input="updateInstance('name', $event.target.value)"
         />
       </div>
-    </div>
-    <div class="pt-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">
-        Connection Info
-      </h3>
-      <p class="mt-1 text-sm text-gray-500">
-        Provide the info to connect to the database.
-      </p>
-      <button type="button" class="btn-normal mt-4">Test Connection</button>
-    </div>
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-      <div class="sm:col-span-3">
+
+      <div class="sm:col-span-2 sm:col-start-1">
+        <label for="environment" class="text-sm font-medium text-gray-700">
+          Environment <span style="color: red">*</span>
+        </label>
+        <EnvironmentSelect
+          id="environment"
+          name="environment"
+          :selectedId="state.instance.attributes.environmentId"
+          @select-environment-id="
+            (environmentId) => {
+              updateInstance('environmentId', environmentId);
+            }
+          "
+        />
+      </div>
+
+      <div class="sm:col-span-5">
         <label for="host" class="block text-sm font-medium text-gray-700">
           Host or Socket <span style="color: red">*</span>
         </label>
@@ -61,9 +68,9 @@ input[type="number"] {
         </div>
       </div>
 
-      <div class="sm:col-span-3">
+      <div class="sm:col-span-1">
         <label for="port" class="block text-sm font-medium text-gray-700">
-          Port (Only applicable when connecting via Host)
+          Port
         </label>
         <div class="mt-1">
           <input
@@ -78,96 +85,161 @@ input[type="number"] {
         </div>
       </div>
 
-      <div class="sm:col-span-2">
-        <label for="username" class="block text-sm font-medium text-gray-700">
-          Username <span style="color: red">*</span>
+      <div class="sm:col-span-6 sm:col-start-1">
+        <label
+          for="externallink"
+          class="inline-flex text-sm font-medium text-gray-700"
+        >
+          <span class="">External Link</span>
+          <button
+            class="btn-icon"
+            :disabled="
+              state.instance.attributes.externalLink?.trim().length == 0
+            "
+            @click.prevent="
+              window.open(
+                urlfy(state.instance.attributes.externalLink),
+                '_blank'
+              )
+            "
+          >
+            <svg
+              class="ml-1 w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              ></path>
+            </svg>
+          </button>
         </label>
-        <div class="mt-1">
-          <input
-            required
-            id="username"
-            name="username"
-            type="text"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.instance.attributes.username"
-            @input="updateInstance('username', $event.target.value)"
-          />
-        </div>
+        <input
+          required
+          id="externallink"
+          name="externallink"
+          type="text"
+          class="shadow-sm mt-1 focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+          :value="state.instance.attributes.externalLink"
+          @input="updateInstance('externalLink', $event.target.value)"
+        />
       </div>
-
-      <div class="sm:col-span-2 sm:col-start-1">
-        <label for="password" class="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <div class="mt-1">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.instance.attributes.password"
-            @input="updateInstance('password', $event.target.value)"
-          />
+    </div>
+    <!-- Datasource Info -->
+    <div class="pt-6">
+      <div class="flex justify-between">
+        <div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900">
+            Admin Data Source Info
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            This data source usually has admin privilege and is the default data
+            source used by the instance owner (e.g. DBA) connecting to the
+            instance to perform administrative operations.
+          </p>
         </div>
+        <button type="button" class="btn-normal">Test Connection</button>
       </div>
+      <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <div class="sm:col-span-2 sm:col-start-1">
+          <label for="username" class="block text-sm font-medium text-gray-700">
+            Username <span style="color: red">*</span>
+          </label>
+          <div class="mt-1">
+            <input
+              required
+              id="username"
+              name="username"
+              type="text"
+              class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+              :value="state.instance.attributes.username"
+              @input="updateInstance('username', $event.target.value)"
+            />
+          </div>
+        </div>
 
-      <div class="sm:col-span-2 sm:col-start-1">
-        <label for="database" class="block text-sm font-medium text-gray-700">
-          Database
-        </label>
-        <div class="mt-1">
-          <input
-            id="database"
-            name="database"
-            type="text"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.instance.attributes.database"
-            @input="updateInstance('database', $event.target.value)"
-          />
+        <div class="sm:col-span-2 sm:col-start-1">
+          <label for="password" class="block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <div class="mt-1">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+              :value="state.instance.attributes.password"
+              @input="updateInstance('password', $event.target.value)"
+            />
+          </div>
+        </div>
+
+        <div class="sm:col-span-2 sm:col-start-1">
+          <label for="database" class="block text-sm font-medium text-gray-700">
+            Database
+          </label>
+          <div class="mt-1">
+            <input
+              id="database"
+              name="database"
+              type="text"
+              class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+              :value="state.instance.attributes.database"
+              @input="updateInstance('database', $event.target.value)"
+            />
+          </div>
         </div>
       </div>
     </div>
-    <!-- Create button group -->
-    <div v-if="state.new" class="flex justify-end pt-5">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="goBack"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-      >
-        Create
-      </button>
-    </div>
-    <!-- Update button group -->
-    <div v-else class="flex justify-between pt-5">
-      <button
-        type="button"
-        class="btn-danger py-2 px-4"
-        @click.prevent="state.showDeleteModal = true"
-      >
-        Delete
-      </button>
-      <div>
+    <!-- Action Button Group -->
+    <div>
+      <!-- Create button group -->
+      <div v-if="state.new" class="flex justify-end pt-5">
         <button
           type="button"
           class="btn-normal py-2 px-4"
-          :disabled="!valueChanged"
-          @click.prevent="revertInstance"
+          @click.prevent="goBack"
         >
-          Revert
+          Cancel
         </button>
         <button
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!valueChanged"
         >
-          Update
+          Create
         </button>
+      </div>
+      <!-- Update button group -->
+      <div v-else class="flex justify-between pt-5">
+        <button
+          type="button"
+          class="btn-danger py-2 px-4"
+          @click.prevent="state.showDeleteModal = true"
+        >
+          Delete
+        </button>
+        <div>
+          <button
+            type="button"
+            class="btn-normal py-2 px-4"
+            :disabled="!valueChanged"
+            @click.prevent="revertInstance"
+          >
+            Revert
+          </button>
+          <button
+            type="submit"
+            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+            :disabled="!valueChanged"
+          >
+            Update
+          </button>
+        </div>
       </div>
     </div>
   </form>
@@ -192,6 +264,8 @@ import { computed, onMounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
+import { urlfy } from "../utils";
+import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, NewInstance } from "../types";
 
 interface LocalState {
@@ -204,7 +278,9 @@ interface LocalState {
 export default {
   name: "InstanceDetail",
   emits: ["delete"],
-  components: {},
+  components: {
+    EnvironmentSelect,
+  },
   props: {
     instanceId: {
       required: true,
@@ -231,6 +307,14 @@ export default {
     const assignInstance = (instance: Instance) => {
       state.originalInstance = instance;
       // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
+      state.instance = JSON.parse(JSON.stringify(state.originalInstance));
+    };
+
+    const updateInstance = (field: string, value: string) => {
+      state.instance!.attributes[field] = value;
+    };
+
+    const revertInstance = () => {
       state.instance = JSON.parse(JSON.stringify(state.originalInstance));
     };
 
@@ -279,8 +363,11 @@ export default {
       state,
       valueChanged,
       goBack,
+      updateInstance,
+      revertInstance,
       doUpdate,
       doDelete,
+      urlfy,
     };
   },
 };

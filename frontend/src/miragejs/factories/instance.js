@@ -13,16 +13,11 @@ export default {
         return "prod env " + i;
       }
     },
-    environmentName(i) {
-      if (i == 0) {
-        return "dev env";
-      } else if (i == 1) {
-        return "test env";
-      } else if (i == 2) {
-        return "staging env";
-      } else {
-        return "prod env " + i;
-      }
+    environmentId() {
+      return "-1";
+    },
+    externalLink() {
+      return "google.com";
     },
     host(i) {
       if (i == 0) {
