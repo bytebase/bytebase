@@ -10,3 +10,11 @@ export function humanize(ts: number) {
   }
   return time.format("MMM D YYYY");
 }
+
+export function urlfy(str: string) {
+  let result = str.trim();
+  if (result.search(/^http[s]?\:\/\//) == -1) {
+    result = "http://" + result;
+  }
+  return result;
+}
