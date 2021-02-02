@@ -10,7 +10,7 @@
         {{ environmentName(instance.attributes.environmentId) }}
       </BBTableCell>
       <BBTableCell class="w-96">
-        {{ instance.attributes.name }}</span>
+        {{ instance.attributes.name }}
       </BBTableCell>
       <BBTableCell class="w-24">
         <template v-if="instance.attributes.port"
@@ -18,6 +18,30 @@
             instance.attributes.port
           }}</template
         ><template v-else>{{ instance.attributes.host }}</template>
+      </BBTableCell>
+      <BBTableCell class="w-2">
+        <button
+          v-if="instance.attributes.externalLink?.trim().length != 0"
+          class="btn-icon"
+          @click.stop="
+            window.open(urlfy(instance.attributes.externalLink), '_blank')
+          "
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+            ></path>
+          </svg>
+        </button>
       </BBTableCell>
     </template>
   </BBTable>
@@ -28,7 +52,7 @@ import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
-import { humanize } from "../utils";
+import { humanize, urlfy } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 
 interface LocalState {
@@ -47,7 +71,7 @@ export default {
   },
   setup(props, ctx) {
     const store = useStore();
-  
+
     const state = reactive<LocalState>({
       columnList: [
         {
@@ -58,6 +82,9 @@ export default {
         },
         {
           title: "Host:Port",
+        },
+        {
+          title: "Link",
         },
       ],
       dataSource: [],
@@ -71,11 +98,12 @@ export default {
 
     const environmentName = function (id: EnvironmentId) {
       return store.getters["environment/environmentById"](id)?.attributes.name;
-    }
+    };
 
     return {
       state,
       humanize,
+      urlfy,
       clickInstance,
       environmentName,
     };
