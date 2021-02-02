@@ -4,6 +4,7 @@
   --color-accent-text: #ffffff;
 
   --color-normal: #f5f7f9;
+  /* gray-400 */
   --color-normal-hover: #9ca3af;
   --color-normal-text: #24292e;
 
@@ -33,7 +34,7 @@
 }
 
 .btn-icon {
-  @apply rounded-md text-normal-text bg-normal hover:bg-normal-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply rounded-md text-normal-text bg-normal hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-danger {
