@@ -7,7 +7,7 @@
   />
   <BBAlert
     :showing="state.showDeleteModal"
-    :style="'critical'"
+    :style="'CRITICAL'"
     :okText="'Delete'"
     :title="
       'Delete environment \'' + state.environment.attributes.name + '\' ?'

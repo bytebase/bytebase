@@ -45,7 +45,7 @@
       >
         <div>
           <div
-            v-if="style == 'success'"
+            v-if="style == 'SUCCESS'"
             class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100"
           >
             <svg
@@ -65,7 +65,7 @@
             </svg>
           </div>
           <div
-            v-if="style == 'warning'"
+            v-else-if="style == 'WARN'"
             class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100"
           >
             <svg
@@ -84,7 +84,7 @@
             </svg>
           </div>
           <div
-            v-if="style == 'critical'"
+            v-else-if="style == 'CRITICAL'"
             class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
           >
             <svg
@@ -160,7 +160,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted } from "vue";
+import { onMounted, PropType } from "vue";
 
 export default {
   name: "BBAlert",
@@ -171,7 +171,7 @@ export default {
       type: Boolean,
     },
     style: {
-      default: "info",
+      default: Object as PropType<"INFO" | "SUCCESS" | "WARN" | "CRITICAL">,
       type: String,
     },
     title: {
@@ -215,10 +215,10 @@ export default {
     });
 
     const buttonStyleMap: Record<string, string> = {
-      info: "bg-blue-600 hover:bg-blue-700",
-      success: "bg-blue-600 hover:bg-blue-700",
-      warning: "bg-red-600 hover:bg-red-700",
-      critical: "bg-red-600 hover:bg-red-700",
+      INFO: "bg-blue-600 hover:bg-blue-700",
+      SUCCESS: "bg-blue-600 hover:bg-blue-700",
+      WARN: "bg-red-600 hover:bg-red-700",
+      CRITICAL: "bg-red-600 hover:bg-red-700",
     };
 
     const okButtonStyle = buttonStyleMap[props.style];
