@@ -14,6 +14,11 @@ export type EnvironmentId = string;
 
 export type InstanceId = string;
 
+export type DataSourceId = {
+  id: string;
+  instanceId: InstanceId;
+};
+
 // Models
 export type User = ResourceObject & {};
 export type NewUser = Omit<ResourceObject, "id">;
@@ -84,6 +89,18 @@ export type Instance = ResourceObject & {
 };
 export type NewInstance = Omit<ResourceObject, "id">;
 
+export type DataSource = ResourceObject & {
+  attributes: {
+    name: string;
+    type: "ADMIN" | "NORMAL";
+    // In mysql, username can be empty which means annonymous user
+    username?: string;
+    password?: string;
+    database?: string;
+  };
+};
+export type NewDataSource = Omit<ResourceObject, "id">;
+
 export type Group = ResourceObject & {};
 export type NewGroup = Omit<ResourceObject, "id">;
 
@@ -147,6 +164,11 @@ export interface EnvironmentState {
 export interface InstanceState {
   instanceList: Instance[];
   instanceById: Map<InstanceId, Instance>;
+}
+
+export interface DataSourceState {
+  dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
+  dataSourceById: Map<DataSourceId, DataSource>;
 }
 
 export interface RepositoryState {
