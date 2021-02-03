@@ -115,6 +115,7 @@ export default {
         type: "environment",
         attributes: {
           name: "New Env",
+          order: -1,
         },
       };
     }
