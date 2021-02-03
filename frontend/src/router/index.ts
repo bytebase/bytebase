@@ -8,6 +8,7 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
+import { idFromSlug } from "../utils";
 
 const HOME_MODULE = "workspace.home";
 const SIGNIN_MODULE = "auth.signin";
@@ -217,7 +218,7 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "instance/:instanceId",
+            path: "instance/:instanceSlug",
             name: "workspace.instance.detail",
             meta: { breadcrumbName: "Instance" },
             components: {
@@ -300,7 +301,7 @@ router.beforeEach((to, from, next) => {
 
   const routerSlug = store.getters["router/routeSlug"](to);
   const pipelineId = routerSlug.pipelineId;
-  const instanceId = routerSlug.instanceId;
+  const instanceSlug = routerSlug.instanceSlug;
 
   console.log("RouterSlug:", routerSlug);
 
@@ -319,13 +320,14 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (instanceId) {
-    if (instanceId.toUpperCase() == "NEW") {
+  if (instanceSlug) {
+    if (instanceSlug.toUpperCase() == "NEW") {
       next();
       return;
     }
+    console.log("aa", instanceSlug, idFromSlug(instanceSlug));
     store
-      .dispatch("instance/fetchInstanceById", instanceId)
+      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
       .then((instance) => {
         next();
       })

@@ -13,7 +13,7 @@ const getters = {
     // /pipeline/<<pipeline-id>>
     // Total 2 elements, 2nd element is the pipeline id
     const pipelineComponents = currentRoute.path.match(
-      "/pipeline/([0-9a-zA-Z_]+)"
+      "/pipeline/([0-9a-zA-Z_-]+)"
     ) || ["/", undefined];
     if (pipelineComponents[1]) {
       return {
@@ -24,11 +24,11 @@ const getters = {
     // /instance/<<instance-id>>
     // Total 2 elements, 2nd element is the pipeline id
     const instanceComponents = currentRoute.path.match(
-      "/instance/([0-9a-zA-Z_]+)"
+      "/instance/([0-9a-zA-Z_-]+)"
     ) || ["/", undefined];
     if (instanceComponents[1]) {
       return {
-        instanceId: instanceComponents[1],
+        instanceSlug: instanceComponents[1],
       };
     }
     return {};

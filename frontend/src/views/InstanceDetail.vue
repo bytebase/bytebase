@@ -309,7 +309,7 @@ import { computed, onMounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
-import { urlfy } from "../utils";
+import { urlfy, idFromSlug } from "../utils";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, NewInstance, DataSource, NewDataSource } from "../types";
 
@@ -339,7 +339,7 @@ export default {
     EnvironmentSelect,
   },
   props: {
-    instanceId: {
+    instanceSlug: {
       required: true,
       type: String,
     },
@@ -349,7 +349,7 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      new: props.instanceId.toLowerCase() == "new",
+      new: props.instanceSlug.toLowerCase() == "new",
       showDeleteModal: false,
       showCancelModal: false,
       showPassword: false,
@@ -413,7 +413,9 @@ export default {
     } else {
       // Instance is already fetched remotely during routing, so we can just
       // use store.getters here.
-      assignInstance(store.getters["instance/instanceById"](props.instanceId));
+      assignInstance(
+        store.getters["instance/instanceById"](idFromSlug(props.instanceSlug))
+      );
 
       // On the other hand, we need to fetch data source remotely first and
       // because the operation is async, we need to have a init object to avoid
@@ -422,12 +424,12 @@ export default {
       store
         .dispatch(
           "dataSource/fetchDataSourceListByInstanceId",
-          props.instanceId
+          idFromSlug(props.instanceSlug)
         )
         .then(() => {
           const dataSource = store.getters[
             "dataSource/adminDataSourceByInstanceId"
-          ](props.instanceId);
+          ](idFromSlug(props.instanceSlug));
           if (dataSource) {
             assignAdminDataSource(dataSource);
           }
@@ -489,7 +491,7 @@ export default {
     ) => {
       store
         .dispatch("instance/patchInstanceById", {
-          instanceId: props.instanceId,
+          instanceId: idFromSlug(props.instanceSlug),
           instance: updatedInstance,
         })
         .then((instance) => {

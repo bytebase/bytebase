@@ -17,6 +17,7 @@
     "moment": "^2.29.1",
     "postcss": "^7",
     "postcss-focus-visible": "^5.0.0",
+    "slug": "^4.0.2",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0-0",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.4",
+    "@types/slug": "^0.9.1",
     "@vue/compiler-sfc": "^3.0.0-rc.1",
     "vite": "^1.0.0-rc.1"
   }

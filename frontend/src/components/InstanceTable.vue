@@ -52,7 +52,7 @@ import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
-import { humanize, urlfy } from "../utils";
+import { humanize, urlfy, instanceSlug } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 
 interface LocalState {
@@ -93,7 +93,14 @@ export default {
     const router = useRouter();
 
     const clickInstance = function (section: number, row: number) {
-      router.push(`/instance/${props.instanceList[row].id}`);
+      const instance = props.instanceList[row];
+      router.push(
+        `/instance/${instanceSlug(
+          environmentName(instance.attributes.environmentId),
+          instance.attributes.name,
+          instance.id
+        )}`
+      );
     };
 
     const environmentName = function (id: EnvironmentId) {
