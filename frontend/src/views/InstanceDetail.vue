@@ -13,10 +13,7 @@ input[type="number"] {
 </style>
 
 <template>
-  <form
-    class="px-4 space-y-6 divide-y divide-control-border"
-    @submit.prevent="doUpdate(state.instance)"
-  >
+  <form class="px-4 space-y-6 divide-y divide-control-border">
     <!-- Instance Name -->
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
@@ -157,8 +154,8 @@ input[type="number"] {
               name="username"
               type="text"
               class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-              :value="state.instance.attributes.username"
-              @input="updateInstance('username', $event.target.value)"
+              :value="state.adminDataSource.attributes.username"
+              @input="updateDataSource('username', $event.target.value)"
             />
           </div>
         </div>
@@ -173,8 +170,8 @@ input[type="number"] {
               name="password"
               type="password"
               class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-              :value="state.instance.attributes.password"
-              @input="updateInstance('password', $event.target.value)"
+              :value="state.adminDataSource.attributes.password"
+              @input="updateDataSource('password', $event.target.value)"
             />
           </div>
         </div>
@@ -189,8 +186,8 @@ input[type="number"] {
               name="database"
               type="text"
               class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-              :value="state.instance.attributes.database"
-              @input="updateInstance('database', $event.target.value)"
+              :value="state.adminDataSource.attributes.database"
+              @input="updateDataSource('database', $event.target.value)"
             />
           </div>
         </div>
@@ -208,8 +205,9 @@ input[type="number"] {
           Cancel
         </button>
         <button
-          type="submit"
+          type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          @click.prevent="doCreate(state.instance, state.adminDataSource)"
         >
           Create
         </button>
@@ -228,14 +226,15 @@ input[type="number"] {
             type="button"
             class="btn-normal py-2 px-4"
             :disabled="!valueChanged"
-            @click.prevent="revertInstance"
+            @click.prevent="revertInstanceAndDataSource"
           >
             Revert
           </button>
           <button
-            type="submit"
+            type="button"
             class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
             :disabled="!valueChanged"
+            @click.prevent="doUpdate(state.instance, state.adminDataSource)"
           >
             Update
           </button>
@@ -266,12 +265,14 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { urlfy } from "../utils";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { Instance, NewInstance } from "../types";
+import { Instance, NewInstance, DataSource, NewDataSource } from "../types";
 
 interface LocalState {
   new: boolean;
   originalInstance?: Instance;
   instance?: Instance | NewInstance;
+  originalAdminDataSource?: DataSource;
+  adminDataSource?: DataSource | NewDataSource;
   showDeleteModal: boolean;
 }
 
@@ -304,18 +305,37 @@ export default {
       });
     });
 
-    const assignInstance = (instance: Instance) => {
-      state.originalInstance = instance;
+    const assignInstance = (instance: Instance | NewInstance) => {
+      if (!state.new) {
+        state.originalInstance = instance as Instance;
+      }
       // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
       state.instance = JSON.parse(JSON.stringify(state.originalInstance));
+    };
+
+    const assignAdminDataSource = (dataSource: DataSource | NewDataSource) => {
+      if (!state.new) {
+        state.originalAdminDataSource = dataSource as DataSource;
+      }
+      // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
+      state.adminDataSource = JSON.parse(
+        JSON.stringify(state.originalAdminDataSource)
+      );
     };
 
     const updateInstance = (field: string, value: string) => {
       state.instance!.attributes[field] = value;
     };
 
-    const revertInstance = () => {
+    const updateDataSource = (field: string, value: string) => {
+      state.adminDataSource!.attributes[field] = value;
+    };
+
+    const revertInstanceAndDataSource = () => {
       state.instance = JSON.parse(JSON.stringify(state.originalInstance));
+      state.adminDataSource = JSON.parse(
+        JSON.stringify(state.originalAdminDataSource)
+      );
     };
 
     // [NOTE] Ternary operator doesn't trigger VS type checking, so we use a separate
@@ -329,26 +349,119 @@ export default {
           username: "root",
         },
       };
+      state.adminDataSource = {
+        type: "dataSource",
+        attributes: {
+          type: "ADMIN",
+        },
+      };
     } else {
+      // Instance is already fetched remotely during routing, so we can just
+      // use store.getters here.
       assignInstance(store.getters["instance/instanceById"](props.instanceId));
+
+      // On the other hand, we need to fetch data source remotely first and
+      // because the operation is async, we need to have a init object to avoid
+      // adding v-if="state.adminDataSource" guard
+      assignAdminDataSource({
+        type: "datasource",
+        attributes: {
+          type: "ADMIN",
+        },
+      });
+      store
+        .dispatch(
+          "datasource/fetchDataSourceListByInstanceId",
+          props.instanceId
+        )
+        .then(() => {
+          const dataSource = store.getters[
+            "datasource/adminDataSourceByInstanceId"
+          ](props.instanceId);
+          if (dataSource) {
+            assignAdminDataSource(dataSource);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     }
 
     const valueChanged = computed(() => {
-      return state.new || !isEqual(state.originalInstance, state.instance);
+      return (
+        state.new ||
+        !isEqual(state.originalInstance, state.instance) ||
+        !isEqual(state.originalAdminDataSource, state.adminDataSource)
+      );
     });
 
     const goBack = () => {
       router.go(-1);
     };
 
-    const doUpdate = (newInstance: Instance) => {
+    // Both doCreate and doUpdate make instance and data source create/patch in
+    // seperate API. In the unlikely event, instance create/patch may succeed while
+    // the corresponding data source operation failed. We consiciously make this
+    // trade-off to make instance create/patch API clean without coupling data source logic.
+    // The logic here to group instance/data source operation together is a shortcut
+    // for the sake of UX, which shouldn't affect underlying modeling anyway.
+    const doCreate = (
+      newInstance: NewInstance,
+      newAdminDataSource: NewDataSource
+    ) => {
+      store
+        .dispatch("instance/createInstance", {
+          newInstance,
+        })
+        .then((instance) => {
+          store
+            .dispatch("datasource/createDataSource", {
+              instanceId: instance.id,
+              newDataSource: newAdminDataSource,
+            })
+            .then((dataSource) => {
+              router.push({
+                name: "workspace.instance",
+              });
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    const doUpdate = (
+      updatedInstance: Instance,
+      updatedAdminDataSource: DataSource
+    ) => {
       store
         .dispatch("instance/patchInstanceById", {
           instanceId: props.instanceId,
-          instance: newInstance,
+          instance: updatedInstance,
         })
         .then((instance) => {
           assignInstance(instance);
+
+          store
+            .dispatch("datasource/patchDataSourceById", {
+              dataSourceId: {
+                id: updatedAdminDataSource.id,
+                instanceId: updatedInstance.id,
+              },
+              dataSource: updatedAdminDataSource,
+            })
+            .then((dataSource) => {
+              assignAdminDataSource(dataSource);
+              router.push({
+                name: "workspace.instance",
+              });
+            })
+            .catch((error) => {
+              console.log(error);
+            });
         })
         .catch((error) => {
           console.log(error);
@@ -364,7 +477,9 @@ export default {
       valueChanged,
       goBack,
       updateInstance,
-      revertInstance,
+      updateDataSource,
+      revertInstanceAndDataSource,
+      doCreate,
       doUpdate,
       doDelete,
       urlfy,
