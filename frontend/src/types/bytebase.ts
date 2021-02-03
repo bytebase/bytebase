@@ -66,11 +66,6 @@ export type Environment = ResourceObject & {
   attributes: {
     name: string;
     order: number;
-    host: string;
-    port: string;
-    username: string;
-    password: string;
-    database: string;
   };
 };
 export type NewEnvironment = Omit<Environment, "id">;

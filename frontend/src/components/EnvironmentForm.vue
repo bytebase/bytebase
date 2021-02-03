@@ -33,100 +33,6 @@ input[type="number"] {
         />
       </div>
     </div>
-    <div class="pt-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">
-        Connection Info
-      </h3>
-      <p class="mt-1 text-sm text-gray-500">
-        Provide the info to connect to the database.
-      </p>
-      <button type="button" class="btn-normal mt-4">Test Connection</button>
-    </div>
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-      <div class="sm:col-span-3">
-        <label for="host" class="block text-sm font-medium text-gray-700">
-          Host or Socket <span style="color: red">*</span>
-        </label>
-        <div class="mt-1">
-          <input
-            required
-            type="text"
-            id="host"
-            name="host"
-            placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.environment.attributes.host"
-            @input="updateEnvironment('host', $event.target.value)"
-          />
-        </div>
-      </div>
-
-      <div class="sm:col-span-3">
-        <label for="port" class="block text-sm font-medium text-gray-700">
-          Port (Only applicable when connecting via Host)
-        </label>
-        <div class="mt-1">
-          <input
-            type="number"
-            id="port"
-            name="port"
-            placeholder="3306"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.environment.attributes.port"
-            @input="updateEnvironment('port', $event.target.value)"
-          />
-        </div>
-      </div>
-
-      <div class="sm:col-span-2">
-        <label for="username" class="block text-sm font-medium text-gray-700">
-          Username <span style="color: red">*</span>
-        </label>
-        <div class="mt-1">
-          <input
-            required
-            id="username"
-            name="username"
-            type="text"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.environment.attributes.username"
-            @input="updateEnvironment('username', $event.target.value)"
-          />
-        </div>
-      </div>
-
-      <div class="sm:col-span-2 sm:col-start-1">
-        <label for="password" class="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <div class="mt-1">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.environment.attributes.password"
-            @input="updateEnvironment('password', $event.target.value)"
-          />
-        </div>
-      </div>
-
-      <div class="sm:col-span-2 sm:col-start-1">
-        <label for="database" class="block text-sm font-medium text-gray-700">
-          Database
-        </label>
-        <div class="mt-1">
-          <input
-            id="database"
-            name="database"
-            type="text"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-            :value="state.environment.attributes.database"
-            @input="updateEnvironment('database', $event.target.value)"
-          />
-        </div>
-      </div>
-    </div>
     <!-- Create button group -->
     <div v-if="create" class="flex justify-end pt-5">
       <button
@@ -209,8 +115,6 @@ export default {
         type: "environment",
         attributes: {
           name: "New Env",
-          host: "127.0.0.1",
-          username: "root",
         },
       };
     }

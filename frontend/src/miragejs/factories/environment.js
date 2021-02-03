@@ -39,14 +39,5 @@ export default {
         return "5432";
       }
     },
-    username() {
-      return "root";
-    },
-    password() {
-      return "root";
-    },
-    database() {
-      return "";
-    },
   }),
 };
