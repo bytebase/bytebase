@@ -6,13 +6,13 @@
     @click-row="clickInstance"
   >
     <template v-slot:body="{ rowData: instance }">
-      <BBTableCell :leftPadding="4" class="w-36">
+      <BBTableCell :leftPadding="4" class="w-24">
         {{ environmentName(instance.attributes.environmentId) }}
       </BBTableCell>
-      <BBTableCell class="w-96">
+      <BBTableCell class="w-48">
         {{ instance.attributes.name }}
       </BBTableCell>
-      <BBTableCell class="w-24">
+      <BBTableCell class="w-64">
         <template v-if="instance.attributes.port"
           >{{ instance.attributes.host }}:{{
             instance.attributes.port
