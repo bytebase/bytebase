@@ -82,9 +82,6 @@ export type Instance = ResourceObject & {
     externalLink?: string;
     host: string;
     port?: string;
-    username?: string;
-    password?: string;
-    database?: string;
   };
 };
 export type NewInstance = Omit<ResourceObject, "id">;
