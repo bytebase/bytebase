@@ -76,15 +76,15 @@ const actions = {
   async deleteInstanceById(
     { state, commit }: { state: InstanceState; commit: any },
     {
-      id,
+      instanceId,
     }: {
-      id: InstanceId;
+      instanceId: InstanceId;
     }
   ) {
-    await axios.delete(`/api/instance/${id}`);
+    await axios.delete(`/api/instance/${instanceId}`);
 
     const newList = state.instanceList.filter((item: Instance) => {
-      return item.id != id;
+      return item.id != instanceId;
     });
 
     commit("setInstanceList", {

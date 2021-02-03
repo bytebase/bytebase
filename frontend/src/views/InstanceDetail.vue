@@ -432,8 +432,8 @@ export default {
       router.go(-1);
     };
 
-    // Both doCreate and doUpdate make instance and data source create/patch in
-    // seperate API. In the unlikely event, instance create/patch may succeed while
+    // Both doCreate/Update/Delete make instance and data source create/patch/delete in
+    // seperate API. In the unlikely event, instance operation may succeed while
     // the corresponding data source operation failed. We consiciously make this
     // trade-off to make instance create/patch API clean without coupling data source logic.
     // The logic here to group instance/data source operation together is a shortcut
@@ -502,7 +502,30 @@ export default {
     };
 
     const doDelete = () => {
-      emit("delete", state.instance);
+      store
+        .dispatch("datasource/deleteDataSourceById", {
+          dataSourceId: {
+            id: state.originalAdminDataSource!.id,
+            instanceId: state.originalInstance!.id,
+          },
+        })
+        .then(() => {
+          store
+            .dispatch("instance/deleteInstanceById", {
+              instanceId: state.originalInstance!.id,
+            })
+            .then(() => {
+              router.push({
+                name: "workspace.instance",
+              });
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     return {
