@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex overflow-hidden">
     <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
-    <div v-if="state.showMobileOverlay" class="lg:hidden">
+    <div v-if="state.showMobileOverlay" class="md:hidden">
       <div class="fixed inset-0 flex z-40">
         <div class="fixed inset-0">
           <div class="absolute inset-0 bg-gray-600 opacity-75"></div>
@@ -68,7 +68,7 @@
     </div>
 
     <!-- Static sidebar for desktop -->
-    <aside class="hidden lg:flex lg:flex-shrink-0">
+    <aside class="hidden md:flex md:flex-shrink-0">
       <div class="flex flex-col w-64">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
         <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
@@ -101,7 +101,7 @@
       class="flex flex-col min-w-0 flex-1 border-l border-r border-block-border"
     >
       <!-- Static sidebar for mobile -->
-      <aside class="lg:hidden">
+      <aside class="md:hidden">
         <div
           class="flex items-center justify-start bg-gray-50 border-b border-gray-200 px-4 py-1.5"
         >
@@ -135,9 +135,9 @@
           </div>
         </div>
       </aside>
-      <div class="w-full mx-auto lg:flex">
-        <div class="lg:min-w-0 lg:flex-1">
-          <div v-if="!isHome" class="hidden lg:block mx-3 mt-4">
+      <div class="w-full mx-auto md:flex">
+        <div class="md:min-w-0 md:flex-1">
+          <div v-if="!isHome" class="hidden md:block mx-3 mt-4">
             <Breadcrumb />
           </div>
           <div v-if="quickActionList" class="mx-3 mt-4">
@@ -146,7 +146,7 @@
         </div>
       </div>
       <!-- This area may scroll -->
-      <div class="lg:min-w-0 lg:flex-1 overflow-y-auto mt-4">
+      <div class="md:min-w-0 md:flex-1 overflow-y-auto mt-4">
         <!-- Start main area-->
         <router-view name="content" />
         <!-- End main area -->
