@@ -140,6 +140,8 @@ input[type="number"] {
             instance to perform administrative operations.
           </p>
         </div>
+      </div>
+      <div class="mt-4">
         <button type="button" class="btn-normal">Test Connection</button>
       </div>
       <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
