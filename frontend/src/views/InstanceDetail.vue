@@ -299,6 +299,14 @@ import { urlfy } from "../utils";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, NewInstance, DataSource, NewDataSource } from "../types";
 
+const INIT_DATA_SOURCE: NewDataSource = {
+  type: "dataSource",
+  attributes: {
+    type: "ADMIN",
+    name: "Admin Data Source",
+  },
+};
+
 interface LocalState {
   new: boolean;
   originalInstance?: Instance;
@@ -379,16 +387,12 @@ export default {
         type: "instance",
         attributes: {
           name: "New Instance",
+          environmentId: "",
           host: "127.0.0.1",
           username: "root",
         },
       };
-      state.adminDataSource = {
-        type: "dataSource",
-        attributes: {
-          type: "ADMIN",
-        },
-      };
+      state.adminDataSource = INIT_DATA_SOURCE;
     } else {
       // Instance is already fetched remotely during routing, so we can just
       // use store.getters here.
@@ -397,12 +401,7 @@ export default {
       // On the other hand, we need to fetch data source remotely first and
       // because the operation is async, we need to have a init object to avoid
       // adding v-if="state.adminDataSource" guard
-      assignAdminDataSource({
-        type: "datasource",
-        attributes: {
-          type: "ADMIN",
-        },
-      });
+      assignAdminDataSource(INIT_DATA_SOURCE);
       store
         .dispatch(
           "datasource/fetchDataSourceListByInstanceId",
