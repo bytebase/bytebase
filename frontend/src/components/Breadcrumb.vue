@@ -113,26 +113,18 @@ export default {
       const routeSlug: RouterSlug = store.getters["router/routeSlug"](
         currentRoute
       );
-      const pipelineId = routeSlug.pipelineId;
       const instanceSlug = routeSlug.instanceSlug;
       const list: Array<BreadcrumbItem> = [];
-      if (pipelineId) {
-        list.push({
-          name: "Pipeline #" + pipelineId,
-          path: "/pipeline/" + pipelineId,
-        });
-      } else if (instanceSlug) {
+      if (instanceSlug) {
         list.push({
           name: "Instance",
           path: "/instance",
         });
+      }
+
+      if (currentRoute.meta.title) {
         list.push({
-          name: instanceSlug,
-          path: "/instance/" + instanceSlug,
-        });
-      } else if (currentRoute.meta.breadcrumbName) {
-        list.push({
-          name: currentRoute.meta.breadcrumbName,
+          name: currentRoute.meta.title(currentRoute),
           path: currentRoute.path,
         });
       }

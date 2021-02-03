@@ -1,5 +1,10 @@
-import { defineAsyncComponent } from "vue";
-import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
+import { defineAsyncComponent, nextTick } from "vue";
+import {
+  createRouter,
+  createWebHistory,
+  RouteLocationNormalized,
+  RouteRecordRaw,
+} from "vue-router";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BodyLayout from "../layouts/BodyLayout.vue";
 import MainSidebar from "../views/MainSidebar.vue";
@@ -19,19 +24,19 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/signin",
     name: SIGNIN_MODULE,
-    meta: { breadcrumbName: "Signin" },
+    meta: { title: () => "Signin" },
     component: Signin,
   },
   {
     path: "/signup",
     name: SIGNUP_MODULE,
-    meta: { breadcrumbName: "Signup" },
+    meta: { title: () => "Signup" },
     component: Signup,
   },
   {
     path: "/password-reset",
     name: PASSWORD_RESET_MODULE,
-    meta: { breadcrumbName: "Reset Password" },
+    meta: { title: () => "Reset Password" },
     component: PasswordReset,
   },
   {
@@ -97,7 +102,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "inbox",
             name: "workspace.inbox",
-            meta: { breadcrumbName: "Inbox" },
+            meta: { title: () => "Inbox" },
             components: {
               content: defineAsyncComponent(() => import("../views/Inbox.vue")),
               leftSidebar: MainSidebar,
@@ -110,7 +115,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "setting",
             name: "setting",
-            meta: { breadcrumbName: "Setting" },
+            meta: { title: () => "Setting" },
             components: {
               content: defineAsyncComponent(
                 () => import("../layouts/SettingLayout.vue")
@@ -127,7 +132,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "",
                 name: "setting.accountprofile",
-                meta: { breadcrumbName: "Account Profile" },
+                meta: { title: () => "Account Profile" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingAccountProfile.vue")
                 ),
@@ -137,7 +142,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "general",
                 name: "setting.workspace.general",
-                meta: { breadcrumbName: "General" },
+                meta: { title: () => "Account General" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingWorkspaceGeneral.vue")
                 ),
@@ -146,7 +151,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "agent",
                 name: "setting.workspace.agent",
-                meta: { breadcrumbName: "Agents" },
+                meta: { title: () => "Agents" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingWorkspaceAgent.vue")
                 ),
@@ -155,7 +160,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "member",
                 name: "setting.workspace.member",
-                meta: { breadcrumbName: "Members" },
+                meta: { title: () => "Members" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingWorkspaceMember.vue")
                 ),
@@ -164,7 +169,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "plan",
                 name: "setting.workspace.plan",
-                meta: { breadcrumbName: "Plans" },
+                meta: { title: () => "Plans" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingWorkspacePlan.vue")
                 ),
@@ -173,7 +178,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "billing",
                 name: "setting.workspace.billing",
-                meta: { breadcrumbName: "Billings" },
+                meta: { title: () => "Billings" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingWorkspaceBilling.vue")
                 ),
@@ -182,7 +187,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "integration/slack",
                 name: "setting.workspace.integration.slack",
-                meta: { breadcrumbName: "Slack" },
+                meta: { title: () => "Slack" },
                 component: defineAsyncComponent(
                   () => import("../views/SettingWorkspaceIntegrationSlack.vue")
                 ),
@@ -193,7 +198,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "environment",
             name: "workspace.environment",
-            meta: { breadcrumbName: "Environment" },
+            meta: { title: () => "Environment" },
             components: {
               content: defineAsyncComponent(
                 () => import("../views/EnvironmentDashboard.vue")
@@ -206,7 +211,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "instance",
             name: "workspace.instance",
             meta: {
-              breadcrumbName: "Instance",
+              title: () => "Instance",
               quickActionList: ["instance.add"],
             },
             components: {
@@ -220,7 +225,13 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "instance/:instanceSlug",
             name: "workspace.instance.detail",
-            meta: { breadcrumbName: "Instance" },
+            meta: {
+              title: (route: RouteLocationNormalized) => {
+                return store.getters["instance/instanceById"](
+                  idFromSlug(route.params.instanceSlug as string)
+                ).attributes.name;
+              },
+            },
             components: {
               content: defineAsyncComponent(
                 () => import("../views/InstanceDetail.vue")
@@ -232,7 +243,11 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "pipeline/:pipelineId",
             name: "workspace.pipeline.detail",
-            meta: { breadcrumbName: "Pipeline" },
+            meta: {
+              title: (route: RouteLocationNormalized) => {
+                return "Pipeline #" + route.params.pipelineId;
+              },
+            },
             components: {
               content: defineAsyncComponent(
                 () => import("../views/PipelineDetail.vue")
@@ -325,7 +340,6 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-    console.log("aa", instanceSlug, idFromSlug(instanceSlug));
     store
       .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
       .then((instance) => {
@@ -343,5 +357,16 @@ router.beforeEach((to, from, next) => {
   next({
     name: "error.404",
     replace: false,
+  });
+});
+
+router.afterEach((to, from) => {
+  // Needs to use nextTick otherwise title will still be the one from the previous route.
+  nextTick(() => {
+    if (to.meta.title) {
+      document.title = to.meta.title(to);
+    } else {
+      document.title = "Bytebase";
+    }
   });
 });
