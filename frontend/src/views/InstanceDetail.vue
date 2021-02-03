@@ -148,6 +148,9 @@ input[type="number"] {
             Username <span style="color: red">*</span>
           </label>
           <div class="mt-1">
+            <!-- For mysql, username can be empty indicating anonymous user. 
+            But it's a very bad practice to use anonymous user for admin operation,
+            thus we make it REQUIRED here. -->
             <input
               required
               id="username"

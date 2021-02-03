@@ -93,7 +93,7 @@ export type DataSource = ResourceObject & {
   attributes: {
     name: string;
     type: "ADMIN" | "NORMAL";
-    // In mysql, username can be empty which means annonymous user
+    // In mysql, username can be empty which means anonymous user
     username?: string;
     password?: string;
     database?: string;
