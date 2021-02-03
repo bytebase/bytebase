@@ -193,7 +193,7 @@ export default function routes() {
   this.get("/instance/:instanceId/datasource", function (schema, request) {
     const instance = schema.instances.find(request.params.instanceId);
     if (instance) {
-      return schema.datasources.where((dataSource) => {
+      return schema.dataSources.where((dataSource) => {
         return dataSource.instanceId == instance.id;
       });
     }
@@ -207,7 +207,7 @@ export default function routes() {
   this.get("/instance/:instanceId/datasource/:id", function (schema, request) {
     const instance = schema.instances.find(request.params.instanceId);
     if (instance) {
-      const dataSource = schema.datasources.find(request.params.id);
+      const dataSource = schema.dataSources.find(request.params.id);
       if (dataSource) {
         return dataSource;
       }
@@ -228,10 +228,10 @@ export default function routes() {
     const instance = schema.instances.find(request.params.instanceId);
     if (instance) {
       const newDataSource = {
-        ...this.normalizedRequestAttrs("datasource"),
+        ...this.normalizedRequestAttrs("data-source"),
         instanceId: request.params.instanceId,
       };
-      return schema.datasources.create(newDataSource);
+      return schema.dataSources.create(newDataSource);
     }
     return new Response(
       404,
@@ -245,8 +245,8 @@ export default function routes() {
     function (schema, request) {
       const instance = schema.instances.find(request.params.instanceId);
       if (instance) {
-        const attrs = this.normalizedRequestAttrs("datasource");
-        return schema.datasources.find(request.params.id).update(attrs);
+        const attrs = this.normalizedRequestAttrs("data-source");
+        return schema.dataSources.find(request.params.id).update(attrs);
       }
       return new Response(
         404,
@@ -261,7 +261,7 @@ export default function routes() {
     function (schema, request) {
       const instance = schema.instances.find(request.params.instanceId);
       if (instance) {
-        return schema.datasources.find(request.params.id).destroy();
+        return schema.dataSources.find(request.params.id).destroy();
       }
       return new Response(
         404,

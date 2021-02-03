@@ -4,7 +4,7 @@ import bookmark from "./modules/bookmark";
 import project from "./modules/project";
 import environment from "./modules/environment";
 import instance from "./modules/instance";
-import datasource from "./modules/datasource";
+import dataSource from "./modules/dataSource";
 import repository from "./modules/repository";
 import auth from "./modules/auth";
 import group from "./modules/group";
@@ -21,7 +21,7 @@ export const store: Store<any> = createStore({
     project,
     environment,
     instance,
-    datasource,
+    dataSource,
     repository,
     auth,
     group,

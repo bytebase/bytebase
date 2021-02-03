@@ -39,7 +39,7 @@ export default {
       }
     },
     afterCreate(instance, server) {
-      server.create("datasource", {
+      server.create("dataSource", {
         instance,
         name: instance.name + " ds1",
         type: "ADMIN",

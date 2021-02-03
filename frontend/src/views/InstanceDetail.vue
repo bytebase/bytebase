@@ -404,12 +404,12 @@ export default {
       assignAdminDataSource(INIT_DATA_SOURCE);
       store
         .dispatch(
-          "datasource/fetchDataSourceListByInstanceId",
+          "dataSource/fetchDataSourceListByInstanceId",
           props.instanceId
         )
         .then(() => {
           const dataSource = store.getters[
-            "datasource/adminDataSourceByInstanceId"
+            "dataSource/adminDataSourceByInstanceId"
           ](props.instanceId);
           if (dataSource) {
             assignAdminDataSource(dataSource);
@@ -448,7 +448,7 @@ export default {
         })
         .then((instance) => {
           store
-            .dispatch("datasource/createDataSource", {
+            .dispatch("dataSource/createDataSource", {
               instanceId: instance.id,
               newDataSource: newAdminDataSource,
             })
@@ -479,7 +479,7 @@ export default {
           assignInstance(instance);
 
           store
-            .dispatch("datasource/patchDataSourceById", {
+            .dispatch("dataSource/patchDataSourceById", {
               dataSourceId: {
                 id: updatedAdminDataSource.id,
                 instanceId: updatedInstance.id,
@@ -503,7 +503,7 @@ export default {
 
     const doDelete = () => {
       store
-        .dispatch("datasource/deleteDataSourceById", {
+        .dispatch("dataSource/deleteDataSourceById", {
           dataSourceId: {
             id: state.originalAdminDataSource!.id,
             instanceId: state.originalInstance!.id,

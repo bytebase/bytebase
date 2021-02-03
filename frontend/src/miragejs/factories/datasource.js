@@ -1,7 +1,7 @@
 import { Factory } from "miragejs";
 
 export default {
-  datasource: Factory.extend({
+  dataSource: Factory.extend({
     name(i) {
       return "ds" + i;
     },
