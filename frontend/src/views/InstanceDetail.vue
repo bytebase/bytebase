@@ -257,10 +257,9 @@ input[type="number"] {
           <button
             type="button"
             class="btn-normal py-2 px-4"
-            :disabled="!valueChanged"
-            @click.prevent="revertInstanceAndDataSource"
+            @click.prevent="cancel"
           >
-            Revert
+            Cancel
           </button>
           <button
             type="button"
@@ -276,7 +275,7 @@ input[type="number"] {
   </form>
   <BBAlert
     :showing="state.showDeleteModal"
-    :style="'critical'"
+    :style="'CRITICAL'"
     :okText="'Delete'"
     :title="'Delete instance \'' + state.instance.attributes.name + '\' ?'"
     @ok="
@@ -286,6 +285,21 @@ input[type="number"] {
       }
     "
     @cancel="state.showDeleteModal = false"
+  >
+  </BBAlert>
+  <BBAlert
+    :showing="state.showCancelModal"
+    :style="'WARN'"
+    :okText="'Discard'"
+    :cancelText="'No'"
+    :title="'Discard changes?'"
+    @ok="
+      () => {
+        state.showCancelModal = false;
+        goBack();
+      }
+    "
+    @cancel="state.showCancelModal = false"
   >
   </BBAlert>
 </template>
@@ -314,6 +328,7 @@ interface LocalState {
   originalAdminDataSource?: DataSource;
   adminDataSource?: DataSource | NewDataSource;
   showDeleteModal: boolean;
+  showCancelModal: boolean;
   showPassword: boolean;
 }
 
@@ -336,6 +351,7 @@ export default {
     const state = reactive<LocalState>({
       new: props.instanceId.toLowerCase() == "new",
       showDeleteModal: false,
+      showCancelModal: false,
       showPassword: false,
     });
 
@@ -373,11 +389,12 @@ export default {
       state.adminDataSource!.attributes[field] = value;
     };
 
-    const revertInstanceAndDataSource = () => {
-      state.instance = JSON.parse(JSON.stringify(state.originalInstance));
-      state.adminDataSource = JSON.parse(
-        JSON.stringify(state.originalAdminDataSource)
-      );
+    const cancel = () => {
+      if (valueChanged.value) {
+        state.showCancelModal = true;
+      } else {
+        goBack();
+      }
     };
 
     // [NOTE] Ternary operator doesn't trigger VS type checking, so we use a separate
@@ -534,7 +551,7 @@ export default {
       goBack,
       updateInstance,
       updateDataSource,
-      revertInstanceAndDataSource,
+      cancel,
       doCreate,
       doUpdate,
       doDelete,
