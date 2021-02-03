@@ -96,7 +96,6 @@ export type DataSource = ResourceObject & {
     // In mysql, username can be empty which means anonymous user
     username?: string;
     password?: string;
-    database?: string;
   };
 };
 export type NewDataSource = Omit<ResourceObject, "id">;

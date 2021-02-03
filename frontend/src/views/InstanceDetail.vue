@@ -223,22 +223,6 @@ input[type="number"] {
             </div>
           </div>
         </div>
-
-        <div class="sm:col-span-2 sm:col-start-1">
-          <label for="database" class="block text-sm font-medium text-gray-700">
-            Database
-          </label>
-          <div class="mt-1">
-            <input
-              id="database"
-              name="database"
-              type="text"
-              class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
-              :value="state.adminDataSource.attributes.database"
-              @input="updateDataSource('database', $event.target.value)"
-            />
-          </div>
-        </div>
       </div>
     </div>
     <!-- Action Button Group -->

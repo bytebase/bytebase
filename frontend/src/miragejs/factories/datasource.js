@@ -14,8 +14,5 @@ export default {
     password(i) {
       return "pwd" + i;
     },
-    database(i) {
-      return "db" + i;
-    },
   }),
 };
