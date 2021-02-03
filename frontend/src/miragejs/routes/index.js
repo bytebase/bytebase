@@ -204,7 +204,7 @@ export default function routes() {
     );
   });
 
-  this.get("/instance/:instanceId/datasource", function (schema, request) {
+  this.get("/instance/:instanceId/datasource/:id", function (schema, request) {
     const instance = schema.instances.find(request.params.instanceId);
     if (instance) {
       const dataSource = schema.datasources.find(request.params.id);
