@@ -37,7 +37,7 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  setup(props, { emit }) {
     const state = reactive<LocalState>({
       environmentList: [],
       selectedId: props.selectedId,
@@ -53,6 +53,7 @@ export default {
           state.environmentList = list.reverse();
           if (!state.selectedId && state.environmentList.length > 0) {
             state.selectedId = state.environmentList[0].id;
+            emit("select-environment-id", state.selectedId);
           }
         })
         .catch((error) => {
