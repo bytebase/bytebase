@@ -135,8 +135,7 @@
           </div>
         </div>
       </aside>
-      <main class="w-full mx-auto lg:flex overflow-y-auto">
-        <!-- main wrapper -->
+      <div class="w-full mx-auto lg:flex">
         <div class="lg:min-w-0 lg:flex-1">
           <div v-if="!isHome" class="hidden lg:block mx-3 mt-4">
             <Breadcrumb />
@@ -144,14 +143,14 @@
           <div v-if="quickActionList" class="mx-3 mt-4">
             <QuickActionPanel :quickActionList="quickActionList" />
           </div>
-
-          <div class="flex-grow w-full h-full mt-4">
-            <!-- Start main area-->
-            <router-view name="content" />
-            <!-- End main area -->
-          </div>
         </div>
-      </main>
+      </div>
+      <!-- This area may scroll -->
+      <div class="lg:min-w-0 lg:flex-1 overflow-y-auto mt-4">
+        <!-- Start main area-->
+        <router-view name="content" />
+        <!-- End main area -->
+      </div>
     </div>
   </div>
 </template>
