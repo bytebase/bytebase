@@ -305,7 +305,7 @@ input[type="number"] {
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
@@ -355,12 +355,22 @@ export default {
       showPassword: false,
     });
 
+    const escHandler = (e: KeyboardEvent) => {
+      if (
+        e.code == "Escape" &&
+        !state.showDeleteModal &&
+        !state.showCancelModal
+      ) {
+        cancel();
+      }
+    };
+
     onMounted(() => {
-      document.addEventListener("keydown", (e) => {
-        if (e.code == "Escape") {
-          goBack();
-        }
-      });
+      document.addEventListener("keydown", escHandler);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener("keydown", escHandler);
     });
 
     const assignInstance = (instance: Instance | NewInstance) => {
