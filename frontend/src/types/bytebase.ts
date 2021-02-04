@@ -19,7 +19,7 @@ export type DataSourceId = {
   instanceId: InstanceId;
 };
 
-// Models
+// Persistent State Models
 export type User = ResourceObject & {};
 export type NewUser = Omit<User, "id">;
 
@@ -121,6 +121,29 @@ export type SignupInfo = Omit<
   "id"
 >;
 
+// UI State Models
+export type RouterSlug = {
+  pipelineId?: PipelineId;
+  instanceSlug?: string;
+};
+
+export type Notification = {
+  id: string;
+  createdTs: number;
+  module: string;
+  action: string;
+  userInfo?: any;
+};
+
+// "id" and "createdTs" is auto generated upon the notification store
+// receives.
+export type NewNotification = Omit<Notification, "id" | "createdTs">;
+
+export type NotificationFilter = {
+  module: string;
+  action: string;
+};
+
 // Store
 export interface AuthState {
   currentUser: User | null;
@@ -166,8 +189,6 @@ export interface RepositoryState {
   repositoryByProject: Map<ProjectId, Repository>;
 }
 
-// UI
-export interface RouterSlug {
-  pipelineId?: PipelineId;
-  instanceSlug?: string;
+export interface NotificationState {
+  notificationByModule: Map<string, Notification[]>;
 }
