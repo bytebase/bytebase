@@ -21,3 +21,5 @@ export type BBStep = {
   status: BBStepStatus;
   link(): string;
 };
+
+export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
