@@ -15,12 +15,8 @@ function findNotification(
   filter: NotificationFilter
 ): Notification | null {
   const list = state.notificationByModule.get(filter.module);
-  if (list) {
-    for (const notification of list) {
-      if (notification.action == filter.action) {
-        return notification;
-      }
-    }
+  if (list && list.length > 0) {
+    return list[0];
   }
   return null;
 }

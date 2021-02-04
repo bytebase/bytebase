@@ -482,6 +482,11 @@ export default {
               newDataSource: newAdminDataSource,
             })
             .then((dataSource) => {
+              store.dispatch("notification/pushNotification", {
+                module: "bytebase",
+                style: "SUCCESS",
+                title: `Successfully created instance '${instance.attributes.name}'.`,
+              });
               router.push({
                 name: "workspace.instance",
               });
@@ -517,6 +522,11 @@ export default {
             })
             .then((dataSource) => {
               assignAdminDataSource(dataSource);
+              store.dispatch("notification/pushNotification", {
+                module: "bytebase",
+                style: "SUCCESS",
+                title: `Successfully updated instance '${updatedInstance.attributes.name}'.`,
+              });
               router.push({
                 name: "workspace.instance",
               });
@@ -544,6 +554,13 @@ export default {
               instanceId: state.originalInstance!.id,
             })
             .then(() => {
+              store.dispatch("notification/pushNotification", {
+                module: "bytebase",
+                style: "SUCCESS",
+                title: `Successfully deleted instance '${
+                  state.originalInstance!.attributes.name
+                }'.`,
+              });
               router.push({
                 name: "workspace.instance",
               });

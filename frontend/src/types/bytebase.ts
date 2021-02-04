@@ -1,4 +1,5 @@
 import { ResourceObject } from "./jsonapi";
+import { BBNotificationStyle } from "../bbkit/types";
 
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
@@ -131,8 +132,9 @@ export type Notification = {
   id: string;
   createdTs: number;
   module: string;
-  action: string;
-  userInfo?: any;
+  style: BBNotificationStyle;
+  title: string;
+  description?: string;
 };
 
 // "id" and "createdTs" is auto generated upon the notification store
@@ -141,7 +143,6 @@ export type NewNotification = Omit<Notification, "id" | "createdTs">;
 
 export type NotificationFilter = {
   module: string;
-  action: string;
 };
 
 // Store

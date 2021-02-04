@@ -10,6 +10,7 @@ import {
   BBAvatar,
   BBContextMenu,
   BBModal,
+  BBNotification,
   BBStepBar,
   BBTab,
   BBTabPanel,
@@ -36,6 +37,7 @@ app
   .component("BBAvatar", BBAvatar)
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)
+  .component("BBNotification", BBNotification)
   .component("BBStepBar", BBStepBar)
   .component("BBTab", BBTab)
   .component("BBTabPanel", BBTabPanel)
