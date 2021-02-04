@@ -45,7 +45,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted, computed, inject, PropType } from "vue";
+import { computed, PropType } from "vue";
 import { useStore } from "vuex";
 import { Project, ProjectId } from "../types";
 

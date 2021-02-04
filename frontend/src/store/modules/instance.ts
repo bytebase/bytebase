@@ -1,5 +1,5 @@
 import axios from "axios";
-import { UserId, InstanceId, Instance, InstanceState } from "../../types";
+import { InstanceId, Instance, InstanceState } from "../../types";
 
 const state: () => InstanceState = () => ({
   instanceList: [],

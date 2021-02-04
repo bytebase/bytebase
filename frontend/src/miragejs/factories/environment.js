@@ -1,6 +1,4 @@
 import { Factory } from "miragejs";
-import faker from "faker";
-
 export default {
   environment: Factory.extend({
     name(i) {

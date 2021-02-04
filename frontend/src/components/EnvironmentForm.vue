@@ -83,7 +83,6 @@ input[type="number"] {
 import { computed, reactive, PropType } from "vue";
 import isEqual from "lodash-es/isEqual";
 import { Environment, NewEnvironment } from "../types";
-import environment from "../store/modules/environment";
 
 interface LocalState {
   environment?: Environment | NewEnvironment;

@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { PropType } from "vue";
 import { BBStep, BBStepStatus } from "./types";
 
 export default {

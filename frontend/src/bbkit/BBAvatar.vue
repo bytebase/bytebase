@@ -10,7 +10,6 @@
 
 <script lang="ts">
 import { computed, PropType } from "vue";
-import isEmpty from "lodash-es/isEmpty";
 
 import { hashCode } from "./BBUtil";
 

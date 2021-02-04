@@ -2,7 +2,6 @@
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
 
-import user from "../factories/user";
 import { Response } from "miragejs";
 
 const WORKSPACE_ID = 1;

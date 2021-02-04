@@ -5,8 +5,6 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
-
 export default {
   name: "BBTabPanel",
   props: {

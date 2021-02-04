@@ -24,12 +24,11 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, inject, reactive, PropType } from "vue";
+import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentId } from "../types";
-import environment from "../store/modules/environment";
+import { Environment } from "../types";
 
 export default {
   name: "EnvironmentDetail",
