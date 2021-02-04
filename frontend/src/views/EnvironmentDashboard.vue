@@ -178,6 +178,7 @@ export default {
 
     const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
       array_swap(state.reorderedEnvironmentList, sourceIndex, targetIndex);
+      selectEnvironment(targetIndex);
     };
 
     const orderChanged = computed(() => {
