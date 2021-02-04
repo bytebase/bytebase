@@ -77,6 +77,9 @@
           {{ pipeline.attributes.type }}
         </span>
       </BBTableCell>
+      <BBTableCell class="w-24 table-cell">
+        {{ environmentName(pipeline.attributes.currentStageId) }}
+      </BBTableCell>
       <BBTableCell :leftPadding="1" class="w-auto">
         {{ pipeline.attributes.name }}
       </BBTableCell>
@@ -95,6 +98,7 @@
 
 <script lang="ts">
 import { reactive, PropType } from "vue";
+import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
   BBTableColumn,
@@ -103,7 +107,7 @@ import {
   BBStepStatus,
 } from "../bbkit/types";
 import { humanize } from "../utils";
-import { Pipeline } from "../types";
+import { EnvironmentId, Pipeline } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
@@ -146,6 +150,8 @@ export default {
     },
   },
   setup(props, ctx) {
+    const store = useStore();
+
     const state = reactive<LocalState>({
       columnList: [
         {
@@ -156,6 +162,9 @@ export default {
         },
         {
           title: "Type",
+        },
+        {
+          title: "Environment",
         },
         {
           title: "Title",
@@ -172,6 +181,10 @@ export default {
       ],
       dataSource: [],
     });
+
+    const environmentName = function (id: EnvironmentId) {
+      return store.getters["environment/environmentById"](id)?.attributes.name;
+    };
 
     const router = useRouter();
 
@@ -219,6 +232,7 @@ export default {
 
     return {
       state,
+      environmentName,
       statusMap,
       stageList,
       humanize,
