@@ -31,7 +31,7 @@ export type Bookmark = ResourceObject & {};
 export type NewBookmark = Omit<Bookmark, "id">;
 
 export type Activity = ResourceObject & {};
-export type NewActivity = Omit<Activity, "id">;
+export type ActivityNew = Omit<Activity, "id">;
 
 export type Pipeline = ResourceObject & {
   attributes: {
@@ -64,7 +64,7 @@ export type Pipeline = ResourceObject & {
     subscriberIdList: Array<string>;
   };
 };
-export type NewPipeline = Omit<Pipeline, "id">;
+export type PipelineNew = Omit<Pipeline, "id">;
 
 export type Environment = ResourceObject & {
   attributes: {
@@ -72,7 +72,7 @@ export type Environment = ResourceObject & {
     order: number;
   };
 };
-export type NewEnvironment = Omit<Environment, "id">;
+export type EnvironmentNew = Omit<Environment, "id">;
 
 export type Instance = ResourceObject & {
   attributes: {
@@ -83,7 +83,7 @@ export type Instance = ResourceObject & {
     port?: string;
   };
 };
-export type NewInstance = Omit<Instance, "id">;
+export type InstanceNew = Omit<Instance, "id">;
 
 export type DataSource = ResourceObject & {
   attributes: {
@@ -94,16 +94,16 @@ export type DataSource = ResourceObject & {
     password?: string;
   };
 };
-export type NewDataSource = Omit<DataSource, "id">;
+export type DataSourceNew = Omit<DataSource, "id">;
 
 export type Group = ResourceObject & {};
-export type NewGroup = Omit<Group, "id">;
+export type GroupNew = Omit<Group, "id">;
 
 export type Project = ResourceObject & {};
-export type NewProject = Omit<Project, "id">;
+export type ProjectNew = Omit<Project, "id">;
 
 export type Repository = ResourceObject & {};
-export type NewRepository = Omit<Repository, "id">;
+export type RepositoryNew = Omit<Repository, "id">;
 
 export type LoginInfo = Omit<
   ResourceObject & {

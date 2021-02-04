@@ -311,9 +311,9 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { urlfy, idFromSlug } from "../utils";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { Instance, NewInstance, DataSource, NewDataSource } from "../types";
+import { Instance, InstanceNew, DataSource, DataSourceNew } from "../types";
 
-const INIT_DATA_SOURCE: NewDataSource = {
+const INIT_DATA_SOURCE: DataSourceNew = {
   type: "dataSource",
   attributes: {
     type: "ADMIN",
@@ -324,9 +324,9 @@ const INIT_DATA_SOURCE: NewDataSource = {
 interface LocalState {
   new: boolean;
   originalInstance?: Instance;
-  instance?: Instance | NewInstance;
+  instance?: Instance | InstanceNew;
   originalAdminDataSource?: DataSource;
-  adminDataSource?: DataSource | NewDataSource;
+  adminDataSource?: DataSource | DataSourceNew;
   showDeleteModal: boolean;
   showCancelModal: boolean;
   showPassword: boolean;
@@ -373,7 +373,7 @@ export default {
       document.removeEventListener("keydown", escHandler);
     });
 
-    const assignInstance = (instance: Instance | NewInstance) => {
+    const assignInstance = (instance: Instance | InstanceNew) => {
       if (!state.new) {
         state.originalInstance = instance as Instance;
       }
@@ -381,7 +381,7 @@ export default {
       state.instance = JSON.parse(JSON.stringify(state.originalInstance));
     };
 
-    const assignAdminDataSource = (dataSource: DataSource | NewDataSource) => {
+    const assignAdminDataSource = (dataSource: DataSource | DataSourceNew) => {
       if (!state.new) {
         state.originalAdminDataSource = dataSource as DataSource;
       }
@@ -468,8 +468,8 @@ export default {
     // The logic here to group instance/data source operation together is a shortcut
     // for the sake of UX, which shouldn't affect underlying modeling anyway.
     const doCreate = (
-      newInstance: NewInstance,
-      newAdminDataSource: NewDataSource
+      newInstance: InstanceNew,
+      newAdminDataSource: DataSourceNew
     ) => {
       store
         .dispatch("instance/createInstance", {

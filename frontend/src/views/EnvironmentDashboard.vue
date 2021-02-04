@@ -58,7 +58,7 @@ import { useStore } from "vuex";
 import { array_swap } from "../utils";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
-import { Environment, NewEnvironment } from "../types";
+import { Environment, EnvironmentNew } from "../types";
 
 interface LocalState {
   reorderedEnvironmentList: Environment[];
@@ -152,7 +152,7 @@ export default {
       state.showCreateModal = true;
     };
 
-    const doCreate = (newEnvironment: NewEnvironment) => {
+    const doCreate = (newEnvironment: EnvironmentNew) => {
       store
         .dispatch("environment/createEnvironment", {
           newEnvironment,

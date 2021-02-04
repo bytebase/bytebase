@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   DataSourceId,
   DataSource,
-  NewDataSource,
+  DataSourceNew,
   DataSourceState,
   InstanceId,
 } from "../../types";
@@ -68,7 +68,7 @@ const actions = {
     {
       instanceId,
       newDataSource,
-    }: { instanceId: InstanceId; newDataSource: NewDataSource }
+    }: { instanceId: InstanceId; newDataSource: DataSourceNew }
   ) {
     const createdDataSource = (
       await axios.post(`/api/instance/${instanceId}/datasource`, {

@@ -71,10 +71,10 @@
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import isEqual from "lodash-es/isEqual";
-import { Environment, NewEnvironment } from "../types";
+import { Environment, EnvironmentNew } from "../types";
 
 interface LocalState {
-  environment?: Environment | NewEnvironment;
+  environment?: Environment | EnvironmentNew;
 }
 
 export default {
