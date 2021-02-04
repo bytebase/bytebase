@@ -34,7 +34,7 @@
 }
 
 .btn-icon {
-  @apply rounded-md text-normal-text bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply rounded-md text-normal-text bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none;
 }
 
 .btn-danger {
