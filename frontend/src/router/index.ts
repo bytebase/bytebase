@@ -227,9 +227,12 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.instance.detail",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                return store.getters["instance/instanceById"](
-                  idFromSlug(route.params.instanceSlug as string)
-                ).attributes.name;
+                const slug = route.params.instanceSlug as string;
+                if (slug.toUpperCase() == "NEW") {
+                  return "New";
+                }
+                return store.getters["instance/instanceById"](idFromSlug(slug))
+                  .attributes.name;
               },
             },
             components: {
