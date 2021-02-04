@@ -27,7 +27,7 @@
             :disabled="!orderChanged"
             @click.prevent="doReorder"
           >
-            Apply new order
+            Apply Change
           </button>
         </div>
         <EnvironmentDetail
