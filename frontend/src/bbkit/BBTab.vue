@@ -2,11 +2,11 @@
   <div class="border-b border-block-border">
     <nav class="-mb-px flex" aria-label="Tabs">
       <div
-        v-for="(item, index) in itemList"
-        :key="item.id"
+        v-for="(title, index) in tabTitleList"
+        :key="index"
         class="cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent"
-        v-bind:class="tabClass(item.id == selectedId)"
-        @click.self="$emit('select-item', item.id)"
+        v-bind:class="tabClass(index == selectedIndex)"
+        @click.self="$emit('select-index', index)"
         @mouseenter="state.hoverIndex = index"
         @mouseleave="state.hoverIndex = -1"
       >
@@ -18,8 +18,8 @@
           "
           @click.prevent="
             () => {
-              $emit('select-item', item.id);
-              $emit('reorder-item', index, index - 1);
+              $emit('select-index', index);
+              $emit('reorder-index', index, index - 1);
             }
           "
           type="button"
@@ -39,17 +39,17 @@
           </svg>
         </button>
         <div v-else class="pl-6"></div>
-        {{ item.name }}
+        {{ title }}
         <button
           v-if="
-            index != itemList.length - 1 &&
+            index != tabTitleList.length - 1 &&
             (reorderModel == 'ALWAYS' ||
               (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
           @click.prevent="
             () => {
-              $emit('select-item', item.id);
-              $emit('reorder-item', index, index + 1);
+              $emit('select-index', index);
+              $emit('reorder-index', index, index + 1);
             }
           "
           type="button"
@@ -72,7 +72,7 @@
       </div>
       <button
         v-if="allowCreate"
-        @click.prevent="$emit('create-item')"
+        @click.prevent="$emit('create')"
         type="button"
         class="flex justify-center py-2 text-gray-500 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus:ring-accent"
         v-bind:class="addTabClass()"
@@ -102,14 +102,15 @@ import { reactive, PropType } from "vue";
 
 export default {
   name: "BBTab",
-  emits: ["create-item", "reorder-item", "select-item"],
+  emits: ["create", "reorder-index", "select-index"],
   props: {
-    itemList: {
+    tabTitleList: {
       required: true,
-      type: Array,
+      type: Object as PropType<String[]>,
     },
-    selectedId: {
+    selectedIndex: {
       required: true,
+      type: Number,
     },
     allowCreate: {
       default: false,
@@ -130,7 +131,7 @@ export default {
 
     const tabClass = (selected: boolean) => {
       const width =
-        "w-1/" + (props.itemList.length + (props.allowCreate ? 1 : 0));
+        "w-1/" + (props.tabTitleList.length + (props.allowCreate ? 1 : 0));
       if (selected) {
         return width + " text-gray-900 border-gray-500";
       }
@@ -140,7 +141,7 @@ export default {
     };
 
     const addTabClass = () => {
-      if (props.itemList.length == 0) {
+      if (props.tabTitleList.length == 0) {
         return "w-1/6 ";
       }
       return "w-1/12";
