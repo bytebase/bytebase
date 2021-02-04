@@ -17,6 +17,7 @@ import uistate from "./modules/uistate";
 
 // Following states are only stored in memory
 import router from "./modules/router";
+import command from "./modules/command";
 import notification from "./modules/notification";
 
 const debug = process.env.NODE_ENV !== "production";
@@ -35,6 +36,7 @@ export const store: Store<any> = createStore({
     pipeline,
     uistate,
     router,
+    command,
     notification,
   },
   strict: debug,

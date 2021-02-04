@@ -20,6 +20,9 @@ export type DataSourceId = {
   instanceId: InstanceId;
 };
 
+export type CommandId = string;
+export type CommandRegisterId = string;
+
 // Persistent State Models
 export type User = ResourceObject & {};
 export type NewUser = Omit<User, "id">;
@@ -137,6 +140,12 @@ export type Notification = {
   description?: string;
 };
 
+export type Command = {
+  id: CommandId;
+  registerId: CommandRegisterId;
+  run: () => void;
+};
+
 // "id" and "createdTs" is auto generated upon the notification store
 // receives.
 export type NewNotification = Omit<Notification, "id" | "createdTs">;
@@ -192,4 +201,8 @@ export interface RepositoryState {
 
 export interface NotificationState {
   notificationByModule: Map<string, Notification[]>;
+}
+
+export interface CommandState {
+  commandListById: Map<CommandId, Command[]>;
 }
