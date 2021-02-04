@@ -11,7 +11,11 @@
         @mouseleave="state.hoverIndex = -1"
       >
         <button
-          v-if="allowReorder && index != 0 && state.hoverIndex == index"
+          v-if="
+            index != 0 &&
+            (reorderModel == 'ALWAYS' ||
+              (reorderModel == 'HOVER' && state.hoverIndex == index))
+          "
           @click.prevent="
             () => {
               $emit('select-item', item.id);
@@ -38,9 +42,9 @@
         {{ item.name }}
         <button
           v-if="
-            allowReorder &&
             index != itemList.length - 1 &&
-            state.hoverIndex == index
+            (reorderModel == 'ALWAYS' ||
+              (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
           @click.prevent="
             () => {
@@ -94,7 +98,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { reactive, PropType } from "vue";
 
 export default {
   name: "BBTab",
@@ -111,9 +115,9 @@ export default {
       default: false,
       type: Boolean,
     },
-    allowReorder: {
-      default: false,
-      type: Boolean,
+    reorderModel: {
+      default: "NEVER",
+      type: String as PropType<"NEVER" | "HOVER" | "ALWAYS">,
     },
   },
   data: function () {
