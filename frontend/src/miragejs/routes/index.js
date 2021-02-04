@@ -103,39 +103,17 @@ export default function routes() {
     return schema.environments.create(newEnvironment);
   });
 
-  this.patch("/environment/order", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("sort-order");
-    const list = schema.environments
-      .where((environment) => {
-        return environment.workspaceId == WORKSPACE_ID;
-      })
-      .sort((a, b) => a.order - b.order).models;
-    const fromOrder = list[attrs.sourceIndex].order;
-    const toOrder = list[attrs.targetIndex].order;
-    if (toOrder > fromOrder) {
-      list.forEach((item) => {
-        if (item.order == fromOrder) {
-          item.update({
-            order: toOrder,
-          });
-        } else if (item.order > fromOrder && item.order <= toOrder) {
-          item.update({
-            order: item.order - 1,
-          });
+  this.patch("/environment/batch", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("batch-update");
+    for (let i = 0; i < attrs.idList.length; i++) {
+      const env = schema.environments.find(attrs.idList[i]);
+      if (env) {
+        const batch = {};
+        for (let j = 0; j < attrs.fieldMaskList.length; j++) {
+          batch[attrs.fieldMaskList[j]] = attrs.rowValueList[i][j];
         }
-      });
-    } else if (toOrder < fromOrder) {
-      list.forEach((item) => {
-        if (item.order == fromOrder) {
-          item.update({
-            order: toOrder,
-          });
-        } else if (item.order >= toOrder && item.order < fromOrder) {
-          item.update({
-            order: item.order + 1,
-          });
-        }
-      });
+        env.update(batch);
+      }
     }
     return schema.environments
       .where((environment) => {

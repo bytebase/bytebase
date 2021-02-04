@@ -51,16 +51,17 @@ const actions = {
 
   async reorderEnvironmentList(
     { commit }: any,
-    { sourceIndex, targetIndex }: { sourceIndex: number; targetIndex: number }
+    orderedEnvironmentList: Environment[]
   ) {
     const environmentList = (
-      await axios.patch(`/api/environment/order`, {
+      await axios.patch(`/api/environment/batch`, {
         data: {
           attributes: {
-            sourceIndex,
-            targetIndex,
+            idList: orderedEnvironmentList.map((item) => item.id),
+            fieldMaskList: ["order"],
+            rowValueList: orderedEnvironmentList.map((_, index) => [index]),
           },
-          type: "sortorder",
+          type: "batchupdate",
         },
       })
     ).data.data;

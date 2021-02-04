@@ -13,11 +13,11 @@ import repository from "./repository";
 import job from "./job";
 import step from "./step";
 import pipeline from "./pipeline";
-import sortOrder from "./sortOrder";
 import group from "./group";
 import workspace from "./workspace";
 import workspaceRole from "./workspaceRole";
 
+import batchUpdate from "./batchUpdate";
 import loginInfo from "./loginInfo";
 
 /*
@@ -37,9 +37,9 @@ export default {
   ...job,
   ...step,
   ...pipeline,
-  ...sortOrder,
   ...group,
   ...workspace,
   ...workspaceRole,
+  ...batchUpdate,
   ...loginInfo,
 };

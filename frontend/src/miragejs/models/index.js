@@ -86,7 +86,7 @@ export default {
     job: belongsTo(),
   }),
 
-  sortOrder: Model,
+  batchUpdate: Model,
 
   signupInfo: Model,
 
