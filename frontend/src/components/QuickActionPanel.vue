@@ -19,7 +19,7 @@
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
             ></path>
           </svg>
         </span>
@@ -123,6 +123,35 @@
     </div>
 
     <div
+      v-if="quickActionList.includes('datasource.add')"
+      class="flex flex-col items-center w-28"
+    >
+      <router-link to="/datasource/new" class="btn-icon">
+        <span
+          class="inline-flex items-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
+        >
+          <svg
+            class="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+            ></path>
+          </svg>
+        </span>
+      </router-link>
+      <h3 class="mt-1 text-base font-normal text-accent tracking-tight">
+        Request DB
+      </h3>
+    </div>
+
+    <div
       v-if="quickActionList.includes('datasource.schema.edit')"
       class="flex flex-col items-center w-28"
     >
@@ -180,7 +209,7 @@
 
     <div
       v-if="quickActionList.includes('environment.add')"
-      class="flex flex-col items-center w-28"
+      class="flex flex-col items-center w-36"
     >
       <button class="btn-icon">
         <span
@@ -203,7 +232,9 @@
           </svg>
         </span>
       </button>
-      <h3 class="mt-1 text-center text-base font-normal text-accent">New</h3>
+      <h3 class="mt-1 text-center text-base font-normal text-accent">
+        Add Environment
+      </h3>
     </div>
 
     <div

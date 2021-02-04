@@ -56,8 +56,7 @@ const routes: Array<RouteRecordRaw> = [
               quickActionList: [
                 "instance.add",
                 "user.manage",
-                "datasource.query",
-                "datasource.data.edit",
+                "datasource.add",
                 "datasource.schema.edit",
                 "ticket.create",
               ],
@@ -247,6 +246,20 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true },
           },
           {
+            path: "datasource/new",
+            name: "workspace.datasource.detail",
+            meta: {
+              title: () => "Request Database",
+            },
+            components: {
+              content: defineAsyncComponent(
+                () => import("../views/DataSourceDetail.vue")
+              ),
+              leftSidebar: MainSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
             path: "pipeline/:pipelineId",
             name: "workspace.pipeline.detail",
             meta: {
@@ -314,6 +327,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.environment" ||
     to.name === "workspace.instance" ||
+    to.name === "workspace.datasource.detail" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();
