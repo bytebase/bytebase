@@ -135,11 +135,13 @@ export default {
       if (environmentList.value) {
         if (state.reorder) {
           return state.reorderedEnvironmentList.map(
-            (item: Environment) => item.attributes.name
+            (item: Environment, index: number) =>
+              (index + 1).toString() + ". " + item.attributes.name
           );
         }
         return environmentList.value.map(
-          (item: Environment) => item.attributes.name
+          (item: Environment, index: number) =>
+            (index + 1).toString() + ". " + item.attributes.name
         );
       }
       return [];
