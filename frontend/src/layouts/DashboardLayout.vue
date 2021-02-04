@@ -6,17 +6,64 @@
         <DashboardHeader />
       </div>
     </nav>
-
     <router-view name="body" />
   </div>
+  <BBNotification
+    :showing="state.notification != null"
+    :style="state.notification?.style || 'INFO'"
+    :title="state.notification?.title || ''"
+    :description="state.notification?.description || ''"
+  />
 </template>
 
 <script lang="ts">
+import { reactive, watchEffect } from "vue";
+import { useStore } from "vuex";
+import { Notification } from "../types";
 import DashboardHeader from "../views/DashboardHeader.vue";
+
+const NOTIFICAITON_DURATION = 4000;
+
+interface LocalState {
+  notification?: Notification | null;
+}
 
 export default {
   name: "DashboardLayout",
   components: { DashboardHeader },
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const store = useStore();
+
+    const state = reactive<LocalState>({
+      notification: null,
+    });
+
+    const watchNotification = () => {
+      store
+        .dispatch("notification/peekNotification", {
+          module: "bytebase",
+        })
+        .then((notification) => {
+          if (notification) {
+            state.notification = notification;
+            setTimeout(() => {
+              store
+                .dispatch("notification/popNotification", {
+                  module: "bytebase",
+                })
+                .then(() => {
+                  state.notification = null;
+                });
+            }, NOTIFICAITON_DURATION);
+          }
+        });
+    };
+
+    watchEffect(watchNotification);
+
+    return {
+      state,
+    };
+  },
 };
 </script>
