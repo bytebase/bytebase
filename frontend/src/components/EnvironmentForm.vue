@@ -37,13 +37,16 @@
     </div>
     <!-- Update button group -->
     <div v-else class="flex justify-between pt-5">
-      <button
-        type="button"
-        class="btn-danger py-2 px-4"
-        @click.prevent="$emit('delete')"
-      >
-        Delete
-      </button>
+      <div>
+        <button
+          v-show="allowDelete"
+          type="button"
+          class="btn-danger py-2 px-4"
+          @click.prevent="$emit('delete')"
+        >
+          Delete
+        </button>
+      </div>
       <div>
         <button
           type="button"
@@ -81,6 +84,10 @@ export default {
     create: {
       type: Boolean,
       default: false,
+    },
+    allowDelete: {
+      type: Boolean,
+      default: true,
     },
     environment: {
       // Can be false when create is true

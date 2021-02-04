@@ -30,7 +30,12 @@
             Apply new order
           </button>
         </div>
-        <EnvironmentDetail v-else :environment="item" @delete="doDelete" />
+        <EnvironmentDetail
+          v-else
+          :allowDelete="environmentList.length > 1"
+          :environment="item"
+          @delete="doDelete"
+        />
       </BBTabPanel>
     </BBTab>
   </div>

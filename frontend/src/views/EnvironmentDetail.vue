@@ -1,6 +1,7 @@
 <template>
   <EnvironmentForm
     v-if="state.environment"
+    :allowDelete="allowDelete"
     :environment="state.environment"
     @submit="doUpdate"
     @delete="state.showDeleteModal = true"
@@ -40,6 +41,10 @@ export default {
     environment: {
       required: true,
       type: Object as PropType<Environment>,
+    },
+    allowDelete: {
+      type: Boolean,
+      default: true,
     },
   },
   setup(props, { emit }) {
