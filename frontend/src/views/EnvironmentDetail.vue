@@ -6,7 +6,7 @@
     @delete="state.showDeleteModal = true"
   />
   <BBAlert
-    :showing="state.showDeleteModal"
+    v-if="state.showDeleteModal"
     :style="'CRITICAL'"
     :okText="'Delete'"
     :title="

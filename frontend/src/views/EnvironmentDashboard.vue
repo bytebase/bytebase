@@ -19,7 +19,7 @@
     </BBTab>
   </div>
   <BBModal
-    :showing="state.showCreateModal"
+    v-if="state.showCreateModal"
     :title="'Create Environment'"
     @close="state.showCreateModal = false"
   >

@@ -274,7 +274,7 @@ input[type="number"] {
     </div>
   </form>
   <BBAlert
-    :showing="state.showDeleteModal"
+    v-if="state.showDeleteModal"
     :style="'CRITICAL'"
     :okText="'Delete'"
     :title="'Delete instance \'' + state.instance.attributes.name + '\' ?'"
@@ -288,7 +288,7 @@ input[type="number"] {
   >
   </BBAlert>
   <BBAlert
-    :showing="state.showCancelModal"
+    v-if="state.showCancelModal"
     :style="'WARN'"
     :okText="'Discard'"
     :cancelText="'No'"

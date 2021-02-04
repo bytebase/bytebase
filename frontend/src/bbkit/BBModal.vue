@@ -3,7 +3,6 @@
 -->
 <template>
   <div
-    v-if="showing"
     class="fixed inset-0 w-full h-screen flex items-center justify-center z-50"
     @click.self="closeIfShown"
     style="background-color: rgba(209, 213, 219, 0.8)"
@@ -53,10 +52,6 @@ import { onMounted } from "vue";
 export default {
   name: "BBModal",
   props: {
-    showing: {
-      required: true,
-      type: Boolean,
-    },
     title: {
       required: true,
       type: String,
