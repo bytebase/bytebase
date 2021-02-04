@@ -39,6 +39,7 @@ const getters = {
     const key = ["grp", groupId].join(".");
     return expandStateByKey(state, key);
   },
+
   expandStateByProject: (state: UIState) => (projectId: ProjectId) => {
     const key = ["proj", projectId].join(".");
     return expandStateByKey(state, key);
@@ -92,6 +93,7 @@ const mutations = {
     }
     state.expandStateByKey = newMap;
   },
+
   setExpandStateByKey(
     state: UIState,
     {

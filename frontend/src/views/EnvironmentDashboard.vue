@@ -154,9 +154,7 @@ export default {
 
     const doCreate = (newEnvironment: EnvironmentNew) => {
       store
-        .dispatch("environment/createEnvironment", {
-          newEnvironment,
-        })
+        .dispatch("environment/createEnvironment", newEnvironment)
         .then((createdEnvironment) => {
           state.showCreateModal = false;
           selectEnvironment(environmentList.value.length - 1);
@@ -212,9 +210,7 @@ export default {
 
     const doDelete = (environment: Environment) => {
       store
-        .dispatch("environment/deleteEnvironmentById", {
-          id: environment.id,
-        })
+        .dispatch("environment/deleteEnvironmentById", environment.id)
         .then(() => {
           if (environmentList.value.length > 0) {
             selectEnvironment(0);

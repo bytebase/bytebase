@@ -61,12 +61,9 @@ export default {
       state.environment = environment;
     };
 
-    const doUpdate = (newEnvironment: Environment) => {
+    const doUpdate = (updatedEnvironment: Environment) => {
       store
-        .dispatch("environment/patchEnvironmentById", {
-          environmentId: props.environment.id,
-          environment: newEnvironment,
-        })
+        .dispatch("environment/patchEnvironment", updatedEnvironment)
         .then((environment) => {
           assignEnvironment(environment);
         })

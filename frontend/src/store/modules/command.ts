@@ -14,6 +14,7 @@ const actions = {
     commit("appendCommand", newCommand);
     return newCommand;
   },
+
   unregisterCommand(
     { commit }: any,
     {
@@ -29,6 +30,7 @@ const actions = {
       registerId,
     });
   },
+
   dispatchCommand({ state }: any, commandId: CommandId) {
     const list = state.commandListById.get(commandId);
     list?.forEach((cmd: Command) => {
@@ -54,6 +56,7 @@ const mutations = {
       state.commandListById.set(command.id, [command]);
     }
   },
+
   removeCommand(
     state: CommandState,
     {

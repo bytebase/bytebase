@@ -472,9 +472,7 @@ export default {
       newAdminDataSource: DataSourceNew
     ) => {
       store
-        .dispatch("instance/createInstance", {
-          newInstance,
-        })
+        .dispatch("instance/createInstance", newInstance)
         .then((instance) => {
           store
             .dispatch("dataSource/createDataSource", {
@@ -505,19 +503,13 @@ export default {
       updatedAdminDataSource: DataSource
     ) => {
       store
-        .dispatch("instance/patchInstanceById", {
-          instanceId: idFromSlug(props.instanceSlug),
-          instance: updatedInstance,
-        })
+        .dispatch("instance/patchInstance", updatedInstance)
         .then((instance) => {
           assignInstance(instance);
 
           store
-            .dispatch("dataSource/patchDataSourceById", {
-              dataSourceId: {
-                id: updatedAdminDataSource.id,
-                instanceId: updatedInstance.id,
-              },
+            .dispatch("dataSource/patchDataSource", {
+              instanceId: updatedInstance.id,
               dataSource: updatedAdminDataSource,
             })
             .then((dataSource) => {
@@ -543,16 +535,12 @@ export default {
     const doDelete = () => {
       store
         .dispatch("dataSource/deleteDataSourceById", {
-          dataSourceId: {
-            id: state.originalAdminDataSource!.id,
-            instanceId: state.originalInstance!.id,
-          },
+          id: state.originalAdminDataSource!.id,
+          instanceId: state.originalInstance!.id,
         })
         .then(() => {
           store
-            .dispatch("instance/deleteInstanceById", {
-              instanceId: state.originalInstance!.id,
-            })
+            .dispatch("instance/deleteInstanceById", state.originalInstance!.id)
             .then(() => {
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",

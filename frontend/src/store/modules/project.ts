@@ -10,9 +10,11 @@ const getters = {
   projectListByGroup: (state: ProjectState) => (groupId: GroupId) => {
     return state.projectListByGroup.get(groupId);
   },
+
   projectListByUser: (state: ProjectState) => (userId: UserId) => {
     return state.projectListByUser.get(userId);
   },
+
   projectByNamespaceAndSlug: (state: ProjectState) => (
     namespace: string,
     slug: string
@@ -41,6 +43,7 @@ const actions = {
     });
     return projectList;
   },
+
   async fetchProjectListForUser({ commit }: any, userId: UserId) {
     const projectList = (await axios.get(`/api/project?userid=${userId}`)).data
       .data;
@@ -65,6 +68,7 @@ const mutations = {
   ) {
     state.projectListByGroup.set(groupId, projectList);
   },
+
   setProjectListForUser(
     state: ProjectState,
     {

@@ -7,6 +7,7 @@ const getters = {
   backPath: (state: RouterState) => (): string => {
     return localStorage.getItem("ui.backPath") || "/";
   },
+
   routeSlug: (state: RouterState) => (
     currentRoute: RouteLocationNormalized
   ): RouterSlug => {

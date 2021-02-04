@@ -1,5 +1,10 @@
 import axios from "axios";
-import { EnvironmentId, Environment, EnvironmentState } from "../../types";
+import {
+  EnvironmentId,
+  Environment,
+  EnvironmentNew,
+  EnvironmentState,
+} from "../../types";
 
 const state: () => EnvironmentState = () => ({
   environmentList: [],
@@ -9,6 +14,7 @@ const getters = {
   environmentList: (state: EnvironmentState) => () => {
     return state.environmentList;
   },
+
   environmentById: (state: EnvironmentState) => (
     environmentId: EnvironmentId
   ) => {
@@ -25,26 +31,19 @@ const actions = {
   async fetchEnvironmentList({ commit }: any) {
     const environmentList = (await axios.get(`/api/environment`)).data.data;
 
-    commit("setEnvironmentList", {
-      environmentList,
-    });
+    commit("setEnvironmentList", environmentList);
 
     return environmentList;
   },
 
-  async createEnvironment(
-    { commit }: any,
-    { newEnvironment }: { newEnvironment: Environment }
-  ) {
+  async createEnvironment({ commit }: any, newEnvironment: EnvironmentNew) {
     const createdEnvironment = (
       await axios.post(`/api/environment`, {
         data: newEnvironment,
       })
     ).data.data;
 
-    commit("appendEnvironment", {
-      newEnvironment: createdEnvironment,
-    });
+    commit("appendEnvironment", createdEnvironment);
 
     return createdEnvironment;
   },
@@ -66,43 +65,26 @@ const actions = {
       })
     ).data.data;
 
-    commit("setEnvironmentList", {
-      environmentList,
-    });
+    commit("setEnvironmentList", environmentList);
 
     return environmentList;
   },
 
-  async patchEnvironmentById(
-    { commit }: any,
-    {
-      environmentId,
-      environment,
-    }: {
-      environmentId: EnvironmentId;
-      environment: Environment;
-    }
-  ) {
+  async patchEnvironment({ commit }: any, environment: Environment) {
     const updatedEnvironment = (
-      await axios.patch(`/api/environment/${environmentId}`, {
+      await axios.patch(`/api/environment/${environment.id}`, {
         data: environment,
       })
     ).data.data;
 
-    commit("replaceEnvironmentInList", {
-      updatedEnvironment,
-    });
+    commit("replaceEnvironmentInList", updatedEnvironment);
 
     return updatedEnvironment;
   },
 
   async deleteEnvironmentById(
     { state, commit }: { state: EnvironmentState; commit: any },
-    {
-      id,
-    }: {
-      id: EnvironmentId;
-    }
+    id: EnvironmentId
   ) {
     await axios.delete(`/api/environment/${id}`);
 
@@ -110,41 +92,22 @@ const actions = {
       return item.id != id;
     });
 
-    commit("setEnvironmentList", {
-      environmentList: newList,
-    });
+    commit("setEnvironmentList", newList);
   },
 };
 
 const mutations = {
-  setEnvironmentList(
-    state: EnvironmentState,
-    {
-      environmentList,
-    }: {
-      environmentList: Environment[];
-    }
-  ) {
+  setEnvironmentList(state: EnvironmentState, environmentList: Environment[]) {
     state.environmentList = environmentList;
   },
-  appendEnvironment(
-    state: EnvironmentState,
-    {
-      newEnvironment,
-    }: {
-      newEnvironment: Environment;
-    }
-  ) {
+
+  appendEnvironment(state: EnvironmentState, newEnvironment: Environment) {
     state.environmentList.push(newEnvironment);
   },
 
   replaceEnvironmentInList(
     state: EnvironmentState,
-    {
-      updatedEnvironment,
-    }: {
-      updatedEnvironment: Environment;
-    }
+    updatedEnvironment: Environment
   ) {
     const i = state.environmentList.findIndex(
       (item: Environment) => item.id == updatedEnvironment.id

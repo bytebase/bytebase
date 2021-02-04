@@ -32,9 +32,11 @@ const actions = {
     };
     commit("appendNotification", notification);
   },
+
   peekNotification({ state }: any, filter: NotificationFilter) {
     return findNotification(state, filter);
   },
+
   popNotification({ state, commit }: any, filter: NotificationFilter) {
     const notification = findNotification(state, filter);
     commit("removeNotification", notification);
@@ -51,6 +53,7 @@ const mutations = {
       state.notificationByModule.set(notification.module, [notification]);
     }
   },
+
   removeNotification(state: NotificationState, notification: Notification) {
     const list = state.notificationByModule.get(notification.module);
     if (list) {

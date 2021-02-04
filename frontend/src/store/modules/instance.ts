@@ -1,5 +1,5 @@
 import axios from "axios";
-import { InstanceId, Instance, InstanceState } from "../../types";
+import { InstanceId, Instance, InstanceNew, InstanceState } from "../../types";
 
 const state: () => InstanceState = () => ({
   instanceList: [],
@@ -10,6 +10,7 @@ const getters = {
   instanceList: (state: InstanceState) => () => {
     return state.instanceList;
   },
+
   instanceById: (state: InstanceState) => (instanceId: InstanceId) => {
     return state.instanceById.get(instanceId);
   },
@@ -19,7 +20,7 @@ const actions = {
   async fetchInstanceList({ commit }: any) {
     const instanceList = (await axios.get(`/api/instance`)).data.data;
 
-    commit("setInstanceList", { instanceList });
+    commit("setInstanceList", instanceList);
 
     return instanceList;
   },
@@ -33,53 +34,33 @@ const actions = {
     return instance;
   },
 
-  async createInstance(
-    { commit }: any,
-    { newInstance }: { newInstance: Instance }
-  ) {
+  async createInstance({ commit }: any, newInstance: InstanceNew) {
     const createdInstance = (
       await axios.post(`/api/instance`, {
         data: newInstance,
       })
     ).data.data;
 
-    commit("appendInstance", {
-      newInstance: createdInstance,
-    });
+    commit("appendInstance", createdInstance);
 
     return createdInstance;
   },
 
-  async patchInstanceById(
-    { commit }: any,
-    {
-      instanceId,
-      instance,
-    }: {
-      instanceId: InstanceId;
-      instance: Instance;
-    }
-  ) {
+  async patchInstance({ commit }: any, instance: Instance) {
     const updatedInstance = (
-      await axios.patch(`/api/instance/${instanceId}`, {
+      await axios.patch(`/api/instance/${instance.id}`, {
         data: instance,
       })
     ).data.data;
 
-    commit("replaceInstanceInList", {
-      updatedInstance,
-    });
+    commit("replaceInstanceInList", updatedInstance);
 
     return updatedInstance;
   },
 
   async deleteInstanceById(
     { state, commit }: { state: InstanceState; commit: any },
-    {
-      instanceId,
-    }: {
-      instanceId: InstanceId;
-    }
+    instanceId: InstanceId
   ) {
     await axios.delete(`/api/instance/${instanceId}`);
 
@@ -87,23 +68,15 @@ const actions = {
       return item.id != instanceId;
     });
 
-    commit("setInstanceList", {
-      instanceList: newList,
-    });
+    commit("setInstanceList", newList);
   },
 };
 
 const mutations = {
-  setInstanceList(
-    state: InstanceState,
-    {
-      instanceList,
-    }: {
-      instanceList: Instance[];
-    }
-  ) {
+  setInstanceList(state: InstanceState, instanceList: Instance[]) {
     state.instanceList = instanceList;
   },
+
   setInstanceById(
     state: InstanceState,
     {
@@ -116,25 +89,12 @@ const mutations = {
   ) {
     state.instanceById.set(instanceId, instance);
   },
-  appendInstance(
-    state: InstanceState,
-    {
-      newInstance,
-    }: {
-      newInstance: Instance;
-    }
-  ) {
+
+  appendInstance(state: InstanceState, newInstance: Instance) {
     state.instanceList.push(newInstance);
   },
 
-  replaceInstanceInList(
-    state: InstanceState,
-    {
-      updatedInstance,
-    }: {
-      updatedInstance: Instance;
-    }
-  ) {
+  replaceInstanceInList(state: InstanceState, updatedInstance: Instance) {
     const i = state.instanceList.findIndex(
       (item: Instance) => item.id == updatedInstance.id
     );

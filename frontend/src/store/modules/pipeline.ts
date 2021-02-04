@@ -10,6 +10,7 @@ const getters = {
   pipelineListByUser: (state: PipelineState) => (userId: UserId) => {
     return state.pipelineListByUser.get(userId);
   },
+
   pipelineById: (state: PipelineState) => (pipelineId: PipelineId) => {
     return state.pipelineById.get(pipelineId);
   },
@@ -46,6 +47,7 @@ const mutations = {
   ) {
     state.pipelineListByUser.set(userId, pipelineList);
   },
+
   setPipelineById(
     state: PipelineState,
     {

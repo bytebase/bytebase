@@ -26,11 +26,13 @@ const getters = {
     }
     return null;
   },
+
   dataSourceListByInstanceId: (state: DataSourceState) => (
     instanceId: InstanceId
   ) => {
     return state.dataSourceListByInstanceId.get(instanceId);
   },
+
   dataSourceById: (state: DataSourceState) => (dataSourceId: DataSourceId) => {
     return state.dataSourceById.get(dataSourceId);
   },
@@ -84,19 +86,19 @@ const actions = {
     return createdDataSource;
   },
 
-  async patchDataSourceById(
+  async patchDataSource(
     { commit }: any,
     {
-      dataSourceId,
+      instanceId,
       dataSource,
     }: {
-      dataSourceId: DataSourceId;
+      instanceId: InstanceId;
       dataSource: DataSource;
     }
   ) {
     const updatedDataSource = (
       await axios.patch(
-        `/api/instance/${dataSourceId.instanceId}/datasource/${dataSourceId.id}`,
+        `/api/instance/${instanceId}/datasource/${dataSource.id}`,
         {
           data: dataSource,
         }
@@ -104,12 +106,12 @@ const actions = {
     ).data.data;
 
     commit("setDataSourceById", {
-      instanceId: dataSourceId.instanceId,
+      instanceId: instanceId,
       updatedDataSource,
     });
 
     commit("replaceDataSourceInListByInstanceId", {
-      instanceId: dataSourceId.instanceId,
+      instanceId: instanceId,
       updatedDataSource,
     });
 
@@ -118,11 +120,7 @@ const actions = {
 
   async deleteDataSourceById(
     { state, commit }: { state: DataSourceState; commit: any },
-    {
-      dataSourceId,
-    }: {
-      dataSourceId: DataSourceId;
-    }
+    dataSourceId: DataSourceId
   ) {
     await axios.delete(
       `/api/instance/${dataSourceId.instanceId}/datasource/${dataSourceId.id}`
@@ -133,9 +131,7 @@ const actions = {
       dataSource: null,
     });
 
-    commit("deleteDataSourceInListById", {
-      dataSourceId,
-    });
+    commit("deleteDataSourceInListById", dataSourceId);
   },
 };
 
@@ -152,6 +148,7 @@ const mutations = {
   ) {
     state.dataSourceListByInstanceId.set(instanceId, dataSourceList);
   },
+
   setDataSourceById(
     state: DataSourceState,
     {
@@ -164,6 +161,7 @@ const mutations = {
   ) {
     state.dataSourceById.set(dataSourceId, dataSource);
   },
+
   appendDataSourceByInstanceId(
     state: DataSourceState,
     {
@@ -181,6 +179,7 @@ const mutations = {
       state.dataSourceListByInstanceId.set(instanceId, [dataSource]);
     }
   },
+
   replaceDataSourceInListByInstanceId(
     state: DataSourceState,
     {
@@ -201,13 +200,10 @@ const mutations = {
       }
     }
   },
+
   deleteDataSourceInListById(
     state: DataSourceState,
-    {
-      dataSourceId,
-    }: {
-      dataSourceId: DataSourceId;
-    }
+    dataSourceId: DataSourceId
   ) {
     const list = state.dataSourceListByInstanceId.get(dataSourceId.instanceId);
     if (list) {
