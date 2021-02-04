@@ -6,6 +6,9 @@
     @click-row="clickInstance"
   >
     <template v-slot:body="{ rowData: instance }">
+      <BBTableCell :leftPadding="4" class="w-10">
+        <img class="h-10 w-auto" src="../assets/db-mysql.svg" />
+      </BBTableCell>
       <BBTableCell :leftPadding="4" class="w-24">
         {{ environmentName(instance.attributes.environmentId) }}
       </BBTableCell>
@@ -77,6 +80,9 @@ export default {
 
     const state = reactive<LocalState>({
       columnList: [
+        {
+          title: "",
+        },
         {
           title: "Environment",
         },
