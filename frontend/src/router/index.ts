@@ -249,7 +249,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "datasource/new",
             name: "workspace.datasource.detail",
             meta: {
-              title: () => "Request Database",
+              title: () => "Request DB",
             },
             components: {
               content: defineAsyncComponent(
