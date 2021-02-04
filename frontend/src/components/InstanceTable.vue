@@ -19,7 +19,7 @@
           }}</template
         ><template v-else>{{ instance.attributes.host }}</template>
       </BBTableCell>
-      <BBTableCell class="w-2">
+      <BBTableCell class="w-4">
         <button
           v-if="instance.attributes.externalLink?.trim().length != 0"
           class="btn-icon"
@@ -42,6 +42,9 @@
             ></path>
           </svg>
         </button>
+      </BBTableCell>
+      <BBTableCell class="w-8">
+        {{ humanize(instance.attributes.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -85,6 +88,9 @@ export default {
         },
         {
           title: "Link",
+        },
+        {
+          title: "Created",
         },
       ],
       dataSource: [],
