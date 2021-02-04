@@ -67,6 +67,7 @@
         <div v-else class="pr-6"></div>
       </div>
       <button
+        v-if="allowCreate"
         @click.prevent="$emit('create-item')"
         type="button"
         class="flex justify-center py-2 text-gray-500 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus:ring-accent"
@@ -106,6 +107,10 @@ export default {
     selectedId: {
       required: true,
     },
+    allowCreate: {
+      default: false,
+      type: Boolean,
+    },
     allowReorder: {
       default: false,
       type: Boolean,
@@ -120,7 +125,8 @@ export default {
     });
 
     const tabClass = (selected: boolean) => {
-      const width = "w-1/" + (props.itemList.length + 1);
+      const width =
+        "w-1/" + (props.itemList.length + (props.allowCreate ? 1 : 0));
       if (selected) {
         return width + " text-gray-900 border-gray-500";
       }
