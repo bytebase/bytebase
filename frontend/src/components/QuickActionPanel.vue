@@ -177,20 +177,94 @@
       </button>
       <h3 class="mt-1 text-center text-base font-normal text-accent">Ticket</h3>
     </div>
+
+    <div
+      v-if="quickActionList.includes('environment.add')"
+      class="flex flex-col items-center w-28"
+    >
+      <button class="btn-icon">
+        <span
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
+          @click.prevent="addEnvironment"
+        >
+          <svg
+            class="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            ></path>
+          </svg>
+        </span>
+      </button>
+      <h3 class="mt-1 text-center text-base font-normal text-accent">New</h3>
+    </div>
+
+    <div
+      v-if="quickActionList.includes('environment.reorder')"
+      class="flex flex-col items-center w-28"
+    >
+      <button class="btn-icon">
+        <span
+          class="inline-flex items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 rounded-full"
+          @click.prevent="reorderEnvironment"
+        >
+          <svg
+            class="transform rotate-90 w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+            ></path>
+          </svg>
+        </span>
+      </button>
+      <h3 class="mt-1 text-center text-base font-normal text-accent">
+        Reorder
+      </h3>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { PropType } from "vue";
+import { useStore } from "vuex";
 
 export default {
   name: "QuickActionPanel",
-  setup() {},
   props: {
     quickActionList: {
       required: true,
       type: Object as PropType<String[]>,
     },
+  },
+  setup() {
+    const store = useStore();
+
+    const addEnvironment = () => {
+      store.dispatch("command/dispatchCommand", "bytebase.environment.add");
+    };
+
+    const reorderEnvironment = () => {
+      store.dispatch("command/dispatchCommand", "bytebase.environment.reorder");
+    };
+
+    return {
+      addEnvironment,
+      reorderEnvironment,
+    };
   },
 };
 </script>

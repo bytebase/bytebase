@@ -198,7 +198,10 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "environment",
             name: "workspace.environment",
-            meta: { title: () => "Environment" },
+            meta: {
+              title: () => "Environment",
+              quickActionList: ["environment.add", "environment.reorder"],
+            },
             components: {
               content: defineAsyncComponent(
                 () => import("../views/EnvironmentDashboard.vue")
