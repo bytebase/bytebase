@@ -6,6 +6,9 @@ export function humanize(ts: number) {
     if (moment().dayOfYear() == time.dayOfYear()) {
       return time.format("HH:mm");
     }
+    if (moment().diff(time, "days") < 3) {
+      return time.format("MMM D HH:mm");
+    }
     return time.format("MMM D");
   }
   return time.format("MMM D YYYY");
