@@ -21,7 +21,7 @@
               <h1
                 class="ml-3 text-2xl font-bold leading-7 text-gray-900 sm:leading-9 sm:truncate"
               >
-                Good morning, Emilia Birch
+                {{ pipeline.attributes.name }}
               </h1>
             </div>
             <dl
@@ -90,8 +90,17 @@
 </template>
 
 <script lang="ts">
+import { PropType } from "vue";
+import { Pipeline } from "../types";
+
 export default {
   name: "PipelineHighlightPanel",
+  props: {
+    pipeline: {
+      required: true,
+      type: Object as PropType<Pipeline>,
+    },
+  },
   components: {},
   setup(props, ctx) {},
 };

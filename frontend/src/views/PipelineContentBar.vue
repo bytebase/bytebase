@@ -55,8 +55,17 @@
 </template>
 
 <script lang="ts">
+import { PropType } from "vue";
+import { Pipeline } from "../types";
+
 export default {
   name: "PipelineToolbar",
+  props: {
+    pipeline: {
+      required: true,
+      type: Object as PropType<Pipeline>,
+    },
+  },
   components: {},
   setup(props, ctx) {},
 };
