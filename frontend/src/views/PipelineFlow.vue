@@ -1,14 +1,14 @@
 <template>
   <nav aria-label="Progress">
     <ol
-      class="border border-gray-300 rounded-md divide-y divide-gray-300 md:flex md:divide-y-0"
+      class="border-t border-b border-block-border divide-y divide-gray-300 md:flex md:divide-y-0"
     >
       <li class="relative md:flex-1 md:flex">
         <!-- Completed Step -->
         <a href="#" class="group flex items-center w-full">
           <span class="px-6 py-4 flex items-center text-sm font-medium">
             <span
-              class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-indigo-600 rounded-full group-hover:bg-indigo-800"
+              class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-accent rounded-full group-hover:bg-accent-hover"
             >
               <!-- Heroicon name: solid/check -->
               <svg

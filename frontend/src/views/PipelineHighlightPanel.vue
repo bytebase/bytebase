@@ -1,7 +1,7 @@
 <template>
   <div class="">
     <div
-      class="px-4 py-6 md:flex md:items-center md:justify-between lg:border-t lg:border-gray-200"
+      class="px-4 py-6 md:flex md:items-center md:justify-between lg:border-t lg:border-block-border"
     >
       <div class="flex-1 min-w-0">
         <!-- Profile -->

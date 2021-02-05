@@ -1,7 +1,7 @@
 <template>
   <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
     <!-- Page header -->
-    <div class="bg-white shadow">
+    <div class="bg-white">
       <PipelineHighlightPanel :pipeline="pipeline" />
     </div>
 
