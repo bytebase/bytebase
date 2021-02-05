@@ -96,7 +96,7 @@ interface LocalState {
 }
 
 export default {
-  name: "MainSidebar",
+  name: "DashboardSidebar",
   props: {},
   components: {
     BookmarkListSidePanel,

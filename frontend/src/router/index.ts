@@ -7,7 +7,7 @@ import {
 } from "vue-router";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BodyLayout from "../layouts/BodyLayout.vue";
-import MainSidebar from "../views/MainSidebar.vue";
+import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -63,7 +63,7 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: Home,
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: {
               content: true,
@@ -77,7 +77,7 @@ const routes: Array<RouteRecordRaw> = [
               content: defineAsyncComponent(
                 () => import("../views/Page404.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: {
               content: true,
@@ -91,7 +91,7 @@ const routes: Array<RouteRecordRaw> = [
               content: defineAsyncComponent(
                 () => import("../views/Page500.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: {
               content: true,
@@ -104,7 +104,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: { title: () => "Inbox" },
             components: {
               content: defineAsyncComponent(() => import("../views/Inbox.vue")),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: {
               content: true,
@@ -205,7 +205,7 @@ const routes: Array<RouteRecordRaw> = [
               content: defineAsyncComponent(
                 () => import("../views/EnvironmentDashboard.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
           },
@@ -220,7 +220,7 @@ const routes: Array<RouteRecordRaw> = [
               content: defineAsyncComponent(
                 () => import("../views/InstanceDashboard.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
           },
@@ -241,7 +241,7 @@ const routes: Array<RouteRecordRaw> = [
               content: defineAsyncComponent(
                 () => import("../views/InstanceDetail.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: { content: true },
           },
@@ -253,9 +253,9 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: defineAsyncComponent(
-                () => import("../views/DataSourceDetail.vue")
+                () => import("../layouts/TaskLayout.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
           },
@@ -271,7 +271,7 @@ const routes: Array<RouteRecordRaw> = [
               content: defineAsyncComponent(
                 () => import("../views/PipelineDetail.vue")
               ),
-              leftSidebar: MainSidebar,
+              leftSidebar: DashboardSidebar,
             },
             props: { content: true },
           },
