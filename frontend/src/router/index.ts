@@ -253,7 +253,7 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: defineAsyncComponent(
-                () => import("../layouts/TaskLayout.vue")
+                () => import("../views/PipelineDetail.vue")
               ),
               leftSidebar: DashboardSidebar,
             },
