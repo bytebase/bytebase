@@ -3,35 +3,105 @@
     <ol
       class="border-t border-b border-block-border divide-y divide-gray-300 md:flex md:divide-y-0"
     >
-      <li class="relative md:flex-1 md:flex">
+      <li
+        v-for="(stage, index) in stageList"
+        :key="index"
+        class="relative md:flex-1 md:flex"
+      >
         <!-- Completed Step -->
-        <a href="#" class="group flex items-center w-full">
-          <span class="px-6 py-4 flex items-center text-sm font-medium">
-            <span
-              class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-accent rounded-full group-hover:bg-accent-hover"
+        <div class="group flex items-center w-full">
+          <span class="px-4 py-3 flex items-center text-sm font-medium">
+            <template
+              class="relative w-6 h-6 flex items-center justify-center rounded-full"
+              :class="stepClass(stage.status)"
             >
-              <!-- Heroicon name: solid/check -->
-              <svg
-                class="w-6 h-6 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </span>
-            <span class="ml-4 text-sm font-medium text-gray-900"
-              >Job details</span
-            >
+              <template v-if="stage.status == 'CREATED'">
+                <span
+                  class="h-1.5 w-1.5 bg-gray-300 hover:bg-gray-400 rounded-full"
+                  aria-hidden="true"
+                ></span>
+              </template>
+              <template v-else-if="stage.status == 'PENDING'">
+                <span
+                  class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+                  aria-hidden="true"
+                ></span>
+              </template>
+              <template v-else-if="stage.status == 'RUNNING'">
+                <span
+                  class="h-2.5 w-2.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+                  style="
+                    animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                  "
+                  aria-hidden="true"
+                ></span>
+              </template>
+              <template v-else-if="stage.status == 'DONE'">
+                <svg
+                  class="w-5 h-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </template>
+              <template v-else-if="stage.status == 'FAILED'">
+                <span
+                  class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
+                  aria-hidden="true"
+                  >!</span
+                >
+              </template>
+              <template v-else-if="stage.status == 'CANCELED'">
+                <svg
+                  class="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  >
+                  <path
+                    fill-rule="evenodd"
+                    d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+              </template>
+              <template v-else-if="stage.status == 'SKIPPED'">
+                <svg
+                  class="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  ></path>
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+              </template>
+            </template>
+            <span class="ml-4 text-sm font-medium text-normal-text">{{
+              stage.title
+            }}</span>
           </span>
-        </a>
+        </div>
 
         <div
+          v-if="index != stageList.length - 1"
           class="hidden md:block absolute top-0 right-0 h-full w-5"
           aria-hidden="true"
         >
@@ -49,57 +119,6 @@
             />
           </svg>
         </div>
-      </li>
-
-      <li class="relative md:flex-1 md:flex">
-        <!-- Current Step -->
-        <a href="#" class="px-6 py-4 flex items-center text-sm font-medium">
-          <span
-            class="flex-shrink-0 w-10 h-10 flex items-center justify-center border-2 border-indigo-600 rounded-full"
-            aria-current="step"
-          >
-            <span class="text-indigo-600">02</span>
-          </span>
-          <span class="ml-4 text-sm font-medium text-indigo-600"
-            >Application form</span
-          >
-        </a>
-
-        <div
-          class="hidden md:block absolute top-0 right-0 h-full w-5"
-          aria-hidden="true"
-        >
-          <svg
-            class="h-full w-full text-gray-300"
-            viewBox="0 0 22 80"
-            fill="none"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M0 -2L20 40L0 82"
-              vector-effect="non-scaling-stroke"
-              stroke="currentcolor"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
-      </li>
-
-      <li class="relative md:flex-1 md:flex">
-        <!-- Upcoming Step -->
-        <a href="#" class="group flex items-center">
-          <span class="px-6 py-4 flex items-center text-sm font-medium">
-            <span
-              class="flex-shrink-0 w-10 h-10 flex items-center justify-center border-2 border-gray-300 rounded-full group-hover:border-gray-400"
-            >
-              <span class="text-gray-500 group-hover:text-gray-900">03</span>
-            </span>
-            <span
-              class="ml-4 text-sm font-medium text-gray-500 group-hover:text-gray-900"
-              >Preview</span
-            >
-          </span>
-        </a>
       </li>
     </ol>
   </nav>
@@ -108,6 +127,12 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { Pipeline } from "../types";
+
+interface FlowItem {
+  title: string;
+  status: string;
+  link: () => string;
+}
 
 export default {
   name: "PipelineFlow",
@@ -118,6 +143,42 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const stageList: FlowItem[] = props.pipeline.attributes.stageProgressList.map(
+      (stageProgress) => {
+        return {
+          title: stageProgress.stageName,
+          status: stageProgress.status,
+          link: (): string => {
+            return `/pipeline/${props.pipeline.id}#${stageProgress.stageId}`;
+          },
+        };
+      }
+    );
+
+    const stepClass = (status: string) => {
+      switch (status) {
+        case "CREATED":
+          return "bg-white border-2 border-gray-300 hover:border-gray-400";
+        case "PENDING":
+          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+        case "RUNNING":
+          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+        case "DONE":
+          return "bg-green-600 hover:bg-green-700 text-white";
+        case "FAILED":
+          return "bg-error text-white hover:text-white hover:bg-error-hover";
+        case "CANCELED":
+          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+        case "SKIPPED":
+          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+      }
+    };
+
+    return {
+      stageList,
+      stepClass,
+    };
+  },
 };
 </script>
