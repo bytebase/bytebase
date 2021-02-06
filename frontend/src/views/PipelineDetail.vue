@@ -1,5 +1,9 @@
 <template>
-  <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
+  <div
+    id="pipeline-detail-top"
+    class="flex-1 overflow-auto focus:outline-none"
+    tabindex="0"
+  >
     <!-- Page header -->
     <div class="bg-white">
       <PipelineHighlightPanel :pipeline="pipeline" />
@@ -38,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { humanize } from "../utils";
 import PipelineActivityPanel from "../views/PipelineActivityPanel.vue";
@@ -67,6 +71,15 @@ export default {
 
   setup(props, ctx) {
     const store = useStore();
+
+    onMounted(() => {
+      // Always scroll to top, the scrollBehavior doesn't seem to work.
+      // The hypothesis is that because the scroll bar is in the nested
+      // route, thus setting the scrollBehavior in the global router
+      // won't work.
+      document.getElementById("pipeline-detail-top")!.scrollIntoView();
+    });
+
     const pipeline = computed(() =>
       store.getters["pipeline/pipelineById"](props.pipelineId)
     );
