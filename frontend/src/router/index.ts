@@ -264,7 +264,9 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.pipeline.detail",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                return "Pipeline #" + route.params.pipelineId;
+                return store.getters["pipeline/pipelineById"](
+                  route.params.pipelineId
+                ).attributes.name;
               },
             },
             components: {
