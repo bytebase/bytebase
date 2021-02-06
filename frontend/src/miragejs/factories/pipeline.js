@@ -7,7 +7,7 @@ export default {
       return faker.fake("{{lorem.sentence}}");
     },
     createdTs(i) {
-      return Date.now() - i * 1800 * 1000;
+      return Date.now() - (i + 1) * 1800 * 1000;
     },
     lastUpdatedTs(i) {
       return Date.now() - i * 3600 * 1000;
