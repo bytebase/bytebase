@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import App from "./App.vue";
+import moment from "moment";
 import { store } from "./store";
 import { router } from "./router";
 import "./index.css";
@@ -29,6 +30,8 @@ const app = createApp(App);
 app.config.globalProperties.window = window;
 // Allow template to access console object
 app.config.globalProperties.console = console;
+// Allow template to access moment object
+app.config.globalProperties.moment = moment;
 
 app
   .use(store)
