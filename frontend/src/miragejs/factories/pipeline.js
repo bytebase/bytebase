@@ -4,7 +4,7 @@ import faker from "faker";
 export default {
   pipeline: Factory.extend({
     name(i) {
-      return faker.fake("{{lorem.sentences}}");
+      return faker.fake("{{lorem.sentence}}");
     },
     createdTs(i) {
       return Date.now() - i * 1800 * 1000;
