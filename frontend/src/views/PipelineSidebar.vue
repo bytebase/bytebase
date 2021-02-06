@@ -18,22 +18,6 @@
           </li>
         </ul>
       </div>
-      <div>
-        <h2 class="text-sm font-medium text-gray-500">Creator</h2>
-        <ul class="mt-3 space-y-3">
-          <li class="flex justify-start items-center space-x-2">
-            <div class="flex-shrink-0">
-              <BBAvatar
-                :size="'small'"
-                :username="pipeline.attributes.creator.name"
-              />
-            </div>
-            <div class="text-sm font-medium text-gray-900">
-              {{ pipeline.attributes.creator.name }}
-            </div>
-          </li>
-        </ul>
-      </div>
     </div>
     <div class="mt-6 border-t border-gray-200 py-6 space-y-4">
       <div class="flex items-center space-x-2">

@@ -15,28 +15,18 @@
                 {{ pipeline.attributes.name }}
               </p>
             </div>
-            <dl class="mt-6 flex flex-col sm:mt-1 sm:flex-row sm:flex-wrap">
-              <dt class="sr-only">Account status</dt>
-              <dd
-                class="mt-3 flex items-center text-sm text-gray-500 font-medium sm:mr-6 sm:mt-0 capitalize"
-              >
-                <!-- Heroicon name: solid/check-circle -->
-                <svg
-                  class="flex-shrink-0 mr-1.5 h-5 w-5 text-green-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                Verified account
-              </dd>
-            </dl>
+            <div>
+              <p class="mt-2 text-sm text-gray-500">
+                #{{ pipeline.id }} opened by
+                <span href="#" class="font-medium text-normal-text">{{
+                  pipeline.attributes.creator.name
+                }}</span>
+                at
+                <span href="#" class="font-medium text-normal-text">{{
+                  moment(pipeline.attributes.lastUpdatedTs).format("LLL")
+                }}</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
