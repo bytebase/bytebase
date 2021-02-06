@@ -13,7 +13,7 @@
           <span class="px-4 py-3 flex items-center text-sm font-medium">
             <template
               class="relative w-6 h-6 flex items-center justify-center rounded-full"
-              :class="stepClass(stage.status)"
+              :class="stepIconClass(stage.status)"
             >
               <template v-if="stage.status == 'CREATED'">
                 <span
@@ -94,9 +94,16 @@
                 </svg>
               </template>
             </template>
-            <span class="ml-4 text-sm font-medium text-normal-text">{{
-              stage.title
-            }}</span>
+            <span
+              class="ml-4 text-sm"
+              :class="
+                stepTextClass(
+                  pipeline.currentStageId == stage.stageId,
+                  stage.status
+                )
+              "
+              >{{ stage.title }}</span
+            >
           </span>
         </div>
 
@@ -156,7 +163,7 @@ export default {
       }
     );
 
-    const stepClass = (status: string) => {
+    const stepIconClass = (status: string) => {
       switch (status) {
         case "CREATED":
           return "bg-white border-2 border-gray-300 hover:border-gray-400";
@@ -175,9 +182,27 @@ export default {
       }
     };
 
+    const stepTextClass = (isCurrentStep: boolean, status: string) => {
+      let textClass = isCurrentStep ? "font-medium " : "font-normal ";
+      switch (status) {
+        case "CREATED":
+        case "CANCELED":
+        case "SKIPPED":
+          return textClass + "text-gray-500";
+        case "DONE":
+          return textClass + "text-normal-text";
+        case "PENDING":
+        case "RUNNING":
+          return textClass + "text-blue-600";
+        case "FAILED":
+          return textClass + "text-red-500";
+      }
+    };
+
     return {
       stageList,
-      stepClass,
+      stepIconClass,
+      stepTextClass,
     };
   },
 };
