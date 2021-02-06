@@ -1,18 +1,8 @@
 <template>
   <div
-    class="md:flex md:items-center md:justify-between md:space-x-4 lg:border-b lg:pb-6"
+    class="md:flex md:items-center md:justify-end md:space-x-4 lg:border-b lg:pb-6"
   >
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">
-        ARIA attribute misspelled
-      </h1>
-      <p class="mt-2 text-sm text-gray-500">
-        #400 opened by
-        <a href="#" class="font-medium text-gray-900">Hilary Mahy</a>
-        in
-        <a href="#" class="font-medium text-gray-900">Customer Portal</a>
-      </p>
-    </div>
+    <div></div>
     <div class="mt-4 flex space-x-3 md:mt-0">
       <button
         type="button"
