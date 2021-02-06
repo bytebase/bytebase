@@ -27,6 +27,9 @@ export default {
         return "OPS";
       }
     },
+    content() {
+      return faker.fake("{{lorem.paragraphs}}");
+    },
     currentStageId() {
       return "1";
     },

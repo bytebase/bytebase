@@ -40,6 +40,7 @@ export type Pipeline = ResourceObject & {
     lastUpdatedTs: number;
     status: "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
     type: "DDL" | "DML" | "OPS";
+    content: string;
     currentStageId: string;
     stageProgressList: {
       stageId: string;
