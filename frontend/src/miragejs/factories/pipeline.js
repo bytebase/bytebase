@@ -4,15 +4,13 @@ import faker from "faker";
 export default {
   pipeline: Factory.extend({
     name(i) {
-      return faker.fake("{{lorem.sentence}}");
+      return faker.fake("{{lorem.sentences}}");
     },
     createdTs(i) {
-      const scaleFactor = Math.random() * i;
-      return Date.now() - scaleFactor * 3600 * 6 * 1000;
+      return Date.now() - i * 1800 * 1000;
     },
     lastUpdatedTs(i) {
-      const scaleFactor = Math.random() * i;
-      return Date.now() - scaleFactor * 3600 * 20 * 1000;
+      return Date.now() - i * 3600 * 1000;
     },
     status() {
       return "RUNNING";
