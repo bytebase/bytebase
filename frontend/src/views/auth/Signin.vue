@@ -4,17 +4,28 @@
   Read the documentation to get started: https://tailwindui.com/documentation
 -->
   <div class="bg-normal min-h-screen flex">
-    <a class="hidden lg:block relative w-0 flex-1" href="https://bytebase.com">
-      <img
+    <div class="hidden bg-main lg:block relative w-0 flex-1">
+      <!-- <img
         class="absolute inset-0 h-full w-full object-cover"
         src="../../assets/signin-splash.jpeg"
         alt=""
-      />
-    </a>
+      /> -->
+      <div class="absolute top-0 right-0 p-8">
+        <h1 class="text-right text-4xl font-semibold tracking-tight space-y-2">
+          <span class="block text-white">Simple systems work</span>
+          <span class="block text-white">and complex don't</span>
+        </h1>
+        <p
+          class="mt-6 text-right text-xl font-normal tracking-tight text-white"
+        >
+          Jim Gray
+        </p>
+      </div>
+    </div>
     <div
-      class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24"
+      class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 lg:w-1/2 xl:px-24"
     >
-      <div class="mx-auto w-full max-w-sm lg:w-96">
+      <div class="mx-auto w-full max-w-sm">
         <a href="https://bytebase.com">
           <img class="h-12 w-auto" src="../../assets/logo.svg" alt="Bytebase" />
           <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
