@@ -4,7 +4,7 @@
     <select
       id="tabs"
       name="tabs"
-      class="block w-full focus:ring-accent focus:border-accent border-control-border rounded-md"
+      class="control block w-full"
       @change="
         (e) => {
           $emit('select-index', parseInt(e.target.value));

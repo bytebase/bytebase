@@ -40,19 +40,31 @@
 @tailwind utilities;
 
 .btn-primary {
-  @apply border border-transparent rounded-md text-accent-text bg-accent hover:bg-accent-hover disabled:bg-accent disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply border border-transparent rounded-md text-accent-text bg-accent hover:bg-accent-hover disabled:bg-accent disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-normal {
-  @apply border border-control-border rounded-md text-control bg-normal hover:bg-normal-hover disabled:bg-normal disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply border border-control-border rounded-md text-control bg-normal hover:bg-normal-hover disabled:bg-normal disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-icon {
-  @apply rounded-md text-control bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none;
+  @apply rounded-md text-control bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
 }
 
 .btn-danger {
-  @apply border border-transparent rounded-md text-accent-text bg-error hover:bg-error-hover disabled:bg-error disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply border border-transparent rounded-md text-accent-text bg-error hover:bg-error-hover disabled:bg-error disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
+.control {
+  @apply focus:ring-control focus:border-control border-control-border rounded-md;
+}
+
+.textlabel {
+  @apply text-sm font-medium text-control;
+}
+
+.textfield {
+  @apply text-main shadow-sm focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
 }
 
 .link {

@@ -190,7 +190,7 @@ export default {
         case "SKIPPED":
           return textClass + "text-gray-500";
         case "DONE":
-          return textClass + "text-normal-text";
+          return textClass + "text-control";
         case "PENDING":
         case "RUNNING":
           return textClass + "text-blue-600";

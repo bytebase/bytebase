@@ -18,6 +18,18 @@
           </li>
         </ul>
       </div>
+      <div>
+        <h2 class="text-sm font-medium text-gray-500">Requested DB Name</h2>
+        <div class="mt-1">
+          <input
+            type="text"
+            name="db"
+            id="db"
+            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-64 text-sm border-gray-300 rounded-md"
+            placeholder="Your DB Name"
+          />
+        </div>
+      </div>
     </div>
     <div class="mt-6 border-t border-gray-200 py-6 space-y-4">
       <div class="flex items-center space-x-2">

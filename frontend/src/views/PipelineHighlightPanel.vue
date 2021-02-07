@@ -18,11 +18,11 @@
             <div>
               <p class="mt-2 text-sm text-gray-500">
                 #{{ pipeline.id }} opened by
-                <span href="#" class="font-medium text-normal-text">{{
+                <span href="#" class="font-medium text-control">{{
                   pipeline.attributes.creator.name
                 }}</span>
                 at
-                <span href="#" class="font-medium text-normal-text">{{
+                <span href="#" class="font-medium text-control">{{
                   moment(pipeline.attributes.lastUpdatedTs).format("LLL")
                 }}</span>
               </p>
@@ -31,18 +31,8 @@
         </div>
       </div>
       <div class="mt-6 flex space-x-3 md:mt-0 md:ml-4">
-        <button
-          type="button"
-          class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
-        >
-          Add money
-        </button>
-        <button
-          type="button"
-          class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-accent-text bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
-        >
-          Send money
-        </button>
+        <button type="button" class="btn-normal px-4 py-2">Add money</button>
+        <button type="button" class="btn-primary px-4 py-2">Send money</button>
       </div>
     </div>
   </div>

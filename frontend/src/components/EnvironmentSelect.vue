@@ -1,6 +1,6 @@
 <template>
   <select
-    class="block w-full focus:ring-accent focus:border-accent border-gray-300 rounded-md"
+    class="control block w-full"
     @change="
       (e) => {
         $emit('select-environment-id', e.target.value);

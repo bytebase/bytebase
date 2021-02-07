@@ -24,7 +24,7 @@
           </svg>
         </span>
       </router-link>
-      <h3 class="mt-1 text-base font-normal text-accent tracking-tight">
+      <h3 class="mt-1 text-base font-normal text-main tracking-tight">
         Add Instance
       </h3>
     </div>
@@ -54,7 +54,7 @@
         </span>
       </button>
       <h3
-        class="mt-1 text-center text-base font-normal text-accent tracking-tight"
+        class="mt-1 text-center text-base font-normal text-main tracking-tight"
       >
         Manage User
       </h3>
@@ -85,7 +85,7 @@
         </span>
       </button>
       <h3
-        class="mt-1 text-center text-base font-normal text-accent tracking-tight"
+        class="mt-1 text-center text-base font-normal text-main tracking-tight"
       >
         Query
       </h3>
@@ -116,7 +116,7 @@
         </span>
       </button>
       <h3
-        class="mt-1 text-center text-base font-normal text-accent tracking-tight"
+        class="mt-1 text-center text-base font-normal text-main tracking-tight"
       >
         Edit Data
       </h3>
@@ -146,7 +146,7 @@
           </svg>
         </span>
       </router-link>
-      <h3 class="mt-1 text-base font-normal text-accent tracking-tight">
+      <h3 class="mt-1 text-base font-normal text-main tracking-tight">
         Request DB
       </h3>
     </div>
@@ -175,7 +175,7 @@
           </svg>
         </span>
       </button>
-      <h3 class="mt-1 text-center text-base font-normal text-accent">
+      <h3 class="mt-1 text-center text-base font-normal text-main">
         Edit Schema
       </h3>
     </div>
@@ -204,7 +204,7 @@
           </svg>
         </span>
       </button>
-      <h3 class="mt-1 text-center text-base font-normal text-accent">Ticket</h3>
+      <h3 class="mt-1 text-center text-base font-normal text-main">Ticket</h3>
     </div>
 
     <div
@@ -232,7 +232,7 @@
           </svg>
         </span>
       </button>
-      <h3 class="mt-1 text-center text-base font-normal text-accent">
+      <h3 class="mt-1 text-center text-base font-normal text-main">
         Add Environment
       </h3>
     </div>
@@ -262,9 +262,7 @@
           </svg>
         </span>
       </button>
-      <h3 class="mt-1 text-center text-base font-normal text-accent">
-        Reorder
-      </h3>
+      <h3 class="mt-1 text-center text-base font-normal text-main">Reorder</h3>
     </div>
   </div>
 </template>

@@ -9,7 +9,7 @@
       <BBTableCell :leftPadding="4" class="w-4 table-cell">
         <span
           class="w-5 h-5 flex items-center justify-center rounded-full"
-          :class="statusMap[pipeline.attributes.status].class"
+          :class="iconStatusMap[pipeline.attributes.status].class"
         >
           <template v-if="pipeline.attributes.status == `PENDING`">
             <span
@@ -114,7 +114,7 @@ interface LocalState {
   dataSource: Object[];
 }
 
-const statusMap = {
+const iconStatusMap = {
   PENDING: {
     name: "Pending",
     class:
@@ -127,7 +127,7 @@ const statusMap = {
   },
   DONE: {
     name: "Done",
-    class: "bg-accent hover:bg-accent-hover text-white",
+    class: "bg-green-600 hover:bg-green-700 text-white",
   },
   FAILED: {
     name: "Failed",
@@ -233,7 +233,7 @@ export default {
     return {
       state,
       environmentName,
-      statusMap,
+      iconStatusMap,
       stageList,
       humanize,
       clickPipeline,

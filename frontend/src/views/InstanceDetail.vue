@@ -17,7 +17,7 @@ input[type="number"] {
     <!-- Instance Name -->
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
-        <label for="name" class="text-sm font-medium text-gray-700">
+        <label for="name" class="textlabel">
           Instance Name <span style="color: red">*</span>
         </label>
         <input
@@ -25,14 +25,14 @@ input[type="number"] {
           id="name"
           name="name"
           type="text"
-          class="shadow-sm mt-1 focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+          class="textfield mt-1 w-full"
           :value="state.instance.attributes.name"
           @input="updateInstance('name', $event.target.value)"
         />
       </div>
 
       <div class="sm:col-span-2 sm:col-start-1">
-        <label for="environment" class="text-sm font-medium text-gray-700">
+        <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
         <EnvironmentSelect
@@ -48,7 +48,7 @@ input[type="number"] {
       </div>
 
       <div class="sm:col-span-5">
-        <label for="host" class="block text-sm font-medium text-gray-700">
+        <label for="host" class="textlabel block">
           Host or Socket <span style="color: red">*</span>
         </label>
         <div class="mt-1">
@@ -58,7 +58,7 @@ input[type="number"] {
             id="host"
             name="host"
             placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+            class="textfield mt-1 w-full"
             :value="state.instance.attributes.host"
             @input="updateInstance('host', $event.target.value)"
           />
@@ -66,16 +66,14 @@ input[type="number"] {
       </div>
 
       <div class="sm:col-span-1">
-        <label for="port" class="block text-sm font-medium text-gray-700">
-          Port
-        </label>
+        <label for="port" class="textlabel block"> Port </label>
         <div class="mt-1">
           <input
             type="number"
             id="port"
             name="port"
             placeholder="3306"
-            class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+            class="textfield mt-1 w-full"
             :value="state.instance.attributes.port"
             @input="updateInstance('port', $event.target.value)"
           />
@@ -83,13 +81,10 @@ input[type="number"] {
       </div>
 
       <div class="sm:col-span-6 sm:col-start-1">
-        <label
-          for="externallink"
-          class="inline-flex text-sm font-medium text-gray-700"
-        >
+        <label for="externallink" class="textlabel inline-flex">
           <span class="">External Link</span>
           <button
-            class="btn-icon"
+            class="ml-1 btn-icon"
             :disabled="
               state.instance.attributes.externalLink?.trim().length == 0
             "
@@ -101,7 +96,7 @@ input[type="number"] {
             "
           >
             <svg
-              class="ml-1 w-5 h-5"
+              class="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -121,7 +116,7 @@ input[type="number"] {
           id="externallink"
           name="externallink"
           type="text"
-          class="shadow-sm mt-1 focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+          class="textfield mt-1 w-full"
           :value="state.instance.attributes.externalLink"
           @input="updateInstance('externalLink', $event.target.value)"
         />
@@ -146,7 +141,7 @@ input[type="number"] {
       </div>
       <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
         <div class="sm:col-span-2 sm:col-start-1">
-          <label for="username" class="block text-sm font-medium text-gray-700">
+          <label for="username" class="textlabel block">
             Username <span style="color: red">*</span>
           </label>
           <div class="mt-1">
@@ -158,7 +153,7 @@ input[type="number"] {
               id="username"
               name="username"
               type="text"
-              class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+              class="textfield mt-1 w-full"
               :value="state.adminDataSource.attributes.username"
               @input="updateDataSource('username', $event.target.value)"
             />
@@ -166,15 +161,13 @@ input[type="number"] {
         </div>
 
         <div class="sm:col-span-2 sm:col-start-1">
-          <label for="password" class="block text-sm font-medium text-gray-700">
-            Password
-          </label>
+          <label for="password" class="textlabel block"> Password </label>
           <div class="mt-1 inline-flex">
             <input
               id="password"
               name="password"
               :type="state.showPassword ? 'text' : 'password'"
-              class="shadow-sm focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+              class="textfield mt-1 w-full"
               :value="state.adminDataSource.attributes.password"
               @input="updateDataSource('password', $event.target.value)"
             />

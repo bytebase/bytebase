@@ -13,7 +13,7 @@
           id="name"
           name="name"
           type="text"
-          class="shadow-sm mt-4 focus:ring-accent block w-full sm:text-sm border-control-border rounded-md"
+          class="textfield mt-4 w-full"
           :value="state.environment.attributes.name"
           @input="updateEnvironment('name', $event.target.value)"
         />
