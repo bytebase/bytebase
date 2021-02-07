@@ -1,9 +1,9 @@
 [
   {
     "id": "1",
-    "name": "Bob (Owner and Developer)",
-    "email": "bob@example.com",
-    "passwordHash": "aaa"
+    "name": "Demo (Owner and Developer)",
+    "email": "demo@example.com",
+    "passwordHash": "1024"
   },
   {
     "id": "2",
