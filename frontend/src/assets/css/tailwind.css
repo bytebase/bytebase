@@ -19,8 +19,8 @@
   /* gray-900 */
   --color-control-hover: #18181b;
 
-  /* gray-400 */
-  --color-control-light: #a1a1aa;
+  /* gray-500 */
+  --color-control-light: #71717a;
   /* gray-600 */
   --color-control-light-hover: #52525b;
 
@@ -69,7 +69,7 @@
 }
 
 .textlabel {
-  @apply text-sm font-medium text-control;
+  @apply text-sm font-medium text-control-light;
 }
 
 .textfield {
