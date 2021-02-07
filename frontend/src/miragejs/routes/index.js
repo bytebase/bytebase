@@ -46,34 +46,34 @@ export default function routes() {
     return schema.users.create(signupInfo);
   });
 
-  // Pipeline
-  this.get("/pipeline", function (schema, request) {
+  // Task
+  this.get("/task", function (schema, request) {
     const {
       queryParams: { userid: userId },
     } = request;
 
     if (userId) {
-      return schema.pipelines.where((pipeline) => {
+      return schema.tasks.where((task) => {
         return (
-          pipeline.workspaceId == WORKSPACE_ID &&
-          (pipeline.creator.id == userId ||
-            pipeline.assignee.id == userId ||
-            pipeline.subscriberIdList.includes(userId))
+          task.workspaceId == WORKSPACE_ID &&
+          (task.creator.id == userId ||
+            task.assignee.id == userId ||
+            task.subscriberIdList.includes(userId))
         );
       });
     }
-    return schema.pipelines.none();
+    return schema.tasks.none();
   });
 
-  this.get("/pipeline/:id", function (schema, request) {
-    const pipeline = schema.pipelines.find(request.params.id);
-    if (pipeline) {
-      return pipeline;
+  this.get("/task/:id", function (schema, request) {
+    const task = schema.tasks.find(request.params.id);
+    if (task) {
+      return task;
     }
     return new Response(
       404,
       {},
-      { errors: "Pipeline " + request.params.id + " not found" }
+      { errors: "Task " + request.params.id + " not found" }
     );
   });
 
@@ -337,21 +337,21 @@ export default function routes() {
     return schema.environments.none();
   });
 
-  this.get("/project/:id/pipeline", function (schema, request) {
+  this.get("/project/:id/task", function (schema, request) {
     const project = schema.projects.find(request.params.id);
     if (project) {
-      return schema.pipelines.where({
+      return schema.tasks.where({
         projectId: project.id,
       });
     }
     return schema.environments.none();
   });
 
-  this.get("/project/:id/pipeline/:pipelineId", function (schema, request) {
+  this.get("/project/:id/task/:taskId", function (schema, request) {
     const project = schema.projects.find(request.params.id);
     if (project) {
-      return schema.pipelines.findBy({
-        slug: request.params.pipelineId,
+      return schema.tasks.findBy({
+        slug: request.params.taskId,
       });
     }
     return null;

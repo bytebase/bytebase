@@ -9,11 +9,11 @@
             <div class="flex-shrink-0">
               <BBAvatar
                 :size="'small'"
-                :username="pipeline.attributes.assignee.name"
+                :username="task.attributes.assignee.name"
               />
             </div>
             <div class="text-sm font-medium text-gray-900">
-              {{ pipeline.attributes.assignee.name }}
+              {{ task.attributes.assignee.name }}
             </div>
           </li>
         </ul>
@@ -67,13 +67,13 @@
       <div>
         <h2 class="textlabel">Update Time</h2>
         <span class="textfield">
-          {{ moment(pipeline.attributes.lastUpdatedTs).format("LLL") }}</span
+          {{ moment(task.attributes.lastUpdatedTs).format("LLL") }}</span
         >
       </div>
       <div>
         <h2 class="textlabel">Creation Time</h2>
         <span class="textfield">
-          {{ moment(pipeline.attributes.createdTs).format("LLL") }}</span
+          {{ moment(task.attributes.createdTs).format("LLL") }}</span
         >
       </div>
     </div>
@@ -82,14 +82,14 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { Pipeline } from "../types";
+import { Task } from "../types";
 
 export default {
-  name: "PipelineSidebar",
+  name: "TaskSidebar",
   props: {
-    pipeline: {
+    task: {
       required: true,
-      type: Object as PropType<Pipeline>,
+      type: Object as PropType<Task>,
     },
   },
   components: {},

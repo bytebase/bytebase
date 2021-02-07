@@ -20,7 +20,7 @@ export default {
     group: hasMany(),
     project: hasMany(),
     workspaceRole: hasMany(),
-    pipeline: hasMany(),
+    task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),
   }),
@@ -49,7 +49,7 @@ export default {
     user: belongsTo(),
   }),
 
-  pipeline: Model.extend({
+  task: Model.extend({
     workspace: belongsTo(),
   }),
 

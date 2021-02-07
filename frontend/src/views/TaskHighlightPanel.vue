@@ -12,18 +12,18 @@
               <p
                 class="text-2xl font-bold leading-7 text-gray-900 sm:leading-9 whitespace-nowrap"
               >
-                {{ pipeline.attributes.name }}
+                {{ task.attributes.name }}
               </p>
             </div>
             <div>
               <p class="mt-2 text-sm text-gray-500">
-                #{{ pipeline.id }} opened by
+                #{{ task.id }} opened by
                 <span href="#" class="font-medium text-control">{{
-                  pipeline.attributes.creator.name
+                  task.attributes.creator.name
                 }}</span>
                 at
                 <span href="#" class="font-medium text-control">{{
-                  moment(pipeline.attributes.lastUpdatedTs).format("LLL")
+                  moment(task.attributes.lastUpdatedTs).format("LLL")
                 }}</span>
               </p>
             </div>
@@ -40,14 +40,14 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { Pipeline } from "../types";
+import { Task } from "../types";
 
 export default {
-  name: "PipelineHighlightPanel",
+  name: "TaskHighlightPanel",
   props: {
-    pipeline: {
+    task: {
       required: true,
-      type: Object as PropType<Pipeline>,
+      type: Object as PropType<Task>,
     },
   },
   components: {},

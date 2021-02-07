@@ -2,7 +2,7 @@ import { Factory } from "miragejs";
 import faker from "faker";
 
 export default {
-  pipeline: Factory.extend({
+  task: Factory.extend({
     name(i) {
       return faker.fake("{{lorem.sentence}}");
     },

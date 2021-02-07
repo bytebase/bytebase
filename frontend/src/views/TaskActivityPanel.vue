@@ -327,14 +327,14 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { Pipeline } from "../types";
+import { Task } from "../types";
 
 export default {
-  name: "PipelineActivityPanel",
+  name: "TaskActivityPanel",
   props: {
-    pipeline: {
+    task: {
       required: true,
-      type: Object as PropType<Pipeline>,
+      type: Object as PropType<Task>,
     },
   },
   components: {},

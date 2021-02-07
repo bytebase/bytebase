@@ -1,16 +1,16 @@
 <template>
   <div
-    id="pipeline-detail-top"
+    id="task-detail-top"
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
     <!-- Page header -->
     <div class="bg-white">
-      <PipelineHighlightPanel :pipeline="pipeline" />
+      <TaskHighlightPanel :task="task" />
     </div>
 
     <!-- Flow -->
-    <PipelineFlow :pipeline="pipeline" />
+    <TaskFlow :task="task" />
 
     <!-- Main Content -->
     <main
@@ -23,18 +23,15 @@
         >
           <div class="lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200">
             <div>
-              <PipelineContentBar v-if="false" :pipeline="pipeline" />
-              <PipelineSidebar class="lg:hidden" :pipeline="pipeline" />
-              <PipelineContent :pipeline="pipeline" />
+              <TaskContentBar v-if="false" :task="task" />
+              <TaskSidebar class="lg:hidden" :task="task" />
+              <TaskContent :task="task" />
             </div>
             <section aria-labelledby="activity-title" class="mt-8 lg:mt-10">
-              <PipelineActivityPanel :pipeline="pipeline" />
+              <TaskActivityPanel :task="task" />
             </section>
           </div>
-          <PipelineSidebar
-            class="hidden lg:block lg:pl-8"
-            :pipeline="pipeline"
-          />
+          <TaskSidebar class="hidden lg:block lg:pl-8" :task="task" />
         </div>
       </div>
     </main>
@@ -45,28 +42,28 @@
 import { computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { humanize } from "../utils";
-import PipelineActivityPanel from "../views/PipelineActivityPanel.vue";
-import PipelineFlow from "../views/PipelineFlow.vue";
-import PipelineHighlightPanel from "../views/PipelineHighlightPanel.vue";
-import PipelineContent from "../views/PipelineContent.vue";
-import PipelineContentBar from "../views/PipelineContentBar.vue";
-import PipelineSidebar from "../views/PipelineSidebar.vue";
+import TaskActivityPanel from "../views/TaskActivityPanel.vue";
+import TaskFlow from "../views/TaskFlow.vue";
+import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
+import TaskContent from "../views/TaskContent.vue";
+import TaskContentBar from "../views/TaskContentBar.vue";
+import TaskSidebar from "../views/TaskSidebar.vue";
 
 export default {
-  name: "PipelineDetail",
+  name: "TaskDetail",
   props: {
-    pipelineId: {
+    taskId: {
       required: true,
       type: String,
     },
   },
   components: {
-    PipelineActivityPanel,
-    PipelineContent,
-    PipelineContentBar,
-    PipelineFlow,
-    PipelineHighlightPanel,
-    PipelineSidebar,
+    TaskActivityPanel,
+    TaskContent,
+    TaskContentBar,
+    TaskFlow,
+    TaskHighlightPanel,
+    TaskSidebar,
   },
 
   setup(props, ctx) {
@@ -77,14 +74,12 @@ export default {
       // The hypothesis is that because the scroll bar is in the nested
       // route, thus setting the scrollBehavior in the global router
       // won't work.
-      document.getElementById("pipeline-detail-top")!.scrollIntoView();
+      document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
-    const pipeline = computed(() =>
-      store.getters["pipeline/pipelineById"](props.pipelineId)
-    );
+    const task = computed(() => store.getters["task/taskById"](props.taskId));
 
-    return { pipeline, humanize };
+    return { task, humanize };
   },
 };
 </script>

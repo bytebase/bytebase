@@ -253,25 +253,24 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: defineAsyncComponent(
-                () => import("../views/PipelineDetail.vue")
+                () => import("../views/TaskDetail.vue")
               ),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "pipeline/:pipelineId",
-            name: "workspace.pipeline.detail",
+            path: "task/:taskId",
+            name: "workspace.task.detail",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                return store.getters["pipeline/pipelineById"](
-                  route.params.pipelineId
-                ).attributes.name;
+                return store.getters["task/taskById"](route.params.taskId)
+                  .attributes.name;
               },
             },
             components: {
               content: defineAsyncComponent(
-                () => import("../views/PipelineDetail.vue")
+                () => import("../views/TaskDetail.vue")
               ),
               leftSidebar: DashboardSidebar,
             },
@@ -337,15 +336,15 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = store.getters["router/routeSlug"](to);
-  const pipelineId = routerSlug.pipelineId;
+  const taskId = routerSlug.taskId;
   const instanceSlug = routerSlug.instanceSlug;
 
   console.log("RouterSlug:", routerSlug);
 
-  if (pipelineId) {
+  if (taskId) {
     store
-      .dispatch("pipeline/fetchPipelineById", pipelineId)
-      .then((pipeline) => {
+      .dispatch("task/fetchTaskById", taskId)
+      .then((task) => {
         next();
       })
       .catch((error) => {

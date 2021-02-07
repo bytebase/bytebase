@@ -5,7 +5,7 @@ import { BBNotificationStyle } from "../bbkit/types";
 // Also good for readability.
 export type UserId = string;
 
-export type PipelineId = string;
+export type TaskId = string;
 
 export type GroupId = string;
 
@@ -33,7 +33,7 @@ export type NewBookmark = Omit<Bookmark, "id">;
 export type Activity = ResourceObject & {};
 export type ActivityNew = Omit<Activity, "id">;
 
-export type Pipeline = ResourceObject & {
+export type Task = ResourceObject & {
   attributes: {
     title: string;
     createdTs: number;
@@ -65,7 +65,7 @@ export type Pipeline = ResourceObject & {
     subscriberIdList: Array<string>;
   };
 };
-export type PipelineNew = Omit<Pipeline, "id">;
+export type TaskNew = Omit<Task, "id">;
 
 export type Environment = ResourceObject & {
   attributes: {
@@ -128,7 +128,7 @@ export type SignupInfo = Omit<
 
 // UI State Models
 export type RouterSlug = {
-  pipelineId?: PipelineId;
+  taskId?: TaskId;
   instanceSlug?: string;
 };
 
@@ -168,9 +168,9 @@ export interface ActivityState {
   activityListByUser: Map<UserId, Activity[]>;
 }
 
-export interface PipelineState {
-  pipelineListByUser: Map<UserId, Pipeline[]>;
-  pipelineById: Map<PipelineId, Pipeline>;
+export interface TaskState {
+  taskListByUser: Map<UserId, Task[]>;
+  taskById: Map<TaskId, Task>;
 }
 
 export interface GroupState {

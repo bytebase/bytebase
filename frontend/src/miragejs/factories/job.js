@@ -4,7 +4,7 @@ import faker from "faker";
 export default {
   job: Factory.extend({
     name() {
-      return "pipeline job " + faker.fake("{{lorem.word}}");
+      return "task job " + faker.fake("{{lorem.word}}");
     },
     slug(i) {
       return 1000 + i;

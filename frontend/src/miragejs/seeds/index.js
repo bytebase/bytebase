@@ -49,7 +49,7 @@ const workspacesSeeder = (server) => {
     });
   }
 
-  // Pipeline
+  // Task
   const ws1Owner = server.schema.users.find(1);
   const ws1DBA = server.schema.users.find(2);
   const ws1Dev1 = server.schema.users.find(3);
@@ -59,7 +59,7 @@ const workspacesSeeder = (server) => {
   const ws2Dev = server.schema.users.find(1);
 
   for (let i = 0; i < 15; i++) {
-    server.create("pipeline", {
+    server.create("task", {
       creator: {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
@@ -75,7 +75,7 @@ const workspacesSeeder = (server) => {
   }
 
   for (let i = 0; i < 15; i++) {
-    server.create("pipeline", {
+    server.create("task", {
       creator: {
         id: ws1Owner.id,
         name: ws1Owner.name,
@@ -91,7 +91,7 @@ const workspacesSeeder = (server) => {
   }
 
   for (let i = 0; i < 15; i++) {
-    server.create("pipeline", {
+    server.create("task", {
       creator: {
         id: ws1Dev2.id,
         name: ws1Dev2.name,
@@ -106,7 +106,7 @@ const workspacesSeeder = (server) => {
     });
   }
 
-  server.create("pipeline", {
+  server.create("task", {
     creator: {
       id: ws2Dev.id,
       name: ws2Dev.name,
@@ -217,30 +217,30 @@ const workspacesSeeder = (server) => {
   });
 
   // Bookmarks
-  // Pipeline 1
-  const pipeline1 = server.schema.pipelines.find(1);
+  // Task 1
+  const task1 = server.schema.tasks.find(1);
   server.create("bookmark", {
     workspace: workspace1,
-    name: "Pipeline #" + pipeline1.id,
-    link: `/pipeline/${pipeline1.id}`,
+    name: "Task #" + task1.id,
+    link: `/task/${task1.id}`,
   });
 
-  // Pipeline 2
-  const pipeline2 = server.schema.pipelines.find(2);
+  // Task 2
+  const task2 = server.schema.tasks.find(2);
   server.create("bookmark", {
     workspace: workspace1,
-    name: "Pipeline #" + pipeline2.id,
-    link: `/pipeline/${pipeline2.id}`,
+    name: "Task #" + task2.id,
+    link: `/task/${task2.id}`,
   });
 
-  // Pipeline 3
-  const pipeline3 = server.schema.pipelines.findBy({
+  // Task 3
+  const task3 = server.schema.tasks.findBy({
     workspaceId: workspace2.id,
   });
   server.create("bookmark", {
     workspace: workspace2,
-    name: "Pipeline #" + pipeline3.id,
-    link: `/pipeline/${pipeline3.id}`,
+    name: "Task #" + task3.id,
+    link: `/task/${task3.id}`,
   });
 };
 

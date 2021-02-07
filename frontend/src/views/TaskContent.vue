@@ -1,20 +1,20 @@
 <template>
   <h2 class="sr-only">Description</h2>
   <div class="prose max-w-none whitespace-pre-line">
-    {{ pipeline.attributes.content }}
+    {{ task.attributes.content }}
   </div>
 </template>
 
 <script lang="ts">
 import { PropType } from "vue";
-import { Pipeline } from "../types";
+import { Task } from "../types";
 
 export default {
-  name: "PipelineContent",
+  name: "TaskContent",
   props: {
-    pipeline: {
+    task: {
       required: true,
-      type: Object as PropType<Pipeline>,
+      type: Object as PropType<Task>,
     },
   },
   components: {},

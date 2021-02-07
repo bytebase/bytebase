@@ -1,23 +1,23 @@
 <template>
   <BBTable
     :columnList="state.columnList"
-    :sectionDataSource="pipelineSectionList"
+    :sectionDataSource="taskSectionList"
     :showHeader="false"
-    @click-row="clickPipeline"
+    @click-row="clickTask"
   >
-    <template v-slot:body="{ rowData: pipeline }">
+    <template v-slot:body="{ rowData: task }">
       <BBTableCell :leftPadding="4" class="w-4 table-cell">
         <span
           class="w-5 h-5 flex items-center justify-center rounded-full"
-          :class="iconStatusMap[pipeline.attributes.status].class"
+          :class="iconStatusMap[task.attributes.status].class"
         >
-          <template v-if="pipeline.attributes.status == `PENDING`">
+          <template v-if="task.attributes.status == `PENDING`">
             <span
               class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
-          <template v-else-if="pipeline.attributes.status == `RUNNING`">
+          <template v-else-if="task.attributes.status == `RUNNING`">
             <span
               class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
               style="
@@ -26,7 +26,7 @@
               aria-hidden="true"
             ></span>
           </template>
-          <template v-else-if="pipeline.attributes.status == `DONE`">
+          <template v-else-if="task.attributes.status == `DONE`">
             <svg
               class="w-4 h-4"
               xmlns="http://www.w3.org/2000/svg"
@@ -41,14 +41,14 @@
               />
             </svg>
           </template>
-          <template v-else-if="pipeline.attributes.status == `FAILED`">
+          <template v-else-if="task.attributes.status == `FAILED`">
             <span
               class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
               aria-hidden="true"
               >!</span
             >
           </template>
-          <template v-else-if="pipeline.attributes.status == `CANCELED`">
+          <template v-else-if="task.attributes.status == `CANCELED`">
             <svg
               class="w-5 h-5"
               fill="currentColor"
@@ -68,29 +68,29 @@
       </BBTableCell>
 
       <BBTableCell class="w-4 table-cell text-gray-500">
-        <span class="">#{{ pipeline.id }}</span>
+        <span class="">#{{ task.id }}</span>
       </BBTableCell>
       <BBTableCell :rightPadding="1" class="w-4">
         <span
           class="flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-mono bg-gray-500 text-white"
         >
-          {{ pipeline.attributes.type }}
+          {{ task.attributes.type }}
         </span>
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">
-        {{ environmentName(pipeline.attributes.currentStageId) }}
+        {{ environmentName(task.attributes.currentStageId) }}
       </BBTableCell>
       <BBTableCell :leftPadding="1" class="w-auto">
-        {{ pipeline.attributes.name }}
+        {{ task.attributes.name }}
       </BBTableCell>
       <BBTableCell class="w-12 hidden sm:table-cell">
-        <BBStepBar :stepList="stageList(pipeline)" />
+        <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
       <BBTableCell class="w-56 hidden sm:table-cell">
-        {{ pipeline.attributes.assignee.name }}
+        {{ task.attributes.assignee.name }}
       </BBTableCell>
       <BBTableCell :rightPadding="4" class="w-24 hidden md:table-cell">
-        {{ humanize(pipeline.attributes.lastUpdatedTs) }}
+        {{ humanize(task.attributes.lastUpdatedTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -107,7 +107,7 @@ import {
   BBStepStatus,
 } from "../bbkit/types";
 import { humanize } from "../utils";
-import { EnvironmentId, Pipeline } from "../types";
+import { EnvironmentId, Task } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
@@ -141,12 +141,12 @@ const iconStatusMap = {
 };
 
 export default {
-  name: "PipelineTable",
+  name: "TaskTable",
   components: {},
   props: {
-    pipelineSectionList: {
+    taskSectionList: {
       required: true,
-      type: Object as PropType<BBTableSectionDataSource<Pipeline>[]>,
+      type: Object as PropType<BBTableSectionDataSource<Task>[]>,
     },
   },
   setup(props, ctx) {
@@ -188,8 +188,8 @@ export default {
 
     const router = useRouter();
 
-    const stageList = function (pipeline: Pipeline): BBStep[] {
-      return pipeline.attributes.stageProgressList.map((stageProgress) => {
+    const stageList = function (task: Task): BBStep[] {
+      return task.attributes.stageProgressList.map((stageProgress) => {
         let stepStatus: BBStepStatus = "CREATED";
         switch (stageProgress.status) {
           case "CREATED":
@@ -218,16 +218,14 @@ export default {
           title: stageProgress.stageName,
           status: stepStatus,
           link: (): string => {
-            return `/pipeline/${pipeline.id}#${stageProgress.stageId}`;
+            return `/task/${task.id}#${stageProgress.stageId}`;
           },
         };
       });
     };
 
-    const clickPipeline = function (section: number, row: number) {
-      router.push(
-        `/pipeline/${props.pipelineSectionList[section].list[row].id}`
-      );
+    const clickTask = function (section: number, row: number) {
+      router.push(`/task/${props.taskSectionList[section].list[row].id}`);
     };
 
     return {
@@ -236,7 +234,7 @@ export default {
       iconStatusMap,
       stageList,
       humanize,
-      clickPipeline,
+      clickTask,
     };
   },
 };

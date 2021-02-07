@@ -98,7 +98,7 @@
               class="ml-4 text-sm"
               :class="
                 stepTextClass(
-                  pipeline.currentStageId == stage.stageId,
+                  task.currentStageId == stage.stageId,
                   stage.status
                 )
               "
@@ -133,7 +133,7 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { Pipeline } from "../types";
+import { Task } from "../types";
 
 interface FlowItem {
   title: string;
@@ -142,22 +142,22 @@ interface FlowItem {
 }
 
 export default {
-  name: "PipelineFlow",
+  name: "TaskFlow",
   props: {
-    pipeline: {
+    task: {
       required: true,
-      type: Object as PropType<Pipeline>,
+      type: Object as PropType<Task>,
     },
   },
   components: {},
   setup(props, ctx) {
-    const stageList: FlowItem[] = props.pipeline.attributes.stageProgressList.map(
+    const stageList: FlowItem[] = props.task.attributes.stageProgressList.map(
       (stageProgress) => {
         return {
           title: stageProgress.stageName,
           status: stageProgress.status,
           link: (): string => {
-            return `/pipeline/${props.pipeline.id}#${stageProgress.stageId}`;
+            return `/task/${props.task.id}#${stageProgress.stageId}`;
           },
         };
       }

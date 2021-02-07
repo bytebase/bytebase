@@ -12,7 +12,7 @@ import dataSource from "./dataSource";
 import repository from "./repository";
 import job from "./job";
 import step from "./step";
-import pipeline from "./pipeline";
+import task from "./task";
 import group from "./group";
 import workspace from "./workspace";
 import workspaceRole from "./workspaceRole";
@@ -36,7 +36,7 @@ export default {
   ...repository,
   ...job,
   ...step,
-  ...pipeline,
+  ...task,
   ...group,
   ...workspace,
   ...workspaceRole,

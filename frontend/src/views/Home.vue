@@ -3,8 +3,8 @@
     <div class="px-2 py-1">
       <EnvironmentTabFilter @select-environment="selectEnvironment" />
     </div>
-    <PipelineTable
-      :pipelineSectionList="[
+    <TaskTable
+      :taskSectionList="[
         {
           title: 'Attention',
           list: filteredList(state.attentionList).sort((a, b) => {
@@ -31,16 +31,16 @@
 <script lang="ts">
 import { watchEffect, inject, reactive } from "vue";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
-import PipelineTable from "../components/PipelineTable.vue";
+import TaskTable from "../components/TaskTable.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { User, Environment, Pipeline } from "../types";
+import { User, Environment, Task } from "../types";
 
 interface LocalState {
-  attentionList: Pipeline[];
-  subscribeList: Pipeline[];
-  closeList: Pipeline[];
+  attentionList: Task[];
+  subscribeList: Task[];
+  closeList: Task[];
   selectedEnvironment?: Environment;
 }
 
@@ -48,7 +48,7 @@ export default {
   name: "Home",
   components: {
     EnvironmentTabFilter,
-    PipelineTable,
+    TaskTable,
   },
   props: {},
   setup(props, ctx) {
@@ -61,34 +61,34 @@ export default {
     const router = useRouter();
     const currentUser = inject<User>(UserStateSymbol);
 
-    const preparePipelineList = () => {
+    const prepareTaskList = () => {
       store
-        .dispatch("pipeline/fetchPipelineListForUser", currentUser!.id)
-        .then((pipelineList: Pipeline[]) => {
+        .dispatch("task/fetchTaskListForUser", currentUser!.id)
+        .then((taskList: Task[]) => {
           state.attentionList = [];
           state.subscribeList = [];
           state.closeList = [];
-          for (const pipeline of pipelineList) {
+          for (const task of taskList) {
             if (
-              pipeline.attributes.assignee.id === currentUser!.id &&
-              (pipeline.attributes.status === "PENDING" ||
-                pipeline.attributes.status === "RUNNING" ||
-                pipeline.attributes.status === "FAILED")
+              task.attributes.assignee.id === currentUser!.id &&
+              (task.attributes.status === "PENDING" ||
+                task.attributes.status === "RUNNING" ||
+                task.attributes.status === "FAILED")
             ) {
-              state.attentionList.push(pipeline);
+              state.attentionList.push(task);
             } else if (
-              pipeline.attributes.subscriberIdList.includes(currentUser!.id) &&
-              (pipeline.attributes.status === "PENDING" ||
-                pipeline.attributes.status === "RUNNING" ||
-                pipeline.attributes.status === "FAILED")
+              task.attributes.subscriberIdList.includes(currentUser!.id) &&
+              (task.attributes.status === "PENDING" ||
+                task.attributes.status === "RUNNING" ||
+                task.attributes.status === "FAILED")
             ) {
-              state.subscribeList.push(pipeline);
+              state.subscribeList.push(task);
             } else if (
-              pipeline.attributes.creator.id === currentUser!.id &&
-              (pipeline.attributes.status === "DONE" ||
-                pipeline.attributes.status === "CANCELED")
+              task.attributes.creator.id === currentUser!.id &&
+              (task.attributes.status === "DONE" ||
+                task.attributes.status === "CANCELED")
             ) {
-              state.closeList.push(pipeline);
+              state.closeList.push(task);
             }
           }
         })
@@ -101,19 +101,17 @@ export default {
       state.selectedEnvironment = environment;
     };
 
-    const filteredList = (list: Pipeline[]) => {
+    const filteredList = (list: Task[]) => {
       if (!state.selectedEnvironment) {
         // Select "All"
         return list;
       }
-      return list.filter((pipeline) => {
-        return (
-          pipeline.attributes.currentStageId == state.selectedEnvironment!.id
-        );
+      return list.filter((task) => {
+        return task.attributes.currentStageId == state.selectedEnvironment!.id;
       });
     };
 
-    watchEffect(preparePipelineList);
+    watchEffect(prepareTaskList);
 
     return {
       state,
