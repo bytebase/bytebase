@@ -6,14 +6,14 @@
     >
       <svg
         v-if="expandState"
-        class="mr-2 h-5 w-5 transform rotate-90 group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
+        class="mr-2 h-5 w-5 transform rotate-90 group-hover:text-control-light-hover group-focus:text-control-light-hover transition-colors ease-in-out duration-150"
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
       </svg>
       <svg
         v-else
-        class="mr-2 h-5 w-5 transform group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
+        class="mr-2 h-5 w-5 transform group-hover:text-control-light-hover group-focus:text-control-light-hover transition-colors ease-in-out duration-150"
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />

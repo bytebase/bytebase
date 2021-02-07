@@ -1,6 +1,6 @@
 <template>
   <h3
-    class="px-3 text-xs leading-4 font-semibold text-gray-500 uppercase tracking-wider"
+    class="px-3 text-xs leading-4 font-semibold text-control-light uppercase tracking-wider"
     id="group-headline"
   >
     Groups

@@ -5,7 +5,7 @@
   >
     <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
-        <label for="name" class="text-lg leading-6 font-medium text-gray-900">
+        <label for="name" class="text-lg leading-6 font-medium text-control">
           Environment Name <span style="color: red">*</span>
         </label>
         <input
