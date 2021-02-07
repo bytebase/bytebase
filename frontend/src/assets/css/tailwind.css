@@ -48,7 +48,11 @@
 }
 
 .btn-icon {
-  @apply rounded-md text-control bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
+  @apply rounded-full text-control bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
+}
+
+.btn-icon-primary {
+  @apply rounded-full text-white bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
 }
 
 .btn-danger {
