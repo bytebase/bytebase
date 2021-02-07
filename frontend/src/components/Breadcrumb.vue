@@ -5,7 +5,7 @@
         <router-link
           v-if="index == 0"
           to="/"
-          class="text-gray-400 hover:text-gray-500"
+          class="text-control-light hover:text-control-light-hover"
           active-class="link"
           exact-active-class="link"
         >
@@ -24,7 +24,7 @@
           <span class="sr-only">Home</span>
         </router-link>
         <svg
-          class="ml-2 flex-shrink-0 h-5 w-5 text-gray-400"
+          class="ml-2 flex-shrink-0 h-5 w-5 text-control-light"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -55,7 +55,7 @@
         >
           <svg
             v-if="state.bookmarked"
-            class="h-6 w-6 text-yellow-300 hover:text-yellow-400"
+            class="h-6 w-6 text-yellow-400 hover:text-yellow-600"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -67,7 +67,7 @@
           </svg>
           <svg
             v-else
-            class="h-6 w-6 text-gray-300 hover:text-gray-400"
+            class="h-6 w-6 text-control-light hover:text-control-light-hover"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"

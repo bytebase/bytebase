@@ -18,8 +18,13 @@ module.exports = {
         "normal-hover": "var(--color-normal-hover)",
 
         main: "var(--color-main)",
+
         control: "var(--color-control)",
         "control-hover": "var(--color-control-hover)",
+
+        "control-light": "var(--color-control-light)",
+        "control-light-hover": "var(--color-control-light-hover)",
+
         "control-placeholder": "var(--color-control-placeholder)",
 
         error: "var(--color-error)",

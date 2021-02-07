@@ -20,6 +20,11 @@
   --color-control-hover: #18181b;
 
   /* gray-400 */
+  --color-control-light: #a1a1aa;
+  /* gray-600 */
+  --color-control-light-hover: #52525b;
+
+  /* gray-400 */
   --color-control-placeholder: #a1a1aa;
 
   /* red-600 */
