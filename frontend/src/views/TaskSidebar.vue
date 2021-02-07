@@ -24,14 +24,16 @@
           <input
             type="text"
             name="db"
-            id="db"
             class="textfield w-64"
             placeholder="Your DB Name"
           />
         </div>
       </div>
     </div>
-    <div class="mt-6 border-t border-block-border py-6 space-y-4">
+    <div
+      v-if="!state.new"
+      class="mt-6 border-t border-block-border py-6 space-y-4"
+    >
       <div class="flex items-center space-x-2">
         <!-- Heroicon name: solid/lock-open -->
         <svg
@@ -81,8 +83,13 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { PropType, reactive } from "vue";
+import isEmpty from "lodash-es/isEmpty";
 import { Task } from "../types";
+
+interface LocalState {
+  new: boolean;
+}
 
 export default {
   name: "TaskSidebar",
@@ -93,6 +100,12 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const state = reactive<LocalState>({
+      new: isEmpty(props.task.id),
+    });
+
+    return { state };
+  },
 };
 </script>

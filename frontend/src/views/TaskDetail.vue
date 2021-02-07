@@ -6,11 +6,12 @@
   >
     <!-- Page header -->
     <div class="bg-white">
-      <TaskHighlightPanel :task="task" />
+      <TaskHighlightPanel :task="state.task" />
     </div>
 
     <!-- Flow -->
-    <TaskFlow :task="task" />
+    <TaskFlow v-if="!state.new" :task="state.task" />
+    <div v-else class="border-t border-block-border" />
 
     <!-- Main Content -->
     <main
@@ -23,15 +24,15 @@
         >
           <div class="lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200">
             <div>
-              <TaskContentBar v-if="false" :task="task" />
-              <TaskSidebar class="lg:hidden" :task="task" />
-              <TaskContent :task="task" />
+              <TaskContentBar v-if="false" :task="state.task" />
+              <TaskSidebar class="lg:hidden" :task="state.task" />
+              <TaskContent :task="state.task" />
             </div>
             <section aria-labelledby="activity-title" class="mt-8 lg:mt-10">
-              <TaskActivityPanel :task="task" />
+              <TaskActivityPanel :task="state.task" />
             </section>
           </div>
-          <TaskSidebar class="hidden lg:block lg:pl-8" :task="task" />
+          <TaskSidebar class="hidden lg:block lg:pl-8" :task="state.task" />
         </div>
       </div>
     </main>
@@ -39,8 +40,9 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted } from "vue";
+import { onMounted, reactive, inject } from "vue";
 import { useStore } from "vuex";
+import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { humanize } from "../utils";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
@@ -48,6 +50,12 @@ import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskContent from "../views/TaskContent.vue";
 import TaskContentBar from "../views/TaskContentBar.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
+import { User, Task } from "../types";
+
+interface LocalState {
+  new: boolean;
+  task: Task;
+}
 
 export default {
   name: "TaskDetail",
@@ -69,6 +77,39 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
+    const currentUser = inject<User>(UserStateSymbol);
+
+    const state = reactive<LocalState>({
+      new: props.taskId.toLowerCase() == "new",
+      task:
+        props.taskId.toLowerCase() == "new"
+          ? {
+              type: "task",
+              attributes: {
+                name: "New Task",
+                status: "PENDING",
+                content: "Need a new database",
+                currentStageId: "1",
+                stageProgressList: [
+                  {
+                    stageId: "1",
+                    stageName: "Request Database",
+                    status: "CREATED",
+                  },
+                ],
+                creator: {
+                  id: currentUser!.id,
+                  name: currentUser!.attributes.name,
+                },
+                assignee: {
+                  id: currentUser!.id,
+                  name: currentUser!.attributes.name,
+                },
+              },
+            }
+          : store.getters["task/taskById"](props.taskId),
+    });
+
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
       // The hypothesis is that because the scroll bar is in the nested
@@ -77,9 +118,7 @@ export default {
       document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
-    const task = computed(() => store.getters["task/taskById"](props.taskId));
-
-    return { task, humanize };
+    return { state, humanize };
   },
 };
 </script>

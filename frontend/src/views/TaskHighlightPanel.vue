@@ -15,7 +15,7 @@
                 {{ task.attributes.name }}
               </p>
             </div>
-            <div>
+            <div v-if="!state.new">
               <p class="mt-2 text-sm text-gray-500">
                 #{{ task.id }} opened by
                 <span href="#" class="font-medium text-control">{{
@@ -31,16 +31,26 @@
         </div>
       </div>
       <div class="mt-6 flex space-x-3 md:mt-0 md:ml-4">
-        <button type="button" class="btn-normal px-4 py-2">Add money</button>
-        <button type="button" class="btn-primary px-4 py-2">Send money</button>
+        <template v-if="state.new">
+          <button type="button" class="btn-primary px-4 py-2">Create</button>
+        </template>
+        <template v-else>
+          <button type="button" class="btn-normal px-4 py-2">Close</button>
+          <button type="button" class="btn-primary px-4 py-2">Resolve</button>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { PropType, reactive } from "vue";
+import isEmpty from "lodash-es/isEmpty";
 import { Task } from "../types";
+
+interface LocalState {
+  new: boolean;
+}
 
 export default {
   name: "TaskHighlightPanel",
@@ -51,6 +61,12 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const state = reactive<LocalState>({
+      new: isEmpty(props.task.id),
+    });
+
+    return { state };
+  },
 };
 </script>

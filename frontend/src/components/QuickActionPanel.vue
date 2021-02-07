@@ -112,7 +112,7 @@
       v-if="quickActionList.includes('datasource.add')"
       class="flex flex-col items-center w-28"
     >
-      <router-link to="/datasource/new" class="">
+      <router-link to="/task/new" class="">
         <span class="btn-icon-primary inline-flex p-3">
           <svg
             class="w-6 h-6"

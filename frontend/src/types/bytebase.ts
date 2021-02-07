@@ -35,7 +35,7 @@ export type ActivityNew = Omit<Activity, "id">;
 
 export type Task = ResourceObject & {
   attributes: {
-    title: string;
+    name: string;
     createdTs: number;
     lastUpdatedTs: number;
     status: "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";

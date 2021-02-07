@@ -246,26 +246,15 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true },
           },
           {
-            path: "datasource/new",
-            name: "workspace.datasource.detail",
-            meta: {
-              title: () => "Request DB",
-            },
-            components: {
-              content: defineAsyncComponent(
-                () => import("../views/TaskDetail.vue")
-              ),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "task/:taskId",
             name: "workspace.task.detail",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                return store.getters["task/taskById"](route.params.taskId)
-                  .attributes.name;
+                const taskId = route.params.taskId as string;
+                if (taskId.toUpperCase() == "NEW") {
+                  return "New";
+                }
+                return store.getters["task/taskById"](taskId).attributes.name;
               },
             },
             components: {
@@ -328,7 +317,6 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.environment" ||
     to.name === "workspace.instance" ||
-    to.name === "workspace.datasource.detail" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();
@@ -342,6 +330,10 @@ router.beforeEach((to, from, next) => {
   console.log("RouterSlug:", routerSlug);
 
   if (taskId) {
+    if (taskId.toUpperCase() == "NEW") {
+      next();
+      return;
+    }
     store
       .dispatch("task/fetchTaskById", taskId)
       .then((task) => {
