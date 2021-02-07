@@ -140,7 +140,7 @@
         >
           <button
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus-visible:ring-2 focus:ring-accent sm:col-start-2 sm:text-sm"
+            class="px-4 py-2 sm:col-start-2"
             v-bind:class="okButtonStyle"
             @click.prevent="$emit('ok')"
           >
@@ -148,7 +148,7 @@
           </button>
           <button
             type="button"
-            class="btn-normal mt-3 w-full inline-flex justify-center shadow-sm px-4 py-2 sm:mt-0 sm:col-start-1 sm:text-sm"
+            class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:col-start-1"
             @click.prevent="cancel"
           >
             {{ cancelText }}
@@ -211,10 +211,10 @@ export default {
     });
 
     const buttonStyleMap: Record<string, string> = {
-      INFO: "bg-blue-600 hover:bg-blue-700",
-      SUCCESS: "bg-blue-600 hover:bg-blue-700",
-      WARN: "bg-red-600 hover:bg-red-700",
-      CRITICAL: "bg-red-600 hover:bg-red-700",
+      INFO: "btn-primary",
+      SUCCESS: "btn-primary",
+      WARN: "btn-danger",
+      CRITICAL: "btn-danger",
     };
 
     const okButtonStyle = buttonStyleMap[props.style];

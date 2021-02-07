@@ -23,7 +23,7 @@
             }
           "
           type="button"
-          class="text-gray-500 hover:text-gray-900 focus:outline-none"
+          class="text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
         >
           <svg
             class="w-6 h-6"
@@ -53,7 +53,7 @@
             }
           "
           type="button"
-          class="text-gray-500 hover:text-gray-900 focus:outline-none"
+          class="text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
         >
           <svg
             class="w-6 h-6"
@@ -74,7 +74,7 @@
         v-if="allowCreate"
         @click.prevent="$emit('create')"
         type="button"
-        class="flex justify-center py-2 text-gray-500 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus:ring-accent"
+        class="flex justify-center py-2 text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
         v-bind:class="addTabClass()"
       >
         <svg
@@ -113,7 +113,7 @@ export default {
       type: Number,
     },
     allowCreate: {
-      default: false,
+      default: true,
       type: Boolean,
     },
     reorderModel: {
@@ -133,10 +133,11 @@ export default {
       const width =
         "w-1/" + (props.tabTitleList.length + (props.allowCreate ? 1 : 0));
       if (selected) {
-        return width + " text-gray-900 border-gray-500";
+        return width + " text-control-hover border-control-hover";
       }
       return (
-        width + " text-gray-500 hover:text-gray-900 hover:border-control-border"
+        width +
+        " text-control hover:text-control-hover hover:border-control-border"
       );
     };
 

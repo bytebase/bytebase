@@ -4,7 +4,7 @@
     <select
       id="tabs"
       name="tabs"
-      class="block w-full focus:ring-accent focus:border-accent border-gray-300 rounded-md"
+      class="block w-full focus:ring-accent focus:border-accent border-control-border rounded-md"
       @change="
         (e) => {
           $emit('select-index', parseInt(e.target.value));
@@ -26,7 +26,7 @@
       <button
         v-for="(item, index) in tabList"
         :key="index"
-        class="px-3 py-1 rounded-md text-normal-text font-normal text-sm focus:outline-none"
+        class="px-3 py-1 rounded-md text-control font-normal text-sm focus:outline-none"
         :class="buttonClass(index == selectedIndex)"
         @click.prevent="$emit('select-index', index)"
       >

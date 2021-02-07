@@ -13,9 +13,15 @@ module.exports = {
         accent: "var(--color-accent)",
         "accent-hover": "var(--color-accent-hover)",
         "accent-text": "var(--color-accent-text)",
+
         normal: "var(--color-normal)",
         "normal-hover": "var(--color-normal-hover)",
-        "normal-text": "var(--color-normal-text)",
+
+        main: "var(--color-main)",
+        control: "var(--color-control)",
+        "control-hover": "var(--color-control-hover)",
+        "control-placeholder": "var(--color-control-placeholder)",
+
         error: "var(--color-error)",
         "error-hover": "var(--color-error-hover)",
 

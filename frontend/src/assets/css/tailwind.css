@@ -1,12 +1,26 @@
 :root {
-  --color-accent: #111827;
-  --color-accent-hover: #374151;
+  /* indigo-600 */
+  --color-accent: #4f46e5;
+  /* indigo-800 */
+  --color-accent-hover: #3730a3;
+  /* white */
   --color-accent-text: #ffffff;
 
-  --color-normal: #f5f7f9;
+  /* gray-50 */
+  --color-normal: #f9fafb;
   /* gray-400 */
-  --color-normal-hover: #9ca3af;
-  --color-normal-text: #24292e;
+  --color-normal-hover: #e5e7eb;
+
+  /* gray-900 */
+  --color-main: #18181b;
+
+  /* gray-700 */
+  --color-control: #52525b;
+  /* gray-900 */
+  --color-control-hover: #18181b;
+
+  /* gray-400 */
+  --color-control-placeholder: #a1a1aa;
 
   /* red-600 */
   --color-error: #dc2626;
@@ -30,11 +44,11 @@
 }
 
 .btn-normal {
-  @apply border border-control-border rounded-md text-normal-text bg-normal hover:bg-normal-hover disabled:bg-normal disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply border border-control-border rounded-md text-control bg-normal hover:bg-normal-hover disabled:bg-normal disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-accent focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-icon {
-  @apply rounded-md text-normal-text bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none;
+  @apply rounded-md text-control bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none;
 }
 
 .btn-danger {
@@ -42,13 +56,17 @@
 }
 
 .link {
-  @apply text-normal-text hover:underline;
+  @apply text-main hover:underline focus:outline-none;
+}
+
+.accentlink {
+  @apply text-accent font-medium hover:underline focus:outline-none;
 }
 
 .iconlink {
-  @apply text-normal-text hover:bg-link-hover focus:outline-none;
+  @apply text-control hover:bg-link-hover focus:outline-none;
 }
 
 .sidebar-link {
-  @apply text-normal-text hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none;
+  @apply text-control hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none;
 }
