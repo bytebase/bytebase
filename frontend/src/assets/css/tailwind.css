@@ -73,7 +73,7 @@
 }
 
 .textfield {
-  @apply text-main shadow-sm focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
+  @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
 }
 
 .link {
