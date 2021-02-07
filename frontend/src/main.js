@@ -20,7 +20,7 @@ import {
   BBTableTabFilter,
 } from "./bbkit";
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV === "development" || import.meta.env.MODE === "demo") {
   makeServer();
 }
 

@@ -4,7 +4,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "demo": "vite build --mode demo"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.2.1",
