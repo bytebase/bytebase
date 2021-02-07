@@ -3,7 +3,7 @@
     <h2 class="sr-only">Details</h2>
     <div class="space-y-4">
       <div>
-        <h2 class="text-sm font-medium text-gray-500">Assignee</h2>
+        <h2 class="textlabel">Assignee</h2>
         <ul class="mt-3 space-y-3">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
@@ -19,19 +19,19 @@
         </ul>
       </div>
       <div>
-        <h2 class="text-sm font-medium text-gray-500">Requested DB Name</h2>
-        <div class="mt-1">
+        <h2 class="textlabel">Requested Database Name</h2>
+        <div class="mt-3">
           <input
             type="text"
             name="db"
             id="db"
-            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-64 text-sm border-gray-300 rounded-md"
+            class="textfield w-64"
             placeholder="Your DB Name"
           />
         </div>
       </div>
     </div>
-    <div class="mt-6 border-t border-gray-200 py-6 space-y-4">
+    <div class="mt-6 border-t border-block-border py-6 space-y-4">
       <div class="flex items-center space-x-2">
         <!-- Heroicon name: solid/lock-open -->
         <svg
@@ -50,7 +50,7 @@
       <div class="flex items-center space-x-2">
         <!-- Heroicon name: solid/chat-alt -->
         <svg
-          class="h-5 w-5 text-gray-400"
+          class="h-5 w-5 text-control-light"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -62,17 +62,17 @@
             clip-rule="evenodd"
           />
         </svg>
-        <span class="text-gray-900 text-sm font-medium">4 comments</span>
+        <span class="textfield">4 comments</span>
       </div>
       <div>
-        <h2 class="text-sm font-medium text-gray-500">Update Time</h2>
-        <span class="text-gray-900 text-sm font-medium">
+        <h2 class="textlabel">Update Time</h2>
+        <span class="textfield">
           {{ moment(pipeline.attributes.lastUpdatedTs).format("LLL") }}</span
         >
       </div>
       <div>
-        <h2 class="text-sm font-medium text-gray-500">Creation Time</h2>
-        <span class="text-gray-900 text-sm font-medium">
+        <h2 class="textlabel">Creation Time</h2>
+        <span class="textfield">
           {{ moment(pipeline.attributes.createdTs).format("LLL") }}</span
         >
       </div>
