@@ -54,9 +54,9 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionList: [
-                "instance.add",
+                "instance.create",
                 "user.manage",
-                "datasource.add",
+                "datasource.create",
                 "datasource.schema.edit",
                 "ticket.create",
               ],
@@ -199,7 +199,7 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.environment",
             meta: {
               title: () => "Environment",
-              quickActionList: ["environment.add", "environment.reorder"],
+              quickActionList: ["environment.create", "environment.reorder"],
             },
             components: {
               content: defineAsyncComponent(
@@ -214,7 +214,7 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.instance",
             meta: {
               title: () => "Instance",
-              quickActionList: ["instance.add"],
+              quickActionList: ["instance.create"],
             },
             components: {
               content: defineAsyncComponent(

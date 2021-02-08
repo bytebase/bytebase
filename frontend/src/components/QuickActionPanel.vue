@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
     <div
-      v-if="quickActionList.includes('instance.add')"
+      v-if="quickActionList.includes('instance.create')"
       class="flex flex-col items-center w-28"
     >
       <router-link to="/instance/new" class="">
@@ -109,7 +109,7 @@
     </div>
 
     <div
-      v-if="quickActionList.includes('datasource.add')"
+      v-if="quickActionList.includes('datasource.create')"
       class="flex flex-col items-center w-28"
     >
       <router-link to="/task/new" class="">
@@ -184,10 +184,10 @@
     </div>
 
     <div
-      v-if="quickActionList.includes('environment.add')"
+      v-if="quickActionList.includes('environment.create')"
       class="flex flex-col items-center w-36"
     >
-      <button class="btn-icon-primary p-3" @click.prevent="addEnvironment">
+      <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
         <svg
           class="w-6 h-6"
           fill="none"
@@ -248,8 +248,8 @@ export default {
   setup() {
     const store = useStore();
 
-    const addEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bytebase.environment.add");
+    const createEnvironment = () => {
+      store.dispatch("command/dispatchCommand", "bytebase.environment.create");
     };
 
     const reorderEnvironment = () => {
@@ -257,7 +257,7 @@ export default {
     };
 
     return {
-      addEnvironment,
+      createEnvironment,
       reorderEnvironment,
     };
   },

@@ -86,7 +86,7 @@ export default {
 
     onMounted(() => {
       store.dispatch("command/registerCommand", {
-        id: "bytebase.environment.add",
+        id: "bytebase.environment.create",
         registerId: "environment.dashboard",
         run: () => {
           createEnvironment();
@@ -103,7 +103,7 @@ export default {
 
     onUnmounted(() => {
       store.dispatch("command/unregisterCommand", {
-        id: "bytebase.environment.add",
+        id: "bytebase.environment.create",
         registerId: "environment.dashboard",
       });
       store.dispatch("command/unregisterCommand", {
