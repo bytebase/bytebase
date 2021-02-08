@@ -13,10 +13,10 @@
       <div class="absolute top-0 right-0 p-8">
         <h1 class="text-right text-4xl font-semibold tracking-tight space-y-2">
           <span class="block text-white">Simple systems work</span>
-          <span class="block text-white">and complex don't</span>
+          <span class="block text-white">complex don't</span>
         </h1>
         <p
-          class="mt-6 text-right text-xl font-normal tracking-tight text-white"
+          class="mt-6 text-right text-xl font-medium tracking-tight text-white"
         >
           Jim Gray
         </p>
