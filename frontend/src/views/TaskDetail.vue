@@ -34,7 +34,7 @@
             </section>
           </div>
           <TaskSidebar
-            class="hidden lg:flex lg:flex-none lg:w-64 lg:pl-8 xl:w-72"
+            class="hidden lg:block lg:w-64 lg:pl-8 xl:w-72"
             :task="state.task"
           />
         </div>
