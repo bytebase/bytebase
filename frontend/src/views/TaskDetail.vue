@@ -19,20 +19,24 @@
       tabindex="-1"
     >
       <div class="py-6">
-        <div
-          class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 lg:max-w-full lg:grid lg:grid-cols-3"
-        >
-          <div class="lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200">
+        <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 lg:max-w-full">
+          <div
+            class="flex flex-col flex-1 min-w-0 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
+          >
             <div>
               <TaskContentBar v-if="false" :task="state.task" />
               <TaskSidebar class="lg:hidden" :task="state.task" />
+              <div class="lg:hidden my-4 border-t border-block-border" />
               <TaskContent :task="state.task" />
             </div>
             <section aria-labelledby="activity-title" class="mt-8 lg:mt-10">
               <TaskActivityPanel :task="state.task" />
             </section>
           </div>
-          <TaskSidebar class="hidden lg:block lg:pl-8" :task="state.task" />
+          <TaskSidebar
+            class="hidden lg:flex lg:flex-none lg:w-64 lg:pl-8 xl:w-72"
+            :task="state.task"
+          />
         </div>
       </div>
     </main>
