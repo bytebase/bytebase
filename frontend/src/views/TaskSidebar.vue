@@ -24,7 +24,7 @@
           <input
             type="text"
             name="db"
-            class="textfield w-64"
+            class="textfield w-full"
             placeholder="Your DB Name"
           />
         </div>
