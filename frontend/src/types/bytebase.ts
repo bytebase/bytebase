@@ -63,6 +63,7 @@ export type Task = ResourceObject & {
       name: string;
     };
     subscriberIdList: Array<string>;
+    payload: any;
   };
 };
 export type TaskNew = Omit<Task, "id">;

@@ -74,7 +74,7 @@
         <span
           class="flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-mono bg-gray-500 text-white"
         >
-          {{ task.attributes.type }}
+          {{ task.attributes.category }}
         </span>
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">

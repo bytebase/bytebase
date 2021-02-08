@@ -15,7 +15,7 @@ export default {
     status() {
       return "RUNNING";
     },
-    type() {
+    category() {
       let dice = Math.random();
       if (dice < 0.33) {
         return "DDL";
@@ -24,6 +24,9 @@ export default {
       } else {
         return "OPS";
       }
+    },
+    type() {
+      return "bytebase.datasource.create";
     },
     content() {
       return faker.fake("{{lorem.paragraphs}}");
@@ -54,6 +57,15 @@ export default {
     },
     subscriberIdList() {
       return new Array();
+    },
+    payload() {
+      return {
+        type: "bytebase.datasource.create",
+        fieldList: {
+          // Requested Database name
+          1: "Mydb",
+        },
+      };
     },
   }),
 };

@@ -18,17 +18,32 @@
           </li>
         </ul>
       </div>
-      <div>
-        <h2 class="textlabel">Requested Database Name</h2>
-        <div class="mt-3">
-          <input
-            type="text"
-            name="db"
-            class="textfield w-full"
-            placeholder="Your DB Name"
-          />
-        </div>
-      </div>
+      <template v-if="template">
+        <template v-for="(field, index) in template.fieldList" :key="index">
+          <template v-if="field.type == 'String'">
+            <div>
+              <h2 class="textlabel">
+                {{ field.name }}
+                <span v-if="field.required" class="text-red-600">*</span>
+              </h2>
+              <div class="mt-3">
+                <input
+                  type="text"
+                  class="textfield w-full"
+                  :name="field.id"
+                  :value="
+                    field.preprocessor
+                      ? field.preprocessor(task.attributes.payload[field.id])
+                      : task.attributes.payload[field.id]
+                  "
+                  :placeholder="field.placeholder"
+                  @input="$emit('update-field', field, $event.target.value)"
+                />
+              </div>
+            </div>
+          </template>
+        </template>
+      </template>
     </div>
     <div
       v-if="!state.new"
@@ -85,6 +100,7 @@
 <script lang="ts">
 import { PropType, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
+import { taskTemplateList } from "../plugins";
 import { Task } from "../types";
 
 interface LocalState {
@@ -93,6 +109,7 @@ interface LocalState {
 
 export default {
   name: "TaskSidebar",
+  emits: ["update-field"],
   props: {
     task: {
       required: true,
@@ -100,12 +117,16 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {
+  setup(props, { emit }) {
     const state = reactive<LocalState>({
       new: isEmpty(props.task.id),
     });
 
-    return { state };
+    const template = taskTemplateList.find(
+      (template) => template.type == props.task.attributes.type
+    );
+
+    return { state, template };
   },
 };
 </script>
