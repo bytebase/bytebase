@@ -86,10 +86,10 @@
       <BBTableCell class="w-12 hidden sm:table-cell">
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
-      <BBTableCell class="w-56 hidden sm:table-cell">
+      <BBTableCell class="w-32 hidden sm:table-cell">
         {{ task.attributes.assignee.name }}
       </BBTableCell>
-      <BBTableCell :rightPadding="4" class="w-24 hidden md:table-cell">
+      <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
         {{ humanize(task.attributes.lastUpdatedTs) }}
       </BBTableCell>
     </template>
