@@ -1,7 +1,7 @@
 [
   {
     "id": "1",
-    "name": "Demo (Owner and Developer)",
+    "name": "Demo User",
     "email": "demo@example.com",
     "passwordHash": "1024"
   },
