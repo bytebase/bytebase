@@ -4,7 +4,7 @@
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
-    <!-- Page header -->
+    <!-- Highlight Panel -->
     <div class="bg-white">
       <TaskHighlightPanel
         :task="state.task"
@@ -13,12 +13,14 @@
       />
     </div>
 
-    <!-- Flow -->
+    <!-- Flow Bar -->
     <TaskFlow
       v-if="state.task.stageProgressList?.length > 0"
       :task="state.task"
     />
-    <div v-else class="border-t border-block-border" />
+
+    <!-- Output Panel -->
+    <TaskOutputPanel v-if="!state.new" :task="state.task" />
 
     <!-- Main Content -->
     <main
@@ -63,11 +65,12 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { humanize, idFromSlug, taskSlug } from "../utils";
-import TaskActivityPanel from "../views/TaskActivityPanel.vue";
-import TaskFlow from "../views/TaskFlow.vue";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
-import TaskContent from "../views/TaskContent.vue";
+import TaskFlow from "../views/TaskFlow.vue";
+import TaskOutputPanel from "../views/TaskOutputPanel.vue";
 import TaskContentBar from "../views/TaskContentBar.vue";
+import TaskContent from "../views/TaskContent.vue";
+import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
 import { User, Task, TaskNew } from "../types";
 import { taskTemplateList, TaskField } from "../plugins";
@@ -86,11 +89,12 @@ export default {
     },
   },
   components: {
-    TaskActivityPanel,
-    TaskContent,
-    TaskContentBar,
-    TaskFlow,
     TaskHighlightPanel,
+    TaskFlow,
+    TaskOutputPanel,
+    TaskContentBar,
+    TaskContent,
+    TaskActivityPanel,
     TaskSidebar,
   },
 
