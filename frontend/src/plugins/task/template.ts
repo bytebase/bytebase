@@ -2,7 +2,28 @@ import { TaskTemplate, TemplateContext, Stage } from "../types";
 
 export const taskTemplateList: TaskTemplate[] = [
   {
+    type: "bytebase.general",
+    stageListBuilder: (ctx: TemplateContext): Stage[] => {
+      return [
+        {
+          id: 1,
+          name: "Request",
+          type: "SIMPLE",
+        },
+      ];
+    },
+  },
+  {
     type: "bytebase.datasource.create",
+    stageListBuilder: (ctx: TemplateContext): Stage[] => {
+      return [
+        {
+          id: 1,
+          name: "Request Data Source",
+          type: "ENVIRONMENT",
+        },
+      ];
+    },
     outputFieldList: [
       {
         id: 1,
@@ -35,13 +56,5 @@ export const taskTemplateList: TaskTemplate[] = [
         },
       },
     ],
-    stageListBuilder: (ctx: TemplateContext): Stage[] => {
-      return [
-        {
-          name: "Request Data Source",
-          type: "SIMPLE",
-        },
-      ];
-    },
   },
 ];

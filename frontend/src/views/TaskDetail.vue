@@ -6,11 +6,42 @@
   >
     <!-- Highlight Panel -->
     <div class="bg-white">
-      <TaskHighlightPanel
-        :task="state.task"
-        :enableButton="enableHighlightButton"
-        @click-button="doClickHighlightPanelButton"
-      />
+      <TaskHighlightPanel :task="state.task">
+        <template v-if="state.new">
+          <button
+            type="button"
+            class="btn-primary px-4 py-2"
+            @click.prevent="doCreate"
+            :disabled="!enableHighlightButton(0)"
+          >
+            Create
+          </button>
+        </template>
+        <template v-else>
+          <template v-if="pendingState() !== 'CLOSED'">
+            <button
+              type="button"
+              class="btn-normal px-4 py-2"
+              :disabled="pendingState() === 'RUNNING'"
+            >
+              Close
+            </button>
+          </template>
+
+          <template v-if="pendingState() === 'APPROVAL'">
+            <button type="button" class="btn-primary px-4 py-2">Approve</button>
+          </template>
+          <template v-else-if="pendingState() === 'RESOLVE'">
+            <button type="button" class="btn-primary px-4 py-2">Resolve</button>
+          </template>
+          <template v-else-if="pendingState() === 'RUNNING'">
+            <button type="button" class="btn-primary px-4 py-2">Cancel</button>
+          </template>
+          <template v-else-if="pendingState() === 'CLOSED'">
+            <button type="button" class="btn-normal px-4 py-2">Reopen</button>
+          </template>
+        </template>
+      </TaskHighlightPanel>
     </div>
 
     <!-- Flow Bar -->
@@ -20,7 +51,10 @@
     />
 
     <!-- Output Panel -->
-    <TaskOutputPanel v-if="!state.new" :task="state.task" />
+    <TaskOutputPanel
+      v-if="!state.new && template.outputFieldList?.length > 0"
+      :task="state.task"
+    />
 
     <!-- Main Content -->
     <main
@@ -58,7 +92,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted, watchEffect, reactive, inject } from "vue";
+import { computed, onMounted, watchEffect, reactive, inject } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -73,7 +107,7 @@ import TaskContent from "../views/TaskContent.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
 import { User, Task, TaskNew } from "../types";
-import { taskTemplateList, TaskField } from "../plugins";
+import { taskTemplateList, TaskField, Stage } from "../plugins";
 
 interface LocalState {
   new: boolean;
@@ -137,9 +171,17 @@ export default {
 
     watchEffect(prepareTask);
 
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"]();
+    });
+
     const template = taskTemplateList.find(
       (template) => template.type == state.task.attributes.type
-    );
+    )!;
+
+    const stageList = template.stageListBuilder({
+      environmentList: environmentList.value,
+    });
 
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
@@ -170,20 +212,11 @@ export default {
         });
     };
 
-    const doClickHighlightPanelButton = (buttonIndex: number) => {
-      if (state.new) {
-        // Create
-        if (buttonIndex == 0) {
-          doCreate();
-        }
-      }
-    };
-
     const enableHighlightButton = (buttonIndex: number): boolean => {
       if (state.new) {
         // Create
         if (buttonIndex == 0) {
-          if (template) {
+          if (template.fieldList) {
             for (const field of template.fieldList) {
               if (
                 field.required &&
@@ -198,12 +231,38 @@ export default {
       return true;
     };
 
+    const pendingState = (): "APPROVAL" | "RESOLVE" | "RUNNING" | "CLOSED" => {
+      if (
+        state.task.attributes.status === "DONE" ||
+        state.task.attributes.status === "CANCELED"
+      ) {
+        return "CLOSED";
+      } else {
+        const currentStage = stageList.find(
+          (stage) => stage.id == state.task.attributes.currentStageId
+        );
+        if (currentStage) {
+          if (currentStage.type === "SIMPLE") {
+            return "RESOLVE";
+          } else if (currentStage.type === "ENVIRONMENT") {
+            if (state.task.attributes.status === "RUNNING") {
+              return "RUNNING";
+            }
+            return "APPROVAL";
+          }
+        }
+        return "CLOSED";
+      }
+    };
+
     return {
       state,
+      template,
       humanize,
       updateField,
-      doClickHighlightPanelButton,
+      doCreate,
       enableHighlightButton,
+      pendingState,
     };
   },
 };

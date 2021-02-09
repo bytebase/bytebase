@@ -2,6 +2,8 @@ import { Environment } from "../types";
 
 // Stage
 export type Stage = {
+  // Similar to TaskField.id below
+  id: number;
   name: string;
   type: "SIMPLE" | "ENVIRONMENT";
 };
@@ -38,7 +40,7 @@ export type TemplateContext = {
   environmentList: Environment[];
 };
 
-export type TemplateOutput = {
+export type TemplateOutputField = {
   // Similar to TaskField.id above
   id: number;
   name: string;
@@ -47,7 +49,7 @@ export type TemplateOutput = {
 
 export type TaskTemplate = {
   type: string;
-  outputFieldList: TemplateOutputField[];
-  fieldList: TaskField[];
   stageListBuilder: (ctx: TemplateContext) => Stage[];
+  outputFieldList?: TemplateOutputField[];
+  fieldList?: TaskField[];
 };

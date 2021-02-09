@@ -37,7 +37,7 @@ export type NewBookmark = Omit<Bookmark, "id">;
 export type Activity = ResourceObject & {};
 export type ActivityNew = Omit<Activity, "id">;
 
-type TaskTypeGeneral = "bytebase.general";
+type TaskTypeGeneral = "bytebase.genera.create";
 
 type TaskTypeDataSource = "bytebase.datasource.create";
 

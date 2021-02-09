@@ -31,20 +31,7 @@
         </div>
       </div>
       <div class="mt-6 flex space-x-3 md:mt-0 md:ml-4">
-        <template v-if="state.new">
-          <button
-            type="button"
-            class="btn-primary px-4 py-2"
-            @click.prevent="$emit('click-button', 0)"
-            :disabled="!enableButton(0)"
-          >
-            Create
-          </button>
-        </template>
-        <template v-else>
-          <button type="button" class="btn-normal px-4 py-2">Close</button>
-          <button type="button" class="btn-primary px-4 py-2">Resolve</button>
-        </template>
+        <slot />
       </div>
     </div>
   </div>
@@ -61,18 +48,10 @@ interface LocalState {
 
 export default {
   name: "TaskHighlightPanel",
-  emits: ["click-button"],
   props: {
     task: {
       required: true,
       type: Object as PropType<Task>,
-    },
-    enableButton: {
-      // [TODO]: Don't know how to declare function type as property...
-      type: Function,
-      default: (index: number) => {
-        return true;
-      },
     },
   },
   components: {},
