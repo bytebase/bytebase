@@ -11,7 +11,10 @@ export const taskTemplateList: TaskTemplate[] = [
         type: "String",
         required: true,
         preprocessor: (name: string): string => {
-          return name.toLowerCase();
+          // In case caller passes corrupted data.
+          // Handled here instead of the caller, because it's
+          // preprocessor specific behavior to handle fallback.
+          return name?.toLowerCase();
         },
       },
     ],
