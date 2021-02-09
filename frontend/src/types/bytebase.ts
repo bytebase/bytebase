@@ -69,6 +69,10 @@ export type Task = ResourceObject & {
       id: string;
       name: string;
     };
+    assignee: {
+      id: string;
+      name: string;
+    };
     subscriberIdList: Array<string>;
     payload: any;
   };
