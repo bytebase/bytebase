@@ -59,6 +59,7 @@
 import { onMounted, watchEffect, reactive, inject } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { humanize, idFromSlug, taskSlug } from "../utils";
@@ -116,10 +117,8 @@ export default {
                   },
                 },
               }
-            : JSON.parse(
-                JSON.stringify(
-                  store.getters["task/taskById"](idFromSlug(props.taskSlug))
-                )
+            : cloneDeep(
+                store.getters["task/taskById"](idFromSlug(props.taskSlug))
               ),
       };
     };

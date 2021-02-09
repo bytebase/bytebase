@@ -301,6 +301,7 @@ input[type="number"] {
 import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { urlfy, idFromSlug } from "../utils";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -371,7 +372,7 @@ export default {
         state.originalInstance = instance as Instance;
       }
       // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
-      state.instance = JSON.parse(JSON.stringify(state.originalInstance));
+      state.instance = cloneDeep(state.originalInstance);
     };
 
     const assignAdminDataSource = (dataSource: DataSource | DataSourceNew) => {
@@ -379,9 +380,7 @@ export default {
         state.originalAdminDataSource = dataSource as DataSource;
       }
       // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
-      state.adminDataSource = JSON.parse(
-        JSON.stringify(state.originalAdminDataSource)
-      );
+      state.adminDataSource = cloneDeep(state.originalAdminDataSource);
     };
 
     const updateInstance = (field: string, value: string) => {

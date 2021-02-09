@@ -70,6 +70,7 @@
 
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
+import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { Environment, EnvironmentNew } from "../types";
 
@@ -101,7 +102,7 @@ export default {
     // [NOTE] Ternary operator doesn't trigger VS type checking, so we use a separate
     // IF block.
     if (props.environment) {
-      state.environment = JSON.parse(JSON.stringify(props.environment));
+      state.environment = cloneDeep(props.environment);
     } else {
       state.environment = {
         type: "environment",
@@ -126,9 +127,7 @@ export default {
       this.state.environment!.attributes[field] = value;
     },
     revertEnvironment: function () {
-      this.state.environment = JSON.parse(
-        JSON.stringify(this.$props.environment)
-      );
+      this.state.environment = cloneDeep(this.$props.environment);
     },
   },
 };
