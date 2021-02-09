@@ -21,7 +21,9 @@
               :name="field.id"
               class="z-10 flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:ring-control focus:border-control sm:text-sm"
             />
+            <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
             <button
+              tabindex="-1"
               class="z-0 -ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
             >
               <svg
@@ -40,6 +42,7 @@
               </svg>
             </button>
             <button
+              tabindex="-1"
               class="z-0 -ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
             >
               <svg
