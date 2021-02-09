@@ -1,5 +1,9 @@
-import { InstanceId } from "../types";
+import { InstanceId, TaskId } from "../types";
 import slug from "slug";
+
+export function taskSlug(taskName: string, taskId: TaskId) {
+  return [slug(taskName), taskId].join("-");
+}
 
 export function instanceSlug(
   environmentName: string,

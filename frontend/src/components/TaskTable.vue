@@ -106,7 +106,7 @@ import {
   BBStep,
   BBStepStatus,
 } from "../bbkit/types";
-import { humanize } from "../utils";
+import { humanize, taskSlug } from "../utils";
 import { EnvironmentId, Task } from "../types";
 
 interface LocalState {
@@ -225,7 +225,8 @@ export default {
     };
 
     const clickTask = function (section: number, row: number) {
-      router.push(`/task/${props.taskSectionList[section].list[row].id}`);
+      const task = props.taskSectionList[section].list[row];
+      router.push(`/task/${taskSlug(task.attributes.name, task.id)}`);
     };
 
     return {

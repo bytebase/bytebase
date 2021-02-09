@@ -11,19 +11,19 @@ const getters = {
   routeSlug: (state: RouterState) => (
     currentRoute: RouteLocationNormalized
   ): RouterSlug => {
-    // /task/<<task-id>>
-    // Total 2 elements, 2nd element is the task id
+    // /task/:taskSlug
+    // Total 2 elements, 2nd element is the task slug
     const taskComponents = currentRoute.path.match(
       "/task/([0-9a-zA-Z_-]+)"
     ) || ["/", undefined];
     if (taskComponents[1]) {
       return {
-        taskId: taskComponents[1],
+        taskSlug: taskComponents[1],
       };
     }
 
-    // /instance/<<instance-id>>
-    // Total 2 elements, 2nd element is the task id
+    // /instance/:instanceSlug
+    // Total 2 elements, 2nd element is the instance slug
     const instanceComponents = currentRoute.path.match(
       "/instance/([0-9a-zA-Z_-]+)"
     ) || ["/", undefined];

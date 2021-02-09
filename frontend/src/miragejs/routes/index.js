@@ -77,6 +77,19 @@ export default function routes() {
     );
   });
 
+  this.post("/task", function (schema, request) {
+    const newTask = {
+      ...this.normalizedRequestAttrs("task"),
+      workspaceId: WORKSPACE_ID,
+    };
+    return schema.tasks.create(newTask);
+  });
+
+  this.patch("/task/:taskId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("task");
+    return schema.tasks.find(request.params.environmentId).update(attrs);
+  });
+
   // environment
   this.get("/environment", function (schema, request) {
     return schema.environments

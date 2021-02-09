@@ -230,7 +230,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.instanceSlug as string;
-                if (slug.toUpperCase() == "NEW") {
+                if (slug.toLowerCase() == "new") {
                   return "New";
                 }
                 return store.getters["instance/instanceById"](idFromSlug(slug))
@@ -246,15 +246,16 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true },
           },
           {
-            path: "task/:taskId",
+            path: "task/:taskSlug",
             name: "workspace.task.detail",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const taskId = route.params.taskId as string;
-                if (taskId.toUpperCase() == "NEW") {
+                const slug = route.params.taskSlug as string;
+                if (slug.toLowerCase() == "new") {
                   return "New";
                 }
-                return store.getters["task/taskById"](taskId).attributes.name;
+                return store.getters["task/taskById"](idFromSlug(slug))
+                  .attributes.name;
               },
             },
             components: {
@@ -324,18 +325,18 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = store.getters["router/routeSlug"](to);
-  const taskId = routerSlug.taskId;
+  const taskSlug = routerSlug.taskSlug;
   const instanceSlug = routerSlug.instanceSlug;
 
   console.log("RouterSlug:", routerSlug);
 
-  if (taskId) {
-    if (taskId.toUpperCase() == "NEW") {
+  if (taskSlug) {
+    if (taskSlug.toLowerCase() == "new") {
       next();
       return;
     }
     store
-      .dispatch("task/fetchTaskById", taskId)
+      .dispatch("task/fetchTaskById", idFromSlug(taskSlug))
       .then((task) => {
         next();
       })
@@ -349,7 +350,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    if (instanceSlug.toUpperCase() == "NEW") {
+    if (instanceSlug.toLowerCase() == "new") {
       next();
       return;
     }

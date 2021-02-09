@@ -129,7 +129,7 @@ export type SignupInfo = Omit<
 
 // UI State Models
 export type RouterSlug = {
-  taskId?: TaskId;
+  taskSlug?: string;
   instanceSlug?: string;
 };
 
