@@ -51,7 +51,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "vue";
+import { PropType, watchEffect, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { Task } from "../types";
 
@@ -80,6 +80,12 @@ export default {
     const state = reactive<LocalState>({
       new: isEmpty(props.task.id),
     });
+
+    const refreshState = () => {
+      state.new = isEmpty(props.task.id);
+    };
+
+    watchEffect(refreshState);
 
     return { state };
   },

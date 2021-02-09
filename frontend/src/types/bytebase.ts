@@ -24,7 +24,11 @@ export type CommandId = string;
 export type CommandRegisterId = string;
 
 // Persistent State Models
-export type User = ResourceObject & {};
+export type User = ResourceObject & {
+  attributes: {
+    name: string;
+  };
+};
 export type NewUser = Omit<User, "id">;
 
 export type Bookmark = ResourceObject & {};
@@ -33,13 +37,20 @@ export type NewBookmark = Omit<Bookmark, "id">;
 export type Activity = ResourceObject & {};
 export type ActivityNew = Omit<Activity, "id">;
 
+type TaskTypeGeneral = "bytebase.general";
+
+type TaskTypeDataSource = "bytebase.datasource.create";
+
+export type TaskType = TaskTypeGeneral & TaskTypeDataSource;
+
 export type Task = ResourceObject & {
   attributes: {
     name: string;
     createdTs: number;
     lastUpdatedTs: number;
     status: "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
-    type: "DDL" | "DML" | "OPS";
+    category: "DDL" | "DML" | "OPS";
+    type: TaskType;
     content: string;
     currentStageId: string;
     stageProgressList: {
@@ -58,15 +69,27 @@ export type Task = ResourceObject & {
       id: string;
       name: string;
     };
-    assignee: {
-      id: string;
-      name: string;
-    };
     subscriberIdList: Array<string>;
     payload: any;
   };
 };
-export type TaskNew = Omit<Task, "id">;
+
+export type TaskNew = Omit<ResourceObject, "id"> & {
+  attributes: {
+    name: string;
+    type: string;
+    content: string;
+    creator: {
+      id: string;
+      name: string;
+    };
+    assignee: {
+      id: string;
+      name: string;
+    };
+    payload: any;
+  };
+};
 
 export type Environment = ResourceObject & {
   attributes: {

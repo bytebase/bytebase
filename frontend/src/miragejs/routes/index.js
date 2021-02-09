@@ -78,8 +78,11 @@ export default function routes() {
   });
 
   this.post("/task", function (schema, request) {
+    const ts = Date.now();
     const newTask = {
       ...this.normalizedRequestAttrs("task"),
+      createdTs: ts,
+      lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
     };
     return schema.tasks.create(newTask);
@@ -87,7 +90,9 @@ export default function routes() {
 
   this.patch("/task/:taskId", function (schema, request) {
     const attrs = this.normalizedRequestAttrs("task");
-    return schema.tasks.find(request.params.environmentId).update(attrs);
+    return schema.tasks
+      .find(request.params.environmentId)
+      .update({ ...attrs, lastUpdatedTs: Date.now() });
   });
 
   // environment

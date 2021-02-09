@@ -6,14 +6,34 @@
         <h2 class="textlabel">Assignee</h2>
         <ul class="mt-3 space-y-3">
           <li class="flex justify-start items-center space-x-2">
-            <div class="flex-shrink-0">
+            <div v-if="task.attributes.assignee" class="flex-shrink-0">
               <BBAvatar
                 :size="'small'"
                 :username="task.attributes.assignee.name"
               />
             </div>
             <div class="text-sm font-medium text-gray-900">
-              {{ task.attributes.assignee.name }}
+              {{
+                task.attributes.assignee
+                  ? task.attributes.assignee.name
+                  : "Unassigned"
+              }}
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="textlabel">Reporter</h2>
+        <ul class="mt-3 space-y-3">
+          <li class="flex justify-start items-center space-x-2">
+            <div class="flex-shrink-0">
+              <BBAvatar
+                :size="'small'"
+                :username="task.attributes.creator.name"
+              />
+            </div>
+            <div class="text-sm font-medium text-gray-900">
+              {{ task.attributes.creator.name }}
             </div>
           </li>
         </ul>
@@ -98,7 +118,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "vue";
+import { PropType, watchEffect, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { taskTemplateList } from "../plugins";
 import { Task } from "../types";
@@ -121,6 +141,12 @@ export default {
     const state = reactive<LocalState>({
       new: isEmpty(props.task.id),
     });
+
+    const refreshState = () => {
+      state.new = isEmpty(props.task.id);
+    };
+
+    watchEffect(refreshState);
 
     const template = taskTemplateList.find(
       (template) => template.type == props.task.attributes.type

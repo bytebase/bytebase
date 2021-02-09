@@ -14,7 +14,10 @@
     </div>
 
     <!-- Flow -->
-    <TaskFlow v-if="!state.new" :task="state.task" />
+    <TaskFlow
+      v-if="state.task.stageProgressList?.length > 0"
+      :task="state.task"
+    />
     <div v-else class="border-t border-block-border" />
 
     <!-- Main Content -->
@@ -53,29 +56,30 @@
 </template>
 
 <script lang="ts">
-import { onMounted, reactive, inject } from "vue";
+import { onMounted, watchEffect, reactive, inject } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { humanize } from "../utils";
+import { humanize, idFromSlug, taskSlug } from "../utils";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskContent from "../views/TaskContent.vue";
 import TaskContentBar from "../views/TaskContentBar.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
-import { User, Task } from "../types";
+import { User, Task, TaskNew } from "../types";
 import { taskTemplateList, TaskField } from "../plugins";
 
 interface LocalState {
   new: boolean;
-  task: Task;
+  task: Task | TaskNew;
 }
 
 export default {
   name: "TaskDetail",
   props: {
-    taskId: {
+    taskSlug: {
       required: true,
       type: String,
     },
@@ -91,45 +95,44 @@ export default {
 
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const currentUser = inject<User>(UserStateSymbol);
 
-    const state = reactive<LocalState>({
-      new: props.taskId.toLowerCase() == "new",
-      task:
-        props.taskId.toLowerCase() == "new"
-          ? {
-              type: "task",
-              attributes: {
-                name: "New Task",
-                status: "PENDING",
-                type: "bytebase.datasource.create",
-                content: "Need a new database",
-                currentStageId: "1",
-                stageProgressList: [
-                  {
-                    stageId: "1",
-                    stageName: "Request Database",
-                    status: "CREATED",
+    const refreshState = () => {
+      return {
+        new: props.taskSlug.toLowerCase() == "new",
+        task:
+          props.taskSlug.toLowerCase() == "new"
+            ? {
+                type: "task",
+                attributes: {
+                  name: "New General Task",
+                  type: "bytebase.general",
+                  content: "blablabla",
+                  creator: {
+                    id: currentUser!.id,
+                    name: currentUser!.attributes.name,
                   },
-                ],
-                creator: {
-                  id: currentUser!.id,
-                  name: currentUser!.attributes.name,
                 },
-                assignee: {
-                  id: currentUser!.id,
-                  name: currentUser!.attributes.name,
-                },
-                payload: {
-                  1: "mydb",
-                },
-              },
-            }
-          : JSON.parse(
-              JSON.stringify(store.getters["task/taskById"](props.taskId))
-            ),
-    });
+              }
+            : JSON.parse(
+                JSON.stringify(
+                  store.getters["task/taskById"](idFromSlug(props.taskSlug))
+                )
+              ),
+      };
+    };
+
+    const state = reactive<LocalState>(refreshState());
+
+    const prepareTask = () => {
+      const updatededState = refreshState();
+      state.new = updatededState.new;
+      state.task = updatededState.task;
+    };
+
+    watchEffect(prepareTask);
 
     const template = taskTemplateList.find(
       (template) => template.type == state.task.attributes.type
@@ -152,6 +155,16 @@ export default {
 
     const doCreate = () => {
       console.log("Create", state.task);
+      store
+        .dispatch("task/createTask", state.task)
+        .then((createdTask) => {
+          router.push(
+            `/task/${taskSlug(createdTask.attributes.name, createdTask.id)}`
+          );
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     const doClickHighlightPanelButton = (buttonIndex: number) => {

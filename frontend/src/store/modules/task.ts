@@ -1,5 +1,5 @@
 import axios from "axios";
-import { UserId, TaskId, Task, TaskState } from "../../types";
+import { UserId, TaskId, Task, TaskNew, TaskState } from "../../types";
 
 const state: () => TaskState = () => ({
   taskListByUser: new Map(),
@@ -30,6 +30,36 @@ const actions = {
       task,
     });
     return task;
+  },
+
+  async createTask({ commit }: any, newTask: TaskNew) {
+    const createdTask = (
+      await axios.post(`/api/task`, {
+        data: newTask,
+      })
+    ).data.data;
+
+    commit("setTaskById", {
+      taskId: createdTask.id,
+      task: createdTask,
+    });
+
+    return createdTask;
+  },
+
+  async patchTask({ commit }: any, task: Task) {
+    const updatedTask = (
+      await axios.patch(`/api/task/${task.id}`, {
+        data: task,
+      })
+    ).data.data;
+
+    commit("setTaskById", {
+      taskId: task.id,
+      task: updatedTask,
+    });
+
+    return updatedTask;
   },
 };
 
