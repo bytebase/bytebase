@@ -10,8 +10,6 @@ import environment from "./environment";
 import instance from "./instance";
 import dataSource from "./dataSource";
 import repository from "./repository";
-import job from "./job";
-import step from "./step";
 import task from "./task";
 import taskPatch from "./taskPatch";
 import group from "./group";
@@ -35,8 +33,6 @@ export default {
   ...instance,
   ...dataSource,
   ...repository,
-  ...job,
-  ...step,
   ...task,
   ...taskPatch,
   ...group,

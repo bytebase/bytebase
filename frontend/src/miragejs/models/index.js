@@ -80,14 +80,6 @@ export default {
     project: belongsTo(),
   }),
 
-  job: Model.extend({
-    step: hasMany(),
-  }),
-
-  step: Model.extend({
-    job: belongsTo(),
-  }),
-
   batchUpdate: Model,
 
   signupInfo: Model,
