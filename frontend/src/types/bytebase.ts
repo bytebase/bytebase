@@ -66,7 +66,7 @@ type TaskTypeGeneral = "bytebase.general.create";
 
 type TaskTypeDataSource = "bytebase.datasource.create";
 
-export type TaskType = TaskTypeGeneral & TaskTypeDataSource;
+export type TaskType = TaskTypeGeneral | TaskTypeDataSource;
 
 export type TaskStatus = "OPEN" | "DONE" | "CANCELED";
 
