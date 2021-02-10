@@ -1,11 +1,13 @@
-import { Environment } from "../types";
+import { Environment, TaskNew, User } from "../types";
 
 // Stage
+export type StageType = "SIMPLE" | "ENVIRONMENT";
+
 export type Stage = {
   // Similar to TaskField.id below
   id: number;
   name: string;
-  type: "SIMPLE" | "ENVIRONMENT";
+  type: StageType;
 };
 
 // Task
@@ -38,6 +40,7 @@ export type TaskField = {
 // Template
 export type TemplateContext = {
   environmentList: Environment[];
+  currentUser: User;
 };
 
 export type TemplateOutputField = {
@@ -49,7 +52,7 @@ export type TemplateOutputField = {
 
 export type TaskTemplate = {
   type: string;
-  stageListBuilder: (ctx: TemplateContext) => Stage[];
+  buildTask: (ctx: TemplateContext) => TaskNew;
   outputFieldList?: TemplateOutputField[];
   fieldList?: TaskField[];
 };

@@ -215,10 +215,10 @@ export default {
             break;
         }
         return {
-          title: stageProgress.stageName,
+          title: stageProgress.name,
           status: stepStatus,
           link: (): string => {
-            return `/task/${task.id}#${stageProgress.stageId}`;
+            return `/task/${task.id}#${stageProgress.id}`;
           },
         };
       });

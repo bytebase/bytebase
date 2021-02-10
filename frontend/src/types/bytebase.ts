@@ -1,5 +1,6 @@
 import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
+import { StageType } from "../plugins";
 
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
@@ -43,6 +44,20 @@ type TaskTypeDataSource = "bytebase.datasource.create";
 
 export type TaskType = TaskTypeGeneral & TaskTypeDataSource;
 
+export type StageProgress = {
+  id: number;
+  name: string;
+  type: StageType;
+  status:
+    | "CREATED"
+    | "PENDING"
+    | "RUNNING"
+    | "DONE"
+    | "FAILED"
+    | "CANCELED"
+    | "SKIPPED";
+};
+
 export type Task = ResourceObject & {
   attributes: {
     name: string;
@@ -53,18 +68,7 @@ export type Task = ResourceObject & {
     type: TaskType;
     content: string;
     currentStageId: string;
-    stageProgressList: {
-      stageId: string;
-      stageName: string;
-      status:
-        | "CREATED"
-        | "PENDING"
-        | "RUNNING"
-        | "DONE"
-        | "FAILED"
-        | "CANCELED"
-        | "SKIPPED";
-    }[];
+    stageProgressList: StageProgress[];
     creator: {
       id: string;
       name: string;
@@ -83,15 +87,16 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
     name: string;
     type: string;
     content: string;
+    stageProgressList: StageProgress[];
     creator: {
       id: string;
       name: string;
     };
-    assignee: {
+    assignee?: {
       id: string;
       name: string;
     };
-    payload: any;
+    payload?: any;
   };
 };
 

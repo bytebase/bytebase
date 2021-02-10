@@ -154,10 +154,10 @@ export default {
     const stageList: FlowItem[] = props.task.attributes.stageProgressList.map(
       (stageProgress) => {
         return {
-          title: stageProgress.stageName,
+          title: stageProgress.name,
           status: stageProgress.status,
           link: (): string => {
-            return `/task/${props.task.id}#${stageProgress.stageId}`;
+            return `/task/${props.task.id}#${stageProgress.id}`;
           },
         };
       }

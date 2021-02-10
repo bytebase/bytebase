@@ -136,25 +136,24 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"]();
+    });
+
     const currentUser = inject<User>(UserStateSymbol);
 
     const refreshState = () => {
+      const generalTaskTemplate = taskTemplateList.find(
+        (template) => template.type == "bytebase.general"
+      )!;
       return {
         new: props.taskSlug.toLowerCase() == "new",
         task:
           props.taskSlug.toLowerCase() == "new"
-            ? {
-                type: "task",
-                attributes: {
-                  name: "New General Task",
-                  type: "bytebase.general",
-                  content: "blablabla",
-                  creator: {
-                    id: currentUser!.id,
-                    name: currentUser!.attributes.name,
-                  },
-                },
-              }
+            ? generalTaskTemplate.buildTask({
+                environmentList: environmentList.value,
+                currentUser: currentUser!,
+              })
             : cloneDeep(
                 store.getters["task/taskById"](idFromSlug(props.taskSlug))
               ),
@@ -163,6 +162,10 @@ export default {
 
     const state = reactive<LocalState>(refreshState());
 
+    const template = taskTemplateList.find(
+      (template) => template.type == state.task.attributes.type
+    )!;
+
     const prepareTask = () => {
       const updatededState = refreshState();
       state.new = updatededState.new;
@@ -170,18 +173,6 @@ export default {
     };
 
     watchEffect(prepareTask);
-
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
-    });
-
-    const template = taskTemplateList.find(
-      (template) => template.type == state.task.attributes.type
-    )!;
-
-    const stageList = template.stageListBuilder({
-      environmentList: environmentList.value,
-    });
 
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
@@ -238,7 +229,7 @@ export default {
       ) {
         return "CLOSED";
       } else {
-        const currentStage = stageList.find(
+        const currentStage = (state.task as Task).attributes.stageProgressList.find(
           (stage) => stage.id == state.task.attributes.currentStageId
         );
         if (currentStage) {
