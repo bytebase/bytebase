@@ -13,7 +13,7 @@ export default {
       return Date.now() - i * 3600 * 1000;
     },
     status() {
-      return "RUNNING";
+      return "OPEN";
     },
     category() {
       let dice = Math.random();
@@ -30,9 +30,6 @@ export default {
     },
     content() {
       return faker.fake("{{lorem.paragraphs}}");
-    },
-    currentStageId() {
-      return "1";
     },
     stageProgressList() {
       return [

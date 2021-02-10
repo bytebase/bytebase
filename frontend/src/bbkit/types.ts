@@ -8,8 +8,8 @@ export type BBTableSectionDataSource<T> = {
 };
 
 export type BBStepStatus =
-  | "CREATED"
   | "PENDING"
+  | "PENDING_ACTIVE"
   | "RUNNING"
   | "DONE"
   | "FAILED"

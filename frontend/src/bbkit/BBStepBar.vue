@@ -14,13 +14,13 @@
           class="relative w-6 h-6 flex items-center justify-center rounded-full"
           :class="stepClass(step.status)"
         >
-          <template v-if="step.status == `CREATED`">
+          <template v-if="step.status == `PENDING`">
             <span
               class="h-1.5 w-1.5 bg-gray-300 hover:bg-gray-400 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
-          <template v-else-if="step.status == `PENDING`">
+          <template v-else-if="step.status == `PENDING_ACTIVE`">
             <span
               class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
               aria-hidden="true"
@@ -114,9 +114,9 @@ export default {
   setup(props, ctx) {
     const stepClass = (status: BBStepStatus) => {
       switch (status) {
-        case "CREATED":
-          return "bg-white border-2 border-gray-300 hover:border-gray-400";
         case "PENDING":
+          return "bg-white border-2 border-gray-300 hover:border-gray-400";
+        case "PENDING_ACTIVE":
           return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
         case "RUNNING":
           return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";

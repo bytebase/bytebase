@@ -1,10 +1,11 @@
 import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
-import { StageType } from "../plugins";
 
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
 export type UserId = string;
+
+export type StageId = string;
 
 export type TaskId = string;
 
@@ -38,27 +39,36 @@ export type NewBookmark = Omit<Bookmark, "id">;
 export type Activity = ResourceObject & {};
 export type ActivityNew = Omit<Activity, "id">;
 
+// Stage
+export type StageType = "SIMPLE" | "ENVIRONMENT";
+
+export type StageStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "FAILED"
+  | "CANCELED"
+  | "SKIPPED";
+
+export type Stage = {
+  id: StageId;
+  name: string;
+  type: StageType;
+  environmentId?: EnvironmentId;
+};
+
+export type StageProgress = Stage & {
+  status: StageStatus;
+};
+
+// Task
 type TaskTypeGeneral = "bytebase.genera.create";
 
 type TaskTypeDataSource = "bytebase.datasource.create";
 
 export type TaskType = TaskTypeGeneral & TaskTypeDataSource;
 
-export type StageProgress = {
-  id: number;
-  name: string;
-  type: StageType;
-  status:
-    | "CREATED"
-    | "PENDING"
-    | "RUNNING"
-    | "DONE"
-    | "FAILED"
-    | "CANCELED"
-    | "SKIPPED";
-};
-
-export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+export type TaskStatus = "OPEN" | "DONE" | "CANCELED";
 
 export type Task = ResourceObject & {
   attributes: {
@@ -69,7 +79,6 @@ export type Task = ResourceObject & {
     category: "DDL" | "DML" | "OPS";
     type: TaskType;
     content: string;
-    currentStageId: string;
     stageProgressList: StageProgress[];
     creator: {
       id: string;
@@ -113,6 +122,7 @@ export type TaskPatch = {
   payload?: any;
 };
 
+// Environment
 export type Environment = ResourceObject & {
   attributes: {
     name: string;
@@ -121,6 +131,7 @@ export type Environment = ResourceObject & {
 };
 export type EnvironmentNew = Omit<Environment, "id">;
 
+// Instance
 export type Instance = ResourceObject & {
   attributes: {
     name: string;
@@ -132,6 +143,7 @@ export type Instance = ResourceObject & {
 };
 export type InstanceNew = Omit<Instance, "id">;
 
+// Data Source
 export type DataSource = ResourceObject & {
   attributes: {
     name: string;
@@ -143,15 +155,19 @@ export type DataSource = ResourceObject & {
 };
 export type DataSourceNew = Omit<DataSource, "id">;
 
+// Group
 export type Group = ResourceObject & {};
 export type GroupNew = Omit<Group, "id">;
 
+// Project
 export type Project = ResourceObject & {};
 export type ProjectNew = Omit<Project, "id">;
 
+// Repository
 export type Repository = ResourceObject & {};
 export type RepositoryNew = Omit<Repository, "id">;
 
+// Auth
 export type LoginInfo = Omit<
   ResourceObject & {
     attributes: {

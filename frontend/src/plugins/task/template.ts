@@ -1,4 +1,4 @@
-import { TaskTemplate, TemplateContext, Stage } from "../types";
+import { TaskTemplate, TemplateContext } from "../types";
 import { TaskNew } from "../../types";
 
 export const taskTemplateList: TaskTemplate[] = [
@@ -13,10 +13,10 @@ export const taskTemplateList: TaskTemplate[] = [
           content: "blablabla",
           stageProgressList: [
             {
-              id: 1,
+              id: "1",
               name: "Request",
               type: "SIMPLE",
-              status: "CREATED",
+              status: "PENDING",
             },
           ],
           creator: {
@@ -38,10 +38,10 @@ export const taskTemplateList: TaskTemplate[] = [
           content: "blablabla",
           stageProgressList: [
             {
-              id: 1,
+              id: "1",
               name: "Request Data Source",
               type: "ENVIRONMENT",
-              status: "CREATED",
+              status: "PENDING",
             },
           ],
           creator: {

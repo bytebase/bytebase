@@ -17,28 +17,83 @@
             Create
           </button>
         </template>
-        <template v-else>
+        <!-- Action Buttons only applicable to creator -->
+        <template
+          v-else-if="currentUser.id === state.task.attributes.creator.id"
+        >
           <template v-if="pendingState() !== 'CLOSED'">
             <button
               type="button"
               class="btn-normal px-4 py-2"
+              @click.prevent="doAbort"
               :disabled="pendingState() === 'RUNNING'"
             >
-              Close
+              Abort
             </button>
           </template>
 
-          <template v-if="pendingState() === 'APPROVAL'">
-            <button type="button" class="btn-primary px-4 py-2">Approve</button>
-          </template>
-          <template v-else-if="pendingState() === 'RESOLVE'">
-            <button type="button" class="btn-success px-4 py-2">Resolve</button>
+          <template v-if="pendingState() === 'RESOLVE'">
+            <button
+              type="button"
+              class="btn-success px-4 py-2"
+              @click.prevent="doResolve"
+            >
+              Resolve
+            </button>
           </template>
           <template v-else-if="pendingState() === 'RUNNING'">
-            <button type="button" class="btn-primary px-4 py-2">Cancel</button>
+            <button
+              type="button"
+              class="btn-primary px-4 py-2"
+              @click.prevent="doAbort"
+            >
+              Cancel
+            </button>
           </template>
           <template v-else-if="pendingState() === 'CLOSED'">
-            <button type="button" class="btn-normal px-4 py-2">Reopen</button>
+            <button
+              type="button"
+              class="btn-normal px-4 py-2"
+              @click.prevent="doReopen"
+            >
+              Reopen
+            </button>
+          </template>
+        </template>
+        <!-- Action Buttons only applicable to assignee -->
+        <template
+          v-else-if="currentUser.id === state.task.attributes.assignee?.id"
+        >
+          <template v-if="pendingState() === 'APPROVAL'">
+            <button
+              type="button"
+              class="btn-primary px-4 py-2"
+              @click.prevent="doApprove"
+            >
+              Approve
+            </button>
+          </template>
+          <template v-else-if="pendingState() === 'RESOLVE'">
+            <button
+              v-if="
+                currentUser.id === state.task.attributes.assignee?.id ||
+                currentUser.id === state.task.attributes.creator.id
+              "
+              type="button"
+              class="btn-success px-4 py-2"
+              @click.prevent="doResolve"
+            >
+              Resolve
+            </button>
+          </template>
+          <template v-else-if="pendingState() === 'RUNNING'">
+            <button
+              type="button"
+              class="btn-primary px-4 py-2"
+              @click.prevent="doAbort"
+            >
+              Cancel
+            </button>
           </template>
         </template>
       </TaskHighlightPanel>
@@ -106,8 +161,8 @@ import TaskContentBar from "../views/TaskContentBar.vue";
 import TaskContent from "../views/TaskContent.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
-import { User, Task, TaskNew } from "../types";
-import { taskTemplateList, TaskField, Stage } from "../plugins";
+import { User, Task, TaskNew, TaskPatch } from "../types";
+import { taskTemplateList, TaskField } from "../plugins";
 
 interface LocalState {
   new: boolean;
@@ -166,13 +221,13 @@ export default {
       (template) => template.type == state.task.attributes.type
     )!;
 
-    const prepareTask = () => {
-      const updatededState = refreshState();
-      state.new = updatededState.new;
-      state.task = updatededState.task;
+    const refreshTask = () => {
+      const updatedState = refreshState();
+      state.new = updatedState.new;
+      state.task = updatedState.task;
     };
 
-    watchEffect(prepareTask);
+    watchEffect(refreshTask);
 
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
@@ -190,7 +245,6 @@ export default {
     };
 
     const doCreate = () => {
-      console.log("Create", state.task);
       store
         .dispatch("task/createTask", state.task)
         .then((createdTask) => {
@@ -201,6 +255,40 @@ export default {
         .catch((error) => {
           console.log(error);
         });
+    };
+
+    const patchTask = (taskPatch: TaskPatch) => {
+      store
+        .dispatch("task/patchTask", {
+          taskId: (state.task as Task).id,
+          taskPatch,
+        })
+        .then((updatedTask) => {
+          state.task = cloneDeep(updatedTask);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    const doAbort = () => {
+      patchTask({
+        status: "CANCELED",
+      });
+    };
+
+    const doApprove = () => {};
+
+    const doReopen = () => {
+      patchTask({
+        status: "OPEN",
+      });
+    };
+
+    const doResolve = () => {
+      patchTask({
+        status: "DONE",
+      });
     };
 
     const enableHighlightButton = (buttonIndex: number): boolean => {
@@ -236,7 +324,7 @@ export default {
           if (currentStage.type === "SIMPLE") {
             return "RESOLVE";
           } else if (currentStage.type === "ENVIRONMENT") {
-            if (state.task.attributes.status === "RUNNING") {
+            if (state.task.attributes.status === "OPEN") {
               return "RUNNING";
             }
             return "APPROVAL";
@@ -252,8 +340,13 @@ export default {
       humanize,
       updateField,
       doCreate,
+      doAbort,
+      doApprove,
+      doReopen,
+      doResolve,
       enableHighlightButton,
       pendingState,
+      currentUser,
     };
   },
 };

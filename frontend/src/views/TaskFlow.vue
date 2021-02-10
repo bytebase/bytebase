@@ -13,17 +13,17 @@
           <span class="px-4 py-3 flex items-center text-sm font-medium">
             <template
               class="relative w-6 h-6 flex items-center justify-center rounded-full"
-              :class="stepIconClass(stage.status)"
+              :class="stageIconClass(stage)"
             >
-              <template v-if="stage.status == 'CREATED'">
+              <template v-if="stage.status === 'PENDING'">
                 <span
-                  class="h-1.5 w-1.5 bg-gray-300 hover:bg-gray-400 rounded-full"
+                  v-if="activeStage(task) === stage.id"
+                  class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
                   aria-hidden="true"
                 ></span>
-              </template>
-              <template v-else-if="stage.status == 'PENDING'">
                 <span
-                  class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+                  v-else
+                  class="h-1.5 w-1.5 bg-gray-300 hover:bg-gray-400 rounded-full"
                   aria-hidden="true"
                 ></span>
               </template>
@@ -97,7 +97,7 @@
             <span
               class="ml-4 text-sm"
               :class="
-                stepTextClass(
+                stageTextClass(
                   task.currentStageId == stage.stageId,
                   stage.status
                 )
@@ -133,9 +133,11 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { Task } from "../types";
+import { Task, Stage, StageId, StageStatus } from "../types";
+import { activeStage } from "../utils";
 
 interface FlowItem {
+  id: StageId;
   title: string;
   status: string;
   link: () => string;
@@ -154,21 +156,23 @@ export default {
     const stageList: FlowItem[] = props.task.attributes.stageProgressList.map(
       (stageProgress) => {
         return {
+          id: stageProgress.id,
           title: stageProgress.name,
           status: stageProgress.status,
           link: (): string => {
-            return `/task/${props.task.id}#${stageProgress.id}`;
+            return `/task/${props.task.id}`;
           },
         };
       }
     );
 
-    const stepIconClass = (status: string) => {
+    const stageIconClass = (stage: Stage) => {
       switch (status) {
-        case "CREATED":
-          return "bg-white border-2 border-gray-300 hover:border-gray-400";
         case "PENDING":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+          if (activeStage(props.task).id === stage.id) {
+            return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+          }
+          return "bg-white border-2 border-gray-300 hover:border-gray-400";
         case "RUNNING":
           return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
         case "DONE":
@@ -182,10 +186,9 @@ export default {
       }
     };
 
-    const stepTextClass = (isCurrentStep: boolean, status: string) => {
+    const stageTextClass = (isCurrentStep: boolean, status: StageStatus) => {
       let textClass = isCurrentStep ? "font-medium " : "font-normal ";
       switch (status) {
-        case "CREATED":
         case "CANCELED":
         case "SKIPPED":
           return textClass + "text-gray-500";
@@ -201,8 +204,9 @@ export default {
 
     return {
       stageList,
-      stepIconClass,
-      stepTextClass,
+      activeStage,
+      stageIconClass,
+      stageTextClass,
     };
   },
 };

@@ -84,8 +84,7 @@ export default function routes() {
       ...attrs,
       createdTs: ts,
       lastUpdatedTs: ts,
-      status: "CREATED",
-      currentStageId: attrs.stageProgressList[0].id,
+      status: "OPEN",
       workspaceId: WORKSPACE_ID,
     };
     return schema.tasks.create(newTask);

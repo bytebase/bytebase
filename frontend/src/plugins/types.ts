@@ -1,15 +1,5 @@
 import { Environment, TaskNew, User } from "../types";
 
-// Stage
-export type StageType = "SIMPLE" | "ENVIRONMENT";
-
-export type Stage = {
-  // Similar to TaskField.id below
-  id: number;
-  name: string;
-  type: StageType;
-};
-
 // Task
 export type TaskFieldType = "String";
 

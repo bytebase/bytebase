@@ -58,7 +58,29 @@ const workspacesSeeder = (server) => {
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
 
-  for (let i = 0; i < 15; i++) {
+  server.create("task", {
+    type: "bytebase.general",
+    creator: {
+      id: ws1Dev1.id,
+      name: ws1Dev1.name,
+    },
+    assignee: {
+      id: ws1Owner.id,
+      name: ws1Owner.name,
+    },
+    subscriberIdList: [ws1DBA.id, ws1Dev2.id],
+    stageProgressList: [
+      {
+        id: "1",
+        name: "Request",
+        type: "SIMPLE",
+        status: "PENDING",
+      },
+    ],
+    workspace: workspace1,
+  });
+
+  for (let i = 0; i < 5; i++) {
     server.create("task", {
       creator: {
         id: ws1Dev1.id,
@@ -248,125 +270,156 @@ const fillStage = (environmentList) => {
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
     return {
-      status: "PENDING",
-      currentStageId: environmentList[0].id,
+      status: "OPEN",
       stageProgressList: [
         {
-          stageId: environmentList[0].id,
-          stageName: environmentList[0].name,
+          id: "1",
+          name: environmentList[0].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[0].id,
           status: "PENDING",
         },
         {
-          stageId: environmentList[1].id,
-          stageName: environmentList[1].name,
-          status: "CREATED",
+          id: "2",
+          name: environmentList[1].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[1].id,
+          status: "PENDING",
         },
       ],
     };
   } else if (i % 5 == 1) {
     return {
-      status: "RUNNING",
-      currentStageId: environmentList[2].id,
+      status: "OPEN",
       stageProgressList: [
         {
-          stageId: environmentList[0].id,
-          stageName: environmentList[0].name,
+          id: "1",
+          name: environmentList[0].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[0].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[1].id,
-          stageName: environmentList[1].name,
+          id: "2",
+          name: environmentList[1].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[1].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[2].id,
-          stageName: environmentList[2].name,
+          id: "3",
+          name: environmentList[2].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[2].id,
           status: "RUNNING",
         },
         {
-          stageId: environmentList[3].id,
-          stageName: environmentList[3].name,
-          status: "CREATED",
+          id: "4",
+          name: environmentList[3].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[3].id,
+          status: "PENDING",
         },
       ],
     };
   } else if (i % 5 == 2) {
     return {
       status: "DONE",
-      currentStageId: environmentList[3].id,
       stageProgressList: [
         {
-          stageId: environmentList[0].id,
-          stageName: environmentList[0].name,
+          id: "1",
+          name: environmentList[0].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[0].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[1].id,
-          stageName: environmentList[1].name,
+          id: "2",
+          name: environmentList[1].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[1].id,
           status: "SKIPPED",
         },
         {
-          stageId: environmentList[2].id,
-          stageName: environmentList[2].name,
+          id: "3",
+          name: environmentList[2].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[2].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[3].id,
-          stageName: environmentList[3].name,
+          id: "4",
+          name: environmentList[3].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[3].id,
           status: "DONE",
         },
       ],
     };
   } else if (i % 5 == 3) {
     return {
-      status: "FAILED",
-      currentStageId: environmentList[1].id,
+      status: "OPEN",
       stageProgressList: [
         {
-          stageId: environmentList[0].id,
-          stageName: environmentList[0].name,
+          id: "1",
+          name: environmentList[0].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[0].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[1].id,
-          stageName: environmentList[1].name,
+          id: "2",
+          name: environmentList[1].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[1].id,
           status: "FAILED",
         },
         {
-          stageId: environmentList[2].id,
-          stageName: environmentList[2].name,
-          status: "CREATED",
+          id: "3",
+          name: environmentList[2].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[2].id,
+          status: "PENDING",
         },
         {
-          stageId: environmentList[3].id,
-          stageName: environmentList[3].name,
-          status: "CREATED",
+          id: "4",
+          name: environmentList[3].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[3].id,
+          status: "PENDING",
         },
       ],
     };
   } else {
     return {
       status: "CANCELED",
-      currentStageId: environmentList[3].id,
       stageProgressList: [
         {
-          stageId: environmentList[0].id,
-          stageName: environmentList[0].name,
+          id: "1",
+          name: environmentList[0].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[0].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[1].id,
-          stageName: environmentList[1].name,
+          id: "2",
+          name: environmentList[1].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[1].id,
           status: "SKIPPED",
         },
         {
-          stageId: environmentList[2].id,
-          stageName: environmentList[2].name,
+          id: "3",
+          name: environmentList[2].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[2].id,
           status: "DONE",
         },
         {
-          stageId: environmentList[3].id,
-          stageName: environmentList[3].name,
+          id: "4",
+          name: environmentList[3].name,
+          type: "ENVIRONMENT",
+          environmentId: environmentList[3].id,
           status: "CANCELED",
         },
       ],

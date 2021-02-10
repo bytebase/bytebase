@@ -71,16 +71,12 @@ export default {
           for (const task of taskList) {
             if (
               task.attributes.assignee.id === currentUser!.id &&
-              (task.attributes.status === "PENDING" ||
-                task.attributes.status === "RUNNING" ||
-                task.attributes.status === "FAILED")
+              task.attributes.status === "OPEN"
             ) {
               state.attentionList.push(task);
             } else if (
               task.attributes.subscriberIdList.includes(currentUser!.id) &&
-              (task.attributes.status === "PENDING" ||
-                task.attributes.status === "RUNNING" ||
-                task.attributes.status === "FAILED")
+              task.attributes.status === "OPEN"
             ) {
               state.subscribeList.push(task);
             } else if (
