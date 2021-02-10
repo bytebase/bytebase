@@ -295,7 +295,7 @@
                   >
                     <!-- Heroicon name: solid/check-circle -->
                     <svg
-                      class="-ml-1 mr-2 h-5 w-5 text-green-500"
+                      class="-ml-1 mr-2 h-5 w-5 text-success"
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"

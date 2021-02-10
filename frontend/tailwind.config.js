@@ -30,6 +30,9 @@ module.exports = {
         error: "var(--color-error)",
         "error-hover": "var(--color-error-hover)",
 
+        success: "var(--color-success)",
+        "success-hover": "var(--color-success-hover)",
+
         "link-hover": "var(--color-link-hover)",
 
         "block-border": "var(--color-block-border)",

@@ -31,6 +31,12 @@
   --color-error: #dc2626;
   /* red-700 */
   --color-error-hover: #b91c1c;
+
+  /* green-600 */
+  --color-success: #16a34a;
+  /* green-700 */
+  --color-success-hover: #15803d;
+
   /* gray-200 */
   --color-link-hover: #e5e7eb;
 
@@ -62,6 +68,10 @@
 
 .btn-danger {
   @apply border border-transparent rounded-md text-accent-text bg-error hover:bg-error-hover disabled:bg-error disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
+.btn-success {
+  @apply border border-transparent rounded-md text-accent-text bg-success hover:bg-success-hover disabled:bg-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .control {

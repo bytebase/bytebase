@@ -127,7 +127,7 @@ const iconStatusMap = {
   },
   DONE: {
     name: "Done",
-    class: "bg-green-600 hover:bg-green-700 text-white",
+    class: "bg-success hover:bg-success-hover text-white",
   },
   FAILED: {
     name: "Failed",

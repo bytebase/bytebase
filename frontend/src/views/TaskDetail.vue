@@ -32,7 +32,7 @@
             <button type="button" class="btn-primary px-4 py-2">Approve</button>
           </template>
           <template v-else-if="pendingState() === 'RESOLVE'">
-            <button type="button" class="btn-primary px-4 py-2">Resolve</button>
+            <button type="button" class="btn-success px-4 py-2">Resolve</button>
           </template>
           <template v-else-if="pendingState() === 'RUNNING'">
             <button type="button" class="btn-primary px-4 py-2">Cancel</button>

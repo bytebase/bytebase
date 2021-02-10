@@ -172,7 +172,7 @@ export default {
         case "RUNNING":
           return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
         case "DONE":
-          return "bg-green-600 hover:bg-green-700 text-white";
+          return "bg-success hover:bg-success-hover text-white";
         case "FAILED":
           return "bg-error text-white hover:text-white hover:bg-error-hover";
         case "CANCELED":
