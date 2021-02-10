@@ -58,12 +58,14 @@ export type StageProgress = {
     | "SKIPPED";
 };
 
+export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+
 export type Task = ResourceObject & {
   attributes: {
     name: string;
     createdTs: number;
     lastUpdatedTs: number;
-    status: "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+    status: TaskStatus;
     category: "DDL" | "DML" | "OPS";
     type: TaskType;
     content: string;
@@ -98,6 +100,17 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
     };
     payload?: any;
   };
+};
+
+export type TaskPatch = {
+  name?: string;
+  status?: TaskStatus;
+  content?: string;
+  assignee?: {
+    id: string;
+    name: string;
+  };
+  payload?: any;
 };
 
 export type Environment = ResourceObject & {

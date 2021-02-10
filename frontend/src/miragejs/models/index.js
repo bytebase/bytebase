@@ -53,6 +53,8 @@ export default {
     workspace: belongsTo(),
   }),
 
+  taskPatch: Model,
+
   environment: Model.extend({
     workspace: belongsTo(),
   }),

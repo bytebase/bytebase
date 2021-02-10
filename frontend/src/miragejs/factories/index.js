@@ -13,6 +13,7 @@ import repository from "./repository";
 import job from "./job";
 import step from "./step";
 import task from "./task";
+import taskPatch from "./taskPatch";
 import group from "./group";
 import workspace from "./workspace";
 import workspaceRole from "./workspaceRole";
@@ -37,6 +38,7 @@ export default {
   ...job,
   ...step,
   ...task,
+  ...taskPatch,
   ...group,
   ...workspace,
   ...workspaceRole,

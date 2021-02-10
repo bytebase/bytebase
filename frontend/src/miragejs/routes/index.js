@@ -92,9 +92,9 @@ export default function routes() {
   });
 
   this.patch("/task/:taskId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("task");
+    const attrs = this.normalizedRequestAttrs("task-patch");
     return schema.tasks
-      .find(request.params.environmentId)
+      .find(request.params.taskId)
       .update({ ...attrs, lastUpdatedTs: Date.now() });
   });
 
