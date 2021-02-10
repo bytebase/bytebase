@@ -62,7 +62,7 @@ export type StageProgress = Stage & {
 };
 
 // Task
-type TaskTypeGeneral = "bytebase.genera.create";
+type TaskTypeGeneral = "bytebase.general.create";
 
 type TaskTypeDataSource = "bytebase.datasource.create";
 
