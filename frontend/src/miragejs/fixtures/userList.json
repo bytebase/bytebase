@@ -19,8 +19,8 @@
   },
   {
     "id": "4",
-    "name": "Mary (DBA)",
-    "email": "mary@example.com",
+    "name": "Jerry (DBA)",
+    "email": "jerry@example.com",
     "passwordHash": "aaa"
   },
   {

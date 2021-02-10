@@ -19,8 +19,9 @@ import {
   BBTableCell,
   BBTableTabFilter,
 } from "./bbkit";
+import { isDevOrDemo } from "./utils";
 
-if (process.env.NODE_ENV === "development" || import.meta.env.MODE === "demo") {
+if (isDevOrDemo()) {
   makeServer();
 }
 
@@ -32,6 +33,8 @@ app.config.globalProperties.window = window;
 app.config.globalProperties.console = console;
 // Allow template to access moment object
 app.config.globalProperties.moment = moment;
+// Allow template to access isDevOrDemo
+app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 
 app
   .use(store)
