@@ -13,9 +13,21 @@
     </button>
     <BBContextMenu
       ref="menu"
-      class="z-10 origin-top-left absolute right-0 mt-2 w-32 rounded-md shadow-lg"
+      class="z-10 origin-top-left absolute right-0 mt-2 w-36 rounded-md shadow-lg"
     >
       <div v-if="isDevOrDemo">
+        <div
+          v-if="currentUser.attributes.email != 'demo@example.com'"
+          class="py-1"
+        >
+          <a
+            @click.prevent="switchToOwner"
+            class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+            role="menuitem"
+          >
+            Switch to Owner
+          </a>
+        </div>
         <div
           v-if="currentUser.attributes.email != 'jerry@example.com'"
           class="py-1"
@@ -106,6 +118,21 @@ export default {
         });
     };
 
+    const switchToOwner = () => {
+      store
+        .dispatch("auth/login", {
+          type: "loginInfo",
+          attributes: {
+            username: "demo@example.com",
+            password: "1024",
+          },
+        })
+        .then(() => {
+          // Do a full page reload to avoid stale UI state.
+          location.replace("/");
+        });
+    };
+
     const switchToDBA = () => {
       store
         .dispatch("auth/login", {
@@ -139,6 +166,7 @@ export default {
     return {
       currentUser,
       logout,
+      switchToOwner,
       switchToDBA,
       switchToDeveloper,
     };
