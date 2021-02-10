@@ -79,10 +79,13 @@ export default function routes() {
 
   this.post("/task", function (schema, request) {
     const ts = Date.now();
+    const attrs = this.normalizedRequestAttrs("task");
     const newTask = {
-      ...this.normalizedRequestAttrs("task"),
+      ...attrs,
       createdTs: ts,
       lastUpdatedTs: ts,
+      status: "CREATED",
+      currentStageId: attrs.stageProgressList[0].id,
       workspaceId: WORKSPACE_ID,
     };
     return schema.tasks.create(newTask);
