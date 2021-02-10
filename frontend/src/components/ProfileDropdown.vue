@@ -20,25 +20,25 @@
           v-if="currentUser.attributes.email != 'jerry@example.com'"
           class="py-1"
         >
-          <div
+          <a
             @click.prevent="switchToDBA"
             class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
             role="menuitem"
           >
             Switch to DBA
-          </div>
+          </a>
         </div>
         <div
           v-if="currentUser.attributes.email != 'tom@example.com'"
           class="py-1"
         >
-          <div
+          <a
             @click.prevent="switchToDeveloper"
             class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
             role="menuitem"
           >
             Switch to Dev
-          </div>
+          </a>
         </div>
         <div class="border-t border-gray-100"></div>
       </div>
