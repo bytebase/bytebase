@@ -70,7 +70,7 @@ export default {
           state.closeList = [];
           for (const task of taskList) {
             if (
-              task.attributes.assignee.id === currentUser!.id &&
+              task.attributes.assignee?.id === currentUser!.id &&
               task.attributes.status === "OPEN"
             ) {
               state.attentionList.push(task);
@@ -80,7 +80,8 @@ export default {
             ) {
               state.subscribeList.push(task);
             } else if (
-              task.attributes.creator.id === currentUser!.id &&
+              (task.attributes.creator.id === currentUser!.id ||
+                task.attributes.assignee?.id === currentUser!.id) &&
               (task.attributes.status === "DONE" ||
                 task.attributes.status === "CANCELED")
             ) {
