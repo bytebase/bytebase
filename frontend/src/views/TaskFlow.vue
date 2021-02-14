@@ -97,10 +97,7 @@
             <span
               class="ml-4 text-sm"
               :class="
-                stageTextClass(
-                  task.currentStageId == stage.stageId,
-                  stage.status
-                )
+                stageTextClass(activeStage(task) === stage.id, stage.status)
               "
               >{{ stage.title }}</span
             >

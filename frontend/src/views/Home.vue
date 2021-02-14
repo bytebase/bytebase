@@ -35,6 +35,7 @@ import TaskTable from "../components/TaskTable.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
+import { activeStage } from "../utils";
 import { User, Environment, Task } from "../types";
 
 interface LocalState {
@@ -104,7 +105,14 @@ export default {
         return list;
       }
       return list.filter((task) => {
-        return task.attributes.currentStageId == state.selectedEnvironment!.id;
+        if (state.selectedEnvironment) {
+          const stage = activeStage(task);
+          return (
+            stage.type === "ENVIRONMENT" &&
+            stage.id == state.selectedEnvironment.id
+          );
+        }
+        return false;
       });
     };
 

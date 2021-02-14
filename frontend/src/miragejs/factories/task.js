@@ -34,8 +34,8 @@ export default {
     stageProgressList() {
       return [
         {
-          stageId: "1",
-          stageName: "Stage Foo",
+          id: "1",
+          name: "Stage Foo",
           status: "DONE",
         },
       ];
