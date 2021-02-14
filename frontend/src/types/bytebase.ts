@@ -84,7 +84,7 @@ export type Task = ResourceObject & {
       id: string;
       name: string;
     };
-    assignee: {
+    assignee?: {
       id: string;
       name: string;
     };
