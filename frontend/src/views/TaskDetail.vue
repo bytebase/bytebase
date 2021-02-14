@@ -19,82 +19,19 @@
         </template>
         <!-- Action Buttons only applicable to creator -->
         <template
-          v-else-if="currentUser.id === state.task.attributes.creator.id"
+          v-else
+          v-for="(transition, index) in applicableTransitionList()"
+          :key="index"
         >
-          <template v-if="pendingState() !== 'CLOSED'">
-            <button
-              type="button"
-              class="btn-normal px-4 py-2"
-              @click.prevent="doAbort"
-              :disabled="pendingState() === 'RUNNING'"
-            >
-              Abort
-            </button>
-          </template>
-
-          <template v-if="pendingState() === 'RESOLVE'">
-            <button
-              type="button"
-              class="btn-success px-4 py-2"
-              @click.prevent="doResolve"
-            >
-              Resolve
-            </button>
-          </template>
-          <template v-else-if="pendingState() === 'RUNNING'">
-            <button
-              type="button"
-              class="btn-primary px-4 py-2"
-              @click.prevent="doAbort"
-            >
-              Cancel
-            </button>
-          </template>
-          <template v-else-if="pendingState() === 'CLOSED'">
-            <button
-              type="button"
-              class="btn-normal px-4 py-2"
-              @click.prevent="doReopen"
-            >
-              Reopen
-            </button>
-          </template>
-        </template>
-        <!-- Action Buttons only applicable to assignee -->
-        <template
-          v-else-if="currentUser.id === state.task.attributes.assignee?.id"
-        >
-          <template v-if="pendingState() === 'APPROVAL'">
-            <button
-              type="button"
-              class="btn-primary px-4 py-2"
-              @click.prevent="doApprove"
-            >
-              Approve
-            </button>
-          </template>
-          <template v-else-if="pendingState() === 'RESOLVE'">
-            <button
-              v-if="
-                currentUser.id === state.task.attributes.assignee?.id ||
-                currentUser.id === state.task.attributes.creator.id
-              "
-              type="button"
-              class="btn-success px-4 py-2"
-              @click.prevent="doResolve"
-            >
-              Resolve
-            </button>
-          </template>
-          <template v-else-if="pendingState() === 'RUNNING'">
-            <button
-              type="button"
-              class="btn-primary px-4 py-2"
-              @click.prevent="doAbort"
-            >
-              Cancel
-            </button>
-          </template>
+          <button
+            type="button"
+            class="px-4 py-2"
+            :class="actionButtonClass(transition.actionType)"
+            @click.prevent="doChangeStatus(transition)"
+            :disabled="!enableHighlightButton(index)"
+          >
+            {{ transition.actionName }}
+          </button>
         </template>
       </TaskHighlightPanel>
     </div>
@@ -153,7 +90,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { humanize, idFromSlug, taskSlug } from "../utils";
+import { humanize, idFromSlug, taskSlug, activeStage } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
@@ -161,8 +98,106 @@ import TaskContentBar from "../views/TaskContentBar.vue";
 import TaskContent from "../views/TaskContent.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
-import { User, Task, TaskNew, TaskPatch } from "../types";
+import {
+  User,
+  Task,
+  TaskNew,
+  TaskPatch,
+  TaskStatus,
+  StageStatus,
+} from "../types";
 import { taskTemplateList, TaskField } from "../plugins";
+
+type TaskTransitionType =
+  | "bytebase.task.resolve"
+  | "bytebase.task.abort"
+  | "bytebase.task.reopen";
+
+type StageTransitionType =
+  | "bytebase.stage.retry"
+  | "bytebase.stage.cancel"
+  | "bytebase.stage.skip";
+
+type TransitionType = TaskTransitionType | StageTransitionType;
+
+// Use enum so it's easier to do numeric comparison to sort the button.
+enum ActionType {
+  SUCCESS = 0,
+  PRIMARY = 1,
+  NORMAL = 2,
+}
+
+type RoleType = "ASSIGNEE" | "CREATOR" | "GUEST";
+
+interface SourceWorkflowStatus {
+  taskStatus: TaskStatus[];
+  stageStatus: StageStatus[];
+}
+
+interface WorkflowStatus {
+  taskStatus: TaskStatus;
+  stageStatus: StageStatus;
+}
+
+interface Transition {
+  type: TransitionType;
+  actionName: string;
+  actionType: ActionType;
+  from: SourceWorkflowStatus;
+  to: (status: WorkflowStatus) => WorkflowStatus;
+  allowedRoleList: RoleType[];
+}
+
+const TRANSITION_LIST: Transition[] = [
+  {
+    type: "bytebase.task.resolve",
+    actionName: "Resolve",
+    actionType: ActionType.SUCCESS,
+    from: {
+      taskStatus: ["OPEN"],
+      stageStatus: ["PENDING", "DONE", "SKIPPED"],
+    },
+    to: (from: WorkflowStatus) => {
+      return {
+        taskStatus: "DONE",
+        stageStatus: from.stageStatus == "PENDING" ? "DONE" : from.stageStatus,
+      };
+    },
+    allowedRoleList: ["ASSIGNEE", "CREATOR"],
+  },
+  {
+    type: "bytebase.task.abort",
+    actionName: "Abort",
+    actionType: ActionType.NORMAL,
+    from: {
+      taskStatus: ["OPEN"],
+      stageStatus: ["PENDING", "FAILED"],
+    },
+    to: (from: WorkflowStatus) => {
+      return {
+        taskStatus: "CANCELED",
+        stageStatus: "SKIPPED",
+      };
+    },
+    allowedRoleList: ["CREATOR"],
+  },
+  {
+    type: "bytebase.task.reopen",
+    actionName: "Reopen",
+    actionType: ActionType.NORMAL,
+    from: {
+      taskStatus: ["DONE", "CANCELED"],
+      stageStatus: ["PENDING", "FAILED"],
+    },
+    to: (from: WorkflowStatus) => {
+      return {
+        taskStatus: "OPEN",
+        stageStatus: "PENDING",
+      };
+    },
+    allowedRoleList: ["ASSIGNEE", "CREATOR"],
+  },
+];
 
 interface LocalState {
   new: boolean;
@@ -271,23 +306,12 @@ export default {
         });
     };
 
-    const doAbort = () => {
+    const doChangeStatus = (transition: Transition) => {
       patchTask({
-        status: "CANCELED",
-      });
-    };
-
-    const doApprove = () => {};
-
-    const doReopen = () => {
-      patchTask({
-        status: "OPEN",
-      });
-    };
-
-    const doResolve = () => {
-      patchTask({
-        status: "DONE",
+        status: transition.to({
+          taskStatus: (state.task as Task).attributes.status,
+          stageStatus: activeStage(state.task as Task).status,
+        }).taskStatus,
       });
     };
 
@@ -310,27 +334,34 @@ export default {
       return true;
     };
 
-    const pendingState = (): "APPROVAL" | "RESOLVE" | "RUNNING" | "CLOSED" => {
-      if (
-        state.task.attributes.status === "DONE" ||
-        state.task.attributes.status === "CANCELED"
-      ) {
-        return "CLOSED";
-      } else {
-        const currentStage = (state.task as Task).attributes.stageProgressList.find(
-          (stage) => stage.id == state.task.attributes.currentStageId
+    const applicableTransitionList = () => {
+      return TRANSITION_LIST.filter((transition) => {
+        const role: RoleType =
+          currentUser!.id === state.task.attributes.creator.id
+            ? "CREATOR"
+            : currentUser!.id === state.task.attributes.assignee?.id
+            ? "ASSIGNEE"
+            : "GUEST";
+        return (
+          transition.from.taskStatus.includes(
+            (state.task as Task).attributes.status
+          ) &&
+          transition.from.stageStatus.includes(
+            activeStage(state.task as Task).status
+          ) &&
+          transition.allowedRoleList.includes(role)
         );
-        if (currentStage) {
-          if (currentStage.type === "SIMPLE") {
-            return "RESOLVE";
-          } else if (currentStage.type === "ENVIRONMENT") {
-            if (state.task.attributes.status === "OPEN") {
-              return "RUNNING";
-            }
-            return "APPROVAL";
-          }
-        }
-        return "CLOSED";
+      }).sort((a, b) => b.actionType - a.actionType);
+    };
+
+    const actionButtonClass = (actionType: ActionType) => {
+      switch (actionType) {
+        case ActionType.SUCCESS:
+          return "btn-success";
+        case ActionType.PRIMARY:
+          return "btn-primary";
+        case ActionType.NORMAL:
+          return "btn-normal";
       }
     };
 
@@ -340,12 +371,10 @@ export default {
       humanize,
       updateField,
       doCreate,
-      doAbort,
-      doApprove,
-      doReopen,
-      doResolve,
+      doChangeStatus,
       enableHighlightButton,
-      pendingState,
+      applicableTransitionList,
+      actionButtonClass,
       currentUser,
     };
   },
