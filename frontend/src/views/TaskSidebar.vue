@@ -1,10 +1,10 @@
 <template>
   <aside>
     <h2 class="sr-only">Details</h2>
-    <div class="space-y-4">
+    <div class="space-y-3">
       <div>
         <h2 class="textlabel">Assignee</h2>
-        <ul class="mt-3 space-y-3">
+        <ul class="mt-3">
           <li class="flex justify-start items-center space-x-2">
             <div v-if="task.attributes.assignee" class="flex-shrink-0">
               <BBAvatar
@@ -12,7 +12,7 @@
                 :username="task.attributes.assignee.name"
               />
             </div>
-            <div class="text-sm font-medium text-gray-900">
+            <div class="text-sm font-medium text-main">
               {{
                 task.attributes.assignee
                   ? task.attributes.assignee.name
@@ -24,7 +24,7 @@
       </div>
       <div>
         <h2 class="textlabel">Reporter</h2>
-        <ul class="mt-3 space-y-3">
+        <ul class="mt-3">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
               <BBAvatar
@@ -32,7 +32,7 @@
                 :username="task.attributes.creator.name"
               />
             </div>
-            <div class="text-sm font-medium text-gray-900">
+            <div class="text-sm font-medium text-main">
               {{ task.attributes.creator.name }}
             </div>
           </li>
