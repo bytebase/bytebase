@@ -10,7 +10,7 @@
               <TaskStatusIcon :task="task" />
               <!-- [TODO] overflow-ellipsis/clip doesn't seem to be working, so just use nowrap -->
               <p
-                class="ml-1 text-2xl font-bold leading-7 text-gray-900 sm:leading-9 whitespace-nowrap"
+                class="ml-1 text-xl font-bold leading-7 text-main whitespace-nowrap"
               >
                 {{ task.attributes.name }}
               </p>
