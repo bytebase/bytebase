@@ -7,63 +7,7 @@
   >
     <template v-slot:body="{ rowData: task }">
       <BBTableCell :leftPadding="4" class="w-4 table-cell">
-        <span
-          class="w-5 h-5 flex items-center justify-center rounded-full"
-          :class="taskIconClass(task)"
-        >
-          <template v-if="task.attributes.status == `OPEN`">
-            <span
-              v-if="activeStage(task).status == 'RUNNING'"
-              class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
-              style="
-                animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-              "
-              aria-hidden="true"
-            ></span>
-            <span
-              v-else-if="activeStage(task).status == 'FAILED'"
-              class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
-              aria-hidden="true"
-              >!</span
-            >
-            <span
-              v-else
-              class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
-              aria-hidden="true"
-            ></span>
-          </template>
-          <template v-else-if="task.attributes.status == `DONE`">
-            <svg
-              class="w-4 h-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </template>
-          <template v-else-if="task.attributes.status == `CANCELED`">
-            <svg
-              class="w-5 h-5"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              >
-              <path
-                fill-rule="evenodd"
-                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
-          </template>
-        </span>
+        <TaskStatusIcon :task="task" />
       </BBTableCell>
 
       <BBTableCell class="w-4 table-cell text-gray-500">
@@ -109,6 +53,7 @@ import {
   BBStep,
   BBStepStatus,
 } from "../bbkit/types";
+import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import { humanize, taskSlug, activeEnvironmentId, activeStage } from "../utils";
 import { EnvironmentId, Task } from "../types";
 
@@ -119,7 +64,7 @@ interface LocalState {
 
 export default {
   name: "TaskTable",
-  components: {},
+  components: { TaskStatusIcon },
   props: {
     taskSectionList: {
       required: true,
@@ -202,26 +147,6 @@ export default {
       });
     };
 
-    const taskIconClass = (task: Task) => {
-      switch (task.attributes.status) {
-        case "OPEN":
-          switch (activeStage(task).status) {
-            case "FAILED":
-              return "bg-error text-white hover:text-white hover:bg-error-hover";
-            case "RUNNING":
-            case "PENDING":
-            case "DONE":
-            case "CANCELED":
-            case "SKIPPED":
-              return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
-          }
-        case "CANCELED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
-        case "DONE":
-          return "bg-success hover:bg-success-hover text-white";
-      }
-    };
-
     const clickTask = function (section: number, row: number) {
       const task = props.taskSectionList[section].list[row];
       router.push(`/task/${taskSlug(task.attributes.name, task.id)}`);
@@ -231,7 +156,6 @@ export default {
       state,
       environmentName,
       stageList,
-      taskIconClass,
       humanize,
       activeEnvironmentId,
       activeStage,
