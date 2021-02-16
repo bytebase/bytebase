@@ -1,12 +1,12 @@
 <template>
   <h2 class="sr-only">Description</h2>
-  <div class="prose max-w-none whitespace-pre-line">
+  <div class="prose max-w-none whitespace-pre-line" ref="taskContent">
     {{ task.attributes.content }}
   </div>
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { nextTick, onMounted, PropType, ref } from "vue";
 import { Task } from "../types";
 
 export default {
@@ -18,6 +18,18 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const taskContent = ref(null);
+    onMounted(() => {
+      nextTick(() => {
+        // Set focus
+        // taskContent.value.focus();
+      });
+    });
+
+    return {
+      taskContent,
+    };
+  },
 };
 </script>
