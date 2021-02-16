@@ -56,17 +56,7 @@ export const taskTemplateList: TaskTemplate[] = [
     outputFieldList: [
       {
         id: 1,
-        name: "Data Source URL1",
-        required: true,
-      },
-      {
-        id: 2,
-        name: "Hello world",
-        required: true,
-      },
-      {
-        id: 3,
-        name: "Data Source URL3",
+        name: "Data Source URL",
         required: true,
       },
     ],
