@@ -3,7 +3,7 @@
     <div
       class="px-2 py-4 md:flex md:flex-col lg:border-t lg:border-b lg:border-block-border"
     >
-      <h3 class="px-4 text-lg leading-6 font-medium text-main">Result</h3>
+      <h2 class="px-4 text-lg font-medium">Result</h2>
 
       <div v-if="template" class="my-2 mx-4 space-y-2">
         <template
