@@ -38,7 +38,7 @@
 
     <!-- Flow Bar -->
     <TaskFlow
-      v-if="state.task.stageProgressList?.length > 0"
+      v-if="!state.new && state.task.attributes.stageProgressList.length > 1"
       :task="state.task"
     />
 
@@ -65,7 +65,7 @@
               <TaskSidebar
                 class="lg:hidden"
                 :task="state.task"
-                :fieldList="inputFieldList || []"
+                :fieldList="inputFieldList"
                 @update-field="updateField"
               />
               <div class="lg:hidden my-4 border-t border-block-border" />
@@ -78,7 +78,7 @@
           <TaskSidebar
             class="hidden lg:block lg:w-64 lg:pl-8 xl:w-72"
             :task="state.task"
-            :fieldList="inputFieldList || []"
+            :fieldList="inputFieldList"
             @update-field="updateField"
           />
         </div>
@@ -261,12 +261,10 @@ export default {
         title: `Unknown template '${templateName}'.`,
       });
     }
-    const outputFieldList = taskTemplate.fieldList?.filter(
-      (item) => item.category == "OUTPUT"
-    );
-    const inputFieldList = taskTemplate.fieldList?.filter(
-      (item) => item.category == "INPUT"
-    );
+    const outputFieldList =
+      taskTemplate.fieldList?.filter((item) => item.category == "OUTPUT") || [];
+    const inputFieldList =
+      taskTemplate.fieldList?.filter((item) => item.category == "INPUT") || [];
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
