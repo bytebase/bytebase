@@ -203,8 +203,8 @@ export default {
     };
 
     onMounted(() => {
-      document.addEventListener("keydown", (e) => {
-        if (e.keyCode == 27) {
+      document.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.code == "Escape") {
           cancel();
         }
       });
