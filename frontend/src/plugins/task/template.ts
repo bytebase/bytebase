@@ -36,7 +36,7 @@ export const taskTemplateList: TaskTemplate[] = [
         attributes: {
           name: "New Data Source",
           type: "bytebase.datasource.create",
-          content: "blablabla",
+          content: "Estimated QPS: 10",
           stageProgressList: [
             {
               id: "1",
