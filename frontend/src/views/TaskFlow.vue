@@ -93,13 +93,9 @@
                 </svg>
               </template>
             </div>
-            <span
-              class="ml-4 text-sm"
-              :class="
-                stageTextClass(activeStage(task) === stage.id, stage.status)
-              "
-              >{{ stage.title }}</span
-            >
+            <span class="ml-4 text-sm" :class="stageTextClass(stage)">{{
+              stage.title
+            }}</span>
           </span>
         </div>
 
@@ -182,15 +178,22 @@ export default {
       }
     };
 
-    const stageTextClass = (isCurrentStep: boolean, status: StageStatus) => {
-      let textClass = isCurrentStep ? "font-medium " : "font-normal ";
-      switch (status) {
+    const stageTextClass = (stage: FlowItem) => {
+      let textClass =
+        activeStage(props.task).id === stage.id
+          ? "font-medium "
+          : "font-normal ";
+      switch (stage.status) {
         case "CANCELED":
         case "SKIPPED":
           return textClass + "text-gray-500";
         case "DONE":
           return textClass + "text-control";
         case "PENDING":
+          if (activeStage(props.task).id === stage.id) {
+            return textClass + "text-blue-600";
+          }
+          return textClass + "text-control";
         case "RUNNING":
           return textClass + "text-blue-600";
         case "FAILED":
