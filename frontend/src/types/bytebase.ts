@@ -64,7 +64,9 @@ export type StageProgress = Stage & {
 // Task
 type TaskTypeGeneral = "bytebase.general";
 
-type TaskTypeDataSource = "bytebase.datasource.create";
+type TaskTypeDataSource =
+  | "bytebase.datasource.create"
+  | "bytebase.datasource.schema.update";
 
 export type TaskType = TaskTypeGeneral | TaskTypeDataSource;
 

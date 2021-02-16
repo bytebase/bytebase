@@ -78,4 +78,46 @@ export const taskTemplateList: TaskTemplate[] = [
       },
     ],
   },
+  {
+    type: "bytebase.datasource.schema.update",
+    buildTask: (ctx: TemplateContext): TaskNew => {
+      return {
+        type: "task",
+        attributes: {
+          name: "Update Schema",
+          type: "bytebase.datasource.schema.update",
+          content: "DDL: ",
+          stageProgressList: ctx.environmentList.map((env) => {
+            return {
+              id: env.id,
+              name: env.attributes.name,
+              type: "ENVIRONMENT",
+              status: "PENDING",
+            };
+          }),
+          creator: {
+            id: ctx.currentUser.id,
+            name: ctx.currentUser.attributes.name,
+          },
+          payload: {},
+        },
+      };
+    },
+    fieldList: [
+      {
+        category: "INPUT",
+        id: 1,
+        slug: "db",
+        name: "Database Name",
+        type: "String",
+        required: true,
+        preprocessor: (name: string): string => {
+          // In case caller passes corrupted data.
+          // Handled here instead of the caller, because it's
+          // preprocessor specific behavior to handle fallback.
+          return name?.toLowerCase();
+        },
+      },
+    ],
+  },
 ];

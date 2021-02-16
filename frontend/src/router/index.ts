@@ -57,7 +57,7 @@ const routes: Array<RouteRecordRaw> = [
                 "instance.create",
                 "user.manage",
                 "datasource.create",
-                "datasource.schema.edit",
+                "datasource.schema.update",
                 "ticket.create",
               ],
             },
