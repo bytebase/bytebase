@@ -9,7 +9,7 @@ export default {
       } else if (i == 2) {
         return "staging env";
       } else {
-        return "prod env " + i;
+        return "prod env " + (i - 2);
       }
     },
     order(i) {
