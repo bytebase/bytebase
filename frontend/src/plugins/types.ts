@@ -4,6 +4,7 @@ import { Environment, TaskNew, User } from "../types";
 export type TaskFieldType = "String";
 
 export type TaskField = {
+  category: "INPUT" | "OUTPUT";
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
   // is very similar to the message field id in Protocol Buffers.
@@ -43,6 +44,5 @@ export type TemplateOutputField = {
 export type TaskTemplate = {
   type: string;
   buildTask: (ctx: TemplateContext) => TaskNew;
-  outputFieldList?: TemplateOutputField[];
-  inputFieldList?: TaskField[];
+  fieldList?: TaskField[];
 };

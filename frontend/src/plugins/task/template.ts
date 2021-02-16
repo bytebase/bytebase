@@ -53,15 +53,9 @@ export const taskTemplateList: TaskTemplate[] = [
         },
       };
     },
-    outputFieldList: [
+    fieldList: [
       {
-        id: 1,
-        name: "Data Source URL",
-        required: true,
-      },
-    ],
-    inputFieldList: [
-      {
+        category: "INPUT",
         id: 1,
         slug: "db",
         name: "Database Name",
@@ -73,6 +67,14 @@ export const taskTemplateList: TaskTemplate[] = [
           // preprocessor specific behavior to handle fallback.
           return name?.toLowerCase();
         },
+      },
+      {
+        category: "OUTPUT",
+        id: 99,
+        slug: "datasource",
+        name: "Data Source URL",
+        type: "String",
+        required: true,
       },
     ],
   },

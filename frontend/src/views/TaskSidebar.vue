@@ -38,33 +38,28 @@
           </li>
         </ul>
       </div>
-      <template v-if="template">
-        <template
-          v-for="(field, index) in template.inputFieldList"
-          :key="index"
-        >
-          <template v-if="field.type == 'String'">
-            <div>
-              <h2 class="textlabel">
-                {{ field.name }}
-                <span v-if="field.required" class="text-red-600">*</span>
-              </h2>
-              <div class="mt-3">
-                <input
-                  type="text"
-                  class="textfield w-full"
-                  :name="field.id"
-                  :value="
-                    field.preprocessor
-                      ? field.preprocessor(task.attributes.payload[field.id])
-                      : task.attributes.payload[field.id]
-                  "
-                  :placeholder="field.placeholder"
-                  @input="$emit('update-field', field, $event.target.value)"
-                />
-              </div>
+      <template v-for="(field, index) in fieldList" :key="index">
+        <template v-if="field.type == 'String'">
+          <div>
+            <h2 class="textlabel">
+              {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </h2>
+            <div class="mt-3">
+              <input
+                type="text"
+                class="textfield w-full"
+                :name="field.id"
+                :value="
+                  field.preprocessor
+                    ? field.preprocessor(task.attributes.payload[field.id])
+                    : task.attributes.payload[field.id]
+                "
+                :placeholder="field.placeholder"
+                @input="$emit('update-field', field, $event.target.value)"
+              />
             </div>
-          </template>
+          </div>
         </template>
       </template>
     </div>
@@ -108,7 +103,7 @@
 <script lang="ts">
 import { PropType, watchEffect, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import { taskTemplateList } from "../plugins";
+import { TaskField } from "../plugins";
 import { Task } from "../types";
 
 interface LocalState {
@@ -123,6 +118,10 @@ export default {
       required: true,
       type: Object as PropType<Task>,
     },
+    fieldList: {
+      required: true,
+      type: Object as PropType<TaskField[]>,
+    },
   },
   components: {},
   setup(props, { emit }) {
@@ -136,11 +135,7 @@ export default {
 
     watchEffect(refreshState);
 
-    const template = taskTemplateList.find(
-      (template) => template.type == props.task.attributes.type
-    );
-
-    return { state, template };
+    return { state };
   },
 };
 </script>

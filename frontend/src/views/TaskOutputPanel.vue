@@ -5,21 +5,25 @@
     >
       <h2 class="px-4 text-lg font-medium">Result</h2>
 
-      <div v-if="template" class="my-2 mx-4 space-y-2">
-        <template
-          v-for="(field, index) in template.outputFieldList"
-          :key="index"
-        >
+      <div class="my-2 mx-4 space-y-2">
+        <template v-for="(field, index) in fieldList" :key="index">
           <div class="flex">
             <span
               class="z-0 whitespace-nowrap inline-flex items-center px-3 rounded-l-md border border-l border-r-0 border-control-border bg-gray-50 text-control-light sm:text-sm"
             >
               {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
             </span>
             <input
               type="text"
-              :name="field.id"
               class="z-10 flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:ring-control focus:border-control sm:text-sm"
+              :name="field.id"
+              :value="
+                field.preprocessor
+                  ? field.preprocessor(task.attributes.payload[field.id])
+                  : task.attributes.payload[field.id]
+              "
+              @input="$emit('update-field', field, $event.target.value)"
             />
             <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
             <button
@@ -69,7 +73,7 @@
 
 <script lang="ts">
 import { PropType, reactive } from "vue";
-import { taskTemplateList } from "../plugins";
+import { TaskField } from "../plugins";
 import { Task } from "../types";
 
 interface LocalState {}
@@ -82,16 +86,16 @@ export default {
       required: true,
       type: Object as PropType<Task>,
     },
+    fieldList: {
+      required: true,
+      type: Object as PropType<TaskField[]>,
+    },
   },
   components: {},
   setup(props, ctx) {
     const state = reactive<LocalState>({});
 
-    const template = taskTemplateList.find(
-      (template) => template.type == props.task.attributes.type
-    );
-
-    return { state, template };
+    return { state };
   },
 };
 </script>

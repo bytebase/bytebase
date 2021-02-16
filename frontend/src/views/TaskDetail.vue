@@ -44,8 +44,10 @@
 
     <!-- Output Panel -->
     <TaskOutputPanel
-      v-if="!state.new && template.outputFieldList?.length > 0"
+      v-if="!state.new && outputFieldList.length > 0"
       :task="state.task"
+      :fieldList="outputFieldList"
+      @update-field="updateField"
     />
 
     <!-- Main Content -->
@@ -63,6 +65,7 @@
               <TaskSidebar
                 class="lg:hidden"
                 :task="state.task"
+                :fieldList="inputFieldList || []"
                 @update-field="updateField"
               />
               <div class="lg:hidden my-4 border-t border-block-border" />
@@ -75,6 +78,7 @@
           <TaskSidebar
             class="hidden lg:block lg:w-64 lg:pl-8 xl:w-72"
             :task="state.task"
+            :fieldList="inputFieldList || []"
             @update-field="updateField"
           />
         </div>
@@ -106,7 +110,7 @@ import {
   TaskStatus,
   StageStatus,
 } from "../types";
-import { taskTemplateList, TaskField } from "../plugins";
+import { taskTemplateList, TaskField, TaskTemplate } from "../plugins";
 
 type TaskTransitionType =
   | "bytebase.task.resolve"
@@ -146,6 +150,11 @@ interface Transition {
   from: SourceWorkflowStatus;
   to: (status: WorkflowStatus) => WorkflowStatus;
   allowedRoleList: RoleType[];
+  validatorList?: ((
+    task: Task,
+    template: TaskTemplate,
+    targetStatus: WorkflowStatus
+  ) => boolean)[];
 }
 
 const TRANSITION_LIST: Transition[] = [
@@ -164,6 +173,20 @@ const TRANSITION_LIST: Transition[] = [
       };
     },
     allowedRoleList: ["ASSIGNEE", "CREATOR"],
+    validatorList: [
+      (task: Task, template: TaskTemplate, targetStatus: WorkflowStatus) => {
+        if (template.fieldList) {
+          for (const field of template.fieldList.filter(
+            (item) => item.category == "OUTPUT"
+          )) {
+            if (field.required && isEmpty(task.attributes.payload[field.id])) {
+              return false;
+            }
+          }
+        }
+        return true;
+      },
+    ],
   },
   {
     type: "bytebase.task.abort",
@@ -238,6 +261,12 @@ export default {
         title: `Unknown template '${templateName}'.`,
       });
     }
+    const outputFieldList = taskTemplate.fieldList?.filter(
+      (item) => item.category == "OUTPUT"
+    );
+    const inputFieldList = taskTemplate.fieldList?.filter(
+      (item) => item.category == "INPUT"
+    );
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
@@ -317,11 +346,24 @@ export default {
     };
 
     const doChangeStatus = (transition: Transition) => {
+      const targetStatus = transition.to({
+        taskStatus: (state.task as Task).attributes.status,
+        stageStatus: activeStage(state.task as Task).status,
+      });
+      if (transition.validatorList) {
+        for (const validator of transition.validatorList) {
+          const result = validator(
+            state.task as Task,
+            taskTemplate,
+            targetStatus
+          );
+          if (!result) {
+            return;
+          }
+        }
+      }
       patchTask({
-        status: transition.to({
-          taskStatus: (state.task as Task).attributes.status,
-          stageStatus: activeStage(state.task as Task).status,
-        }).taskStatus,
+        status: targetStatus.taskStatus,
       });
     };
 
@@ -329,8 +371,10 @@ export default {
       if (state.new) {
         // Create
         if (buttonIndex == 0) {
-          if (template.inputFieldList) {
-            for (const field of template.inputFieldList) {
+          if (template.fieldList) {
+            for (const field of template.fieldList.filter(
+              (item) => item.category == "INPUT"
+            )) {
               if (
                 field.required &&
                 isEmpty(state.task.attributes.payload[field.id])
@@ -386,6 +430,8 @@ export default {
       applicableTransitionList,
       actionButtonClass,
       currentUser,
+      outputFieldList,
+      inputFieldList,
     };
   },
 };
