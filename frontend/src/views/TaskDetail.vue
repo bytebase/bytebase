@@ -226,6 +226,19 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    const templateName =
+      router.currentRoute.value.query.template || "bytebase.general";
+    const taskTemplate = taskTemplateList.find(
+      (template) => template.type === templateName
+    )!;
+    if (!taskTemplate) {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Unknown template '${templateName}'.`,
+      });
+    }
+
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
     });
@@ -233,14 +246,11 @@ export default {
     const currentUser = inject<User>(UserStateSymbol);
 
     const refreshState = () => {
-      const generalTaskTemplate = taskTemplateList.find(
-        (template) => template.type == "bytebase.general"
-      )!;
       return {
         new: props.taskSlug.toLowerCase() == "new",
         task:
           props.taskSlug.toLowerCase() == "new"
-            ? generalTaskTemplate.buildTask({
+            ? taskTemplate.buildTask({
                 environmentList: environmentList.value,
                 currentUser: currentUser!,
               })

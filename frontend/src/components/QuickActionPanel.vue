@@ -112,7 +112,7 @@
       v-if="quickActionList.includes('datasource.create')"
       class="flex flex-col items-center w-28"
     >
-      <router-link to="/task/new" class="">
+      <router-link to="/task/new?template=bytebase.datasource.create" class="">
         <span class="btn-icon-primary inline-flex p-3">
           <svg
             class="w-6 h-6"
@@ -164,22 +164,24 @@
       v-if="quickActionList.includes('ticket.create')"
       class="flex flex-col items-center w-28"
     >
-      <button class="btn-icon-primary p-3">
-        <svg
-          class="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-          ></path>
-        </svg>
-      </button>
+      <router-link to="/task/new" class="">
+        <span class="btn-icon-primary inline-flex p-3">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+            ></path>
+          </svg>
+        </span>
+      </router-link>
       <h3 class="mt-1 text-center text-base font-normal text-main">Ticket</h3>
     </div>
 
