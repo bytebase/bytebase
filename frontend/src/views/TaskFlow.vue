@@ -8,10 +8,9 @@
         :key="index"
         class="relative md:flex-1 md:flex"
       >
-        <!-- Completed Step -->
         <div class="group flex items-center w-full">
           <span class="px-4 py-3 flex items-center text-sm font-medium">
-            <template
+            <div
               class="relative w-6 h-6 flex items-center justify-center rounded-full"
               :class="stageIconClass(stage)"
             >
@@ -93,7 +92,7 @@
                   ></path>
                 </svg>
               </template>
-            </template>
+            </div>
             <span
               class="ml-4 text-sm"
               :class="
@@ -163,8 +162,8 @@ export default {
       }
     );
 
-    const stageIconClass = (stage: Stage) => {
-      switch (status) {
+    const stageIconClass = (stage: FlowItem) => {
+      switch (stage.status) {
         case "PENDING":
           if (activeStage(props.task).id === stage.id) {
             return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
