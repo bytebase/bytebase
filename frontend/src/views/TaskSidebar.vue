@@ -39,7 +39,10 @@
         </ul>
       </div>
       <template v-if="template">
-        <template v-for="(field, index) in template.fieldList" :key="index">
+        <template
+          v-for="(field, index) in template.inputFieldList"
+          :key="index"
+        >
           <template v-if="field.type == 'String'">
             <div>
               <h2 class="textlabel">

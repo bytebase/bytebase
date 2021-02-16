@@ -329,8 +329,8 @@ export default {
       if (state.new) {
         // Create
         if (buttonIndex == 0) {
-          if (template.fieldList) {
-            for (const field of template.fieldList) {
+          if (template.inputFieldList) {
+            for (const field of template.inputFieldList) {
               if (
                 field.required &&
                 isEmpty(state.task.attributes.payload[field.id])

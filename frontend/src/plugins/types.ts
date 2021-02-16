@@ -44,5 +44,5 @@ export type TaskTemplate = {
   type: string;
   buildTask: (ctx: TemplateContext) => TaskNew;
   outputFieldList?: TemplateOutputField[];
-  fieldList?: TaskField[];
+  inputFieldList?: TaskField[];
 };

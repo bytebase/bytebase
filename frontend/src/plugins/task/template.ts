@@ -60,7 +60,7 @@ export const taskTemplateList: TaskTemplate[] = [
         required: true,
       },
     ],
-    fieldList: [
+    inputFieldList: [
       {
         id: 1,
         slug: "db",
