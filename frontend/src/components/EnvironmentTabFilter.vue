@@ -17,6 +17,7 @@
 <script lang="ts">
 import { watchEffect, reactive } from "vue";
 import { useStore } from "vuex";
+import cloneDeep from "lodash-es/cloneDeep";
 import { Environment } from "../types";
 
 interface LocalState {
@@ -44,7 +45,7 @@ export default {
         .then((list: Environment[]) => {
           // Usually env is ordered by ascending importantance, thus we rervese the order to put
           // more important ones first.
-          state.environmentList = list.reverse();
+          state.environmentList = cloneDeep(list).reverse();
           state.tabList = [
             "All",
             ...list.map((environment) => {

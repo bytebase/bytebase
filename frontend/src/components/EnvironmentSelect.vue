@@ -20,6 +20,7 @@
 
 <script lang="ts">
 import { watchEffect, reactive } from "vue";
+import cloneDeep from "lodash-es/cloneDeep";
 import { useStore } from "vuex";
 import { Environment } from "../types";
 
@@ -50,7 +51,7 @@ export default {
         .then((list: Environment[]) => {
           // Usually env is ordered by ascending importantance, thus we rervese the order to put
           // more important ones first.
-          state.environmentList = list.reverse();
+          state.environmentList = cloneDeep(list).reverse();
           if (!state.selectedId && state.environmentList.length > 0) {
             state.selectedId = state.environmentList[0].id;
             emit("select-environment-id", state.selectedId);
