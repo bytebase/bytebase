@@ -10,7 +10,7 @@ export const taskTemplateList: TaskTemplate[] = [
         attributes: {
           name: "New General Task",
           type: "bytebase.general",
-          content: "blablabla",
+          content: "",
           stageProgressList: [
             {
               id: "1",
@@ -23,6 +23,7 @@ export const taskTemplateList: TaskTemplate[] = [
             id: ctx.currentUser.id,
             name: ctx.currentUser.attributes.name,
           },
+          payload: {},
         },
       };
     },
@@ -48,6 +49,7 @@ export const taskTemplateList: TaskTemplate[] = [
             id: ctx.currentUser.id,
             name: ctx.currentUser.attributes.name,
           },
+          payload: {},
         },
       };
     },

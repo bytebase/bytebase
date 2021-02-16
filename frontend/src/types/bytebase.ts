@@ -62,7 +62,7 @@ export type StageProgress = Stage & {
 };
 
 // Task
-type TaskTypeGeneral = "bytebase.general.create";
+type TaskTypeGeneral = "bytebase.general";
 
 type TaskTypeDataSource = "bytebase.datasource.create";
 
@@ -107,7 +107,7 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
       id: string;
       name: string;
     };
-    payload?: any;
+    payload: any;
   };
 };
 
