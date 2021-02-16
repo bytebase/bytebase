@@ -5,7 +5,7 @@
     tabindex="0"
   >
     <!-- Highlight Panel -->
-    <div class="bg-white">
+    <div class="bg-white px-6 py-6 lg:border-t lg:border-block-border">
       <TaskHighlightPanel :task="state.task">
         <template v-if="state.new">
           <button
@@ -54,7 +54,7 @@
       tabindex="-1"
     >
       <div class="py-6">
-        <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 lg:max-w-full">
+        <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
           <div
             class="flex flex-col flex-1 min-w-0 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
           >
