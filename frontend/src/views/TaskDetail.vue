@@ -17,17 +17,17 @@
             Create
           </button>
         </template>
-        <!-- Action Buttons only applicable to creator -->
+        <!-- Action Button List -->
         <template
           v-else
-          v-for="(transition, index) in applicableTransitionList()"
+          v-for="(transition, index) in applicableStageTransitionList()"
           :key="index"
         >
           <button
             type="button"
             class="px-4 py-2"
             :class="actionButtonClass(transition.actionType)"
-            @click.prevent="doChangeStatus(transition)"
+            @click.prevent="tryChangeStageStatus(transition)"
             :disabled="!enableHighlightButton(index)"
           >
             {{ transition.actionName }}
@@ -87,6 +87,22 @@
       </div>
     </main>
   </div>
+  <BBAlert
+    v-if="modalState.show"
+    :style="'INFO'"
+    :okText="modalState.okText"
+    :cancelText="'No'"
+    :title="modalState.title"
+    :payload="modalState.payload"
+    @ok="
+      (transition) => {
+        modalState.show = false;
+        doChangeStageStatus(transition);
+      }
+    "
+    @cancel="modalState.show = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -114,17 +130,43 @@ import {
 } from "../types";
 import { taskTemplateList, TaskField, TaskTemplate } from "../plugins";
 
-type TaskTransitionType =
-  | "bytebase.task.resolve"
-  | "bytebase.task.abort"
-  | "bytebase.task.reopen";
+type StageTransitionType = "RUN" | "RETRY" | "SKIP";
 
-type StageTransitionType =
-  | "bytebase.stage.run"
-  | "bytebase.stage.retry"
-  | "bytebase.stage.skip";
+const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
+  StageStatus,
+  StageTransitionType[]
+> = new Map([
+  ["PENDING", []],
+  ["RUNNING", []],
+  ["DONE", []],
+  ["FAILED", []],
+  ["CANCELED", []],
+  ["SKIPPED", []],
+]);
 
-type TransitionType = TaskTransitionType | StageTransitionType;
+const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
+  StageStatus,
+  StageTransitionType[]
+> = new Map([
+  ["PENDING", ["RUN", "SKIP"]],
+  ["RUNNING", []],
+  ["DONE", []],
+  ["FAILED", ["RETRY", "SKIP"]],
+  ["CANCELED", []],
+  ["SKIPPED", []],
+]);
+
+const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
+  StageStatus,
+  StageTransitionType[]
+> = new Map([
+  ["PENDING", []],
+  ["RUNNING", []],
+  ["DONE", []],
+  ["FAILED", []],
+  ["CANCELED", []],
+  ["SKIPPED", []],
+]);
 
 // Use enum so it's easier to do numeric comparison to sort the button.
 enum ActionType {
@@ -133,155 +175,48 @@ enum ActionType {
   NORMAL = 2,
 }
 
-type RoleType = "ASSIGNEE" | "CREATOR" | "GUEST";
-
-interface SourceWorkflowStatus {
-  taskStatus: TaskStatus[];
-  stageStatus: StageStatus[];
-}
-
-interface WorkflowStatus {
-  taskStatus: TaskStatus;
-  stageStatus: StageStatus;
-}
-
 interface Transition {
-  type: TransitionType;
+  type: StageTransitionType;
   actionName: string;
   actionType: ActionType;
   requiredRunnable: boolean;
-  from: SourceWorkflowStatus;
-  to: (status: WorkflowStatus) => WorkflowStatus;
-  allowedRoleList: RoleType[];
-  validatorList?: ((
-    task: Task,
-    template: TaskTemplate,
-    targetStatus: WorkflowStatus
-  ) => boolean)[];
+  to: StageStatus;
 }
 
-const TRANSITION_LIST: Transition[] = [
+const STAGE_TRANSITION_LIST: Transition[] = [
   {
-    type: "bytebase.task.resolve",
-    actionName: "Resolve",
-    actionType: ActionType.SUCCESS,
-    requiredRunnable: false,
-    from: {
-      taskStatus: ["OPEN"],
-      stageStatus: ["PENDING", "DONE", "SKIPPED"],
-    },
-    to: (from: WorkflowStatus) => {
-      return {
-        taskStatus: "DONE",
-        stageStatus: from.stageStatus == "PENDING" ? "DONE" : from.stageStatus,
-      };
-    },
-    allowedRoleList: ["ASSIGNEE", "CREATOR"],
-    validatorList: [
-      (task: Task, template: TaskTemplate, targetStatus: WorkflowStatus) => {
-        if (template.fieldList) {
-          for (const field of template.fieldList.filter(
-            (item) => item.category == "OUTPUT"
-          )) {
-            if (field.required && isEmpty(task.attributes.payload[field.id])) {
-              return false;
-            }
-          }
-        }
-        return true;
-      },
-    ],
-  },
-  {
-    type: "bytebase.task.abort",
-    actionName: "Abort",
-    actionType: ActionType.NORMAL,
-    requiredRunnable: false,
-    from: {
-      taskStatus: ["OPEN"],
-      stageStatus: ["PENDING", "FAILED"],
-    },
-    to: (from: WorkflowStatus) => {
-      return {
-        taskStatus: "CANCELED",
-        stageStatus: "CANCELED",
-      };
-    },
-    allowedRoleList: ["ASSIGNEE", "CREATOR"],
-  },
-  {
-    type: "bytebase.task.reopen",
-    actionName: "Reopen",
-    actionType: ActionType.NORMAL,
-    requiredRunnable: false,
-    from: {
-      taskStatus: ["DONE", "CANCELED"],
-      stageStatus: ["PENDING", "DONE", "FAILED", "CANCELED", "SKIPPED"],
-    },
-    to: (from: WorkflowStatus) => {
-      return {
-        taskStatus: "OPEN",
-        stageStatus: "PENDING",
-      };
-    },
-    allowedRoleList: ["ASSIGNEE", "CREATOR"],
-  },
-  {
-    type: "bytebase.stage.run",
+    type: "RUN",
     actionName: "Run",
     actionType: ActionType.PRIMARY,
     requiredRunnable: true,
-    from: {
-      taskStatus: ["OPEN"],
-      stageStatus: ["PENDING"],
-    },
-    to: (from: WorkflowStatus) => {
-      return {
-        taskStatus: "OPEN",
-        stageStatus: "RUNNING",
-      };
-    },
-    allowedRoleList: ["ASSIGNEE"],
+    to: "RUNNING",
   },
   {
-    type: "bytebase.stage.retry",
+    type: "RETRY",
     actionName: "Rerun",
     actionType: ActionType.PRIMARY,
     requiredRunnable: true,
-    from: {
-      taskStatus: ["OPEN"],
-      stageStatus: ["FAILED"],
-    },
-    to: (from: WorkflowStatus) => {
-      return {
-        taskStatus: "OPEN",
-        stageStatus: "RUNNING",
-      };
-    },
-    allowedRoleList: ["ASSIGNEE"],
+    to: "RUNNING",
   },
   {
-    type: "bytebase.stage.skip",
+    type: "SKIP",
     actionName: "Skip",
     actionType: ActionType.NORMAL,
     requiredRunnable: false,
-    from: {
-      taskStatus: ["OPEN"],
-      stageStatus: ["PENDING", "FAILED"],
-    },
-    to: (from: WorkflowStatus) => {
-      return {
-        taskStatus: "OPEN",
-        stageStatus: "SKIPPED",
-      };
-    },
-    allowedRoleList: ["ASSIGNEE"],
+    to: "SKIPPED",
   },
 ];
 
 interface LocalState {
   new: boolean;
   task: Task | TaskNew;
+}
+
+interface ModalState {
+  show: boolean;
+  okText: string;
+  title: string;
+  payload?: Transition;
 }
 
 export default {
@@ -345,6 +280,11 @@ export default {
     };
 
     const state = reactive<LocalState>(refreshState());
+    const modalState = reactive<ModalState>({
+      show: false,
+      okText: "OK",
+      title: "",
+    });
 
     const template = taskTemplateList.find(
       (template) => template.type == state.task.attributes.type
@@ -406,29 +346,23 @@ export default {
         });
     };
 
-    const doChangeStatus = (transition: Transition) => {
-      const targetStatus = transition.to({
-        taskStatus: (state.task as Task).attributes.status,
-        stageStatus: activeStage(state.task as Task).status,
-      });
-      if (transition.validatorList) {
-        for (const validator of transition.validatorList) {
-          const result = validator(
-            state.task as Task,
-            taskTemplate,
-            targetStatus
-          );
-          if (!result) {
-            return;
-          }
-        }
-      }
+    const tryChangeStageStatus = (transition: Transition) => {
+      modalState.okText = transition.actionName;
+      modalState.title =
+        transition.actionName +
+        ' "' +
+        activeStage(state.task as Task).name +
+        '" ?';
+      modalState.payload = transition;
+      modalState.show = true;
+    };
+
+    const doChangeStageStatus = (transition: Transition) => {
       patchTask({
-        status: targetStatus.taskStatus,
         stageProgressList: [
           {
             id: activeStage(state.task as Task).id,
-            status: targetStatus.stageStatus,
+            status: transition.to,
           },
         ],
       });
@@ -455,21 +389,18 @@ export default {
       return true;
     };
 
-    const applicableTransitionList = () => {
-      return TRANSITION_LIST.filter((transition) => {
-        const role: RoleType =
+    const applicableStageTransitionList = () => {
+      return STAGE_TRANSITION_LIST.filter((transition) => {
+        const actionListForRole =
           currentUser!.id === state.task.attributes.creator.id
-            ? "CREATOR"
+            ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
             : currentUser!.id === state.task.attributes.assignee?.id
-            ? "ASSIGNEE"
-            : "GUEST";
+            ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
+            : GUEST_APPLICABLE_STAGE_ACTION_LIST;
         const stage = activeStage(state.task as Task);
         return (
-          transition.from.taskStatus.includes(
-            (state.task as Task).attributes.status
-          ) &&
-          transition.from.stageStatus.includes(stage.status) &&
-          transition.allowedRoleList.includes(role) &&
+          stage.type === "ENVIRONMENT" &&
+          actionListForRole.get(stage.status)!.includes(transition.type) &&
           (!transition.requiredRunnable || stage.runnable)
         );
       }).sort((a, b) => b.actionType - a.actionType);
@@ -488,14 +419,16 @@ export default {
 
     return {
       state,
+      modalState,
       template,
       humanize,
       updateBuiltInField,
       updateCustomField,
       doCreate,
-      doChangeStatus,
+      tryChangeStageStatus,
+      doChangeStageStatus,
       enableHighlightButton,
-      applicableTransitionList,
+      applicableStageTransitionList,
       actionButtonClass,
       currentUser,
       outputFieldList,
