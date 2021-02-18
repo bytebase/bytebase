@@ -1,5 +1,5 @@
 export function isDev() {
-  return process.env.NODE_ENV === "development";
+  return import.meta.env.DEV;
 }
 
 export function isDemo() {
