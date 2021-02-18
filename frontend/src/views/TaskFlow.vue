@@ -124,8 +124,8 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
-import { Task, Stage, StageId, StageStatus } from "../types";
+import { computed, PropType } from "vue";
+import { Task, StageId } from "../types";
 import { activeStage } from "../utils";
 
 interface FlowItem {
@@ -145,8 +145,8 @@ export default {
   },
   components: {},
   setup(props, ctx) {
-    const stageList: FlowItem[] = props.task.attributes.stageProgressList.map(
-      (stageProgress) => {
+    const stageList = computed<FlowItem[]>(() => {
+      return props.task.attributes.stageProgressList.map((stageProgress) => {
         return {
           id: stageProgress.id,
           title: stageProgress.name,
@@ -155,8 +155,8 @@ export default {
             return `/task/${props.task.id}`;
           },
         };
-      }
-    );
+      });
+    });
 
     const stageIconClass = (stage: FlowItem) => {
       switch (stage.status) {
