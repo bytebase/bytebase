@@ -109,7 +109,7 @@ export default {
           const stage = activeStage(task);
           return (
             stage.type === "ENVIRONMENT" &&
-            stage.id == state.selectedEnvironment.id
+            stage.environmentId == state.selectedEnvironment.id
           );
         }
         return false;

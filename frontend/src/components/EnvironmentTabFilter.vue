@@ -48,7 +48,7 @@ export default {
           state.environmentList = cloneDeep(list).reverse();
           state.tabList = [
             "All",
-            ...list.map((environment) => {
+            ...state.environmentList.map((environment) => {
               return environment.attributes.name;
             }),
           ];
