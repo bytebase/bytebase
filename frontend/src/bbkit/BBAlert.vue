@@ -142,7 +142,7 @@
             type="button"
             class="px-4 py-2 sm:col-start-2"
             v-bind:class="okButtonStyle"
-            @click.prevent="$emit('ok')"
+            @click.prevent="$emit('ok', payload)"
           >
             {{ okText }}
           </button>
@@ -190,10 +190,14 @@ export default {
       type: Boolean,
       default: true,
     },
+    // Any payload pass through to "ok" and "cancel" events
+    payload: {
+      type: Object,
+    },
   },
   setup(props, { emit }) {
     const cancel = () => {
-      emit("cancel");
+      emit("cancel", props.payload);
     };
 
     const clickBackground = () => {
