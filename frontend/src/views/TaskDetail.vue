@@ -5,7 +5,7 @@
     tabindex="0"
   >
     <!-- Highlight Panel -->
-    <div class="bg-white px-6 py-6 lg:border-t lg:border-block-border">
+    <div class="bg-white px-4 py-6 lg:border-t lg:border-block-border">
       <TaskHighlightPanel :task="state.task">
         <template v-if="state.new">
           <button
