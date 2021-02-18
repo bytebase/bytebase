@@ -8,11 +8,12 @@
       >
         <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Status</h2>
         <TaskStatusSelect
+          :disabled="activeStageIsRunning(task)"
           class="lg:mt-3 w-3/4 lg:w-auto"
           :selectedStatus="task.attributes.status"
           @change-status="
             (value) => {
-              $emit('update-builtin-field', 'status', value);
+              $emit('update-task-status', value);
             }
           "
         />
@@ -123,6 +124,7 @@ import isEmpty from "lodash-es/isEmpty";
 import TaskStatusSelect from "../components/TaskStatusSelect.vue";
 import { TaskField } from "../plugins";
 import { Task } from "../types";
+import { activeStageIsRunning } from "../utils";
 
 interface LocalState {
   new: boolean;
@@ -130,7 +132,7 @@ interface LocalState {
 
 export default {
   name: "TaskSidebar",
-  emits: ["update-builtin-field", "update-custom-field"],
+  emits: ["update-task-status", "update-custom-field"],
   props: {
     task: {
       required: true,
@@ -153,7 +155,7 @@ export default {
 
     watchEffect(refreshState);
 
-    return { state };
+    return { state, activeStageIsRunning };
   },
 };
 </script>

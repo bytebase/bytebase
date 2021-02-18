@@ -17,6 +17,10 @@ export function activeStage(task: Task): StageProgress {
   ];
 }
 
+export function activeStageIsRunning(task: Task): boolean {
+  return activeStage(task).status === "RUNNING";
+}
+
 export function activeEnvironmentId(task: Task): EnvironmentId | null {
   const stageProgress = activeStage(task);
   if (stageProgress.type === "ENVIRONMENT") {

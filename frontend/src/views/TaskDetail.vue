@@ -66,7 +66,7 @@
                 class="lg:hidden"
                 :task="state.task"
                 :fieldList="inputFieldList"
-                @update-builtin-field="updateBuiltInField"
+                @update-task-status="updateTaskStatus"
                 @update-custom-field="updateCustomField"
               />
               <div class="lg:hidden my-4 border-t border-block-border" />
@@ -80,7 +80,7 @@
             class="hidden lg:block lg:w-64 lg:pl-8 xl:w-72"
             :task="state.task"
             :fieldList="inputFieldList"
-            @update-builtin-field="updateBuiltInField"
+            @update-task-status="updateTaskStatus"
             @update-custom-field="updateCustomField"
           />
         </div>
@@ -306,9 +306,23 @@ export default {
       document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
-    const updateBuiltInField = (fieldName: string, value: string) => {
+    const updateTaskStatus = (newStatus: TaskStatus) => {
+      // if (newStatus === "DONE") {
+      //   if (template.fieldList) {
+      //     for (const field of template.fieldList.filter(
+      //       (item) => item.category == "OUTPUT"
+      //     )) {
+      //       if (
+      //         field.required &&
+      //         isEmpty(state.task.attributes.payload[field.id])
+      //       ) {
+      //         return;
+      //       }
+      //     }
+      //   }
+      // }
       patchTask({
-        [fieldName]: value,
+        status: newStatus,
       });
     };
 
@@ -422,7 +436,7 @@ export default {
       modalState,
       template,
       humanize,
-      updateBuiltInField,
+      updateTaskStatus,
       updateCustomField,
       doCreate,
       tryChangeStageStatus,
