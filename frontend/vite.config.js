@@ -1,6 +1,8 @@
 // const path = require("path");
+import vue from "@vitejs/plugin-vue";
 
 module.exports = {
+  plugins: [vue()],
   optimizeDeps: {
     allowNodeBuiltins: ["postcss", "bytebase"],
   },
@@ -14,7 +16,9 @@ module.exports = {
     //     rewrite: path => path.replace(/^\/api/, '')
     // }
   },
-  alias: {
-    // "/@/": path.resolve(__dirname, "./src"),
+  resolve: {
+    // alias: {
+    //   "/@/": path.resolve(__dirname, "./src"),
+    // },
   },
 };
