@@ -47,7 +47,7 @@
       v-if="!state.new && outputFieldList.length > 0"
       :task="state.task"
       :fieldList="outputFieldList"
-      @update-field="updateField"
+      @update-custom-field="updateCustomField"
     />
 
     <!-- Main Content -->
@@ -66,7 +66,8 @@
                 class="lg:hidden"
                 :task="state.task"
                 :fieldList="inputFieldList"
-                @update-field="updateField"
+                @update-builtin-field="updateBuiltInField"
+                @update-custom-field="updateCustomField"
               />
               <div class="lg:hidden my-4 border-t border-block-border" />
               <TaskContent :task="state.task" />
@@ -79,7 +80,8 @@
             class="hidden lg:block lg:w-64 lg:pl-8 xl:w-72"
             :task="state.task"
             :fieldList="inputFieldList"
-            @update-field="updateField"
+            @update-builtin-field="updateBuiltInField"
+            @update-custom-field="updateCustomField"
           />
         </div>
       </div>
@@ -364,7 +366,13 @@ export default {
       document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
-    const updateField = (field: TaskField, value: string) => {
+    const updateBuiltInField = (fieldName: string, value: string) => {
+      patchTask({
+        [fieldName]: value,
+      });
+    };
+
+    const updateCustomField = (field: TaskField, value: string) => {
       if (field.preprocessor) {
         value = field.preprocessor(value);
       }
@@ -482,7 +490,8 @@ export default {
       state,
       template,
       humanize,
-      updateField,
+      updateBuiltInField,
+      updateCustomField,
       doCreate,
       doChangeStatus,
       enableHighlightButton,

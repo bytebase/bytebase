@@ -23,7 +23,7 @@
                   ? field.preprocessor(task.attributes.payload[field.id])
                   : task.attributes.payload[field.id]
               "
-              @input="$emit('update-field', field, $event.target.value)"
+              @input="$emit('update-custom-field', field, $event.target.value)"
             />
             <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
             <button
@@ -80,7 +80,7 @@ interface LocalState {}
 
 export default {
   name: "TaskOutputPanel",
-  emits: ["update-field"],
+  emits: ["update-custom-field"],
   props: {
     task: {
       required: true,

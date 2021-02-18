@@ -2,6 +2,21 @@
   <aside>
     <h2 class="sr-only">Details</h2>
     <div class="space-y-3">
+      <div
+        v-if="!state.new"
+        class="flex flex-row space-x-2 lg:flex-col lg:space-x-0"
+      >
+        <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Status</h2>
+        <TaskStatusSelect
+          class="lg:mt-3 w-3/4 lg:w-auto"
+          :selectedStatus="task.attributes.status"
+          @change-status="
+            (value) => {
+              $emit('update-builtin-field', 'status', value);
+            }
+          "
+        />
+      </div>
       <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
         <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Assignee</h2>
         <ul class="lg:mt-3 w-3/4 lg:w-auto">
@@ -56,7 +71,9 @@
                     : task.attributes.payload[field.id]
                 "
                 :placeholder="field.placeholder"
-                @input="$emit('update-field', field, $event.target.value)"
+                @input="
+                  $emit('update-custom-field', field, $event.target.value)
+                "
               />
             </div>
           </template>
@@ -103,6 +120,7 @@
 <script lang="ts">
 import { PropType, watchEffect, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
+import TaskStatusSelect from "../components/TaskStatusSelect.vue";
 import { TaskField } from "../plugins";
 import { Task } from "../types";
 
@@ -112,7 +130,7 @@ interface LocalState {
 
 export default {
   name: "TaskSidebar",
-  emits: ["update-field"],
+  emits: ["update-builtin-field", "update-custom-field"],
   props: {
     task: {
       required: true,
@@ -123,7 +141,7 @@ export default {
       type: Object as PropType<TaskField[]>,
     },
   },
-  components: {},
+  components: { TaskStatusSelect },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       new: isEmpty(props.task.id),
