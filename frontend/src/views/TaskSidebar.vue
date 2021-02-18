@@ -2,9 +2,9 @@
   <aside>
     <h2 class="sr-only">Details</h2>
     <div class="space-y-3">
-      <div>
-        <h2 class="textlabel">Assignee</h2>
-        <ul class="mt-3">
+      <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
+        <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Assignee</h2>
+        <ul class="lg:mt-3 w-3/4 lg:w-auto">
           <li class="flex justify-start items-center space-x-2">
             <div v-if="task.attributes.assignee" class="flex-shrink-0">
               <BBAvatar
@@ -22,9 +22,9 @@
           </li>
         </ul>
       </div>
-      <div>
-        <h2 class="textlabel">Reporter</h2>
-        <ul class="mt-3">
+      <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
+        <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Reporter</h2>
+        <ul class="lg:mt-3 w-3/4 lg:w-auto">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
               <BBAvatar
@@ -39,13 +39,13 @@
         </ul>
       </div>
       <template v-for="(field, index) in fieldList" :key="index">
-        <template v-if="field.type == 'String'">
-          <div>
-            <h2 class="textlabel">
+        <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
+          <template v-if="field.type == 'String'">
+            <h2 class="flex items-center textlabel w-1/4 lg:w-auto">
               {{ field.name }}
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
-            <div class="mt-3">
+            <div class="lg:mt-3 w-3/4 lg:w-auto">
               <input
                 type="text"
                 class="textfield w-full"
@@ -59,8 +59,8 @@
                 @input="$emit('update-field', field, $event.target.value)"
               />
             </div>
-          </div>
-        </template>
+          </template>
+        </div>
       </template>
     </div>
     <div
