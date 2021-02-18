@@ -92,9 +92,24 @@ export default function routes() {
 
   this.patch("/task/:taskId", function (schema, request) {
     const attrs = this.normalizedRequestAttrs("task-patch");
-    return schema.tasks
-      .find(request.params.taskId)
-      .update({ ...attrs, lastUpdatedTs: Date.now() });
+    const task = schema.tasks.find(request.params.taskId);
+    if (task) {
+      attrs.stageProgressList = task.stageProgressList.map((item) => {
+        for (const stage of attrs.stageProgressList) {
+          if (item.id === stage.id) {
+            item.status = stage.status;
+            break;
+          }
+        }
+        return item;
+      });
+      return task.update({ ...attrs, lastUpdatedTs: Date.now() });
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Task " + request.params.id + " not found" }
+    );
   });
 
   // environment

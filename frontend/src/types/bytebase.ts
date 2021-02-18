@@ -61,6 +61,11 @@ export type StageProgress = Stage & {
   status: StageStatus;
 };
 
+export type StageProgressPatch = {
+  id: StageId;
+  status: StageStatus;
+};
+
 // Task
 type TaskTypeGeneral = "bytebase.general";
 
@@ -121,6 +126,7 @@ export type TaskPatch = {
     id: string;
     name: string;
   };
+  stageProgressList?: StageProgressPatch[];
   payload?: any;
 };
 

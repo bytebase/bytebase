@@ -210,7 +210,7 @@ const TRANSITION_LIST: Transition[] = [
     actionType: ActionType.NORMAL,
     from: {
       taskStatus: ["DONE", "CANCELED"],
-      stageStatus: ["PENDING", "FAILED"],
+      stageStatus: ["PENDING", "DONE", "FAILED", "CANCELED"],
     },
     to: (from: WorkflowStatus) => {
       return {
@@ -362,6 +362,12 @@ export default {
       }
       patchTask({
         status: targetStatus.taskStatus,
+        stageProgressList: [
+          {
+            id: activeStage(state.task as Task).id,
+            status: targetStatus.stageStatus,
+          },
+        ],
       });
     };
 

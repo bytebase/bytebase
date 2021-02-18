@@ -18,6 +18,14 @@ export default {
         name: "Jim Gray",
       };
     },
+    stageProgressList() {
+      return [
+        {
+          id: "1",
+          status: "RUNNING",
+        },
+      ];
+    },
     payload() {
       return {
         type: "bytebase.datasource.create",
