@@ -137,10 +137,10 @@
       </aside>
       <div class="w-full mx-auto md:flex">
         <div class="md:min-w-0 md:flex-1">
-          <div v-if="!isHome" class="hidden md:block mx-3 mt-4">
+          <div v-if="!isHome" class="hidden md:block mx-4 mt-4">
             <Breadcrumb />
           </div>
-          <div v-if="quickActionList" class="mx-3 mt-4">
+          <div v-if="quickActionList" class="mx-4 mt-4">
             <QuickActionPanel :quickActionList="quickActionList" />
           </div>
         </div>
