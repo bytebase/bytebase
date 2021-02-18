@@ -167,7 +167,7 @@ export default {
   emits: ["ok", "cancel"],
   props: {
     style: {
-      type: Object as PropType<"INFO" | "SUCCESS" | "WARN" | "CRITICAL">,
+      type: String as PropType<"INFO" | "SUCCESS" | "WARN" | "CRITICAL">,
       default: "INFO",
     },
     title: {
