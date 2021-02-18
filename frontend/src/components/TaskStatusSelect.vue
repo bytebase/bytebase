@@ -19,17 +19,10 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
-import { useStore } from "vuex";
 import { TaskStatus } from "../types";
 
-// interface LocalState {
-//   environmentList: Environment[];
-//   selectedId?: string;
-// }
-
 export default {
-  name: "EnvironmentSelect",
+  name: "TaskStatusSelect",
   emits: ["change-status"],
   components: {},
   props: {
@@ -37,32 +30,6 @@ export default {
       type: String as PropType<TaskStatus>,
     },
   },
-  setup(props, { emit }) {
-    // const state = reactive<LocalState>({
-    //   environmentList: [],
-    //   selectedId: props.selectedId,
-    // });
-    // const store = useStore();
-    // const prepareEnvironmentList = () => {
-    //   store
-    //     .dispatch("environment/fetchEnvironmentList")
-    //     .then((list: Environment[]) => {
-    //       // Usually env is ordered by ascending importantance, thus we rervese the order to put
-    //       // more important ones first.
-    //       state.environmentList = cloneDeep(list).reverse();
-    //       if (!state.selectedId && state.environmentList.length > 0) {
-    //         state.selectedId = state.environmentList[0].id;
-    //         emit("select-environment-id", state.selectedId);
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       console.log(error);
-    //     });
-    // };
-    // watchEffect(prepareEnvironmentList);
-    // return {
-    //   state,
-    // };
-  },
+  setup() {},
 };
 </script>
