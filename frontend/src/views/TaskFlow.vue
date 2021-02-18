@@ -57,22 +57,6 @@
                   >!</span
                 >
               </template>
-              <template v-else-if="stage.status == 'CANCELED'">
-                <svg
-                  class="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  >
-                  <path
-                    fill-rule="evenodd"
-                    d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                    clip-rule="evenodd"
-                  ></path>
-                </svg>
-              </template>
               <template v-else-if="stage.status == 'SKIPPED'">
                 <svg
                   class="w-4 h-4"
@@ -171,8 +155,6 @@ export default {
           return "bg-success hover:bg-success-hover text-white";
         case "FAILED":
           return "bg-error text-white hover:text-white hover:bg-error-hover";
-        case "CANCELED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
         case "SKIPPED":
           return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
       }
@@ -184,7 +166,6 @@ export default {
           ? "font-medium "
           : "font-normal ";
       switch (stage.status) {
-        case "CANCELED":
         case "SKIPPED":
           return textClass + "text-gray-500";
         case "DONE":

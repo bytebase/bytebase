@@ -42,13 +42,7 @@ export type ActivityNew = Omit<Activity, "id">;
 // Stage
 export type StageType = "SIMPLE" | "ENVIRONMENT";
 
-export type StageStatus =
-  | "PENDING"
-  | "RUNNING"
-  | "DONE"
-  | "FAILED"
-  | "CANCELED"
-  | "SKIPPED";
+export type StageStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 
 export type StageRunnable = {
   auto: boolean;

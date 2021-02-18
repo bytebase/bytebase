@@ -492,7 +492,7 @@ const fillStage = (environmentList) => {
             auto: true,
             run: () => {},
           },
-          status: "CANCELED",
+          status: "PENDING",
         },
       ],
     };

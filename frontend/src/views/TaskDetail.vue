@@ -140,7 +140,6 @@ const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
   ["RUNNING", []],
   ["DONE", []],
   ["FAILED", []],
-  ["CANCELED", []],
   ["SKIPPED", []],
 ]);
 
@@ -152,7 +151,6 @@ const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY", "SKIP"]],
-  ["CANCELED", []],
   ["SKIPPED", []],
 ]);
 
@@ -164,7 +162,6 @@ const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
   ["RUNNING", []],
   ["DONE", []],
   ["FAILED", []],
-  ["CANCELED", []],
   ["SKIPPED", []],
 ]);
 

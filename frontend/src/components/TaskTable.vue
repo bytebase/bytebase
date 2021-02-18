@@ -112,7 +112,7 @@ export default {
 
     const stageList = function (task: Task): BBStep[] {
       return task.attributes.stageProgressList.map((stageProgress) => {
-        let stepStatus: BBStepStatus;
+        let stepStatus: BBStepStatus = "PENDING";
         switch (stageProgress.status) {
           case "PENDING":
             if (activeStage(task).id === stageProgress.id) {
@@ -129,9 +129,6 @@ export default {
             break;
           case "FAILED":
             stepStatus = "FAILED";
-            break;
-          case "CANCELED":
-            stepStatus = "CANCELED";
             break;
           case "SKIPPED":
             stepStatus = "SKIPPED";
