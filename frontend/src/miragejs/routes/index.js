@@ -94,15 +94,17 @@ export default function routes() {
     const attrs = this.normalizedRequestAttrs("task-patch");
     const task = schema.tasks.find(request.params.taskId);
     if (task) {
-      attrs.stageProgressList = task.stageProgressList.map((item) => {
-        for (const stage of attrs.stageProgressList) {
-          if (item.id === stage.id) {
-            item.status = stage.status;
-            break;
+      if (attrs.stageProgressList) {
+        attrs.stageProgressList = task.stageProgressList.map((item) => {
+          for (const stage of attrs.stageProgressList) {
+            if (item.id === stage.id) {
+              item.status = stage.status;
+              break;
+            }
           }
-        }
-        return item;
-      });
+          return item;
+        });
+      }
       return task.update({ ...attrs, lastUpdatedTs: Date.now() });
     }
     return new Response(
