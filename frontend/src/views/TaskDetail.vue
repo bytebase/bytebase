@@ -118,8 +118,8 @@ type TaskTransitionType =
   | "bytebase.task.reopen";
 
 type StageTransitionType =
+  | "bytebase.stage.run"
   | "bytebase.stage.retry"
-  | "bytebase.stage.cancel"
   | "bytebase.stage.skip";
 
 type TransitionType = TaskTransitionType | StageTransitionType;
@@ -147,6 +147,7 @@ interface Transition {
   type: TransitionType;
   actionName: string;
   actionType: ActionType;
+  requiredRunnable: boolean;
   from: SourceWorkflowStatus;
   to: (status: WorkflowStatus) => WorkflowStatus;
   allowedRoleList: RoleType[];
@@ -162,6 +163,7 @@ const TRANSITION_LIST: Transition[] = [
     type: "bytebase.task.resolve",
     actionName: "Resolve",
     actionType: ActionType.SUCCESS,
+    requiredRunnable: false,
     from: {
       taskStatus: ["OPEN"],
       stageStatus: ["PENDING", "DONE", "SKIPPED"],
@@ -192,6 +194,7 @@ const TRANSITION_LIST: Transition[] = [
     type: "bytebase.task.abort",
     actionName: "Abort",
     actionType: ActionType.NORMAL,
+    requiredRunnable: false,
     from: {
       taskStatus: ["OPEN"],
       stageStatus: ["PENDING", "FAILED"],
@@ -199,18 +202,19 @@ const TRANSITION_LIST: Transition[] = [
     to: (from: WorkflowStatus) => {
       return {
         taskStatus: "CANCELED",
-        stageStatus: "SKIPPED",
+        stageStatus: "CANCELED",
       };
     },
-    allowedRoleList: ["CREATOR"],
+    allowedRoleList: ["ASSIGNEE", "CREATOR"],
   },
   {
     type: "bytebase.task.reopen",
     actionName: "Reopen",
     actionType: ActionType.NORMAL,
+    requiredRunnable: false,
     from: {
       taskStatus: ["DONE", "CANCELED"],
-      stageStatus: ["PENDING", "DONE", "FAILED", "CANCELED"],
+      stageStatus: ["PENDING", "DONE", "FAILED", "CANCELED", "SKIPPED"],
     },
     to: (from: WorkflowStatus) => {
       return {
@@ -219,6 +223,57 @@ const TRANSITION_LIST: Transition[] = [
       };
     },
     allowedRoleList: ["ASSIGNEE", "CREATOR"],
+  },
+  {
+    type: "bytebase.stage.run",
+    actionName: "Run",
+    actionType: ActionType.PRIMARY,
+    requiredRunnable: true,
+    from: {
+      taskStatus: ["OPEN"],
+      stageStatus: ["PENDING"],
+    },
+    to: (from: WorkflowStatus) => {
+      return {
+        taskStatus: "OPEN",
+        stageStatus: "RUNNING",
+      };
+    },
+    allowedRoleList: ["ASSIGNEE"],
+  },
+  {
+    type: "bytebase.stage.retry",
+    actionName: "Rerun",
+    actionType: ActionType.PRIMARY,
+    requiredRunnable: true,
+    from: {
+      taskStatus: ["OPEN"],
+      stageStatus: ["FAILED"],
+    },
+    to: (from: WorkflowStatus) => {
+      return {
+        taskStatus: "OPEN",
+        stageStatus: "RUNNING",
+      };
+    },
+    allowedRoleList: ["ASSIGNEE"],
+  },
+  {
+    type: "bytebase.stage.skip",
+    actionName: "Skip",
+    actionType: ActionType.NORMAL,
+    requiredRunnable: false,
+    from: {
+      taskStatus: ["OPEN"],
+      stageStatus: ["PENDING", "FAILED"],
+    },
+    to: (from: WorkflowStatus) => {
+      return {
+        taskStatus: "OPEN",
+        stageStatus: "SKIPPED",
+      };
+    },
+    allowedRoleList: ["ASSIGNEE"],
   },
 ];
 
@@ -400,14 +455,14 @@ export default {
             : currentUser!.id === state.task.attributes.assignee?.id
             ? "ASSIGNEE"
             : "GUEST";
+        const stage = activeStage(state.task as Task);
         return (
           transition.from.taskStatus.includes(
             (state.task as Task).attributes.status
           ) &&
-          transition.from.stageStatus.includes(
-            activeStage(state.task as Task).status
-          ) &&
-          transition.allowedRoleList.includes(role)
+          transition.from.stageStatus.includes(stage.status) &&
+          transition.allowedRoleList.includes(role) &&
+          (!transition.requiredRunnable || stage.runnable)
         );
       }).sort((a, b) => b.actionType - a.actionType);
     };

@@ -277,6 +277,10 @@ const fillStage = (environmentList) => {
           name: environmentList[0].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[0].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "PENDING",
         },
         {
@@ -284,6 +288,10 @@ const fillStage = (environmentList) => {
           name: environmentList[1].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[1].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "PENDING",
         },
       ],
@@ -297,6 +305,10 @@ const fillStage = (environmentList) => {
           name: environmentList[0].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[0].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -304,6 +316,10 @@ const fillStage = (environmentList) => {
           name: environmentList[1].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[1].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -311,6 +327,10 @@ const fillStage = (environmentList) => {
           name: environmentList[2].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[2].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "RUNNING",
         },
         {
@@ -318,6 +338,10 @@ const fillStage = (environmentList) => {
           name: environmentList[3].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[3].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "PENDING",
         },
       ],
@@ -331,6 +355,10 @@ const fillStage = (environmentList) => {
           name: environmentList[0].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[0].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -338,6 +366,10 @@ const fillStage = (environmentList) => {
           name: environmentList[1].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[1].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "SKIPPED",
         },
         {
@@ -345,6 +377,10 @@ const fillStage = (environmentList) => {
           name: environmentList[2].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[2].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -352,6 +388,10 @@ const fillStage = (environmentList) => {
           name: environmentList[3].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[3].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
       ],
@@ -365,6 +405,10 @@ const fillStage = (environmentList) => {
           name: environmentList[0].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[0].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -372,6 +416,10 @@ const fillStage = (environmentList) => {
           name: environmentList[1].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[1].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "FAILED",
         },
         {
@@ -379,6 +427,10 @@ const fillStage = (environmentList) => {
           name: environmentList[2].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[2].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "PENDING",
         },
         {
@@ -386,6 +438,10 @@ const fillStage = (environmentList) => {
           name: environmentList[3].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[3].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "PENDING",
         },
       ],
@@ -399,6 +455,10 @@ const fillStage = (environmentList) => {
           name: environmentList[0].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[0].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -406,6 +466,10 @@ const fillStage = (environmentList) => {
           name: environmentList[1].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[1].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "SKIPPED",
         },
         {
@@ -413,6 +477,10 @@ const fillStage = (environmentList) => {
           name: environmentList[2].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[2].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "DONE",
         },
         {
@@ -420,6 +488,10 @@ const fillStage = (environmentList) => {
           name: environmentList[3].name,
           type: "ENVIRONMENT",
           environmentId: environmentList[3].id,
+          runnable: {
+            auto: true,
+            run: () => {},
+          },
           status: "CANCELED",
         },
       ],

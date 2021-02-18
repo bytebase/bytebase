@@ -93,6 +93,12 @@ export const taskTemplateList: TaskTemplate[] = [
               name: env.attributes.name,
               type: "ENVIRONMENT",
               status: "PENDING",
+              runnable: {
+                auto: true,
+                run: () => {
+                  console.log("Start", env.attributes.name);
+                },
+              },
             };
           }),
           creator: {

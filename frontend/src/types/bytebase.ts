@@ -50,11 +50,17 @@ export type StageStatus =
   | "CANCELED"
   | "SKIPPED";
 
+export type StageRunnable = {
+  auto: boolean;
+  run: () => void;
+};
+
 export type Stage = {
   id: StageId;
   name: string;
   type: StageType;
   environmentId?: EnvironmentId;
+  runnable?: StageRunnable;
 };
 
 export type StageProgress = Stage & {
