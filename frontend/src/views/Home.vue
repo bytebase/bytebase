@@ -7,15 +7,11 @@
       :taskSectionList="[
         {
           title: 'Attention',
-          list: filteredList(state.attentionList).sort((a, b) => {
-            return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
-          }),
+          list: filteredList(state.attentionList).sort(openTaskSorter),
         },
         {
           title: 'Subscribed',
-          list: filteredList(state.subscribeList).sort((a, b) => {
-            return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
-          }),
+          list: filteredList(state.subscribeList).sort(openTaskSorter),
         },
         {
           title: 'Recently Closed',
@@ -35,8 +31,8 @@ import TaskTable from "../components/TaskTable.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { activeEnvironmentId } from "../utils";
-import { User, Environment, Task } from "../types";
+import { activeStage, activeEnvironmentId } from "../utils";
+import { User, Environment, Task, StageStatus } from "../types";
 
 interface LocalState {
   attentionList: Task[];
@@ -119,12 +115,36 @@ export default {
       });
     };
 
+    const openTaskSorter = (a: Task, b: Task) => {
+      const statusOrder = (status: StageStatus) => {
+        switch (status) {
+          case "RUNNING":
+            return 0;
+          case "FAILED":
+            return 1;
+          case "PENDING":
+            return 2;
+          case "DONE":
+            return 3;
+          case "SKIPPED":
+            return 4;
+        }
+      };
+      const aStatusOrder = statusOrder(activeStage(a).status);
+      const bStatusOrder = statusOrder(activeStage(b).status);
+      if (aStatusOrder == bStatusOrder) {
+        return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
+      }
+      return aStatusOrder - bStatusOrder;
+    };
+
     watchEffect(prepareTaskList);
 
     return {
       state,
       filteredList,
       selectEnvironment,
+      openTaskSorter,
     };
   },
 };
