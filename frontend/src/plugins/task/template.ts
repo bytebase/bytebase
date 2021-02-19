@@ -1,7 +1,7 @@
 import { TaskTemplate, TemplateContext } from "../types";
 import { EnvironmentId, TaskNew } from "../../types";
 
-export const taskTemplateList: TaskTemplate[] = [
+const allTaskTemplateList: TaskTemplate[] = [
   {
     type: "bytebase.general",
     buildTask: (ctx: TemplateContext): TaskNew => {
@@ -141,3 +141,7 @@ export const taskTemplateList: TaskTemplate[] = [
     ],
   },
 ];
+
+export function templateForType(type: string): TaskTemplate | undefined {
+  return allTaskTemplateList.find((template) => template.type === type);
+}

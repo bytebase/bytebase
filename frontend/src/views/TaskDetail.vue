@@ -128,7 +128,7 @@ import {
   TaskStatus,
   StageStatus,
 } from "../types";
-import { taskTemplateList, TaskField, TaskTemplate } from "../plugins";
+import { templateForType, TaskField, TaskTemplate } from "../plugins";
 
 type StageTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
 
@@ -250,16 +250,16 @@ export default {
     });
 
     const newTaskemplateName =
-      router.currentRoute.value.query.template || "bytebase.general";
-    const newTaskTemplate = taskTemplateList.find(
-      (template) => template.type === newTaskemplateName
-    )!;
+      (router.currentRoute.value.query.template as string) ||
+      "bytebase.general";
+    const newTaskTemplate = templateForType(newTaskemplateName);
     if (!newTaskTemplate) {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",
         title: `Unknown template '${newTaskTemplate}'.`,
       });
+      return;
     }
 
     const environmentList = computed(() => {
@@ -289,9 +289,7 @@ export default {
       title: "",
     });
 
-    const taskTemplate = taskTemplateList.find(
-      (template) => template.type == state.task.attributes.type
-    )!;
+    const taskTemplate = templateForType(state.task.attributes.type)!;
 
     const outputFieldList =
       taskTemplate.fieldList?.filter((item) => item.category == "OUTPUT") || [];
