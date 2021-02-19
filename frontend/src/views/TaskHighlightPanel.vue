@@ -5,8 +5,9 @@
         <div>
           <div class="flex items-center">
             <TaskStatusIcon v-if="!state.new" :task="task" class="mr-1" />
-            <!-- [TODO] overflow-ellipsis/clip doesn't seem to be working, so just use nowrap -->
-            <p class="text-xl font-bold leading-7 text-main whitespace-nowrap">
+            <p
+              class="text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
+            >
               {{ task.attributes.name }}
             </p>
           </div>
