@@ -70,23 +70,30 @@ export default {
           state.subscribeList = [];
           state.closeList = [];
           for (const task of taskList) {
-            if (
-              task.attributes.assignee?.id === currentUser!.id &&
-              task.attributes.status === "OPEN"
+            // "OPEN"
+            if (task.attributes.status === "OPEN") {
+              if (
+                task.attributes.creator.id === currentUser!.id ||
+                task.attributes.assignee?.id === currentUser!.id
+              ) {
+                state.attentionList.push(task);
+              } else if (
+                task.attributes.subscriberIdList.includes(currentUser!.id)
+              ) {
+                state.subscribeList.push(task);
+              }
+            }
+            // "DONE" or "CANCELED"
+            else if (
+              task.attributes.status === "DONE" ||
+              task.attributes.status === "CANCELED"
             ) {
-              state.attentionList.push(task);
-            } else if (
-              task.attributes.subscriberIdList.includes(currentUser!.id) &&
-              task.attributes.status === "OPEN"
-            ) {
-              state.subscribeList.push(task);
-            } else if (
-              (task.attributes.creator.id === currentUser!.id ||
-                task.attributes.assignee?.id === currentUser!.id) &&
-              (task.attributes.status === "DONE" ||
-                task.attributes.status === "CANCELED")
-            ) {
-              state.closeList.push(task);
+              if (
+                task.attributes.creator.id === currentUser!.id ||
+                task.attributes.assignee?.id === currentUser!.id
+              ) {
+                state.closeList.push(task);
+              }
             }
           }
         })
