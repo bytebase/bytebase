@@ -245,22 +245,22 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const templateName =
+    const isNew = computed(() => {
+      return props.taskSlug.toLowerCase() == "new";
+    });
+
+    const newTaskemplateName =
       router.currentRoute.value.query.template || "bytebase.general";
-    const taskTemplate = taskTemplateList.find(
-      (template) => template.type === templateName
+    const newTaskTemplate = taskTemplateList.find(
+      (template) => template.type === newTaskemplateName
     )!;
-    if (!taskTemplate) {
+    if (!newTaskTemplate) {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",
-        title: `Unknown template '${templateName}'.`,
+        title: `Unknown template '${newTaskTemplate}'.`,
       });
     }
-    const outputFieldList =
-      taskTemplate.fieldList?.filter((item) => item.category == "OUTPUT") || [];
-    const inputFieldList =
-      taskTemplate.fieldList?.filter((item) => item.category == "INPUT") || [];
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
@@ -270,16 +270,15 @@ export default {
 
     const refreshState = () => {
       return {
-        new: props.taskSlug.toLowerCase() == "new",
-        task:
-          props.taskSlug.toLowerCase() == "new"
-            ? taskTemplate.buildTask({
-                environmentList: environmentList.value,
-                currentUser: currentUser!,
-              })
-            : cloneDeep(
-                store.getters["task/taskById"](idFromSlug(props.taskSlug))
-              ),
+        new: isNew.value,
+        task: isNew.value
+          ? newTaskTemplate.buildTask({
+              environmentList: environmentList.value,
+              currentUser: currentUser!,
+            })
+          : cloneDeep(
+              store.getters["task/taskById"](idFromSlug(props.taskSlug))
+            ),
       };
     };
 
@@ -290,9 +289,14 @@ export default {
       title: "",
     });
 
-    const template = taskTemplateList.find(
+    const taskTemplate = taskTemplateList.find(
       (template) => template.type == state.task.attributes.type
     )!;
+
+    const outputFieldList =
+      taskTemplate.fieldList?.filter((item) => item.category == "OUTPUT") || [];
+    const inputFieldList =
+      taskTemplate.fieldList?.filter((item) => item.category == "INPUT") || [];
 
     const refreshTask = () => {
       const updatedState = refreshState();
@@ -390,8 +394,8 @@ export default {
       if (state.new) {
         // Create
         if (buttonIndex == 0) {
-          if (template.fieldList) {
-            for (const field of template.fieldList.filter(
+          if (taskTemplate.fieldList) {
+            for (const field of taskTemplate.fieldList.filter(
               (item) => item.category == "INPUT"
             )) {
               if (
@@ -438,7 +442,6 @@ export default {
     return {
       state,
       modalState,
-      template,
       humanize,
       updateTaskStatus,
       updateCustomField,
