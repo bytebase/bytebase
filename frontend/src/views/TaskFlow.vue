@@ -11,7 +11,7 @@
         <div class="group flex items-center w-full">
           <span class="px-4 py-3 flex items-center text-sm font-medium">
             <div
-              class="relative w-6 h-6 flex items-center justify-center rounded-full"
+              class="relative w-6 h-6 flex items-center justify-center rounded-full select-none"
               :class="stageIconClass(stage)"
             >
               <template v-if="stage.status === 'PENDING'">
