@@ -99,5 +99,5 @@
 }
 
 .sidebar-link {
-  @apply text-control hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none;
+  @apply text-control hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none select-none;
 }
