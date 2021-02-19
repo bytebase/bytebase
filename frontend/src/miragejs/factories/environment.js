@@ -3,13 +3,16 @@ export default {
   environment: Factory.extend({
     name(i) {
       if (i == 0) {
-        return "dev env";
+        return "Sandbox A";
       } else if (i == 1) {
-        return "test env";
+        return "Integration";
       } else if (i == 2) {
-        return "staging env";
+        return "Staging";
       } else {
-        return "prod env " + (i - 2);
+        if (i == 3) {
+          return "Prod";
+        }
+        return "Prod " + (i - 2);
       }
     },
     order(i) {
