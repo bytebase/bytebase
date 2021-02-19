@@ -7,16 +7,17 @@
         class="flex flex-row space-x-2 lg:flex-col lg:space-x-0"
       >
         <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Status</h2>
-        <TaskStatusSelect
-          :disabled="activeStageIsRunning(task)"
-          class="lg:mt-3 w-3/4 lg:w-auto"
-          :selectedStatus="task.attributes.status"
-          @change-status="
-            (value) => {
-              $emit('update-task-status', value);
-            }
-          "
-        />
+        <div class="lg:mt-3 w-3/4 lg:w-auto">
+          <TaskStatusSelect
+            :disabled="activeStageIsRunning(task)"
+            :selectedStatus="task.attributes.status"
+            @change-status="
+              (value) => {
+                $emit('update-task-status', value);
+              }
+            "
+          />
+        </div>
       </div>
       <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
         <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Assignee</h2>
