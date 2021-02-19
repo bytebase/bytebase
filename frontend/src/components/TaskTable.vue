@@ -23,7 +23,7 @@
       <BBTableCell class="w-24 table-cell">
         {{ activeEnvironmentName(task) }}
       </BBTableCell>
-      <BBTableCell :leftPadding="1" class="w-auto">
+      <BBTableCell :leftPadding="1" class="truncate">
         {{ task.attributes.name }}
       </BBTableCell>
       <BBTableCell class="w-12 hidden sm:table-cell">
