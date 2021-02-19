@@ -56,11 +56,11 @@
       </div>
       <template v-for="(field, index) in fieldList" :key="index">
         <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
+          <h2 class="flex items-center textlabel w-1/4 lg:w-auto">
+            {{ field.name }}
+            <span v-if="field.required" class="text-red-600">*</span>
+          </h2>
           <template v-if="field.type == 'String'">
-            <h2 class="flex items-center textlabel w-1/4 lg:w-auto">
-              {{ field.name }}
-              <span v-if="field.required" class="text-red-600">*</span>
-            </h2>
             <div class="lg:mt-3 w-3/4 lg:w-auto">
               <input
                 type="text"
@@ -74,6 +74,23 @@
                 :placeholder="field.placeholder"
                 @input="
                   $emit('update-custom-field', field, $event.target.value)
+                "
+              />
+            </div>
+          </template>
+          <template v-else-if="field.type == 'Environment'">
+            <div class="lg:mt-3 w-3/4 lg:w-auto">
+              <EnvironmentSelect
+                :name="field.id"
+                :selectedId="
+                  field.preprocessor
+                    ? field.preprocessor(task.attributes.payload[field.id])
+                    : task.attributes.payload[field.id]
+                "
+                @select-environment-id="
+                  (environmentId) => {
+                    $emit('update-custom-field', field, environmentId);
+                  }
                 "
               />
             </div>
@@ -121,6 +138,7 @@
 <script lang="ts">
 import { PropType, watchEffect, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
+import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import TaskStatusSelect from "../components/TaskStatusSelect.vue";
 import { TaskField } from "../plugins";
 import { Task } from "../types";
@@ -143,7 +161,7 @@ export default {
       type: Object as PropType<TaskField[]>,
     },
   },
-  components: { TaskStatusSelect },
+  components: { EnvironmentSelect, TaskStatusSelect },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       new: isEmpty(props.task.id),

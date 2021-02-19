@@ -1,7 +1,7 @@
 import { Environment, TaskNew, User } from "../types";
 
 // Task
-export type TaskFieldType = "String";
+export type TaskFieldType = "String" | "Environment";
 
 export type TaskField = {
   category: "INPUT" | "OUTPUT";
