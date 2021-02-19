@@ -97,9 +97,8 @@ const workspacesSeeder = (server) => {
       {
         id: "1",
         name: "Request data source",
-        type: "ENVIRONMENT",
+        type: "SIMPLE",
         status: "PENDING",
-        environmentId: environmentList1[1].id,
       },
     ],
     payload: {
