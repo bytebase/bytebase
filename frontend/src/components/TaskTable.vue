@@ -21,11 +21,7 @@
         </span>
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">
-        {{
-          activeEnvironmentId(task)
-            ? environmentName(activeEnvironmentId(task))
-            : ""
-        }}
+        {{ activeEnvironmentName(task) }}
       </BBTableCell>
       <BBTableCell :leftPadding="1" class="w-auto">
         {{ task.attributes.name }}
@@ -108,8 +104,13 @@ export default {
       dataSource: [],
     });
 
-    const environmentName = function (id: EnvironmentId) {
-      return store.getters["environment/environmentById"](id)?.attributes.name;
+    const activeEnvironmentName = function (task: Task) {
+      const id = activeEnvironmentId(task);
+      if (id) {
+        return store.getters["environment/environmentById"](id)?.attributes
+          .name;
+      }
+      return "";
     };
 
     const router = useRouter();
@@ -155,10 +156,9 @@ export default {
 
     return {
       state,
-      environmentName,
+      activeEnvironmentName,
       stageList,
       humanize,
-      activeEnvironmentId,
       activeStage,
       clickTask,
     };

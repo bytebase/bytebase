@@ -60,6 +60,7 @@ const workspacesSeeder = (server) => {
 
   server.create("task", {
     type: "bytebase.general",
+    name: "General Task",
     creator: {
       id: ws1Dev1.id,
       name: ws1Dev1.name,
@@ -77,6 +78,34 @@ const workspacesSeeder = (server) => {
         status: "PENDING",
       },
     ],
+    workspace: workspace1,
+  });
+
+  server.create("task", {
+    type: "bytebase.datasource.create",
+    name: "Request data source for environment - " + environmentList1[1].name,
+    creator: {
+      id: ws1Dev1.id,
+      name: ws1Dev1.name,
+    },
+    assignee: {
+      id: ws1Owner.id,
+      name: ws1Owner.name,
+    },
+    subscriberIdList: [ws1DBA.id, ws1Dev2.id],
+    stageProgressList: [
+      {
+        id: "1",
+        name: "Request data source",
+        type: "ENVIRONMENT",
+        status: "PENDING",
+        environmentId: environmentList1[1].id,
+      },
+    ],
+    payload: {
+      1: "db1",
+      2: environmentList1[1].id,
+    },
     workspace: workspace1,
   });
 

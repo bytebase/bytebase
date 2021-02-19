@@ -1,5 +1,5 @@
 import { TaskTemplate, TemplateContext } from "../types";
-import { EnvironmentId, TaskNew } from "../../types";
+import { EnvironmentId, TaskType, TaskNew } from "../../types";
 
 const allTaskTemplateList: TaskTemplate[] = [
   {
@@ -41,7 +41,7 @@ const allTaskTemplateList: TaskTemplate[] = [
             {
               id: "1",
               name: "Request Data Source",
-              type: "ENVIRONMENT",
+              type: "SIMPLE",
               status: "PENDING",
             },
           ],
@@ -142,6 +142,6 @@ const allTaskTemplateList: TaskTemplate[] = [
   },
 ];
 
-export function templateForType(type: string): TaskTemplate | undefined {
+export function templateForType(type: TaskType): TaskTemplate | undefined {
   return allTaskTemplateList.find((template) => template.type === type);
 }

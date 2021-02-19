@@ -124,6 +124,7 @@ import {
   User,
   Task,
   TaskNew,
+  TaskType,
   TaskPatch,
   TaskStatus,
   StageStatus,
@@ -250,7 +251,7 @@ export default {
     });
 
     const newTaskemplateName =
-      (router.currentRoute.value.query.template as string) ||
+      (router.currentRoute.value.query.template as TaskType) ||
       "bytebase.general";
     const newTaskTemplate = templateForType(newTaskemplateName);
     if (!newTaskTemplate) {

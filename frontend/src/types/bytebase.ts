@@ -103,7 +103,7 @@ export type Task = ResourceObject & {
 export type TaskNew = Omit<ResourceObject, "id"> & {
   attributes: {
     name: string;
-    type: string;
+    type: TaskType;
     content: string;
     stageProgressList: StageProgress[];
     creator: {
