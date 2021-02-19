@@ -1,4 +1,4 @@
-import { defineAsyncComponent, nextTick } from "vue";
+import { nextTick } from "vue";
 import {
   createRouter,
   createWebHistory,
@@ -74,9 +74,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "404",
             name: "error.404",
             components: {
-              content: defineAsyncComponent(
-                () => import("../views/Page404.vue")
-              ),
+              content: () => import("../views/Page404.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -88,9 +86,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "500",
             name: "error.500",
             components: {
-              content: defineAsyncComponent(
-                () => import("../views/Page500.vue")
-              ),
+              content: () => import("../views/Page500.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -103,7 +99,7 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.inbox",
             meta: { title: () => "Inbox" },
             components: {
-              content: defineAsyncComponent(() => import("../views/Inbox.vue")),
+              content: () => import("../views/Inbox.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -116,12 +112,8 @@ const routes: Array<RouteRecordRaw> = [
             name: "setting",
             meta: { title: () => "Setting" },
             components: {
-              content: defineAsyncComponent(
-                () => import("../layouts/SettingLayout.vue")
-              ),
-              leftSidebar: defineAsyncComponent(
-                () => import("../views/SettingSidebar.vue")
-              ),
+              content: () => import("../layouts/SettingLayout.vue"),
+              leftSidebar: () => import("../views/SettingSidebar.vue"),
               props: {
                 content: true,
                 leftSidebar: true,
@@ -132,9 +124,7 @@ const routes: Array<RouteRecordRaw> = [
                 path: "",
                 name: "setting.accountprofile",
                 meta: { title: () => "Account Profile" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingAccountProfile.vue")
-                ),
+                component: () => import("../views/SettingAccountProfile.vue"),
                 alias: "account/profile",
                 props: true,
               },
@@ -142,54 +132,43 @@ const routes: Array<RouteRecordRaw> = [
                 path: "general",
                 name: "setting.workspace.general",
                 meta: { title: () => "Account General" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspaceGeneral.vue")
-                ),
+                component: () => import("../views/SettingWorkspaceGeneral.vue"),
                 props: true,
               },
               {
                 path: "agent",
                 name: "setting.workspace.agent",
                 meta: { title: () => "Agents" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspaceAgent.vue")
-                ),
+                component: () => import("../views/SettingWorkspaceAgent.vue"),
                 props: true,
               },
               {
                 path: "member",
                 name: "setting.workspace.member",
                 meta: { title: () => "Members" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspaceMember.vue")
-                ),
+                component: () => import("../views/SettingWorkspaceMember.vue"),
                 props: true,
               },
               {
                 path: "plan",
                 name: "setting.workspace.plan",
                 meta: { title: () => "Plans" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspacePlan.vue")
-                ),
+                component: () => import("../views/SettingWorkspacePlan.vue"),
                 props: true,
               },
               {
                 path: "billing",
                 name: "setting.workspace.billing",
                 meta: { title: () => "Billings" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspaceBilling.vue")
-                ),
+                component: () => import("../views/SettingWorkspaceBilling.vue"),
                 props: true,
               },
               {
                 path: "integration/slack",
                 name: "setting.workspace.integration.slack",
                 meta: { title: () => "Slack" },
-                component: defineAsyncComponent(
-                  () => import("../views/SettingWorkspaceIntegrationSlack.vue")
-                ),
+                component: () =>
+                  import("../views/SettingWorkspaceIntegrationSlack.vue"),
                 props: true,
               },
             ],
@@ -202,9 +181,7 @@ const routes: Array<RouteRecordRaw> = [
               quickActionList: ["environment.create", "environment.reorder"],
             },
             components: {
-              content: defineAsyncComponent(
-                () => import("../views/EnvironmentDashboard.vue")
-              ),
+              content: () => import("../views/EnvironmentDashboard.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
@@ -217,9 +194,7 @@ const routes: Array<RouteRecordRaw> = [
               quickActionList: ["instance.create"],
             },
             components: {
-              content: defineAsyncComponent(
-                () => import("../views/InstanceDashboard.vue")
-              ),
+              content: () => import("../views/InstanceDashboard.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
@@ -238,9 +213,7 @@ const routes: Array<RouteRecordRaw> = [
               },
             },
             components: {
-              content: defineAsyncComponent(
-                () => import("../views/InstanceDetail.vue")
-              ),
+              content: () => import("../views/InstanceDetail.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true },
@@ -259,9 +232,7 @@ const routes: Array<RouteRecordRaw> = [
               },
             },
             components: {
-              content: defineAsyncComponent(
-                () => import("../views/TaskDetail.vue")
-              ),
+              content: () => import("../views/TaskDetail.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true },
