@@ -177,7 +177,7 @@ interface Transition {
   type: StageTransitionType;
   actionName: string;
   actionType: ActionType;
-  requiredRunnable: boolean;
+  requireRunnable: boolean;
   to: StageStatus;
 }
 
@@ -186,28 +186,28 @@ const STAGE_TRANSITION_LIST: Transition[] = [
     type: "RUN",
     actionName: "Run",
     actionType: ActionType.PRIMARY,
-    requiredRunnable: true,
+    requireRunnable: true,
     to: "RUNNING",
   },
   {
     type: "RETRY",
     actionName: "Rerun",
     actionType: ActionType.PRIMARY,
-    requiredRunnable: true,
+    requireRunnable: true,
     to: "RUNNING",
   },
   {
     type: "CANCEL",
     actionName: "Cancel",
     actionType: ActionType.PRIMARY,
-    requiredRunnable: true,
+    requireRunnable: true,
     to: "PENDING",
   },
   {
     type: "SKIP",
     actionName: "Skip",
     actionType: ActionType.NORMAL,
-    requiredRunnable: false,
+    requireRunnable: false,
     to: "SKIPPED",
   },
 ];
@@ -422,7 +422,7 @@ export default {
         return (
           stage.type === "ENVIRONMENT" &&
           actionListForRole.get(stage.status)!.includes(transition.type) &&
-          (!transition.requiredRunnable || stage.runnable)
+          (!transition.requireRunnable || stage.runnable)
         );
       }).sort((a, b) => b.actionType - a.actionType);
     };
