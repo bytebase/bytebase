@@ -1,5 +1,5 @@
 <template>
-  <!-- This example requires Tailwind CSS v2.0+ -->
+  <BannerDemo v-if="isDemo()" />
   <div class="relative h-screen overflow-hidden flex flex-col">
     <nav class="bg-white border-b border-block-border">
       <div class="max-w-full mx-auto px-6">
@@ -19,8 +19,10 @@
 <script lang="ts">
 import { reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Notification } from "../types";
 import DashboardHeader from "../views/DashboardHeader.vue";
+import BannerDemo from "../views/BannerDemo.vue";
+import { Notification } from "../types";
+import { isDemo } from "../utils";
 
 const NOTIFICAITON_DURATION = 4000;
 
@@ -30,7 +32,7 @@ interface LocalState {
 
 export default {
   name: "DashboardLayout",
-  components: { DashboardHeader },
+  components: { DashboardHeader, BannerDemo },
   setup(props, ctx) {
     const store = useStore();
 
@@ -63,6 +65,7 @@ export default {
 
     return {
       state,
+      isDemo,
     };
   },
 };
