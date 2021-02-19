@@ -29,6 +29,9 @@
       <BBTableCell class="w-12 hidden sm:table-cell">
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
+      <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
+        {{ humanize(task.attributes.lastUpdatedTs) }}
+      </BBTableCell>
       <BBTableCell class="w-32 hidden sm:table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar
@@ -45,9 +48,6 @@
               : "Unassigned"
           }}</span>
         </div>
-      </BBTableCell>
-      <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
-        {{ humanize(task.attributes.lastUpdatedTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -105,10 +105,10 @@ export default {
           title: "Progress",
         },
         {
-          title: "Assignee",
+          title: "Updated",
         },
         {
-          title: "Updated",
+          title: "Assignee",
         },
       ],
       dataSource: [],
