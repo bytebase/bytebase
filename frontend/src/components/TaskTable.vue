@@ -30,11 +30,21 @@
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
       <BBTableCell class="w-32 hidden sm:table-cell">
-        {{
-          task.attributes.assignee
-            ? task.attributes.assignee.name
-            : "Unassigned"
-        }}
+        <div class="flex flex-row items-center">
+          <BBAvatar
+            :size="'small'"
+            :username="
+              task.attributes.assignee
+                ? task.attributes.assignee.name
+                : 'Unassigned'
+            "
+          />
+          <span class="ml-2">{{
+            task.attributes.assignee
+              ? task.attributes.assignee.name
+              : "Unassigned"
+          }}</span>
+        </div>
       </BBTableCell>
       <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
         {{ humanize(task.attributes.lastUpdatedTs) }}
