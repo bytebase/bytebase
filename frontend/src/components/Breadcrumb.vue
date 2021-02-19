@@ -39,12 +39,12 @@
         <router-link
           v-if="item.path"
           :to="item.path"
-          class="link w-96 truncate"
+          class="link max-w-prose truncate"
           active-class="link"
           exact-active-class="link"
           >{{ item.name }}</router-link
         >
-        <div v-else class="w-96 truncate">
+        <div v-else class="truncate">
           {{ item.name }}
         </div>
         <button
