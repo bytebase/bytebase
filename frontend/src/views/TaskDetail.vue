@@ -43,12 +43,20 @@
     />
 
     <!-- Output Panel -->
-    <TaskOutputPanel
+    <!-- Only render the top border if TaskFlow is not displayed, otherwise it would overlap with the bottom border of the TaskFlow -->
+    <div
       v-if="!state.new && outputFieldList.length > 0"
-      :task="state.task"
-      :fieldList="outputFieldList"
-      @update-custom-field="updateCustomField"
-    />
+      class="px-2 py-4 md:flex md:flex-col lg:border-b lg:border-block-border"
+      :class="
+        state.task.attributes.stageProgressList.length <= 1 ? 'lg:border-t' : ''
+      "
+    >
+      <TaskOutputPanel
+        :task="state.task"
+        :fieldList="outputFieldList"
+        @update-custom-field="updateCustomField"
+      />
+    </div>
 
     <!-- Main Content -->
     <main
