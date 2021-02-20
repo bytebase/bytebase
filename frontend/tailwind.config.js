@@ -14,9 +14,6 @@ module.exports = {
         "accent-hover": "var(--color-accent-hover)",
         "accent-text": "var(--color-accent-text)",
 
-        normal: "var(--color-normal)",
-        "normal-hover": "var(--color-normal-hover)",
-
         main: "var(--color-main)",
 
         control: "var(--color-control)",
@@ -24,6 +21,9 @@ module.exports = {
 
         "control-light": "var(--color-control-light)",
         "control-light-hover": "var(--color-control-light-hover)",
+
+        "control-bg": "var(--color-control-bg)",
+        "control-bg-hover": "var(--color-control-bg-hover)",
 
         "control-placeholder": "var(--color-control-placeholder)",
 

@@ -6,11 +6,6 @@
   /* white */
   --color-accent-text: #ffffff;
 
-  /* gray-50 */
-  --color-normal: #f9fafb;
-  /* gray-400 */
-  --color-normal-hover: #e5e7eb;
-
   /* gray-900 */
   --color-main: #18181b;
 
@@ -23,6 +18,11 @@
   --color-control-light: #71717a;
   /* gray-600 */
   --color-control-light-hover: #52525b;
+
+  /* gray-50 */
+  --color-control-bg: #f9fafb;
+  /* gray-400 */
+  --color-control-bg-hover: #e5e7eb;
 
   /* gray-400 */
   --color-control-placeholder: #a1a1aa;
@@ -55,7 +55,7 @@
 }
 
 .btn-normal {
-  @apply border border-control-border rounded-md text-control bg-normal hover:bg-normal-hover disabled:bg-normal disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply border border-control-border rounded-md text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-icon {
