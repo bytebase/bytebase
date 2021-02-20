@@ -2,6 +2,7 @@
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
 
+import { create } from "lodash-es";
 import { Response } from "miragejs";
 
 const WORKSPACE_ID = 1;
@@ -87,7 +88,18 @@ export default function routes() {
       status: "OPEN",
       workspaceId: WORKSPACE_ID,
     };
-    return schema.tasks.create(newTask);
+    const createdTask = schema.tasks.create(newTask);
+
+    schema.activities.create({
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      actionType: "bytebase.task.create",
+      containerId: createdTask.id,
+      creator: attrs.creator,
+      workspaceId: WORKSPACE_ID,
+    });
+
+    return createdTask;
   });
 
   this.patch("/task/:taskId", function (schema, request) {
