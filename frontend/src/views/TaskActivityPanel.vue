@@ -56,25 +56,6 @@
                         :username="currentUser.attributes.name"
                       >
                       </BBAvatar>
-
-                      <span
-                        class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
-                      >
-                        <!-- Heroicon name: solid/chat-alt -->
-                        <svg
-                          class="h-3.5 w-3.5 text-control-light"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </span>
                     </div>
                   </template>
                   <div class="min-w-0 flex-1">
@@ -113,6 +94,24 @@
             <div class="flex-shrink-0">
               <div class="relative">
                 <BBAvatar :username="currentUser.attributes.name"> </BBAvatar>
+                <span
+                  class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
+                >
+                  <!-- Heroicon name: solid/chat-alt -->
+                  <svg
+                    class="h-3.5 w-3.5 text-control-light"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </span>
               </div>
             </div>
             <div class="min-w-0 flex-1">
