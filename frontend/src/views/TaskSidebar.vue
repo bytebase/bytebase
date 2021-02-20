@@ -103,23 +103,6 @@
       v-if="!state.new"
       class="mt-6 border-t border-block-border py-6 space-y-4"
     >
-      <div class="flex items-center space-x-2">
-        <!-- Heroicon name: solid/chat-alt -->
-        <svg
-          class="h-5 w-5 text-control-light"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        <span class="textfield">4 comments</span>
-      </div>
       <div>
         <h2 class="textlabel">Update Time</h2>
         <span class="textfield">
