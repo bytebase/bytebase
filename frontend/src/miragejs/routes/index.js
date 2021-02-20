@@ -388,34 +388,4 @@ export default function routes() {
     }
     return schema.environments.none();
   });
-
-  this.get("/project/:id/task", function (schema, request) {
-    const project = schema.projects.find(request.params.id);
-    if (project) {
-      return schema.tasks.where({
-        projectId: project.id,
-      });
-    }
-    return schema.environments.none();
-  });
-
-  this.get("/project/:id/task/:taskId", function (schema, request) {
-    const project = schema.projects.find(request.params.id);
-    if (project) {
-      return schema.tasks.findBy({
-        slug: request.params.taskId,
-      });
-    }
-    return null;
-  });
-
-  this.get("/project/:id/repository", function (schema, request) {
-    const project = schema.projects.find(request.params.id);
-    if (project) {
-      return schema.repositories.findBy({
-        projectId: project.id,
-      });
-    }
-    return null;
-  });
 }
