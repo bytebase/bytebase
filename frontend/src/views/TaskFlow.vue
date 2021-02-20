@@ -16,7 +16,7 @@
             >
               <template v-if="stage.status === 'PENDING'">
                 <span
-                  v-if="activeStage(task) === stage.id"
+                  v-if="activeStage(task).id === stage.id"
                   class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
                   aria-hidden="true"
                 ></span>
