@@ -81,7 +81,11 @@
               <div class="lg:hidden my-4 border-t border-block-border" />
               <TaskContent :task="state.task" />
             </div>
-            <section aria-labelledby="activity-title" class="mt-8 lg:mt-10">
+            <section
+              v-if="!state.new"
+              aria-labelledby="activity-title"
+              class="mt-8 lg:mt-10"
+            >
               <TaskActivityPanel :task="state.task" />
             </section>
           </div>
