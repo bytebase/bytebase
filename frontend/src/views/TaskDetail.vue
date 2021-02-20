@@ -1,7 +1,7 @@
 <template>
   <div
     id="task-detail-top"
-    class="flex-1 overflow-auto focus:outline-none"
+    class="flex-1 overflow-auto focus:outline-none space-y-4"
     tabindex="0"
   >
     <!-- Highlight Panel -->
@@ -37,20 +37,14 @@
     </div>
 
     <!-- Flow Bar -->
-    <TaskFlow
-      class="pt-4"
-      v-if="!state.new && state.task.attributes.stageProgressList.length > 1"
-      :task="state.task"
-    />
+    <TaskFlow v-if="showTaskFlowBar" :task="state.task" />
 
     <!-- Output Panel -->
     <!-- Only render the top border if TaskFlow is not displayed, otherwise it would overlap with the bottom border of the TaskFlow -->
     <div
       v-if="!state.new && outputFieldList.length > 0"
-      class="px-2 py-4 md:flex md:flex-col lg:border-b lg:border-block-border"
-      :class="
-        state.task.attributes.stageProgressList.length <= 1 ? 'lg:border-t' : ''
-      "
+      class="px-2 md:flex md:flex-col"
+      :class="showTaskFlowBar ? '' : 'lg:border-t pt-4'"
     >
       <TaskOutputPanel
         :task="state.task"
@@ -61,42 +55,40 @@
 
     <!-- Main Content -->
     <main
-      class="flex-1 relative overflow-y-auto focus:outline-none"
+      class="flex-1 relative overflow-y-auto focus:outline-none lg:border-t lg:border-block-border"
       tabindex="-1"
     >
-      <div class="py-6">
-        <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
-          <div
-            class="flex flex-col flex-1 min-w-0 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
-          >
-            <div>
-              <TaskContentBar v-if="false" :task="state.task" />
-              <TaskSidebar
-                class="lg:hidden"
-                :task="state.task"
-                :fieldList="inputFieldList"
-                @update-task-status="updateTaskStatus"
-                @update-custom-field="updateCustomField"
-              />
-              <div class="lg:hidden my-4 border-t border-block-border" />
-              <TaskContent :task="state.task" />
-            </div>
-            <section
-              v-if="!state.new"
-              aria-labelledby="activity-title"
-              class="mt-8 lg:mt-10"
-            >
-              <TaskActivityPanel :task="state.task" />
-            </section>
+      <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
+        <div
+          class="py-4 flex flex-col flex-1 min-w-0 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
+        >
+          <div>
+            <TaskContentBar v-if="false" :task="state.task" />
+            <TaskSidebar
+              class="lg:hidden"
+              :task="state.task"
+              :fieldList="inputFieldList"
+              @update-task-status="updateTaskStatus"
+              @update-custom-field="updateCustomField"
+            />
+            <div class="lg:hidden my-4 border-t border-block-border" />
+            <TaskContent :task="state.task" />
           </div>
-          <TaskSidebar
-            class="hidden lg:block lg:w-64 lg:pl-8 xl:w-72"
-            :task="state.task"
-            :fieldList="inputFieldList"
-            @update-task-status="updateTaskStatus"
-            @update-custom-field="updateCustomField"
-          />
+          <section
+            v-if="!state.new"
+            aria-labelledby="activity-title"
+            class="mt-8 lg:mt-10"
+          >
+            <TaskActivityPanel :task="state.task" />
+          </section>
         </div>
+        <TaskSidebar
+          class="hidden lg:block pt-4 lg:w-64 lg:pl-8 xl:w-72"
+          :task="state.task"
+          :fieldList="inputFieldList"
+          @update-task-status="updateTaskStatus"
+          @update-custom-field="updateCustomField"
+        />
       </div>
     </main>
   </div>
@@ -451,6 +443,10 @@ export default {
       }
     };
 
+    const showTaskFlowBar = computed(() => {
+      return !state.new && state.task.attributes.stageProgressList.length > 1;
+    });
+
     return {
       state,
       modalState,
@@ -465,6 +461,7 @@ export default {
       currentUser,
       outputFieldList,
       inputFieldList,
+      showTaskFlowBar,
     };
   },
 };
