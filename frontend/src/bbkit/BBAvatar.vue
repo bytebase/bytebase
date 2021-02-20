@@ -36,7 +36,7 @@ type SizeType = "small" | "normal" | "large";
 
 const sizeClassMap: Map<SizeType, string> = new Map([
   ["small", "w-7 h-7 text-xs font-normal"],
-  ["normal", "w-8 h-8 text-sm font-normal"],
+  ["normal", "w-9 h-9 text-normal font-normal"],
   ["large", "w-24 h-24 text-4xl font-medium"],
 ]);
 
