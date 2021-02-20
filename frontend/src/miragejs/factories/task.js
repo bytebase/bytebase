@@ -57,11 +57,8 @@ export default {
     },
     payload() {
       return {
-        type: "bytebase.datasource.create",
-        fieldList: {
-          // Requested Database name
-          1: "Mydb",
-        },
+        // Requested Database name
+        1: "Fake DB",
       };
     },
   }),
