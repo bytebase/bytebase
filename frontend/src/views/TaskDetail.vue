@@ -120,7 +120,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { humanize, idFromSlug, taskSlug, activeStage } from "../utils";
+import { idFromSlug, taskSlug, activeStage } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
@@ -449,7 +449,6 @@ export default {
     return {
       state,
       modalState,
-      humanize,
       updateTaskStatus,
       updateCustomField,
       doCreate,

@@ -47,7 +47,7 @@
         </button>
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ humanize(instance.attributes.createdTs) }}
+        {{ humanizeTs(instance.attributes.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -58,7 +58,7 @@ import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
-import { humanize, urlfy, instanceSlug } from "../utils";
+import { urlfy, instanceSlug } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 
 interface LocalState {
@@ -121,7 +121,6 @@ export default {
 
     return {
       state,
-      humanize,
       urlfy,
       clickInstance,
       environmentName,

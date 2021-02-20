@@ -30,7 +30,7 @@
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
       <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
-        {{ humanize(task.attributes.lastUpdatedTs) }}
+        {{ humanizeTs(task.attributes.lastUpdatedTs) }}
       </BBTableCell>
       <BBTableCell class="w-32 hidden sm:table-cell">
         <div class="flex flex-row items-center">
@@ -64,7 +64,7 @@ import {
   BBStepStatus,
 } from "../bbkit/types";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
-import { humanize, taskSlug, activeEnvironmentId, activeStage } from "../utils";
+import { taskSlug, activeEnvironmentId, activeStage } from "../utils";
 import { EnvironmentId, Task } from "../types";
 
 interface LocalState {
@@ -168,7 +168,6 @@ export default {
       state,
       activeEnvironmentName,
       stageList,
-      humanize,
       activeStage,
       clickTask,
     };

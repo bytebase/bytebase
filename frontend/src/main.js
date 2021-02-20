@@ -19,7 +19,7 @@ import {
   BBTableCell,
   BBTableTabFilter,
 } from "./bbkit";
-import { isDevOrDemo } from "./utils";
+import { isDevOrDemo, humanizeTs } from "./utils";
 
 if (isDevOrDemo()) {
   makeServer();
@@ -27,13 +27,11 @@ if (isDevOrDemo()) {
 
 const app = createApp(App);
 
-// Allow template to access window object
+// Allow template to access various function
 app.config.globalProperties.window = window;
-// Allow template to access console object
 app.config.globalProperties.console = console;
-// Allow template to access moment object
 app.config.globalProperties.moment = moment;
-// Allow template to access isDevOrDemo
+app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 
 app

@@ -1,6 +1,6 @@
 import moment from "moment";
 
-export function humanize(ts: number) {
+export function humanizeTs(ts: number) {
   const time = moment.utc(ts);
   if (moment().year() == time.year()) {
     if (moment().dayOfYear() == time.dayOfYear()) {
