@@ -1,28 +1,27 @@
-import { randomNumber } from "./utils";
 import { Factory } from "miragejs";
-import faker from "faker";
 
 export default {
   activity: Factory.extend({
-    name() {
-      return "activity " + faker.fake("{{lorem.word}}");
+    createdTs(i) {
+      return Date.now() - (10 - i) * 1800 * 1000;
     },
-    description() {
-      return faker.fake("{{lorem.sentence}}");
+    lastUpdatedTs(i) {
+      return Date.now() - (10 - i) * 3600 * 1000;
+    },
+    actionType() {
+      return "bytebase.task.comment.create";
+    },
+    containerId() {
+      return "0";
     },
     creator() {
-      return (
-        faker.fake("{{name.lastName}}") + " " + faker.fake("{{name.firstName}}")
-      );
+      return {
+        id: "100",
+        name: "John Appleseed",
+      };
     },
-    link(i) {
-      return "actlink" + (i + 1);
-    },
-    startTs() {
-      return Date.now() - 3600 * 1000;
-    },
-    endTs() {
-      return Date.now() + randomNumber(3600 * 1000);
+    payload() {
+      return {};
     },
   }),
 };

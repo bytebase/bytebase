@@ -36,9 +36,6 @@ export type NewUser = Omit<User, "id">;
 export type Bookmark = ResourceObject & {};
 export type NewBookmark = Omit<Bookmark, "id">;
 
-export type Activity = ResourceObject & {};
-export type ActivityNew = Omit<Activity, "id">;
-
 // Stage
 export type StageType = "SIMPLE" | "ENVIRONMENT";
 
@@ -129,6 +126,37 @@ export type TaskPatch = {
   stageProgressList?: StageProgressPatch[];
   payload?: any;
 };
+
+// Activity
+export type TaskActionType =
+  | "bytebase.task.create"
+  | "bytebase.task.comment.create"
+  | "bytebase.task.field.update";
+
+export type ActionType = TaskActionType;
+
+export type ActionCommentCreatePayload = {
+  content: string;
+};
+
+export type ActionPayloadType = ActionCommentCreatePayload;
+
+export type Activity = ResourceObject & {
+  attributes: {
+    createdTs: number;
+    lastUpdatedTs: number;
+    actionType: ActionType;
+    // The object where this activity belongs
+    // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
+    containerId: TaskId;
+    creator: {
+      id: string;
+      name: string;
+    };
+    payload?: ActionPayloadType;
+  };
+};
+export type ActivityNew = Omit<Environment, "id">;
 
 // Environment
 export type Environment = ResourceObject & {
@@ -236,6 +264,7 @@ export interface BookmarkState {
 
 export interface ActivityState {
   activityListByUser: Map<UserId, Activity[]>;
+  activityListByTask: Map<TaskId, Activity[]>;
 }
 
 export interface TaskState {

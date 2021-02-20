@@ -294,8 +294,23 @@ export default function routes() {
 
   // Activity
   this.get("/activity", function (schema, request) {
-    return schema.activities.where({
-      workspaceId: WORKSPACE_ID,
+    const {
+      queryParams: { containerid: containerId, type },
+    } = request;
+    return schema.activities.where((activity) => {
+      if (activity.workspaceId != WORKSPACE_ID) {
+        return false;
+      }
+
+      if (containerId && containerId != activity.containerId) {
+        return false;
+      }
+
+      if (type && !activity.actionType.startsWith(type)) {
+        return false;
+      }
+
+      return true;
     });
   });
 

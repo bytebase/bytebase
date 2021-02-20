@@ -58,7 +58,7 @@ const workspacesSeeder = (server) => {
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
 
-  server.create("task", {
+  let task = server.create("task", {
     type: "bytebase.general",
     name: "General Task",
     creator: {
@@ -81,7 +81,32 @@ const workspacesSeeder = (server) => {
     workspace: workspace1,
   });
 
-  server.create("task", {
+  server.create("activity", {
+    actionType: "bytebase.task.create",
+    containerId: task.id,
+    creator: {
+      id: ws1Dev1.id,
+      name: ws1Dev1.name,
+    },
+    workspace: workspace1,
+  });
+
+  for (let i = 0; i < 3; i++) {
+    server.create("activity", {
+      actionType: "bytebase.task.comment.create",
+      containerId: task.id,
+      creator: {
+        id: ws1Dev1.id,
+        name: ws1Dev1.name,
+      },
+      payload: {
+        content: faker.fake("{{lorem.paragraph}}"),
+      },
+      workspace: workspace1,
+    });
+  }
+
+  task = server.create("task", {
     type: "bytebase.datasource.create",
     name: "Request data source for environment - " + environmentList1[1].name,
     creator: {
@@ -108,8 +133,33 @@ const workspacesSeeder = (server) => {
     workspace: workspace1,
   });
 
+  server.create("activity", {
+    actionType: "bytebase.task.create",
+    containerId: task.id,
+    creator: {
+      id: ws1Dev1.id,
+      name: ws1Dev1.name,
+    },
+    workspace: workspace1,
+  });
+
+  for (let i = 0; i < 3; i++) {
+    server.create("activity", {
+      actionType: "bytebase.task.comment.create",
+      containerId: task.id,
+      creator: {
+        id: ws1Dev1.id,
+        name: ws1Dev1.name,
+      },
+      payload: {
+        content: faker.fake("{{lorem.paragraph}}"),
+      },
+      workspace: workspace1,
+    });
+  }
+
   for (let i = 0; i < 5; i++) {
-    server.create("task", {
+    task = server.create("task", {
       creator: {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
@@ -122,10 +172,35 @@ const workspacesSeeder = (server) => {
       ...fillStage(environmentList1),
       workspace: workspace1,
     });
+
+    server.create("activity", {
+      actionType: "bytebase.task.create",
+      containerId: task.id,
+      creator: {
+        id: ws1Dev1.id,
+        name: ws1Dev1.name,
+      },
+      workspace: workspace1,
+    });
+
+    for (let i = 0; i < 3; i++) {
+      server.create("activity", {
+        actionType: "bytebase.task.comment.create",
+        containerId: task.id,
+        creator: {
+          id: ws1Dev1.id,
+          name: ws1Dev1.name,
+        },
+        payload: {
+          content: faker.fake("{{lorem.paragraph}}"),
+        },
+        workspace: workspace1,
+      });
+    }
   }
 
   for (let i = 0; i < 15; i++) {
-    server.create("task", {
+    task = server.create("task", {
       creator: {
         id: ws1Owner.id,
         name: ws1Owner.name,
@@ -138,10 +213,35 @@ const workspacesSeeder = (server) => {
       ...fillStage(environmentList1),
       workspace: workspace1,
     });
+
+    server.create("activity", {
+      actionType: "bytebase.task.create",
+      containerId: task.id,
+      creator: {
+        id: ws1Owner.id,
+        name: ws1Owner.name,
+      },
+      workspace: workspace1,
+    });
+
+    for (let i = 0; i < 3; i++) {
+      server.create("activity", {
+        actionType: "bytebase.task.comment.create",
+        containerId: task.id,
+        creator: {
+          id: ws1Dev1.id,
+          name: ws1Dev1.name,
+        },
+        payload: {
+          content: faker.fake("{{lorem.paragraph}}"),
+        },
+        workspace: workspace1,
+      });
+    }
   }
 
   for (let i = 0; i < 15; i++) {
-    server.create("task", {
+    task = server.create("task", {
       creator: {
         id: ws1Dev2.id,
         name: ws1Dev2.name,
@@ -154,9 +254,34 @@ const workspacesSeeder = (server) => {
       ...fillStage(environmentList1),
       workspace: workspace1,
     });
+
+    server.create("activity", {
+      actionType: "bytebase.task.create",
+      containerId: task.id,
+      creator: {
+        id: ws1Dev2.id,
+        name: ws1Dev2.name,
+      },
+      workspace: workspace1,
+    });
+
+    for (let i = 0; i < 3; i++) {
+      server.create("activity", {
+        actionType: "bytebase.task.comment.create",
+        containerId: task.id,
+        creator: {
+          id: ws1DBA.id,
+          name: ws1DBA.name,
+        },
+        payload: {
+          content: faker.fake("{{lorem.paragraph}}"),
+        },
+        workspace: workspace1,
+      });
+    }
   }
 
-  server.create("task", {
+  task = server.create("task", {
     creator: {
       id: ws2Dev.id,
       name: ws2Dev.name,
@@ -166,6 +291,16 @@ const workspacesSeeder = (server) => {
       name: ws2DBA.name,
     },
     ...fillStage(environmentList2),
+    workspace: workspace2,
+  });
+
+  server.create("activity", {
+    actionType: "bytebase.task.create",
+    containerId: task.id,
+    creator: {
+      id: ws1Dev1.id,
+      name: ws1Dev1.name,
+    },
     workspace: workspace2,
   });
 
