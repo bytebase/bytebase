@@ -4,9 +4,9 @@
       <div class="flex items-center">
         <div>
           <div class="flex items-center">
-            <TaskStatusIcon v-if="!state.new" :task="task" class="mr-1" />
+            <TaskStatusIcon v-if="!state.new" :task="task" />
             <p
-              class="text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
+              class="ml-2 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
             >
               {{ task.attributes.name }}
             </p>
