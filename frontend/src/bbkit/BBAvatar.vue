@@ -1,10 +1,13 @@
 <template>
-  <div
-    class="flex tracking-wide justify-center items-center select-none"
-    :class="textClass"
-    :style="[style]"
-  >
-    <slot>{{ initials }}</slot>
+  <!-- This div is used to insulate it from outside element to prevent resizing the BBAvatar -->
+  <div>
+    <div
+      class="flex tracking-wide justify-center items-center select-none"
+      :class="textClass"
+      :style="[style]"
+    >
+      <slot>{{ initials }}</slot>
+    </div>
   </div>
 </template>
 
