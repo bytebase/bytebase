@@ -5,7 +5,7 @@
     tabindex="0"
   >
     <!-- Highlight Panel -->
-    <div class="bg-white px-4 py-6 lg:border-t lg:border-block-border">
+    <div class="bg-white px-4 pt-6 lg:border-t lg:border-block-border">
       <TaskHighlightPanel :task="state.task">
         <template v-if="state.new">
           <button
@@ -38,6 +38,7 @@
 
     <!-- Flow Bar -->
     <TaskFlow
+      class="pt-4"
       v-if="!state.new && state.task.attributes.stageProgressList.length > 1"
       :task="state.task"
     />
