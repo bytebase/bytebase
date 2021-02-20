@@ -4,14 +4,14 @@ export function humanizeTs(ts: number) {
   const time = moment.utc(ts);
   if (moment().year() == time.year()) {
     if (moment().dayOfYear() == time.dayOfYear()) {
-      return time.format("HH:mm");
+      return time.local().format("HH:mm");
     }
     if (moment().diff(time, "days") < 3) {
-      return time.format("MMM D HH:mm");
+      return time.local().format("MMM D HH:mm");
     }
-    return time.format("MMM D");
+    return time.local().format("MMM D");
   }
-  return time.format("MMM D YYYY");
+  return time.local().format("MMM D YYYY");
 }
 
 export function urlfy(str: string) {
