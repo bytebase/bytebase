@@ -115,31 +115,35 @@
               </div>
             </div>
             <div class="min-w-0 flex-1">
-              <form action="#">
-                <div>
+              <BBAutoResize>
+                <template v-slot:default="{ resize }">
                   <label for="comment" class="sr-only">Comment</label>
-                  <BBAutoResize>
-                    <template v-slot:default="{ resize }">
-                      <textarea
-                        id="comment"
-                        name="comment"
-                        rows="3"
-                        class="overflow-y-hidden shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
-                        placeholder="Leave a comment..."
-                        @input="resize"
-                      ></textarea>
-                    </template>
-                  </BBAutoResize>
-                </div>
-                <div class="mt-6 flex items-center justify-start space-x-4">
-                  <button
-                    type="submit"
-                    class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
-                  >
-                    Comment
-                  </button>
-                </div>
-              </form>
+                  <textarea
+                    id="comment"
+                    name="comment"
+                    rows="3"
+                    class="overflow-y-hidden shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
+                    placeholder="Leave a comment..."
+                    v-model="comment"
+                    @input="
+                      (e) => {
+                        resize(e);
+                      }
+                    "
+                  ></textarea>
+                </template>
+              </BBAutoResize>
+              <div class="mt-2 flex items-center justify-start space-x-4">
+                <button
+                  type="button"
+                  class="btn-normal"
+                  ref="commentButton"
+                  :disabled="comment.length == 0"
+                  @click.prevent="createComment"
+                >
+                  Comment
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -149,7 +153,7 @@
 </template>
 
 <script lang="ts">
-import { computed, inject, watchEffect, PropType } from "vue";
+import { computed, inject, ref, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { User, Task, TaskActionType } from "../types";
@@ -165,6 +169,8 @@ export default {
   components: {},
   setup(props, ctx) {
     const store = useStore();
+    const comment = ref("");
+    const commentButton = ref();
 
     const currentUser = inject<User>(UserStateSymbol);
 
@@ -180,6 +186,10 @@ export default {
       store.getters["activity/activityListByTask"](props.task.id)
     );
 
+    const createComment = () => {
+      console.log(comment.value);
+    };
+
     watchEffect(prepareActivityList);
 
     const actionSentence = (actionType: TaskActionType) => {
@@ -194,9 +204,12 @@ export default {
     };
 
     return {
+      comment,
+      commentButton,
       currentUser,
       activityList,
       actionSentence,
+      createComment,
     };
   },
 };
