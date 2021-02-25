@@ -8,6 +8,7 @@ import "./assets/css/tailwind.css";
 import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
+  BBAutoResize,
   BBAvatar,
   BBContextMenu,
   BBModal,
@@ -38,6 +39,7 @@ app
   .use(store)
   .use(router)
   .component("BBAlert", BBAlert)
+  .component("BBAutoResize", BBAutoResize)
   .component("BBAvatar", BBAvatar)
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)

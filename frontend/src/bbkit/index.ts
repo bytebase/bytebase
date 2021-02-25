@@ -1,4 +1,5 @@
 import BBAlert from "./BBAlert.vue";
+import BBAutoResize from "./BBAutoResize.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBContextMenu from "./BBContextMenu.vue";
 import BBModal from "./BBModal.vue";
@@ -10,6 +11,7 @@ import { BBTable, BBTableCell, BBTableTabFilter } from "./BBTable";
 
 export {
   BBAlert,
+  BBAutoResize,
   BBAvatar,
   BBContextMenu,
   BBModal,

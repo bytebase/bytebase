@@ -118,13 +118,18 @@
               <form action="#">
                 <div>
                   <label for="comment" class="sr-only">Comment</label>
-                  <textarea
-                    id="comment"
-                    name="comment"
-                    rows="3"
-                    class="shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Leave a comment..."
-                  ></textarea>
+                  <BBAutoResize>
+                    <template v-slot:default="{ resize }">
+                      <textarea
+                        id="comment"
+                        name="comment"
+                        rows="3"
+                        class="overflow-y-hidden shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
+                        placeholder="Leave a comment..."
+                        @input="resize"
+                      ></textarea>
+                    </template>
+                  </BBAutoResize>
                 </div>
                 <div class="mt-6 flex items-center justify-start space-x-4">
                   <button
