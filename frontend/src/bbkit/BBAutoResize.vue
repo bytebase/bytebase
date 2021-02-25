@@ -17,7 +17,8 @@ export default {
         control.value.setAttribute(
           "style",
           "height",
-          `${control.value.scrollHeight}px`
+          // Extra 2px is to prevent jiggling upon entering the text
+          `${control.value.scrollHeight + 2}px`
         );
       });
     });
@@ -25,7 +26,7 @@ export default {
     const resize = (e: Event) => {
       const target = e.target as HTMLTextAreaElement;
       target.style.height = "auto";
-      target.style.height = `${target.scrollHeight}px`;
+      target.style.height = `${target.scrollHeight + 2}px`;
     };
 
     return {
