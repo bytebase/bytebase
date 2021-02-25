@@ -122,7 +122,7 @@
                     id="comment"
                     name="comment"
                     rows="3"
-                    class="overflow-y-hidden shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
+                    class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
                     placeholder="Leave a comment..."
                     v-model="comment"
                     @input="
