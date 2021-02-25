@@ -14,7 +14,7 @@
               <div :id="'activity' + (index + 1)" class="relative pb-8">
                 <span
                   v-if="index != activityList.length - 1"
-                  class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-block-border"
+                  class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                   aria-hidden="true"
                 ></span>
                 <div class="relative flex items-start space-x-3">
@@ -24,12 +24,12 @@
                     "
                   >
                     <div>
-                      <div class="relative pl-1">
+                      <div class="relative pl-0.5 pt-0.5">
                         <div
-                          class="h-8 w-8 bg-control-bg rounded-full ring-8 ring-white flex items-center justify-center"
+                          class="bg-control-bg rounded-full ring-8 ring-white flex items-center justify-center"
                         >
                           <svg
-                            class="w-6 h-6 text-control"
+                            class="w-7 h-7 text-control"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                             xmlns="http://www.w3.org/2000/svg"
