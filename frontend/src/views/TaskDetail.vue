@@ -63,7 +63,6 @@
           class="py-4 flex flex-col flex-1 min-w-0 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
         >
           <div>
-            <TaskContentBar v-if="false" :task="state.task" />
             <TaskSidebar
               class="lg:hidden"
               :task="state.task"
@@ -121,7 +120,6 @@ import { idFromSlug, taskSlug, activeStage } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
-import TaskContentBar from "../views/TaskContentBar.vue";
 import TaskContent from "../views/TaskContent.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
@@ -241,7 +239,6 @@ export default {
     TaskHighlightPanel,
     TaskFlow,
     TaskOutputPanel,
-    TaskContentBar,
     TaskContent,
     TaskActivityPanel,
     TaskSidebar,
