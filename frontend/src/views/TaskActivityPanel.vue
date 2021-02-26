@@ -24,7 +24,7 @@
                     "
                   >
                     <div>
-                      <div class="relative pl-0.5 pt-0.5">
+                      <div class="relative pl-0.5">
                         <div
                           class="bg-control-bg rounded-full ring-8 ring-white flex items-center justify-center"
                         >
@@ -59,7 +59,7 @@
                     </div>
                   </template>
                   <div class="min-w-0 flex-1">
-                    <div class="min-w-0 flex-1 py-1.5">
+                    <div class="min-w-0 flex-1 flex justify-between">
                       <div class="text-sm text-control-light">
                         <span class="font-medium text-main">{{
                           activity.attributes.creator.name
@@ -70,6 +70,36 @@
                           class="link whitespace-nowrap"
                           >{{ humanizeTs(activity.attributes.createdTs) }}</a
                         >
+                      </div>
+                      <div
+                        v-if="currentUser.id == activity.attributes.creator.id"
+                        class="space-x-2 text-control-light"
+                      >
+                        <!-- Delete Comment Button-->
+                        <button
+                          class="btn-icon"
+                          @click.prevent="
+                            {
+                              state.activeComment = activity;
+                              state.showDeleteCommentModal = true;
+                            }
+                          "
+                        >
+                          <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            ></path>
+                          </svg>
+                        </button>
                       </div>
                     </div>
                     <template
@@ -152,13 +182,34 @@
       </div>
     </div>
   </div>
+  <BBAlert
+    v-if="state.showDeleteCommentModal"
+    :style="'INFO'"
+    :okText="'Delete'"
+    :title="'Are you sure to delete this comment?'"
+    :description="'You cannot undo this action.'"
+    @ok="
+      () => {
+        deleteComment(state.activeComment);
+        state.showDeleteCommentModal = false;
+        state.activeComment = null;
+      }
+    "
+    @cancel="state.showDeleteCommentModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
-import { computed, inject, ref, watchEffect, PropType } from "vue";
+import { computed, inject, ref, reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { User, Task, TaskActionType } from "../types";
+import { User, Task, TaskActionType, Activity } from "../types";
+
+interface LocalState {
+  showDeleteCommentModal: boolean;
+  activeComment?: Activity;
+}
 
 export default {
   name: "TaskActivityPanel",
@@ -173,6 +224,10 @@ export default {
     const store = useStore();
     const comment = ref("");
     const commentButton = ref();
+
+    const state = reactive<LocalState>({
+      showDeleteCommentModal: false,
+    });
 
     const currentUser = inject<User>(UserStateSymbol);
 
@@ -212,6 +267,12 @@ export default {
         });
     };
 
+    const deleteComment = (activity: Activity) => {
+      store.dispatch("activity/deleteActivity", activity).catch((error) => {
+        console.log(error);
+      });
+    };
+
     watchEffect(prepareActivityList);
 
     const actionSentence = (actionType: TaskActionType) => {
@@ -226,12 +287,14 @@ export default {
     };
 
     return {
+      state,
       comment,
       commentButton,
       currentUser,
       activityList,
       actionSentence,
       createComment,
+      deleteComment,
     };
   },
 };

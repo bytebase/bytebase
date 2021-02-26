@@ -50,6 +50,14 @@ const actions = {
 
     return createdActivity;
   },
+
+  async deleteActivity({ dispatch }: any, activity: Activity) {
+    await axios.delete(`/api/activity/${activity.id}`);
+
+    if (activity.attributes.actionType.startsWith("bytebase.task.")) {
+      dispatch("fetchActivityListForTask", activity.attributes.containerId);
+    }
+  },
 };
 
 const mutations = {

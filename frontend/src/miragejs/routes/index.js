@@ -339,6 +339,10 @@ export default function routes() {
     return createdActivity;
   });
 
+  this.delete("/activity/:activityId", function (schema, request) {
+    return schema.activities.find(request.params.activityId).destroy();
+  });
+
   // Group
   this.get("/group", function (schema, request) {
     const {

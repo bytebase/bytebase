@@ -9,6 +9,8 @@ export type StageId = string;
 
 export type TaskId = string;
 
+export type ActivityId = string;
+
 export type GroupId = string;
 
 export type ProjectId = string;
