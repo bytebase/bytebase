@@ -111,7 +111,7 @@
             <span class="pl-2 bg-normal text-control">
               Already have an account?
             </span>
-            <router-link to="signin" class="accentlink px-2 bg-normal">
+            <router-link to="signin" class="accent-link px-2 bg-normal">
               Sign in
             </router-link>
           </div>

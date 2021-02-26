@@ -25,7 +25,7 @@
     </div>
     <div>
       <div class="flex items-center">
-        <router-link to="/inbox" class="iconlink p-1 rounded-full">
+        <router-link to="/inbox" class="icon-link p-1 rounded-full">
           <span class="sr-only">View Inbox</span>
           <!-- Heroicon name: bell -->
           <svg
@@ -52,7 +52,7 @@
           <!-- Mobile menu button -->
           <button
             @click.prevent="state.showMobileMenu = !state.showMobileMenu"
-            class="iconlink inline-flex items-center justify-center rounded-md"
+            class="icon-link inline-flex items-center justify-center rounded-md"
           >
             <span class="sr-only">Open main menu</span>
             <!--

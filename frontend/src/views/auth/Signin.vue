@@ -116,7 +116,7 @@
           </div>
           <div class="relative flex justify-center text-sm">
             <span class="pl-2 bg-normal text-control"> New to Bytebase? </span>
-            <router-link to="signup" class="accentlink px-2 bg-normal">
+            <router-link to="signup" class="accent-link px-2 bg-normal">
               Sign up
             </router-link>
           </div>

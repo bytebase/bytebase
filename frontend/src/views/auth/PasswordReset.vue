@@ -74,7 +74,7 @@
             <div class="w-full border-t border-control-border"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <router-link to="signin" class="accentlink bg-normal px-2">
+            <router-link to="signin" class="accent-link bg-normal px-2">
               Return to Sign in
             </router-link>
           </div>
