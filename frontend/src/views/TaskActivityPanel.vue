@@ -183,7 +183,7 @@
                           "
                         >
                           <BBAutoResize>
-                            <template v-slot:default="{ resize }">
+                            <template v-slot:main="{ resize }">
                               <label for="comment" class="sr-only"
                                 >Edit Comment</label
                               >
@@ -195,12 +195,12 @@
                                 v-model="editComment"
                                 @input="
                                   (e) => {
-                                    resize(e);
+                                    resize(e.target);
                                   }
                                 "
                                 @focus="
                                   (e) => {
-                                    resize(e);
+                                    resize(e.target);
                                   }
                                 "
                               ></textarea>
@@ -246,31 +246,34 @@
             </div>
             <div class="ml-3 min-w-0 flex-1">
               <BBAutoResize>
-                <template v-slot:default="{ resize }">
+                <template v-slot:main="{ resize }">
                   <label for="comment" class="sr-only">Create Comment</label>
                   <textarea
+                    ref="newCommentTextArea"
                     rows="3"
                     class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
                     placeholder="Leave a comment..."
                     v-model="newComment"
                     @input="
                       (e) => {
-                        resize(e);
+                        resize(e.target);
                       }
                     "
                   ></textarea>
                 </template>
+                <template v-slot:accessory="{ resize }">
+                  <div class="mt-4 flex items-center justify-start space-x-4">
+                    <button
+                      type="button"
+                      class="btn-normal"
+                      :disabled="newComment.length == 0"
+                      @click.prevent="doCreateComment(resize)"
+                    >
+                      Comment
+                    </button>
+                  </div>
+                </template>
               </BBAutoResize>
-              <div class="mt-4 flex items-center justify-start space-x-4">
-                <button
-                  type="button"
-                  class="btn-normal"
-                  :disabled="newComment.length == 0"
-                  @click.prevent="doCreateComment"
-                >
-                  Comment
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -327,6 +330,7 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const newComment = ref("");
+    const newCommentTextArea = ref();
     const editComment = ref("");
     const editCommentTextArea = ref();
 
@@ -349,7 +353,7 @@ export default {
       store.getters["activity/activityListByTask"](props.task.id)
     );
 
-    const doCreateComment = () => {
+    const doCreateComment = (resize: (el: HTMLTextAreaElement) => void) => {
       store
         .dispatch("activity/createActivity", {
           type: "activity",
@@ -367,6 +371,7 @@ export default {
         })
         .then(() => {
           newComment.value = "";
+          nextTick(() => resize(newCommentTextArea.value));
         })
         .catch((error) => {
           console.log(error);
@@ -420,6 +425,7 @@ export default {
     return {
       state,
       newComment,
+      newCommentTextArea,
       editComment,
       editCommentTextArea,
       currentUser,

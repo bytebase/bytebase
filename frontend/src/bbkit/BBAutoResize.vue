@@ -1,7 +1,8 @@
 <template>
   <div ref="control">
-    <slot :resize="resize" />
+    <slot name="main" :resize="resize" />
   </div>
+  <slot name="accessory" :resize="resize" />
 </template>
 
 <script lang="ts">
@@ -23,10 +24,9 @@ export default {
       });
     });
 
-    const resize = (e: Event) => {
-      const target = e.target as HTMLTextAreaElement;
-      target.style.height = "auto";
-      target.style.height = `${target.scrollHeight + 2}px`;
+    const resize = (el: HTMLTextAreaElement) => {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight + 2}px`;
     };
 
     return {
