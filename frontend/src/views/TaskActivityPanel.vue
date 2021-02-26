@@ -64,23 +64,24 @@
                         <span class="font-medium text-main">{{
                           activity.attributes.creator.name
                         }}</span>
-                        {{ actionSentence(activity.attributes.actionType) }}
                         <a
                           :href="'#activity' + (index + 1)"
-                          class="link whitespace-nowrap"
-                          >{{ humanizeTs(activity.attributes.createdTs) }}</a
+                          class="ml-1 anchor-link whitespace-nowrap"
                         >
-                        <template
-                          v-if="
-                            activity.attributes.createdTs !=
-                              activity.attributes.lastUpdatedTs &&
-                            activity.attributes.actionType ==
-                              'bytebase.task.comment.create'
-                          "
-                        >
-                          (edited
-                          {{ humanizeTs(activity.attributes.createdTs) }})
-                        </template>
+                          {{ actionSentence(activity.attributes.actionType) }}
+                          {{ humanizeTs(activity.attributes.createdTs) }}
+                          <template
+                            v-if="
+                              activity.attributes.createdTs !=
+                                activity.attributes.lastUpdatedTs &&
+                              activity.attributes.actionType ==
+                                'bytebase.task.comment.create'
+                            "
+                          >
+                            (edited
+                            {{ humanizeTs(activity.attributes.createdTs) }})
+                          </template>
+                        </a>
                       </div>
                       <div
                         v-if="currentUser.id == activity.attributes.creator.id"
