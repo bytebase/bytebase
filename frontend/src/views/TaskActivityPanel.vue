@@ -108,6 +108,10 @@
                           <button
                             type="button"
                             class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                            :disabled="
+                              editComment.length == 0 ||
+                              editComment == activity.attributes.payload.content
+                            "
                             @click.prevent="doUpdateComment"
                           >
                             Save
