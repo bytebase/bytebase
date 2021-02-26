@@ -11,7 +11,7 @@
         <div class="flow-root">
           <ul class="-mb-8">
             <li v-for="(activity, index) in activityList" :key="index">
-              <div :id="'activity' + (index + 1)" class="relative pb-8">
+              <div :id="'activity' + (index + 1)" class="relative pb-6">
                 <span
                   v-if="index != activityList.length - 1"
                   class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
@@ -219,7 +219,7 @@
           </ul>
         </div>
 
-        <div v-if="!state.editCommentMode" class="mt-6">
+        <div v-if="!state.editCommentMode" class="mt-8">
           <div class="flex">
             <div class="flex-shrink-0">
               <div class="relative">
@@ -261,7 +261,7 @@
                   ></textarea>
                 </template>
               </BBAutoResize>
-              <div class="mt-2 flex items-center justify-start space-x-4">
+              <div class="mt-4 flex items-center justify-start space-x-4">
                 <button
                   type="button"
                   class="btn-normal"
