@@ -98,8 +98,8 @@
                             @click.prevent="
                               {
                                 editComment = '';
-                                state.editCommentMode = false;
                                 state.activeComment = null;
+                                state.editCommentMode = false;
                               }
                             "
                           >
@@ -108,9 +108,7 @@
                           <button
                             type="button"
                             class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                            @click.prevent="
-                              updateComment(activity.id, editComment)
-                            "
+                            @click.prevent="updateComment"
                           >
                             Save
                           </button>
@@ -362,16 +360,16 @@ export default {
         });
     };
 
-    const updateComment = (activityId: ActivityId, updatedComment: string) => {
+    const updateComment = () => {
       const activityPatch = store
         .dispatch("activity/updateComment", {
-          activityId,
-          updatedComment,
+          activityId: state.activeComment!.id,
+          updatedComment: editComment.value,
         })
         .then(() => {
           editComment.value = "";
-          state.editCommentMode = false;
           state.activeComment = undefined;
+          state.editCommentMode = false;
         })
         .catch((error) => {
           console.log(error);
