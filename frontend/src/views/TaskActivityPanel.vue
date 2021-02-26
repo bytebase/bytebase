@@ -78,7 +78,9 @@
                         'bytebase.task.comment.create'
                       "
                     >
-                      <div class="mt-2 text-sm text-control">
+                      <div
+                        class="mt-2 text-sm text-control whitespace-pre-wrap"
+                      >
                         {{ activity.attributes.payload.content }}
                       </div>
                     </template>
