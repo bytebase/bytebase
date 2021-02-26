@@ -266,7 +266,7 @@
                   type="button"
                   class="btn-normal"
                   :disabled="newComment.length == 0"
-                  @click.prevent="createComment"
+                  @click.prevent="doCreateComment"
                 >
                   Comment
                 </button>
@@ -285,7 +285,7 @@
     :description="'You cannot undo this action.'"
     @ok="
       () => {
-        deleteComment(state.activeComment);
+        doDeleteComment(state.activeComment);
         state.showDeleteCommentModal = false;
         state.activeComment = null;
       }
@@ -349,7 +349,7 @@ export default {
       store.getters["activity/activityListByTask"](props.task.id)
     );
 
-    const createComment = () => {
+    const doCreateComment = () => {
       store
         .dispatch("activity/createActivity", {
           type: "activity",
@@ -398,7 +398,7 @@ export default {
         });
     };
 
-    const deleteComment = (activity: Activity) => {
+    const doDeleteComment = (activity: Activity) => {
       store.dispatch("activity/deleteActivity", activity).catch((error) => {
         console.log(error);
       });
@@ -425,10 +425,10 @@ export default {
       currentUser,
       activityList,
       actionSentence,
-      createComment,
+      doCreateComment,
       onUpdateComment,
       doUpdateComment,
-      deleteComment,
+      doDeleteComment,
     };
   },
 };
