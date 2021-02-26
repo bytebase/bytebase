@@ -17,7 +17,7 @@
                   class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                   aria-hidden="true"
                 ></span>
-                <div class="relative flex items-start space-x-3">
+                <div class="relative flex items-start">
                   <template
                     v-if="
                       activity.attributes.actionType == 'bytebase.task.create'
@@ -58,7 +58,7 @@
                       </BBAvatar>
                     </div>
                   </template>
-                  <div class="min-w-0 flex-1">
+                  <div class="ml-3 min-w-0 flex-1">
                     <div class="min-w-0 flex-1 flex justify-between">
                       <div class="text-sm text-control-light">
                         <span class="font-medium text-main">{{
@@ -218,7 +218,7 @@
         </div>
 
         <div v-if="!state.editCommentMode" class="mt-6">
-          <div class="flex space-x-3">
+          <div class="flex">
             <div class="flex-shrink-0">
               <div class="relative">
                 <BBAvatar :username="currentUser.attributes.name"> </BBAvatar>
@@ -242,7 +242,7 @@
                 </span>
               </div>
             </div>
-            <div class="min-w-0 flex-1">
+            <div class="ml-3 min-w-0 flex-1">
               <BBAutoResize>
                 <template v-slot:default="{ resize }">
                   <label for="comment" class="sr-only">Create Comment</label>
