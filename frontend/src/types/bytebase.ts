@@ -156,7 +156,7 @@ export type Activity = ResourceObject & {
     payload?: ActionPayloadType;
   };
 };
-export type ActivityNew = Omit<Environment, "id">;
+export type ActivityNew = Omit<Activity, "id">;
 
 // Environment
 export type Environment = ResourceObject & {

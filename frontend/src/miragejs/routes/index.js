@@ -326,6 +326,19 @@ export default function routes() {
     });
   });
 
+  this.post("/activity", function (schema, request) {
+    const ts = Date.now();
+    const attrs = this.normalizedRequestAttrs("activity");
+    const newActivity = {
+      ...attrs,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      workspaceId: WORKSPACE_ID,
+    };
+    const createdActivity = schema.activities.create(newActivity);
+    return createdActivity;
+  });
+
   // Group
   this.get("/group", function (schema, request) {
     const {

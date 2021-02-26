@@ -1,5 +1,11 @@
 import axios from "axios";
-import { UserId, TaskId, Activity, ActivityState } from "../../types";
+import {
+  UserId,
+  TaskId,
+  Activity,
+  ActivityNew,
+  ActivityState,
+} from "../../types";
 
 const state: () => ActivityState = () => ({
   activityListByUser: new Map(),
@@ -28,6 +34,21 @@ const actions = {
     ).data.data;
     commit("setActivityListForTask", { taskId, activityList });
     return activityList;
+  },
+
+  async createActivity({ dispatch }: any, newActivity: ActivityNew) {
+    const createdActivity: Activity = (
+      await axios.post(`/api/activity`, {
+        data: newActivity,
+      })
+    ).data.data;
+
+    // There might exist other activities happened since the last fetch, so we do a full refetch.
+    if (newActivity.attributes.actionType.startsWith("bytebase.task.")) {
+      dispatch("fetchActivityListForTask", newActivity.attributes.containerId);
+    }
+
+    return createdActivity;
   },
 };
 

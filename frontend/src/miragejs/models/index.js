@@ -20,6 +20,7 @@ export default {
     group: hasMany(),
     project: hasMany(),
     workspaceRole: hasMany(),
+    activity: hasMany(),
     task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),

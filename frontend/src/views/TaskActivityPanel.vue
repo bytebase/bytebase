@@ -189,7 +189,27 @@ export default {
     );
 
     const createComment = () => {
-      console.log(comment.value);
+      store
+        .dispatch("activity/createActivity", {
+          type: "activity",
+          attributes: {
+            actionType: "bytebase.task.comment.create",
+            containerId: props.task.id,
+            creator: {
+              id: currentUser!.id,
+              name: currentUser!.attributes.name,
+            },
+            payload: {
+              content: comment.value,
+            },
+          },
+        })
+        .then(() => {
+          comment.value = "";
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     watchEffect(prepareActivityList);
