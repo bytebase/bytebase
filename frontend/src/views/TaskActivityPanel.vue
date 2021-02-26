@@ -108,7 +108,7 @@
                           <button
                             type="button"
                             class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                            @click.prevent="updateComment"
+                            @click.prevent="doUpdateComment"
                           >
                             Save
                           </button>
@@ -142,14 +142,7 @@
                           <!-- Edit Comment Button-->
                           <button
                             class="btn-icon"
-                            @click.prevent="
-                              {
-                                editComment =
-                                  activity.attributes.payload.content;
-                                state.activeComment = activity;
-                                state.editCommentMode = true;
-                              }
-                            "
+                            @click.prevent="onUpdateComment(activity)"
                           >
                             <svg
                               class="w-4 h-4"
@@ -190,11 +183,17 @@
                                 >Edit Comment</label
                               >
                               <textarea
+                                ref="editCommentTextArea"
                                 rows="3"
                                 class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
                                 placeholder="Leave a comment..."
                                 v-model="editComment"
                                 @input="
+                                  (e) => {
+                                    resize(e);
+                                  }
+                                "
+                                @focus="
                                   (e) => {
                                     resize(e);
                                   }
@@ -292,7 +291,15 @@
 </template>
 
 <script lang="ts">
-import { computed, inject, ref, reactive, watchEffect, PropType } from "vue";
+import {
+  computed,
+  inject,
+  nextTick,
+  ref,
+  reactive,
+  watchEffect,
+  PropType,
+} from "vue";
 import { useStore } from "vuex";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { User, Task, TaskActionType, Activity, ActivityId } from "../types";
@@ -316,6 +323,7 @@ export default {
     const store = useStore();
     const newComment = ref("");
     const editComment = ref("");
+    const editCommentTextArea = ref();
 
     const state = reactive<LocalState>({
       showDeleteCommentModal: false,
@@ -360,7 +368,16 @@ export default {
         });
     };
 
-    const updateComment = () => {
+    const onUpdateComment = (activity: Activity) => {
+      editComment.value = activity.attributes.payload!.content;
+      state.activeComment = activity;
+      state.editCommentMode = true;
+      nextTick(() => {
+        editCommentTextArea.value.focus();
+      });
+    };
+
+    const doUpdateComment = () => {
       const activityPatch = store
         .dispatch("activity/updateComment", {
           activityId: state.activeComment!.id,
@@ -399,11 +416,13 @@ export default {
       state,
       newComment,
       editComment,
+      editCommentTextArea,
       currentUser,
       activityList,
       actionSentence,
       createComment,
-      updateComment,
+      onUpdateComment,
+      doUpdateComment,
       deleteComment,
     };
   },
