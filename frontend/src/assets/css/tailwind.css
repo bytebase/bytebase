@@ -86,6 +86,10 @@
   @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
 }
 
+.textarea {
+  @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md shadow-sm;
+}
+
 .link {
   @apply text-main hover:underline focus:outline-none;
 }

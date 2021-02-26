@@ -190,7 +190,7 @@
                               <textarea
                                 ref="editCommentTextArea"
                                 rows="3"
-                                class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
+                                class="textarea block w-full resize-none"
                                 placeholder="Leave a comment..."
                                 v-model="editComment"
                                 @input="
@@ -251,7 +251,7 @@
                   <textarea
                     ref="newCommentTextArea"
                     rows="3"
-                    class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
+                    class="textarea block w-full resize-none"
                     placeholder="Leave a comment..."
                     v-model="newComment"
                     @input="
