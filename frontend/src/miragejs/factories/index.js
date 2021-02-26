@@ -2,7 +2,6 @@
  * Mirage JS guide on Factories: https://miragejs.com/docs/data-layer/factories
  */
 
-import activity from "./activity";
 import user from "./user";
 import bookmark from "./bookmark";
 import project from "./project";
@@ -12,6 +11,8 @@ import dataSource from "./dataSource";
 import repository from "./repository";
 import task from "./task";
 import taskPatch from "./taskPatch";
+import activity from "./activity";
+import activityPatch from "./activityPatch";
 import group from "./group";
 import workspace from "./workspace";
 import workspaceRole from "./workspaceRole";
@@ -25,7 +26,6 @@ import loginInfo from "./loginInfo";
  * be done for all future factories
  */
 export default {
-  ...activity,
   ...user,
   ...bookmark,
   ...project,
@@ -35,6 +35,8 @@ export default {
   ...repository,
   ...task,
   ...taskPatch,
+  ...activity,
+  ...activityPatch,
   ...group,
   ...workspace,
   ...workspaceRole,

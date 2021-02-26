@@ -39,6 +39,8 @@ export default {
     workspace: belongsTo(),
   }),
 
+  activityPatch: Model,
+
   group: Model.extend({
     workspace: belongsTo(),
     project: hasMany(),

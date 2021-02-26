@@ -160,6 +160,10 @@ export type Activity = ResourceObject & {
 };
 export type ActivityNew = Omit<Activity, "id">;
 
+export type ActivityPatch = {
+  payload: any;
+};
+
 // Environment
 export type Environment = ResourceObject & {
   attributes: {

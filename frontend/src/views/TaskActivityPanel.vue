@@ -70,36 +70,105 @@
                           class="link whitespace-nowrap"
                           >{{ humanizeTs(activity.attributes.createdTs) }}</a
                         >
+                        <template
+                          v-if="
+                            activity.attributes.createdTs !=
+                              activity.attributes.lastUpdatedTs &&
+                            activity.attributes.actionType ==
+                              'bytebase.task.comment.create'
+                          "
+                        >
+                          (edited
+                          {{ humanizeTs(activity.attributes.createdTs) }})
+                        </template>
                       </div>
                       <div
                         v-if="currentUser.id == activity.attributes.creator.id"
                         class="space-x-2 text-control-light"
                       >
-                        <!-- Delete Comment Button-->
-                        <button
-                          class="btn-icon"
-                          @click.prevent="
-                            {
-                              state.activeComment = activity;
-                              state.showDeleteCommentModal = true;
-                            }
+                        <template
+                          v-if="
+                            state.editCommentMode &&
+                            state.activeComment.id == activity.id
                           "
                         >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
+                          <button
+                            type="button"
+                            class="text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                            @click.prevent="
+                              {
+                                editComment = '';
+                                state.editCommentMode = false;
+                                state.activeComment = null;
+                              }
+                            "
                           >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            ></path>
-                          </svg>
-                        </button>
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                            @click.prevent="
+                              updateComment(activity.id, editComment)
+                            "
+                          >
+                            Save
+                          </button>
+                        </template>
+                        <template v-else>
+                          <!-- Delete Comment Button-->
+                          <button
+                            class="btn-icon"
+                            @click.prevent="
+                              {
+                                state.activeComment = activity;
+                                state.showDeleteCommentModal = true;
+                              }
+                            "
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              ></path>
+                            </svg>
+                          </button>
+                          <!-- Edit Comment Button-->
+                          <button
+                            class="btn-icon"
+                            @click.prevent="
+                              {
+                                editComment =
+                                  activity.attributes.payload.content;
+                                state.activeComment = activity;
+                                state.editCommentMode = true;
+                              }
+                            "
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              ></path>
+                            </svg>
+                          </button>
+                        </template>
                       </div>
                     </div>
                     <template
@@ -111,7 +180,34 @@
                       <div
                         class="mt-2 text-sm text-control whitespace-pre-wrap"
                       >
-                        {{ activity.attributes.payload.content }}
+                        <template
+                          v-if="
+                            state.editCommentMode &&
+                            state.activeComment.id == activity.id
+                          "
+                        >
+                          <BBAutoResize>
+                            <template v-slot:default="{ resize }">
+                              <label for="comment" class="sr-only"
+                                >Edit Comment</label
+                              >
+                              <textarea
+                                rows="3"
+                                class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
+                                placeholder="Leave a comment..."
+                                v-model="editComment"
+                                @input="
+                                  (e) => {
+                                    resize(e);
+                                  }
+                                "
+                              ></textarea>
+                            </template>
+                          </BBAutoResize>
+                        </template>
+                        <template v-else>
+                          {{ activity.attributes.payload.content }}
+                        </template>
                       </div>
                     </template>
                   </div>
@@ -121,7 +217,7 @@
           </ul>
         </div>
 
-        <div class="mt-6">
+        <div v-if="!state.editCommentMode" class="mt-6">
           <div class="flex space-x-3">
             <div class="flex-shrink-0">
               <div class="relative">
@@ -149,10 +245,8 @@
             <div class="min-w-0 flex-1">
               <BBAutoResize>
                 <template v-slot:default="{ resize }">
-                  <label for="comment" class="sr-only">Comment</label>
+                  <label for="comment" class="sr-only">Create Comment</label>
                   <textarea
-                    id="comment"
-                    name="comment"
                     rows="3"
                     class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
                     placeholder="Leave a comment..."
@@ -169,7 +263,6 @@
                 <button
                   type="button"
                   class="btn-normal"
-                  ref="commentButton"
                   :disabled="comment.length == 0"
                   @click.prevent="createComment"
                 >
@@ -204,10 +297,11 @@
 import { computed, inject, ref, reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { User, Task, TaskActionType, Activity } from "../types";
+import { User, Task, TaskActionType, Activity, ActivityId } from "../types";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
+  editCommentMode: boolean;
   activeComment?: Activity;
 }
 
@@ -223,10 +317,11 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const comment = ref("");
-    const commentButton = ref();
+    const editComment = ref("");
 
     const state = reactive<LocalState>({
       showDeleteCommentModal: false,
+      editCommentMode: false,
     });
 
     const currentUser = inject<User>(UserStateSymbol);
@@ -267,6 +362,22 @@ export default {
         });
     };
 
+    const updateComment = (activityId: ActivityId, updatedComment: string) => {
+      const activityPatch = store
+        .dispatch("activity/updateComment", {
+          activityId,
+          updatedComment,
+        })
+        .then(() => {
+          editComment.value = "";
+          state.editCommentMode = false;
+          state.activeComment = undefined;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
     const deleteComment = (activity: Activity) => {
       store.dispatch("activity/deleteActivity", activity).catch((error) => {
         console.log(error);
@@ -289,11 +400,12 @@ export default {
     return {
       state,
       comment,
-      commentButton,
+      editComment,
       currentUser,
       activityList,
       actionSentence,
       createComment,
+      updateComment,
       deleteComment,
     };
   },

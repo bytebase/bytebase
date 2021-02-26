@@ -339,6 +339,19 @@ export default function routes() {
     return createdActivity;
   });
 
+  this.patch("/activity/:activityId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("activity-patch");
+    const activity = schema.activities.find(request.params.activityId);
+    if (activity) {
+      return activity.update({ ...attrs, lastUpdatedTs: Date.now() });
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Activity " + request.params.activityId + " not found" }
+    );
+  });
+
   this.delete("/activity/:activityId", function (schema, request) {
     return schema.activities.find(request.params.activityId).destroy();
   });

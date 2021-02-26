@@ -2,8 +2,10 @@ import axios from "axios";
 import {
   UserId,
   TaskId,
+  ActivityId,
   Activity,
   ActivityNew,
+  ActivityPatch,
   ActivityState,
 } from "../../types";
 
@@ -49,6 +51,34 @@ const actions = {
     }
 
     return createdActivity;
+  },
+
+  async updateComment(
+    { dispatch }: any,
+    {
+      activityId,
+      updatedComment,
+    }: { activityId: ActivityId; updatedComment: string }
+  ) {
+    const updatedActivity = (
+      await axios.patch(`/api/activity/${activityId}`, {
+        data: {
+          type: "activitypatch",
+          attributes: {
+            payload: {
+              content: updatedComment,
+            },
+          },
+        },
+      })
+    ).data.data;
+
+    dispatch(
+      "fetchActivityListForTask",
+      updatedActivity.attributes.containerId
+    );
+
+    return updatedActivity;
   },
 
   async deleteActivity({ dispatch }: any, activity: Activity) {

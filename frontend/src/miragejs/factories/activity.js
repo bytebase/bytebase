@@ -6,7 +6,7 @@ export default {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
     lastUpdatedTs(i) {
-      return Date.now() - (10 - i) * 3600 * 1000;
+      return Date.now() - (10 - i) * 1800 * 1000;
     },
     actionType() {
       return "bytebase.task.comment.create";
