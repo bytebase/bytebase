@@ -59,7 +59,7 @@
                     </div>
                   </template>
                   <div class="ml-3 min-w-0 flex-1">
-                    <div class="min-w-0 flex-1 flex justify-between">
+                    <div class="min-w-0 flex-1 pt-1 flex justify-between">
                       <div class="text-sm text-control-light">
                         <span class="font-medium text-main">{{
                           activity.attributes.creator.name
