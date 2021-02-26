@@ -250,7 +250,7 @@
                     rows="3"
                     class="resize-none shadow-sm block w-full focus:ring-gray-900 focus:border-gray-900 sm:text-sm border-gray-300 rounded-md"
                     placeholder="Leave a comment..."
-                    v-model="comment"
+                    v-model="newComment"
                     @input="
                       (e) => {
                         resize(e);
@@ -263,7 +263,7 @@
                 <button
                   type="button"
                   class="btn-normal"
-                  :disabled="comment.length == 0"
+                  :disabled="newComment.length == 0"
                   @click.prevent="createComment"
                 >
                   Comment
@@ -316,7 +316,7 @@ export default {
   components: {},
   setup(props, ctx) {
     const store = useStore();
-    const comment = ref("");
+    const newComment = ref("");
     const editComment = ref("");
 
     const state = reactive<LocalState>({
@@ -350,12 +350,12 @@ export default {
               name: currentUser!.attributes.name,
             },
             payload: {
-              content: comment.value,
+              content: newComment.value,
             },
           },
         })
         .then(() => {
-          comment.value = "";
+          newComment.value = "";
         })
         .catch((error) => {
           console.log(error);
@@ -399,7 +399,7 @@ export default {
 
     return {
       state,
-      comment,
+      newComment,
       editComment,
       currentUser,
       activityList,
