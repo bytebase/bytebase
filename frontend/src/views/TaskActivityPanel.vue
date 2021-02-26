@@ -83,7 +83,11 @@
                       </a>
                     </div>
                     <div
-                      v-if="currentUser.id == activity.attributes.creator.id"
+                      v-if="
+                        currentUser.id == activity.attributes.creator.id &&
+                        activity.attributes.actionType ==
+                          'bytebase.task.comment.create'
+                      "
                       class="space-x-2 text-control-light"
                     >
                       <template
