@@ -46,7 +46,7 @@
 </template>
 
 <script>
-import clickInsideOutside from "./click-inside-outside";
+import clickInsideOutside from "./directives/click-inside-outside";
 
 export default {
   name: "BBContextMenu",
