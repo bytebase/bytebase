@@ -99,13 +99,7 @@
                         <button
                           type="button"
                           class="rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                          @click.prevent="
-                            {
-                              editComment = '';
-                              state.activeComment = null;
-                              state.editCommentMode = false;
-                            }
-                          "
+                          @click.prevent="cancelEditComment"
                         >
                           Cancel
                         </button>
@@ -300,6 +294,8 @@
 
 <script lang="ts">
 import {
+  onMounted,
+  onUnmounted,
   computed,
   inject,
   nextTick,
@@ -339,6 +335,31 @@ export default {
       editCommentMode: false,
     });
 
+    const keyboardHandler = (e: KeyboardEvent) => {
+      if (
+        state.editCommentMode &&
+        editCommentTextArea.value === document.activeElement
+      ) {
+        if (e.code == "Escape") {
+          cancelEditComment();
+        } else if (e.code == "Enter" && e.metaKey) {
+          doUpdateComment();
+        }
+      } else if (newCommentTextArea.value === document.activeElement) {
+        if (e.code == "Enter" && e.metaKey) {
+          doCreateComment();
+        }
+      }
+    };
+
+    onMounted(() => {
+      document.addEventListener("keydown", keyboardHandler);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener("keydown", keyboardHandler);
+    });
+
     const currentUser = inject<User>(UserStateSymbol);
 
     const prepareActivityList = () => {
@@ -353,7 +374,13 @@ export default {
       store.getters["activity/activityListByTask"](props.task.id)
     );
 
-    const doCreateComment = (resize: (el: HTMLTextAreaElement) => void) => {
+    const cancelEditComment = () => {
+      editComment.value = "";
+      state.activeComment = undefined;
+      state.editCommentMode = false;
+    };
+
+    const doCreateComment = (resize?: (el: HTMLTextAreaElement) => void) => {
       store
         .dispatch("activity/createActivity", {
           type: "activity",
@@ -371,7 +398,9 @@ export default {
         })
         .then(() => {
           newComment.value = "";
-          nextTick(() => resize(newCommentTextArea.value));
+          if (resize) {
+            nextTick(() => resize(newCommentTextArea.value));
+          }
         })
         .catch((error) => {
           console.log(error);
@@ -394,9 +423,7 @@ export default {
           updatedComment: editComment.value,
         })
         .then(() => {
-          editComment.value = "";
-          state.activeComment = undefined;
-          state.editCommentMode = false;
+          cancelEditComment();
         })
         .catch((error) => {
           console.log(error);
@@ -432,6 +459,7 @@ export default {
       activityList,
       actionSentence,
       doCreateComment,
+      cancelEditComment,
       onUpdateComment,
       doUpdateComment,
       doDeleteComment,

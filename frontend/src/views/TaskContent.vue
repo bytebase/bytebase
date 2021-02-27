@@ -77,7 +77,7 @@
 </template>
 
 <script lang="ts">
-import { nextTick, onMounted, PropType, ref, reactive } from "vue";
+import { nextTick, onMounted, onUnmounted, PropType, ref, reactive } from "vue";
 import { useStore } from "vuex";
 import { Task } from "../types";
 
@@ -101,6 +101,24 @@ export default {
 
     const state = reactive<LocalState>({
       edit: false,
+    });
+
+    const keyboardHandler = (e: KeyboardEvent) => {
+      if (state.edit && editContentTextArea.value === document.activeElement) {
+        if (e.code == "Escape") {
+          cancelEdit();
+        } else if (e.code == "Enter" && e.metaKey) {
+          saveEdit();
+        }
+      }
+    };
+
+    onMounted(() => {
+      document.addEventListener("keydown", keyboardHandler);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener("keydown", keyboardHandler);
     });
 
     const beginEdit = () => {
