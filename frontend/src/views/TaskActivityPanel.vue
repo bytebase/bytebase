@@ -52,7 +52,7 @@
                   <div class="relative">
                     <BBAvatar
                       class="rounded-full ring-8 ring-white"
-                      :username="currentUser.attributes.name"
+                      :username="activity.attributes.creator.name"
                     >
                     </BBAvatar>
                   </div>
