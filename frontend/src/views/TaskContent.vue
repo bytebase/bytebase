@@ -39,47 +39,44 @@
     </button>
   </div>
   <!-- Content -->
-  <BBAutoResize>
-    <template v-slot:main="{ resize }">
-      <label for="content" class="sr-only">Edit Description</label>
-      <!-- Use border-white focus:border-white to have the invisible border width
+  <label for="content" class="sr-only">Edit Description</label>
+  <!-- Use border-white focus:border-white to have the invisible border width
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
-      <textarea
-        ref="editContentTextArea"
-        rows="10"
-        class="mt-4 rounded-md w-full resize-none whitespace-pre-line border-white focus:border-white outline-none"
-        :class="
-          state.edit
-            ? 'focus:ring-control focus-visible:ring-2 focus:ring-offset-4'
-            : ''
-        "
-        :style="
-          state.edit
-            ? ''
-            : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
-        "
-        placeholder="Add some description..."
-        :readonly="!state.edit"
-        v-model="editContent"
-        @input="
-          (e) => {
-            resize(e.target);
-          }
-        "
-        @focus="
-          (e) => {
-            resize(e.target);
-          }
-        "
-      ></textarea>
-    </template>
-  </BBAutoResize>
+  <textarea
+    ref="editContentTextArea"
+    rows="10"
+    class="mt-4 rounded-md w-full resize-none whitespace-pre-line border-white focus:border-white outline-none"
+    :class="
+      state.edit
+        ? 'focus:ring-control focus-visible:ring-2 focus:ring-offset-4'
+        : ''
+    "
+    :style="
+      state.edit
+        ? ''
+        : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
+    "
+    placeholder="Add some description..."
+    :readonly="!state.edit"
+    v-model="editContent"
+    @input="
+      (e) => {
+        sizeToFit(e.target);
+      }
+    "
+    @focus="
+      (e) => {
+        sizeToFit(e.target);
+      }
+    "
+  ></textarea>
 </template>
 
 <script lang="ts">
 import { nextTick, onMounted, onUnmounted, PropType, ref, reactive } from "vue";
 import { useStore } from "vuex";
 import { Task } from "../types";
+import { sizeToFit } from "../utils";
 
 interface LocalState {
   edit: boolean;
@@ -115,6 +112,9 @@ export default {
 
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
+      nextTick(() => {
+        sizeToFit(editContentTextArea.value);
+      });
     });
 
     onUnmounted(() => {
@@ -140,6 +140,9 @@ export default {
         .then((updatedTask: Task) => {
           state.edit = false;
           editContent.value = updatedTask.attributes.content;
+          nextTick(() => {
+            sizeToFit(editContentTextArea.value);
+          });
         })
         .catch((error) => {
           console.log(error);
@@ -149,6 +152,9 @@ export default {
     const cancelEdit = () => {
       state.edit = false;
       editContent.value = props.task.attributes.content;
+      nextTick(() => {
+        sizeToFit(editContentTextArea.value);
+      });
     };
 
     return {

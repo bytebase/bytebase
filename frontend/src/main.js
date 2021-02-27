@@ -8,7 +8,6 @@ import "./assets/css/tailwind.css";
 import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
-  BBAutoResize,
   BBAvatar,
   BBContextMenu,
   BBModal,
@@ -20,7 +19,7 @@ import {
   BBTableCell,
   BBTableTabFilter,
 } from "./bbkit";
-import { isDevOrDemo, humanizeTs } from "./utils";
+import { isDevOrDemo, humanizeTs, sizeToFit } from "./utils";
 
 if (isDevOrDemo()) {
   makeServer();
@@ -34,12 +33,12 @@ app.config.globalProperties.console = console;
 app.config.globalProperties.moment = moment;
 app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
+app.config.globalProperties.sizeToFit = sizeToFit;
 
 app
   .use(store)
   .use(router)
   .component("BBAlert", BBAlert)
-  .component("BBAutoResize", BBAutoResize)
   .component("BBAvatar", BBAvatar)
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)

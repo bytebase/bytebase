@@ -177,30 +177,26 @@
                           state.activeComment.id == activity.id
                         "
                       >
-                        <BBAutoResize>
-                          <template v-slot:main="{ resize }">
-                            <label for="comment" class="sr-only"
-                              >Edit Comment</label
-                            >
-                            <textarea
-                              ref="editCommentTextArea"
-                              rows="3"
-                              class="textarea block w-full resize-none"
-                              placeholder="Leave a comment..."
-                              v-model="editComment"
-                              @input="
-                                (e) => {
-                                  resize(e.target);
-                                }
-                              "
-                              @focus="
-                                (e) => {
-                                  resize(e.target);
-                                }
-                              "
-                            ></textarea>
-                          </template>
-                        </BBAutoResize>
+                        <label for="comment" class="sr-only"
+                          >Edit Comment</label
+                        >
+                        <textarea
+                          ref="editCommentTextArea"
+                          rows="3"
+                          class="textarea block w-full resize-none"
+                          placeholder="Leave a comment..."
+                          v-model="editComment"
+                          @input="
+                            (e) => {
+                              sizeToFit(e.target);
+                            }
+                          "
+                          @focus="
+                            (e) => {
+                              sizeToFit(e.target);
+                            }
+                          "
+                        ></textarea>
                       </template>
                       <template v-else>
                         {{ activity.attributes.payload.content }}
@@ -239,35 +235,29 @@
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <BBAutoResize>
-                <template v-slot:main="{ resize }">
-                  <label for="comment" class="sr-only">Create Comment</label>
-                  <textarea
-                    ref="newCommentTextArea"
-                    rows="3"
-                    class="textarea block w-full resize-none"
-                    placeholder="Leave a comment..."
-                    v-model="newComment"
-                    @input="
-                      (e) => {
-                        resize(e.target);
-                      }
-                    "
-                  ></textarea>
-                </template>
-                <template v-slot:accessory="{ resize }">
-                  <div class="mt-4 flex items-center justify-start space-x-4">
-                    <button
-                      type="button"
-                      class="btn-normal"
-                      :disabled="newComment.length == 0"
-                      @click.prevent="doCreateComment(resize)"
-                    >
-                      Comment
-                    </button>
-                  </div>
-                </template>
-              </BBAutoResize>
+              <label for="comment" class="sr-only">Create Comment</label>
+              <textarea
+                ref="newCommentTextArea"
+                rows="3"
+                class="textarea block w-full resize-none"
+                placeholder="Leave a comment..."
+                v-model="newComment"
+                @input="
+                  (e) => {
+                    sizeToFit(e.target);
+                  }
+                "
+              ></textarea>
+              <div class="mt-4 flex items-center justify-start space-x-4">
+                <button
+                  type="button"
+                  class="btn-normal"
+                  :disabled="newComment.length == 0"
+                  @click.prevent="doCreateComment"
+                >
+                  Comment
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -307,6 +297,7 @@ import {
 import { useStore } from "vuex";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { User, Task, TaskActionType, Activity, ActivityId } from "../types";
+import { sizeToFit } from "../utils";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -380,7 +371,7 @@ export default {
       state.editCommentMode = false;
     };
 
-    const doCreateComment = (resize?: (el: HTMLTextAreaElement) => void) => {
+    const doCreateComment = () => {
       store
         .dispatch("activity/createActivity", {
           type: "activity",
@@ -398,9 +389,7 @@ export default {
         })
         .then(() => {
           newComment.value = "";
-          if (resize) {
-            nextTick(() => resize(newCommentTextArea.value));
-          }
+          nextTick(() => sizeToFit(newCommentTextArea.value));
         })
         .catch((error) => {
           console.log(error);
