@@ -47,7 +47,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
 
 export default {
   name: "BBModal",
@@ -76,12 +76,18 @@ export default {
       }
     };
 
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.code == "Escape") {
+        close();
+      }
+    };
+
     onMounted(() => {
-      document.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.code == "Escape") {
-          close();
-        }
-      });
+      document.addEventListener("keydown", escHandler);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener("keydown", escHandler);
     });
 
     return {

@@ -160,7 +160,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted, PropType } from "vue";
+import { onMounted, onUnmounted, PropType } from "vue";
 
 export default {
   name: "BBAlert",
@@ -206,12 +206,18 @@ export default {
       }
     };
 
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.code == "Escape") {
+        cancel();
+      }
+    };
+
     onMounted(() => {
-      document.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.code == "Escape") {
-          cancel();
-        }
-      });
+      document.addEventListener("keydown", escHandler);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener("keydown", escHandler);
     });
 
     const buttonStyleMap: Record<string, string> = {
