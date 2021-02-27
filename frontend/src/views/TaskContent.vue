@@ -1,15 +1,15 @@
 <template>
   <!-- Content Bar -->
-  <div class="flex justify-end space-x-3">
+  <div class="flex justify-end space-x-2">
     <button
       v-if="!state.edit"
       type="button"
-      class="btn-normal"
+      class="btn-icon"
       @click.prevent="beginEdit"
     >
       <!-- Heroicon name: solid/pencil -->
       <svg
-        class="-ml-1 mr-2 h-5 w-5 text-gray-400"
+        class="h-6 w-6 text-control"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
         fill="currentColor"
@@ -19,12 +19,12 @@
           d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
         />
       </svg>
-      <span>Edit</span>
     </button>
+    <!-- mt-0.5 is to prevent jiggling betweening switching edit/none-edit -->
     <button
       v-if="state.edit"
       type="button"
-      class="btn-cancel"
+      class="mt-0.5 px-4 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
       @click.prevent="cancelEdit"
     >
       Cancel
@@ -32,7 +32,7 @@
     <button
       v-if="state.edit"
       type="button"
-      class="btn-normal"
+      class="mt-0.5 px-4 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
       @click.prevent="saveEdit"
     >
       Save
