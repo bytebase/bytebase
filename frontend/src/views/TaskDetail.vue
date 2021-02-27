@@ -340,6 +340,9 @@ export default {
         value = field.preprocessor(value);
       }
       state.task.attributes.payload[field.id] = value;
+      patchTask({
+        payload: state.task.attributes.payload,
+      });
     };
 
     const doCreate = () => {
