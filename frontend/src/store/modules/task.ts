@@ -55,7 +55,7 @@ const actions = {
   },
 
   async patchTask(
-    { commit }: any,
+    { commit, dispatch }: any,
     {
       taskId,
       taskPatch,
@@ -77,6 +77,8 @@ const actions = {
       taskId: taskId,
       task: updatedTask,
     });
+
+    dispatch("activity/fetchActivityListForTask", taskId, { root: true });
 
     return updatedTask;
   },

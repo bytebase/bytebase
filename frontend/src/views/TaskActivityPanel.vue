@@ -43,12 +43,7 @@
                     </div>
                   </div>
                 </template>
-                <template
-                  v-else-if="
-                    activity.attributes.actionType ==
-                    'bytebase.task.comment.create'
-                  "
-                >
+                <template v-else>
                   <div class="relative">
                     <BBAvatar
                       class="rounded-full ring-8 ring-white"
@@ -291,7 +286,6 @@ import {
   nextTick,
   ref,
   reactive,
-  watchEffect,
   PropType,
 } from "vue";
 import { useStore } from "vuex";
@@ -361,6 +355,10 @@ export default {
         });
     };
 
+    // Only call upon setup, followup fetch will be done only when necessary
+    // e.g. after patching the task in the task store.
+    prepareActivityList();
+
     const activityList = computed(() =>
       store.getters["activity/activityListByTask"](props.task.id)
     );
@@ -424,8 +422,6 @@ export default {
         console.log(error);
       });
     };
-
-    watchEffect(prepareActivityList);
 
     const actionSentence = (actionType: TaskActionType) => {
       switch (actionType) {
