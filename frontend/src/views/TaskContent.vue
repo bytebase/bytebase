@@ -44,7 +44,7 @@
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
     ref="editContentTextArea"
-    rows="10"
+    rows="5"
     class="mt-4 rounded-md w-full resize-none whitespace-pre-line border-white focus:border-white outline-none"
     :class="
       state.edit
