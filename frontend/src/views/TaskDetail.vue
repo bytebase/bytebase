@@ -373,9 +373,7 @@ export default {
             },
           },
         })
-        .then((updatedTask) => {
-          state.task = cloneDeep(updatedTask);
-        })
+        .then((updatedTask) => {})
         .catch((error) => {
           console.log(error);
         });
