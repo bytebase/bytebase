@@ -74,7 +74,6 @@
 
 <script lang="ts">
 import { nextTick, onMounted, onUnmounted, PropType, ref, reactive } from "vue";
-import { useStore } from "vuex";
 import { Task } from "../types";
 import { sizeToFit } from "../utils";
 
@@ -84,6 +83,7 @@ interface LocalState {
 
 export default {
   name: "TaskContent",
+  emits: ["update-content"],
   props: {
     task: {
       required: true,
@@ -91,8 +91,7 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {
-    const store = useStore();
+  setup(props, { emit }) {
     const editContent = ref(props.task.attributes.content);
     const editContentTextArea = ref();
 
@@ -130,23 +129,13 @@ export default {
     };
 
     const saveEdit = () => {
-      store
-        .dispatch("task/patchTask", {
-          taskId: props.task.id,
-          taskPatch: {
-            content: editContent.value,
-          },
-        })
-        .then((updatedTask: Task) => {
-          state.edit = false;
-          editContent.value = updatedTask.attributes.content;
-          nextTick(() => {
-            sizeToFit(editContentTextArea.value);
-          });
-        })
-        .catch((error) => {
-          console.log(error);
+      emit("update-content", editContent.value, (updatedTask: Task) => {
+        state.edit = false;
+        editContent.value = updatedTask.attributes.content;
+        nextTick(() => {
+          sizeToFit(editContentTextArea.value);
         });
+      });
     };
 
     const cancelEdit = () => {

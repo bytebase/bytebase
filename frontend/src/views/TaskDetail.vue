@@ -71,7 +71,7 @@
               @update-custom-field="updateCustomField"
             />
             <div class="lg:hidden my-4 border-t border-block-border" />
-            <TaskContent :task="state.task" />
+            <TaskContent :task="state.task" @update-content="updateContent" />
           </div>
           <section
             v-if="!state.new"
@@ -318,6 +318,18 @@ export default {
       document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
+    const updateContent = (
+      newContent: string,
+      postUpdated: (updatedTask: Task) => void
+    ) => {
+      patchTask(
+        {
+          content: newContent,
+        },
+        postUpdated
+      );
+    };
+
     const updateTaskStatus = (newStatus: TaskStatus) => {
       // if (newStatus === "DONE") {
       //   if (template.fieldList) {
@@ -361,7 +373,10 @@ export default {
         });
     };
 
-    const patchTask = (taskPatch: TaskPatch) => {
+    const patchTask = (
+      taskPatch: TaskPatch,
+      postUpdated?: (updatedTask: Task) => void
+    ) => {
       store
         .dispatch("task/patchTask", {
           taskId: (state.task as Task).id,
@@ -373,7 +388,11 @@ export default {
             },
           },
         })
-        .then((updatedTask) => {})
+        .then((updatedTask) => {
+          if (postUpdated) {
+            postUpdated(updatedTask);
+          }
+        })
         .catch((error) => {
           console.log(error);
         });
@@ -457,6 +476,7 @@ export default {
     return {
       state,
       modalState,
+      updateContent,
       updateTaskStatus,
       updateCustomField,
       doCreate,
