@@ -300,7 +300,12 @@ import {
   Environment,
 } from "../types";
 import { sizeToFit } from "../utils";
-import { fieldFromId, TaskTemplate, TaskField } from "../plugins";
+import {
+  fieldFromId,
+  TaskTemplate,
+  TaskField,
+  TaskBuiltinFieldId,
+} from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -447,34 +452,46 @@ export default {
           const updateInfoList: string[] = [];
           for (const update of (activity.attributes
             .payload as ActionTaskFieldUpdatePayload)?.changeList || []) {
-            const field = fieldFromId(props.taskTemplate, update.fieldId);
             let name = "Unknown Field";
             let oldValue = undefined;
             let newValue = undefined;
-            if (field) {
-              name = field.name;
-              if (field.type === "String") {
-                oldValue = update.oldValue;
-                newValue = update.newValue;
-              } else if (field.type === "Environment") {
-                if (update.oldValue) {
-                  const environment: Environment = store.getters[
-                    "environment/environmentById"
-                  ](update.oldValue);
-                  if (environment) {
-                    oldValue = environment.attributes.name;
-                  } else {
-                    oldValue = "Unknown Environment";
+            if (update.fieldId == TaskBuiltinFieldId.STATUS) {
+              name = "Status";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.ASSIGNEE) {
+              name = "Assignee";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.CONTENT) {
+              name = "Description";
+            } else {
+              const field = fieldFromId(props.taskTemplate, update.fieldId);
+              if (field) {
+                name = field.name;
+                if (field.type === "String") {
+                  oldValue = update.oldValue;
+                  newValue = update.newValue;
+                } else if (field.type === "Environment") {
+                  if (update.oldValue) {
+                    const environment: Environment = store.getters[
+                      "environment/environmentById"
+                    ](update.oldValue);
+                    if (environment) {
+                      oldValue = environment.attributes.name;
+                    } else {
+                      oldValue = "Unknown Environment";
+                    }
                   }
-                }
-                if (update.newValue) {
-                  const environment: Environment = store.getters[
-                    "environment/environmentById"
-                  ](update.newValue);
-                  if (environment) {
-                    newValue = environment.attributes.name;
-                  } else {
-                    newValue = "Unknown Environment";
+                  if (update.newValue) {
+                    const environment: Environment = store.getters[
+                      "environment/environmentById"
+                    ](update.newValue);
+                    if (environment) {
+                      newValue = environment.attributes.name;
+                    } else {
+                      newValue = "Unknown Environment";
+                    }
                   }
                 }
               }
@@ -493,6 +510,8 @@ export default {
               updateInfoList.push("unset " + name + ' from "' + oldValue + '"');
             } else if (newValue) {
               updateInfoList.push("set " + name + ' to "' + newValue + '"');
+            } else {
+              updateInfoList.push("changed " + name);
             }
           }
           if (updateInfoList.length > 0) {

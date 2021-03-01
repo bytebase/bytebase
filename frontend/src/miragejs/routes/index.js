@@ -2,6 +2,7 @@
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
 import { Response } from "miragejs";
+import { TaskBuiltinFieldId } from "../../plugins";
 
 const WORKSPACE_ID = 1;
 
@@ -117,6 +118,37 @@ export default function routes() {
       }
 
       const changeList = [];
+
+      if (attrs.status) {
+        if (task.status != attrs.status) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.STATUS,
+            oldValue: task.status,
+            newValue: attrs.status,
+          });
+        }
+      }
+
+      if (attrs.assignee) {
+        if (task.assignee != attrs.assignee) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.ASSIGNEE,
+            oldValue: task.assignee,
+            newValue: attrs.assignee,
+          });
+        }
+      }
+
+      if (attrs.content) {
+        if (task.content != attrs.content) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.CONTENT,
+            oldValue: task.content,
+            newValue: attrs.content,
+          });
+        }
+      }
+
       for (const fieldId in attrs.payload) {
         const oldValue = task.payload[fieldId];
         const newValue = attrs.payload[fieldId];
