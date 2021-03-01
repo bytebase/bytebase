@@ -481,7 +481,7 @@ export default {
             }
             if (oldValue && newValue) {
               updateInfoList.push(
-                "updated " +
+                "changed " +
                   name +
                   ' from "' +
                   oldValue +
@@ -490,9 +490,9 @@ export default {
                   '"'
               );
             } else if (oldValue) {
-              updateInfoList.push("removed " + name + ' "' + oldValue + '"');
+              updateInfoList.push("unset " + name + ' from "' + oldValue + '"');
             } else if (newValue) {
-              updateInfoList.push("added " + name + ' "' + newValue + '"');
+              updateInfoList.push("set " + name + ' to "' + newValue + '"');
             }
           }
           if (updateInfoList.length > 0) {
