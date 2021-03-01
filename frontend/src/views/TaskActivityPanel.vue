@@ -55,12 +55,12 @@
                 <div class="ml-3 min-w-0 flex-1">
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
-                      <span class="font-medium text-main">{{
+                      <span class="font-medium text-main whitespace-nowrap">{{
                         activity.attributes.creator.name
                       }}</span>
                       <a
                         :href="'#activity' + (index + 1)"
-                        class="ml-1 anchor-link whitespace-nowrap"
+                        class="ml-1 anchor-link whitespace-normal"
                       >
                         {{ actionSentence(activity) }}
                         {{ humanizeTs(activity.attributes.createdTs) }}
