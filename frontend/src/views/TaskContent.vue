@@ -33,6 +33,7 @@
       v-if="state.edit"
       type="button"
       class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+      :disabled="editContent == task.attributes.content"
       @click.prevent="saveEdit"
     >
       Save
@@ -104,7 +105,9 @@ export default {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          saveEdit();
+          if (editContent.value != props.task.attributes.content) {
+            saveEdit();
+          }
         }
       }
     };
