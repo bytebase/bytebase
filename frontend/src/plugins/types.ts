@@ -1,6 +1,14 @@
 import { Environment, TaskNew, User } from "../types";
 
 // Task
+export type TaskFieldId = number;
+
+export enum TaskBuiltinFieldId {
+  STATUS = 10000,
+  ASSIGNEE = 10001,
+  REPORTER = 10002,
+}
+
 export type TaskFieldType = "String" | "Environment";
 
 export type TaskField = {
@@ -8,7 +16,7 @@ export type TaskField = {
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
   // is very similar to the message field id in Protocol Buffers.
-  id: number;
+  id: TaskFieldId;
   // Used as the key to generate UI artifacts (e.g. query parameter).
   // Though changing it won't have catastrophic consequence like changing
   // id, we strongly recommend NOT to change it as well, otherwise, previous
@@ -32,13 +40,6 @@ export type TaskField = {
 export type TemplateContext = {
   environmentList: Environment[];
   currentUser: User;
-};
-
-export type TemplateOutputField = {
-  // Similar to TaskField.id above
-  id: number;
-  name: string;
-  required: boolean;
 };
 
 export type TaskTemplate = {

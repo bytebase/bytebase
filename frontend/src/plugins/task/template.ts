@@ -1,4 +1,9 @@
-import { TaskTemplate, TemplateContext } from "../types";
+import {
+  TaskField,
+  TaskFieldId,
+  TaskTemplate,
+  TemplateContext,
+} from "../types";
 import { EnvironmentId, TaskType, TaskNew } from "../../types";
 
 const allTaskTemplateList: TaskTemplate[] = [
@@ -144,4 +149,14 @@ const allTaskTemplateList: TaskTemplate[] = [
 
 export function templateForType(type: TaskType): TaskTemplate | undefined {
   return allTaskTemplateList.find((template) => template.type === type);
+}
+
+export function fieldFromId(
+  template: TaskTemplate,
+  fieldId: TaskFieldId
+): TaskField | undefined {
+  if (template.fieldList) {
+    return template.fieldList.find((field) => field.id == fieldId);
+  }
+  return undefined;
 }

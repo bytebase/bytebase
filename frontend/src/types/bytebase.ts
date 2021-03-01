@@ -1,5 +1,6 @@
 import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
+import { TaskFieldId } from "../plugins";
 
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
@@ -76,6 +77,8 @@ export type TaskType = TaskTypeGeneral | TaskTypeDataSource;
 
 export type TaskStatus = "OPEN" | "DONE" | "CANCELED";
 
+export type TaskPayload = { [key: string]: any };
+
 export type Task = ResourceObject & {
   attributes: {
     name: string;
@@ -95,7 +98,7 @@ export type Task = ResourceObject & {
       name: string;
     };
     subscriberIdList: Array<string>;
-    payload: any;
+    payload: TaskPayload;
   };
 };
 
@@ -113,7 +116,7 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
       id: string;
       name: string;
     };
-    payload: any;
+    payload: TaskPayload;
   };
 };
 
@@ -126,7 +129,7 @@ export type TaskPatch = {
     name: string;
   };
   stageProgressList?: StageProgressPatch[];
-  payload?: any;
+  payload?: TaskPayload;
 };
 
 // Activity
@@ -137,11 +140,21 @@ export type TaskActionType =
 
 export type ActionType = TaskActionType;
 
-export type ActionCommentCreatePayload = {
+export type ActionTaskCommentCreatePayload = {
   content: string;
 };
 
-export type ActionPayloadType = ActionCommentCreatePayload;
+export type ActionTaskFieldUpdatePayload = {
+  changeList: {
+    fieldId: TaskFieldId;
+    oldValue?: string;
+    newValue?: string;
+  }[];
+};
+
+export type ActionPayloadType =
+  | ActionTaskCommentCreatePayload
+  | ActionTaskFieldUpdatePayload;
 
 export type Activity = ResourceObject & {
   attributes: {

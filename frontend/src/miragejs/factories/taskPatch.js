@@ -3,6 +3,12 @@ import faker from "faker";
 
 export default {
   taskPatch: Factory.extend({
+    producer() {
+      return {
+        id: "100",
+        name: "Ed Codd",
+      };
+    },
     name(i) {
       return faker.fake("{{lorem.sentence}}");
     },
@@ -28,11 +34,8 @@ export default {
     },
     payload() {
       return {
-        type: "bytebase.datasource.create",
-        fieldList: {
-          // Requested Database name
-          1: "Mydb",
-        },
+        // Requested Database name
+        1: "Mydb",
       };
     },
   }),

@@ -78,7 +78,10 @@
             aria-labelledby="activity-title"
             class="mt-8 lg:mt-10"
           >
-            <TaskActivityPanel :task="state.task" />
+            <TaskActivityPanel
+              :task="state.task"
+              :taskTemplate="taskTemplate"
+            />
           </section>
         </div>
         <TaskSidebar
@@ -132,7 +135,7 @@ import {
   TaskStatus,
   StageStatus,
 } from "../types";
-import { templateForType, TaskField, TaskTemplate } from "../plugins";
+import { templateForType, TaskField } from "../plugins";
 
 type StageTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
 
@@ -362,7 +365,13 @@ export default {
       store
         .dispatch("task/patchTask", {
           taskId: (state.task as Task).id,
-          taskPatch,
+          taskPatch: {
+            ...taskPatch,
+            producer: {
+              id: currentUser!.id,
+              name: currentUser!.attributes.name,
+            },
+          },
         })
         .then((updatedTask) => {
           state.task = cloneDeep(updatedTask);
@@ -459,6 +468,7 @@ export default {
       applicableStageTransitionList,
       actionButtonClass,
       currentUser,
+      taskTemplate,
       outputFieldList,
       inputFieldList,
       showTaskFlowBar,

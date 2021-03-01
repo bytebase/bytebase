@@ -62,7 +62,7 @@
                         :href="'#activity' + (index + 1)"
                         class="ml-1 anchor-link whitespace-nowrap"
                       >
-                        {{ actionSentence(activity.attributes.actionType) }}
+                        {{ actionSentence(activity) }}
                         {{ humanizeTs(activity.attributes.createdTs) }}
                         <template
                           v-if="
@@ -290,8 +290,17 @@ import {
 } from "vue";
 import { useStore } from "vuex";
 import { UserStateSymbol } from "../components/ProvideUser.vue";
-import { User, Task, TaskActionType, Activity, ActivityId } from "../types";
+import {
+  User,
+  Task,
+  TaskActionType,
+  Activity,
+  ActionTaskCommentCreatePayload,
+  ActionTaskFieldUpdatePayload,
+  Environment,
+} from "../types";
 import { sizeToFit } from "../utils";
+import { fieldFromId, TaskTemplate, TaskField } from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -305,6 +314,10 @@ export default {
     task: {
       required: true,
       type: Object as PropType<Task>,
+    },
+    taskTemplate: {
+      required: true,
+      type: Object as PropType<TaskTemplate>,
     },
   },
   components: {},
@@ -395,7 +408,8 @@ export default {
     };
 
     const onUpdateComment = (activity: Activity) => {
-      editComment.value = activity.attributes.payload!.content;
+      editComment.value = (activity.attributes
+        .payload! as ActionTaskCommentCreatePayload).content;
       state.activeComment = activity;
       state.editCommentMode = true;
       nextTick(() => {
@@ -423,14 +437,69 @@ export default {
       });
     };
 
-    const actionSentence = (actionType: TaskActionType) => {
-      switch (actionType) {
+    const actionSentence = (activity: Activity): string => {
+      switch (activity.attributes.actionType) {
         case "bytebase.task.create":
           return "created task";
         case "bytebase.task.comment.create":
           return "commented";
-        case "bytebase.task.field.update":
+        case "bytebase.task.field.update": {
+          const updateInfoList: string[] = [];
+          for (const update of (activity.attributes
+            .payload as ActionTaskFieldUpdatePayload)?.changeList || []) {
+            const field = fieldFromId(props.taskTemplate, update.fieldId);
+            let name = "Unknown Field";
+            let oldValue = undefined;
+            let newValue = undefined;
+            if (field) {
+              name = field.name;
+              if (field.type === "String") {
+                oldValue = update.oldValue;
+                newValue = update.newValue;
+              } else if (field.type === "Environment") {
+                if (update.oldValue) {
+                  const environment: Environment = store.getters[
+                    "environment/environmentById"
+                  ](update.oldValue);
+                  if (environment) {
+                    oldValue = environment.attributes.name;
+                  } else {
+                    oldValue = "Unknown Environment";
+                  }
+                }
+                if (update.newValue) {
+                  const environment: Environment = store.getters[
+                    "environment/environmentById"
+                  ](update.newValue);
+                  if (environment) {
+                    newValue = environment.attributes.name;
+                  } else {
+                    newValue = "Unknown Environment";
+                  }
+                }
+              }
+            }
+            if (oldValue && newValue) {
+              updateInfoList.push(
+                "updated " +
+                  name +
+                  ' from "' +
+                  oldValue +
+                  '" to "' +
+                  newValue +
+                  '"'
+              );
+            } else if (oldValue) {
+              updateInfoList.push("removed " + name + ' "' + oldValue + '"');
+            } else if (newValue) {
+              updateInfoList.push("added " + name + ' "' + newValue + '"');
+            }
+          }
+          if (updateInfoList.length > 0) {
+            return updateInfoList.join("; ");
+          }
           return "updated";
+        }
       }
     };
 

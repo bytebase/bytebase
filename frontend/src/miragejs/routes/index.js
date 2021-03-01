@@ -1,8 +1,6 @@
 /*
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
-
-import { create } from "lodash-es";
 import { Response } from "miragejs";
 
 const WORKSPACE_ID = 1;
@@ -117,7 +115,34 @@ export default function routes() {
           return item;
         });
       }
-      return task.update({ ...attrs, lastUpdatedTs: Date.now() });
+
+      const changeList = [];
+      for (const fieldId in attrs.payload) {
+        const oldValue = task.payload[fieldId];
+        const newValue = attrs.payload[fieldId];
+        if (oldValue != newValue) {
+          changeList.push({
+            fieldId: fieldId,
+            oldValue: task.payload[fieldId],
+            newValue: attrs.payload[fieldId],
+          });
+        }
+      }
+
+      const ts = Date.now();
+      const updatedTask = task.update({ ...attrs, lastUpdatedTs: ts });
+
+      schema.activities.create({
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        actionType: "bytebase.task.field.update",
+        containerId: updatedTask.id,
+        creator: attrs.producer,
+        payload: changeList.length > 0 ? { changeList } : undefined,
+        workspaceId: WORKSPACE_ID,
+      });
+
+      return updatedTask;
     }
     return new Response(
       404,
