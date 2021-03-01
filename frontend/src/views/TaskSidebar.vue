@@ -67,11 +67,7 @@
                 type="text"
                 class="textfield w-full"
                 :name="field.id"
-                :value="
-                  field.preprocessor
-                    ? field.preprocessor(task.attributes.payload[field.id])
-                    : task.attributes.payload[field.id]
-                "
+                :value="fieldValue(field)"
                 :placeholder="field.placeholder"
                 @input="
                   $emit('update-custom-field', field, $event.target.value)
@@ -83,11 +79,8 @@
             <div class="lg:mt-3 w-3/4 lg:w-auto">
               <EnvironmentSelect
                 :name="field.id"
-                :selectedId="
-                  field.preprocessor
-                    ? field.preprocessor(task.attributes.payload[field.id])
-                    : task.attributes.payload[field.id]
-                "
+                :selectedId="fieldValue(field)"
+                :selectDefault="false"
                 @select-environment-id="
                   (environmentId) => {
                     $emit('update-custom-field', field, environmentId);
@@ -155,9 +148,15 @@ export default {
       state.new = isEmpty(props.task.id);
     };
 
+    const fieldValue = (field: TaskField): string => {
+      return field.preprocessor
+        ? field.preprocessor(props.task.attributes.payload[field.id])
+        : props.task.attributes.payload[field.id];
+    };
+
     watchEffect(refreshState);
 
-    return { state, activeStageIsRunning };
+    return { state, activeStageIsRunning, fieldValue };
   },
 };
 </script>

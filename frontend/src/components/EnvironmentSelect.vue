@@ -7,6 +7,9 @@
       }
     "
   >
+    <option disabled :selected="undefined === state.selectedId">
+      Not selected
+    </option>
     <option
       v-for="(environment, index) in state.environmentList"
       :key="index"
@@ -37,6 +40,10 @@ export default {
     selectedId: {
       type: String,
     },
+    selectDefault: {
+      default: true,
+      type: Boolean,
+    },
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
@@ -52,7 +59,11 @@ export default {
           // Usually env is ordered by ascending importantance, thus we rervese the order to put
           // more important ones first.
           state.environmentList = cloneDeep(list).reverse();
-          if (!state.selectedId && state.environmentList.length > 0) {
+          if (
+            !props.selectedId &&
+            props.selectDefault &&
+            state.environmentList.length > 0
+          ) {
             state.selectedId = state.environmentList[0].id;
             emit("select-environment-id", state.selectedId);
           }
