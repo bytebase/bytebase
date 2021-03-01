@@ -85,7 +85,7 @@
           </section>
         </div>
         <TaskSidebar
-          class="hidden lg:block pt-4 lg:w-64 lg:pl-8 xl:w-72"
+          class="hidden lg:block pt-4 lg:w-72 lg:pl-8 xl:w-80"
           :task="state.task"
           :fieldList="inputFieldList"
           @update-task-status="updateTaskStatus"
