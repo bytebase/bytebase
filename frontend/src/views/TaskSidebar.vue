@@ -1,7 +1,7 @@
 <template>
   <aside>
     <h2 class="sr-only">Details</h2>
-    <div class="space-y-3">
+    <div class="space-y-4">
       <div
         v-if="!$props.new"
         class="flex flex-row space-x-2 lg:flex-col lg:space-x-0"
@@ -155,7 +155,7 @@
     </div>
     <div
       v-if="!$props.new"
-      class="mt-6 border-t border-block-border py-6 space-y-4"
+      class="mt-6 border-t border-block-border py-4 space-y-4"
     >
       <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
         <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Reporter</h2>
