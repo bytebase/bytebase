@@ -47,11 +47,7 @@
     ref="editContentTextArea"
     rows="5"
     class="mt-4 w-full resize-none whitespace-pre-line border-white focus:border-white outline-none"
-    :class="
-      state.edit
-        ? 'focus:ring-control focus-visible:ring-2 focus:ring-offset-4'
-        : ''
-    "
+    :class="state.edit ? 'focus:ring-control focus-visible:ring-2' : ''"
     :style="
       state.edit
         ? ''
