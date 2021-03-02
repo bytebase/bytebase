@@ -3,7 +3,7 @@
     <h2 class="sr-only">Details</h2>
     <div class="space-y-3">
       <div
-        v-if="!state.new"
+        v-if="!$props.new"
         class="flex flex-row space-x-2 lg:flex-col lg:space-x-0"
       >
         <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Status</h2>
@@ -158,7 +158,7 @@
       </template>
     </div>
     <div
-      v-if="!state.new"
+      v-if="!$props.new"
       class="mt-6 border-t border-block-border py-6 space-y-4"
     >
       <div>
@@ -186,7 +186,6 @@ import {
   nextTick,
   reactive,
   ref,
-  watchEffect,
 } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -196,7 +195,6 @@ import { Task } from "../types";
 import { activeStageIsRunning } from "../utils";
 
 interface LocalState {
-  new: boolean;
   activeCustomFieldIndex: number;
 }
 
@@ -208,6 +206,10 @@ export default {
       required: true,
       type: Object as PropType<Task>,
     },
+    new: {
+      required: true,
+      type: Boolean,
+    },
     fieldList: {
       required: true,
       type: Object as PropType<TaskField[]>,
@@ -216,7 +218,6 @@ export default {
   components: { EnvironmentSelect, TaskStatusSelect },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
-      new: isEmpty(props.task.id),
       activeCustomFieldIndex: -1,
     });
 
@@ -252,10 +253,6 @@ export default {
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const refreshState = () => {
-      state.new = isEmpty(props.task.id);
-    };
-
     const fieldValue = (field: TaskField): string => {
       return field.preprocessor
         ? field.preprocessor(props.task.attributes.payload[field.id])
@@ -287,8 +284,6 @@ export default {
 
       state.activeCustomFieldIndex = -1;
     };
-
-    watchEffect(refreshState);
 
     return {
       state,

@@ -1,6 +1,6 @@
 <template>
   <!-- Content Bar -->
-  <div class="flex justify-end space-x-2">
+  <div v-if="!$props.new" class="flex justify-end space-x-2">
     <button
       v-if="!state.edit"
       type="button"
@@ -70,7 +70,15 @@
 </template>
 
 <script lang="ts">
-import { nextTick, onMounted, onUnmounted, PropType, ref, reactive } from "vue";
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  watch,
+  PropType,
+  ref,
+  reactive,
+} from "vue";
 import { Task } from "../types";
 import { sizeToFit } from "../utils";
 
@@ -85,6 +93,10 @@ export default {
     task: {
       required: true,
       type: Object as PropType<Task>,
+    },
+    new: {
+      required: true,
+      type: Boolean,
     },
   },
   components: {},
@@ -112,12 +124,26 @@ export default {
       document.addEventListener("keydown", keyboardHandler);
       nextTick(() => {
         sizeToFit(editContentTextArea.value);
+        if (props.new) {
+          state.edit = true;
+          editContentTextArea.value.focus();
+        }
       });
     });
 
     onUnmounted(() => {
       document.removeEventListener("keydown", keyboardHandler);
     });
+
+    // Reset the edit state after creating the task.
+    watch(
+      () => props.new,
+      (curNew, prevNew) => {
+        if (!curNew && prevNew) {
+          state.edit = false;
+        }
+      }
+    );
 
     const beginEdit = () => {
       editContent.value = props.task.attributes.content;

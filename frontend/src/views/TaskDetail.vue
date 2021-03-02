@@ -6,7 +6,7 @@
   >
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pt-6 lg:border-t lg:border-block-border">
-      <TaskHighlightPanel :task="state.task">
+      <TaskHighlightPanel :task="state.task" :new="state.new">
         <template v-if="state.new">
           <button
             type="button"
@@ -66,12 +66,17 @@
             <TaskSidebar
               class="lg:hidden"
               :task="state.task"
+              :new="state.new"
               :fieldList="inputFieldList"
               @update-task-status="updateTaskStatus"
               @update-custom-field="updateCustomField"
             />
             <div class="lg:hidden my-4 border-t border-block-border" />
-            <TaskContent :task="state.task" @update-content="updateContent" />
+            <TaskContent
+              :task="state.task"
+              :new="state.new"
+              @update-content="updateContent"
+            />
           </div>
           <section
             v-if="!state.new"
@@ -87,6 +92,7 @@
         <TaskSidebar
           class="hidden lg:block pt-4 lg:w-72 lg:pl-8 xl:w-80"
           :task="state.task"
+          :new="state.new"
           :fieldList="inputFieldList"
           @update-task-status="updateTaskStatus"
           @update-custom-field="updateCustomField"
@@ -355,9 +361,11 @@ export default {
         value = field.preprocessor(value);
       }
       state.task.attributes.payload[field.id] = value;
-      patchTask({
-        payload: state.task.attributes.payload,
-      });
+      if (!state.new) {
+        patchTask({
+          payload: state.task.attributes.payload,
+        });
+      }
     };
 
     const doCreate = () => {

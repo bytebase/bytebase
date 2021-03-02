@@ -4,14 +4,14 @@
       <div class="flex items-center">
         <div>
           <div class="flex items-center">
-            <TaskStatusIcon v-if="!state.new" :task="task" />
+            <TaskStatusIcon v-if="!$props.new" :task="task" />
             <p
               class="ml-2 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
             >
               {{ task.attributes.name }}
             </p>
           </div>
-          <div v-if="!state.new">
+          <div v-if="!$props.new">
             <p class="mt-2 text-sm text-gray-500">
               #{{ task.id }} opened by
               <span href="#" class="font-medium text-control">{{
@@ -33,14 +33,9 @@
 </template>
 
 <script lang="ts">
-import { PropType, watchEffect, reactive } from "vue";
-import isEmpty from "lodash-es/isEmpty";
+import { PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import { Task } from "../types";
-
-interface LocalState {
-  new: boolean;
-}
 
 export default {
   name: "TaskHighlightPanel",
@@ -49,20 +44,12 @@ export default {
       required: true,
       type: Object as PropType<Task>,
     },
+    new: {
+      required: true,
+      type: Boolean,
+    },
   },
   components: { TaskStatusIcon },
-  setup(props, ctx) {
-    const state = reactive<LocalState>({
-      new: isEmpty(props.task.id),
-    });
-
-    const refreshState = () => {
-      state.new = isEmpty(props.task.id);
-    };
-
-    watchEffect(refreshState);
-
-    return { state };
-  },
+  setup(props, ctx) {},
 };
 </script>
