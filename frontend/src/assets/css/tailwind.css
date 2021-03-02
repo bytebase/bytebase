@@ -79,7 +79,7 @@
 }
 
 .control {
-  @apply focus:ring-control focus:border-control border-control-border rounded-md;
+  @apply focus:ring-control focus:border-control border-control-border rounded-md select-none;
 }
 
 .textlabel {
