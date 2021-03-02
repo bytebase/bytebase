@@ -46,7 +46,7 @@
   <textarea
     ref="editDescriptionTextArea"
     rows="5"
-    class="mt-4 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
+    class="mt-2 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
     :class="state.edit ? 'focus:ring-control focus-visible:ring-2' : ''"
     :style="
       state.edit
