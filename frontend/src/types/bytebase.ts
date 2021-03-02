@@ -29,6 +29,7 @@ export type CommandId = string;
 export type CommandRegisterId = string;
 
 // Persistent State Models
+// User
 export type User = ResourceObject & {
   attributes: {
     name: string;
@@ -36,6 +37,13 @@ export type User = ResourceObject & {
 };
 export type NewUser = Omit<User, "id">;
 
+// For display purpose
+export type UserDisplay = {
+  id: UserId;
+  name: string;
+};
+
+// Bookmark
 export type Bookmark = ResourceObject & {};
 export type NewBookmark = Omit<Bookmark, "id">;
 
@@ -89,14 +97,8 @@ export type Task = ResourceObject & {
     type: TaskType;
     description: string;
     stageProgressList: StageProgress[];
-    creator: {
-      id: string;
-      name: string;
-    };
-    assignee?: {
-      id: string;
-      name: string;
-    };
+    creator: UserDisplay;
+    assignee?: UserDisplay;
     subscriberIdList: Array<string>;
     payload: TaskPayload;
   };
@@ -108,14 +110,8 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
     type: TaskType;
     description: string;
     stageProgressList: StageProgress[];
-    creator: {
-      id: string;
-      name: string;
-    };
-    assignee?: {
-      id: string;
-      name: string;
-    };
+    creator: UserDisplay;
+    assignee?: UserDisplay;
     payload: TaskPayload;
   };
 };
@@ -124,10 +120,7 @@ export type TaskPatch = {
   name?: string;
   status?: TaskStatus;
   description?: string;
-  assignee?: {
-    id: string;
-    name: string;
-  };
+  assignee?: UserDisplay;
   stageProgressList?: StageProgressPatch[];
   payload?: TaskPayload;
 };
@@ -164,10 +157,7 @@ export type Activity = ResourceObject & {
     // The object where this activity belongs
     // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
     containerId: TaskId;
-    creator: {
-      id: string;
-      name: string;
-    };
+    creator: UserDisplay;
     payload?: ActionPayloadType;
   };
 };
