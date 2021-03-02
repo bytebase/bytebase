@@ -141,7 +141,7 @@ export type TaskActionType =
 export type ActionType = TaskActionType;
 
 export type ActionTaskCommentCreatePayload = {
-  content: string;
+  comment: string;
 };
 
 export type ActionTaskFieldUpdatePayload = {

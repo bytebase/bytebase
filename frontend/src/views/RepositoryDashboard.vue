@@ -3,7 +3,7 @@
   {{ repository?.attributes.type }}
   <br />
   Access Token
-  {{ repository?.attributes.content.accessToken }}
+  {{ repository?.attributes.comment.accessToken }}
 </template>
 
 <script lang="ts">

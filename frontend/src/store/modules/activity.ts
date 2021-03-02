@@ -66,7 +66,7 @@ const actions = {
           type: "activitypatch",
           attributes: {
             payload: {
-              content: updatedComment,
+              comment: updatedComment,
             },
           },
         },

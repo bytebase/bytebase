@@ -100,7 +100,7 @@ const workspacesSeeder = (server) => {
         name: ws1Dev1.name,
       },
       payload: {
-        content: faker.fake("{{lorem.paragraph}}"),
+        comment: faker.fake("{{lorem.paragraph}}"),
       },
       workspace: workspace1,
     });
@@ -152,7 +152,7 @@ const workspacesSeeder = (server) => {
         name: ws1Dev1.name,
       },
       payload: {
-        content: faker.fake("{{lorem.paragraph}}"),
+        comment: faker.fake("{{lorem.paragraph}}"),
       },
       workspace: workspace1,
     });
@@ -192,7 +192,7 @@ const workspacesSeeder = (server) => {
           name: ws1Dev1.name,
         },
         payload: {
-          content: faker.fake("{{lorem.paragraph}}"),
+          comment: faker.fake("{{lorem.paragraph}}"),
         },
         workspace: workspace1,
       });
@@ -233,7 +233,7 @@ const workspacesSeeder = (server) => {
           name: ws1Dev1.name,
         },
         payload: {
-          content: faker.fake("{{lorem.paragraph}}"),
+          comment: faker.fake("{{lorem.paragraph}}"),
         },
         workspace: workspace1,
       });
@@ -274,7 +274,7 @@ const workspacesSeeder = (server) => {
           name: ws1DBA.name,
         },
         payload: {
-          content: faker.fake("{{lorem.paragraph}}"),
+          comment: faker.fake("{{lorem.paragraph}}"),
         },
         workspace: workspace1,
       });

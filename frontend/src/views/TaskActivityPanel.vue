@@ -103,7 +103,7 @@
                           class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
                           :disabled="
                             editComment.length == 0 ||
-                            editComment == activity.attributes.payload.content
+                            editComment == activity.attributes.payload.comment
                           "
                           @click.prevent="doUpdateComment"
                         >
@@ -194,7 +194,7 @@
                         ></textarea>
                       </template>
                       <template v-else>
-                        {{ activity.attributes.payload.content }}
+                        {{ activity.attributes.payload.comment }}
                       </template>
                     </div>
                   </template>
@@ -399,7 +399,7 @@ export default {
               name: currentUser!.attributes.name,
             },
             payload: {
-              content: newComment.value,
+              comment: newComment.value,
             },
           },
         })
@@ -414,7 +414,7 @@ export default {
 
     const onUpdateComment = (activity: Activity) => {
       editComment.value = (activity.attributes
-        .payload! as ActionTaskCommentCreatePayload).content;
+        .payload! as ActionTaskCommentCreatePayload).comment;
       state.activeComment = activity;
       state.editCommentMode = true;
       nextTick(() => {
