@@ -1,5 +1,5 @@
 <template>
-  <!-- Content Bar -->
+  <!-- Description Bar -->
   <div v-if="!$props.new" class="flex justify-end space-x-2">
     <button
       v-if="!state.edit"
@@ -33,18 +33,18 @@
       v-if="state.edit"
       type="button"
       class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-      :disabled="editContent == task.attributes.content"
+      :disabled="editDescription == task.attributes.description"
       @click.prevent="saveEdit"
     >
       Save
     </button>
   </div>
-  <!-- Content -->
-  <label for="content" class="sr-only">Edit Description</label>
+  <!-- Description -->
+  <label for="description" class="sr-only">Edit Description</label>
   <!-- Use border-white focus:border-white to have the invisible border width
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
-    ref="editContentTextArea"
+    ref="editDescriptionTextArea"
     rows="5"
     class="mt-4 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
     :class="state.edit ? 'focus:ring-control focus-visible:ring-2' : ''"
@@ -55,7 +55,7 @@
     "
     placeholder="Add some description..."
     :readonly="!state.edit"
-    v-model="editContent"
+    v-model="editDescription"
     @input="
       (e) => {
         sizeToFit(e.target);
@@ -87,8 +87,8 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskContent",
-  emits: ["update-content"],
+  name: "TaskDescription",
+  emits: ["update-description"],
   props: {
     task: {
       required: true,
@@ -101,19 +101,22 @@ export default {
   },
   components: {},
   setup(props, { emit }) {
-    const editContent = ref(props.task.attributes.content);
-    const editContentTextArea = ref();
+    const editDescription = ref(props.task.attributes.description);
+    const editDescriptionTextArea = ref();
 
     const state = reactive<LocalState>({
       edit: false,
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
-      if (state.edit && editContentTextArea.value === document.activeElement) {
+      if (
+        state.edit &&
+        editDescriptionTextArea.value === document.activeElement
+      ) {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          if (editContent.value != props.task.attributes.content) {
+          if (editDescription.value != props.task.attributes.description) {
             saveEdit();
           }
         }
@@ -123,10 +126,10 @@ export default {
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
       nextTick(() => {
-        sizeToFit(editContentTextArea.value);
+        sizeToFit(editDescriptionTextArea.value);
         if (props.new) {
           state.edit = true;
-          editContentTextArea.value.focus();
+          editDescriptionTextArea.value.focus();
         }
       });
     });
@@ -146,35 +149,35 @@ export default {
     );
 
     const beginEdit = () => {
-      editContent.value = props.task.attributes.content;
+      editDescription.value = props.task.attributes.description;
       state.edit = true;
       nextTick(() => {
-        editContentTextArea.value.focus();
+        editDescriptionTextArea.value.focus();
       });
     };
 
     const saveEdit = () => {
-      emit("update-content", editContent.value, (updatedTask: Task) => {
+      emit("update-description", editDescription.value, (updatedTask: Task) => {
         state.edit = false;
-        editContent.value = updatedTask.attributes.content;
+        editDescription.value = updatedTask.attributes.description;
         nextTick(() => {
-          sizeToFit(editContentTextArea.value);
+          sizeToFit(editDescriptionTextArea.value);
         });
       });
     };
 
     const cancelEdit = () => {
       state.edit = false;
-      editContent.value = props.task.attributes.content;
+      editDescription.value = props.task.attributes.description;
       nextTick(() => {
-        sizeToFit(editContentTextArea.value);
+        sizeToFit(editDescriptionTextArea.value);
       });
     };
 
     return {
       state,
-      editContent,
-      editContentTextArea,
+      editDescription,
+      editDescriptionTextArea,
       beginEdit,
       saveEdit,
       cancelEdit,

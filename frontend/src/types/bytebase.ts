@@ -87,7 +87,7 @@ export type Task = ResourceObject & {
     status: TaskStatus;
     category: "DDL" | "DML" | "OPS";
     type: TaskType;
-    content: string;
+    description: string;
     stageProgressList: StageProgress[];
     creator: {
       id: string;
@@ -106,7 +106,7 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
   attributes: {
     name: string;
     type: TaskType;
-    content: string;
+    description: string;
     stageProgressList: StageProgress[];
     creator: {
       id: string;
@@ -123,7 +123,7 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
 export type TaskPatch = {
   name?: string;
   status?: TaskStatus;
-  content?: string;
+  description?: string;
   assignee?: {
     id: string;
     name: string;

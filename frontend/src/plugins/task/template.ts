@@ -15,7 +15,7 @@ const allTaskTemplateList: TaskTemplate[] = [
         attributes: {
           name: "New General Task",
           type: "bytebase.general",
-          content: "",
+          description: "",
           stageProgressList: [
             {
               id: "1",
@@ -41,7 +41,7 @@ const allTaskTemplateList: TaskTemplate[] = [
         attributes: {
           name: "New Data Source",
           type: "bytebase.datasource.create",
-          content: "Estimated QPS: 10",
+          description: "Estimated QPS: 10",
           stageProgressList: [
             {
               id: "1",
@@ -105,7 +105,7 @@ const allTaskTemplateList: TaskTemplate[] = [
         attributes: {
           name: "Update Schema",
           type: "bytebase.datasource.schema.update",
-          content: "DDL: ",
+          description: "DDL: ",
           stageProgressList: ctx.environmentList.map((env) => {
             return {
               id: env.id,

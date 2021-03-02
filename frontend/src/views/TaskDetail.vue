@@ -72,10 +72,10 @@
               @update-custom-field="updateCustomField"
             />
             <div class="lg:hidden my-4 border-t border-block-border" />
-            <TaskContent
+            <TaskDescription
               :task="state.task"
               :new="state.new"
-              @update-content="updateContent"
+              @update-description="updateDescription"
             />
           </div>
           <section
@@ -129,7 +129,7 @@ import { idFromSlug, taskSlug, activeStage } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
-import TaskContent from "../views/TaskContent.vue";
+import TaskDescription from "../views/TaskDescription.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
 import {
@@ -248,7 +248,7 @@ export default {
     TaskHighlightPanel,
     TaskFlow,
     TaskOutputPanel,
-    TaskContent,
+    TaskDescription,
     TaskActivityPanel,
     TaskSidebar,
   },
@@ -324,13 +324,13 @@ export default {
       document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
-    const updateContent = (
-      newContent: string,
+    const updateDescription = (
+      newDescription: string,
       postUpdated: (updatedTask: Task) => void
     ) => {
       patchTask(
         {
-          content: newContent,
+          description: newDescription,
         },
         postUpdated
       );
@@ -484,7 +484,7 @@ export default {
     return {
       state,
       modalState,
-      updateContent,
+      updateDescription,
       updateTaskStatus,
       updateCustomField,
       doCreate,

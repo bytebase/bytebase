@@ -463,7 +463,7 @@ export default {
               name = "Assignee";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.CONTENT) {
+            } else if (update.fieldId == TaskBuiltinFieldId.DESCRIPTION) {
               name = "Description";
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);

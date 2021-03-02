@@ -15,7 +15,7 @@ export default {
     status() {
       return "RUNNING";
     },
-    content() {
+    description() {
       return faker.fake("{{lorem.paragraphs}}");
     },
     assignee() {

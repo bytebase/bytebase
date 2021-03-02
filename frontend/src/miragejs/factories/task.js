@@ -28,7 +28,7 @@ export default {
     type() {
       return "bytebase.datasource.create";
     },
-    content() {
+    description() {
       return faker.fake("{{lorem.paragraphs}}");
     },
     stageProgressList() {

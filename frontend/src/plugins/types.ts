@@ -6,7 +6,7 @@ export type TaskFieldId = number;
 export enum TaskBuiltinFieldId {
   STATUS = 10000,
   ASSIGNEE = 10001,
-  CONTENT = 10002,
+  DESCRIPTION = 10002,
 }
 
 export type TaskFieldType = "String" | "Environment";

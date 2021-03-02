@@ -140,12 +140,12 @@ export default function routes() {
       }
 
       // Empty string is valid
-      if (attrs.content !== undefined) {
-        if (task.content != attrs.content) {
+      if (attrs.description !== undefined) {
+        if (task.description != attrs.description) {
           changeList.push({
-            fieldId: TaskBuiltinFieldId.CONTENT,
-            oldValue: task.content,
-            newValue: attrs.content,
+            fieldId: TaskBuiltinFieldId.DESCRIPTION,
+            oldValue: task.description,
+            newValue: attrs.description,
           });
         }
       }
