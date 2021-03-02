@@ -234,7 +234,7 @@
               <textarea
                 ref="newCommentTextArea"
                 rows="3"
-                class="textarea block w-full resize-none"
+                class="textarea block w-full resize-none whitespace-pre-wrap"
                 placeholder="Leave a comment..."
                 v-model="newComment"
                 @input="
