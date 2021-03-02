@@ -3,7 +3,7 @@
   Tailwind UI components require Tailwind CSS v1.8 and the @tailwindcss/ui plugin.
   Read the documentation to get started: https://tailwindui.com/documentation
 -->
-  <div class="bg-normal min-h-screen flex">
+  <div class="min-h-screen flex">
     <div class="hidden bg-main lg:block relative w-0 flex-1">
       <!-- <img
         class="absolute inset-0 h-full w-full object-cover"
@@ -115,8 +115,8 @@
             <div class="w-full border-t border-control-border"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="pl-2 bg-normal text-control"> New to Bytebase? </span>
-            <router-link to="signup" class="accent-link px-2 bg-normal">
+            <span class="pl-2 bg-white text-control"> New to Bytebase? </span>
+            <router-link to="signup" class="accent-link bg-white px-2">
               Sign up
             </router-link>
           </div>

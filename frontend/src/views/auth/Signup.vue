@@ -3,7 +3,7 @@
   Tailwind UI components require Tailwind CSS v1.8 and the @tailwindcss/ui plugin.
   Read the documentation to get started: https://tailwindui.com/documentation
 -->
-  <div class="bg-normal min-h-screen flex">
+  <div class="min-h-screen flex">
     <div class="hidden bg-main lg:block relative w-0 flex-1">
       <!-- <img
         class="absolute inset-0 h-full w-full object-cover"
@@ -108,10 +108,10 @@
             <div class="w-full border-t border-control-border"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="pl-2 bg-normal text-control">
+            <span class="pl-2 bg-white text-control">
               Already have an account?
             </span>
-            <router-link to="signin" class="accent-link px-2 bg-normal">
+            <router-link to="signin" class="accent-link px-2 bg-white">
               Sign in
             </router-link>
           </div>
