@@ -91,7 +91,7 @@
 }
 
 .textarea {
-  @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md shadow-sm;
+  @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border shadow-sm;
 }
 
 .link {
