@@ -140,7 +140,7 @@ export default function routes() {
       }
 
       // Empty string is valid
-      if (typeof attrs.content !== undefined) {
+      if (attrs.content !== undefined) {
         if (task.content != attrs.content) {
           changeList.push({
             fieldId: TaskBuiltinFieldId.CONTENT,
