@@ -64,13 +64,18 @@
           <template v-if="field.type == 'String'">
             <div
               class="lg:mt-3 w-3/4 lg:w-auto mt-1 flex"
-              @focusin="state.activeCustomFieldIndex = index"
+              @focusin="
+                if (!$props.new) {
+                  state.activeCustomFieldIndex = index;
+                }
+              "
               @focusout="
                 (e) => {
                   // If we lose focus because of clicking the save/cancel button,
                   // we should NOT reset the active index. Otherwise, the button
                   // will be removed from the DOM before firing the click event.
                   if (
+                    !$props.new &&
                     state.activeCustomFieldIndex == index &&
                     e.relatedTarget !== customFieldSaveButton &&
                     e.relatedTarget !== customFieldCancelButton
@@ -93,8 +98,15 @@
                 :name="field.id"
                 :value="fieldValue(field)"
                 :placeholder="field.placeholder"
+                @input="
+                  if ($props.new) {
+                    trySaveCustomTextField(index);
+                  }
+                "
               />
-              <template v-if="state.activeCustomFieldIndex === index">
+              <template
+                v-if="!$props.new && state.activeCustomFieldIndex === index"
+              >
                 <button
                   tabindex="-1"
                   class="z-0 -ml-px px-1 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
@@ -270,7 +282,7 @@ export default {
           .value as HTMLSelectElement).value;
       }
 
-      if (field.required && isEmpty(value)) {
+      if (!props.new && field.required && isEmpty(value)) {
         // Refocus
         nextTick(() =>
           (customFieldRefList[customFieldIndex].value as HTMLElement).focus()
