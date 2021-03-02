@@ -81,7 +81,7 @@
           <section
             v-if="!state.new"
             aria-labelledby="activity-title"
-            class="mt-8 lg:mt-10"
+            class="mt-4 lg:mt-6"
           >
             <TaskActivityPanel
               :task="state.task"
