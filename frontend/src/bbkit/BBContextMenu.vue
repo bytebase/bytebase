@@ -29,6 +29,7 @@
     leave-to-class="transform opacity-0 scale-95"
   >
     <div
+      class="z-50"
       v-show="isOpen"
       v-click-inside-outside="close"
       @contextmenu.capture.prevent
