@@ -8,7 +8,7 @@
         :key="index"
         class="relative md:flex-1 md:flex"
       >
-        <div class="group flex items-center w-full">
+        <div class="cursor-default group flex items-center w-full">
           <span class="px-4 py-3 flex items-center text-sm font-medium">
             <div
               class="relative w-6 h-6 flex items-center justify-center rounded-full select-none"
@@ -17,18 +17,18 @@
               <template v-if="stage.status === 'PENDING'">
                 <span
                   v-if="activeStage(task).id === stage.id"
-                  class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+                  class="h-1.5 w-1.5 bg-blue-600 rounded-full"
                   aria-hidden="true"
                 ></span>
                 <span
                   v-else
-                  class="h-1.5 w-1.5 bg-gray-300 hover:bg-gray-400 rounded-full"
+                  class="h-1.5 w-1.5 bg-gray-300 rounded-full"
                   aria-hidden="true"
                 ></span>
               </template>
               <template v-else-if="stage.status == 'RUNNING'">
                 <span
-                  class="h-2.5 w-2.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+                  class="h-2.5 w-2.5 bg-blue-600 rounded-full"
                   style="
                     animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                   "
@@ -83,6 +83,7 @@
           </span>
         </div>
 
+        <!-- Arrow separator -->
         <div
           v-if="index != stageList.length - 1"
           class="hidden md:block absolute top-0 right-0 h-full w-5"
@@ -146,17 +147,17 @@ export default {
       switch (stage.status) {
         case "PENDING":
           if (activeStage(props.task).id === stage.id) {
-            return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+            return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
-          return "bg-white border-2 border-gray-300 hover:border-gray-400";
+          return "bg-white border-2 border-gray-300";
         case "RUNNING":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+          return "bg-white border-2 border-blue-600 text-blue-600";
         case "DONE":
-          return "bg-success hover:bg-success-hover text-white";
+          return "bg-success text-white";
         case "FAILED":
-          return "bg-error text-white hover:text-white hover:bg-error-hover";
+          return "bg-error text-white";
         case "SKIPPED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+          return "bg-white border-2 text-gray-400 border-gray-400";
       }
     };
 
