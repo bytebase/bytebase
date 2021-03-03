@@ -275,11 +275,21 @@ export default {
       const field = props.fieldList[customFieldIndex];
       let value = "";
       if (field.type === "String") {
-        value = (customFieldRefList[customFieldIndex].value as HTMLInputElement)
-          .value;
+        const el = customFieldRefList[customFieldIndex]
+          .value as HTMLInputElement;
+        value = el.value;
+        if (field.preprocessor) {
+          value = field.preprocessor(value);
+          el.value = value;
+        }
       } else if (field.type === "Environment") {
-        value = (customFieldRefList[customFieldIndex]
-          .value as HTMLSelectElement).value;
+        const el = customFieldRefList[customFieldIndex]
+          .value as HTMLSelectElement;
+        value = el.value;
+        if (field.preprocessor) {
+          value = field.preprocessor(value);
+          el.value = value;
+        }
       }
 
       if (!props.new && field.required && isEmpty(value)) {
