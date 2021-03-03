@@ -1,13 +1,10 @@
 <template>
   <aside>
     <h2 class="sr-only">Details</h2>
-    <div class="space-y-4">
-      <div
-        v-if="!$props.new"
-        class="flex flex-row space-x-2 lg:flex-col lg:space-x-0"
-      >
-        <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Status</h2>
-        <div class="lg:mt-3 w-3/4 lg:w-auto">
+    <div class="space-y-6">
+      <div v-if="!$props.new" class="flex flex-row space-x-2">
+        <h2 class="flex items-center textlabel w-36">Status</h2>
+        <div class="w-full">
           <TaskStatusSelect
             :disabled="activeStageIsRunning(task)"
             :selectedStatus="task.attributes.status"
@@ -19,9 +16,9 @@
           />
         </div>
       </div>
-      <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
-        <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Assignee</h2>
-        <ul class="lg:mt-3 w-3/4 lg:w-auto">
+      <div class="flex flex-row space-x-2">
+        <h2 class="flex items-center textlabel w-36">Assignee</h2>
+        <ul class="w-full">
           <li class="flex justify-start items-center space-x-2">
             <div v-if="task.attributes.assignee" class="flex-shrink-0">
               <BBAvatar
@@ -40,14 +37,14 @@
         </ul>
       </div>
       <template v-for="(field, index) in fieldList" :key="index">
-        <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
-          <h2 class="flex items-center textlabel w-1/4 lg:w-auto">
+        <div class="flex flex-row space-x-2">
+          <h2 class="flex items-center textlabel w-36">
             {{ field.name }}
             <span v-if="field.required" class="text-red-600">*</span>
           </h2>
           <template v-if="field.type == 'String'">
             <div
-              class="lg:mt-3 w-3/4 lg:w-auto mt-1 flex"
+              class="w-full flex"
               @focusin="
                 if (!$props.new) {
                   state.activeCustomFieldIndex = index;
@@ -137,7 +134,7 @@
             </div>
           </template>
           <template v-else-if="field.type == 'Environment'">
-            <div class="lg:mt-3 w-3/4 lg:w-auto">
+            <div class="w-full">
               <EnvironmentSelect
                 :name="field.id"
                 :selectedId="fieldValue(field)"
@@ -155,11 +152,11 @@
     </div>
     <div
       v-if="!$props.new"
-      class="mt-6 border-t border-block-border py-4 space-y-4"
+      class="mt-6 border-t border-block-border py-6 space-y-6"
     >
-      <div class="flex flex-row space-x-2 lg:flex-col lg:space-x-0">
-        <h2 class="flex items-center textlabel w-1/4 lg:w-auto">Reporter</h2>
-        <ul class="lg:mt-3 w-3/4 lg:w-auto">
+      <div class="flex flex-row space-x-2">
+        <h2 class="flex items-center textlabel w-36">Reporter</h2>
+        <ul class="w-full">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
               <BBAvatar
@@ -173,15 +170,15 @@
           </li>
         </ul>
       </div>
-      <div>
-        <h2 class="textlabel">Update Time</h2>
-        <span class="textfield">
+      <div class="flex flex-row space-x-2">
+        <h2 class="textlabel w-36">Updated</h2>
+        <span class="textfield w-full">
           {{ moment(task.attributes.lastUpdatedTs).format("LLL") }}</span
         >
       </div>
-      <div>
-        <h2 class="textlabel">Creation Time</h2>
-        <span class="textfield">
+      <div class="flex flex-row space-x-2">
+        <h2 class="textlabel w-36">Created</h2>
+        <span class="textfield w-full">
           {{ moment(task.attributes.createdTs).format("LLL") }}</span
         >
       </div>
