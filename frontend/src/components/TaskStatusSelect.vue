@@ -2,7 +2,7 @@
   <select
     id="status"
     name="status"
-    class="pl-3 pr-10 py-2 control block w-full"
+    class="pl-3 pr-10 py-2 btn-select w-full"
     @change="
       (e) => {
         $emit('change-status', e.target.value);

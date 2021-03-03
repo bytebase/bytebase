@@ -1,6 +1,6 @@
 <template>
   <select
-    class="control block w-full"
+    class="btn-select w-full"
     @change="
       (e) => {
         $emit('select-environment-id', e.target.value);

@@ -63,7 +63,7 @@
 }
 
 .btn-select {
-  @apply select-none text-main bg-white border border-control-border rounded-md shadow-sm text-left cursor-default focus:outline-none focus:ring-1 focus:ring-control focus:border-control;
+  @apply select-none text-main bg-white border border-control-border disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed rounded-md shadow-sm text-left cursor-default focus:outline-none focus:ring-1 focus:ring-control focus:border-control;
 }
 
 .btn-cancel {

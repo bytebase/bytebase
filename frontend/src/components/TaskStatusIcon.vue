@@ -59,7 +59,7 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { activeStage } from "../utils";
-import { StageStatus, Task, TaskStatus } from "../types";
+import { StageStatus, TaskStatus } from "../types";
 
 type SizeType = "small" | "normal";
 
