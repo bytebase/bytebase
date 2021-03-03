@@ -6,11 +6,13 @@
     @select-item="(item) => $emit('select-principal', item)"
   >
     <template v-slot:menuItem="{ item }">
-      <span class="flex items-center">
+      <!--TODO: Have to set a fixed width, otherwise the width would change based on the selected text.
+          Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
+          The specific value and breakpoint is to make it align with other select in the task sidebar.
+          -->
+      <span class="flex lg:40 xl:w-44 items-center space-x-2">
         <BBAvatar :size="'small'" :username="item.name" />
-        <span class="ml-3 block truncate">
-          {{ item.name }}
-        </span>
+        <span class="truncate">{{ item.name }}</span>
       </span>
     </template>
   </BBSelect>
