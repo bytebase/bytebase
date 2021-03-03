@@ -1,17 +1,17 @@
 <template>
   <span
-    class="w-5 h-5 flex items-center justify-center rounded-full select-none"
-    :class="taskIconClass(task)"
+    class="flex items-center justify-center rounded-full select-none"
+    :class="taskIconClass()"
   >
-    <template v-if="task.attributes.status == `OPEN`">
+    <template v-if="taskStatus === `OPEN`">
       <span
-        v-if="activeStage(task).status == 'RUNNING'"
+        v-if="stageStatus === 'RUNNING'"
         class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
         style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
         aria-hidden="true"
       ></span>
       <span
-        v-else-if="activeStage(task).status == 'FAILED'"
+        v-else-if="stageStatus === 'FAILED'"
         class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
         aria-hidden="true"
         >!</span
@@ -22,7 +22,7 @@
         aria-hidden="true"
       ></span>
     </template>
-    <template v-else-if="task.attributes.status == `DONE`">
+    <template v-else-if="taskStatus === `DONE`">
       <svg
         class="w-4 h-4"
         xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +37,7 @@
         />
       </svg>
     </template>
-    <template v-else-if="task.attributes.status == `CANCELED`">
+    <template v-else-if="taskStatus === `CANCELED`">
       <svg
         class="w-5 h-5"
         fill="currentColor"
@@ -59,34 +59,48 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { activeStage } from "../utils";
-import { Task } from "../types";
+import { StageStatus, Task, TaskStatus } from "../types";
+
+type SizeType = "small" | "normal";
 
 export default {
   name: "TaskStatusIcon",
   props: {
-    task: {
+    taskStatus: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<TaskStatus>,
+    },
+    stageStatus: {
+      type: Object as PropType<StageStatus>,
+    },
+    size: {
+      type: String as PropType<SizeType>,
+      default: "normal",
     },
   },
   components: {},
   setup(props, ctx) {
-    const taskIconClass = (task: Task) => {
-      switch (task.attributes.status) {
+    const taskIconClass = () => {
+      let iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
+      switch (props.taskStatus) {
         case "OPEN":
-          switch (activeStage(task).status) {
-            case "FAILED":
-              return "bg-error text-white hover:text-white hover:bg-error-hover";
-            case "RUNNING":
-            case "PENDING":
-            case "DONE":
-            case "SKIPPED":
-              return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+          if (props.stageStatus && props.stageStatus === "FAILED") {
+            return (
+              iconClass +
+              " bg-error text-white hover:text-white hover:bg-error-hover"
+            );
           }
+          return (
+            iconClass +
+            " bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700"
+          );
         case "CANCELED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+          return (
+            iconClass +
+            " bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500"
+          );
         case "DONE":
-          return "bg-success hover:bg-success-hover text-white";
+          return iconClass + " bg-success hover:bg-success-hover text-white";
       }
     };
 

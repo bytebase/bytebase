@@ -4,7 +4,11 @@
       <div class="flex items-center">
         <div>
           <div class="flex items-center">
-            <TaskStatusIcon v-if="!$props.new" :task="task" />
+            <TaskStatusIcon
+              v-if="!$props.new"
+              :taskStatus="task.attributes.status"
+              :stageStatus="activeStage(task).status"
+            />
             <p
               class="ml-2 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
             >
@@ -35,6 +39,7 @@
 <script lang="ts">
 import { PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
+import { activeStage } from "../utils";
 import { Task } from "../types";
 
 export default {
@@ -50,6 +55,8 @@ export default {
     },
   },
   components: { TaskStatusIcon },
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    return { activeStage };
+  },
 };
 </script>

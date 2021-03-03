@@ -7,7 +7,10 @@
   >
     <template v-slot:body="{ rowData: task }">
       <BBTableCell :leftPadding="4" class="w-4 table-cell">
-        <TaskStatusIcon :task="task" />
+        <TaskStatusIcon
+          :taskStatus="task.attributes.status"
+          :stageStatus="activeStage(task).status"
+        />
       </BBTableCell>
 
       <BBTableCell class="w-4 table-cell text-gray-500">
