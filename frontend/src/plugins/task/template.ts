@@ -77,7 +77,7 @@ const allTaskTemplateList: TaskTemplate[] = [
         category: "INPUT",
         id: 2,
         slug: "db",
-        name: "Database Name",
+        name: "DB Name",
         type: "String",
         required: true,
         preprocessor: (name: string): string => {
@@ -133,7 +133,7 @@ const allTaskTemplateList: TaskTemplate[] = [
         category: "INPUT",
         id: 1,
         slug: "db",
-        name: "Database Name",
+        name: "DB Name",
         type: "String",
         required: true,
         preprocessor: (name: string): string => {
