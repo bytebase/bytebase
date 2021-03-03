@@ -15,6 +15,8 @@ module.exports = {
         "accent-text": "var(--color-accent-text)",
 
         main: "var(--color-main)",
+        "main-hover": "var(--color-main-hover)",
+        "main-text": "var(--color-main-text)",
 
         control: "var(--color-control)",
         "control-hover": "var(--color-control-hover)",

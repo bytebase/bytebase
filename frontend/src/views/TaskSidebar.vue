@@ -18,23 +18,16 @@
       </div>
       <div class="flex flex-row space-x-2">
         <h2 class="flex items-center textlabel w-36">Assignee</h2>
-        <ul class="w-full">
-          <li class="flex justify-start items-center space-x-2">
-            <div v-if="task.attributes.assignee" class="flex-shrink-0">
-              <BBAvatar
-                :size="'small'"
-                :username="task.attributes.assignee.name"
-              />
-            </div>
-            <div class="text-sm font-medium text-main">
-              {{
-                task.attributes.assignee
-                  ? task.attributes.assignee.name
-                  : "Unassigned"
-              }}
-            </div>
-          </li>
-        </ul>
+        <div class="w-full">
+          <PrincipalSelect
+            :selectedId="task.attributes.assignee?.id"
+            @select-principal="
+              (value) => {
+                $emit('update-assignee', value);
+              }
+            "
+          />
+        </div>
       </div>
       <template v-for="(field, index) in fieldList" :key="index">
         <div class="flex flex-row space-x-2">
@@ -198,6 +191,7 @@ import {
 } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
+import PrincipalSelect from "../components/PrincipalSelect.vue";
 import TaskStatusSelect from "../components/TaskStatusSelect.vue";
 import { TaskField } from "../plugins";
 import { Task } from "../types";
@@ -209,7 +203,7 @@ interface LocalState {
 
 export default {
   name: "TaskSidebar",
-  emits: ["update-task-status", "update-custom-field"],
+  emits: ["update-task-status", "update-assignee", "update-custom-field"],
   props: {
     task: {
       required: true,
@@ -224,7 +218,7 @@ export default {
       type: Object as PropType<TaskField[]>,
     },
   },
-  components: { EnvironmentSelect, TaskStatusSelect },
+  components: { EnvironmentSelect, PrincipalSelect, TaskStatusSelect },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       activeCustomFieldIndex: -1,

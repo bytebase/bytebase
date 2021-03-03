@@ -8,6 +8,10 @@
 
   /* gray-900 */
   --color-main: #18181b;
+  /* gray-700 */
+  --color-main-hover: #3f3f46;
+  /* white */
+  --color-main-text: #ffffff;
 
   /* gray-700 */
   --color-control: #52525b;
@@ -56,6 +60,10 @@
 
 .btn-normal {
   @apply select-none inline-flex border border-control-border rounded-md text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
+.btn-select {
+  @apply select-none text-main bg-white border border-control-border rounded-md shadow-sm text-left cursor-default focus:outline-none focus:ring-1 focus:ring-control focus:border-control;
 }
 
 .btn-cancel {

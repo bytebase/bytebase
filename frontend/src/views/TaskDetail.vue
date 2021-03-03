@@ -74,6 +74,7 @@
               :new="state.new"
               :fieldList="inputFieldList"
               @update-task-status="updateTaskStatus"
+              @update-assignee="updateAssignee"
               @update-custom-field="updateCustomField"
             />
             <div class="lg:hidden my-4 border-t border-block-border" />
@@ -100,6 +101,7 @@
           :new="state.new"
           :fieldList="inputFieldList"
           @update-task-status="updateTaskStatus"
+          @update-assignee="updateAssignee"
           @update-custom-field="updateCustomField"
         />
       </div>
@@ -145,6 +147,7 @@ import {
   TaskPatch,
   TaskStatus,
   StageStatus,
+  UserDisplay,
 } from "../types";
 import { templateForType, TaskField } from "../plugins";
 
@@ -361,6 +364,26 @@ export default {
       });
     };
 
+    const updateAssignee = (newAssignee: UserDisplay) => {
+      // if (newStatus === "DONE") {
+      //   if (template.fieldList) {
+      //     for (const field of template.fieldList.filter(
+      //       (item) => item.category == "OUTPUT"
+      //     )) {
+      //       if (
+      //         field.required &&
+      //         isEmpty(state.task.attributes.payload[field.id])
+      //       ) {
+      //         return;
+      //       }
+      //     }
+      //   }
+      // }
+      patchTask({
+        assignee: newAssignee,
+      });
+    };
+
     const updateCustomField = (field: TaskField, value: string) => {
       if (field.preprocessor) {
         value = field.preprocessor(value);
@@ -495,6 +518,7 @@ export default {
       modalState,
       updateDescription,
       updateTaskStatus,
+      updateAssignee,
       updateCustomField,
       doCreate,
       tryChangeStageStatus,

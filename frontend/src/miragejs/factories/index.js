@@ -15,7 +15,7 @@ import activity from "./activity";
 import activityPatch from "./activityPatch";
 import group from "./group";
 import workspace from "./workspace";
-import workspaceRole from "./workspaceRole";
+import member from "./member";
 
 import batchUpdate from "./batchUpdate";
 import loginInfo from "./loginInfo";
@@ -39,7 +39,7 @@ export default {
   ...activityPatch,
   ...group,
   ...workspace,
-  ...workspaceRole,
+  ...member,
   ...batchUpdate,
   ...loginInfo,
 };

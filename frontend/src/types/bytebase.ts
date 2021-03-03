@@ -43,6 +43,19 @@ export type UserDisplay = {
   name: string;
 };
 
+// Member
+export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
+
+export type Member = ResourceObject & {
+  attributes: {
+    createdTs: number;
+    lastUpdatedTs: number;
+    role: RoleType;
+    user: UserDisplay;
+    updater: UserDisplay;
+  };
+};
+
 // Bookmark
 export type Bookmark = ResourceObject & {};
 export type NewBookmark = Omit<Bookmark, "id">;
@@ -265,6 +278,10 @@ export type NotificationFilter = {
 // Store
 export interface AuthState {
   currentUser: User | null;
+}
+
+export interface MemberState {
+  memberList: Member[];
 }
 
 export interface BookmarkState {

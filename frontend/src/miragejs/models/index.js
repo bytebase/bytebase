@@ -12,23 +12,20 @@ import { Model, hasMany, belongsTo } from "miragejs";
  * Mirage JS guide on Relationships: https://miragejs.com/docs/main-concepts/relationships/
  */
 export default {
-  user: Model.extend({
-    workspaceRole: hasMany(),
-  }),
+  user: Model.extend({}),
 
   workspace: Model.extend({
     group: hasMany(),
     project: hasMany(),
-    workspaceRole: hasMany(),
+    member: hasMany(),
     activity: hasMany(),
     task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),
   }),
 
-  workspaceRole: Model.extend({
+  member: Model.extend({
     workspace: belongsTo(),
-    user: belongsTo(),
   }),
 
   bookmark: Model.extend({

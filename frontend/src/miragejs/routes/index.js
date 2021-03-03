@@ -46,6 +46,13 @@ export default function routes() {
     return schema.users.create(signupInfo);
   });
 
+  // Member
+  this.get("/member", function (schema, request) {
+    return schema.members.where((member) => {
+      return member.workspaceId == WORKSPACE_ID;
+    });
+  });
+
   // Task
   this.get("/task", function (schema, request) {
     const {
