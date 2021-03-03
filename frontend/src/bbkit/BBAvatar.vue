@@ -76,7 +76,7 @@ export default {
         }
       }
       if (initials.length <= 2) {
-        return initials;
+        return initials.toUpperCase();
       }
       // If there are more than 2 initials, we will pick the first and last initial.
       // Displaying > 2 letters in a circle doesn't look good.
