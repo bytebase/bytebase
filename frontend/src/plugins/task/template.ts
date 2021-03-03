@@ -62,20 +62,6 @@ const allTaskTemplateList: TaskTemplate[] = [
       {
         category: "INPUT",
         id: 1,
-        slug: "db",
-        name: "Database Name",
-        type: "String",
-        required: true,
-        preprocessor: (name: string): string => {
-          // In case caller passes corrupted data.
-          // Handled here instead of the caller, because it's
-          // preprocessor specific behavior to handle fallback.
-          return name?.toLowerCase();
-        },
-      },
-      {
-        category: "INPUT",
-        id: 2,
         slug: "env",
         name: "Environment",
         type: "Environment",
@@ -85,6 +71,20 @@ const allTaskTemplateList: TaskTemplate[] = [
           // Handled here instead of the caller, because it's
           // preprocessor specific behavior to handle fallback.
           return environmentId;
+        },
+      },
+      {
+        category: "INPUT",
+        id: 2,
+        slug: "db",
+        name: "Database Name",
+        type: "String",
+        required: true,
+        preprocessor: (name: string): string => {
+          // In case caller passes corrupted data.
+          // Handled here instead of the caller, because it's
+          // preprocessor specific behavior to handle fallback.
+          return name?.toLowerCase();
         },
       },
       {

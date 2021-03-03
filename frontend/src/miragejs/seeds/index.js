@@ -127,8 +127,8 @@ const workspacesSeeder = (server) => {
       },
     ],
     payload: {
-      1: "db1",
-      2: environmentList1[1].id,
+      1: environmentList1[1].id,
+      2: "db1",
     },
     workspace: workspace1,
   });
