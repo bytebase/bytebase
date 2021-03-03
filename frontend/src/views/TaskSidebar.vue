@@ -145,7 +145,7 @@
     </div>
     <div
       v-if="!$props.new"
-      class="mt-6 border-t border-block-border py-6 space-y-6"
+      class="mt-6 border-t border-block-border pt-6 space-y-6"
     >
       <div class="flex flex-row space-x-2">
         <h2 class="flex items-center textlabel w-36">Reporter</h2>
