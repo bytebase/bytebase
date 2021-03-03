@@ -79,7 +79,7 @@
             v-for="(item, index) in itemList"
             :key="index"
             role="option"
-            class="z-10 text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
+            class="text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
             @click="
               if (item !== state.selectedItem) {
                 $emit('select-item', item);
