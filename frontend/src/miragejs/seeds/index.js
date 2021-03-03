@@ -55,6 +55,8 @@ const workspacesSeeder = (server) => {
   const ws1Dev1 = server.schema.users.find(3);
   const ws1Dev2 = server.schema.users.find(5);
 
+  const ws1UserList = [ws1Owner, ws1DBA, ws1Dev1, ws1Dev2];
+
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
 
@@ -92,12 +94,13 @@ const workspacesSeeder = (server) => {
   });
 
   for (let i = 0; i < 3; i++) {
+    const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {
       actionType: "bytebase.task.comment.create",
       containerId: task.id,
       creator: {
-        id: ws1Dev1.id,
-        name: ws1Dev1.name,
+        id: user.id,
+        name: user.name,
       },
       payload: {
         comment: faker.fake("{{lorem.paragraph}}"),
@@ -144,12 +147,13 @@ const workspacesSeeder = (server) => {
   });
 
   for (let i = 0; i < 3; i++) {
+    const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {
       actionType: "bytebase.task.comment.create",
       containerId: task.id,
       creator: {
-        id: ws1Dev1.id,
-        name: ws1Dev1.name,
+        id: user.id,
+        name: user.name,
       },
       payload: {
         comment: faker.fake("{{lorem.paragraph}}"),
@@ -184,12 +188,13 @@ const workspacesSeeder = (server) => {
     });
 
     for (let i = 0; i < 3; i++) {
+      const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creator: {
-          id: ws1Dev1.id,
-          name: ws1Dev1.name,
+          id: user.id,
+          name: user.name,
         },
         payload: {
           comment: faker.fake("{{lorem.paragraph}}"),
@@ -225,12 +230,13 @@ const workspacesSeeder = (server) => {
     });
 
     for (let i = 0; i < 3; i++) {
+      const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creator: {
-          id: ws1Dev1.id,
-          name: ws1Dev1.name,
+          id: user.id,
+          name: user.name,
         },
         payload: {
           comment: faker.fake("{{lorem.paragraph}}"),
@@ -266,12 +272,13 @@ const workspacesSeeder = (server) => {
     });
 
     for (let i = 0; i < 3; i++) {
+      const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creator: {
-          id: ws1DBA.id,
-          name: ws1DBA.name,
+          id: user.id,
+          name: user.name,
         },
         payload: {
           comment: faker.fake("{{lorem.paragraph}}"),
