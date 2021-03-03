@@ -42,7 +42,7 @@
     <!-- Output Panel -->
     <!-- Only render the top border if TaskFlow is not displayed, otherwise it would overlap with the bottom border of the TaskFlow -->
     <div
-      v-if="!state.new && outputFieldList.length > 0"
+      v-if="false && !state.new && outputFieldList.length > 0"
       class="px-2 md:flex md:flex-col"
       :class="showTaskFlowBar ? '' : 'lg:border-t pt-4'"
     >
