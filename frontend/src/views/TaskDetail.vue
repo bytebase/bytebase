@@ -65,15 +65,18 @@
     >
       <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
-          <TaskSidebar
+          <div
             class="lg:py-6 lg:px-4 lg:w-80 xl:w-96 lg:border-l lg:border-block-border"
-            :task="state.task"
-            :new="state.new"
-            :fieldList="inputFieldList"
-            @update-task-status="updateTaskStatus"
-            @update-assignee="updateAssignee"
-            @update-custom-field="updateCustomField"
-          />
+          >
+            <TaskSidebar
+              :task="state.task"
+              :new="state.new"
+              :fieldList="inputFieldList"
+              @update-task-status="updateTaskStatus"
+              @update-assignee="updateAssignee"
+              @update-custom-field="updateCustomField"
+            />
+          </div>
           <div class="lg:hidden my-4 border-t border-block-border" />
           <div class="w-full py-6 pr-4">
             <TaskDescription
