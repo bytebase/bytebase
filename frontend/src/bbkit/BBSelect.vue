@@ -84,8 +84,8 @@
               if (item !== state.selectedItem) {
                 $emit('select-item', item);
                 state.selectedItem = item;
-                close();
               }
+              close();
             "
           >
             <slot name="menuItem" :item="item" />
