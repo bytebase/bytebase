@@ -69,7 +69,7 @@
               <input
                 type="text"
                 autocomplete="off"
-                class="z-10 flex-1 min-w-0 block w-full border border-r border-control-border focus:ring-control focus:border-control sm:text-sm"
+                class="flex-1 min-w-0 block w-full border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm"
                 :class="
                   state.activeCustomFieldIndex === index
                     ? 'rounded-l-md'
@@ -90,7 +90,7 @@
               >
                 <button
                   tabindex="-1"
-                  class="z-0 -ml-px px-1 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+                  class="-ml-px px-1 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
                   ref="customFieldSaveButton"
                   @click="trySaveCustomTextField(index)"
                 >
@@ -111,7 +111,7 @@
                 </button>
                 <button
                   tabindex="-1"
-                  class="z-0 -ml-px px-1 border border-control-border text-sm font-medium rounded-r-md text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+                  class="-ml-px px-1 border border-control-border text-sm font-medium rounded-r-md text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
                   ref="customFieldCancelButton"
                   @click="state.activeCustomFieldIndex = -1"
                 >

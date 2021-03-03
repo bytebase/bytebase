@@ -5,14 +5,14 @@
     <template v-for="(field, index) in fieldList" :key="index">
       <div class="flex">
         <span
-          class="z-0 whitespace-nowrap inline-flex items-center px-3 rounded-l-md border border-l border-r-0 border-control-border bg-gray-50 text-control-light sm:text-sm"
+          class="whitespace-nowrap inline-flex items-center px-3 rounded-l-md border border-l border-r-0 border-control-border bg-gray-50 text-control-light sm:text-sm"
         >
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
         </span>
         <input
           type="text"
-          class="z-10 flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:ring-control focus:border-control sm:text-sm"
+          class="flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm"
           :name="field.id"
           :value="
             field.preprocessor
@@ -24,7 +24,7 @@
         <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
         <button
           tabindex="-1"
-          class="z-0 -ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
         >
           <svg
             class="w-6 h-6"
@@ -43,7 +43,7 @@
         </button>
         <button
           tabindex="-1"
-          class="z-0 -ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
         >
           <svg
             class="w-6 h-6"

@@ -55,6 +55,7 @@ module.exports = {
       opacity: ["disabled"],
       backgroundColor: ["disabled"],
       cursor: ["disabled"],
+      margin: ["focus"],
     },
   },
   plugins: [require("@tailwindcss/forms"), require("@tailwindcss/typography")],
