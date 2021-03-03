@@ -45,7 +45,7 @@
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
     ref="editDescriptionTextArea"
-    rows="5"
+    :rows="$props.new ? 10 : 5"
     class="mt-2 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
     :class="state.edit ? 'focus:ring-control focus-visible:ring-2' : ''"
     :style="
