@@ -64,46 +64,35 @@
       tabindex="-1"
     >
       <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
-        <div
-          class="py-6 flex flex-col flex-1 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
-        >
-          <div>
-            <TaskSidebar
-              class="lg:hidden"
-              :task="state.task"
-              :new="state.new"
-              :fieldList="inputFieldList"
-              @update-task-status="updateTaskStatus"
-              @update-assignee="updateAssignee"
-              @update-custom-field="updateCustomField"
-            />
-            <div class="lg:hidden my-4 border-t border-block-border" />
+        <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
+          <TaskSidebar
+            class="lg:py-6 lg:px-4 lg:w-80 xl:w-96 lg:border-l lg:border-block-border"
+            :task="state.task"
+            :new="state.new"
+            :fieldList="inputFieldList"
+            @update-task-status="updateTaskStatus"
+            @update-assignee="updateAssignee"
+            @update-custom-field="updateCustomField"
+          />
+          <div class="lg:hidden my-4 border-t border-block-border" />
+          <div class="w-full py-6 pr-4">
             <TaskDescription
               :task="state.task"
               :new="state.new"
               @update-description="updateDescription"
             />
+            <section
+              v-if="!state.new"
+              aria-labelledby="activity-title"
+              class="mt-4 lg:mt-6"
+            >
+              <TaskActivityPanel
+                :task="state.task"
+                :taskTemplate="taskTemplate"
+              />
+            </section>
           </div>
-          <section
-            v-if="!state.new"
-            aria-labelledby="activity-title"
-            class="mt-4 lg:mt-6"
-          >
-            <TaskActivityPanel
-              :task="state.task"
-              :taskTemplate="taskTemplate"
-            />
-          </section>
         </div>
-        <TaskSidebar
-          class="hidden lg:block py-6 lg:w-80 lg:pl-8 xl:w-96"
-          :task="state.task"
-          :new="state.new"
-          :fieldList="inputFieldList"
-          @update-task-status="updateTaskStatus"
-          @update-assignee="updateAssignee"
-          @update-custom-field="updateCustomField"
-        />
       </div>
     </main>
   </div>
