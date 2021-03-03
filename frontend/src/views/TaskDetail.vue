@@ -60,7 +60,7 @@
     >
       <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
         <div
-          class="py-4 flex flex-col flex-1 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
+          class="py-6 flex flex-col flex-1 lg:col-span-2 lg:pr-8 lg:border-r lg:border-gray-200"
         >
           <div>
             <TaskSidebar
@@ -90,7 +90,7 @@
           </section>
         </div>
         <TaskSidebar
-          class="hidden lg:block py-4 lg:w-80 lg:pl-8 xl:w-96"
+          class="hidden lg:block py-6 lg:w-80 lg:pl-8 xl:w-96"
           :task="state.task"
           :new="state.new"
           :fieldList="inputFieldList"
