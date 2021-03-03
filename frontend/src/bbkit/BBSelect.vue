@@ -1,13 +1,22 @@
 <template>
   <div>
-    <div class="relative">
+    <div
+      class="relative"
+      v-click-inside-outside="
+        (_, inside) => {
+          if (!inside) {
+            close();
+          }
+        }
+      "
+    >
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded="true"
         aria-labelledby="listbox-label"
         class="btn-select relative w-full pl-3 pr-10 py-2"
-        @click.prevent="state.showMenu = !state.showMenu"
+        @click="toggle"
       >
         <template v-if="state.selectedItem">
           <slot name="menuItem" :item="state.selectedItem" />
@@ -72,12 +81,12 @@
               :key="index"
               role="option"
               class="z-10 text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
-              @click.prevent="
+              @click="
                 if (item !== state.selectedItem) {
                   $emit('select-item', item);
                   state.selectedItem = item;
+                  close();
                 }
-                close();
               "
             >
               <slot name="menuItem" :item="item" />
@@ -110,6 +119,7 @@
 
 <script lang="ts">
 import { reactive, PropType, watch } from "vue";
+import clickInsideOutside from "./directives/click-inside-outside";
 
 interface LocalState {
   showMenu: boolean;
@@ -119,6 +129,9 @@ interface LocalState {
 export default {
   name: "BBSelect",
   emits: ["select-item"],
+  directives: {
+    "click-inside-outside": clickInsideOutside,
+  },
   components: {},
   props: {
     selectedItem: {
@@ -146,12 +159,17 @@ export default {
       }
     );
 
+    const toggle = () => {
+      state.showMenu = !state.showMenu;
+    };
+
     const close = () => {
       state.showMenu = false;
     };
 
     return {
       state,
+      toggle,
       close,
     };
   },
