@@ -1,11 +1,11 @@
 <template>
   <div
     id="task-detail-top"
-    class="flex-1 overflow-auto focus:outline-none space-y-4"
+    class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
     <!-- Highlight Panel -->
-    <div class="bg-white px-4 pt-6 lg:border-t lg:border-block-border">
+    <div class="bg-white px-4 py-6 lg:border-t lg:border-block-border">
       <TaskHighlightPanel :task="state.task" :new="state.new">
         <template v-if="state.new">
           <button
@@ -42,9 +42,9 @@
     <!-- Output Panel -->
     <!-- Only render the top border if TaskFlow is not displayed, otherwise it would overlap with the bottom border of the TaskFlow -->
     <div
-      v-if="false && !state.new && outputFieldList.length > 0"
+      v-if="showTaskOutputPanel"
       class="px-2 md:flex md:flex-col"
-      :class="showTaskFlowBar ? '' : 'lg:border-t pt-4'"
+      :class="showTaskFlowBar ? '' : 'lg:border-t py-4'"
     >
       <TaskOutputPanel
         :task="state.task"
@@ -55,7 +55,12 @@
 
     <!-- Main Content -->
     <main
-      class="flex-1 relative overflow-y-auto focus:outline-none lg:border-t lg:border-block-border"
+      class="flex-1 relative overflow-y-auto focus:outline-none"
+      :class="
+        showTaskFlowBar && !showTaskOutputPanel
+          ? ''
+          : 'lg:border-t lg:border-block-border'
+      "
       tabindex="-1"
     >
       <div class="flex max-w-3xl mx-auto px-4 sm:px-6 lg:max-w-full">
@@ -481,6 +486,10 @@ export default {
       return !state.new && state.task.attributes.stageProgressList.length > 1;
     });
 
+    const showTaskOutputPanel = computed(() => {
+      return false && !state.new && outputFieldList.length > 0;
+    });
+
     return {
       state,
       modalState,
@@ -498,6 +507,7 @@ export default {
       outputFieldList,
       inputFieldList,
       showTaskFlowBar,
+      showTaskOutputPanel,
     };
   },
 };
