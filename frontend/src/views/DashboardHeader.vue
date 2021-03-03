@@ -20,6 +20,9 @@
           <router-link to="/environment" class="link px-3 py-2 rounded-md"
             >Environment</router-link
           >
+          <router-link to="/setting/member" class="link px-3 py-2 rounded-md"
+            >Members</router-link
+          >
         </div>
       </div>
     </div>
