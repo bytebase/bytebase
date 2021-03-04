@@ -123,8 +123,13 @@ export default {
       }
     };
 
+    const resizeTextAreaHandler = () => {
+      sizeToFit(editDescriptionTextArea.value);
+    };
+
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
+      window.addEventListener("resize", resizeTextAreaHandler);
       nextTick(() => {
         sizeToFit(editDescriptionTextArea.value);
         if (props.new) {
@@ -136,6 +141,7 @@ export default {
 
     onUnmounted(() => {
       document.removeEventListener("keydown", keyboardHandler);
+      window.removeEventListener("resize", resizeTextAreaHandler);
     });
 
     // Reset the edit state after creating the task.
