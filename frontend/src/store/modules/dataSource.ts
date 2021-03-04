@@ -12,10 +12,7 @@ import {
 function convert(dataSource: ResourceObject): DataSource {
   return {
     id: dataSource.id,
-    name: dataSource.attributes.name as string,
-    type: dataSource.attributes.type as DataSourceType,
-    username: dataSource.attributes.username as string,
-    password: dataSource.attributes.password as string,
+    ...(dataSource.attributes as Omit<DataSource, "id">),
   };
 }
 

@@ -10,11 +10,7 @@ import {
 function convert(member: ResourceObject): Member {
   return {
     id: member.id,
-    createdTs: member.attributes.createdTs as number,
-    lastUpdatedTs: member.attributes.lastUpdatedTs as number,
-    role: member.attributes.role as RoleType,
-    user: member.attributes.user as UserDisplay,
-    updater: member.attributes.updater as UserDisplay,
+    ...(member.attributes as Omit<Member, "id">),
   };
 }
 

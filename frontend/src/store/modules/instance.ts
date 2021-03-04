@@ -10,11 +10,7 @@ import {
 function convert(instance: ResourceObject): Instance {
   return {
     id: instance.id,
-    name: instance.attributes.name as string,
-    environmentId: instance.attributes.environmentId as string,
-    externalLink: instance.attributes.externalLink as string,
-    host: instance.attributes.host as string,
-    port: instance.attributes.port as string,
+    ...(instance.attributes as Omit<Instance, "id">),
   };
 }
 

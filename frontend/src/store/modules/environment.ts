@@ -10,8 +10,7 @@ import {
 function convert(environment: ResourceObject): Environment {
   return {
     id: environment.id,
-    name: environment.attributes.name as string,
-    order: environment.attributes.order as number,
+    ...(environment.attributes as Omit<Environment, "id">),
   };
 }
 
