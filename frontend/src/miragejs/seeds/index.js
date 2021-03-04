@@ -164,6 +164,7 @@ const workspacesSeeder = (server) => {
 
   for (let i = 0; i < 5; i++) {
     task = server.create("task", {
+      type: "bytebase.datasource.schema.update",
       creator: {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
@@ -206,6 +207,7 @@ const workspacesSeeder = (server) => {
 
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
+      type: "bytebase.datasource.schema.update",
       creator: {
         id: ws1Owner.id,
         name: ws1Owner.name,
@@ -248,6 +250,7 @@ const workspacesSeeder = (server) => {
 
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
+      type: "bytebase.datasource.schema.update",
       creator: {
         id: ws1Dev2.id,
         name: ws1Dev2.name,
@@ -289,6 +292,7 @@ const workspacesSeeder = (server) => {
   }
 
   task = server.create("task", {
+    type: "bytebase.datasource.schema.update",
     creator: {
       id: ws2Dev.id,
       name: ws2Dev.name,
