@@ -17,11 +17,7 @@
                 aria-hidden="true"
               ></span>
               <div class="relative flex items-start">
-                <template
-                  v-if="
-                    activity.attributes.actionType == 'bytebase.task.create'
-                  "
-                >
+                <template v-if="activity.actionType == 'bytebase.task.create'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-8 ring-white flex items-center justify-center"
@@ -43,8 +39,7 @@
                 </template>
                 <template
                   v-else-if="
-                    activity.attributes.actionType ==
-                    'bytebase.task.field.update'
+                    activity.actionType == 'bytebase.task.field.update'
                   "
                 >
                   <div class="relative pl-0.5">
@@ -73,7 +68,7 @@
                   <div class="relative">
                     <BBAvatar
                       class="rounded-full ring-8 ring-white"
-                      :username="activity.attributes.creator.name"
+                      :username="activity.creator.name"
                     >
                     </BBAvatar>
                   </div>
@@ -82,32 +77,30 @@
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
                       <span class="font-medium text-main whitespace-nowrap">{{
-                        activity.attributes.creator.name
+                        activity.creator.name
                       }}</span>
                       <a
                         :href="'#activity' + (index + 1)"
                         class="ml-1 anchor-link whitespace-normal"
                       >
                         {{ actionSentence(activity) }}
-                        {{ humanizeTs(activity.attributes.createdTs) }}
+                        {{ humanizeTs(activity.createdTs) }}
                         <template
                           v-if="
-                            activity.attributes.createdTs !=
-                              activity.attributes.lastUpdatedTs &&
-                            activity.attributes.actionType ==
+                            activity.createdTs != activity.lastUpdatedTs &&
+                            activity.actionType ==
                               'bytebase.task.comment.create'
                           "
                         >
                           (edited
-                          {{ humanizeTs(activity.attributes.createdTs) }})
+                          {{ humanizeTs(activity.createdTs) }})
                         </template>
                       </a>
                     </div>
                     <div
                       v-if="
-                        currentUser.id == activity.attributes.creatorId &&
-                        activity.attributes.actionType ==
-                          'bytebase.task.comment.create'
+                        currentUser.id == activity.creatorId &&
+                        activity.actionType == 'bytebase.task.comment.create'
                       "
                       class="space-x-2 text-control-light"
                     >
@@ -129,7 +122,7 @@
                           class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
                           :disabled="
                             editComment.length == 0 ||
-                            editComment == activity.attributes.payload.comment
+                            editComment == activity.payload.comment
                           "
                           @click.prevent="doUpdateComment"
                         >
@@ -187,10 +180,7 @@
                     </div>
                   </div>
                   <template
-                    v-if="
-                      activity.attributes.actionType ==
-                      'bytebase.task.comment.create'
-                    "
+                    v-if="activity.actionType == 'bytebase.task.comment.create'"
                   >
                     <div class="mt-2 text-sm text-control whitespace-pre-wrap">
                       <template
@@ -221,7 +211,7 @@
                         ></textarea>
                       </template>
                       <template v-else>
-                        {{ activity.attributes.payload.comment }}
+                        {{ activity.payload.comment }}
                       </template>
                     </div>
                   </template>
@@ -419,17 +409,14 @@ export default {
     const doCreateComment = () => {
       store
         .dispatch("activity/createActivity", {
-          type: "activity",
-          attributes: {
-            actionType: "bytebase.task.comment.create",
-            containerId: props.task.id,
-            creator: {
-              id: currentUser.id,
-              name: currentUser.attributes.name,
-            },
-            payload: {
-              comment: newComment.value,
-            },
+          actionType: "bytebase.task.comment.create",
+          containerId: props.task.id,
+          creator: {
+            id: currentUser.id,
+            name: currentUser.attributes.name,
+          },
+          payload: {
+            comment: newComment.value,
           },
         })
         .then(() => {
@@ -442,8 +429,7 @@ export default {
     };
 
     const onUpdateComment = (activity: Activity) => {
-      editComment.value = (activity.attributes
-        .payload! as ActionTaskCommentCreatePayload).comment;
+      editComment.value = (activity.payload! as ActionTaskCommentCreatePayload).comment;
       state.activeComment = activity;
       state.editCommentMode = true;
       nextTick(() => {
@@ -472,15 +458,15 @@ export default {
     };
 
     const actionSentence = (activity: Activity): string => {
-      switch (activity.attributes.actionType) {
+      switch (activity.actionType) {
         case "bytebase.task.create":
           return "created task";
         case "bytebase.task.comment.create":
           return "commented";
         case "bytebase.task.field.update": {
           const updateInfoList: string[] = [];
-          for (const update of (activity.attributes
-            .payload as ActionTaskFieldUpdatePayload)?.changeList || []) {
+          for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
+            ?.changeList || []) {
             let name = "Unknown Field";
             let oldValue = undefined;
             let newValue = undefined;

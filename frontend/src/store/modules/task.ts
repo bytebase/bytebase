@@ -55,7 +55,12 @@ const actions = {
     const createdTask = convert(
       (
         await axios.post(`/api/task`, {
-          data: newTask,
+          data: {
+            type: "task",
+            attributes: {
+              ...newTask,
+            },
+          },
         })
       ).data.data
     );

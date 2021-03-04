@@ -134,7 +134,7 @@ export type TaskNew = {
   description: string;
   stageProgressList: StageProgress[];
   creatorId: PrincipalId;
-  assigneeId: PrincipalId;
+  assigneeId?: PrincipalId;
   creator: UserDisplay;
   assignee?: UserDisplay;
   payload: TaskPayload;
@@ -174,18 +174,17 @@ export type ActionPayloadType =
   | ActionTaskCommentCreatePayload
   | ActionTaskFieldUpdatePayload;
 
-export type Activity = ResourceObject & {
-  attributes: {
-    createdTs: number;
-    lastUpdatedTs: number;
-    actionType: ActionType;
-    // The object where this activity belongs
-    // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
-    containerId: TaskId;
-    creatorId: PrincipalId;
-    creator: UserDisplay;
-    payload?: ActionPayloadType;
-  };
+export type Activity = {
+  id: ActivityId;
+  createdTs: number;
+  lastUpdatedTs: number;
+  actionType: ActionType;
+  // The object where this activity belongs
+  // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
+  containerId: TaskId;
+  creatorId: PrincipalId;
+  creator: UserDisplay;
+  payload?: ActionPayloadType;
 };
 export type ActivityNew = Omit<Activity, "id">;
 

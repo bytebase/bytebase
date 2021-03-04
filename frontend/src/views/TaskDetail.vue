@@ -397,7 +397,7 @@ export default {
             ...taskPatch,
             producer: {
               id: currentUser.id,
-              name: currentUser.name,
+              name: currentUser.attributes.name,
             },
           },
         })

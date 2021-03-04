@@ -7,7 +7,15 @@ import {
   ActivityNew,
   ActivityPatch,
   ActivityState,
+  ResourceObject,
 } from "../../types";
+
+function convert(activity: ResourceObject): Activity {
+  return {
+    id: activity.id,
+    ...(activity.attributes as Omit<Activity, "id">),
+  };
+}
 
 const state: () => ActivityState = () => ({
   activityListByUser: new Map(),
@@ -25,7 +33,12 @@ const getters = {
 
 const actions = {
   async fetchActivityListForUser({ commit }: any, userId: UserId) {
-    const activityList = (await axios.get(`/api/activity`)).data.data;
+    const activityList = (await axios.get(`/api/activity`)).data.data.map(
+      (activity: ResourceObject) => {
+        return convert(activity);
+      }
+    );
+
     commit("setActivityListForUser", { userId, activityList });
     return activityList;
   },
@@ -33,21 +46,29 @@ const actions = {
   async fetchActivityListForTask({ commit }: any, taskId: TaskId) {
     const activityList = (
       await axios.get(`/api/activity?containerid=${taskId}&type=bytebase.task.`)
-    ).data.data;
+    ).data.data.map((activity: ResourceObject) => {
+      return convert(activity);
+    });
+
     commit("setActivityListForTask", { taskId, activityList });
     return activityList;
   },
 
   async createActivity({ dispatch }: any, newActivity: ActivityNew) {
-    const createdActivity: Activity = (
-      await axios.post(`/api/activity`, {
-        data: newActivity,
-      })
-    ).data.data;
+    const createdActivity: Activity = convert(
+      (
+        await axios.post(`/api/activity`, {
+          data: {
+            type: "activity",
+            attributes: newActivity,
+          },
+        })
+      ).data.data
+    );
 
     // There might exist other activities happened since the last fetch, so we do a full refetch.
-    if (newActivity.attributes.actionType.startsWith("bytebase.task.")) {
-      dispatch("fetchActivityListForTask", newActivity.attributes.containerId);
+    if (newActivity.actionType.startsWith("bytebase.task.")) {
+      dispatch("fetchActivityListForTask", newActivity.containerId);
     }
 
     return createdActivity;
@@ -60,23 +81,22 @@ const actions = {
       updatedComment,
     }: { activityId: ActivityId; updatedComment: string }
   ) {
-    const updatedActivity = (
-      await axios.patch(`/api/activity/${activityId}`, {
-        data: {
-          type: "activitypatch",
-          attributes: {
-            payload: {
-              comment: updatedComment,
+    const updatedActivity = convert(
+      (
+        await axios.patch(`/api/activity/${activityId}`, {
+          data: {
+            type: "activitypatch",
+            attributes: {
+              payload: {
+                comment: updatedComment,
+              },
             },
           },
-        },
-      })
-    ).data.data;
-
-    dispatch(
-      "fetchActivityListForTask",
-      updatedActivity.attributes.containerId
+        })
+      ).data.data
     );
+
+    dispatch("fetchActivityListForTask", updatedActivity.containerId);
 
     return updatedActivity;
   },
@@ -84,8 +104,8 @@ const actions = {
   async deleteActivity({ dispatch }: any, activity: Activity) {
     await axios.delete(`/api/activity/${activity.id}`);
 
-    if (activity.attributes.actionType.startsWith("bytebase.task.")) {
-      dispatch("fetchActivityListForTask", activity.attributes.containerId);
+    if (activity.actionType.startsWith("bytebase.task.")) {
+      dispatch("fetchActivityListForTask", activity.containerId);
     }
   },
 };

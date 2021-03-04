@@ -11,25 +11,23 @@ const allTaskTemplateList: TaskTemplate[] = [
     type: "bytebase.general",
     buildTask: (ctx: TemplateContext): TaskNew => {
       return {
-        type: "task",
-        attributes: {
-          name: "New General Task",
-          type: "bytebase.general",
-          description: "",
-          stageProgressList: [
-            {
-              id: "1",
-              name: "Request",
-              type: "SIMPLE",
-              status: "PENDING",
-            },
-          ],
-          creator: {
-            id: ctx.currentUser.id,
-            name: ctx.currentUser.attributes.name,
+        name: "New General Task",
+        type: "bytebase.general",
+        description: "",
+        stageProgressList: [
+          {
+            id: "1",
+            name: "Request",
+            type: "SIMPLE",
+            status: "PENDING",
           },
-          payload: {},
+        ],
+        creatorId: ctx.currentUser.id,
+        creator: {
+          id: ctx.currentUser.id,
+          name: ctx.currentUser.attributes.name,
         },
+        payload: {},
       };
     },
   },
@@ -37,25 +35,23 @@ const allTaskTemplateList: TaskTemplate[] = [
     type: "bytebase.datasource.create",
     buildTask: (ctx: TemplateContext): TaskNew => {
       return {
-        type: "task",
-        attributes: {
-          name: "New Data Source",
-          type: "bytebase.datasource.create",
-          description: "Estimated QPS: 10",
-          stageProgressList: [
-            {
-              id: "1",
-              name: "Request Data Source",
-              type: "SIMPLE",
-              status: "PENDING",
-            },
-          ],
-          creator: {
-            id: ctx.currentUser.id,
-            name: ctx.currentUser.attributes.name,
+        name: "New Data Source",
+        type: "bytebase.datasource.create",
+        description: "Estimated QPS: 10",
+        stageProgressList: [
+          {
+            id: "1",
+            name: "Request Data Source",
+            type: "SIMPLE",
+            status: "PENDING",
           },
-          payload: {},
+        ],
+        creatorId: ctx.currentUser.id,
+        creator: {
+          id: ctx.currentUser.id,
+          name: ctx.currentUser.attributes.name,
         },
+        payload: {},
       };
     },
     fieldList: [
@@ -101,31 +97,29 @@ const allTaskTemplateList: TaskTemplate[] = [
     type: "bytebase.datasource.schema.update",
     buildTask: (ctx: TemplateContext): TaskNew => {
       return {
-        type: "task",
-        attributes: {
-          name: "Update Schema",
-          type: "bytebase.datasource.schema.update",
-          description: "DDL: ",
-          stageProgressList: ctx.environmentList.map((env) => {
-            return {
-              id: env.id,
-              name: env.attributes.name,
-              type: "ENVIRONMENT",
-              status: "PENDING",
-              runnable: {
-                auto: true,
-                run: () => {
-                  console.log("Start", env.attributes.name);
-                },
+        name: "Update Schema",
+        type: "bytebase.datasource.schema.update",
+        description: "DDL: ",
+        stageProgressList: ctx.environmentList.map((env) => {
+          return {
+            id: env.id,
+            name: env.name,
+            type: "ENVIRONMENT",
+            status: "PENDING",
+            runnable: {
+              auto: true,
+              run: () => {
+                console.log("Start", env.name);
               },
-            };
-          }),
-          creator: {
-            id: ctx.currentUser.id,
-            name: ctx.currentUser.attributes.name,
-          },
-          payload: {},
+            },
+          };
+        }),
+        creatorId: ctx.currentUser.id,
+        creator: {
+          id: ctx.currentUser.id,
+          name: ctx.currentUser.attributes.name,
         },
+        payload: {},
       };
     },
     fieldList: [
