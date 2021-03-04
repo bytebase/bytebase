@@ -11,6 +11,8 @@ export type PrincipalId = UserId;
 
 export type MemberId = string;
 
+export type BookmarkId = string;
+
 export type StageId = string;
 
 export type TaskId = string;
@@ -66,8 +68,13 @@ export type Member = {
 };
 
 // Bookmark
-export type Bookmark = ResourceObject & {};
-export type NewBookmark = Omit<Bookmark, "id">;
+export type Bookmark = {
+  id: BookmarkId;
+  name: string;
+  link: string;
+  creatorId: UserId;
+};
+export type BookmarkNew = Omit<Bookmark, "id">;
 
 // Stage
 export type StageType = "SIMPLE" | "ENVIRONMENT";

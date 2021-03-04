@@ -14,10 +14,10 @@
     :key="item.id"
   >
     <router-link
-      :to="item.attributes.link"
+      :to="item.link"
       class="sidebar-link group flex items-center px-3 py-1 text-sm"
     >
-      {{ item.attributes.name }}
+      {{ item.name }}
     </router-link>
   </div>
 </template>
