@@ -69,7 +69,7 @@
 
     <!-- Static sidebar for desktop -->
     <aside class="hidden md:flex md:flex-shrink-0">
-      <div class="flex flex-col w-48 xl:w-64">
+      <div class="flex flex-col w-48">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
         <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
           <router-view name="leftSidebar" />
