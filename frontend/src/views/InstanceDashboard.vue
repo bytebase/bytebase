@@ -52,9 +52,7 @@ export default {
         return list;
       }
       return list.filter((instance) => {
-        return (
-          instance.attributes.environmentId == state.selectedEnvironment!.id
-        );
+        return instance.environmentId == state.selectedEnvironment!.id;
       });
     };
 
