@@ -50,8 +50,8 @@ export default {
         .then((list: Member[]) => {
           state.principalList = list.map((member: Member) => {
             return {
-              id: member.attributes.user.id,
-              name: member.attributes.user.name,
+              id: member.user.id,
+              name: member.user.name,
             };
           });
           state.selectedPrincipal = state.principalList.find(

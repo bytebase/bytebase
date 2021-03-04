@@ -95,8 +95,7 @@ const actions = {
           data: {
             type: "dataSource",
             attributes: {
-              type: newDataSource.type,
-              name: newDataSource.name,
+              ...newDataSource,
             },
           },
         })

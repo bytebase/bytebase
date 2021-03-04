@@ -56,8 +56,7 @@ const actions = {
           data: {
             type: "environment",
             attributes: {
-              name: newEnvironment.name,
-              order: newEnvironment.order,
+              ...newEnvironment,
             },
           },
         })

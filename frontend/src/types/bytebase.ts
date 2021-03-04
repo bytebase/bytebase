@@ -55,14 +55,12 @@ export type Principal = {
 // Member
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
-export type Member = ResourceObject & {
-  attributes: {
-    createdTs: number;
-    lastUpdatedTs: number;
-    role: RoleType;
-    user: UserDisplay;
-    updater: UserDisplay;
-  };
+export type Member = {
+  createdTs: number;
+  lastUpdatedTs: number;
+  role: RoleType;
+  user: UserDisplay;
+  updater: UserDisplay;
 };
 
 // Bookmark
