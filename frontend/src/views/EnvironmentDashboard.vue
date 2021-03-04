@@ -100,7 +100,7 @@ export default {
         },
       });
 
-      if (environmentList.length > 0) {
+      if (environmentList.value.length > 0) {
         selectEnvironment(0);
       }
     });
@@ -118,19 +118,19 @@ export default {
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
-    }).value;
+    });
 
     const tabTitleList = computed(() => {
       if (environmentList) {
         if (state.reorder) {
           return state.reorderedEnvironmentList.map(
             (item: Environment, index: number) =>
-              (index + 1).toString() + ". " + item.attributes.name
+              (index + 1).toString() + ". " + item.name
           );
         }
-        return environmentList.map(
+        return environmentList.value.map(
           (item: Environment, index: number) =>
-            (index + 1).toString() + ". " + item.attributes.name
+            (index + 1).toString() + ". " + item.name
         );
       }
       return [];
@@ -146,7 +146,7 @@ export default {
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((createdEnvironment) => {
           state.showCreateModal = false;
-          selectEnvironment(environmentList.length - 1);
+          selectEnvironment(environmentList.value.length - 1);
         })
         .catch((error) => {
           console.log(error);
@@ -154,7 +154,7 @@ export default {
     };
 
     const startReorder = () => {
-      state.reorderedEnvironmentList = [...environmentList];
+      state.reorderedEnvironmentList = [...environmentList.value];
       state.reorder = true;
     };
 
@@ -170,7 +170,9 @@ export default {
 
     const orderChanged = computed(() => {
       for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-        if (state.reorderedEnvironmentList[i].id != environmentList[i].id) {
+        if (
+          state.reorderedEnvironmentList[i].id != environmentList.value[i].id
+        ) {
           return true;
         }
       }
@@ -199,7 +201,7 @@ export default {
       store
         .dispatch("environment/deleteEnvironmentById", environment.id)
         .then(() => {
-          if (environmentList.length > 0) {
+          if (environmentList.value.length > 0) {
             selectEnvironment(0);
           }
         })
@@ -212,7 +214,7 @@ export default {
       state.selectedIndex = index;
     };
 
-    const tabClass = computed(() => "w-1/" + environmentList.length);
+    const tabClass = computed(() => "w-1/" + environmentList.value.length);
 
     return {
       state,

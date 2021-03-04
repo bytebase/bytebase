@@ -14,7 +14,7 @@
           name="name"
           type="text"
           class="textfield mt-4 w-full"
-          :value="state.environment.attributes.name"
+          :value="state.environment.name"
           @input="updateEnvironment('name', $event.target.value)"
         />
       </div>
@@ -105,11 +105,8 @@ export default {
       state.environment = cloneDeep(props.environment);
     } else {
       state.environment = {
-        type: "environment",
-        attributes: {
-          name: "New Env",
-          order: -1,
-        },
+        name: "New Env",
+        order: -1,
       };
     }
 
@@ -124,7 +121,9 @@ export default {
   },
   methods: {
     updateEnvironment: function (field: string, value: string) {
-      this.state.environment!.attributes[field] = value;
+      if (this.state.environment) {
+        (this.state.environment as any)[field] = value;
+      }
     },
     revertEnvironment: function () {
       this.state.environment = cloneDeep(this.$props.environment);

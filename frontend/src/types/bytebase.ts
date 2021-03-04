@@ -196,11 +196,10 @@ export type ActivityPatch = {
 };
 
 // Environment
-export type Environment = ResourceObject & {
-  attributes: {
-    name: string;
-    order: number;
-  };
+export type Environment = {
+  id: EnvironmentId;
+  name: string;
+  order: number;
 };
 export type EnvironmentNew = Omit<Environment, "id">;
 

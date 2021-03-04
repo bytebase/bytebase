@@ -10,9 +10,7 @@
     v-if="state.showDeleteModal"
     :style="'CRITICAL'"
     :okText="'Delete'"
-    :title="
-      'Delete environment \'' + state.environment.attributes.name + '\' ?'
-    "
+    :title="'Delete environment \'' + state.environment.name + '\' ?'"
     @ok="
       () => {
         state.showDeleteModal = false;

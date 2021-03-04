@@ -16,7 +16,7 @@
       :value="environment.id"
       :selected="environment.id == state.selectedId"
     >
-      {{ environment.attributes.name }}
+      {{ environment.name }}
     </option>
   </select>
 </template>

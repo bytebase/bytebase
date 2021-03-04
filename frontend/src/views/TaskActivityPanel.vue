@@ -507,7 +507,7 @@ export default {
                       "environment/environmentById"
                     ](update.oldValue);
                     if (environment) {
-                      oldValue = environment.attributes.name;
+                      oldValue = environment.name;
                     } else {
                       oldValue = "Unknown Environment";
                     }
@@ -517,7 +517,7 @@ export default {
                       "environment/environmentById"
                     ](update.newValue);
                     if (environment) {
-                      newValue = environment.attributes.name;
+                      newValue = environment.name;
                     } else {
                       newValue = "Unknown Environment";
                     }

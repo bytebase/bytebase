@@ -47,7 +47,7 @@ export default {
         ...cloneDeep(environmentList)
           .reverse()
           .map((environment: Environment) => {
-            return environment.attributes.name;
+            return environment.name;
           })
       );
       return list;

@@ -4,7 +4,16 @@ import {
   Environment,
   EnvironmentNew,
   EnvironmentState,
+  ResourceObject,
 } from "../../types";
+
+function convert(environment: ResourceObject): Environment {
+  return {
+    id: environment.id,
+    name: environment.attributes.name as string,
+    order: environment.attributes.order as number,
+  };
+}
 
 const state: () => EnvironmentState = () => ({
   environmentList: [],
@@ -17,19 +26,23 @@ const getters = {
 
   environmentById: (state: EnvironmentState) => (
     environmentId: EnvironmentId
-  ) => {
+  ): Environment | undefined => {
     for (const environment of state.environmentList) {
       if (environment.id == environmentId) {
         return environment;
       }
     }
-    return null;
+    return undefined;
   },
 };
 
 const actions = {
   async fetchEnvironmentList({ commit }: any) {
-    const environmentList = (await axios.get(`/api/environment`)).data.data;
+    const environmentList = (await axios.get(`/api/environment`)).data.data.map(
+      (env: ResourceObject) => {
+        return convert(env);
+      }
+    );
 
     commit("setEnvironmentList", environmentList);
 
@@ -37,11 +50,19 @@ const actions = {
   },
 
   async createEnvironment({ commit }: any, newEnvironment: EnvironmentNew) {
-    const createdEnvironment = (
-      await axios.post(`/api/environment`, {
-        data: newEnvironment,
-      })
-    ).data.data;
+    const createdEnvironment = convert(
+      (
+        await axios.post(`/api/environment`, {
+          data: {
+            type: "environment",
+            attributes: {
+              name: newEnvironment.name,
+              order: newEnvironment.order,
+            },
+          },
+        })
+      ).data.data
+    );
 
     commit("appendEnvironment", createdEnvironment);
 
@@ -63,7 +84,9 @@ const actions = {
           type: "batchupdate",
         },
       })
-    ).data.data;
+    ).data.data.map((env: ResourceObject) => {
+      return convert(env);
+    });
 
     commit("setEnvironmentList", environmentList);
 
@@ -71,11 +94,18 @@ const actions = {
   },
 
   async patchEnvironment({ commit }: any, environment: Environment) {
-    const updatedEnvironment = (
-      await axios.patch(`/api/environment/${environment.id}`, {
-        data: environment,
-      })
-    ).data.data;
+    const updatedEnvironment = convert(
+      (
+        await axios.patch(`/api/environment/${environment.id}`, {
+          data: {
+            type: "environment",
+            attributes: {
+              name: environment.name,
+            },
+          },
+        })
+      ).data.data
+    );
 
     commit("replaceEnvironmentInList", updatedEnvironment);
 
