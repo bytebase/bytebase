@@ -10,25 +10,21 @@
         <img class="h-10 w-auto" src="../assets/db-mysql.svg" />
       </BBTableCell>
       <BBTableCell :leftPadding="4" class="w-24">
-        {{ environmentName(instance.attributes.environmentId) }}
+        {{ environmentName(instance.environmentId) }}
       </BBTableCell>
       <BBTableCell class="w-48">
-        {{ instance.attributes.name }}
+        {{ instance.name }}
       </BBTableCell>
       <BBTableCell class="w-64">
-        <template v-if="instance.attributes.port"
-          >{{ instance.attributes.host }}:{{
-            instance.attributes.port
-          }}</template
-        ><template v-else>{{ instance.attributes.host }}</template>
+        <template v-if="instance.port"
+          >{{ instance.host }}:{{ instance.port }}</template
+        ><template v-else>{{ instance.host }}</template>
       </BBTableCell>
       <BBTableCell class="w-4">
         <button
-          v-if="instance.attributes.externalLink?.trim().length != 0"
+          v-if="instance.externalLink?.trim().length != 0"
           class="btn-icon"
-          @click.stop="
-            window.open(urlfy(instance.attributes.externalLink), '_blank')
-          "
+          @click.stop="window.open(urlfy(instance.externalLink), '_blank')"
         >
           <svg
             class="w-5 h-5"
@@ -47,7 +43,7 @@
         </button>
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ humanizeTs(instance.attributes.createdTs) }}
+        {{ humanizeTs(instance.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -108,8 +104,8 @@ export default {
       const instance = props.instanceList[row];
       router.push(
         `/instance/${instanceSlug(
-          environmentName(instance.attributes.environmentId),
-          instance.attributes.name,
+          environmentName(instance.environmentId),
+          instance.name,
           instance.id
         )}`
       );

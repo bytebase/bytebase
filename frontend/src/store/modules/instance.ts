@@ -1,5 +1,22 @@
 import axios from "axios";
-import { InstanceId, Instance, InstanceNew, InstanceState } from "../../types";
+import {
+  InstanceId,
+  Instance,
+  InstanceNew,
+  InstanceState,
+  ResourceObject,
+} from "../../types";
+
+function convert(instance: ResourceObject): Instance {
+  return {
+    id: instance.id,
+    name: instance.attributes.name as string,
+    environmentId: instance.attributes.environmentId as string,
+    externalLink: instance.attributes.externalLink as string,
+    host: instance.attributes.host as string,
+    port: instance.attributes.port as string,
+  };
+}
 
 const state: () => InstanceState = () => ({
   instanceList: [],
@@ -18,7 +35,11 @@ const getters = {
 
 const actions = {
   async fetchInstanceList({ commit }: any) {
-    const instanceList = (await axios.get(`/api/instance`)).data.data;
+    const instanceList = (await axios.get(`/api/instance`)).data.data.map(
+      (instance: ResourceObject) => {
+        return convert(instance);
+      }
+    );
 
     commit("setInstanceList", instanceList);
 
@@ -26,7 +47,9 @@ const actions = {
   },
 
   async fetchInstanceById({ commit }: any, instanceId: InstanceId) {
-    const instance = (await axios.get(`/api/instance/${instanceId}`)).data.data;
+    const instance = convert(
+      (await axios.get(`/api/instance/${instanceId}`)).data.data
+    );
     commit("setInstanceById", {
       instanceId,
       instance,
@@ -35,11 +58,18 @@ const actions = {
   },
 
   async createInstance({ commit }: any, newInstance: InstanceNew) {
-    const createdInstance = (
-      await axios.post(`/api/instance`, {
-        data: newInstance,
-      })
-    ).data.data;
+    const createdInstance = convert(
+      (
+        await axios.post(`/api/instance`, {
+          data: {
+            type: "instance",
+            attributes: {
+              ...newInstance,
+            },
+          },
+        })
+      ).data.data
+    );
 
     commit("appendInstance", createdInstance);
 
@@ -47,11 +77,19 @@ const actions = {
   },
 
   async patchInstance({ commit }: any, instance: Instance) {
-    const updatedInstance = (
-      await axios.patch(`/api/instance/${instance.id}`, {
-        data: instance,
-      })
-    ).data.data;
+    const { id, ...attrs } = instance;
+    const updatedInstance = convert(
+      (
+        await axios.patch(`/api/instance/${instance.id}`, {
+          data: {
+            type: "instance",
+            attributes: {
+              ...attrs,
+            },
+          },
+        })
+      ).data.data
+    );
 
     commit("replaceInstanceInList", updatedInstance);
 

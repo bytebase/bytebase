@@ -204,22 +204,22 @@ export type Environment = {
 export type EnvironmentNew = Omit<Environment, "id">;
 
 // Instance
-export type Instance = ResourceObject & {
-  attributes: {
-    name: string;
-    environmentId: string;
-    externalLink?: string;
-    host: string;
-    port?: string;
-  };
+export type Instance = {
+  id: InstanceId;
+  name: string;
+  environmentId: string;
+  externalLink?: string;
+  host: string;
+  port?: string;
 };
 export type InstanceNew = Omit<Instance, "id">;
 
+export type DataSourceType = "ADMIN" | "NORMAL";
 // Data Source
 export type DataSource = {
   id: string;
   name: string;
-  type: "ADMIN" | "NORMAL";
+  type: DataSourceType;
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;

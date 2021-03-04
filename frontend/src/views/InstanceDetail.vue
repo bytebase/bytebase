@@ -26,7 +26,7 @@ input[type="number"] {
           name="name"
           type="text"
           class="textfield mt-1 w-full"
-          :value="state.instance.attributes.name"
+          :value="state.instance.name"
           @input="updateInstance('name', $event.target.value)"
         />
       </div>
@@ -38,7 +38,7 @@ input[type="number"] {
         <EnvironmentSelect
           id="environment"
           name="environment"
-          :selectedId="state.instance.attributes.environmentId"
+          :selectedId="state.instance.environmentId"
           @select-environment-id="
             (environmentId) => {
               updateInstance('environmentId', environmentId);
@@ -59,7 +59,7 @@ input[type="number"] {
             name="host"
             placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
             class="textfield mt-1 w-full"
-            :value="state.instance.attributes.host"
+            :value="state.instance.host"
             @input="updateInstance('host', $event.target.value)"
           />
         </div>
@@ -74,7 +74,7 @@ input[type="number"] {
             name="port"
             placeholder="3306"
             class="textfield mt-1 w-full"
-            :value="state.instance.attributes.port"
+            :value="state.instance.port"
             @input="updateInstance('port', $event.target.value)"
           />
         </div>
@@ -85,14 +85,9 @@ input[type="number"] {
           <span class="">External Link</span>
           <button
             class="ml-1 btn-icon"
-            :disabled="
-              state.instance.attributes.externalLink?.trim().length == 0
-            "
+            :disabled="state.instance.externalLink?.trim().length == 0"
             @click.prevent="
-              window.open(
-                urlfy(state.instance.attributes.externalLink),
-                '_blank'
-              )
+              window.open(urlfy(state.instance.externalLink), '_blank')
             "
           >
             <svg
@@ -117,7 +112,7 @@ input[type="number"] {
           name="externallink"
           type="text"
           class="textfield mt-1 w-full"
-          :value="state.instance.attributes.externalLink"
+          :value="state.instance.externalLink"
           @input="updateInstance('externalLink', $event.target.value)"
         />
       </div>
@@ -271,7 +266,7 @@ input[type="number"] {
     v-if="state.showDeleteModal"
     :style="'CRITICAL'"
     :okText="'Delete'"
-    :title="'Delete instance \'' + state.instance.attributes.name + '\' ?'"
+    :title="'Delete instance \'' + state.instance.name + '\' ?'"
     @ok="
       () => {
         state.showDeleteModal = false;
@@ -309,8 +304,9 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, InstanceNew, DataSource, DataSourceNew } from "../types";
 
 const INIT_DATA_SOURCE: DataSourceNew = {
-  type: "ADMIN",
   name: "Admin Data Source",
+  type: "ADMIN",
+  username: "root",
 };
 
 interface LocalState {
@@ -382,7 +378,7 @@ export default {
     };
 
     const updateInstance = (field: string, value: string) => {
-      state.instance!.attributes[field] = value;
+      (state.instance as any)[field] = value;
     };
 
     const updateDataSource = (field: string, value: string) => {
@@ -401,13 +397,9 @@ export default {
     // IF block.
     if (state.new) {
       state.instance = {
-        type: "instance",
-        attributes: {
-          name: "New Instance",
-          environmentId: "",
-          host: "127.0.0.1",
-          username: "root",
-        },
+        name: "New Instance",
+        environmentId: "",
+        host: "127.0.0.1",
       };
       state.adminDataSource = INIT_DATA_SOURCE;
     } else {
@@ -473,7 +465,7 @@ export default {
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",
                 style: "SUCCESS",
-                title: `Successfully created instance '${instance.attributes.name}'.`,
+                title: `Successfully created instance '${instance.name}'.`,
               });
               router.push({
                 name: "workspace.instance",
@@ -507,7 +499,7 @@ export default {
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",
                 style: "SUCCESS",
-                title: `Successfully updated instance '${updatedInstance.attributes.name}'.`,
+                title: `Successfully updated instance '${updatedInstance.name}'.`,
               });
               router.push({
                 name: "workspace.instance",
@@ -536,7 +528,7 @@ export default {
                 module: "bytebase",
                 style: "SUCCESS",
                 title: `Successfully deleted instance '${
-                  state.originalInstance!.attributes.name
+                  state.originalInstance!.name
                 }'.`,
               });
               router.push({

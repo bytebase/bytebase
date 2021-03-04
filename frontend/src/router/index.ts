@@ -209,7 +209,7 @@ const routes: Array<RouteRecordRaw> = [
                   return "New";
                 }
                 return store.getters["instance/instanceById"](idFromSlug(slug))
-                  .attributes.name;
+                  .name;
               },
             },
             components: {
