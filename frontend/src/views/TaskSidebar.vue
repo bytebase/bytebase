@@ -7,7 +7,7 @@
         <div class="z-10 w-full">
           <TaskStatusSelect
             :disabled="activeStageIsRunning(task)"
-            :selectedStatus="task.attributes.status"
+            :selectedStatus="task.status"
             @change-status="
               (value) => {
                 $emit('update-task-status', value);
@@ -20,7 +20,7 @@
         <h2 class="flex items-center textlabel w-36">Assignee</h2>
         <div class="w-full">
           <PrincipalSelect
-            :selectedId="task.attributes.assignee?.id"
+            :selectedId="task.assignee?.id"
             @select-principal="
               (value) => {
                 $emit('update-assignee', value);
@@ -152,13 +152,10 @@
         <ul class="w-full">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
-              <BBAvatar
-                :size="'small'"
-                :username="task.attributes.creator.name"
-              />
+              <BBAvatar :size="'small'" :username="task.creator.name" />
             </div>
             <div class="text-sm font-medium text-main">
-              {{ task.attributes.creator.name }}
+              {{ task.creator.name }}
             </div>
           </li>
         </ul>
@@ -166,13 +163,13 @@
       <div class="flex flex-row space-x-2">
         <h2 class="textlabel w-36">Updated</h2>
         <span class="textfield w-full">
-          {{ moment(task.attributes.lastUpdatedTs).format("LLL") }}</span
+          {{ moment(task.lastUpdatedTs).format("LLL") }}</span
         >
       </div>
       <div class="flex flex-row space-x-2">
         <h2 class="textlabel w-36">Created</h2>
         <span class="textfield w-full">
-          {{ moment(task.attributes.createdTs).format("LLL") }}</span
+          {{ moment(task.createdTs).format("LLL") }}</span
         >
       </div>
     </div>
@@ -258,8 +255,8 @@ export default {
 
     const fieldValue = (field: TaskField): string => {
       return field.preprocessor
-        ? field.preprocessor(props.task.attributes.payload[field.id])
-        : props.task.attributes.payload[field.id];
+        ? field.preprocessor(props.task.payload[field.id])
+        : props.task.payload[field.id];
     };
 
     const trySaveCustomTextField = (customFieldIndex: number) => {

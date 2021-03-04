@@ -302,7 +302,7 @@ export default {
       title: "",
     });
 
-    const taskTemplate = templateForType(state.task.attributes.type)!;
+    const taskTemplate = templateForType(state.task.type)!;
 
     const outputFieldList =
       taskTemplate.fieldList?.filter((item) => item.category == "OUTPUT") || [];
@@ -345,7 +345,7 @@ export default {
       //     )) {
       //       if (
       //         field.required &&
-      //         isEmpty(state.task.attributes.payload[field.id])
+      //         isEmpty(state.task.payload[field.id])
       //       ) {
       //         return;
       //       }
@@ -358,20 +358,6 @@ export default {
     };
 
     const updateAssignee = (newAssignee: UserDisplay) => {
-      // if (newStatus === "DONE") {
-      //   if (template.fieldList) {
-      //     for (const field of template.fieldList.filter(
-      //       (item) => item.category == "OUTPUT"
-      //     )) {
-      //       if (
-      //         field.required &&
-      //         isEmpty(state.task.attributes.payload[field.id])
-      //       ) {
-      //         return;
-      //       }
-      //     }
-      //   }
-      // }
       patchTask({
         assignee: newAssignee,
       });
@@ -381,10 +367,10 @@ export default {
       if (field.preprocessor) {
         value = field.preprocessor(value);
       }
-      state.task.attributes.payload[field.id] = value;
+      state.task.payload[field.id] = value;
       if (!state.new) {
         patchTask({
-          payload: state.task.attributes.payload,
+          payload: state.task.payload,
         });
       }
     };
@@ -393,9 +379,7 @@ export default {
       store
         .dispatch("task/createTask", state.task)
         .then((createdTask) => {
-          router.push(
-            `/task/${taskSlug(createdTask.attributes.name, createdTask.id)}`
-          );
+          router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
         })
         .catch((error) => {
           console.log(error);
@@ -413,7 +397,7 @@ export default {
             ...taskPatch,
             producer: {
               id: currentUser.id,
-              name: currentUser.attributes.name,
+              name: currentUser.name,
             },
           },
         })
@@ -457,10 +441,7 @@ export default {
             for (const field of taskTemplate.fieldList.filter(
               (item) => item.category == "INPUT"
             )) {
-              if (
-                field.required &&
-                isEmpty(state.task.attributes.payload[field.id])
-              ) {
+              if (field.required && isEmpty(state.task.payload[field.id])) {
                 return false;
               }
             }
@@ -473,9 +454,9 @@ export default {
     const applicableStageTransitionList = () => {
       return STAGE_TRANSITION_LIST.filter((transition) => {
         const actionListForRole =
-          currentUser.id === state.task.attributes.creatorId
+          currentUser.id === state.task.creatorId
             ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser.id === state.task.attributes.assigneeId
+            : currentUser.id === state.task.assigneeId
             ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
             : GUEST_APPLICABLE_STAGE_ACTION_LIST;
         const stage = activeStage(state.task as Task);
@@ -499,7 +480,7 @@ export default {
     };
 
     const showTaskFlowBar = computed(() => {
-      return !state.new && state.task.attributes.stageProgressList.length > 1;
+      return !state.new && state.task.stageProgressList.length > 1;
     });
 
     const showTaskOutputPanel = computed(() => {

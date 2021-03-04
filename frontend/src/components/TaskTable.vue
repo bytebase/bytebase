@@ -8,7 +8,7 @@
     <template v-slot:body="{ rowData: task }">
       <BBTableCell :leftPadding="4" class="w-4 table-cell">
         <TaskStatusIcon
-          :taskStatus="task.attributes.status"
+          :taskStatus="task.status"
           :stageStatus="activeStage(task).status"
         />
       </BBTableCell>
@@ -20,35 +20,29 @@
         <span
           class="flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-mono bg-gray-500 text-white"
         >
-          {{ task.attributes.category }}
+          {{ task.category }}
         </span>
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">
         {{ activeEnvironmentName(task) }}
       </BBTableCell>
       <BBTableCell :leftPadding="1" class="truncate">
-        {{ task.attributes.name }}
+        {{ task.name }}
       </BBTableCell>
       <BBTableCell class="w-12 hidden sm:table-cell">
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
       <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
-        {{ humanizeTs(task.attributes.lastUpdatedTs) }}
+        {{ humanizeTs(task.lastUpdatedTs) }}
       </BBTableCell>
       <BBTableCell class="w-32 hidden sm:table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'small'"
-            :username="
-              task.attributes.assignee
-                ? task.attributes.assignee.name
-                : 'Unassigned'
-            "
+            :username="task.assignee ? task.assignee.name : 'Unassigned'"
           />
           <span class="ml-2">{{
-            task.attributes.assignee
-              ? task.attributes.assignee.name
-              : "Unassigned"
+            task.assignee ? task.assignee.name : "Unassigned"
           }}</span>
         </div>
       </BBTableCell>
@@ -128,7 +122,7 @@ export default {
     const router = useRouter();
 
     const stageList = function (task: Task): BBStep[] {
-      return task.attributes.stageProgressList.map((stageProgress) => {
+      return task.stageProgressList.map((stageProgress) => {
         let stepStatus: BBStepStatus = "PENDING";
         switch (stageProgress.status) {
           case "PENDING":
@@ -163,7 +157,7 @@ export default {
 
     const clickTask = function (section: number, row: number) {
       const task = props.taskSectionList[section].list[row];
-      router.push(`/task/${taskSlug(task.attributes.name, task.id)}`);
+      router.push(`/task/${taskSlug(task.name, task.id)}`);
     };
 
     return {

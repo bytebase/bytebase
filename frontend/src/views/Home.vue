@@ -16,7 +16,7 @@
         {
           title: 'Recently Closed',
           list: filteredList(state.closeList).sort((a, b) => {
-            return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
+            return b.lastUpdatedTs - a.lastUpdatedTs;
           }),
         },
       ]"
@@ -68,26 +68,21 @@ export default {
           state.closeList = [];
           for (const task of taskList) {
             // "OPEN"
-            if (task.attributes.status === "OPEN") {
+            if (task.status === "OPEN") {
               if (
-                task.attributes.creatorId === currentUser.id ||
-                task.attributes.assigneeId === currentUser.id
+                task.creatorId === currentUser.id ||
+                task.assigneeId === currentUser.id
               ) {
                 state.attentionList.push(task);
-              } else if (
-                task.attributes.subscriberIdList.includes(currentUser.id)
-              ) {
+              } else if (task.subscriberIdList.includes(currentUser.id)) {
                 state.subscribeList.push(task);
               }
             }
             // "DONE" or "CANCELED"
-            else if (
-              task.attributes.status === "DONE" ||
-              task.attributes.status === "CANCELED"
-            ) {
+            else if (task.status === "DONE" || task.status === "CANCELED") {
               if (
-                task.attributes.creator.id === currentUser.id ||
-                task.attributes.assignee?.id === currentUser.id
+                task.creator.id === currentUser.id ||
+                task.assignee?.id === currentUser.id
               ) {
                 state.closeList.push(task);
               }
@@ -134,7 +129,7 @@ export default {
       const aStatusOrder = statusOrder(activeStage(a).status);
       const bStatusOrder = statusOrder(activeStage(b).status);
       if (aStatusOrder == bStatusOrder) {
-        return b.attributes.lastUpdatedTs - a.attributes.lastUpdatedTs;
+        return b.lastUpdatedTs - a.lastUpdatedTs;
       }
       return aStatusOrder - bStatusOrder;
     };

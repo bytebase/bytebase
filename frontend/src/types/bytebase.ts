@@ -9,6 +9,8 @@ export type UserId = string;
 // For now, Principal is equal to UserId, in the future it may contain other id such as application, bot etc.
 export type PrincipalId = UserId;
 
+export type MemberId = string;
+
 export type StageId = string;
 
 export type TaskId = string;
@@ -56,6 +58,7 @@ export type Principal = {
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
 export type Member = {
+  id: MemberId;
   createdTs: number;
   lastUpdatedTs: number;
   role: RoleType;
@@ -107,37 +110,34 @@ export type TaskStatus = "OPEN" | "DONE" | "CANCELED";
 
 export type TaskPayload = { [key: string]: any };
 
-export type Task = ResourceObject & {
-  attributes: {
-    name: string;
-    createdTs: number;
-    lastUpdatedTs: number;
-    status: TaskStatus;
-    category: "DDL" | "DML" | "OPS";
-    type: TaskType;
-    description: string;
-    stageProgressList: StageProgress[];
-    creatorId: PrincipalId;
-    assigneeId: PrincipalId;
-    creator: UserDisplay;
-    assignee?: UserDisplay;
-    subscriberIdList: Array<string>;
-    payload: TaskPayload;
-  };
+export type Task = {
+  id: TaskId;
+  name: string;
+  createdTs: number;
+  lastUpdatedTs: number;
+  status: TaskStatus;
+  category: "DDL" | "DML" | "OPS";
+  type: TaskType;
+  description: string;
+  stageProgressList: StageProgress[];
+  creatorId: PrincipalId;
+  assigneeId: PrincipalId;
+  creator: UserDisplay;
+  assignee?: UserDisplay;
+  subscriberIdList: Array<string>;
+  payload: TaskPayload;
 };
 
-export type TaskNew = Omit<ResourceObject, "id"> & {
-  attributes: {
-    name: string;
-    type: TaskType;
-    description: string;
-    stageProgressList: StageProgress[];
-    creatorId: PrincipalId;
-    assigneeId: PrincipalId;
-    creator: UserDisplay;
-    assignee?: UserDisplay;
-    payload: TaskPayload;
-  };
+export type TaskNew = {
+  name: string;
+  type: TaskType;
+  description: string;
+  stageProgressList: StageProgress[];
+  creatorId: PrincipalId;
+  assigneeId: PrincipalId;
+  creator: UserDisplay;
+  assignee?: UserDisplay;
+  payload: TaskPayload;
 };
 
 export type TaskPatch = {

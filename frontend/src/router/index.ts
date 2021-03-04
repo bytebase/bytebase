@@ -227,8 +227,7 @@ const routes: Array<RouteRecordRaw> = [
                 if (slug.toLowerCase() == "new") {
                   return "New";
                 }
-                return store.getters["task/taskById"](idFromSlug(slug))
-                  .attributes.name;
+                return store.getters["task/taskById"](idFromSlug(slug)).name;
               },
             },
             components: {

@@ -16,8 +16,8 @@
           :name="field.id"
           :value="
             field.preprocessor
-              ? field.preprocessor(task.attributes.payload[field.id])
-              : task.attributes.payload[field.id]
+              ? field.preprocessor(task.payload[field.id])
+              : task.payload[field.id]
           "
           @input="$emit('update-custom-field', field, $event.target.value)"
         />

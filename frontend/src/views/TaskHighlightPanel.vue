@@ -6,24 +6,24 @@
           <div class="flex items-center">
             <TaskStatusIcon
               v-if="!$props.new"
-              :taskStatus="task.attributes.status"
+              :taskStatus="task.status"
               :stageStatus="activeStage(task).status"
             />
             <p
               class="ml-2 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
             >
-              {{ task.attributes.name }}
+              {{ task.name }}
             </p>
           </div>
           <div v-if="!$props.new">
             <p class="mt-2 text-sm text-gray-500">
               #{{ task.id }} opened by
               <span href="#" class="font-medium text-control">{{
-                task.attributes.creator.name
+                task.creator.name
               }}</span>
               at
               <span href="#" class="font-medium text-control">{{
-                moment(task.attributes.lastUpdatedTs).format("LLL")
+                moment(task.lastUpdatedTs).format("LLL")
               }}</span>
             </p>
           </div>

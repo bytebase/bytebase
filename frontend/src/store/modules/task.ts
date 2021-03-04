@@ -6,7 +6,15 @@ import {
   TaskNew,
   TaskPatch,
   TaskState,
+  ResourceObject,
 } from "../../types";
+
+function convert(task: ResourceObject): Task {
+  return {
+    id: task.id,
+    ...(task.attributes as Omit<Task, "id">),
+  };
+}
 
 const state: () => TaskState = () => ({
   taskListByUser: new Map(),
@@ -25,13 +33,17 @@ const getters = {
 
 const actions = {
   async fetchTaskListForUser({ commit }: any, userId: UserId) {
-    const taskList = (await axios.get(`/api/task?userid=${userId}`)).data.data;
+    const taskList = (
+      await axios.get(`/api/task?userid=${userId}`)
+    ).data.data.map((task: ResourceObject) => {
+      return convert(task);
+    });
     commit("setTaskListForUser", { userId, taskList });
     return taskList;
   },
 
   async fetchTaskById({ commit }: any, taskId: TaskId) {
-    const task = (await axios.get(`/api/task/${taskId}`)).data.data;
+    const task = convert((await axios.get(`/api/task/${taskId}`)).data.data);
     commit("setTaskById", {
       taskId,
       task,
@@ -40,11 +52,13 @@ const actions = {
   },
 
   async createTask({ commit }: any, newTask: TaskNew) {
-    const createdTask = (
-      await axios.post(`/api/task`, {
-        data: newTask,
-      })
-    ).data.data;
+    const createdTask = convert(
+      (
+        await axios.post(`/api/task`, {
+          data: newTask,
+        })
+      ).data.data
+    );
 
     commit("setTaskById", {
       taskId: createdTask.id,
@@ -64,14 +78,16 @@ const actions = {
       taskPatch: TaskPatch;
     }
   ) {
-    const updatedTask = (
-      await axios.patch(`/api/task/${taskId}`, {
-        data: {
-          type: "taskpatch",
-          attributes: taskPatch,
-        },
-      })
-    ).data.data;
+    const updatedTask = convert(
+      (
+        await axios.patch(`/api/task/${taskId}`, {
+          data: {
+            type: "taskpatch",
+            attributes: taskPatch,
+          },
+        })
+      ).data.data
+    );
 
     commit("setTaskById", {
       taskId: taskId,

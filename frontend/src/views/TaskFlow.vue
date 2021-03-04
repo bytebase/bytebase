@@ -131,7 +131,7 @@ export default {
   components: {},
   setup(props, ctx) {
     const stageList = computed<FlowItem[]>(() => {
-      return props.task.attributes.stageProgressList.map((stageProgress) => {
+      return props.task.stageProgressList.map((stageProgress) => {
         return {
           id: stageProgress.id,
           title: stageProgress.name,

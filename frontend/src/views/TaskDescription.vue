@@ -33,7 +33,7 @@
       v-if="state.edit"
       type="button"
       class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-      :disabled="editDescription == task.attributes.description"
+      :disabled="editDescription == task.description"
       @click.prevent="saveEdit"
     >
       Save
@@ -101,7 +101,7 @@ export default {
   },
   components: {},
   setup(props, { emit }) {
-    const editDescription = ref(props.task.attributes.description);
+    const editDescription = ref(props.task.description);
     const editDescriptionTextArea = ref();
 
     const state = reactive<LocalState>({
@@ -116,7 +116,7 @@ export default {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          if (editDescription.value != props.task.attributes.description) {
+          if (editDescription.value != props.task.description) {
             saveEdit();
           }
         }
@@ -155,7 +155,7 @@ export default {
     );
 
     const beginEdit = () => {
-      editDescription.value = props.task.attributes.description;
+      editDescription.value = props.task.description;
       state.edit = true;
       nextTick(() => {
         editDescriptionTextArea.value.focus();
@@ -165,7 +165,7 @@ export default {
     const saveEdit = () => {
       emit("update-description", editDescription.value, (updatedTask: Task) => {
         state.edit = false;
-        editDescription.value = updatedTask.attributes.description;
+        editDescription.value = updatedTask.description;
         nextTick(() => {
           sizeToFit(editDescriptionTextArea.value);
         });
@@ -174,7 +174,7 @@ export default {
 
     const cancelEdit = () => {
       state.edit = false;
-      editDescription.value = props.task.attributes.description;
+      editDescription.value = props.task.description;
       nextTick(() => {
         sizeToFit(editDescriptionTextArea.value);
       });
