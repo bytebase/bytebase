@@ -6,7 +6,7 @@
 import { useStore } from "vuex";
 
 export default {
-  name: "ProvideEnvironment",
+  name: "ProvideContext",
   async setup() {
     const store = useStore();
 

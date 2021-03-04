@@ -3,9 +3,9 @@
   <Suspense>
     <template #default>
       <div>
-        <ProvideEnvironment>
+        <ProvideContext>
           <router-view />
-        </ProvideEnvironment>
+        </ProvideContext>
       </div>
     </template>
     <template #fallback>
@@ -15,11 +15,11 @@
 </template>
 
 <script lang="ts">
-import ProvideEnvironment from "./components/ProvideEnvironment.vue";
+import ProvideContext from "./components/ProvideContext.vue";
 
 export default {
   name: "App",
-  components: { ProvideEnvironment },
+  components: { ProvideContext },
   setup(props, ctx) {},
 };
 </script>
