@@ -401,7 +401,7 @@ export default {
         environmentId: "",
         host: "127.0.0.1",
       };
-      state.adminDataSource = INIT_DATA_SOURCE;
+      state.adminDataSource = cloneDeep(INIT_DATA_SOURCE);
     } else {
       // Instance is already fetched remotely during routing, so we can just
       // use store.getters here.
@@ -412,7 +412,7 @@ export default {
       // On the other hand, we need to fetch data source remotely first and
       // because the operation is async, we need to have a init object to avoid
       // adding v-if="state.adminDataSource" guard
-      assignAdminDataSource(INIT_DATA_SOURCE);
+      assignAdminDataSource(cloneDeep(INIT_DATA_SOURCE));
       store
         .dispatch(
           "dataSource/fetchDataSourceListByInstanceId",
