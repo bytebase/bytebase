@@ -136,7 +136,8 @@
                           Save
                         </button>
                       </template>
-                      <template v-else>
+                      <!-- mr-2 is to veritical align with the text description edit button-->
+                      <div v-else class="mr-2 space-x-2">
                         <!-- Delete Comment Button-->
                         <button
                           class="btn-icon"
@@ -182,7 +183,7 @@
                             ></path>
                           </svg>
                         </button>
-                      </template>
+                      </div>
                     </div>
                   </div>
                   <template
