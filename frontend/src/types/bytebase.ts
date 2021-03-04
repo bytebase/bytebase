@@ -216,14 +216,13 @@ export type Instance = ResourceObject & {
 export type InstanceNew = Omit<Instance, "id">;
 
 // Data Source
-export type DataSource = ResourceObject & {
-  attributes: {
-    name: string;
-    type: "ADMIN" | "NORMAL";
-    // In mysql, username can be empty which means anonymous user
-    username?: string;
-    password?: string;
-  };
+export type DataSource = {
+  id: string;
+  name: string;
+  type: "ADMIN" | "NORMAL";
+  // In mysql, username can be empty which means anonymous user
+  username?: string;
+  password?: string;
 };
 export type DataSourceNew = Omit<DataSource, "id">;
 

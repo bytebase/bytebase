@@ -154,7 +154,7 @@ input[type="number"] {
               name="username"
               type="text"
               class="textfield mt-1 w-full"
-              :value="state.adminDataSource.attributes.username"
+              :value="state.adminDataSource.username"
               @input="updateDataSource('username', $event.target.value)"
             />
           </div>
@@ -166,9 +166,10 @@ input[type="number"] {
             <input
               id="password"
               name="password"
+              autocomplete="off"
               :type="state.showPassword ? 'text' : 'password'"
               class="textfield mt-1 w-full"
-              :value="state.adminDataSource.attributes.password"
+              :value="state.adminDataSource.password"
               @input="updateDataSource('password', $event.target.value)"
             />
             <div class="ml-2 flex items-center">
@@ -308,11 +309,8 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, InstanceNew, DataSource, DataSourceNew } from "../types";
 
 const INIT_DATA_SOURCE: DataSourceNew = {
-  type: "dataSource",
-  attributes: {
-    type: "ADMIN",
-    name: "Admin Data Source",
-  },
+  type: "ADMIN",
+  name: "Admin Data Source",
 };
 
 interface LocalState {
@@ -388,7 +386,7 @@ export default {
     };
 
     const updateDataSource = (field: string, value: string) => {
-      state.adminDataSource!.attributes[field] = value;
+      (state.adminDataSource as any)[field] = value;
     };
 
     const cancel = () => {

@@ -4,8 +4,20 @@ import {
   DataSource,
   DataSourceNew,
   DataSourceState,
+  DataSourceType,
   InstanceId,
+  ResourceObject,
 } from "../../types";
+
+function convert(dataSource: ResourceObject): DataSource {
+  return {
+    id: dataSource.id,
+    name: dataSource.attributes.name as string,
+    type: dataSource.attributes.type as DataSourceType,
+    username: dataSource.attributes.username as string,
+    password: dataSource.attributes.password as string,
+  };
+}
 
 const state: () => DataSourceState = () => ({
   dataSourceListByInstanceId: new Map(),
@@ -19,7 +31,7 @@ const getters = {
     const list = state.dataSourceListByInstanceId.get(instanceId);
     if (list) {
       for (const item of list) {
-        if (item.attributes.type == "ADMIN") {
+        if (item.type == "ADMIN") {
           return item;
         }
       }
@@ -45,7 +57,9 @@ const actions = {
   ) {
     const dataSourceList = (
       await axios.get(`/api/instance/${instanceId}/datasource`)
-    ).data.data;
+    ).data.data.map((env: ResourceObject) => {
+      return convert(env);
+    });
 
     commit("setDataSourceListByInstanceId", { instanceId, dataSourceList });
 
@@ -53,11 +67,14 @@ const actions = {
   },
 
   async fetchDataSourceById({ commit }: any, dataSourceId: DataSourceId) {
-    const dataSource = (
-      await axios.get(
-        `/api/instance/${dataSourceId.instanceId}/datasource/${dataSourceId.id}`
-      )
-    ).data.data;
+    const dataSource = convert(
+      (
+        await axios.get(
+          `/api/instance/${dataSourceId.instanceId}/datasource/${dataSourceId.id}`
+        )
+      ).data.data
+    );
+
     commit("setDataSourceById", {
       dataSourceId,
       dataSource,
@@ -72,11 +89,19 @@ const actions = {
       newDataSource,
     }: { instanceId: InstanceId; newDataSource: DataSourceNew }
   ) {
-    const createdDataSource = (
-      await axios.post(`/api/instance/${instanceId}/datasource`, {
-        data: newDataSource,
-      })
-    ).data.data;
+    const createdDataSource = convert(
+      (
+        await axios.post(`/api/instance/${instanceId}/datasource`, {
+          data: {
+            type: "dataSource",
+            attributes: {
+              type: newDataSource.type,
+              name: newDataSource.name,
+            },
+          },
+        })
+      ).data.data
+    );
 
     commit("appendDataSourceByInstanceId", {
       dataSource: createdDataSource,
@@ -96,14 +121,22 @@ const actions = {
       dataSource: DataSource;
     }
   ) {
-    const updatedDataSource = (
-      await axios.patch(
-        `/api/instance/${instanceId}/datasource/${dataSource.id}`,
-        {
-          data: dataSource,
-        }
-      )
-    ).data.data;
+    const { id, ...attrs } = dataSource;
+    const updatedDataSource = convert(
+      (
+        await axios.patch(
+          `/api/instance/${instanceId}/datasource/${dataSource.id}`,
+          {
+            data: {
+              type: "dataSource",
+              attributes: {
+                ...attrs,
+              },
+            },
+          }
+        )
+      ).data.data
+    );
 
     commit("setDataSourceById", {
       instanceId: instanceId,
