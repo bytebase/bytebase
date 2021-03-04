@@ -9,5 +9,8 @@ export default {
     link(i) {
       return "favlink" + (i + 1);
     },
+    creatorId() {
+      return "100";
+    },
   }),
 };

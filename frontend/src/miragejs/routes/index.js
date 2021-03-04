@@ -366,8 +366,13 @@ export default function routes() {
 
   // Bookmark
   this.get("/bookmark", function (schema, request) {
+    const {
+      queryParams: { userid: userId },
+    } = request;
+
     return schema.bookmarks.where({
       workspaceId: WORKSPACE_ID,
+      creatorId: userId,
     });
   });
 

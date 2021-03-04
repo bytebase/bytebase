@@ -13,7 +13,8 @@ const getters = {
 
 const actions = {
   async fetchBookmarkListForUser({ commit }: any, userId: UserId) {
-    const bookmarkList = (await axios.get(`/api/bookmark`)).data.data;
+    const bookmarkList = (await axios.get(`/api/bookmark?userid=${userId}`))
+      .data.data;
     commit("setBookmarkListForUser", { userId, bookmarkList });
     return bookmarkList;
   },
