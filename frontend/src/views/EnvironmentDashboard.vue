@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted, watchEffect, computed, reactive } from "vue";
+import { onMounted, onUnmounted, computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { array_swap } from "../utils";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
@@ -99,6 +99,10 @@ export default {
           startReorder();
         },
       });
+
+      if (environmentList.length > 0) {
+        selectEnvironment(0);
+      }
     });
 
     onUnmounted(() => {
@@ -112,34 +116,19 @@ export default {
       });
     });
 
-    const prepareEnvironmentList = () => {
-      store
-        .dispatch("environment/fetchEnvironmentList")
-        .then((list) => {
-          if (list.length > 0) {
-            selectEnvironment(0);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    watchEffect(prepareEnvironmentList);
-
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
-    });
+    }).value;
 
     const tabTitleList = computed(() => {
-      if (environmentList.value) {
+      if (environmentList) {
         if (state.reorder) {
           return state.reorderedEnvironmentList.map(
             (item: Environment, index: number) =>
               (index + 1).toString() + ". " + item.attributes.name
           );
         }
-        return environmentList.value.map(
+        return environmentList.map(
           (item: Environment, index: number) =>
             (index + 1).toString() + ". " + item.attributes.name
         );
@@ -157,7 +146,7 @@ export default {
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((createdEnvironment) => {
           state.showCreateModal = false;
-          selectEnvironment(environmentList.value.length - 1);
+          selectEnvironment(environmentList.length - 1);
         })
         .catch((error) => {
           console.log(error);
@@ -165,7 +154,7 @@ export default {
     };
 
     const startReorder = () => {
-      state.reorderedEnvironmentList = [...environmentList.value];
+      state.reorderedEnvironmentList = [...environmentList];
       state.reorder = true;
     };
 
@@ -181,9 +170,7 @@ export default {
 
     const orderChanged = computed(() => {
       for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-        if (
-          state.reorderedEnvironmentList[i].id != environmentList.value[i].id
-        ) {
+        if (state.reorderedEnvironmentList[i].id != environmentList[i].id) {
           return true;
         }
       }
@@ -212,7 +199,7 @@ export default {
       store
         .dispatch("environment/deleteEnvironmentById", environment.id)
         .then(() => {
-          if (environmentList.value.length > 0) {
+          if (environmentList.length > 0) {
             selectEnvironment(0);
           }
         })
@@ -225,7 +212,7 @@ export default {
       state.selectedIndex = index;
     };
 
-    const tabClass = computed(() => "w-1/" + environmentList.value.length);
+    const tabClass = computed(() => "w-1/" + environmentList.length);
 
     return {
       state,

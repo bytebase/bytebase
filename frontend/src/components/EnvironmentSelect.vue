@@ -11,7 +11,7 @@
       Not selected
     </option>
     <option
-      v-for="(environment, index) in state.environmentList"
+      v-for="(environment, index) in environmentList"
       :key="index"
       :value="environment.id"
       :selected="environment.id == state.selectedId"
@@ -22,13 +22,10 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, reactive } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
-import { Environment } from "../types";
 
 interface LocalState {
-  environmentList: Environment[];
   selectedId?: string;
 }
 
@@ -46,37 +43,28 @@ export default {
     },
   },
   setup(props, { emit }) {
+    const store = useStore();
     const state = reactive<LocalState>({
-      environmentList: [],
       selectedId: props.selectedId,
     });
-    const store = useStore();
 
-    const prepareEnvironmentList = () => {
-      store
-        .dispatch("environment/fetchEnvironmentList")
-        .then((list: Environment[]) => {
-          // Usually env is ordered by ascending importantance, thus we rervese the order to put
-          // more important ones first.
-          state.environmentList = cloneDeep(list).reverse();
-          if (
-            !props.selectedId &&
-            props.selectDefault &&
-            state.environmentList.length > 0
-          ) {
-            state.selectedId = state.environmentList[0].id;
-            emit("select-environment-id", state.selectedId);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"]();
+    }).value;
 
-    watchEffect(prepareEnvironmentList);
+    if (
+      !props.selectedId &&
+      props.selectDefault &&
+      environmentList &&
+      environmentList.length > 0
+    ) {
+      state.selectedId = environmentList[0].id;
+      emit("select-environment-id", state.selectedId);
+    }
 
     return {
       state,
+      environmentList,
     };
   },
 };

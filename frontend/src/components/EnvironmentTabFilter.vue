@@ -1,13 +1,13 @@
 <template>
   <BBTableTabFilter
-    :tabList="state.tabList"
+    :tabList="tabList"
     :selectedIndex="state.selectedIndex"
     @select-index="
       (index) => {
         state.selectedIndex = index;
         $emit(
           'select-environment',
-          index == 0 ? null : state.environmentList[index - 1]
+          index == 0 ? null : environmentList[index - 1]
         );
       }
     "
@@ -15,14 +15,12 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Environment } from "../types";
 
 interface LocalState {
-  environmentList: Environment[];
-  tabList: string[];
   selectedIndex: number;
 }
 
@@ -32,36 +30,33 @@ export default {
   components: {},
   props: {},
   setup(props, ctx) {
+    const store = useStore();
     const state = reactive<LocalState>({
-      environmentList: [],
-      tabList: [],
       selectedIndex: 0,
     });
-    const store = useStore();
 
-    const prepareEnvironmentList = () => {
-      store
-        .dispatch("environment/fetchEnvironmentList")
-        .then((list: Environment[]) => {
-          // Usually env is ordered by ascending importantance, thus we rervese the order to put
-          // more important ones first.
-          state.environmentList = cloneDeep(list).reverse();
-          state.tabList = [
-            "All",
-            ...state.environmentList.map((environment) => {
-              return environment.attributes.name;
-            }),
-          ];
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"]();
+    }).value;
 
-    watchEffect(prepareEnvironmentList);
+    const tabList = computed(() => {
+      const list = ["All"];
+      list.push(
+        // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
+        // thus we rervese the order to put more important ones first.
+        ...cloneDeep(environmentList)
+          .reverse()
+          .map((environment: Environment) => {
+            return environment.attributes.name;
+          })
+      );
+      return list;
+    });
 
     return {
       state,
+      environmentList,
+      tabList,
     };
   },
 };
