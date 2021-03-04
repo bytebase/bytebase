@@ -21,7 +21,7 @@ import router from "./modules/router";
 import command from "./modules/command";
 import notification from "./modules/notification";
 
-const debug = process.env.NODE_ENV !== "production";
+const debug = import.meta.env.NODE_ENV !== "production";
 
 export const store: Store<any> = createStore({
   modules: {
