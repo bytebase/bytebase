@@ -94,13 +94,14 @@ const actions = {
   },
 
   async patchEnvironment({ commit }: any, environment: Environment) {
+    const { id, ...attrs } = environment;
     const updatedEnvironment = convert(
       (
         await axios.patch(`/api/environment/${environment.id}`, {
           data: {
             type: "environment",
             attributes: {
-              name: environment.name,
+              ...attrs,
             },
           },
         })
