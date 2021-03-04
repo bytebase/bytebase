@@ -4,7 +4,7 @@
       <div
         v-for="(title, index) in tabTitleList"
         :key="index"
-        class="cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent"
+        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent"
         v-bind:class="tabClass(index == selectedIndex)"
         @click.self="$emit('select-index', index)"
         @mouseenter="state.hoverIndex = index"
