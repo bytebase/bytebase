@@ -66,7 +66,7 @@
       <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
           <div
-            class="py-6 lg:pl-4 lg:w-80 xl:w-96 lg:border-l lg:border-block-border"
+            class="py-6 lg:py-6 lg:pl-4 lg:w-80 xl:w-96 lg:border-l lg:border-block-border"
           >
             <TaskSidebar
               :task="state.task"
@@ -77,7 +77,7 @@
               @update-custom-field="updateCustomField"
             />
           </div>
-          <div class="lg:hidden my-4 border-t border-block-border" />
+          <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
             <TaskDescription
               :task="state.task"
