@@ -1,5 +1,11 @@
 import axios from "axios";
-import { UserId, Bookmark, BookmarkState, ResourceObject } from "../../types";
+import {
+  UserId,
+  Bookmark,
+  BookmarkNew,
+  BookmarkState,
+  ResourceObject,
+} from "../../types";
 
 function convert(bookmark: ResourceObject): Bookmark {
   return {
@@ -13,25 +19,78 @@ const state: () => BookmarkState = () => ({
 });
 
 const getters = {
-  bookmarkListByUser: (state: BookmarkState) => (userId: UserId) => {
+  bookmarkListByUser: (state: BookmarkState) => (
+    userId: UserId
+  ): Bookmark[] | undefined => {
     return state.bookmarkListByUser.get(userId);
+  },
+  bookmarkByUserAndLink: (state: BookmarkState) => (
+    userId: UserId,
+    link: string
+  ): Bookmark | undefined => {
+    const list = state.bookmarkListByUser.get(userId);
+    if (list) {
+      return list.find((item: Bookmark) => item.link == link);
+    }
+    return undefined;
   },
 };
 
 const actions = {
-  async fetchBookmarkListForUser({ commit }: any, userId: UserId) {
+  async fetchBookmarkListByUser({ commit }: any, userId: UserId) {
     const bookmarkList = (
       await axios.get(`/api/bookmark?userid=${userId}`)
     ).data.data.map((bookmark: ResourceObject) => {
       return convert(bookmark);
     });
-    commit("setBookmarkListForUser", { userId, bookmarkList });
+    commit("setBookmarkListByUserId", { userId, bookmarkList });
     return bookmarkList;
+  },
+
+  async createBookmark({ commit }: any, newBookmark: BookmarkNew) {
+    const createdBookmark = convert(
+      (
+        await axios.post(`/api/bookmark`, {
+          data: {
+            type: "bookmark",
+            attributes: newBookmark,
+          },
+        })
+      ).data.data
+    );
+
+    commit("appendBookmark", createdBookmark);
+
+    return createdBookmark;
+  },
+
+  async patchBookmark({ commit }: any, bookmark: Bookmark) {
+    const { id, ...attrs } = bookmark;
+    const updatedBookmark = convert(
+      (
+        await axios.patch(`/api/bookmark/${bookmark.id}`, {
+          data: {
+            type: "bookmark",
+            attributes: attrs,
+          },
+        })
+      ).data.data
+    );
+
+    commit("replaceBookmark", updatedBookmark);
+
+    return updatedBookmark;
+  },
+
+  async deleteBookmark({ commit }: any, bookmark: Bookmark) {
+    await axios.delete(`/api/bookmark/${bookmark.id}`);
+
+    commit("deleteBookmark", bookmark);
   },
 };
 
 const mutations = {
-  setBookmarkListForUser(
+  setBookmarkListByUserId(
     state: BookmarkState,
     {
       userId,
@@ -42,6 +101,37 @@ const mutations = {
     }
   ) {
     state.bookmarkListByUser.set(userId, bookmarkList);
+  },
+
+  appendBookmark(state: BookmarkState, bookmark: Bookmark) {
+    const list = state.bookmarkListByUser.get(bookmark.creatorId);
+    if (list) {
+      list.push(bookmark);
+    } else {
+      state.bookmarkListByUser.set(bookmark.creatorId, [bookmark]);
+    }
+  },
+
+  replaceBookmark(state: BookmarkState, updatedBookmark: Bookmark) {
+    const list = state.bookmarkListByUser.get(updatedBookmark.creatorId);
+    if (list) {
+      const i = list.findIndex(
+        (item: Bookmark) => item.id == updatedBookmark.id
+      );
+      if (i != -1) {
+        list[i] = updatedBookmark;
+      }
+    }
+  },
+
+  deleteBookmark(state: BookmarkState, bookmark: Bookmark) {
+    const list = state.bookmarkListByUser.get(bookmark.creatorId);
+    if (list) {
+      const i = list.findIndex((item: Bookmark) => item.id == bookmark.id);
+      if (i != -1) {
+        list.splice(i, 1);
+      }
+    }
   },
 };
 

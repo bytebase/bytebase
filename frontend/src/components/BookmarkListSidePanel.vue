@@ -17,7 +17,7 @@
       :to="item.link"
       class="sidebar-link group flex items-center px-3 py-1 text-sm"
     >
-      {{ item.name }}
+      <span class="truncate">{{ item.name }}</span>
     </router-link>
   </div>
 </template>
@@ -37,20 +37,9 @@ export default {
       store.getters["auth/currentUser"]()
     ).value;
 
-    const prepareBookmarkList = () => {
-      store
-        .dispatch("bookmark/fetchBookmarkListForUser", currentUser.id)
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
     const bookmarkList = computed(() =>
       store.getters["bookmark/bookmarkListByUser"](currentUser.id)
     );
-
-    watchEffect(prepareBookmarkList);
-
     return {
       bookmarkList,
     };

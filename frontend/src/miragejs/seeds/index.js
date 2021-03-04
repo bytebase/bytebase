@@ -429,7 +429,7 @@ const workspacesSeeder = (server) => {
   const task1 = server.schema.tasks.find(1);
   server.create("bookmark", {
     workspace: workspace1,
-    name: "Task #" + task1.id,
+    name: task1.name,
     link: `/task/${task1.id}`,
     creatorId: user1.id,
   });
@@ -438,7 +438,7 @@ const workspacesSeeder = (server) => {
   const task2 = server.schema.tasks.find(2);
   server.create("bookmark", {
     workspace: workspace1,
-    name: "Task #" + task2.id,
+    name: task2.name,
     link: `/task/${task2.id}`,
     creatorId: user1.id,
   });
@@ -449,7 +449,7 @@ const workspacesSeeder = (server) => {
   });
   server.create("bookmark", {
     workspace: workspace2,
-    name: "Task #" + task3.id,
+    name: task3.name,
     link: `/task/${task3.id}`,
     creatorId: user1.id,
   });

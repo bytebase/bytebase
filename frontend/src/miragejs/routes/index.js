@@ -376,6 +376,23 @@ export default function routes() {
     });
   });
 
+  this.post("/bookmark", function (schema, request) {
+    const newBookmark = {
+      ...this.normalizedRequestAttrs("bookmark"),
+      workspaceId: WORKSPACE_ID,
+    };
+    return schema.bookmarks.create(newBookmark);
+  });
+
+  this.patch("/bookmark/:bookmarkId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("bookmark");
+    return schema.bookmarks.find(request.params.bookmarkId).update(attrs);
+  });
+
+  this.delete("/bookmark/:bookmarkId", function (schema, request) {
+    return schema.bookmarks.find(request.params.bookmarkId).destroy();
+  });
+
   // Activity
   this.get("/activity", function (schema, request) {
     const {

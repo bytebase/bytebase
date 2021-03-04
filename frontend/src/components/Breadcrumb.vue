@@ -54,7 +54,7 @@
           @click.prevent="toggleBookmark"
         >
           <svg
-            v-if="state.bookmarked"
+            v-if="bookmark"
             class="h-6 w-6 text-yellow-400 hover:text-yellow-600"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
@@ -84,10 +84,10 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed } from "vue";
+import { reactive, computed, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { RouterSlug } from "../types";
+import { RouterSlug, User, Bookmark } from "../types";
 
 interface LocalState {
   bookmarked: boolean;
@@ -103,13 +103,24 @@ export default {
   components: {},
   setup(props, ctx) {
     const store = useStore();
+    const currentRoute = useRouter().currentRoute.value;
 
     const state = reactive<LocalState>({
       bookmarked: Math.random() > 0.5,
     });
 
+    const currentUser: ComputedRef<User> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
+
+    const bookmark: ComputedRef<Bookmark> = computed(() =>
+      store.getters["bookmark/bookmarkByUserAndLink"](
+        currentUser.value.id,
+        currentRoute.path
+      )
+    );
+
     const breadcrumbList = computed(() => {
-      const currentRoute = useRouter().currentRoute.value;
       const routeSlug: RouterSlug = store.getters["router/routeSlug"](
         currentRoute
       );
@@ -133,11 +144,28 @@ export default {
     });
 
     const toggleBookmark = () => {
-      state.bookmarked = !state.bookmarked;
+      if (bookmark.value) {
+        store
+          .dispatch("bookmark/deleteBookmark", bookmark.value)
+          .catch((error) => {
+            console.log(error);
+          });
+      } else {
+        store
+          .dispatch("bookmark/createBookmark", {
+            name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
+            link: currentRoute.path,
+            creatorId: currentUser.value.id,
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
     };
 
     return {
       state,
+      bookmark,
       breadcrumbList,
       toggleBookmark,
     };
