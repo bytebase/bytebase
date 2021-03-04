@@ -54,9 +54,7 @@ const actions = {
         await axios.post(`/api/environment`, {
           data: {
             type: "environment",
-            attributes: {
-              ...newEnvironment,
-            },
+            attributes: newEnvironment,
           },
         })
       ).data.data
@@ -98,9 +96,7 @@ const actions = {
         await axios.patch(`/api/environment/${environment.id}`, {
           data: {
             type: "environment",
-            attributes: {
-              ...attrs,
-            },
+            attributes: attrs,
           },
         })
       ).data.data

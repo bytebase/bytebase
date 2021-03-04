@@ -59,9 +59,7 @@ const actions = {
         await axios.post(`/api/instance`, {
           data: {
             type: "instance",
-            attributes: {
-              ...newInstance,
-            },
+            attributes: newInstance,
           },
         })
       ).data.data
@@ -79,9 +77,7 @@ const actions = {
         await axios.patch(`/api/instance/${instance.id}`, {
           data: {
             type: "instance",
-            attributes: {
-              ...attrs,
-            },
+            attributes: attrs,
           },
         })
       ).data.data

@@ -57,9 +57,7 @@ const actions = {
         await axios.post(`/api/task`, {
           data: {
             type: "task",
-            attributes: {
-              ...newTask,
-            },
+            attributes: newTask,
           },
         })
       ).data.data

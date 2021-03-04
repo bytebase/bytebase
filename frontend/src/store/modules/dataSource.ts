@@ -91,9 +91,7 @@ const actions = {
         await axios.post(`/api/instance/${instanceId}/datasource`, {
           data: {
             type: "dataSource",
-            attributes: {
-              ...newDataSource,
-            },
+            attributes: newDataSource,
           },
         })
       ).data.data
@@ -125,9 +123,7 @@ const actions = {
           {
             data: {
               type: "dataSource",
-              attributes: {
-                ...attrs,
-              },
+              attributes: attrs,
             },
           }
         )
