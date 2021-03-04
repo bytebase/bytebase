@@ -113,7 +113,7 @@ export default {
       type: Number,
     },
     allowCreate: {
-      default: true,
+      default: false,
       type: Boolean,
     },
     reorderModel: {
