@@ -315,7 +315,6 @@ import {
   PropType,
 } from "vue";
 import { useStore } from "vuex";
-import { UserStateSymbol } from "../components/ProvideUser.vue";
 import {
   User,
   Task,
@@ -390,7 +389,9 @@ export default {
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const prepareActivityList = () => {
       store
@@ -422,8 +423,8 @@ export default {
             actionType: "bytebase.task.comment.create",
             containerId: props.task.id,
             creator: {
-              id: currentUser!.id,
-              name: currentUser!.attributes.name,
+              id: currentUser.id,
+              name: currentUser.attributes.name,
             },
             payload: {
               comment: newComment.value,

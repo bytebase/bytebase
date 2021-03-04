@@ -123,7 +123,6 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
-import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { idFromSlug, taskSlug, activeStage } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
@@ -278,7 +277,9 @@ export default {
       return store.getters["environment/environmentList"]();
     });
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const refreshState = () => {
       return {
@@ -286,7 +287,7 @@ export default {
         task: isNew.value
           ? newTaskTemplate.buildTask({
               environmentList: environmentList.value,
-              currentUser: currentUser!,
+              currentUser: currentUser,
             })
           : cloneDeep(
               store.getters["task/taskById"](idFromSlug(props.taskSlug))
@@ -411,8 +412,8 @@ export default {
           taskPatch: {
             ...taskPatch,
             producer: {
-              id: currentUser!.id,
-              name: currentUser!.attributes.name,
+              id: currentUser.id,
+              name: currentUser.attributes.name,
             },
           },
         })
@@ -472,9 +473,9 @@ export default {
     const applicableStageTransitionList = () => {
       return STAGE_TRANSITION_LIST.filter((transition) => {
         const actionListForRole =
-          currentUser!.id === state.task.attributes.creator.id
+          currentUser.id === state.task.attributes.creator.id
             ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser!.id === state.task.attributes.assignee?.id
+            : currentUser.id === state.task.attributes.assignee?.id
             ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
             : GUEST_APPLICABLE_STAGE_ACTION_LIST;
         const stage = activeStage(state.task as Task);

@@ -11,7 +11,6 @@
 <script lang="ts">
 import { watchEffect, computed, inject } from "vue";
 import { useStore } from "vuex";
-import { UserStateSymbol } from "./ProvideUser.vue";
 import GroupSidePanel from "./GroupSidePanel.vue";
 import { User } from "../types";
 
@@ -24,18 +23,20 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const prepareGroupList = () => {
       store
-        .dispatch("group/fetchGroupListForUser", currentUser!.id)
+        .dispatch("group/fetchGroupListForUser", currentUser.id)
         .catch((error) => {
           console.log(error);
         });
     };
 
     const groupList = computed(() =>
-      store.getters["group/groupListByUser"](currentUser!.id)
+      store.getters["group/groupListByUser"](currentUser.id)
     );
 
     watchEffect(prepareGroupList);

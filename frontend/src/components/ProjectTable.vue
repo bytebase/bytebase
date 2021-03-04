@@ -63,9 +63,9 @@
 </template>
 
 <script lang="ts">
-import { computed, inject } from "vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
-import { UserStateSymbol } from "./ProvideUser.vue";
+
 import ProjectTableActionButton from "./ProjectTableActionButton.vue";
 import { User } from "../types";
 
@@ -78,10 +78,12 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const projectList = computed(() =>
-      store.getters["project/projectListByUser"](currentUser!.id)
+      store.getters["project/projectListByUser"](currentUser.id)
     );
 
     return {

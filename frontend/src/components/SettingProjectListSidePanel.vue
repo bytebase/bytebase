@@ -12,9 +12,8 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, inject } from "vue";
+import { watchEffect, computed } from "vue";
 import { useStore } from "vuex";
-import { UserStateSymbol } from "./ProvideUser.vue";
 import { User } from "../types";
 
 export default {
@@ -23,18 +22,20 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const prepareProjectList = () => {
       store
-        .dispatch("project/fetchProjectListForUser", currentUser!.id)
+        .dispatch("project/fetchProjectListForUser", currentUser.id)
         .catch((error) => {
           console.log(error);
         });
     };
 
     const projectList = computed(() =>
-      store.getters["project/projectListByUser"](currentUser!.id)
+      store.getters["project/projectListByUser"](currentUser.id)
     );
 
     watchEffect(prepareProjectList);

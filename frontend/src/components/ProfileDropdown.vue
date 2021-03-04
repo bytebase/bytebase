@@ -91,9 +91,8 @@
 </template>
 
 <script lang="ts">
-import { inject } from "vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
-import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { User } from "../types";
 
 export default {
@@ -102,7 +101,9 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const logout = () => {
       store

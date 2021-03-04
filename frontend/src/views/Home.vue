@@ -25,12 +25,11 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, inject, reactive } from "vue";
+import { watchEffect, computed, reactive } from "vue";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import TaskTable from "../components/TaskTable.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { activeStage, activeEnvironmentId } from "../utils";
 import { User, Environment, Task, StageStatus } from "../types";
 
@@ -56,11 +55,13 @@ export default {
     });
     const store = useStore();
     const router = useRouter();
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const prepareTaskList = () => {
       store
-        .dispatch("task/fetchTaskListForUser", currentUser!.id)
+        .dispatch("task/fetchTaskListForUser", currentUser.id)
         .then((taskList: Task[]) => {
           state.attentionList = [];
           state.subscribeList = [];
@@ -69,12 +70,12 @@ export default {
             // "OPEN"
             if (task.attributes.status === "OPEN") {
               if (
-                task.attributes.creator.id === currentUser!.id ||
-                task.attributes.assignee?.id === currentUser!.id
+                task.attributes.creator.id === currentUser.id ||
+                task.attributes.assignee?.id === currentUser.id
               ) {
                 state.attentionList.push(task);
               } else if (
-                task.attributes.subscriberIdList.includes(currentUser!.id)
+                task.attributes.subscriberIdList.includes(currentUser.id)
               ) {
                 state.subscribeList.push(task);
               }
@@ -85,8 +86,8 @@ export default {
               task.attributes.status === "CANCELED"
             ) {
               if (
-                task.attributes.creator.id === currentUser!.id ||
-                task.attributes.assignee?.id === currentUser!.id
+                task.attributes.creator.id === currentUser.id ||
+                task.attributes.assignee?.id === currentUser.id
               ) {
                 state.closeList.push(task);
               }

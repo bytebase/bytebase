@@ -23,9 +23,8 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, inject } from "vue";
+import { watchEffect, computed } from "vue";
 import { useStore } from "vuex";
-import { UserStateSymbol } from "../components/ProvideUser.vue";
 import { User } from "../types";
 
 export default {
@@ -34,18 +33,20 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = inject<User>(UserStateSymbol);
+    const currentUser: User = computed(() =>
+      store.getters["auth/currentUser"]()
+    ).value;
 
     const prepareBookmarkList = () => {
       store
-        .dispatch("bookmark/fetchBookmarkListForUser", currentUser!.id)
+        .dispatch("bookmark/fetchBookmarkListForUser", currentUser.id)
         .catch((error) => {
           console.log(error);
         });
     };
 
     const bookmarkList = computed(() =>
-      store.getters["bookmark/bookmarkListByUser"](currentUser!.id)
+      store.getters["bookmark/bookmarkListByUser"](currentUser.id)
     );
 
     watchEffect(prepareBookmarkList);
