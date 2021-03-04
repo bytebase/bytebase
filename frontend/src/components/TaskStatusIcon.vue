@@ -68,10 +68,10 @@ export default {
   props: {
     taskStatus: {
       required: true,
-      type: Object as PropType<TaskStatus>,
+      type: String as PropType<TaskStatus>,
     },
     stageStatus: {
-      type: Object as PropType<StageStatus>,
+      type: String as PropType<StageStatus>,
     },
     size: {
       type: String as PropType<SizeType>,
