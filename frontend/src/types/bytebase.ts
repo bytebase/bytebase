@@ -6,6 +6,9 @@ import { TaskFieldId } from "../plugins";
 // Also good for readability.
 export type UserId = string;
 
+// For now, Principal is equal to UserId, in the future it may contain other id such as application, bot etc.
+export type PrincipalId = UserId;
+
 export type StageId = string;
 
 export type TaskId = string;
@@ -40,6 +43,12 @@ export type NewUser = Omit<User, "id">;
 // For display purpose
 export type UserDisplay = {
   id: UserId;
+  name: string;
+};
+
+// Principal
+export type Principal = {
+  id: PrincipalId;
   name: string;
 };
 
@@ -110,6 +119,8 @@ export type Task = ResourceObject & {
     type: TaskType;
     description: string;
     stageProgressList: StageProgress[];
+    creatorId: PrincipalId;
+    assigneeId: PrincipalId;
     creator: UserDisplay;
     assignee?: UserDisplay;
     subscriberIdList: Array<string>;
@@ -123,6 +134,8 @@ export type TaskNew = Omit<ResourceObject, "id"> & {
     type: TaskType;
     description: string;
     stageProgressList: StageProgress[];
+    creatorId: PrincipalId;
+    assigneeId: PrincipalId;
     creator: UserDisplay;
     assignee?: UserDisplay;
     payload: TaskPayload;
@@ -133,6 +146,7 @@ export type TaskPatch = {
   name?: string;
   status?: TaskStatus;
   description?: string;
+  assigneeId?: PrincipalId;
   assignee?: UserDisplay;
   stageProgressList?: StageProgressPatch[];
   payload?: TaskPayload;
@@ -170,6 +184,7 @@ export type Activity = ResourceObject & {
     // The object where this activity belongs
     // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
     containerId: TaskId;
+    creatorId: PrincipalId;
     creator: UserDisplay;
     payload?: ActionPayloadType;
   };
@@ -282,6 +297,10 @@ export interface AuthState {
 
 export interface MemberState {
   memberList: Member[];
+}
+
+export interface PrincipalState {
+  principalList: Principal[];
 }
 
 export interface BookmarkState {

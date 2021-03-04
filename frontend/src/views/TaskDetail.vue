@@ -473,9 +473,9 @@ export default {
     const applicableStageTransitionList = () => {
       return STAGE_TRANSITION_LIST.filter((transition) => {
         const actionListForRole =
-          currentUser.id === state.task.attributes.creator.id
+          currentUser.id === state.task.attributes.creatorId
             ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser.id === state.task.attributes.assignee?.id
+            : currentUser.id === state.task.attributes.assigneeId
             ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
             : GUEST_APPLICABLE_STAGE_ACTION_LIST;
         const stage = activeStage(state.task as Task);

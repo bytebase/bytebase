@@ -63,6 +63,8 @@ const workspacesSeeder = (server) => {
   let task = server.create("task", {
     type: "bytebase.general",
     name: "General Task",
+    creatorId: ws1Dev1.id,
+    assigneeId: ws1Owner.id,
     creator: {
       id: ws1Dev1.id,
       name: ws1Dev1.name,
@@ -112,6 +114,8 @@ const workspacesSeeder = (server) => {
   task = server.create("task", {
     type: "bytebase.datasource.create",
     name: "Request data source for environment - " + environmentList1[1].name,
+    creatorId: ws1Dev1.id,
+    assigneeId: ws1Owner.id,
     creator: {
       id: ws1Dev1.id,
       name: ws1Dev1.name,
@@ -165,6 +169,8 @@ const workspacesSeeder = (server) => {
   for (let i = 0; i < 5; i++) {
     task = server.create("task", {
       type: "bytebase.datasource.schema.update",
+      creatorId: ws1Dev1.id,
+      assigneeId: ws1Owner.id,
       creator: {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
@@ -208,6 +214,8 @@ const workspacesSeeder = (server) => {
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
       type: "bytebase.datasource.schema.update",
+      creatorId: ws1Owner.id,
+      assigneeId: ws1DBA.id,
       creator: {
         id: ws1Owner.id,
         name: ws1Owner.name,
@@ -251,6 +259,8 @@ const workspacesSeeder = (server) => {
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
       type: "bytebase.datasource.schema.update",
+      creatorId: ws1Dev2.id,
+      assigneeId: ws1DBA.id,
       creator: {
         id: ws1Dev2.id,
         name: ws1Dev2.name,
@@ -293,6 +303,8 @@ const workspacesSeeder = (server) => {
 
   task = server.create("task", {
     type: "bytebase.datasource.schema.update",
+    creatorId: ws2Dev.id,
+    assigneeId: ws2DBA.id,
     creator: {
       id: ws2Dev.id,
       name: ws2Dev.name,

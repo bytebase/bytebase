@@ -105,7 +105,7 @@
                     </div>
                     <div
                       v-if="
-                        currentUser.id == activity.attributes.creator.id &&
+                        currentUser.id == activity.attributes.creatorId &&
                         activity.attributes.actionType ==
                           'bytebase.task.comment.create'
                       "

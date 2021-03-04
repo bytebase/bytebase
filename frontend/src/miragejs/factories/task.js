@@ -40,6 +40,12 @@ export default {
         },
       ];
     },
+    creatorId() {
+      return "100";
+    },
+    assigneeId() {
+      return "200";
+    },
     creator() {
       return {
         id: "100",

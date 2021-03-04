@@ -10,6 +10,7 @@ export default {
   async setup() {
     const store = useStore();
 
+    await store.dispatch("principal/fetchPrincipalList");
     await store.dispatch("environment/fetchEnvironmentList");
   },
 };

@@ -16,6 +16,8 @@ export default function routes() {
   // User
   this.get("/user/:id");
 
+  this.get("/user");
+
   // Auth
   this.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");
@@ -63,8 +65,8 @@ export default function routes() {
       return schema.tasks.where((task) => {
         return (
           task.workspaceId == WORKSPACE_ID &&
-          (task.creator.id == userId ||
-            task.assignee.id == userId ||
+          (task.creatorId == userId ||
+            task.assigneeId == userId ||
             task.subscriberIdList.includes(userId))
         );
       });
