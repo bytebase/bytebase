@@ -35,10 +35,9 @@ export type CommandRegisterId = string;
 
 // Persistent State Models
 // User
-export type User = ResourceObject & {
-  attributes: {
-    name: string;
-  };
+export type User = {
+  id: UserId;
+  name: string;
 };
 export type NewUser = Omit<User, "id">;
 
@@ -236,25 +235,15 @@ export type Repository = ResourceObject & {};
 export type RepositoryNew = Omit<Repository, "id">;
 
 // Auth
-export type LoginInfo = Omit<
-  ResourceObject & {
-    attributes: {
-      username: string;
-      password: string;
-    };
-  },
-  "id"
->;
+export type LoginInfo = {
+  username: string;
+  password: string;
+};
 
-export type SignupInfo = Omit<
-  ResourceObject & {
-    attributes: {
-      username: string;
-      password: string;
-    };
-  },
-  "id"
->;
+export type SignupInfo = {
+  username: string;
+  password: string;
+};
 
 // UI State Models
 export type RouterSlug = {

@@ -9,17 +9,14 @@
       aria-label="User menu"
       aria-haspopup="true"
     >
-      <BBAvatar :username="currentUser.attributes.name"> </BBAvatar>
+      <BBAvatar :username="currentUser.name"> </BBAvatar>
     </button>
     <BBContextMenu
       ref="menu"
       class="z-10 origin-top-left absolute right-0 mt-2 w-36 rounded-md shadow-lg"
     >
       <div v-if="isDevOrDemo">
-        <div
-          v-if="currentUser.attributes.email != 'demo@example.com'"
-          class="py-1"
-        >
+        <div v-if="currentUser.email != 'demo@example.com'" class="py-1">
           <a
             @click.prevent="switchToOwner"
             class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
@@ -28,10 +25,7 @@
             Switch to Owner
           </a>
         </div>
-        <div
-          v-if="currentUser.attributes.email != 'jerry@example.com'"
-          class="py-1"
-        >
+        <div v-if="currentUser.email != 'jerry@example.com'" class="py-1">
           <a
             @click.prevent="switchToDBA"
             class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
@@ -40,10 +34,7 @@
             Switch to DBA
           </a>
         </div>
-        <div
-          v-if="currentUser.attributes.email != 'tom@example.com'"
-          class="py-1"
-        >
+        <div v-if="currentUser.email != 'tom@example.com'" class="py-1">
           <a
             @click.prevent="switchToDeveloper"
             class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
@@ -122,11 +113,8 @@ export default {
     const switchToOwner = () => {
       store
         .dispatch("auth/login", {
-          type: "loginInfo",
-          attributes: {
-            username: "demo@example.com",
-            password: "1024",
-          },
+          username: "demo@example.com",
+          password: "1024",
         })
         .then(() => {
           // Do a full page reload to avoid stale UI state.
@@ -137,11 +125,8 @@ export default {
     const switchToDBA = () => {
       store
         .dispatch("auth/login", {
-          type: "loginInfo",
-          attributes: {
-            username: "jerry@example.com",
-            password: "aaa",
-          },
+          username: "jerry@example.com",
+          password: "aaa",
         })
         .then(() => {
           // Do a full page reload to avoid stale UI state.
@@ -152,11 +137,8 @@ export default {
     const switchToDeveloper = () => {
       store
         .dispatch("auth/login", {
-          type: "loginInfo",
-          attributes: {
-            username: "tom@example.com",
-            password: "aaa",
-          },
+          username: "tom@example.com",
+          password: "aaa",
         })
         .then(() => {
           // Do a full page reload to avoid stale UI state.

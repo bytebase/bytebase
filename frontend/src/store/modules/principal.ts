@@ -29,7 +29,7 @@ const actions = {
     const principalList = userList.map((user) => {
       return {
         id: user.id,
-        name: user.attributes.name,
+        name: user.name,
       };
     });
     commit("setPrincipalList", principalList);

@@ -145,11 +145,8 @@ export default {
 
     const trySignup = () => {
       const signupInfo: SignupInfo = {
-        type: "signupInfo",
-        attributes: {
-          username: state.email,
-          password: state.password,
-        },
+        username: state.email,
+        password: state.password,
       };
       store
         .dispatch("auth/signup", signupInfo)

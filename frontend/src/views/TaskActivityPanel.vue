@@ -225,7 +225,7 @@
           <div class="flex">
             <div class="flex-shrink-0">
               <div class="relative">
-                <BBAvatar :username="currentUser.attributes.name"> </BBAvatar>
+                <BBAvatar :username="currentUser.name"> </BBAvatar>
                 <span
                   class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
                 >
@@ -413,7 +413,7 @@ export default {
           containerId: props.task.id,
           creator: {
             id: currentUser.id,
-            name: currentUser.attributes.name,
+            name: currentUser.name,
           },
           payload: {
             comment: newComment.value,

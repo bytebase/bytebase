@@ -1,5 +1,18 @@
 import axios from "axios";
-import { User, AuthState, LoginInfo, SignupInfo } from "../../types";
+import {
+  User,
+  AuthState,
+  LoginInfo,
+  SignupInfo,
+  ResourceObject,
+} from "../../types";
+
+function convert(user: ResourceObject): User {
+  return {
+    id: user.id,
+    ...(user.attributes as Omit<User, "id">),
+  };
+}
 
 const state: () => AuthState = () => ({
   currentUser: null,
@@ -20,11 +33,13 @@ const getters = {
 
 const actions = {
   async login({ commit }: any, loginInfo: LoginInfo) {
-    const loggedInUser = (
-      await axios.post("/api/auth/login", {
-        data: loginInfo,
-      })
-    ).data.data;
+    const loggedInUser = convert(
+      (
+        await axios.post("/api/auth/login", {
+          data: { type: "loginInfo", attributes: loginInfo },
+        })
+      ).data.data
+    );
 
     localStorage.setItem("bb.auth.user", JSON.stringify(loggedInUser));
     commit("setCurrentUser", loggedInUser);
@@ -32,11 +47,13 @@ const actions = {
   },
 
   async signup({ commit }: any, signupInfo: SignupInfo) {
-    const newUser = (
-      await axios.post("/api/auth/signup", {
-        data: signupInfo,
-      })
-    ).data.data;
+    const newUser = convert(
+      (
+        await axios.post("/api/auth/signup", {
+          data: { type: "signupInfo", attributes: signupInfo },
+        })
+      ).data.data
+    );
 
     localStorage.setItem("bb.auth.user", JSON.stringify(newUser));
     commit("setCurrentUser", newUser);
@@ -44,7 +61,8 @@ const actions = {
   },
 
   async fetchCurrentUser({ commit }: any) {
-    const currentUser = (await axios.get("/api/user/1")).data.data;
+    const currentUser = convert((await axios.get("/api/user/1")).data.data);
+
     localStorage.setItem("bb.auth.user", JSON.stringify(currentUser));
     commit("setCurrentUser", currentUser);
     return currentUser;

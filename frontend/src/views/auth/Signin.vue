@@ -150,11 +150,8 @@ export default {
 
     const trySignin = () => {
       const loginInfo: LoginInfo = {
-        type: "loginInfo",
-        attributes: {
-          username: state.email,
-          password: state.password,
-        },
+        username: state.email,
+        password: state.password,
       };
       store
         .dispatch("auth/login", loginInfo)
