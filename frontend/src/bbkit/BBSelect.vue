@@ -132,9 +132,7 @@ export default {
   },
   components: {},
   props: {
-    selectedItem: {
-      type: Object,
-    },
+    selectedItem: {},
     itemList: {
       required: true,
       type: Object as PropType<any[]>,
