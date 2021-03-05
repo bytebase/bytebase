@@ -4,8 +4,8 @@
     <div class="space-y-1">
       <router-link
         to="/"
-        class="sidebar-link group flex items-center px-2"
-        active-class="sidebar-link"
+        class="outline-item group flex items-center px-2"
+        active-class="outline-item"
       >
         <svg
           class="mr-3 h-6 w-6 text-control-light group-hover:text-control-light group-focus:text-control-light-hover"

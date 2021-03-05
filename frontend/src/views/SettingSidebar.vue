@@ -46,7 +46,7 @@
         <div class="space-y-1">
           <router-link
             to="/setting/account/profile"
-            class="navlink group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Profile
           </router-link>
@@ -75,31 +75,31 @@
         <div class="space-y-1">
           <router-link
             to="/setting/general"
-            class="sidebar-link group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             General
           </router-link>
           <router-link
             to="/setting/agent"
-            class="sidebar-link group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Agents
           </router-link>
           <router-link
             to="/setting/member"
-            class="sidebar-link group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Members
           </router-link>
           <router-link
             to="/setting/plan"
-            class="sidebar-link group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Plans
           </router-link>
           <router-link
             to="/setting/billing"
-            class="sidebar-link group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Billing
           </router-link>
@@ -110,7 +110,7 @@
           >
             <button
               @click.prevent="toggleExpand"
-              class="sidebar-link mt-1 group w-full flex items-center pr-2 py-2"
+              class="mt-1 focus:outline-none group w-full flex items-center pr-2 py-2"
             >
               <svg
                 v-if="state.expandState"
@@ -132,7 +132,7 @@
             <div v-if="state.expandState" class="mt-1 space-y-1">
               <router-link
                 to="/setting/integration/slack"
-                class="sidebar-link group w-full flex items-center pl-10 pr-2 py-1"
+                class="outline-item group w-full flex items-center pl-10 pr-2 py-1"
               >
                 Slack
               </router-link>

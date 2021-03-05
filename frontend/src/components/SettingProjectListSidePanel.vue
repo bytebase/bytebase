@@ -3,7 +3,7 @@
     <template v-for="project in projectList" :key="project.id">
       <router-link
         :to="`/${project.attributes.namespace}/${project.attributes.slug}/setting`"
-        class="sidebar-link group w-full flex items-center pl-11 pr-2 py-2"
+        class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
       >
         {{ project.attributes.name }}
       </router-link>

@@ -2,7 +2,7 @@
   <div class="mt-1 space-y-1" role="group" aria-labelledby="groups-headline">
     <button
       @click.prevent="toggleExpand"
-      class="sidebar-link mt-1 group w-full flex items-center pr-2 py-2"
+      class="outline-item mt-1 group w-full flex items-center pr-2 py-2"
     >
       <svg
         v-if="expandState"
@@ -24,13 +24,13 @@
     <div v-if="expandState" class="mt-1 space-y-1">
       <router-link
         :to="`/${group.attributes.slug}`"
-        class="sidebar-link group w-full flex items-center pl-10 pr-2 py-1"
+        class="outline-item group w-full flex items-center pl-10 pr-2 py-1"
       >
         Dashboard
       </router-link>
       <router-link
         :to="`/${group.attributes.slug}/setting`"
-        class="sidebar-link group w-full flex items-center pl-10 pr-2 py-1"
+        class="outline-item group w-full flex items-center pl-10 pr-2 py-1"
       >
         Setting
       </router-link>
