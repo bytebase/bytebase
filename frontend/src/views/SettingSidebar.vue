@@ -4,7 +4,7 @@
     <div class="space-y-1">
       <button
         @click.prevent="goBack"
-        class="group flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
+        class="group flex items-center px-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
       >
         <svg
           class="mr-1 h-6 w-6 text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
