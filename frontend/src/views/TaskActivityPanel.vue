@@ -475,8 +475,16 @@ export default {
               newValue = update.newValue;
             } else if (update.fieldId == TaskBuiltinFieldId.ASSIGNEE) {
               name = "Assignee";
-              oldValue = update.oldValue;
-              newValue = update.newValue;
+              if (update.oldValue) {
+                oldValue = store.getters["principal/principalById"](
+                  update.oldValue
+                ).name;
+              }
+              if (update.newValue) {
+                newValue = store.getters["principal/principalById"](
+                  update.newValue
+                ).name;
+              }
             } else if (update.fieldId == TaskBuiltinFieldId.DESCRIPTION) {
               name = "Description";
             } else {
