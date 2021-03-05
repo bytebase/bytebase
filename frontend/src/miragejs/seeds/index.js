@@ -334,7 +334,7 @@ const workspacesSeeder = (server) => {
     workspace: workspace1,
     name: task1.name,
     link: `/task/${task1.id}`,
-    creatorId: user1.id,
+    creatorId: ws1Owner.id,
   });
 
   // Task 2
@@ -343,7 +343,7 @@ const workspacesSeeder = (server) => {
     workspace: workspace1,
     name: task2.name,
     link: `/task/${task2.id}`,
-    creatorId: user1.id,
+    creatorId: ws1Owner.id,
   });
 
   // Task 3
@@ -354,7 +354,7 @@ const workspacesSeeder = (server) => {
     workspace: workspace2,
     name: task3.name,
     link: `/task/${task3.id}`,
-    creatorId: user1.id,
+    creatorId: ws1Owner.id,
   });
 };
 

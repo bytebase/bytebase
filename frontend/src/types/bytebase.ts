@@ -225,10 +225,6 @@ export type DataSource = {
 };
 export type DataSourceNew = Omit<DataSource, "id">;
 
-// Repository
-export type Repository = ResourceObject & {};
-export type RepositoryNew = Omit<Repository, "id">;
-
 // Auth
 export type LoginInfo = {
   username: string;
@@ -308,10 +304,6 @@ export interface InstanceState {
 export interface DataSourceState {
   dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
   dataSourceById: Map<DataSourceId, DataSource>;
-}
-
-export interface RepositoryState {
-  repositoryByProject: Map<ProjectId, Repository>;
 }
 
 export interface NotificationState {

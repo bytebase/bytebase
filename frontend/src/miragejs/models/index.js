@@ -55,8 +55,6 @@ export default {
     instance: belongsTo(),
   }),
 
-  repository: Model.extend({}),
-
   batchUpdate: Model,
 
   signupInfo: Model,

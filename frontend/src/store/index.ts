@@ -8,7 +8,6 @@ import environment from "./modules/environment";
 import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
 import principal from "./modules/principal";
-import repository from "./modules/repository";
 import auth from "./modules/auth";
 import task from "./modules/task";
 
@@ -31,7 +30,6 @@ export const store: Store<any> = createStore({
     instance,
     dataSource,
     principal,
-    repository,
     auth,
     task,
     uistate,
