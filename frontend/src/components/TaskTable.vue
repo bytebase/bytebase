@@ -35,7 +35,7 @@
       <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
         {{ humanizeTs(task.lastUpdatedTs) }}
       </BBTableCell>
-      <BBTableCell class="w-32 hidden sm:table-cell">
+      <BBTableCell class="w-36 hidden sm:table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'small'"
