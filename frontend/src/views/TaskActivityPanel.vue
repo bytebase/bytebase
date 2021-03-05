@@ -99,7 +99,7 @@
                     </div>
                     <div
                       v-if="
-                        currentUser.id == activity.creatorId &&
+                        currentUser.id == activity.creator.id &&
                         activity.actionType == 'bytebase.task.comment.create'
                       "
                       class="space-x-2 text-control-light"
