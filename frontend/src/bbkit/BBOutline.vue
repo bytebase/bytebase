@@ -32,11 +32,11 @@
       @mouseenter="state.hoverIndex = index"
       @mouseleave="state.hoverIndex = -1"
     >
-      <div
+      <router-link
+        :to="item.link"
         class="outline-item flex justify-between px-3 py-1"
-        @click.prevent="$emit('click-index', index)"
       >
-        <span class="truncate">{{ item }}</span>
+        <span class="truncate">{{ item.name }}</span>
         <button
           v-if="allowDelete && index == state.hoverIndex"
           class="focus:outline-none"
@@ -57,7 +57,7 @@
             ></path>
           </svg>
         </button>
-      </div>
+      </router-link>
     </div>
   </div>
 </template>
@@ -69,12 +69,17 @@ interface LocalState {
   expandState: boolean;
 }
 
+type OutlineItem = {
+  name: string;
+  link: string;
+};
+
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 
 export default {
   name: "BBOutline",
-  emits: ["click-index", "delete-index"],
+  emits: ["delete-index"],
   props: {
     // Used for storing the expand state.
     // Empty id means not to store expand state.
@@ -88,7 +93,7 @@ export default {
     },
     itemList: {
       required: true,
-      type: Object as PropType<any[]>,
+      type: Object as PropType<OutlineItem[]>,
     },
     allowDelete: {
       default: false,

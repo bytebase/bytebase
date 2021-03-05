@@ -2,10 +2,13 @@
   <BBOutline
     :id="'bookmark'"
     :title="'Bookmarks'"
-    :itemList="bookmarkList.map((item) => item.name)"
+    :itemList="
+      bookmarkList.map((item) => {
+        return { name: item.name, link: item.link };
+      })
+    "
     :allowDelete="true"
     :allowCollapse="true"
-    @click-index="clickIndex"
     @delete-index="deleteIndex"
   />
 </template>
@@ -14,7 +17,7 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { Bookmark, User } from "../types";
+import { User } from "../types";
 
 export default {
   name: "BookmarkListSidePanel",
@@ -31,10 +34,6 @@ export default {
       store.getters["bookmark/bookmarkListByUser"](currentUser.id)
     );
 
-    const clickIndex = (index: number) => {
-      router.push(bookmarkList.value[index].link);
-    };
-
     const deleteIndex = (index: number) => {
       store
         .dispatch("bookmark/deleteBookmark", bookmarkList.value[index])
@@ -45,7 +44,6 @@ export default {
 
     return {
       bookmarkList,
-      clickIndex,
       deleteIndex,
     };
   },

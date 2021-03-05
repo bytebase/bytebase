@@ -104,11 +104,7 @@
             Billing
           </router-link>
           <div class="pl-9 mt-1">
-            <BBOutline
-              :title="'Integrations'"
-              :itemList="integrationList.map((item) => item.name)"
-              @click-index="goToIntegration"
-            />
+            <BBOutline :title="'Integrations'" :itemList="integrationList" />
           </div>
         </div>
       </div>
@@ -148,18 +144,13 @@ export default {
     const integrationList = [
       {
         name: "Slack",
-        path: "/setting/integration/slack",
+        link: "/setting/integration/slack",
       },
     ];
-
-    const goToIntegration = (index: number) => {
-      router.push(integrationList[index].path);
-    };
 
     return {
       state,
       integrationList,
-      goToIntegration,
       goBack,
       toggleExpand,
     };
