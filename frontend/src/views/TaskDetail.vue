@@ -73,7 +73,7 @@
               :new="state.new"
               :fieldList="inputFieldList"
               @update-task-status="updateTaskStatus"
-              @update-assignee="updateAssignee"
+              @update-assignee-id="updateAssigneeId"
               @update-custom-field="updateCustomField"
             />
           </div>
@@ -138,7 +138,7 @@ import {
   TaskPatch,
   TaskStatus,
   StageStatus,
-  UserDisplay,
+  PrincipalId,
 } from "../types";
 import { templateForType, TaskField } from "../plugins";
 
@@ -357,9 +357,9 @@ export default {
       });
     };
 
-    const updateAssignee = (newAssignee: UserDisplay) => {
+    const updateAssigneeId = (newAssigneeId: PrincipalId) => {
       patchTask({
-        assignee: newAssignee,
+        assigneeId: newAssigneeId,
       });
     };
 
@@ -454,9 +454,9 @@ export default {
     const applicableStageTransitionList = () => {
       return STAGE_TRANSITION_LIST.filter((transition) => {
         const actionListForRole =
-          currentUser.id === state.task.creatorId
+          currentUser.id === (state.task as Task).creator.id
             ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser.id === state.task.assigneeId
+            : currentUser.id === (state.task as Task).assignee?.id
             ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
             : GUEST_APPLICABLE_STAGE_ACTION_LIST;
         const stage = activeStage(state.task as Task);
@@ -492,7 +492,7 @@ export default {
       modalState,
       updateDescription,
       updateTaskStatus,
-      updateAssignee,
+      updateAssigneeId,
       updateCustomField,
       doCreate,
       tryChangeStageStatus,

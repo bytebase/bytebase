@@ -22,8 +22,8 @@
           <PrincipalSelect
             :selectedId="task.assignee?.id"
             @select-principal="
-              (value) => {
-                $emit('update-assignee', value);
+              (principal) => {
+                $emit('update-assignee-id', principal.id);
               }
             "
           />
@@ -200,7 +200,7 @@ interface LocalState {
 
 export default {
   name: "TaskSidebar",
-  emits: ["update-task-status", "update-assignee", "update-custom-field"],
+  emits: ["update-task-status", "update-assignee-id", "update-custom-field"],
   props: {
     task: {
       required: true,

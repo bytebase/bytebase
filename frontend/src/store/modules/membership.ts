@@ -1,16 +1,21 @@
 import axios from "axios";
-import {
-  Membership,
-  MembershipState,
-  RoleType,
-  UserDisplay,
-  ResourceObject,
-} from "../../types";
+import { Membership, MembershipState, ResourceObject } from "../../types";
 
-function convert(membership: ResourceObject): Membership {
+function convert(membership: ResourceObject, rootGetters: any): Membership {
+  const principal = rootGetters["principal/principalById"](
+    membership.attributes.principalId
+  );
+  const updater = rootGetters["principal/principalById"](
+    membership.attributes.updaterId
+  );
   return {
     id: membership.id,
-    ...(membership.attributes as Omit<Membership, "id">),
+    principal,
+    updater,
+    ...(membership.attributes as Omit<
+      Membership,
+      "id" | "principal" | "updater"
+    >),
   };
 }
 
@@ -20,15 +25,15 @@ const state: () => MembershipState = () => ({
 
 const getters = {
   membershipList: (state: MembershipState) => () => {
-    return state.memberList;
+    return state.membershipList;
   },
 };
 
 const actions = {
-  async fetchMembershipList({ commit }: any) {
+  async fetchMembershipList({ commit, rootGetters }: any) {
     const membershipList = (await axios.get(`/api/membership`)).data.data.map(
       (membership: ResourceObject) => {
-        return convert(membership);
+        return convert(membership, rootGetters);
       }
     );
 

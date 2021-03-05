@@ -9,10 +9,22 @@ import {
   ResourceObject,
 } from "../../types";
 
-function convert(task: ResourceObject): Task {
+function convert(task: ResourceObject, rootGetters: any): Task {
+  const creator = rootGetters["principal/principalById"](
+    task.attributes.creatorId
+  );
+  let assignee = undefined;
+  if (task.attributes.assigneeId) {
+    assignee = rootGetters["principal/principalById"](
+      task.attributes.assigneeId
+    );
+  }
+
   return {
     id: task.id,
-    ...(task.attributes as Omit<Task, "id">),
+    creator,
+    assignee,
+    ...(task.attributes as Omit<Task, "id" | "creator" | "assignee">),
   };
 }
 
@@ -32,26 +44,30 @@ const getters = {
 };
 
 const actions = {
-  async fetchTaskListForUser({ commit }: any, userId: UserId) {
+  async fetchTaskListForUser({ commit, rootGetters }: any, userId: UserId) {
     const taskList = (
       await axios.get(`/api/task?userid=${userId}`)
     ).data.data.map((task: ResourceObject) => {
-      return convert(task);
+      return convert(task, rootGetters);
     });
     commit("setTaskListForUser", { userId, taskList });
     return taskList;
   },
 
-  async fetchTaskById({ commit }: any, taskId: TaskId) {
-    const task = convert((await axios.get(`/api/task/${taskId}`)).data.data);
+  async fetchTaskById({ commit, rootGetters }: any, taskId: TaskId) {
+    const task = convert(
+      (await axios.get(`/api/task/${taskId}`)).data.data,
+      rootGetters
+    );
     commit("setTaskById", {
       taskId,
       task,
     });
+    console.log(task);
     return task;
   },
 
-  async createTask({ commit }: any, newTask: TaskNew) {
+  async createTask({ commit, rootGetters }: any, newTask: TaskNew) {
     const createdTask = convert(
       (
         await axios.post(`/api/task`, {
@@ -60,7 +76,8 @@ const actions = {
             attributes: newTask,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("setTaskById", {
@@ -72,7 +89,7 @@ const actions = {
   },
 
   async patchTask(
-    { commit, dispatch }: any,
+    { commit, dispatch, rootGetters }: any,
     {
       taskId,
       taskPatch,
@@ -89,7 +106,8 @@ const actions = {
             attributes: taskPatch,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("setTaskById", {

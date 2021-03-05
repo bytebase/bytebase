@@ -65,14 +65,6 @@ const workspacesSeeder = (server) => {
     name: "General Task",
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
-    creator: {
-      id: ws1Dev1.id,
-      name: ws1Dev1.name,
-    },
-    assignee: {
-      id: ws1Owner.id,
-      name: ws1Owner.name,
-    },
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
     stageProgressList: [
       {
@@ -116,14 +108,6 @@ const workspacesSeeder = (server) => {
     name: "Request data source for environment - " + environmentList1[1].name,
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
-    creator: {
-      id: ws1Dev1.id,
-      name: ws1Dev1.name,
-    },
-    assignee: {
-      id: ws1Owner.id,
-      name: ws1Owner.name,
-    },
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
     stageProgressList: [
       {
@@ -155,10 +139,7 @@ const workspacesSeeder = (server) => {
     server.create("activity", {
       actionType: "bytebase.task.comment.create",
       containerId: task.id,
-      creator: {
-        id: user.id,
-        name: user.name,
-      },
+      creatorId: user.id,
       payload: {
         comment: faker.fake("{{lorem.paragraph}}"),
       },
@@ -175,10 +156,7 @@ const workspacesSeeder = (server) => {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
       },
-      assignee: {
-        id: ws1Owner.id,
-        name: ws1Owner.name,
-      },
+      assigneeId: ws1Owner.id,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -187,10 +165,7 @@ const workspacesSeeder = (server) => {
     server.create("activity", {
       actionType: "bytebase.task.create",
       containerId: task.id,
-      creator: {
-        id: ws1Dev1.id,
-        name: ws1Dev1.name,
-      },
+      creatorId: ws1Dev1.id,
       workspace: workspace1,
     });
 
@@ -199,10 +174,7 @@ const workspacesSeeder = (server) => {
       server.create("activity", {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
-        creator: {
-          id: user.id,
-          name: user.name,
-        },
+        creatorId: user.id,
         payload: {
           comment: faker.fake("{{lorem.paragraph}}"),
         },
@@ -216,14 +188,8 @@ const workspacesSeeder = (server) => {
       type: "bytebase.datasource.schema.update",
       creatorId: ws1Owner.id,
       assigneeId: ws1DBA.id,
-      creator: {
-        id: ws1Owner.id,
-        name: ws1Owner.name,
-      },
-      assignee: {
-        id: ws1DBA.id,
-        name: ws1DBA.name,
-      },
+      creatorId: ws1Owner.id,
+      assigneeId: ws1DBA.id,
       subscriberIdList: [ws1Dev2.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -244,10 +210,7 @@ const workspacesSeeder = (server) => {
       server.create("activity", {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
-        creator: {
-          id: user.id,
-          name: user.name,
-        },
+        creatorId: user.id,
         payload: {
           comment: faker.fake("{{lorem.paragraph}}"),
         },
@@ -261,14 +224,8 @@ const workspacesSeeder = (server) => {
       type: "bytebase.datasource.schema.update",
       creatorId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
-      creator: {
-        id: ws1Dev2.id,
-        name: ws1Dev2.name,
-      },
-      assignee: {
-        id: ws1DBA.id,
-        name: ws1DBA.name,
-      },
+      creatorId: ws1Dev2.id,
+      assigneeId: ws1DBA.id,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -277,10 +234,7 @@ const workspacesSeeder = (server) => {
     server.create("activity", {
       actionType: "bytebase.task.create",
       containerId: task.id,
-      creator: {
-        id: ws1Dev2.id,
-        name: ws1Dev2.name,
-      },
+      creatorId: ws1Dev2.id,
       workspace: workspace1,
     });
 
@@ -289,10 +243,7 @@ const workspacesSeeder = (server) => {
       server.create("activity", {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
-        creator: {
-          id: user.id,
-          name: user.name,
-        },
+        creatorId: user.id,
         payload: {
           comment: faker.fake("{{lorem.paragraph}}"),
         },
@@ -305,14 +256,8 @@ const workspacesSeeder = (server) => {
     type: "bytebase.datasource.schema.update",
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
-    creator: {
-      id: ws2Dev.id,
-      name: ws2Dev.name,
-    },
-    assignee: {
-      id: ws2DBA.id,
-      name: ws2DBA.name,
-    },
+    creatorId: ws2Dev.id,
+    assigneeId: ws2DBA.id,
     ...fillStage(environmentList2),
     workspace: workspace2,
   });
@@ -320,10 +265,7 @@ const workspacesSeeder = (server) => {
   server.create("activity", {
     actionType: "bytebase.task.create",
     containerId: task.id,
-    creator: {
-      id: ws1Dev1.id,
-      name: ws1Dev1.name,
-    },
+    creatorId: ws1Dev1.id,
     workspace: workspace2,
   });
 

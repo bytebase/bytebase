@@ -314,7 +314,6 @@ import {
   ActionTaskCommentCreatePayload,
   ActionTaskFieldUpdatePayload,
   Environment,
-  UserDisplay,
 } from "../types";
 import { sizeToFit } from "../utils";
 import {

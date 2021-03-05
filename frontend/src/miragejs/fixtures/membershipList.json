@@ -5,14 +5,8 @@
     "createdTs": 1614528000,
     "lastUpdatedTs": 1614571200,
     "role": "OWNER",
-    "user": {
-      "id": "1",
-      "name": "Demo User"
-    },
-    "updater": {
-      "id": "1",
-      "name": "Demo User"
-    }
+    "principalId": "1",
+    "updaterId": "1"
   },
   {
     "id": "2",
@@ -20,14 +14,8 @@
     "createdTs": 1614614400,
     "lastUpdatedTs": 1614657600,
     "role": "DEVELOPER",
-    "user": {
-      "id": "1",
-      "name": "Demo User"
-    },
-    "updater": {
-      "id": "1",
-      "name": "Demo User"
-    }
+    "principalId": "1",
+    "updaterId": "1"
   },
   {
     "id": "3",
@@ -35,14 +23,8 @@
     "createdTs": 1614700800,
     "lastUpdatedTs": 1614744000,
     "role": "DBA",
-    "user": {
-      "id": "2",
-      "name": "Jerry DBA"
-    },
-    "updater": {
-      "id": "1",
-      "name": "Demo User"
-    }
+    "principalId": "2",
+    "updaterId": "1"
   },
   {
     "id": "4",
@@ -50,14 +32,8 @@
     "createdTs": 1609430400,
     "lastUpdatedTs": 1609473600,
     "role": "DEVELOPER",
-    "user": {
-      "id": "3",
-      "name": "Tom Dev"
-    },
-    "updater": {
-      "id": "1",
-      "name": "Demo User"
-    }
+    "principalId": "3",
+    "updaterId": "1"
   },
   {
     "id": "5",
@@ -65,14 +41,8 @@
     "createdTs": 1609516800,
     "lastUpdatedTs": 1609560000,
     "role": "DBA",
-    "user": {
-      "id": "4",
-      "name": "Alice DBA"
-    },
-    "updater": {
-      "id": "1",
-      "name": "Demo User"
-    }
+    "principalId": "4",
+    "updaterId": "1"
   },
   {
     "id": "6",
@@ -80,13 +50,7 @@
     "createdTs": 1609603200,
     "lastUpdatedTs": 1609646400,
     "role": "DEVELOPER",
-    "user": {
-      "id": "5",
-      "name": "Jane Dev"
-    },
-    "updater": {
-      "id": "1",
-      "name": "Demo User"
-    }
+    "principalId": "5",
+    "updaterId": "1"
   }
 ]

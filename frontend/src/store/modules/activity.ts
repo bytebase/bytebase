@@ -5,15 +5,18 @@ import {
   ActivityId,
   Activity,
   ActivityNew,
-  ActivityPatch,
   ActivityState,
   ResourceObject,
 } from "../../types";
 
-function convert(activity: ResourceObject): Activity {
+function convert(activity: ResourceObject, rootGetters: any): Activity {
+  const creator = rootGetters["principal/principalById"](
+    activity.attributes.creatorId
+  );
   return {
     id: activity.id,
-    ...(activity.attributes as Omit<Activity, "id">),
+    creator,
+    ...(activity.attributes as Omit<Activity, "id" | "creator">),
   };
 }
 
@@ -32,10 +35,10 @@ const getters = {
 };
 
 const actions = {
-  async fetchActivityListForUser({ commit }: any, userId: UserId) {
+  async fetchActivityListForUser({ commit, rootGetters }: any, userId: UserId) {
     const activityList = (await axios.get(`/api/activity`)).data.data.map(
       (activity: ResourceObject) => {
-        return convert(activity);
+        return convert(activity, rootGetters);
       }
     );
 
@@ -43,18 +46,21 @@ const actions = {
     return activityList;
   },
 
-  async fetchActivityListForTask({ commit }: any, taskId: TaskId) {
+  async fetchActivityListForTask({ commit, rootGetters }: any, taskId: TaskId) {
     const activityList = (
       await axios.get(`/api/activity?containerid=${taskId}&type=bytebase.task.`)
     ).data.data.map((activity: ResourceObject) => {
-      return convert(activity);
+      return convert(activity, rootGetters);
     });
 
     commit("setActivityListForTask", { taskId, activityList });
     return activityList;
   },
 
-  async createActivity({ dispatch }: any, newActivity: ActivityNew) {
+  async createActivity(
+    { dispatch, rootGetters }: any,
+    newActivity: ActivityNew
+  ) {
     const createdActivity: Activity = convert(
       (
         await axios.post(`/api/activity`, {
@@ -63,7 +69,8 @@ const actions = {
             attributes: newActivity,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     // There might exist other activities happened since the last fetch, so we do a full refetch.
@@ -75,7 +82,7 @@ const actions = {
   },
 
   async updateComment(
-    { dispatch }: any,
+    { dispatch, rootGetters }: any,
     {
       activityId,
       updatedComment,
@@ -93,7 +100,8 @@ const actions = {
             },
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     dispatch("fetchActivityListForTask", updatedActivity.containerId);

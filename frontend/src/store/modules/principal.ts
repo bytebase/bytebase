@@ -1,5 +1,11 @@
 import axios from "axios";
-import { User, PrincipalId, Principal, PrincipalState } from "../../types";
+import {
+  User,
+  PrincipalId,
+  Principal,
+  PrincipalState,
+  ResourceObject,
+} from "../../types";
 
 const state: () => PrincipalState = () => ({
   principalList: [],
@@ -12,24 +18,27 @@ const getters = {
 
   principalById: (state: PrincipalState) => (
     principalId: PrincipalId
-  ): Principal | undefined => {
+  ): Principal => {
     for (const principal of state.principalList) {
       if (principal.id == principalId) {
         return principal;
       }
     }
-    return undefined;
+    return {
+      id: principalId,
+      name: "Unknown User " + principalId,
+    };
   },
 };
 
 const actions = {
   async fetchPrincipalList({ commit }: any) {
-    const userList: User[] = (await axios.get(`/api/user`)).data.data;
+    const userList: ResourceObject[] = (await axios.get(`/api/user`)).data.data;
 
     const principalList = userList.map((user) => {
       return {
         id: user.id,
-        name: user.name,
+        name: user.attributes.name,
       };
     });
     commit("setPrincipalList", principalList);

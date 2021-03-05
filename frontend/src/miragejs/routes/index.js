@@ -138,12 +138,12 @@ export default function routes() {
         }
       }
 
-      if (attrs.assignee) {
-        if (task.assignee != attrs.assignee) {
+      if (attrs.assigneeId) {
+        if (task.assigneeId != attrs.assigneeId) {
           changeList.push({
             fieldId: TaskBuiltinFieldId.ASSIGNEE,
-            oldValue: task.assignee,
-            newValue: attrs.assignee,
+            oldValue: task.assigneeId,
+            newValue: attrs.assigneeId,
           });
         }
       }

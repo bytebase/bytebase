@@ -18,11 +18,8 @@ export default {
     description() {
       return faker.fake("{{lorem.paragraphs}}");
     },
-    assignee() {
-      return {
-        id: "200",
-        name: "Jim Gray",
-      };
+    assigneeId() {
+      return "200";
     },
     stageProgressList() {
       return [

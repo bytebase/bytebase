@@ -46,18 +46,6 @@ export default {
     assigneeId() {
       return "200";
     },
-    creator() {
-      return {
-        id: "100",
-        name: "John Appleseed",
-      };
-    },
-    assignee() {
-      return {
-        id: "200",
-        name: "Jim Gray",
-      };
-    },
     subscriberIdList() {
       return new Array();
     },

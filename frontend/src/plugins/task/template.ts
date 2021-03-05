@@ -23,10 +23,6 @@ const allTaskTemplateList: TaskTemplate[] = [
           },
         ],
         creatorId: ctx.currentUser.id,
-        creator: {
-          id: ctx.currentUser.id,
-          name: ctx.currentUser.name,
-        },
         payload: {},
       };
     },
@@ -47,10 +43,6 @@ const allTaskTemplateList: TaskTemplate[] = [
           },
         ],
         creatorId: ctx.currentUser.id,
-        creator: {
-          id: ctx.currentUser.id,
-          name: ctx.currentUser.name,
-        },
         payload: {},
       };
     },
@@ -115,10 +107,6 @@ const allTaskTemplateList: TaskTemplate[] = [
           };
         }),
         creatorId: ctx.currentUser.id,
-        creator: {
-          id: ctx.currentUser.id,
-          name: ctx.currentUser.name,
-        },
         payload: {},
       };
     },

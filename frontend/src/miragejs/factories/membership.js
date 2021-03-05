@@ -18,17 +18,11 @@ export default {
         return "DEVELOPER";
       }
     },
-    user() {
-      return {
-        id: "100",
-        name: "John Appleseed",
-      };
+    principalId() {
+      return "100";
     },
-    updater() {
-      return {
-        id: "200",
-        name: "Jim Gray",
-      };
+    updaterId() {
+      return "200";
     },
   }),
 };

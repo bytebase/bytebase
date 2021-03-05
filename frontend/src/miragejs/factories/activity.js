@@ -14,11 +14,8 @@ export default {
     containerId() {
       return "0";
     },
-    creator() {
-      return {
-        id: "100",
-        name: "John Appleseed",
-      };
+    creatorId() {
+      return "100";
     },
     payload() {
       return {};

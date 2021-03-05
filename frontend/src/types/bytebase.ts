@@ -39,12 +39,6 @@ export type User = {
 };
 export type NewUser = Omit<User, "id">;
 
-// For display purpose
-export type UserDisplay = {
-  id: UserId;
-  name: string;
-};
-
 // Principal
 export type Principal = {
   id: PrincipalId;
@@ -59,8 +53,8 @@ export type Membership = {
   createdTs: number;
   lastUpdatedTs: number;
   role: RoleType;
-  user: UserDisplay;
-  updater: UserDisplay;
+  principal: Principal;
+  updater: Principal;
 };
 
 // Bookmark
@@ -122,10 +116,8 @@ export type Task = {
   type: TaskType;
   description: string;
   stageProgressList: StageProgress[];
-  creatorId: PrincipalId;
-  assigneeId: PrincipalId;
-  creator: UserDisplay;
-  assignee?: UserDisplay;
+  creator: Principal;
+  assignee?: Principal;
   subscriberIdList: Array<string>;
   payload: TaskPayload;
 };
@@ -137,8 +129,6 @@ export type TaskNew = {
   stageProgressList: StageProgress[];
   creatorId: PrincipalId;
   assigneeId?: PrincipalId;
-  creator: UserDisplay;
-  assignee?: UserDisplay;
   payload: TaskPayload;
 };
 
@@ -147,7 +137,6 @@ export type TaskPatch = {
   status?: TaskStatus;
   description?: string;
   assigneeId?: PrincipalId;
-  assignee?: UserDisplay;
   stageProgressList?: StageProgressPatch[];
   payload?: TaskPayload;
 };
@@ -184,8 +173,7 @@ export type Activity = {
   // The object where this activity belongs
   // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
   containerId: TaskId;
-  creatorId: PrincipalId;
-  creator: UserDisplay;
+  creator: Principal;
   payload?: ActionPayloadType;
 };
 export type ActivityNew = Omit<Activity, "id">;

@@ -70,8 +70,8 @@ export default {
             // "OPEN"
             if (task.status === "OPEN") {
               if (
-                task.creatorId === currentUser.id ||
-                task.assigneeId === currentUser.id
+                task.creator.id === currentUser.id ||
+                task.assignee?.id === currentUser.id
               ) {
                 state.attentionList.push(task);
               } else if (task.subscriberIdList.includes(currentUser.id)) {
