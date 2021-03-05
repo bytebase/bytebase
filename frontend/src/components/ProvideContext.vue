@@ -22,6 +22,7 @@ export default {
       "bookmark/fetchBookmarkListByUser",
       currentUser.value.id
     );
+    await store.dispatch("uistate/restoreExpandState");
   },
 };
 </script>

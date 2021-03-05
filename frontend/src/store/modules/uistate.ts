@@ -35,6 +35,10 @@ const saveExpandStateByKey = function (
 };
 
 const getters = {
+  expandStateByKey: (state: UIState) => (key: string) => {
+    return expandStateByKey(state, key);
+  },
+
   expandStateByGroup: (state: UIState) => (groupId: GroupId) => {
     const key = ["grp", groupId].join(".");
     return expandStateByKey(state, key);
@@ -54,6 +58,19 @@ const actions = {
       commit("setExpandState", fullState);
     }
     return fullState;
+  },
+
+  async saveExpandStateByKey(
+    { commit }: any,
+    {
+      key,
+      expand,
+    }: {
+      key: string;
+      expand: boolean;
+    }
+  ) {
+    return saveExpandStateByKey(commit, key, expand);
   },
 
   async saveExpandStateByGroup(

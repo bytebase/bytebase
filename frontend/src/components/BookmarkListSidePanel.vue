@@ -1,10 +1,12 @@
 <template>
   <BBOutline
+    :id="'bookmark'"
     :title="'Bookmarks'"
-    :itemList="bookmarkList"
+    :itemList="bookmarkList.map((item) => item.name)"
     :allowDelete="true"
-    @click-item="clickItem"
-    @delete-item="deleteItem"
+    :allowCollapse="true"
+    @click-index="clickIndex"
+    @delete-index="deleteIndex"
   />
 </template>
 
@@ -29,20 +31,22 @@ export default {
       store.getters["bookmark/bookmarkListByUser"](currentUser.id)
     );
 
-    const clickItem = (bookmark: Bookmark) => {
-      router.push(bookmark.link);
+    const clickIndex = (index: number) => {
+      router.push(bookmarkList.value[index].link);
     };
 
-    const deleteItem = (bookmark: Bookmark) => {
-      store.dispatch("bookmark/deleteBookmark", bookmark).catch((error) => {
-        console.log(error);
-      });
+    const deleteIndex = (index: number) => {
+      store
+        .dispatch("bookmark/deleteBookmark", bookmarkList.value[index])
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     return {
       bookmarkList,
-      clickItem,
-      deleteItem,
+      clickIndex,
+      deleteIndex,
     };
   },
 };

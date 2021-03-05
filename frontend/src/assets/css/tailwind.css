@@ -102,8 +102,16 @@
   @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border shadow-sm;
 }
 
+.outline-title {
+  @apply text-control-light w-full group items-center text-xs leading-5 font-semibold focus:outline-none select-none uppercase tracking-wider;
+}
+
+.outline-title.collapsible {
+  @apply cursor-pointer hover:bg-link-hover;
+}
+
 .outline-item {
-  @apply text-control cursor-pointer group items-center hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none select-none;
+  @apply text-control cursor-pointer w-full group items-center hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none select-none;
 }
 
 .link {
