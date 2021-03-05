@@ -111,7 +111,7 @@
 }
 
 .outline-item {
-  @apply text-control cursor-pointer w-full group items-center hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none select-none;
+  @apply text-control cursor-pointer w-full group items-center hover:bg-link-hover text-sm leading-5 focus:outline-none select-none;
 }
 
 .link {
