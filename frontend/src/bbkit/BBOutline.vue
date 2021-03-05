@@ -26,7 +26,7 @@
   </div>
   <template v-if="expandState">
     <div
-      class="mt-2 space-y-1"
+      class="mt-2"
       role="group"
       v-for="(item, index) in itemList"
       :key="item.id"
