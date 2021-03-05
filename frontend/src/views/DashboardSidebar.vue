@@ -1,14 +1,14 @@
 <template>
   <!-- Navigation -->
-  <nav class="px-2">
+  <nav class="px-2 space-y-4">
     <div class="space-y-1">
       <router-link
         to="/"
-        class="sidebar-link group flex items-center px-2 py-2"
+        class="sidebar-link group flex items-center px-2"
         active-class="sidebar-link"
       >
         <svg
-          class="mr-3 h-6 w-6 text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
+          class="mr-3 h-6 w-6 text-control-light group-hover:text-control-light group-focus:text-control-light-hover"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -23,7 +23,7 @@
         Home
       </router-link>
     </div>
-    <div class="mt-4">
+    <div>
       <BookmarkListSidePanel />
     </div>
     <!-- <div class="mt-4">
