@@ -1,7 +1,7 @@
 <template>
   <div
     @click.prevent="toggleExpand"
-    class="outline-title flex text-xs px-2 py-1"
+    class="outline-title flex text-xs px-2 py-2"
     :class="allowCollapse ? 'collapsible' : ''"
     @mouseenter="state.hoverTitle = true"
     @mouseleave="state.hoverTitle = false"
