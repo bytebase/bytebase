@@ -4,7 +4,7 @@
     <div class="space-y-1">
       <router-link
         to="/"
-        class="outline-item group flex items-center px-2"
+        class="outline-item group flex items-center px-2 py-2"
         active-class="outline-item"
       >
         <svg

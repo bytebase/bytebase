@@ -71,7 +71,7 @@
     <aside class="hidden md:flex md:flex-shrink-0">
       <div class="flex flex-col w-48">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
-        <div class="flex-1 flex flex-col py-4 overflow-y-auto">
+        <div class="flex-1 flex flex-col py-2 overflow-y-auto">
           <router-view name="leftSidebar" />
         </div>
         <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
