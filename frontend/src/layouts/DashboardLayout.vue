@@ -2,7 +2,7 @@
   <BannerDemo v-if="isDemo()" />
   <div class="relative h-screen overflow-hidden flex flex-col">
     <nav class="bg-white border-b border-block-border">
-      <div class="max-w-full mx-auto px-6">
+      <div class="max-w-full mx-auto px-4">
         <DashboardHeader />
       </div>
     </nav>
