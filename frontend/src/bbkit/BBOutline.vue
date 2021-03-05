@@ -14,7 +14,7 @@
     @mouseleave="state.hoverIndex = -1"
   >
     <div
-      class="outline-item px-3 py-1"
+      class="outline-item flex justify-between px-3 py-1"
       @click.prevent="$emit('click-item', item)"
     >
       <span class="truncate">{{ item.name }}</span>
