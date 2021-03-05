@@ -1,7 +1,3 @@
-/*
- * Mirage JS guide on Factories: https://miragejs.com/docs/data-layer/factories
- */
-
 import user from "./user";
 import bookmark from "./bookmark";
 import environment from "./environment";

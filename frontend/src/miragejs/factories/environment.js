@@ -1,4 +1,5 @@
 import { Factory } from "miragejs";
+
 export default {
   environment: Factory.extend({
     name(i) {
