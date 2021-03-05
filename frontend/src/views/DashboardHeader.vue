@@ -8,14 +8,16 @@
       </div>
       <div class="hidden md:block">
         <div class="ml-4 flex items-baseline space-x-4">
-          <router-link to="/instance" class="link px-2 py-2 rounded-md"
+          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md"
             >Instance</router-link
           >
 
-          <router-link to="/environment" class="link px-2 py-2 rounded-md"
+          <router-link to="/environment" class="bar-link px-2 py-2 rounded-md"
             >Environment</router-link
           >
-          <router-link to="/setting/member" class="link px-2 py-2 rounded-md"
+          <router-link
+            to="/setting/member"
+            class="bar-link px-2 py-2 rounded-md"
             >Members</router-link
           >
         </div>
@@ -86,15 +88,15 @@
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
       <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-      <router-link to="/" class="link rounded-md block px-3 py-2"
+      <router-link to="/" class="bar-link rounded-md block px-3 py-2"
         >Dashboard</router-link
       >
 
-      <router-link to="/instance" class="link rounded-md block px-3 py-2"
+      <router-link to="/instance" class="bar-link rounded-md block px-3 py-2"
         >Instance</router-link
       >
 
-      <router-link to="/environment" class="link rounded-md block px-3 py-2"
+      <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
         >Environment</router-link
       >
     </div>

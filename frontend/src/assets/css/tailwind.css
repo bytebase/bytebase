@@ -114,8 +114,8 @@
   @apply text-control cursor-pointer w-full group items-center hover:bg-link-hover text-sm leading-5 focus:outline-none select-none;
 }
 
-.link {
-  @apply text-main hover:underline focus:outline-none;
+.bar-link {
+  @apply text-main hover:bg-link-hover focus:outline-none;
 }
 
 .accent-link {
