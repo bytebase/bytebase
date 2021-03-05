@@ -137,7 +137,10 @@
       </aside>
       <div class="w-full mx-auto md:flex">
         <div class="md:min-w-0 md:flex-1">
-          <div v-if="!isHome" class="hidden md:block mx-4 mt-4">
+          <div
+            v-if="!isHome"
+            class="hidden md:block px-4 py-4 border-b lg:border-block-border"
+          >
             <Breadcrumb />
           </div>
           <div v-if="quickActionList" class="mx-4 mt-4">
