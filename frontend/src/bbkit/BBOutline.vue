@@ -24,9 +24,8 @@
       </svg>
     </template>
   </div>
-  <template v-if="expandState">
+  <div v-if="expandState" class="space-y-1">
     <div
-      class="mt-2"
       role="group"
       v-for="(item, index) in itemList"
       :key="item.id"
@@ -60,7 +59,7 @@
         </button>
       </div>
     </div>
-  </template>
+  </div>
 </template>
 
 <script lang="ts">
