@@ -26,16 +26,12 @@
     <div>
       <BookmarkListSidePanel />
     </div>
-    <div class="mt-4">
-      <GroupListSidePanel />
-    </div> -->
   </nav>
 </template>
 
 <script lang="ts">
 import { reactive } from "vue";
 import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
-// import GroupListSidePanel from "../components/GroupListSidePanel.vue";
 
 interface LocalState {
   hasUnreadMessage: boolean;
@@ -46,7 +42,6 @@ export default {
   props: {},
   components: {
     BookmarkListSidePanel,
-    // GroupListSidePanel,
   },
   setup(props, ctx) {
     const state = reactive<LocalState>({

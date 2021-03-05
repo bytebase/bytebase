@@ -444,28 +444,4 @@ export default function routes() {
   this.delete("/activity/:activityId", function (schema, request) {
     return schema.activities.find(request.params.activityId).destroy();
   });
-
-  // Group
-  this.get("/group", function (schema, request) {
-    const {
-      queryParams: { userid: userId },
-    } = request;
-
-    if (userId) {
-      return schema.groups.where((group) => {
-        return (
-          group.workspaceId == WORKSPACE_ID &&
-          group.groupRoleIds?.find((roleId) => {
-            return schema.groupRoles.where({
-              userId,
-              groupId: group.id,
-            });
-          })
-        );
-      });
-    }
-    return schema.groups.where({
-      workspaceId: WORKSPACE_ID,
-    });
-  });
 }

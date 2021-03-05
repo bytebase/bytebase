@@ -12,7 +12,6 @@ import task from "./task";
 import taskPatch from "./taskPatch";
 import activity from "./activity";
 import activityPatch from "./activityPatch";
-import group from "./group";
 import workspace from "./workspace";
 import member from "./member";
 
@@ -35,7 +34,7 @@ export default {
   ...taskPatch,
   ...activity,
   ...activityPatch,
-  ...group,
+
   ...workspace,
   ...member,
   ...batchUpdate,

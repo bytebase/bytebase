@@ -1,5 +1,4 @@
 import isUndefined from "lodash-es/isUndefined";
-import { GroupId, ProjectId } from "../../types";
 
 export interface UIState {
   expandStateByKey: Map<string, boolean>;
@@ -38,11 +37,6 @@ const getters = {
   expandStateByKey: (state: UIState) => (key: string) => {
     return expandStateByKey(state, key);
   },
-
-  expandStateByGroup: (state: UIState) => (groupId: GroupId) => {
-    const key = ["grp", groupId].join(".");
-    return expandStateByKey(state, key);
-  },
 };
 
 const actions = {
@@ -65,20 +59,6 @@ const actions = {
       expand: boolean;
     }
   ) {
-    return saveExpandStateByKey(commit, key, expand);
-  },
-
-  async saveExpandStateByGroup(
-    { commit }: any,
-    {
-      groupId,
-      expand,
-    }: {
-      groupId: GroupId;
-      expand: boolean;
-    }
-  ) {
-    const key = ["grp", groupId].join(".");
     return saveExpandStateByKey(commit, key, expand);
   },
 };

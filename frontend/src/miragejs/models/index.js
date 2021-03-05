@@ -15,7 +15,6 @@ export default {
   user: Model.extend({}),
 
   workspace: Model.extend({
-    group: hasMany(),
     member: hasMany(),
     activity: hasMany(),
     task: hasMany(),
@@ -36,17 +35,6 @@ export default {
   }),
 
   activityPatch: Model,
-
-  group: Model.extend({
-    workspace: belongsTo(),
-
-    groupRole: hasMany(),
-  }),
-
-  groupRole: Model.extend({
-    group: belongsTo(),
-    user: belongsTo(),
-  }),
 
   task: Model.extend({
     workspace: belongsTo(),

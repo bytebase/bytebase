@@ -10,7 +10,6 @@ import dataSource from "./modules/dataSource";
 import principal from "./modules/principal";
 import repository from "./modules/repository";
 import auth from "./modules/auth";
-import group from "./modules/group";
 import task from "./modules/task";
 
 // Following states are persisted in local storage
@@ -34,7 +33,6 @@ export const store: Store<any> = createStore({
     principal,
     repository,
     auth,
-    group,
     task,
     uistate,
     router,

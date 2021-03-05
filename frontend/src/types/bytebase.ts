@@ -19,9 +19,6 @@ export type TaskId = string;
 
 export type ActivityId = string;
 
-export type GroupId = string;
-
-
 export type EnvironmentId = string;
 
 export type InstanceId = string;
@@ -228,11 +225,6 @@ export type DataSource = {
 };
 export type DataSourceNew = Omit<DataSource, "id">;
 
-// Group
-export type Group = ResourceObject & {};
-export type GroupNew = Omit<Group, "id">;
-
-
 // Repository
 export type Repository = ResourceObject & {};
 export type RepositoryNew = Omit<Repository, "id">;
@@ -302,10 +294,6 @@ export interface ActivityState {
 export interface TaskState {
   taskListByUser: Map<UserId, Task[]>;
   taskById: Map<TaskId, Task>;
-}
-
-export interface GroupState {
-  groupListByUser: Map<UserId, Group[]>;
 }
 
 export interface EnvironmentState {
