@@ -1,11 +1,10 @@
 <template>
   <!-- Navigation -->
-  <nav class="px-2 space-y-2">
+  <nav class="px-2 space-y-1">
     <div class="space-y-1">
       <router-link
         to="/"
         class="outline-item group flex items-center px-2 py-2"
-        active-class="outline-item"
       >
         <svg
           class="mr-3 h-6 w-6 text-control-light group-hover:text-control-light group-focus:text-control-light-hover"
