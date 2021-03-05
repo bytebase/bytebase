@@ -3,6 +3,7 @@ import BBAvatar from "./BBAvatar.vue";
 import BBContextMenu from "./BBContextMenu.vue";
 import BBModal from "./BBModal.vue";
 import BBNotification from "./BBNotification.vue";
+import BBOutline from "./BBOutline.vue";
 import BBSelect from "./BBSelect.vue";
 import BBStepBar from "./BBStepBar.vue";
 import BBTab from "./BBTab.vue";
@@ -15,6 +16,7 @@ export {
   BBContextMenu,
   BBModal,
   BBNotification,
+  BBOutline,
   BBSelect,
   BBStepBar,
   BBTab,

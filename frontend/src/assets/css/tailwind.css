@@ -102,6 +102,10 @@
   @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border shadow-sm;
 }
 
+.outline-item {
+  @apply text-control cursor-pointer group flex justify-between items-center hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none select-none;
+}
+
 .link {
   @apply text-main hover:underline focus:outline-none;
 }
@@ -112,10 +116,6 @@
 
 .icon-link {
   @apply text-control hover:bg-link-hover focus:outline-none;
-}
-
-.sidebar-link {
-  @apply text-control hover:bg-link-hover text-sm leading-5 font-medium focus:outline-none select-none;
 }
 
 .anchor-link {

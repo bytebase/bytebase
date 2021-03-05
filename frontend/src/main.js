@@ -12,6 +12,7 @@ import {
   BBContextMenu,
   BBModal,
   BBNotification,
+  BBOutline,
   BBSelect,
   BBStepBar,
   BBTab,
@@ -44,6 +45,7 @@ app
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)
   .component("BBNotification", BBNotification)
+  .component("BBOutline", BBOutline)
   .component("BBSelect", BBSelect)
   .component("BBStepBar", BBStepBar)
   .component("BBTab", BBTab)
