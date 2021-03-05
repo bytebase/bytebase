@@ -21,7 +21,7 @@
 <script lang="ts">
 import { watchEffect, reactive } from "vue";
 import { useStore } from "vuex";
-import { Member, UserDisplay } from "../types";
+import { Membership, UserDisplay } from "../types";
 
 interface LocalState {
   showMenu: boolean;
@@ -46,12 +46,12 @@ export default {
 
     const preparePrincipalList = () => {
       store
-        .dispatch("member/fetchMemberList")
-        .then((list: Member[]) => {
-          state.principalList = list.map((member: Member) => {
+        .dispatch("membership/fetchMembershipList")
+        .then((list: Membership[]) => {
+          state.principalList = list.map((membership: Membership) => {
             return {
-              id: member.user.id,
-              name: member.user.name,
+              id: membership.user.id,
+              name: membership.user.name,
             };
           });
           state.selectedPrincipal = state.principalList.find(

@@ -8,7 +8,7 @@ import taskPatch from "./taskPatch";
 import activity from "./activity";
 import activityPatch from "./activityPatch";
 import workspace from "./workspace";
-import member from "./member";
+import membership from "./membership";
 
 import batchUpdate from "./batchUpdate";
 import loginInfo from "./loginInfo";
@@ -30,7 +30,7 @@ export default {
   ...activityPatch,
 
   ...workspace,
-  ...member,
+  ...membership,
   ...batchUpdate,
   ...loginInfo,
 };

@@ -9,7 +9,7 @@ export type UserId = string;
 // For now, Principal is equal to UserId, in the future it may contain other id such as application, bot etc.
 export type PrincipalId = UserId;
 
-export type MemberId = string;
+export type MembershipId = string;
 
 export type BookmarkId = string;
 
@@ -51,11 +51,11 @@ export type Principal = {
   name: string;
 };
 
-// Member
+// Membership
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
-export type Member = {
-  id: MemberId;
+export type Membership = {
+  id: MembershipId;
   createdTs: number;
   lastUpdatedTs: number;
   role: RoleType;
@@ -270,8 +270,8 @@ export interface AuthState {
   currentUser: User | null;
 }
 
-export interface MemberState {
-  memberList: Member[];
+export interface MembershipState {
+  membershipList: Membership[];
 }
 
 export interface PrincipalState {
