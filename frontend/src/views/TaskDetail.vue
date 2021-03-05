@@ -118,7 +118,7 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, watchEffect, reactive, inject } from "vue";
+import { computed, onMounted, watchEffect, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -131,7 +131,6 @@ import TaskDescription from "../views/TaskDescription.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
 import {
-  User,
   Task,
   TaskNew,
   TaskType,
@@ -277,9 +276,7 @@ export default {
       return store.getters["environment/environmentList"]();
     });
 
-    const currentUser: User = computed(() =>
-      store.getters["auth/currentUser"]()
-    ).value;
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const refreshState = () => {
       return {
@@ -287,7 +284,7 @@ export default {
         task: isNew.value
           ? newTaskTemplate.buildTask({
               environmentList: environmentList.value,
-              currentUser: currentUser,
+              currentUser: currentUser.value,
             })
           : cloneDeep(
               store.getters["task/taskById"](idFromSlug(props.taskSlug))
@@ -396,8 +393,8 @@ export default {
           taskPatch: {
             ...taskPatch,
             producer: {
-              id: currentUser.id,
-              name: currentUser.name,
+              id: currentUser.value.id,
+              name: currentUser.value.name,
             },
           },
         })
@@ -454,9 +451,9 @@ export default {
     const applicableStageTransitionList = () => {
       return STAGE_TRANSITION_LIST.filter((transition) => {
         const actionListForRole =
-          currentUser.id === (state.task as Task).creator.id
+          currentUser.value.id === (state.task as Task).creator.id
             ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser.id === (state.task as Task).assignee?.id
+            : currentUser.value.id === (state.task as Task).assignee?.id
             ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
             : GUEST_APPLICABLE_STAGE_ACTION_LIST;
         const stage = activeStage(state.task as Task);

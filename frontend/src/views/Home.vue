@@ -31,7 +31,7 @@ import TaskTable from "../components/TaskTable.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { activeStage, activeEnvironmentId } from "../utils";
-import { User, Environment, Task, StageStatus } from "../types";
+import { Environment, Task, StageStatus } from "../types";
 
 interface LocalState {
   attentionList: Task[];
@@ -55,13 +55,11 @@ export default {
     });
     const store = useStore();
     const router = useRouter();
-    const currentUser: User = computed(() =>
-      store.getters["auth/currentUser"]()
-    ).value;
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareTaskList = () => {
       store
-        .dispatch("task/fetchTaskListForUser", currentUser.id)
+        .dispatch("task/fetchTaskListForUser", currentUser.value.id)
         .then((taskList: Task[]) => {
           state.attentionList = [];
           state.subscribeList = [];
@@ -70,19 +68,19 @@ export default {
             // "OPEN"
             if (task.status === "OPEN") {
               if (
-                task.creator.id === currentUser.id ||
-                task.assignee?.id === currentUser.id
+                task.creator.id === currentUser.value.id ||
+                task.assignee?.id === currentUser.value.id
               ) {
                 state.attentionList.push(task);
-              } else if (task.subscriberIdList.includes(currentUser.id)) {
+              } else if (task.subscriberIdList.includes(currentUser.value.id)) {
                 state.subscribeList.push(task);
               }
             }
             // "DONE" or "CANCELED"
             else if (task.status === "DONE" || task.status === "CANCELED") {
               if (
-                task.creator.id === currentUser.id ||
-                task.assignee?.id === currentUser.id
+                task.creator.id === currentUser.value.id ||
+                task.assignee?.id === currentUser.value.id
               ) {
                 state.closeList.push(task);
               }

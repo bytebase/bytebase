@@ -294,7 +294,6 @@ import {
   onMounted,
   onUnmounted,
   computed,
-  inject,
   nextTick,
   ref,
   reactive,
@@ -302,21 +301,14 @@ import {
 } from "vue";
 import { useStore } from "vuex";
 import {
-  User,
   Task,
-  TaskActionType,
   Activity,
   ActionTaskCommentCreatePayload,
   ActionTaskFieldUpdatePayload,
   Environment,
 } from "../types";
 import { sizeToFit } from "../utils";
-import {
-  fieldFromId,
-  TaskTemplate,
-  TaskField,
-  TaskBuiltinFieldId,
-} from "../plugins";
+import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -374,9 +366,7 @@ export default {
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const currentUser: User = computed(() =>
-      store.getters["auth/currentUser"]()
-    ).value;
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareActivityList = () => {
       store
@@ -406,8 +396,8 @@ export default {
           actionType: "bytebase.task.comment.create",
           containerId: props.task.id,
           creator: {
-            id: currentUser.id,
-            name: currentUser.name,
+            id: currentUser.value.id,
+            name: currentUser.value.name,
           },
           payload: {
             comment: newComment.value,

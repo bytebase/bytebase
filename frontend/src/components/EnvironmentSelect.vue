@@ -50,15 +50,15 @@ export default {
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
-    }).value;
+    });
 
     if (
       !props.selectedId &&
       props.selectDefault &&
-      environmentList &&
-      environmentList.length > 0
+      environmentList.value &&
+      environmentList.value.length > 0
     ) {
-      state.selectedId = environmentList[0].id;
+      state.selectedId = environmentList.value[0].id;
       emit("select-environment-id", state.selectedId);
     }
 

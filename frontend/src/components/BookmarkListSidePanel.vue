@@ -17,7 +17,6 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { User } from "../types";
 
 export default {
   name: "BookmarkListSidePanel",
@@ -26,12 +25,10 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser: User = computed(() =>
-      store.getters["auth/currentUser"]()
-    ).value;
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const bookmarkList = computed(() =>
-      store.getters["bookmark/bookmarkListByUser"](currentUser.id)
+      store.getters["bookmark/bookmarkListByUser"](currentUser.value.id)
     );
 
     const deleteIndex = (index: number) => {
