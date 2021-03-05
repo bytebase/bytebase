@@ -328,9 +328,8 @@ const workspacesSeeder = (server) => {
   });
 
   // Naming convention
-  // xxx <<workspace #>><<group #>><<project #>>
+  // xxx <<workspace #>><<group #>>
   // e.g. group 12 (1st workspace and 1st group inside)
-  // e.g. project 241 (2nd workspace, 4th group inside and 1st project inside)
 
   // Group
   // Workspace 1
@@ -358,38 +357,6 @@ const workspacesSeeder = (server) => {
     slug: "grp24",
     namepsace: "",
     workspace: workspace2,
-  });
-
-  // Project
-  // Workspace 1
-  const project1 = server.create("project", {
-    name: "proj 111",
-    slug: "proj111",
-    namespace: "grp11",
-    workspace: workspace1,
-    group: group1,
-  });
-  const project2 = server.create("project", {
-    name: "proj 122",
-    slug: "proj122",
-    namespace: "grp12",
-    workspace: workspace1,
-    group: group2,
-  });
-  const project3 = server.create("project", {
-    name: "proj 131",
-    slug: "proj131",
-    namespace: "grp13",
-    workspace: workspace1,
-    group: group3,
-  });
-  // Workspace 2
-  const project4 = server.create("project", {
-    name: "proj 241",
-    slug: "proj241",
-    namespace: "grp24",
-    workspace: workspace2,
-    group: group4,
   });
 
   // User 1 is owner of group1, developer of group3 and owner of group4

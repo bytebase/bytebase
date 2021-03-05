@@ -4,7 +4,6 @@ import { createStore, Store } from "vuex";
 import activity from "./modules/activity";
 import bookmark from "./modules/bookmark";
 import member from "./modules/member";
-import project from "./modules/project";
 import environment from "./modules/environment";
 import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
@@ -29,7 +28,6 @@ export const store: Store<any> = createStore({
     activity,
     bookmark,
     member,
-    project,
     environment,
     instance,
     dataSource,

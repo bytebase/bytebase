@@ -16,7 +16,6 @@ export default {
 
   workspace: Model.extend({
     group: hasMany(),
-    project: hasMany(),
     member: hasMany(),
     activity: hasMany(),
     task: hasMany(),
@@ -40,7 +39,7 @@ export default {
 
   group: Model.extend({
     workspace: belongsTo(),
-    project: hasMany(),
+
     groupRole: hasMany(),
   }),
 
@@ -68,17 +67,7 @@ export default {
     instance: belongsTo(),
   }),
 
-  project: Model.extend({
-    workspace: belongsTo(),
-    group: belongsTo(),
-    environment: hasMany(),
-    // To signal 1:1 relationship
-    repository: belongsTo(),
-  }),
-
-  repository: Model.extend({
-    project: belongsTo(),
-  }),
+  repository: Model.extend({}),
 
   batchUpdate: Model,
 

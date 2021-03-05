@@ -43,11 +43,6 @@ const getters = {
     const key = ["grp", groupId].join(".");
     return expandStateByKey(state, key);
   },
-
-  expandStateByProject: (state: UIState) => (projectId: ProjectId) => {
-    const key = ["proj", projectId].join(".");
-    return expandStateByKey(state, key);
-  },
 };
 
 const actions = {
@@ -84,20 +79,6 @@ const actions = {
     }
   ) {
     const key = ["grp", groupId].join(".");
-    return saveExpandStateByKey(commit, key, expand);
-  },
-
-  async saveExpandStateByProject(
-    { commit }: any,
-    {
-      projectId,
-      expand,
-    }: {
-      projectId: ProjectId;
-      expand: boolean;
-    }
-  ) {
-    const key = ["proj", projectId].join(".");
     return saveExpandStateByKey(commit, key, expand);
   },
 };

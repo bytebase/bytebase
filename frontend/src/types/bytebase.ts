@@ -21,7 +21,6 @@ export type ActivityId = string;
 
 export type GroupId = string;
 
-export type ProjectId = string;
 
 export type EnvironmentId = string;
 
@@ -233,9 +232,6 @@ export type DataSourceNew = Omit<DataSource, "id">;
 export type Group = ResourceObject & {};
 export type GroupNew = Omit<Group, "id">;
 
-// Project
-export type Project = ResourceObject & {};
-export type ProjectNew = Omit<Project, "id">;
 
 // Repository
 export type Repository = ResourceObject & {};
@@ -310,11 +306,6 @@ export interface TaskState {
 
 export interface GroupState {
   groupListByUser: Map<UserId, Group[]>;
-}
-
-export interface ProjectState {
-  projectListByGroup: Map<GroupId, Project[]>;
-  projectListByUser: Map<UserId, Project[]>;
 }
 
 export interface EnvironmentState {
