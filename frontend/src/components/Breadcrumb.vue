@@ -11,7 +11,7 @@
         >
           <!-- Heroicon name: home -->
           <svg
-            class="flex-shrink-0 h-5 w-5"
+            class="flex-shrink-0 h-4 w-4"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -24,7 +24,7 @@
           <span class="sr-only">Home</span>
         </router-link>
         <svg
-          class="ml-2 flex-shrink-0 h-5 w-5 text-control-light"
+          class="ml-2 flex-shrink-0 h-4 w-4 text-control-light"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -39,12 +39,12 @@
         <router-link
           v-if="item.path"
           :to="item.path"
-          class="link max-w-prose truncate"
+          class="text-sm link max-w-prose truncate"
           active-class="link"
           exact-active-class="link"
           >{{ item.name }}</router-link
         >
-        <div v-else class="truncate">
+        <div v-else class="text-sm max-w-prose truncate">
           {{ item.name }}
         </div>
         <button
@@ -55,7 +55,7 @@
         >
           <svg
             v-if="bookmark"
-            class="h-6 w-6 text-yellow-400 hover:text-yellow-600"
+            class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -67,7 +67,7 @@
           </svg>
           <svg
             v-else
-            class="h-6 w-6 text-control-light hover:text-control-light-hover"
+            class="h-5 w-5 text-control-light hover:text-control-light-hover"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
