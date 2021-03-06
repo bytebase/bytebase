@@ -22,7 +22,10 @@
             </svg>
           </span>
           <p class="ml-3 font-medium text-white truncate">
-            <span> You are playing with a demo version </span>
+            <span>
+              You are trying a DEMO version. Feel free to make whatever changes
+              and all data will be reset after reloading the page.</span
+            >
           </p>
         </div>
         <div
