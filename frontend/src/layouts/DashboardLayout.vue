@@ -1,24 +1,38 @@
 <template>
-  <BannerDemo v-if="isDemo()" />
-  <div class="relative h-screen overflow-hidden flex flex-col">
-    <nav class="bg-white border-b border-block-border">
-      <div class="max-w-full mx-auto px-4">
-        <DashboardHeader />
+  <h1 v-if="error">Failed to load {{ error.stack }}</h1>
+  <!-- Suspense is experimental, be aware of the potential change -->
+  <Suspense v-else>
+    <template #default>
+      <div>
+        <ProvideContext>
+          <BannerDemo v-if="isDemo()" />
+          <div class="relative h-screen overflow-hidden flex flex-col">
+            <nav class="bg-white border-b border-block-border">
+              <div class="max-w-full mx-auto px-4">
+                <DashboardHeader />
+              </div>
+            </nav>
+            <router-view name="body" />
+          </div>
+          <BBNotification
+            :showing="state.notification != null"
+            :style="state.notification?.style || 'INFO'"
+            :title="state.notification?.title || ''"
+            :description="state.notification?.description || ''"
+          />
+        </ProvideContext>
       </div>
-    </nav>
-    <router-view name="body" />
-  </div>
-  <BBNotification
-    :showing="state.notification != null"
-    :style="state.notification?.style || 'INFO'"
-    :title="state.notification?.title || ''"
-    :description="state.notification?.description || ''"
-  />
+    </template>
+    <template #fallback>
+      <span>Loading...</span>
+    </template>
+  </Suspense>
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect } from "vue";
+import { reactive, watchEffect, onErrorCaptured, ref } from "vue";
 import { useStore } from "vuex";
+import ProvideContext from "../components/ProvideContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import { Notification } from "../types";
@@ -32,9 +46,15 @@ interface LocalState {
 
 export default {
   name: "DashboardLayout",
-  components: { DashboardHeader, BannerDemo },
+  components: { ProvideContext, DashboardHeader, BannerDemo },
   setup(props, ctx) {
     const store = useStore();
+    const error = ref();
+
+    onErrorCaptured((e) => {
+      error.value = e;
+      return true;
+    });
 
     const state = reactive<LocalState>({
       notification: null,
@@ -64,6 +84,7 @@ export default {
     watchEffect(watchNotification);
 
     return {
+      error,
       state,
       isDemo,
     };
