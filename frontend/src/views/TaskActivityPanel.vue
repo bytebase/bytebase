@@ -97,7 +97,7 @@
                         currentUser.id == activity.creator.id &&
                         activity.actionType == 'bytebase.task.comment.create'
                       "
-                      class="space-x-2 text-control-light"
+                      class="space-x-2 flex items-center text-control-light"
                     >
                       <template
                         v-if="
@@ -125,7 +125,7 @@
                         </button>
                       </template>
                       <!-- mr-2 is to veritical align with the text description edit button-->
-                      <div v-else class="mr-2 space-x-2">
+                      <div v-else class="mr-2 flex items-center space-x-2">
                         <!-- Delete Comment Button-->
                         <button
                           class="btn-icon"
