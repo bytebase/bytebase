@@ -21,8 +21,8 @@ const state: () => BookmarkState = () => ({
 const getters = {
   bookmarkListByUser: (state: BookmarkState) => (
     userId: UserId
-  ): Bookmark[] | undefined => {
-    return state.bookmarkListByUser.get(userId);
+  ): Bookmark[] => {
+    return state.bookmarkListByUser.get(userId) || [];
   },
   bookmarkByUserAndLink: (state: BookmarkState) => (
     userId: UserId,
