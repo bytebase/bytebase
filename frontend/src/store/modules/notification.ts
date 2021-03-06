@@ -13,12 +13,15 @@ const state: () => NotificationState = () => ({
 function findNotification(
   state: NotificationState,
   filter: NotificationFilter
-): Notification | null {
+): Notification | undefined {
   const list = state.notificationByModule.get(filter.module);
   if (list && list.length > 0) {
+    if (filter.id) {
+      return list.find((item) => item.id == filter.id);
+    }
     return list[0];
   }
-  return null;
+  return undefined;
 }
 
 const getters = {};
@@ -37,7 +40,7 @@ const actions = {
     return findNotification(state, filter);
   },
 
-  popNotification({ state, commit }: any, filter: NotificationFilter) {
+  removeNotification({ state, commit }: any, filter: NotificationFilter) {
     const notification = findNotification(state, filter);
     commit("removeNotification", notification);
     return notification;

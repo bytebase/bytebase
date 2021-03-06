@@ -251,6 +251,7 @@ export type NewNotification = Omit<Notification, "id" | "createdTs">;
 
 export type NotificationFilter = {
   module: string;
+  id?: string;
 };
 
 // Store
