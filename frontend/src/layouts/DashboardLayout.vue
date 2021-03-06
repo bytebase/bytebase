@@ -14,6 +14,7 @@
             <router-view name="body" />
           </div>
           <BBNotification
+            :placement="'BOTTOM_RIGHT'"
             :showing="state.notification != null"
             :style="state.notification?.style || 'INFO'"
             :title="state.notification?.title || ''"
