@@ -1,7 +1,6 @@
 <template>
-  <h1 v-if="error">Failed to load {{ error.stack }}</h1>
   <!-- Suspense is experimental, be aware of the potential change -->
-  <Suspense v-else>
+  <Suspense>
     <template #default>
       <div>
         <ProvideContext>
@@ -30,7 +29,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, onErrorCaptured, ref } from "vue";
+import { reactive, watchEffect, ref } from "vue";
 import { useStore } from "vuex";
 import ProvideContext from "../components/ProvideContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
@@ -49,12 +48,6 @@ export default {
   components: { ProvideContext, DashboardHeader, BannerDemo },
   setup(props, ctx) {
     const store = useStore();
-    const error = ref();
-
-    onErrorCaptured((e) => {
-      error.value = e;
-      return true;
-    });
 
     const state = reactive<LocalState>({
       notification: null,
@@ -84,7 +77,6 @@ export default {
     watchEffect(watchNotification);
 
     return {
-      error,
       state,
       isDemo,
     };
