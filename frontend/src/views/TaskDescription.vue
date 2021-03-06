@@ -33,7 +33,7 @@
       v-if="state.edit"
       type="button"
       class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-      :disabled="editDescription == task.description"
+      :disabled="state.editDescription == task.description"
       @click.prevent="saveEdit"
     >
       Save
@@ -55,7 +55,7 @@
     "
     placeholder="Add some description..."
     :readonly="!state.edit"
-    v-model="editDescription"
+    v-model="state.editDescription"
     @input="
       (e) => {
         sizeToFit(e.target);
@@ -84,6 +84,7 @@ import { sizeToFit } from "../utils";
 
 interface LocalState {
   edit: boolean;
+  editDescription: string;
 }
 
 export default {
@@ -101,11 +102,11 @@ export default {
   },
   components: {},
   setup(props, { emit }) {
-    const editDescription = ref(props.task.description);
     const editDescriptionTextArea = ref();
 
     const state = reactive<LocalState>({
       edit: false,
+      editDescription: props.task.description,
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -116,7 +117,7 @@ export default {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          if (editDescription.value != props.task.description) {
+          if (state.editDescription != props.task.description) {
             saveEdit();
           }
         }
@@ -154,8 +155,18 @@ export default {
       }
     );
 
+    watch(
+      () => props.task,
+      (curNew, prevNew) => {
+        state.editDescription = curNew.description;
+        nextTick(() => {
+          sizeToFit(editDescriptionTextArea.value);
+        });
+      }
+    );
+
     const beginEdit = () => {
-      editDescription.value = props.task.description;
+      state.editDescription = props.task.description;
       state.edit = true;
       nextTick(() => {
         editDescriptionTextArea.value.focus();
@@ -163,9 +174,9 @@ export default {
     };
 
     const saveEdit = () => {
-      emit("update-description", editDescription.value, (updatedTask: Task) => {
+      emit("update-description", state.editDescription, (updatedTask: Task) => {
         state.edit = false;
-        editDescription.value = updatedTask.description;
+        state.editDescription = updatedTask.description;
         nextTick(() => {
           sizeToFit(editDescriptionTextArea.value);
         });
@@ -174,7 +185,7 @@ export default {
 
     const cancelEdit = () => {
       state.edit = false;
-      editDescription.value = props.task.description;
+      state.editDescription = props.task.description;
       nextTick(() => {
         sizeToFit(editDescriptionTextArea.value);
       });
@@ -182,7 +193,6 @@ export default {
 
     return {
       state,
-      editDescription,
       editDescriptionTextArea,
       beginEdit,
       saveEdit,
