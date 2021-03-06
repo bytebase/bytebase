@@ -191,9 +191,7 @@ export default {
       default: true,
     },
     // Any payload pass through to "ok" and "cancel" events
-    payload: {
-      type: Object,
-    },
+    payload: {},
   },
   setup(props, { emit }) {
     const cancel = () => {
