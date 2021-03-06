@@ -84,7 +84,6 @@
 <script lang="ts">
 import { computed } from "vue";
 import { useStore } from "vuex";
-import { User } from "../types";
 
 export default {
   name: "ProfileDropdown",
@@ -92,9 +91,7 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser: User = computed(() =>
-      store.getters["auth/currentUser"]()
-    ).value;
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const logout = () => {
       store
@@ -111,39 +108,24 @@ export default {
     };
 
     const switchToOwner = () => {
-      store
-        .dispatch("auth/login", {
-          username: "demo@example.com",
-          password: "1024",
-        })
-        .then(() => {
-          // Do a full page reload to avoid stale UI state.
-          location.replace("/");
-        });
+      store.dispatch("auth/login", {
+        username: "demo@example.com",
+        password: "1024",
+      });
     };
 
     const switchToDBA = () => {
-      store
-        .dispatch("auth/login", {
-          username: "jerry@example.com",
-          password: "aaa",
-        })
-        .then(() => {
-          // Do a full page reload to avoid stale UI state.
-          location.replace("/");
-        });
+      store.dispatch("auth/login", {
+        username: "jerry@example.com",
+        password: "aaa",
+      });
     };
 
     const switchToDeveloper = () => {
-      store
-        .dispatch("auth/login", {
-          username: "tom@example.com",
-          password: "aaa",
-        })
-        .then(() => {
-          // Do a full page reload to avoid stale UI state.
-          location.replace("/");
-        });
+      store.dispatch("auth/login", {
+        username: "tom@example.com",
+        password: "aaa",
+      });
     };
 
     return {
