@@ -9,10 +9,10 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in activityList" :key="index">
+          <li v-for="(activity, index) in state.activityList" :key="index">
             <div :id="'activity' + (index + 1)" class="relative pb-6">
               <span
-                v-if="index != activityList.length - 1"
+                v-if="index != state.activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                 aria-hidden="true"
               ></span>
@@ -297,6 +297,7 @@ import {
   nextTick,
   ref,
   reactive,
+  watchEffect,
   PropType,
 } from "vue";
 import { useStore } from "vuex";
@@ -313,6 +314,7 @@ import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
 interface LocalState {
   showDeleteCommentModal: boolean;
   editCommentMode: boolean;
+  activityList: Activity[];
   activeComment?: Activity;
 }
 
@@ -339,6 +341,7 @@ export default {
     const state = reactive<LocalState>({
       showDeleteCommentModal: false,
       editCommentMode: false,
+      activityList: [],
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -371,18 +374,15 @@ export default {
     const prepareActivityList = () => {
       store
         .dispatch("activity/fetchActivityListForTask", props.task.id)
+        .then((list) => {
+          state.activityList = list;
+        })
         .catch((error) => {
           console.log(error);
         });
     };
 
-    // Only call upon setup, followup fetch will be done only when necessary
-    // e.g. after patching the task in the task store.
-    prepareActivityList();
-
-    const activityList = computed(() =>
-      store.getters["activity/activityListByTask"](props.task.id)
-    );
+    watchEffect(prepareActivityList);
 
     const cancelEditComment = () => {
       editComment.value = "";
@@ -536,7 +536,6 @@ export default {
       editComment,
       editCommentTextArea,
       currentUser,
-      activityList,
       actionSentence,
       doCreateComment,
       cancelEditComment,
