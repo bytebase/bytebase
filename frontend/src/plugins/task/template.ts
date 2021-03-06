@@ -26,6 +26,7 @@ const allTaskTemplateList: TaskTemplate[] = [
         payload: {},
       };
     },
+    fieldList: [],
   },
   {
     type: "bytebase.datasource.create",
