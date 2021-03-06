@@ -299,12 +299,20 @@ export default {
       title: "",
     });
 
-    const taskTemplate = templateForType(state.task.type)!;
+    const taskTemplate = computed(() => templateForType(state.task.type));
 
-    const outputFieldList =
-      taskTemplate.fieldList?.filter((item) => item.category == "OUTPUT") || [];
-    const inputFieldList =
-      taskTemplate.fieldList?.filter((item) => item.category == "INPUT") || [];
+    const outputFieldList = computed(
+      () =>
+        taskTemplate.value?.fieldList.filter(
+          (item) => item.category == "OUTPUT"
+        ) || []
+    );
+    const inputFieldList = computed(
+      () =>
+        taskTemplate.value?.fieldList.filter(
+          (item) => item.category == "INPUT"
+        ) || []
+    );
 
     const refreshTask = () => {
       const updatedState = refreshState();
@@ -434,8 +442,8 @@ export default {
       if (state.new) {
         // Create
         if (buttonIndex == 0) {
-          if (taskTemplate.fieldList) {
-            for (const field of taskTemplate.fieldList.filter(
+          if (taskTemplate.value?.fieldList) {
+            for (const field of taskTemplate.value.fieldList.filter(
               (item) => item.category == "INPUT"
             )) {
               if (field.required && isEmpty(state.task.payload[field.id])) {
@@ -481,7 +489,7 @@ export default {
     });
 
     const showTaskOutputPanel = computed(() => {
-      return false && !state.new && outputFieldList.length > 0;
+      return false && !state.new && outputFieldList.value.length > 0;
     });
 
     return {
