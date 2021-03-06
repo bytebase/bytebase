@@ -71,7 +71,7 @@
 }
 
 .btn-icon {
-  @apply select-none rounded-full text-control bg-white hover:bg-transparent disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
+  @apply select-none rounded-full text-control bg-transparent hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
 }
 
 .btn-icon-primary {
