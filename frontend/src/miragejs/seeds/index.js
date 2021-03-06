@@ -1,4 +1,5 @@
 import faker from "faker";
+import { taskSlug } from "../../utils";
 
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
@@ -275,7 +276,7 @@ const workspacesSeeder = (server) => {
   server.create("bookmark", {
     workspace: workspace1,
     name: task1.name,
-    link: `/task/${task1.id}`,
+    link: `/task/${taskSlug(task1.name, task1.id)}`,
     creatorId: ws1Owner.id,
   });
 
@@ -284,7 +285,7 @@ const workspacesSeeder = (server) => {
   server.create("bookmark", {
     workspace: workspace1,
     name: task2.name,
-    link: `/task/${task2.id}`,
+    link: `/task/${taskSlug(task2.name, task2.id)}`,
     creatorId: ws1Owner.id,
   });
 
@@ -295,7 +296,7 @@ const workspacesSeeder = (server) => {
   server.create("bookmark", {
     workspace: workspace2,
     name: task3.name,
-    link: `/task/${task3.id}`,
+    link: `/task/${taskSlug(task3.name, task3.id)}`,
     creatorId: ws1Owner.id,
   });
 };
