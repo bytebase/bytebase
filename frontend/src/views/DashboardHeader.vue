@@ -6,7 +6,7 @@
           ><img class="h-10 w-auto" src="../assets/logo.svg" alt="Bytebase"
         /></router-link>
       </div>
-      <div class="hidden md:block">
+      <div class="hidden sm:block">
         <div class="ml-4 flex items-baseline space-x-4">
           <router-link to="/instance" class="bar-link px-2 py-2 rounded-md"
             >Instance</router-link
@@ -48,7 +48,7 @@
         <div class="ml-2">
           <ProfileDropdown />
         </div>
-        <div class="ml-2 -mr-2 flex md:hidden">
+        <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
           <button
             @click.prevent="state.showMobileMenu = !state.showMobileMenu"
