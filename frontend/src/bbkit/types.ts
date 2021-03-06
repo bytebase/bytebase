@@ -23,3 +23,8 @@ export type BBStep = {
 };
 
 export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
+export type BBNotificationPlacement =
+  | "TOP_LEFT"
+  | "TOP_RIGHT"
+  | "BOTTOM_LEFT"
+  | "BOTTOM_RIGHT";

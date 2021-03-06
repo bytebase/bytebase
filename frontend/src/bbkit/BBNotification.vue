@@ -1,7 +1,8 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
   <div
-    class="fixed inset-0 flex items-end justify-center px-4 py-6 pointer-events-none sm:p-6 sm:items-start sm:justify-end"
+    class="fixed inset-0 flex px-4 py-6 pointer-events-none sm:p-6"
+    :class="placementClass"
   >
     <!--
     Notification panel, show/hide based on alert state.
@@ -107,7 +108,15 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { BBNotificationStyle } from "./types";
+import { BBNotificationStyle, BBNotificationPlacement } from "./types";
+
+// For <sm breakpoint, we always position it at the center.
+const placementClassMap: Map<BBNotificationPlacement, string> = new Map([
+  ["TOP_LEFT", "items-start justify-center sm:justify-start"],
+  ["TOP_RIGHT", "items-start justify-center sm:justify-end"],
+  ["BOTTOM_LEFT", "items-end justify-center sm:justify-start"],
+  ["BOTTOM_RIGHT", "items-end justify-center sm:justify-end"],
+]);
 
 export default {
   name: "BBNotification",
@@ -120,6 +129,10 @@ export default {
       type: String as PropType<BBNotificationStyle>,
       default: "INFO",
     },
+    placement: {
+      type: String as PropType<BBNotificationPlacement>,
+      default: "TOP_RIGHT",
+    },
     title: {
       type: String,
       default: "",
@@ -130,7 +143,9 @@ export default {
     },
   },
   setup(props, { emit }) {
-    return {};
+    return {
+      placementClass: placementClassMap.get(props.placement),
+    };
   },
 };
 </script>
