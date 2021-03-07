@@ -2,7 +2,7 @@
   <BBTable
     :columnList="state.columnList"
     :sectionDataSource="taskSectionList"
-    :showHeader="false"
+    :showHeader="true"
     @click-row="clickTask"
   >
     <template v-slot:body="{ rowData: task }">

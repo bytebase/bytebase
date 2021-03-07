@@ -4,7 +4,7 @@
       class="min-w-full divide-y divide-block-border"
       :class="backgroundColor"
     >
-      <thead v-if="showHeader" class="bg-gray-50">
+      <thead v-if="showHeader && !sectionDataSource" class="bg-gray-50">
         <tr>
           <th
             v-for="(column, index) in columnList"
@@ -29,6 +29,17 @@
               {{ section.title }}
             </th>
             <template v-if="section.list.length > 0">
+              <tr v-if="showHeader" class="bg-gray-50">
+                <th
+                  v-for="(column, index) in columnList"
+                  :key="index"
+                  scope="col"
+                  class="py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider"
+                  :class="index == 0 ? 'pl-4' : 'pl-2'"
+                >
+                  {{ column.title }}
+                </th>
+              </tr>
               <tr
                 v-for="(item, j) in section.list"
                 :key="j"
