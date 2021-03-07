@@ -19,6 +19,7 @@ import {
   BBTabPanel,
   BBTable,
   BBTableCell,
+  BBTableHeaderCell,
   BBTableTabFilter,
 } from "./bbkit";
 import { isDevOrDemo, humanizeTs, sizeToFit } from "./utils";
@@ -52,5 +53,6 @@ app
   .component("BBTabPanel", BBTabPanel)
   .component("BBTable", BBTable)
   .component("BBTableCell", BBTableCell)
+  .component("BBTableHeaderCell", BBTableHeaderCell)
   .component("BBTableTabFilter", BBTableTabFilter)
   .mount("#app");

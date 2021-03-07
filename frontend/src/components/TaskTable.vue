@@ -5,6 +5,40 @@
     :showHeader="true"
     @click-row="clickTask"
   >
+    <template v-slot:header>
+      <BBTableHeaderCell
+        class="w-4 table-cell"
+        :title="state.columnList[0].title"
+      />
+      <BBTableHeaderCell
+        class="w-4 table-cell"
+        :title="state.columnList[1].title"
+      />
+      <BBTableHeaderCell
+        class="w-4 table-cell"
+        :title="state.columnList[2].title"
+      />
+      <BBTableHeaderCell
+        class="w-24 table-cell"
+        :title="state.columnList[3].title"
+      />
+      <BBTableHeaderCell
+        class="table-cell"
+        :title="state.columnList[4].title"
+      />
+      <BBTableHeaderCell
+        class="w-12 hidden sm:table-cell"
+        :title="state.columnList[5].title"
+      />
+      <BBTableHeaderCell
+        class="w-32 hidden md:table-cell"
+        :title="state.columnList[6].title"
+      />
+      <BBTableHeaderCell
+        class="w-36 hidden sm:table-cell"
+        :title="state.columnList[7].title"
+      />
+    </template>
     <template v-slot:body="{ rowData: task }">
       <BBTableCell :leftPadding="4" class="w-4 table-cell">
         <TaskStatusIcon

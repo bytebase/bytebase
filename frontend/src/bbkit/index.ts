@@ -8,7 +8,12 @@ import BBSelect from "./BBSelect.vue";
 import BBStepBar from "./BBStepBar.vue";
 import BBTab from "./BBTab.vue";
 import BBTabPanel from "./BBTabPanel.vue";
-import { BBTable, BBTableCell, BBTableTabFilter } from "./BBTable";
+import {
+  BBTable,
+  BBTableCell,
+  BBTableHeaderCell,
+  BBTableTabFilter,
+} from "./BBTable";
 
 export {
   BBAlert,
@@ -23,5 +28,6 @@ export {
   BBTabPanel,
   BBTable,
   BBTableCell,
+  BBTableHeaderCell,
   BBTableTabFilter,
 };
