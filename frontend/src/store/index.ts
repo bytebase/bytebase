@@ -3,7 +3,7 @@ import { createStore, Store } from "vuex";
 // Following states are persisted in database
 import activity from "./modules/activity";
 import bookmark from "./modules/bookmark";
-import membership from "./modules/membership";
+import roleMapping from "./modules/roleMapping";
 import environment from "./modules/environment";
 import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
@@ -25,7 +25,7 @@ export const store: Store<any> = createStore({
   modules: {
     activity,
     bookmark,
-    membership,
+    roleMapping,
     environment,
     instance,
     dataSource,

@@ -15,14 +15,14 @@ export default {
   user: Model.extend({}),
 
   workspace: Model.extend({
-    membership: hasMany(),
+    roleMapping: hasMany(),
     activity: hasMany(),
     task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),
   }),
 
-  membership: Model.extend({
+  roleMapping: Model.extend({
     workspace: belongsTo(),
   }),
 

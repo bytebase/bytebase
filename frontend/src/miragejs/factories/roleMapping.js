@@ -1,7 +1,7 @@
 import { Factory } from "miragejs";
 
 export default {
-  membership: Factory.extend({
+  roleMapping: Factory.extend({
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
     },

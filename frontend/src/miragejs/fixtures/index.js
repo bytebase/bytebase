@@ -3,11 +3,11 @@
  */
 
 import workspaces from "./workspaceList.json";
-import memberships from "./membershipList.json";
+import roleMappings from "./roleMappingList.json";
 import users from "./userList.json";
 
 export default {
   workspaces,
-  memberships,
+  roleMappings,
   users,
 };

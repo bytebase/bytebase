@@ -48,10 +48,10 @@ export default function routes() {
     return schema.users.create(signupInfo);
   });
 
-  // Membership
-  this.get("/membership", function (schema, request) {
-    return schema.memberships.where((membership) => {
-      return membership.workspaceId == WORKSPACE_ID;
+  // RoleMapping
+  this.get("/roleMapping", function (schema, request) {
+    return schema.roleMappings.where((roleMapping) => {
+      return roleMapping.workspaceId == WORKSPACE_ID;
     });
   });
 

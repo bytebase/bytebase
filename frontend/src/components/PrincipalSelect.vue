@@ -21,7 +21,7 @@
 <script lang="ts">
 import { watchEffect, reactive } from "vue";
 import { useStore } from "vuex";
-import { Membership, Principal } from "../types";
+import { RoleMapping, Principal } from "../types";
 
 interface LocalState {
   showMenu: boolean;
@@ -46,10 +46,10 @@ export default {
 
     const preparePrincipalList = () => {
       store
-        .dispatch("membership/fetchMembershipList")
-        .then((list: Membership[]) => {
-          state.principalList = list.map((membership: Membership) => {
-            return membership.principal;
+        .dispatch("roleMapping/fetchRoleMappingList")
+        .then((list: RoleMapping[]) => {
+          state.principalList = list.map((roleMapping: RoleMapping) => {
+            return roleMapping.principal;
           });
           state.selectedPrincipal = state.principalList.find(
             (principal) => principal.id == props.selectedId
