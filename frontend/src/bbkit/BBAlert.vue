@@ -43,91 +43,103 @@
         aria-modal="true"
         aria-labelledby="modal-headline"
       >
-        <div>
-          <div
-            v-if="style == 'SUCCESS'"
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100"
-          >
-            <svg
-              class="h-6 w-6 text-success"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
+        <div class="sm:flex sm:flex-col sm:items-start">
+          <div class="flex items-start">
+            <div
+              v-if="style == 'SUCCESS'"
+              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <div
-            v-else-if="style == 'WARN'"
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100"
-          >
-            <svg
-              class="w-6 h-6 text-yellow-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+              <!-- Heroicon name: outline/exclamation -->
+              <svg
+                class="h-6 w-6 text-success"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div
+              v-else-if="style == 'WARN'"
+              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              ></path>
-            </svg>
-          </div>
-          <div
-            v-else-if="style == 'CRITICAL'"
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
-          >
-            <svg
-              class="w-6 h-6 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+              <!-- Heroicon name: outline/exclamation -->
+              <svg
+                class="h-6 w-6 text-yellow-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                ></path>
+              </svg>
+            </div>
+            <div
+              v-else-if="style == 'CRITICAL'"
+              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-          </div>
-          <div
-            v-else
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100"
-          >
-            <svg
-              class="w-6 h-6 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+              <!-- Heroicon name: outline/exclamation -->
+              <svg
+                class="h-6 w-6 text-red-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div
+              v-else
+              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-          </div>
-          <div class="mt-3 text-center sm:mt-5">
+              <!-- Heroicon name: outline/exclamation -->
+              <svg
+                class="h-6 w-6 text-blue-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </div>
             <h3
-              class="text-lg leading-6 font-medium text-gray-900"
+              class="ml-4 flex self-center text-lg leading-6 font-medium text-gray-900"
               id="modal-headline"
             >
               {{ title }}
             </h3>
+          </div>
+          <div
+            v-if="description"
+            class="mt-3 text-center sm:mt-0 sm:ml-14 sm:text-left"
+          >
             <div class="mt-2">
               <p class="text-sm text-gray-500">
                 {{ description }}
@@ -135,12 +147,10 @@
             </div>
           </div>
         </div>
-        <div
-          class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
-        >
+        <div class="mt-5 sm:mt-4 sm:ml-10 sm:pl-4 sm:flex">
           <button
             type="button"
-            class="px-4 py-2 sm:col-start-2"
+            class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-error text-base font-medium text-white hover:bg-error-hover focus:outline-none focus-visible:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             v-bind:class="okButtonStyle"
             @click.prevent="$emit('ok', payload)"
           >
@@ -148,7 +158,7 @@
           </button>
           <button
             type="button"
-            class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:col-start-1"
+            class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:ml-3 sm:w-auto"
             @click.prevent="cancel"
           >
             {{ cancelText }}
