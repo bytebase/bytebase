@@ -19,7 +19,13 @@
       <BBTableCell :leftPadding="4" class="w-24 table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar :size="'small'" :username="roleMapping.principal.name" />
-          <span class="ml-2">{{ roleMapping.principal.name }}</span>
+          <span class="ml-2">
+            <router-link
+              :to="`/u/${roleMapping.principal.id}`"
+              class="normal-link"
+              >{{ roleMapping.principal.name }}
+            </router-link></span
+          >
         </div>
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -37,7 +43,9 @@
           {{ humanizeTs(roleMapping.lastUpdatedTs) }}
           <span class="ml-1"
             >by
-            <router-link :to="`/u/${roleMapping.principal.id}`"
+            <router-link
+              :to="`/u/${roleMapping.principal.id}`"
+              class="normal-link"
               >{{ roleMapping.principal.name }}
             </router-link></span
           >

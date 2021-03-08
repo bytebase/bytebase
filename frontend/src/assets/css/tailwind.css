@@ -138,6 +138,10 @@
   @apply text-accent font-medium hover:underline focus:outline-none;
 }
 
+.normal-link {
+  @apply text-main hover:underline focus:outline-none;
+}
+
 .icon-link {
   @apply text-control hover:bg-link-hover focus:outline-none;
 }
