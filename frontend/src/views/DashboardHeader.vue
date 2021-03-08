@@ -2,7 +2,11 @@
   <div class="flex items-center justify-between h-16">
     <div class="flex items-center">
       <div class="flex-shrink-0 w-40">
-        <router-link to="/" active-class="" exact-active-class=""
+        <router-link
+          to="/"
+          class="select-none"
+          active-class=""
+          exact-active-class=""
           ><img class="h-10 w-auto" src="../assets/logo.svg" alt="Bytebase"
         /></router-link>
       </div>
