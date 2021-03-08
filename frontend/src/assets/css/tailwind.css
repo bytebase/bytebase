@@ -59,7 +59,7 @@
 }
 
 .btn-normal {
-  @apply select-none inline-flex border border-control-border rounded-md text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex border border-control-border rounded-md text-control bg-white hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-select {
