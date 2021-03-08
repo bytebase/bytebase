@@ -1,9 +1,11 @@
 <template>
-  <div class="mx-4 flex justify-center">
-    <MemberInvite />
+  <div class="max-w-4xl flex justify-center">
+    <div>
+      <MemberInvite />
+    </div>
   </div>
   <div class="mt-6">
-    <p class="ml-4 text-xl font-bold leading-7 text-main">Members</p>
+    <p class="text-xl font-bold leading-7 text-main">Current Members</p>
     <MemberTable class="mt-2" />
   </div>
 </template>
