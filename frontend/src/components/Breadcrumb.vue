@@ -103,7 +103,7 @@ export default {
   components: {},
   setup(props, ctx) {
     const store = useStore();
-    const currentRoute = useRouter().currentRoute.value;
+    const currentRoute = useRouter().currentRoute;
 
     const state = reactive<LocalState>({
       bookmarked: Math.random() > 0.5,
@@ -116,13 +116,13 @@ export default {
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       store.getters["bookmark/bookmarkByUserAndLink"](
         currentUser.value.id,
-        currentRoute.path
+        currentRoute.value.path
       )
     );
 
     const breadcrumbList = computed(() => {
       const routeSlug: RouterSlug = store.getters["router/routeSlug"](
-        currentRoute
+        currentRoute.value
       );
       const instanceSlug = routeSlug.instanceSlug;
       const list: Array<BreadcrumbItem> = [];
@@ -133,10 +133,10 @@ export default {
         });
       }
 
-      if (currentRoute.meta.title) {
+      if (currentRoute.value.meta.title) {
         list.push({
-          name: currentRoute.meta.title(currentRoute),
-          path: currentRoute.path,
+          name: currentRoute.value.meta.title(currentRoute.value),
+          path: currentRoute.value.path,
         });
       }
 
@@ -154,7 +154,7 @@ export default {
         store
           .dispatch("bookmark/createBookmark", {
             name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
-            link: currentRoute.path,
+            link: currentRoute.value.path,
             creatorId: currentUser.value.id,
           })
           .catch((error) => {
