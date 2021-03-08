@@ -3,6 +3,7 @@
     :columnList="columnList"
     :sectionDataSource="dataSource"
     :showHeader="true"
+    :rowClickable="false"
   >
     <template v-slot:header>
       <BBTableHeaderCell
@@ -34,7 +35,12 @@
       <BBTableCell class="w-48 table-cell">
         <div class="flex flex-row items-center">
           {{ humanizeTs(roleMapping.lastUpdatedTs) }}
-          <span class="ml-1">by {{ roleMapping.principal.name }}</span>
+          <span class="ml-1"
+            >by
+            <router-link :to="`/u/${roleMapping.principal.id}`"
+              >{{ roleMapping.principal.name }}
+            </router-link></span
+          >
         </div>
       </BBTableCell>
       <BBTableCell>

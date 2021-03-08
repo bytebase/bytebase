@@ -35,8 +35,14 @@
               <tr
                 v-for="(item, j) in section.list"
                 :key="j"
-                class="cursor-pointer hover:bg-gray-200"
-                @click.stop="$emit('click-row', i, j)"
+                :class="rowClickable ? 'cursor-pointer hover:bg-gray-200' : ''"
+                @click.stop="
+                  () => {
+                    if (rowClickable) {
+                      $emit('click-row', i, j);
+                    }
+                  }
+                "
               >
                 <slot name="body" :rowData="item" />
               </tr>
@@ -91,6 +97,10 @@ export default {
     },
     showHeader: {
       default: true,
+      type: Boolean,
+    },
+    rowClickable: {
+      defalut: true,
       type: Boolean,
     },
     backgroundColor: {
