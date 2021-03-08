@@ -1,7 +1,7 @@
 <template>
   <th
     scope="col"
-    class="text-left text-xs font-medium text-gray-500 capitalize tracking-wider py-3"
+    class="text-left text-xs font-medium text-gray-500 capitalize tracking-wider py-2"
     :class="`pl-` + leftPadding"
   >
     {{ title }}
