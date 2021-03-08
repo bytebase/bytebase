@@ -1,7 +1,7 @@
 <template>
   <BBSelect
-    :selectedItem="state.selectedPrincipal"
-    :itemList="state.principalList"
+    :selectedItem="selectedPrincipal"
+    :itemList="principalList"
     :placeholder="'Unassigned'"
     @select-item="(item) => $emit('select-principal', item)"
   >
@@ -19,14 +19,12 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, reactive } from "vue";
+import { watchEffect, reactive, computed } from "vue";
 import { useStore } from "vuex";
 import { RoleMapping, Principal } from "../types";
 
 interface LocalState {
   showMenu: boolean;
-  principalList: Principal[];
-  selectedPrincipal?: Principal;
 }
 
 export default {
@@ -40,27 +38,22 @@ export default {
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       showMenu: false,
-      principalList: [],
     });
     const store = useStore();
 
-    const preparePrincipalList = () => {
-      store
-        .dispatch("roleMapping/fetchRoleMappingList")
-        .then((list: RoleMapping[]) => {
-          state.principalList = list.map((roleMapping: RoleMapping) => {
-            return roleMapping.principal;
-          });
-          state.selectedPrincipal = state.principalList.find(
-            (principal) => principal.id == props.selectedId
-          );
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
+    const principalList = computed(() =>
+      store.getters["roleMapping/roleMappingList"]().map(
+        (roleMapping: RoleMapping) => {
+          return roleMapping.principal;
+        }
+      )
+    );
 
-    watchEffect(preparePrincipalList);
+    const selectedPrincipal = computed(() =>
+      principalList.value.find(
+        (principal: Principal) => principal.id == props.selectedId
+      )
+    );
 
     const close = () => {
       state.showMenu = false;
@@ -68,6 +61,8 @@ export default {
 
     return {
       state,
+      principalList,
+      selectedPrincipal,
       close,
     };
   },
