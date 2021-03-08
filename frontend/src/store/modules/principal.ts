@@ -27,6 +27,13 @@ const getters = {
   principalById: (state: PrincipalState) => (
     principalId: PrincipalId
   ): Principal => {
+    if (!principalId) {
+      return {
+        id: "-1",
+        name: "<<ID Missing>>",
+        email: "",
+      };
+    }
     for (const principal of state.principalList) {
       if (principal.id == principalId) {
         return principal;
@@ -34,7 +41,7 @@ const getters = {
     }
     return {
       id: principalId,
-      name: "Unknown User " + principalId,
+      name: principalId,
       email: "",
     };
   },

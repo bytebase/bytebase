@@ -8,12 +8,15 @@
     <template v-slot:header>
       <BBTableHeaderCell
         :leftPadding="4"
-        class="w-24 table-cell"
+        class="w-auto table-cell"
         :title="columnList[0].title"
       />
       <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
-      <BBTableHeaderCell class="w-48 table-cell" :title="columnList[2].title" />
-      <BBTableHeaderCell class="w-4 table-cell" :title="columnList[3].title" />
+      <BBTableHeaderCell class="w-72 table-cell" :title="columnList[2].title" />
+      <BBTableHeaderCell
+        class="w-auto table-cell"
+        :title="columnList[3].title"
+      />
     </template>
     <template v-slot:body="{ rowData: roleMapping }">
       <BBTableCell :leftPadding="4" class="table-cell">
@@ -34,7 +37,7 @@
           </span>
         </div>
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="">
         <RoleSelect
           :selectedRole="roleMapping.role"
           @change-role="
@@ -44,24 +47,20 @@
           "
         />
       </BBTableCell>
-      <BBTableCell class="w-48 table-cell">
-        <div class="flex flex-row items-center">
-          {{ humanizeTs(roleMapping.lastUpdatedTs) }}
-          <span class="ml-1"
-            >by
-            <router-link
-              :to="`/u/${roleMapping.principal.id}`"
-              class="normal-link"
-              >{{ roleMapping.principal.name }}
-            </router-link></span
-          >
+      <BBTableCell class="table-cell">
+        <div class="flex flex-row items-center space-x-1">
+          <span>
+            {{ humanizeTs(roleMapping.lastUpdatedTs) }}
+          </span>
+          <router-link
+            :to="`/u/${roleMapping.principal.id}`"
+            class="normal-link"
+            >by {{ roleMapping.principal.name }}
+          </router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
-        <button
-          class="w-4 btn-icon"
-          @click.prevent="deleteRole(roleMapping.id)"
-        >
+        <button class="btn-icon" @click.prevent="deleteRole(roleMapping.id)">
           <svg
             class="w-4 h-4"
             fill="none"

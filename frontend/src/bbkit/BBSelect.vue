@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative"
+    class="relative flex flex-shrink-0"
     v-click-inside-outside="
       (_, inside) => {
         if (!inside) {
