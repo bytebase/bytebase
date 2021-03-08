@@ -4,7 +4,7 @@
     <div class="space-y-6">
       <div v-if="!$props.new" class="flex flex-row space-x-2">
         <h2 class="flex items-center textlabel w-36">Status</h2>
-        <div class="z-10 w-full">
+        <div class="w-full">
           <TaskStatusSelect
             :disabled="activeStageIsRunning(task)"
             :selectedStatus="task.status"

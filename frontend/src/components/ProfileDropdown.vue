@@ -13,7 +13,7 @@
     </button>
     <BBContextMenu
       ref="menu"
-      class="z-10 origin-top-left absolute right-0 mt-2 w-36 rounded-md shadow-lg"
+      class="origin-top-left absolute right-0 mt-2 w-36 rounded-md shadow-lg"
     >
       <div v-if="isDevOrDemo">
         <div v-if="currentUser.email != 'demo@example.com'" class="py-1">
