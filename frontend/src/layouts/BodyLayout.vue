@@ -130,14 +130,14 @@
               </svg>
             </button>
           </div>
-          <div v-if="!isHome" class="ml-4">
+          <div v-if="showBreadcrumb" class="ml-4">
             <Breadcrumb />
           </div>
         </div>
       </aside>
       <div class="w-full mx-auto md:flex">
         <div class="md:min-w-0 md:flex-1">
-          <div v-if="!isHome" class="hidden md:block px-4 pt-4 pb-2">
+          <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4 pb-2">
             <Breadcrumb />
           </div>
           <div v-if="quickActionList" class="mx-4 mt-4">
@@ -146,7 +146,10 @@
         </div>
       </div>
       <!-- This area may scroll -->
-      <div class="md:min-w-0 md:flex-1 overflow-y-auto mt-4">
+      <div
+        class="md:min-w-0 md:flex-1 overflow-y-auto"
+        :class="showBreadcrumb || quickActionList ? 'mt-4' : ''"
+      >
         <!-- Start main area-->
         <router-view name="content" />
         <!-- End main area -->
@@ -186,10 +189,15 @@ export default {
       return router.currentRoute.value.meta.quickActionList;
     });
 
+    const showBreadcrumb = computed(() => {
+      const name = router.currentRoute.value.name;
+      return !(name === "workspace.home" || name === "workspace.profile");
+    });
+
     return {
       state,
-      isHome,
       quickActionList,
+      showBreadcrumb,
     };
   },
 };

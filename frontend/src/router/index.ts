@@ -109,7 +109,7 @@ const routes: Array<RouteRecordRaw> = [
           },
           {
             path: "u/:principalId",
-            name: "workspace.profile.detail",
+            name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const principalId = route.params.principalId as string;
