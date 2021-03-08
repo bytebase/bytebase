@@ -63,6 +63,11 @@ export type RoleMappingNew = {
   updaterId: PrincipalId;
 };
 
+export type RoleMappingPatch = {
+  id: RoleMappingId;
+  role: RoleType;
+};
+
 // Bookmark
 export type Bookmark = {
   id: BookmarkId;

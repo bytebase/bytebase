@@ -2,14 +2,19 @@
   <div class="mx-4 flex justify-center">
     <MemberInvite />
   </div>
+  <div class="mt-6">
+    <p class="ml-4 text-xl font-bold leading-7 text-main">Members</p>
+    <MemberTable class="mt-2" />
+  </div>
 </template>
 
 <script lang="ts">
 import MemberInvite from "../components/MemberInvite.vue";
+import MemberTable from "../components/MemberTable.vue";
 
 export default {
   name: "SettingWorkspaceMember",
-  components: { MemberInvite },
+  components: { MemberInvite, MemberTable },
   props: {},
   setup(props, ctx) {},
 };

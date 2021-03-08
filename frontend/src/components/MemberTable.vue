@@ -1,0 +1,168 @@
+<template>
+  <BBTable
+    :columnList="columnList"
+    :sectionDataSource="dataSource"
+    :showHeader="true"
+  >
+    <template v-slot:header>
+      <BBTableHeaderCell
+        :leftPadding="4"
+        class="w-24 table-cell"
+        :title="columnList[0].title"
+      />
+      <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
+      <BBTableHeaderCell class="w-48 table-cell" :title="columnList[2].title" />
+      <BBTableHeaderCell class="w-4 table-cell" :title="columnList[3].title" />
+    </template>
+    <template v-slot:body="{ rowData: roleMapping }">
+      <BBTableCell :leftPadding="4" class="w-24 table-cell">
+        <div class="flex flex-row items-center">
+          <BBAvatar :size="'small'" :username="roleMapping.principal.name" />
+          <span class="ml-2">{{ roleMapping.principal.name }}</span>
+        </div>
+      </BBTableCell>
+      <BBTableCell class="w-8">
+        <RoleSelect
+          :selectedRole="roleMapping.role"
+          @change-role="
+            (role) => {
+              changeRole(roleMapping.id, role);
+            }
+          "
+        />
+      </BBTableCell>
+      <BBTableCell class="w-48 table-cell">
+        <div class="flex flex-row items-center">
+          {{ humanizeTs(roleMapping.lastUpdatedTs) }}
+          <span class="ml-1">by {{ roleMapping.principal.name }}</span>
+        </div>
+      </BBTableCell>
+      <BBTableCell>
+        <button
+          class="w-4 btn-icon"
+          @click.prevent="deleteRole(roleMapping.id)"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            ></path>
+          </svg>
+        </button>
+      </BBTableCell>
+    </template>
+  </BBTable>
+</template>
+
+<script lang="ts">
+import { computed, reactive, watchEffect } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import RoleSelect from "../components/RoleSelect.vue";
+import { RoleMappingId, RoleType } from "../types";
+import { BBTableColumn } from "../bbkit/types";
+
+const columnList: BBTableColumn[] = [
+  {
+    title: "Account",
+  },
+  {
+    title: "Role",
+  },
+  {
+    title: "Granted Time",
+  },
+  {
+    title: "",
+  },
+];
+
+interface LocalState {}
+
+export default {
+  name: "MemberTable",
+  components: { RoleSelect },
+  props: {},
+  setup(props, ctx) {
+    const store = useStore();
+    const router = useRouter();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const state = reactive<LocalState>({});
+
+    const prepareRoleMappingList = () => {
+      store.dispatch("roleMapping/fetchRoleMappingList").catch((error) => {
+        console.log(error);
+      });
+    };
+
+    watchEffect(prepareRoleMappingList);
+
+    const dataSource = computed(() => {
+      const ownerList = [];
+      const dbaList = [];
+      const developerList = [];
+      for (const roleMapping of store.getters[
+        "roleMapping/roleMappingList"
+      ]()) {
+        if (roleMapping.role === "OWNER") {
+          ownerList.push(roleMapping);
+        } else if (roleMapping.role === "DBA") {
+          dbaList.push(roleMapping);
+        } else if (roleMapping.role === "DEVELOPER") {
+          developerList.push(roleMapping);
+        }
+      }
+      const dataSource = [];
+      dataSource.push({
+        title: "Owner",
+        list: ownerList,
+      });
+      dataSource.push({
+        title: "DBA",
+        list: dbaList,
+      });
+      dataSource.push({
+        title: "Developer",
+        list: developerList,
+      });
+      return dataSource;
+    });
+
+    const changeRole = (id: RoleMappingId, role: RoleType) => {
+      store
+        .dispatch("roleMapping/patchRoleMapping", {
+          id,
+          role,
+          updaterId: currentUser.value.id,
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    const deleteRole = (id: RoleMappingId) => {
+      store.dispatch("roleMapping/deleteRoleMappingById", id).catch((error) => {
+        console.log(error);
+      });
+    };
+
+    return {
+      state,
+      columnList,
+      dataSource,
+      changeRole,
+      deleteRole,
+    };
+  },
+};
+</script>

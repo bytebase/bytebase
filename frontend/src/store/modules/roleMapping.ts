@@ -1,7 +1,9 @@
 import axios from "axios";
 import {
   RoleMapping,
+  RoleMappingId,
   RoleMappingNew,
+  RoleMappingPatch,
   RoleMappingState,
   ResourceObject,
 } from "../../types";
@@ -13,6 +15,7 @@ function convert(roleMapping: ResourceObject, rootGetters: any): RoleMapping {
   const updater = rootGetters["principal/principalById"](
     roleMapping.attributes.updaterId
   );
+
   return {
     id: roleMapping.id,
     principal,
@@ -36,7 +39,7 @@ const getters = {
 
 const actions = {
   async fetchRoleMappingList({ commit, rootGetters }: any) {
-    const roleMappingList = (await axios.get(`/api/roleMapping`)).data.data.map(
+    const roleMappingList = (await axios.get(`/api/rolemapping`)).data.data.map(
       (roleMapping: ResourceObject) => {
         return convert(roleMapping, rootGetters);
       }
@@ -52,7 +55,7 @@ const actions = {
   ) {
     const createdRoleMapping = convert(
       (
-        await axios.post(`/api/roleMapping`, {
+        await axios.post(`/api/rolemapping`, {
           data: {
             type: "roleMapping",
             attributes: newRoleMapping,
@@ -66,6 +69,41 @@ const actions = {
 
     return createdRoleMapping;
   },
+
+  async patchRoleMapping(
+    { commit, rootGetters }: any,
+    roleMapping: RoleMappingPatch
+  ) {
+    const { id, ...attrs } = roleMapping;
+    const updatedRoleMapping = convert(
+      (
+        await axios.patch(`/api/rolemapping/${roleMapping.id}`, {
+          data: {
+            type: "roleMapping",
+            attributes: attrs,
+          },
+        })
+      ).data.data,
+      rootGetters
+    );
+
+    commit("replaceRoleMappingInList", updatedRoleMapping);
+
+    return updatedRoleMapping;
+  },
+
+  async deleteRoleMappingById(
+    { state, commit }: { state: RoleMappingState; commit: any },
+    id: RoleMappingId
+  ) {
+    await axios.delete(`/api/rolemapping/${id}`);
+
+    const newList = state.roleMappingList.filter((item: RoleMapping) => {
+      return item.id != id;
+    });
+
+    commit("setRoleMappingList", newList);
+  },
 };
 
 const mutations = {
@@ -75,6 +113,18 @@ const mutations = {
 
   appendRoleMapping(state: RoleMappingState, newRoleMapping: RoleMapping) {
     state.roleMappingList.push(newRoleMapping);
+  },
+
+  replaceRoleMappingInList(
+    state: RoleMappingState,
+    updatedRoleMapping: RoleMapping
+  ) {
+    const i = state.roleMappingList.findIndex(
+      (item: RoleMapping) => item.id == updatedRoleMapping.id
+    );
+    if (i != -1) {
+      state.roleMappingList[i] = updatedRoleMapping;
+    }
   },
 };
 

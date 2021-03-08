@@ -49,13 +49,13 @@ export default function routes() {
   });
 
   // RoleMapping
-  this.get("/roleMapping", function (schema, request) {
+  this.get("/rolemapping", function (schema, request) {
     return schema.roleMappings.where((roleMapping) => {
       return roleMapping.workspaceId == WORKSPACE_ID;
     });
   });
 
-  this.post("/roleMapping", function (schema, request) {
+  this.post("/rolemapping", function (schema, request) {
     const ts = Date.now();
     const attrs = {
       ...this.normalizedRequestAttrs("role-mapping"),
@@ -70,6 +70,15 @@ export default function routes() {
       workspaceId: WORKSPACE_ID,
     };
     return schema.roleMappings.create(newRoleMapping);
+  });
+
+  this.patch("/rolemapping/:roleMappingId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("role-mapping");
+    return schema.roleMappings.find(request.params.roleMappingId).update(attrs);
+  });
+
+  this.delete("/rolemapping/:roleMappingId", function (schema, request) {
+    return schema.roleMappings.find(request.params.roleMappingId).destroy();
   });
 
   // Task
