@@ -16,16 +16,22 @@
       <BBTableHeaderCell class="w-4 table-cell" :title="columnList[3].title" />
     </template>
     <template v-slot:body="{ rowData: roleMapping }">
-      <BBTableCell :leftPadding="4" class="w-24 table-cell">
-        <div class="flex flex-row items-center">
+      <BBTableCell :leftPadding="4" class="table-cell">
+        <div class="flex flex-row items-center space-x-2">
           <BBAvatar :size="'small'" :username="roleMapping.principal.name" />
-          <span class="ml-2">
+          <span>
             <router-link
               :to="`/u/${roleMapping.principal.id}`"
               class="normal-link"
               >{{ roleMapping.principal.name }}
             </router-link></span
           >
+          <span
+            v-if="currentUser.id == roleMapping.principal.id"
+            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+          >
+            You
+          </span>
         </div>
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -79,7 +85,6 @@
 <script lang="ts">
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import RoleSelect from "../components/RoleSelect.vue";
 import { RoleMappingId, RoleType } from "../types";
 import { BBTableColumn } from "../bbkit/types";
@@ -107,7 +112,6 @@ export default {
   props: {},
   setup(props, ctx) {
     const store = useStore();
-    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -172,6 +176,7 @@ export default {
 
     return {
       state,
+      currentUser,
       columnList,
       dataSource,
       changeRole,
