@@ -48,13 +48,13 @@
           {{ item.name }}
         </div>
         <button
-          v-if="index == breadcrumbList.length - 1"
+          v-if="allowBookmark && index == breadcrumbList.length - 1"
           class="relative focus:outline-none"
           type="button"
           @click.prevent="toggleBookmark"
         >
           <svg
-            v-if="bookmark"
+            v-if="bookmarked"
             class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
@@ -89,10 +89,6 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { RouterSlug, User, Bookmark } from "../types";
 
-interface LocalState {
-  bookmarked: boolean;
-}
-
 interface BreadcrumbItem {
   name: string;
   path?: string;
@@ -105,15 +101,11 @@ export default {
     const store = useStore();
     const currentRoute = useRouter().currentRoute;
 
-    const state = reactive<LocalState>({
-      bookmarked: Math.random() > 0.5,
-    });
-
     const currentUser: ComputedRef<User> = computed(() =>
       store.getters["auth/currentUser"]()
     );
 
-    const bookmark: ComputedRef<Bookmark> = computed(() =>
+    const bookmarked: ComputedRef<Bookmark> = computed(() =>
       store.getters["bookmark/bookmarkByUserAndLink"](
         currentUser.value.id,
         currentRoute.value.path
@@ -144,9 +136,9 @@ export default {
     });
 
     const toggleBookmark = () => {
-      if (bookmark.value) {
+      if (bookmarked.value) {
         store
-          .dispatch("bookmark/deleteBookmark", bookmark.value)
+          .dispatch("bookmark/deleteBookmark", bookmarked.value)
           .catch((error) => {
             console.log(error);
           });
@@ -164,8 +156,8 @@ export default {
     };
 
     return {
-      state,
-      bookmark,
+      allowBookmark: currentRoute.value.meta.allowBookmark,
+      bookmarked,
       breadcrumbList,
       toggleBookmark,
     };

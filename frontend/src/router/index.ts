@@ -227,6 +227,7 @@ const routes: Array<RouteRecordRaw> = [
                 return store.getters["instance/instanceById"](idFromSlug(slug))
                   .name;
               },
+              allowBookmark: true,
             },
             components: {
               content: () => import("../views/InstanceDetail.vue"),
@@ -245,6 +246,7 @@ const routes: Array<RouteRecordRaw> = [
                 }
                 return store.getters["task/taskById"](idFromSlug(slug)).name;
               },
+              allowBookmark: true,
             },
             components: {
               content: () => import("../views/TaskDetail.vue"),
