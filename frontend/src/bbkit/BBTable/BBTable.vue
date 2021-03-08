@@ -1,9 +1,6 @@
 <template>
-    <table
-      class="min-w-full divide-y divide-block-border"
-      :class="backgroundColor"
-    >
   <div class="border-block-border" :class="borderVisibility">
+    <table class="min-w-full divide-y divide-block-border">
       <thead v-if="showHeader && !sectionDataSource" class="bg-gray-50">
         <tr>
           <th
@@ -24,7 +21,6 @@
             <th
               :colspan="columnList.length"
               class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
-              :class="backgroundColor"
             >
               {{ section.title }}
             </th>
@@ -103,9 +99,6 @@ export default {
       defalut: true,
       type: Boolean,
     },
-    backgroundColor: {
-      default: "bg-white",
-      type: String,
     leftBordered: {
       default: true,
       type: Boolean,
