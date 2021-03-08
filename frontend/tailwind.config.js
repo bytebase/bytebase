@@ -9,6 +9,9 @@ module.exports = {
   purge: [],
   theme: {
     extend: {
+      screens: {
+        xs: "425px",
+      },
       colors: {
         accent: "var(--color-accent)",
         "accent-hover": "var(--color-accent-hover)",
