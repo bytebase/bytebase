@@ -35,12 +35,13 @@ const BACKGROUND_COLOR_LIST: string[] = [
   "#F43F5E",
 ];
 
-type SizeType = "small" | "normal" | "large";
+type SizeType = "small" | "normal" | "large" | "huge";
 
 const sizeClassMap: Map<SizeType, string> = new Map([
   ["small", "w-6 h-6 text-xs font-normal"],
   ["normal", "w-8 h-8 text-sm font-normal"],
   ["large", "w-24 h-24 text-4xl font-medium"],
+  ["huge", "w-36 h-36 text-5xl font-medium"],
 ]);
 
 export default {
