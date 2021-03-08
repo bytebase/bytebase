@@ -57,6 +57,12 @@ export type RoleMapping = {
   updater: Principal;
 };
 
+export type RoleMappingNew = {
+  email: string;
+  role: RoleType;
+  updaterId: PrincipalId;
+};
+
 // Bookmark
 export type Bookmark = {
   id: BookmarkId;

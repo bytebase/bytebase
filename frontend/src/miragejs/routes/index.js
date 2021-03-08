@@ -55,6 +55,23 @@ export default function routes() {
     });
   });
 
+  this.post("/roleMapping", function (schema, request) {
+    const ts = Date.now();
+    const attrs = {
+      ...this.normalizedRequestAttrs("role-mapping"),
+      workspaceId: WORKSPACE_ID,
+    };
+    const newRoleMapping = {
+      ...attrs,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      role: attrs.role,
+      updaterId: attrs.updaterId,
+      workspaceId: WORKSPACE_ID,
+    };
+    return schema.roleMappings.create(newRoleMapping);
+  });
+
   // Task
   this.get("/task", function (schema, request) {
     const {

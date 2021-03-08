@@ -46,3 +46,10 @@ export function sizeToFit(el: HTMLTextAreaElement) {
   // Extra 2px is to prevent jiggling upon entering the text
   el.style.height = `${el.scrollHeight + 2}px`;
 }
+
+export function isValidEmail(email: string) {
+  // Rather than using esoteric regex complying RFC 822/2822, we just use a naive but readable version
+  // which should work most of the time.
+  var re = /\S+@\S+\.\S+/;
+  return re.test(email);
+}

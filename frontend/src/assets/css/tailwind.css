@@ -71,7 +71,7 @@
 }
 
 .btn-icon {
-  @apply select-none rounded-full text-control bg-transparent hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
+  @apply cursor-pointer select-none rounded-full text-control bg-transparent hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
 }
 
 .btn-icon-primary {
@@ -100,6 +100,22 @@
 
 .textarea {
   @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border shadow-sm;
+}
+
+.radio-set {
+  @apply h-9 flex flex-row items-center space-x-2;
+}
+
+.radio {
+  @apply flex items-center;
+}
+
+.radio .btn {
+  @apply focus:ring-control h-4 w-4 text-control border-control-border select-none;
+}
+
+.radio .label {
+  @apply ml-2 block text-sm font-medium text-gray-700 select-none;
 }
 
 .outline-title {

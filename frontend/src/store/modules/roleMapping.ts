@@ -1,5 +1,10 @@
 import axios from "axios";
-import { RoleMapping, RoleMappingState, ResourceObject } from "../../types";
+import {
+  RoleMapping,
+  RoleMappingNew,
+  RoleMappingState,
+  ResourceObject,
+} from "../../types";
 
 function convert(roleMapping: ResourceObject, rootGetters: any): RoleMapping {
   const principal = rootGetters["principal/principalById"](
@@ -40,11 +45,36 @@ const actions = {
     commit("setRoleMappingList", roleMappingList);
     return roleMappingList;
   },
+
+  async createdRoleMapping(
+    { commit, rootGetters }: any,
+    newRoleMapping: RoleMappingNew
+  ) {
+    const createdRoleMapping = convert(
+      (
+        await axios.post(`/api/roleMapping`, {
+          data: {
+            type: "roleMapping",
+            attributes: newRoleMapping,
+          },
+        })
+      ).data.data,
+      rootGetters
+    );
+
+    commit("appendRoleMapping", createdRoleMapping);
+
+    return createdRoleMapping;
+  },
 };
 
 const mutations = {
   setRoleMappingList(state: RoleMappingState, roleMappingList: RoleMapping[]) {
     state.roleMappingList = roleMappingList;
+  },
+
+  appendRoleMapping(state: RoleMappingState, newRoleMapping: RoleMapping) {
+    state.roleMappingList.push(newRoleMapping);
   },
 };
 
