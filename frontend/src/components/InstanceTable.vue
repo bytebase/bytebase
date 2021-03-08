@@ -3,6 +3,8 @@
     :columnList="state.columnList"
     :dataSource="instanceList"
     :showHeader="true"
+    :leftBordered="false"
+    :rightBordered="false"
     @click-row="clickInstance"
   >
     <template v-slot:body="{ rowData: instance }">

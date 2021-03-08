@@ -1,9 +1,9 @@
 <template>
-  <div class="border-t border-b border-block-border">
     <table
       class="min-w-full divide-y divide-block-border"
       :class="backgroundColor"
     >
+  <div class="border-block-border" :class="borderVisibility">
       <thead v-if="showHeader && !sectionDataSource" class="bg-gray-50">
         <tr>
           <th
@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../types";
 
 export default {
@@ -106,8 +106,44 @@ export default {
     backgroundColor: {
       default: "bg-white",
       type: String,
+    leftBordered: {
+      default: true,
+      type: Boolean,
+    },
+    rightBordered: {
+      default: true,
+      type: Boolean,
+    },
+    topBordered: {
+      default: true,
+      type: Boolean,
+    },
+    bottomBordered: {
+      default: true,
+      type: Boolean,
     },
   },
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const borderVisibility = computed(() => {
+      const style = [];
+      if (props.leftBordered) {
+        style.push("border-l");
+      }
+
+      if (props.rightBordered) {
+        style.push("border-r");
+      }
+
+      if (props.topBordered) {
+        style.push("border-t");
+      }
+
+      if (props.bottomBordered) {
+        style.push("border-b");
+      }
+      return style.join(" ");
+    });
+    return { borderVisibility };
+  },
 };
 </script>

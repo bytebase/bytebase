@@ -3,6 +3,8 @@
     :columnList="state.columnList"
     :sectionDataSource="taskSectionList"
     :showHeader="true"
+    :leftBordered="false"
+    :rightBordered="false"
     @click-row="clickTask"
   >
     <template v-slot:header>

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="w-full space-y-6">
     <div class="space-y-2">
       <div class="space-y-1">
         <p id="invite_members_helper" class="sr-only">Add by email address</p>
