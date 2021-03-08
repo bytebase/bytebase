@@ -43,6 +43,7 @@ export type NewUser = Omit<User, "id">;
 export type Principal = {
   id: PrincipalId;
   name: string;
+  email: string;
 };
 
 // RoleMapping
@@ -239,6 +240,7 @@ export type SignupInfo = {
 export type RouterSlug = {
   taskSlug?: string;
   instanceSlug?: string;
+  principalId?: PrincipalId;
 };
 
 export type Notification = {

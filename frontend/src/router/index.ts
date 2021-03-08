@@ -108,6 +108,22 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "u/:principalId",
+            name: "workspace.profile.detail",
+            meta: {
+              title: (route: RouteLocationNormalized) => {
+                const principalId = route.params.principalId as string;
+                return store.getters["principal/principalById"](principalId)
+                  .name;
+              },
+            },
+            components: {
+              content: () => import("../views/ProfileDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
+          },
+          {
             path: "setting",
             name: "setting",
             meta: { title: () => "Setting" },
@@ -122,8 +138,8 @@ const routes: Array<RouteRecordRaw> = [
             children: [
               {
                 path: "",
-                name: "setting.accountprofile",
-                meta: { title: () => "Account Profile" },
+                name: "setting.profile",
+                meta: { title: () => "Profile" },
                 component: () => import("../views/SettingAccountProfile.vue"),
                 alias: "account/profile",
                 props: true,
@@ -305,6 +321,7 @@ router.beforeEach((to, from, next) => {
   const routerSlug = store.getters["router/routeSlug"](to);
   const taskSlug = routerSlug.taskSlug;
   const instanceSlug = routerSlug.instanceSlug;
+  const principalId = routerSlug.principalId;
 
   console.log("RouterSlug:", routerSlug);
 
@@ -335,6 +352,21 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
       .then((instance) => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+      });
+    return;
+  }
+
+  if (principalId) {
+    store
+      .dispatch("principal/fetchPrincipalById", principalId)
+      .then(() => {
         next();
       })
       .catch((error) => {

@@ -32,6 +32,18 @@ const getters = {
         instanceSlug: instanceComponents[1],
       };
     }
+
+    // /u/:principalId
+    // Total 2 elements, 2nd element is the principal id
+    const profileComponents = currentRoute.path.match(
+      "/u/([0-9a-zA-Z_-]+)"
+    ) || ["/", undefined];
+    if (profileComponents[1]) {
+      return {
+        principalId: profileComponents[1],
+      };
+    }
+
     return {};
   },
 };
