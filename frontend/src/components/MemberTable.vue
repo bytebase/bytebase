@@ -21,20 +21,25 @@
     <template v-slot:body="{ rowData: roleMapping }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
-          <BBAvatar :size="'small'" :username="roleMapping.principal.name" />
-          <span>
-            <router-link
-              :to="`/u/${roleMapping.principal.id}`"
-              class="normal-link"
-              >{{ roleMapping.principal.name }}
-            </router-link></span
-          >
-          <span
-            v-if="currentUser.id == roleMapping.principal.id"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-          >
-            You
-          </span>
+          <BBAvatar :username="roleMapping.principal.name" />
+          <div class="flex flex-col">
+            <div class="flex flex-row items-center space-x-2">
+              <router-link
+                :to="`/u/${roleMapping.principal.id}`"
+                class="normal-link"
+                >{{ roleMapping.principal.name }}
+              </router-link>
+              <span
+                v-if="currentUser.id == roleMapping.principal.id"
+                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+              >
+                You
+              </span>
+            </div>
+            <span class="textlabel">
+              {{ roleMapping.principal.email }}
+            </span>
+          </div>
         </div>
       </BBTableCell>
       <BBTableCell class="">
