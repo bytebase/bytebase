@@ -51,6 +51,7 @@
       <BBTableCell class="">
         <RoleSelect
           :selectedRole="roleMapping.role"
+          :disabled="!allowEdit"
           @change-role="
             (role) => {
               changeRole(roleMapping.id, role);
@@ -71,7 +72,11 @@
         </div>
       </BBTableCell>
       <BBTableCell>
-        <button class="btn-icon" @click.prevent="deleteRole(roleMapping.id)">
+        <button
+          v-if="allowEdit"
+          class="btn-icon"
+          @click.prevent="deleteRole(roleMapping.id)"
+        >
           <svg
             class="w-4 h-4"
             fill="none"
@@ -96,7 +101,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { RoleMappingId, RoleType } from "../types";
+import { RoleMapping, RoleMappingId, RoleType } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 
 const columnList: BBTableColumn[] = [
@@ -166,6 +171,16 @@ export default {
       return dataSource;
     });
 
+    const allowEdit = computed(() => {
+      const myRoleMapping = store.getters[
+        "roleMapping/roleMappingByPrincipalId"
+      ](currentUser.value.id);
+      if (myRoleMapping.role != "OWNER") {
+        return false;
+      }
+      return true;
+    });
+
     const changeRole = (id: RoleMappingId, role: RoleType) => {
       store
         .dispatch("roleMapping/patchRoleMapping", {
@@ -189,6 +204,7 @@ export default {
       currentUser,
       columnList,
       dataSource,
+      allowEdit,
       changeRole,
       deleteRole,
     };

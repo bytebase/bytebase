@@ -6,6 +6,7 @@ import {
   RoleMappingPatch,
   RoleMappingState,
   ResourceObject,
+  PrincipalId,
 } from "../../types";
 
 function convert(roleMapping: ResourceObject, rootGetters: any): RoleMapping {
@@ -34,6 +35,11 @@ const state: () => RoleMappingState = () => ({
 const getters = {
   roleMappingList: (state: RoleMappingState) => () => {
     return state.roleMappingList;
+  },
+  roleMappingByPrincipalId: (state: RoleMappingState) => (
+    id: PrincipalId
+  ): RoleMapping | undefined => {
+    return state.roleMappingList.find((item) => item.principal.id == id);
   },
   roleMappingByEmail: (state: RoleMappingState) => (
     email: string
