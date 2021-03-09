@@ -25,6 +25,7 @@
                 required
                 placeholder="jim@example.com"
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                @input="onTextEmail"
               />
             </div>
           </div>
@@ -44,6 +45,25 @@
                 v-model="state.password"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              for="email"
+              class="block text-sm font-medium leading-5 text-control"
+            >
+              Name
+            </label>
+            <div class="mt-1 rounded-md shadow-sm">
+              <input
+                id="name"
+                type="text"
+                v-model="state.name"
+                placeholder="Jim Gray"
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                @input="onTextName"
               />
             </div>
           </div>
@@ -104,7 +124,9 @@ import { SignupInfo } from "../../types";
 interface LocalState {
   email: string;
   password: string;
+  name: string;
   rememberMe: boolean;
+  nameManuallyEdited: boolean;
 }
 
 export default {
@@ -116,13 +138,42 @@ export default {
     const state = reactive<LocalState>({
       email: "",
       password: "",
+      name: "",
       rememberMe: true,
+      nameManuallyEdited: false,
     });
+
+    const onTextEmail = () => {
+      const email = state.email.trim();
+      if (!state.nameManuallyEdited) {
+        const emailParts = email.split("@");
+        if (emailParts.length > 0) {
+          if (emailParts[0].length > 0) {
+            const name = emailParts[0].replace("_", ".");
+            const nameParts = name.split(".");
+            if (nameParts.length >= 2) {
+              state.name = [
+                nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1),
+                nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1),
+              ].join(" ");
+            } else {
+              state.name = name.charAt(0).toUpperCase() + name.slice(1);
+            }
+          }
+        }
+      }
+    };
+
+    const onTextName = () => {
+      const name = state.name.trim();
+      state.nameManuallyEdited = name.length > 0;
+    };
 
     const trySignup = () => {
       const signupInfo: SignupInfo = {
         email: state.email,
         password: state.password,
+        name: state.name,
       };
       store
         .dispatch("auth/signup", signupInfo)
@@ -137,6 +188,8 @@ export default {
 
     return {
       state,
+      onTextEmail,
+      onTextName,
       trySignup,
     };
   },

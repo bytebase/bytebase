@@ -248,6 +248,7 @@ export type LoginInfo = {
 export type SignupInfo = {
   email: string;
   password: string;
+  name: string;
 };
 
 // UI State Models

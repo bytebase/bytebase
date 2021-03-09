@@ -8,5 +8,8 @@ export default {
     password() {
       return "blablabla";
     },
+    name() {
+      return "foo";
+    },
   }),
 };
