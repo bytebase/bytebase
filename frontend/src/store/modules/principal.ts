@@ -34,11 +34,14 @@ const getters = {
         email: "",
       };
     }
+
     for (const principal of state.principalList) {
       if (principal.id == principalId) {
         return principal;
       }
     }
+
+    // Return id as the name if no matching is found.
     return {
       id: principalId,
       name: principalId,
