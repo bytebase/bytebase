@@ -32,9 +32,15 @@
           <div>
             <label
               for="password"
-              class="block text-sm font-medium leading-5 text-control"
+              class="flex justify-between text-sm font-medium leading-5 text-control"
             >
-              Password<span class="text-red-600">*</span>
+              <div>Password<span class="text-red-600">*</span></div>
+              <router-link
+                to="/auth/password-reset"
+                class="text-sm font-normal text-control-light hover:underline focus:outline-none"
+              >
+                Forgot your password?
+              </router-link>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -45,14 +51,6 @@
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-start">
-            <div class="text-sm leading-5">
-              <router-link to="/auth/password-reset" class="link">
-                Forgot your password?
-              </router-link>
             </div>
           </div>
 
