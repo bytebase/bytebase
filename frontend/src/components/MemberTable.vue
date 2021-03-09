@@ -64,10 +64,8 @@
           <span>
             {{ humanizeTs(roleMapping.lastUpdatedTs) }}
           </span>
-          <router-link
-            :to="`/u/${roleMapping.principal.id}`"
-            class="normal-link"
-            >by {{ roleMapping.principal.name }}
+          <router-link :to="`/u/${roleMapping.updater.id}`" class="normal-link"
+            >by {{ roleMapping.updater.name }}
           </router-link>
         </div>
       </BBTableCell>
