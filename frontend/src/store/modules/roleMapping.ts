@@ -35,6 +35,11 @@ const getters = {
   roleMappingList: (state: RoleMappingState) => () => {
     return state.roleMappingList;
   },
+  roleMappingByEmail: (state: RoleMappingState) => (
+    email: string
+  ): RoleMapping | undefined => {
+    return state.roleMappingList.find((item) => item.principal.email == email);
+  },
 };
 
 const actions = {

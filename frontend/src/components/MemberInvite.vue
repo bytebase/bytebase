@@ -18,8 +18,17 @@
               class="textfield w-full lowercase"
               placeholder="foo@example.com"
               v-model="invite.email"
+              @blur="validateInvite(invite, index)"
+              @input="clearValidationError(index)"
               aria-describedby="invite_members_helper"
             />
+            <p
+              v-if="state.errorList[index]"
+              class="mt-2 text-sm text-error"
+              id="email-error"
+            >
+              {{ state.errorList[index] }}
+            </p>
           </div>
           <div class="sm:hidden w-36">
             <RoleSelect
@@ -80,7 +89,7 @@
       <button
         type="button"
         class="btn-primary"
-        :disabled="!hasValidInvite()"
+        :disabled="!hasValidInviteOnly()"
         @click.prevent="sendInvite"
       >
         <svg
@@ -112,6 +121,7 @@ import { isValidEmail } from "../utils";
 
 interface LocalState {
   inviteList: RoleMappingNew[];
+  errorList: string[];
 }
 
 export default {
@@ -125,6 +135,7 @@ export default {
 
     const state = reactive<LocalState>({
       inviteList: [],
+      errorList: [],
     });
 
     for (let i = 0; i < 3; i++) {
@@ -133,7 +144,28 @@ export default {
         role: "DEVELOPER",
         updaterId: currentUser.value.id,
       });
+      state.errorList.push("");
     }
+
+    const validateInvite = (invite: RoleMappingNew, index: number): boolean => {
+      state.errorList[index] = "";
+      if (invite.email) {
+        if (!isValidEmail(invite.email)) {
+          state.errorList[index] = "Invalid email address";
+          return false;
+        } else if (
+          store.getters["roleMapping/roleMappingByEmail"](invite.email)
+        ) {
+          state.errorList[index] = "Already a member";
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const clearValidationError = (index: number) => {
+      state.errorList[index] = "";
+    };
 
     const addInvite = () => {
       state.inviteList.push({
@@ -141,20 +173,23 @@ export default {
         role: "DEVELOPER",
         updaterId: currentUser.value.id,
       });
+      state.errorList.push("");
     };
 
-    const hasValidInvite = () => {
-      let hasValidEmail = false;
-      for (const invite of state.inviteList) {
+    const hasValidInviteOnly = () => {
+      let hasEmailInput = false;
+      state.inviteList.forEach((invite) => {
         if (invite.email) {
-          if (isValidEmail(invite.email)) {
-            hasValidEmail = true;
-          } else {
-            return false;
-          }
+          hasEmailInput = true;
+        }
+      });
+
+      for (const error of state.errorList) {
+        if (error) {
+          return false;
         }
       }
-      return hasValidEmail;
+      return hasEmailInput;
     };
 
     const sendInvite = () => {
@@ -163,18 +198,22 @@ export default {
           store.dispatch("roleMapping/createdRoleMapping", invite);
         }
       }
-      state.inviteList = [];
-      state.inviteList.push({
-        email: "",
-        role: "DEVELOPER",
-        updaterId: currentUser.value.id,
-      });
+      state.inviteList = [
+        {
+          email: "",
+          role: "DEVELOPER",
+          updaterId: currentUser.value.id,
+        },
+      ];
+      state.errorList = [""];
     };
 
     return {
       state,
+      validateInvite,
+      clearValidationError,
       addInvite,
-      hasValidInvite,
+      hasValidInviteOnly,
       sendInvite,
     };
   },
