@@ -15,7 +15,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Email
+              Email<span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -23,6 +23,7 @@
                 type="email"
                 v-model="state.email"
                 required
+                placeholder="jim@example.com"
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
@@ -33,7 +34,7 @@
               for="password"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Password
+              Password<span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
