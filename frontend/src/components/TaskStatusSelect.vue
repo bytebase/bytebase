@@ -3,6 +3,7 @@
     :selectedItem="selectedStatus"
     :itemList="['OPEN', 'DONE', 'CANCELED']"
     :placeholder="'Unknown Status'"
+    :disabled="disabled"
     @select-item="(status) => $emit('change-status', status)"
   >
     <template v-slot:menuItem="{ item }">
@@ -28,6 +29,10 @@ export default {
   props: {
     selectedStatus: {
       type: String as PropType<TaskStatus>,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup() {

@@ -15,6 +15,7 @@
       aria-expanded="true"
       aria-labelledby="listbox-label"
       class="btn-select relative w-full pl-3 pr-10 py-2"
+      :disabled="disabled"
       @click="toggle"
     >
       <template v-if="state.selectedItem">
@@ -140,6 +141,10 @@ export default {
     placeholder: {
       default: "",
       type: String,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {

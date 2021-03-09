@@ -3,6 +3,7 @@
     :selectedItem="selectedPrincipal"
     :itemList="principalList"
     :placeholder="'Unassigned'"
+    :disabled="disabled"
     @select-item="(item) => $emit('select-principal', item)"
   >
     <template v-slot:menuItem="{ item }">
@@ -33,6 +34,10 @@ export default {
   props: {
     selectedId: {
       type: String,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {

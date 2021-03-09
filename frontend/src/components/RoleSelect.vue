@@ -3,6 +3,7 @@
     :selectedItem="selectedRole"
     :itemList="['OWNER', 'DBA', 'DEVELOPER']"
     :placeholder="'Select role'"
+    :disabled="disabled"
     @select-item="(role) => $emit('change-role', role)"
   >
     <template v-slot:menuItem="{ item }">
@@ -22,6 +23,10 @@ export default {
   props: {
     selectedRole: {
       type: String as PropType<RoleType>,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup() {
