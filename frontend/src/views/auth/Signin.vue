@@ -48,22 +48,7 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input
-                id="remember_me"
-                type="checkbox"
-                v-model="state.rememberMe"
-                class="text-control form-checkbox h-4 w-4"
-              />
-              <label
-                for="remember_me"
-                class="ml-2 block text-sm leading-5 text-main"
-              >
-                Remember me
-              </label>
-            </div>
-
+          <div class="flex items-center justify-start">
             <div class="text-sm leading-5">
               <router-link to="/auth/password-reset" class="link">
                 Forgot your password?
@@ -108,7 +93,6 @@ import { LoginInfo } from "../../types";
 interface LocalState {
   email: string;
   password: string;
-  rememberMe: boolean;
 }
 
 export default {
@@ -120,7 +104,6 @@ export default {
     const state = reactive<LocalState>({
       email: "",
       password: "",
-      rememberMe: true,
     });
 
     const trySignin = () => {

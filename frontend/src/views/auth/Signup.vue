@@ -68,23 +68,6 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input
-                id="remember_me"
-                type="checkbox"
-                v-model="state.rememberMe"
-                class="text-control form-checkbox h-4 w-4"
-              />
-              <label
-                for="remember_me"
-                class="ml-2 block text-sm leading-5 text-main"
-              >
-                Remember me
-              </label>
-            </div>
-          </div>
-
           <div>
             <span class="block w-full rounded-md shadow-sm">
               <button
@@ -125,7 +108,6 @@ interface LocalState {
   email: string;
   password: string;
   name: string;
-  rememberMe: boolean;
   nameManuallyEdited: boolean;
 }
 
@@ -139,7 +121,6 @@ export default {
       email: "",
       password: "",
       name: "",
-      rememberMe: true,
       nameManuallyEdited: false,
     });
 
