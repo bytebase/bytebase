@@ -151,7 +151,7 @@ export default {
 
     const trySignin = () => {
       const loginInfo: LoginInfo = {
-        username: state.email,
+        email: state.email,
         password: state.password,
       };
       store

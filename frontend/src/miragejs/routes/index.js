@@ -31,7 +31,7 @@ export default function routes() {
   this.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");
     const user = schema.users.findBy({
-      email: loginInfo.username,
+      email: loginInfo.email,
       passwordHash: loginInfo.password,
     });
     if (user) {
@@ -40,24 +40,40 @@ export default function routes() {
     return new Response(
       401,
       {},
-      { errors: loginInfo.username + " not found or incorrect password" }
+      { errors: loginInfo.email + " not found or incorrect password" }
     );
   });
 
   this.post("/auth/signup", function (schema, request) {
     const signupInfo = this.normalizedRequestAttrs("signup-info");
-    const user = schema.users.findBy({ email: signupInfo.username });
+    const user = schema.users.findBy({ email: signupInfo.email });
     if (user) {
       return new Response(
         409,
         {},
-        { errors: signupInfo.username + " already exists" }
+        { errors: signupInfo.email + " already exists" }
       );
     }
-    return schema.users.create({
+    const ts = Date.now();
+    const createdUser = schema.users.create({
+      createdTs: ts,
+      lastUpdatedTs: ts,
       status: "ACTIVE",
       ...signupInfo,
     });
+
+    const newRoleMapping = {
+      principalId: createdUser.id,
+      email: createdUser.email,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      role: "DEVELOPER",
+      updaterId: createdUser.id,
+      workspaceId: WORKSPACE_ID,
+    };
+    schema.roleMappings.create(newRoleMapping);
+
+    return createdUser;
   });
 
   // RoleMapping

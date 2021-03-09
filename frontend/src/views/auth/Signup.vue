@@ -146,7 +146,7 @@ export default {
 
     const trySignup = () => {
       const signupInfo: SignupInfo = {
-        username: state.email,
+        email: state.email,
         password: state.password,
       };
       store

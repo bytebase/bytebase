@@ -109,21 +109,21 @@ export default {
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
-        username: "demo@example.com",
+        email: "demo@example.com",
         password: "1024",
       });
     };
 
     const switchToDBA = () => {
       store.dispatch("auth/login", {
-        username: "jerry@example.com",
+        email: "jerry@example.com",
         password: "aaa",
       });
     };
 
     const switchToDeveloper = () => {
       store.dispatch("auth/login", {
-        username: "tom@example.com",
+        email: "tom@example.com",
         password: "aaa",
       });
     };

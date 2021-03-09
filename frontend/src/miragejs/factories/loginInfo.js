@@ -2,7 +2,7 @@ import { Factory } from "miragejs";
 
 export default {
   loginInfo: Factory.extend({
-    usename() {
+    email() {
       return "foo@example.com";
     },
     password() {
