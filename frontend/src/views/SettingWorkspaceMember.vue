@@ -3,8 +3,7 @@
     <MemberInvite />
   </div>
   <div>
-    <p class="text-xl font-bold leading-7 text-main">Current Members</p>
-    <MemberTable class="mt-2" />
+    <MemberTable />
   </div>
 </template>
 
