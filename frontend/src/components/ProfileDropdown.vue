@@ -84,12 +84,14 @@
 <script lang="ts">
 import { computed } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 
 export default {
   name: "ProfileDropdown",
   props: {},
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -97,8 +99,8 @@ export default {
       store
         .dispatch("auth/logout")
         .then(() => {
-          // Just do a reload. router.push won't refresh the app.vue page.
-          // It's acceptable to use reload for logout.
+          // If using router.push, looks like hook reactive to currentUser would get called first.
+          // So we just do a reload here.
           location.reload();
         })
         .catch((error: Error) => {

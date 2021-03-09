@@ -130,6 +130,7 @@
 <script lang="ts">
 import { reactive } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import { LoginInfo } from "../../types";
 
 interface LocalState {
@@ -142,6 +143,7 @@ export default {
   name: "Signin",
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       email: "",
@@ -157,8 +159,7 @@ export default {
       store
         .dispatch("auth/login", loginInfo)
         .then(() => {
-          // Do a full page reload to avoid stale UI state.
-          location.replace("/");
+          router.push("/");
         })
         .catch((error: Error) => {
           console.log(error);
