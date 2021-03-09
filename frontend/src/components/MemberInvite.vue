@@ -1,10 +1,10 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="space-y-4">
     <div class="space-y-2">
       <div
         v-for="(invite, index) in state.inviteList"
         :key="index"
-        class="py-0.5 select-none"
+        class="flex justify-between py-0.5 select-none"
       >
         <p id="invite_members_helper" class="sr-only">
           Invite by email address
@@ -15,7 +15,7 @@
               type="email"
               name="invite_members"
               autocomplete="off"
-              class="textfield w-full lowercase"
+              class="w-36 sm:w-64 textfield lowercase"
               placeholder="foo@example.com"
               v-model="invite.email"
               @blur="validateInvite(invite, index)"

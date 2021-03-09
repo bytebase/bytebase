@@ -1,8 +1,6 @@
 <template>
-  <div class="max-w-4xl flex justify-center">
-    <div>
-      <MemberInvite />
-    </div>
+  <div class="w-full flex justify-center">
+    <MemberInvite />
   </div>
   <div class="mt-6">
     <p class="text-xl font-bold leading-7 text-main">Current Members</p>
