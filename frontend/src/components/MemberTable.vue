@@ -35,6 +35,12 @@
               >
                 You
               </span>
+              <span
+                v-if="'INVITED' == roleMapping.principal.status"
+                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
+              >
+                Invited
+              </span>
             </div>
             <span class="textlabel">
               {{ roleMapping.principal.email }}

@@ -52,5 +52,14 @@
     "role": "DEVELOPER",
     "principalId": "5",
     "updaterId": "1"
+  },
+  {
+    "id": "7",
+    "workspaceId": "1",
+    "createdTs": 1609603200000,
+    "lastUpdatedTs": 1609646400000,
+    "role": "DEVELOPER",
+    "principalId": "6",
+    "updaterId": "1"
   }
 ]

@@ -1,32 +1,44 @@
 [
   {
     "id": "1",
+    "status": "ACTIVE",
     "name": "Demo Owner",
     "email": "demo@example.com",
     "passwordHash": "1024"
   },
   {
     "id": "2",
+    "status": "ACTIVE",
     "name": "Jerry DBA",
     "email": "jerry@example.com",
     "passwordHash": "aaa"
   },
   {
     "id": "3",
+    "status": "ACTIVE",
     "name": "Tom Dev",
     "email": "tom@example.com",
     "passwordHash": "aaa"
   },
   {
     "id": "4",
+    "status": "ACTIVE",
     "name": "Alice DBA",
     "email": "alice@example.com",
     "passwordHash": "aaa"
   },
   {
     "id": "5",
+    "status": "ACTIVE",
     "name": "Jane Dev",
     "email": "jane@example.com",
+    "passwordHash": "aaa"
+  },
+  {
+    "id": "6",
+    "status": "INVITED",
+    "name": "Bob Invited",
+    "email": "bob@example.com",
     "passwordHash": "aaa"
   }
 ]

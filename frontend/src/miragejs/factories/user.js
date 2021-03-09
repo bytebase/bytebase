@@ -6,14 +6,14 @@ export default {
     name() {
       return faker.fake("{{name.findName}}");
     },
+    status() {
+      return "INVITED";
+    },
     email() {
       return faker.fake("{{internet.email}}");
     },
     passwordHash() {
       return faker.fake("{{internet.password}}");
-    },
-    mobile() {
-      return faker.fake("{{phone.phoneNumber}}");
     },
   }),
 };

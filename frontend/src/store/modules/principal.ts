@@ -4,12 +4,14 @@ import {
   PrincipalId,
   Principal,
   PrincipalState,
+  PrincipalStatus,
   ResourceObject,
 } from "../../types";
 
 function convert(user: ResourceObject): Principal {
   return {
     id: user.id,
+    status: user.attributes.status as PrincipalStatus,
     name: user.attributes.name as string,
     email: user.attributes.email as string,
   };
@@ -30,6 +32,7 @@ const getters = {
     if (!principalId) {
       return {
         id: "-1",
+        status: "UNKNOWN",
         name: "<<ID Missing>>",
         email: "",
       };
@@ -44,6 +47,7 @@ const getters = {
     // Return id as the name if no matching is found.
     return {
       id: principalId,
+      status: "UNKNOWN",
       name: principalId,
       email: "",
     };

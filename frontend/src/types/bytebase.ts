@@ -33,15 +33,22 @@ export type CommandRegisterId = string;
 
 // Persistent State Models
 // User
+export type UserStatus = "INVITED" | "ACTIVE";
+
 export type User = {
   id: UserId;
+  status: UserStatus;
   name: string;
+  email: string;
 };
 export type NewUser = Omit<User, "id">;
 
 // Principal
+export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
+
 export type Principal = {
   id: PrincipalId;
+  status: PrincipalStatus;
   name: string;
   email: string;
 };
