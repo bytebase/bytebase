@@ -5,6 +5,7 @@ import {
   RouteLocationNormalized,
   RouteRecordRaw,
 } from "vue-router";
+import SplashLayout from "../layouts/SplashLayout.vue";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BodyLayout from "../layouts/BodyLayout.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
@@ -16,28 +17,40 @@ import { store } from "../store";
 import { idFromSlug } from "../utils";
 
 const HOME_MODULE = "workspace.home";
+const AUTH_MODULE = "auth";
 const SIGNIN_MODULE = "auth.signin";
 const SIGNUP_MODULE = "auth.signup";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/signin",
-    name: SIGNIN_MODULE,
-    meta: { title: () => "Signin" },
-    component: Signin,
-  },
-  {
-    path: "/signup",
-    name: SIGNUP_MODULE,
-    meta: { title: () => "Signup" },
-    component: Signup,
-  },
-  {
-    path: "/password-reset",
-    name: PASSWORD_RESET_MODULE,
-    meta: { title: () => "Reset Password" },
-    component: PasswordReset,
+    path: "/auth",
+    name: AUTH_MODULE,
+    component: SplashLayout,
+    children: [
+      {
+        path: "",
+        name: SIGNIN_MODULE,
+        meta: { title: () => "Signin" },
+        component: Signin,
+        alias: "signin",
+        props: true,
+      },
+      {
+        path: "signup",
+        name: SIGNUP_MODULE,
+        meta: { title: () => "Signup" },
+        component: Signup,
+        props: true,
+      },
+      {
+        path: "password-reset",
+        name: PASSWORD_RESET_MODULE,
+        meta: { title: () => "Reset Password" },
+        component: PasswordReset,
+        props: true,
+      },
+    ],
   },
   {
     path: "/",
