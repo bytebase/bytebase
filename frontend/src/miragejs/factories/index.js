@@ -12,6 +12,7 @@ import roleMapping from "./roleMapping";
 
 import batchUpdate from "./batchUpdate";
 import loginInfo from "./loginInfo";
+import signupInfo from "./signupInfo";
 
 /*
  * factories are contained in a single object, that's why we
@@ -33,4 +34,5 @@ export default {
   ...roleMapping,
   ...batchUpdate,
   ...loginInfo,
+  ...signupInfo,
 };

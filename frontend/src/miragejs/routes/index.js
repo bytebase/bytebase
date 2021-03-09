@@ -18,6 +18,15 @@ export default function routes() {
 
   this.get("/user");
 
+  this.post("/user", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("user");
+    const user = schema.users.findBy({ email: attrs.email });
+    if (user) {
+      return new Response(200, {}, user);
+    }
+    return schema.users.create(attrs);
+  });
+
   // Auth
   this.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");
@@ -45,7 +54,10 @@ export default function routes() {
         { errors: signupInfo.username + " already exists" }
       );
     }
-    return schema.users.create(signupInfo);
+    return schema.users.create({
+      status: "ACTIVE",
+      ...signupInfo,
+    });
   });
 
   // RoleMapping

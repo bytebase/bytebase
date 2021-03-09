@@ -21,31 +21,37 @@
     <template v-slot:body="{ rowData: roleMapping }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
-          <BBAvatar :username="roleMapping.principal.name" />
-          <div class="flex flex-col">
-            <div class="flex flex-row items-center space-x-2">
-              <router-link
-                :to="`/u/${roleMapping.principal.id}`"
-                class="normal-link"
-                >{{ roleMapping.principal.name }}
-              </router-link>
-              <span
-                v-if="currentUser.id == roleMapping.principal.id"
-                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-              >
-                You
-              </span>
-              <span
-                v-if="'INVITED' == roleMapping.principal.status"
-                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
-              >
-                Invited
-              </span>
-            </div>
+          <template v-if="'INVITED' == roleMapping.principal.status">
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
+            >
+              Invited
+            </span>
             <span class="textlabel">
               {{ roleMapping.principal.email }}
             </span>
-          </div>
+          </template>
+          <template v-else>
+            <BBAvatar :username="roleMapping.principal.name" />
+            <div class="flex flex-col">
+              <div class="flex flex-row items-center space-x-2">
+                <router-link
+                  :to="`/u/${roleMapping.principal.id}`"
+                  class="normal-link"
+                  >{{ roleMapping.principal.name }}
+                </router-link>
+                <span
+                  v-if="currentUser.id == roleMapping.principal.id"
+                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                >
+                  You
+                </span>
+              </div>
+              <span class="textlabel">
+                {{ roleMapping.principal.email }}
+              </span>
+            </div>
+          </template>
         </div>
       </BBTableCell>
       <BBTableCell class="">

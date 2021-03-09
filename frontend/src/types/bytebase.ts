@@ -2,6 +2,8 @@ import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
 import { TaskFieldId } from "../plugins";
 
+export const UNKNOWN_ID = "-1";
+
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
 export type UserId = string;
@@ -53,6 +55,10 @@ export type Principal = {
   email: string;
 };
 
+export type PrincipalNew = {
+  email: string;
+};
+
 // RoleMapping
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
@@ -66,6 +72,7 @@ export type RoleMapping = {
 };
 
 export type RoleMappingNew = {
+  principalId: PrincipalId;
   email: string;
   role: RoleType;
   updaterId: PrincipalId;

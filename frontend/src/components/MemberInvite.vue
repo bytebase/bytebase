@@ -116,7 +116,7 @@
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { RoleMappingNew } from "../types";
+import { UNKNOWN_ID, Principal, RoleMappingNew } from "../types";
 import { isValidEmail } from "../utils";
 
 interface LocalState {
@@ -140,6 +140,7 @@ export default {
 
     for (let i = 0; i < 3; i++) {
       state.inviteList.push({
+        principalId: UNKNOWN_ID,
         email: "",
         role: "DEVELOPER",
         updaterId: currentUser.value.id,
@@ -169,6 +170,7 @@ export default {
 
     const addInvite = () => {
       state.inviteList.push({
+        principalId: UNKNOWN_ID,
         email: "",
         role: "DEVELOPER",
         updaterId: currentUser.value.id,
@@ -195,11 +197,35 @@ export default {
     const sendInvite = () => {
       for (const invite of state.inviteList) {
         if (isValidEmail(invite.email)) {
-          store.dispatch("roleMapping/createdRoleMapping", invite);
+          // We created a new principal for that email if not exists.
+          // Note "principal/createPrincipal" would return the existing principal.
+          // This could happen if another client has just created the principal
+          // with this email.
+          if (invite.principalId == UNKNOWN_ID) {
+            invite.principalId = store.getters["principal/principalByEmail"](
+              invite.email
+            ).id;
+          }
+          if (invite.principalId != UNKNOWN_ID) {
+            store.dispatch("roleMapping/createdRoleMapping", invite);
+          } else {
+            store
+              .dispatch("principal/createPrincipal", {
+                email: invite.email,
+              })
+              .then((principal: Principal) => {
+                invite.principalId = principal.id;
+                store.dispatch("roleMapping/createdRoleMapping", invite);
+              })
+              .catch((error) => {
+                console.error(error);
+              });
+          }
         }
       }
       state.inviteList = [
         {
+          principalId: UNKNOWN_ID,
           email: "",
           role: "DEVELOPER",
           updaterId: currentUser.value.id,

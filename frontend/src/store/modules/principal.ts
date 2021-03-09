@@ -1,12 +1,15 @@
 import axios from "axios";
 import {
   User,
+  UNKNOWN_ID,
   PrincipalId,
   Principal,
+  PrincipalNew,
   PrincipalState,
   PrincipalStatus,
   ResourceObject,
 } from "../../types";
+import { isDevOrDemo, randomString } from "../../utils";
 
 function convert(user: ResourceObject): Principal {
   return {
@@ -26,29 +29,52 @@ const getters = {
     return state.principalList;
   },
 
+  principalByEmail: (state: PrincipalState) => (email: string): Principal => {
+    if (!email) {
+      return {
+        id: UNKNOWN_ID,
+        status: "UNKNOWN",
+        name: "<<Email Missing>>",
+        email: "",
+      };
+    }
+
+    const principal = state.principalList.find((item) => item.email == email);
+    if (principal) {
+      return principal;
+    }
+
+    return {
+      id: UNKNOWN_ID,
+      status: "UNKNOWN",
+      name: `<<Email ${email} not found>>`,
+      email: "",
+    };
+  },
+
   principalById: (state: PrincipalState) => (
     principalId: PrincipalId
   ): Principal => {
     if (!principalId) {
       return {
-        id: "-1",
+        id: UNKNOWN_ID,
         status: "UNKNOWN",
         name: "<<ID Missing>>",
         email: "",
       };
     }
 
-    for (const principal of state.principalList) {
-      if (principal.id == principalId) {
-        return principal;
-      }
+    const principal = state.principalList.find(
+      (item) => item.id == principalId
+    );
+    if (principal) {
+      return principal;
     }
 
-    // Return id as the name if no matching is found.
     return {
       id: principalId,
       status: "UNKNOWN",
-      name: principalId,
+      name: `<<ID ${principalId} not found>>`,
       email: "",
     };
   },
@@ -75,11 +101,37 @@ const actions = {
 
     return principal;
   },
+
+  // Returns existing user if already created.
+  async createPrincipal({ commit }: any, newPrincipal: PrincipalNew) {
+    const createdPrincipal = convert(
+      (
+        await axios.post(`/api/user`, {
+          data: {
+            type: "user",
+            attributes: {
+              status: "INVITED",
+              email: newPrincipal.email,
+              password: isDevOrDemo() ? "aaa" : randomString(),
+            },
+          },
+        })
+      ).data.data
+    );
+
+    commit("appendPrincipal", createdPrincipal);
+
+    return createdPrincipal;
+  },
 };
 
 const mutations = {
   setPrincipalList(state: PrincipalState, principalList: Principal[]) {
     state.principalList = principalList;
+  },
+
+  appendPrincipal(state: PrincipalState, newPrincipal: Principal) {
+    state.principalList.push(newPrincipal);
   },
 
   replacePrincipalInList(state: PrincipalState, updatedPrincipal: Principal) {

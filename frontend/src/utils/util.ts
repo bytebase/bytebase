@@ -53,3 +53,17 @@ export function isValidEmail(email: string) {
   var re = /\S+@\S+\.\S+/;
   return re.test(email);
 }
+
+export function randomString(n?: number): string {
+  if (!n) {
+    n = 10;
+  }
+  var result = "";
+  var characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?";
+  var charactersLength = characters.length;
+  for (var i = 0; i < n; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
