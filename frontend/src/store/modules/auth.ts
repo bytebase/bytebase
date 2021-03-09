@@ -4,6 +4,7 @@ import {
   AuthState,
   LoginInfo,
   SignupInfo,
+  ActivateInfo,
   ResourceObject,
 } from "../../types";
 
@@ -58,6 +59,20 @@ const actions = {
     localStorage.setItem("bb.auth.user", JSON.stringify(newUser));
     commit("setCurrentUser", newUser);
     return newUser;
+  },
+
+  async activate({ commit }: any, activateInfo: ActivateInfo) {
+    const activatedUser = convert(
+      (
+        await axios.post("/api/auth/activate", {
+          data: { type: "activateInfo", attributes: activateInfo },
+        })
+      ).data.data
+    );
+
+    localStorage.setItem("bb.auth.user", JSON.stringify(activatedUser));
+    commit("setCurrentUser", activatedUser);
+    return activatedUser;
   },
 
   async fetchCurrentUser({ commit }: any) {

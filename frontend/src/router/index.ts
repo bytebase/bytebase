@@ -12,6 +12,7 @@ import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
+import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
 import { idFromSlug } from "../utils";
@@ -20,6 +21,7 @@ const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
 const SIGNIN_MODULE = "auth.signin";
 const SIGNUP_MODULE = "auth.signup";
+const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 
 const routes: Array<RouteRecordRaw> = [
@@ -41,6 +43,13 @@ const routes: Array<RouteRecordRaw> = [
         name: SIGNUP_MODULE,
         meta: { title: () => "Signup" },
         component: Signup,
+        props: true,
+      },
+      {
+        path: "activate",
+        name: ACTIVATE_MODULE,
+        meta: { title: () => "Activate" },
+        component: Activate,
         props: true,
       },
       {
@@ -305,12 +314,24 @@ router.beforeEach((to, from, next) => {
   if (
     to.name === SIGNIN_MODULE ||
     to.name === SIGNUP_MODULE ||
+    to.name === ACTIVATE_MODULE ||
     to.name === PASSWORD_RESET_MODULE
   ) {
     if (loginUser) {
       next({ name: HOME_MODULE, replace: true });
     } else {
-      next();
+      if (to.name === ACTIVATE_MODULE) {
+        const token = to.query.token;
+        if (token) {
+          // TODO: Needs to validate the token
+          next();
+        } else {
+          // Go to signup if token is missing
+          next({ name: SIGNUP_MODULE, replace: true });
+        }
+      } else {
+        next();
+      }
     }
     return;
   } else {

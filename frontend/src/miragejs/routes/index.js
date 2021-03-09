@@ -76,6 +76,31 @@ export default function routes() {
     return createdUser;
   });
 
+  this.post("/auth/activate", function (schema, request) {
+    const activateInfo = this.normalizedRequestAttrs("activate-info");
+    if (!activateInfo.token) {
+      return new Response(400, {}, { errors: "Missing activation token" });
+    }
+
+    const user = schema.users.findBy({ email: activateInfo.email });
+    if (user) {
+      const ts = Date.now();
+      user.update({
+        name: activateInfo.name,
+        status: "ACTIVE",
+        lastUpdatedTs: ts,
+        passwordHash: activateInfo.password,
+      });
+      return user;
+    }
+
+    return new Response(
+      400,
+      {},
+      { errors: activateInfo.email + " is not invited" }
+    );
+  });
+
   // RoleMapping
   this.get("/rolemapping", function (schema, request) {
     return schema.roleMappings.where((roleMapping) => {

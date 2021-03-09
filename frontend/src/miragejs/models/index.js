@@ -60,4 +60,6 @@ export default {
   signupInfo: Model,
 
   loginInfo: Model,
+
+  activateInfo: Model,
 };

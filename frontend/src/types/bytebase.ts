@@ -251,6 +251,13 @@ export type SignupInfo = {
   name: string;
 };
 
+export type ActivateInfo = {
+  email: string;
+  password: string;
+  name: string;
+  token: string;
+};
+
 // UI State Models
 export type RouterSlug = {
   taskSlug?: string;
