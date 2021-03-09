@@ -65,6 +65,7 @@
                   <input
                     id="password"
                     type="password"
+                    autocomplete="on"
                     v-model="state.password"
                     required
                     class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
