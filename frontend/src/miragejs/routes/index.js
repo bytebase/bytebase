@@ -187,7 +187,7 @@ export default function routes() {
       lastUpdatedTs: ts,
       actionType: "bytebase.task.create",
       containerId: createdTask.id,
-      creator: attrs.creator,
+      creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
     });
 
