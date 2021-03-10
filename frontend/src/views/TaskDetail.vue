@@ -365,8 +365,9 @@ export default {
     };
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
-      (state.task as TaskNew).assigneeId = newAssigneeId;
-      if (!state.new) {
+      if (state.new) {
+        (state.task as TaskNew).assigneeId = newAssigneeId;
+      } else {
         patchTask({
           assigneeId: newAssigneeId,
         });
