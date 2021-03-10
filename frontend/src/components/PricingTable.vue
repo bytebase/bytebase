@@ -38,8 +38,12 @@
         <div class="mt-6 flex justify-center flex-row">
           <span class="text-4xl font-extrabold text-gray-900">$0</span>
           <div class="ml-2 flex flex-col">
-            <span class="text-sm font-medium text-gray-500">per user</span>
-            <span class="text-sm font-medium text-gray-500">per month</span>
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
+              >per user</span
+            >
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
+              >per month</span
+            >
           </div>
         </div>
         <div class="mt-8 text-sm text-center">Community support</div>
@@ -64,8 +68,8 @@
                 clip-rule="evenodd"
               />
             </svg>
-            <span class="text-sm text-main"
-              >100 tasks (excluding those archived)</span
+            <span class="text-sm text-main whitespace-nowrap"
+              >100 tasks (excluding archived)</span
             >
           </li>
 
@@ -192,7 +196,7 @@
         </h2>
         <a
           href="#"
-          class="mt-8 block w-full border border-green-500 rounded-md py-4 text-2xl font-semibold text-white text-center bg-green-500 hover:bg-green-600 hover:border-green-600 hover:text-white"
+          class="mt-8 block w-full border border-green-500 rounded-md py-4 text-2xl font-semibold text-white text-center bg-green-500 hover:bg-green-600 hover:border-green-600 hover:text-white whitespace-nowrap"
           >Buy now</a
         >
         <div class="mt-6 flex justify-center flex-row">
@@ -203,8 +207,12 @@
             state.isMonthly ? "$6" : "$8"
           }}</span>
           <div class="ml-2 flex flex-col">
-            <span class="text-sm font-medium text-gray-500">per user</span>
-            <span class="text-sm font-medium text-gray-500">per month</span>
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
+              >per user</span
+            >
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
+              >per month</span
+            >
           </div>
         </div>
 
@@ -342,21 +350,7 @@
           </li>
 
           <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <svg
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            <span class="text-sm text-main-500">SSO</span>
+            <span class="ml-8 text-sm text-gray-500">SSO</span>
           </li>
 
           <li class="flex space-x-3">
@@ -378,12 +372,12 @@
           Enterprice
         </h2>
         <div
-          class="mt-8 block w-full border border-gray-800 rounded-md py-4 text-2xl font-semibold text-gray-800 text-center"
+          class="mt-8 block w-full border border-gray-800 rounded-md py-4 text-2xl font-semibold text-gray-800 text-center whitespace-nowrap"
         >
           Coming soon
         </div>
         <div class="mt-6 flex justify-center flex-row">
-          <span class="text-base font-medium text-gray-500"
+          <span class="text-base font-medium text-gray-500 whitespace-nowrap"
             >Custom pricing</span
           >
         </div>
