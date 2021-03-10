@@ -112,6 +112,8 @@ export default {
       )
     );
 
+    const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
+
     const breadcrumbList = computed(() => {
       const routeSlug: RouterSlug = store.getters["router/routeSlug"](
         currentRoute.value
@@ -156,7 +158,7 @@ export default {
     };
 
     return {
-      allowBookmark: currentRoute.value.meta.allowBookmark,
+      allowBookmark,
       bookmarked,
       breadcrumbList,
       toggleBookmark,
