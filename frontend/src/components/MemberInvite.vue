@@ -148,20 +148,22 @@ export default {
       state.errorList.push("");
     }
 
-    const validateInvite = (invite: RoleMappingNew, index: number): boolean => {
-      state.errorList[index] = "";
+    const validateInviteInternal = (invite: RoleMappingNew): string => {
       if (invite.email) {
         if (!isValidEmail(invite.email)) {
-          state.errorList[index] = "Invalid email address";
-          return false;
+          return "Invalid email address";
         } else if (
           store.getters["roleMapping/roleMappingByEmail"](invite.email)
         ) {
-          state.errorList[index] = "Already a member";
-          return false;
+          return "Already a member";
         }
       }
-      return true;
+      return "";
+    };
+
+    const validateInvite = (invite: RoleMappingNew, index: number): boolean => {
+      state.errorList[index] = validateInviteInternal(invite);
+      return state.errorList[index].length == 0;
     };
 
     const clearValidationError = (index: number) => {
@@ -180,18 +182,17 @@ export default {
 
     const hasValidInviteOnly = () => {
       let hasEmailInput = false;
+      let hasError = false;
       state.inviteList.forEach((invite) => {
         if (invite.email) {
           hasEmailInput = true;
+          if (validateInviteInternal(invite).length > 0) {
+            hasError = true;
+            return;
+          }
         }
       });
-
-      for (const error of state.errorList) {
-        if (error) {
-          return false;
-        }
-      }
-      return hasEmailInput;
+      return !hasError && hasEmailInput;
     };
 
     const sendInvite = () => {
