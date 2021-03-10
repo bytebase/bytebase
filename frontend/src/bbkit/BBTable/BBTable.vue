@@ -61,8 +61,14 @@
           <tr
             v-for="(item, index) in dataSource"
             :key="index"
-            class="cursor-pointer hover:bg-gray-200"
-            @click.stop="$emit('click-row', 0, index)"
+            :class="rowClickable ? 'cursor-pointer hover:bg-gray-200' : ''"
+            @click.stop="
+              () => {
+                if (rowClickable) {
+                  $emit('click-row', 0, index);
+                }
+              }
+            "
           >
             <slot name="body" :rowData="item" />
           </tr></tbody
