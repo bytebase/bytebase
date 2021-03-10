@@ -39,7 +39,7 @@
           <div class="flex-1 h-0 py-4 overflow-y-auto">
             <router-view name="leftSidebar" />
           </div>
-          <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <div class="flex-shrink-0 flex border-t border-block-border p-4">
             <a href="#" class="flex-shrink-0 group block">
               <div class="flex items-center">
                 <svg
@@ -74,7 +74,12 @@
         <div class="flex-1 flex flex-col py-2 overflow-y-auto">
           <router-view name="leftSidebar" />
         </div>
-        <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
+        <div
+          class="flex-shrink-0 flex justify-center border-t border-block-border py-2"
+        >
+          <IntroList />
+        </div>
+        <div class="flex-shrink-0 flex border-t border-block-border p-4">
           <a href="#" class="flex-shrink-0 w-full group block">
             <div class="flex items-center">
               <svg
@@ -103,7 +108,7 @@
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">
         <div
-          class="flex items-center justify-start bg-gray-50 border-b border-gray-200 px-4 py-1.5"
+          class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4 py-1.5"
         >
           <div>
             <button
@@ -162,6 +167,7 @@
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
+import IntroList from "../components/IntroList.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 
 interface LocalState {
@@ -172,6 +178,7 @@ export default {
   name: "BodyLayout",
   components: {
     Breadcrumb,
+    IntroList,
     QuickActionPanel,
   },
   setup(props, ctx) {
