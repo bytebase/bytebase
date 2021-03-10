@@ -385,6 +385,13 @@ export default {
         .dispatch("task/createTask", state.task)
         .then((createdTask) => {
           router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
+
+          if (taskTemplate.value?.type == "bytebase.datasource.create") {
+            store.dispatch("uistate/saveIntroStateByKey", {
+              key: "datasource.create",
+              newState: true,
+            });
+          }
         })
         .catch((error) => {
           console.log(error);

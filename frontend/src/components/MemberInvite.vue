@@ -221,6 +221,11 @@ export default {
                 console.error(error);
               });
           }
+
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "member.invite",
+            newState: true,
+          });
         }
       }
       state.inviteList = [

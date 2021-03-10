@@ -147,6 +147,11 @@ export default {
         .then((createdEnvironment) => {
           state.showCreateModal = false;
           selectEnvironment(environmentList.value.length - 1);
+
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "environment.create",
+            newState: true,
+          });
         })
         .catch((error) => {
           console.log(error);

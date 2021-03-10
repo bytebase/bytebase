@@ -470,6 +470,11 @@ export default {
               router.push({
                 name: "workspace.instance",
               });
+
+              store.dispatch("uistate/saveIntroStateByKey", {
+                key: "instance.create",
+                newState: true,
+              });
             })
             .catch((error) => {
               console.log(error);

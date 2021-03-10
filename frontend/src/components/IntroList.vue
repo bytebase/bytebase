@@ -70,14 +70,13 @@
 </template>
 
 <script lang="ts">
+import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
-import { PropType } from "vue";
-import { RoleType } from "../types";
 
 type IntroItem = {
   name: string;
   link: string;
-  done: boolean;
+  done: ComputedRef<boolean>;
 };
 
 export default {
@@ -88,33 +87,43 @@ export default {
   setup() {
     const store = useStore();
 
-    const introList: IntroItem[] = [
+    const introList: IntroItem[] = reactive([
       {
         name: "Add an environment",
         link: "/environment",
-        done: false,
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("environment.create");
+        }),
       },
       {
         name: "Create an instance",
         link: "/instance",
-        done: false,
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("instance.create");
+        }),
       },
       {
         name: "Request a database",
         link: "/task/new?template=bytebase.datasource.create",
-        done: false,
+        done: computed(() =>
+          store.getters["uistate/introStateByKey"]("datasource.create")
+        ),
       },
       {
         name: "Create a table",
         link: "/task/new?template=bytebase.datasource.schema.update",
-        done: false,
+        done: computed(() =>
+          store.getters["uistate/introStateByKey"]("table.create")
+        ),
       },
       {
         name: "Invite a member",
         link: "/setting/member",
-        done: false,
+        done: computed(() =>
+          store.getters["uistate/introStateByKey"]("member.invite")
+        ),
       },
-    ];
+    ]);
 
     const hideQuickstart = () => {
       store
