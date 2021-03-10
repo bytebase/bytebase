@@ -365,9 +365,12 @@ export default {
     };
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
-      patchTask({
-        assigneeId: newAssigneeId,
-      });
+      (state.task as TaskNew).assigneeId = newAssigneeId;
+      if (!state.new) {
+        patchTask({
+          assigneeId: newAssigneeId,
+        });
+      }
     };
 
     const updateCustomField = (field: TaskField, value: string) => {
