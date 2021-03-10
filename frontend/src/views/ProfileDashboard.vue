@@ -13,6 +13,14 @@
               <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
                   <BBAvatar :size="'huge'" :username="principal.name" />
+                  <div class="block mt-6 min-w-0 flex-1">
+                    <router-link
+                      :to="'/setting/member'"
+                      class="text-xl font-semibold text-main hover:underline focus:outline-none"
+                    >
+                      {{ role }}
+                    </router-link>
+                  </div>
                   <div
                     class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
                   >
@@ -184,6 +192,15 @@ export default {
       return store.getters["principal/principalById"](currentUser.value.id);
     });
 
+    const role = computed(() => {
+      const role = store.getters["roleMapping/roleMappingByPrincipalId"](
+        principal.value.id
+      ).role;
+      return role == "DBA"
+        ? role
+        : role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+    });
+
     const isCurrentUser = computed(() => {
       return currentUser.value.id == principal.value.id;
     });
@@ -229,6 +246,7 @@ export default {
       state,
       isCurrentUser,
       principal,
+      role,
       valueChanged,
       updatePrincipal,
       editUser,
