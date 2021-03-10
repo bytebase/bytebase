@@ -102,7 +102,7 @@ export default {
       type: Boolean,
     },
     rowClickable: {
-      defalut: true,
+      default: true,
       type: Boolean,
     },
     leftBordered: {
