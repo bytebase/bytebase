@@ -97,7 +97,7 @@ export default {
       },
       {
         name: "Create an instance",
-        link: "/instance",
+        link: "/instance/new",
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.create");
         }),
