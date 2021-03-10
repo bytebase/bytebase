@@ -279,13 +279,15 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const refreshState = () => {
+      const newTask: TaskNew = newTaskTemplate.buildTask({
+        environmentList: environmentList.value,
+        currentUser: currentUser.value,
+      });
+      newTask.creatorId = currentUser.value.id;
       return {
         new: isNew.value,
         task: isNew.value
-          ? newTaskTemplate.buildTask({
-              environmentList: environmentList.value,
-              currentUser: currentUser.value,
-            })
+          ? newTask
           : cloneDeep(
               store.getters["task/taskById"](idFromSlug(props.taskSlug))
             ),
