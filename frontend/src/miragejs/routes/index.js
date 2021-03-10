@@ -263,7 +263,7 @@ export default function routes() {
         lastUpdatedTs: ts,
         actionType: "bytebase.task.field.update",
         containerId: updatedTask.id,
-        creator: attrs.producer,
+        creatorId: attrs.updaterId,
         payload: changeList.length > 0 ? { changeList } : undefined,
         workspaceId: WORKSPACE_ID,
       });

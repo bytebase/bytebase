@@ -412,10 +412,7 @@ export default {
           taskId: (state.task as Task).id,
           taskPatch: {
             ...taskPatch,
-            producer: {
-              id: currentUser.value.id,
-              name: currentUser.value.name,
-            },
+            updaterId: currentUser.value.id,
           },
         })
         .then((updatedTask) => {

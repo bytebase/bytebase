@@ -3,11 +3,8 @@ import faker from "faker";
 
 export default {
   taskPatch: Factory.extend({
-    producer() {
-      return {
-        id: "100",
-        name: "Ed Codd",
-      };
+    updaterId() {
+      return "100";
     },
     name(i) {
       return faker.fake("{{lorem.sentence}}");
