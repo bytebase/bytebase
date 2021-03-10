@@ -275,6 +275,12 @@ export default {
       document.getElementById("task-detail-top")!.scrollIntoView();
     });
 
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"]();
+    });
+
     const isNew = computed(() => {
       return props.taskSlug.toLowerCase() == "new";
     });
@@ -312,12 +318,6 @@ export default {
     );
 
     watchEffect(refreshTemplate);
-
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
-    });
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const refreshState = () => {
       const newTask: TaskNew = newTaskTemplate.value.buildTask({
