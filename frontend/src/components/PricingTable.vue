@@ -176,7 +176,7 @@
           </li>
 
           <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Audit Log</span>
+            <span class="ml-8 text-sm text-gray-500">Audit log</span>
           </li>
         </ul>
       </div>
@@ -358,7 +358,7 @@
           </li>
 
           <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Audit Log</span>
+            <span class="ml-8 text-sm text-gray-500">Audit log</span>
           </li>
         </ul>
       </div>
@@ -566,7 +566,7 @@
                 clip-rule="evenodd"
               />
             </svg>
-            <span class="text-sm text-main">Audit Log</span>
+            <span class="text-sm text-main">Audit log</span>
           </li>
         </ul>
       </div>
