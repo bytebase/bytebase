@@ -109,7 +109,11 @@
                     :value="state.editingPrincipal.name"
                     @input="updatePrincipal('name', $event.target.value)"
                   />
-                  <h1 v-else class="text-2xl font-bold text-main truncate">
+                  <!-- pb-1.5 is to avoid flicking when entering/existing the editing state -->
+                  <h1
+                    v-else
+                    class="pb-1.5 text-2xl font-bold text-main truncate"
+                  >
                     {{ principal.name }}
                   </h1>
                 </div>
