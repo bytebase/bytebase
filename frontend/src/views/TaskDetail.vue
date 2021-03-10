@@ -268,6 +268,14 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    onMounted(() => {
+      // Always scroll to top, the scrollBehavior doesn't seem to work.
+      // The hypothesis is that because the scroll bar is in the nested
+      // route, thus setting the scrollBehavior in the global router
+      // won't work.
+      document.getElementById("task-detail-top")!.scrollIntoView();
+    });
+
     const isNew = computed(() => {
       return props.taskSlug.toLowerCase() == "new";
     });
@@ -349,14 +357,6 @@ export default {
         ) || []
     );
 
-    onMounted(() => {
-      // Always scroll to top, the scrollBehavior doesn't seem to work.
-      // The hypothesis is that because the scroll bar is in the nested
-      // route, thus setting the scrollBehavior in the global router
-      // won't work.
-      document.getElementById("task-detail-top")!.scrollIntoView();
-    });
-
     const updateDescription = (
       newDescription: string,
       postUpdated: (updatedTask: Task) => void
@@ -370,20 +370,6 @@ export default {
     };
 
     const updateTaskStatus = (newStatus: TaskStatus) => {
-      // if (newStatus === "DONE") {
-      //   if (template.fieldList) {
-      //     for (const field of template.fieldList.filter(
-      //       (item) => item.category == "OUTPUT"
-      //     )) {
-      //       if (
-      //         field.required &&
-      //         isEmpty(state.task.payload[field.id])
-      //       ) {
-      //         return;
-      //       }
-      //     }
-      //   }
-      // }
       patchTask({
         status: newStatus,
       });
