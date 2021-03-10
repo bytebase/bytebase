@@ -17,12 +17,14 @@ export default {
     );
 
     await store.dispatch("principal/fetchPrincipalList");
+    // This depends on principal/fetchPrincipalList
+    await store.dispatch("roleMapping/fetchRoleMappingList");
+
     await store.dispatch("environment/fetchEnvironmentList");
     await store.dispatch(
       "bookmark/fetchBookmarkListByUser",
       currentUser.value.id
     );
-    await store.dispatch("roleMapping/fetchRoleMappingList");
     await store.dispatch("uistate/restoreExpandState");
   },
 };
