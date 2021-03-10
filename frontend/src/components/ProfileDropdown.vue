@@ -48,7 +48,7 @@
       <div class="py-1">
         <router-link
           to="/setting"
-          class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
           role="menuitem"
           >Settings</router-link
         >
@@ -57,13 +57,19 @@
       <div class="py-1">
         <a
           href="#"
-          class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
           role="menuitem"
           >Changelog</a
         >
         <a
+          @click.prevent="showQuickstart"
+          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+          role="menuitem"
+          >Quickstart</a
+        >
+        <a
           href="#"
-          class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
           role="menuitem"
           >Support</a
         >
@@ -109,6 +115,13 @@ export default {
         });
     };
 
+    const showQuickstart = () => {
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "hidden",
+        newState: false,
+      });
+    };
+
     const switchToOwner = () => {
       store.dispatch("auth/login", {
         email: "demo@example.com",
@@ -132,6 +145,7 @@ export default {
 
     return {
       currentUser,
+      showQuickstart,
       logout,
       switchToOwner,
       switchToDBA,

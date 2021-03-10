@@ -131,7 +131,6 @@ export default {
             })
             .catch((error) => {
               console.log(error);
-              return;
             });
         } else {
           state.expandState = !state.expandState;

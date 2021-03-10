@@ -70,6 +70,7 @@
 </template>
 
 <script lang="ts">
+import { useStore } from "vuex";
 import { PropType } from "vue";
 import { RoleType } from "../types";
 
@@ -85,6 +86,8 @@ export default {
   components: {},
   props: {},
   setup() {
+    const store = useStore();
+
     const introList: IntroItem[] = [
       {
         name: "Add an environment",
@@ -113,7 +116,26 @@ export default {
       },
     ];
 
-    const hideQuickstart = () => {};
+    const hideQuickstart = () => {
+      store
+        .dispatch("uistate/saveIntroStateByKey", {
+          key: "hidden",
+          newState: true,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "INFO",
+            title: `Quickstart guide dismissed`,
+            description:
+              "You can still bring it back later from the top right menu",
+            manualHide: true,
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
 
     return { introList, hideQuickstart };
   },

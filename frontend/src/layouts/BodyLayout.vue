@@ -75,6 +75,7 @@
           <router-view name="leftSidebar" />
         </div>
         <div
+          v-if="showIntro"
           class="flex-shrink-0 flex justify-center border-t border-block-border py-2"
         >
           <IntroList />
@@ -165,6 +166,7 @@
 
 <script lang="ts">
 import { computed, reactive } from "vue";
+import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import IntroList from "../components/IntroList.vue";
@@ -182,6 +184,7 @@ export default {
     QuickActionPanel,
   },
   setup(props, ctx) {
+    const store = useStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -201,10 +204,15 @@ export default {
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
+    const showIntro = computed(() => {
+      return !store.getters["uistate/introStateByKey"]("hidden");
+    });
+
     return {
       state,
       quickActionList,
       showBreadcrumb,
+      showIntro,
     };
   },
 };
