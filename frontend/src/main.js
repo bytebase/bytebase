@@ -3,7 +3,6 @@ import App from "./App.vue";
 import moment from "moment";
 import { store } from "./store";
 import { router } from "./router";
-import "./index.css";
 import "./assets/css/tailwind.css";
 import { makeServer } from "./miragejs/server";
 import {
