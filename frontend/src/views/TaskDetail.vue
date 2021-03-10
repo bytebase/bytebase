@@ -12,7 +12,7 @@
             type="button"
             class="btn-primary px-4 py-2"
             @click.prevent="doCreate"
-            :disabled="!enableHighlightButton(0)"
+            :disabled="!allowCreate"
           >
             Create
           </button>
@@ -28,7 +28,6 @@
             class="px-4 py-2"
             :class="actionButtonClass(transition.actionType)"
             @click.prevent="tryChangeStageStatus(transition)"
-            :disabled="!enableHighlightButton(index)"
           >
             {{ transition.actionName }}
           </button>
@@ -320,39 +319,51 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const state = reactive<LocalState>({
-      new: isNew.value,
-      task: computed(() => {
-        if (isNew.value) {
-          const newTask: TaskNew = newTaskTemplate.value.buildTask({
-            environmentList: environmentList.value,
-            currentUser: currentUser.value,
-          });
-          newTask.creatorId = currentUser.value.id;
-          return newTask;
-        }
-        return cloneDeep(
-          store.getters["task/taskById"](idFromSlug(props.taskSlug))
-        );
-      }),
-    });
+    const refreshState = () => {
+      const newTask: TaskNew = newTaskTemplate.value.buildTask({
+        environmentList: environmentList.value,
+        currentUser: currentUser.value,
+      });
+      newTask.creatorId = currentUser.value.id;
+      return {
+        new: isNew.value,
+        task: isNew.value
+          ? newTask
+          : cloneDeep(
+              store.getters["task/taskById"](idFromSlug(props.taskSlug))
+            ),
+      };
+    };
+
+    const state = reactive<LocalState>(refreshState());
+
     const modalState = reactive<ModalState>({
       show: false,
       okText: "OK",
       title: "",
     });
 
-    const taskTemplate = computed(() => templateForType(state.task.type));
+    const refreshTask = () => {
+      const updatedState = refreshState();
+      state.new = updatedState.new;
+      state.task = updatedState.task;
+    };
+
+    watchEffect(refreshTask);
+
+    const taskTemplate = computed(
+      () => templateForType(state.task.type) || defaulTemplate()
+    );
 
     const outputFieldList = computed(
       () =>
-        taskTemplate.value?.fieldList.filter(
+        taskTemplate.value.fieldList.filter(
           (item) => item.category == "OUTPUT"
         ) || []
     );
     const inputFieldList = computed(
       () =>
-        taskTemplate.value?.fieldList.filter(
+        taskTemplate.value.fieldList.filter(
           (item) => item.category == "INPUT"
         ) || []
     );
@@ -403,9 +414,16 @@ export default {
         .then((createdTask) => {
           router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
 
-          if (taskTemplate.value?.type == "bytebase.datasource.create") {
+          if (taskTemplate.value.type == "bytebase.datasource.create") {
             store.dispatch("uistate/saveIntroStateByKey", {
               key: "datasource.create",
+              newState: true,
+            });
+          } else if (
+            taskTemplate.value.type == "bytebase.datasource.schema.update"
+          ) {
+            store.dispatch("uistate/saveIntroStateByKey", {
+              key: "table.create",
               newState: true,
             });
           }
@@ -459,23 +477,19 @@ export default {
       });
     };
 
-    const enableHighlightButton = (buttonIndex: number): boolean => {
-      if (state.new) {
-        // Create
-        if (buttonIndex == 0) {
-          if (taskTemplate.value?.fieldList) {
-            for (const field of taskTemplate.value.fieldList.filter(
-              (item) => item.category == "INPUT"
-            )) {
-              if (field.required && isEmpty(state.task.payload[field.id])) {
-                return false;
-              }
-            }
+    const allowCreate = computed(() => {
+      if (newTaskTemplate.value.fieldList) {
+        for (const field of newTaskTemplate.value.fieldList.filter(
+          (item) => item.category == "INPUT"
+        )) {
+          if (field.required && isEmpty(state.task.payload[field.id])) {
+            debugger;
+            return false;
           }
         }
       }
       return true;
-    };
+    });
 
     const applicableStageTransitionList = () => {
       return STAGE_TRANSITION_LIST.filter((transition) => {
@@ -523,7 +537,7 @@ export default {
       doCreate,
       tryChangeStageStatus,
       doChangeStageStatus,
-      enableHighlightButton,
+      allowCreate,
       applicableStageTransitionList,
       actionButtonClass,
       currentUser,
