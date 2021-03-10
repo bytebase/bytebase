@@ -6,28 +6,30 @@ import {
 } from "../types";
 import { EnvironmentId, TaskType, TaskNew } from "../../types";
 
-const allTaskTemplateList: TaskTemplate[] = [
-  {
-    type: "bytebase.general",
-    buildTask: (ctx: TemplateContext): TaskNew => {
-      return {
-        name: "New General Task",
-        type: "bytebase.general",
-        description: "",
-        stageProgressList: [
-          {
-            id: "1",
-            name: "Request",
-            type: "SIMPLE",
-            status: "PENDING",
-          },
-        ],
-        creatorId: ctx.currentUser.id,
-        payload: {},
-      };
-    },
-    fieldList: [],
+const DEFAULT_TEMPLATE = {
+  type: "bytebase.general",
+  buildTask: (ctx: TemplateContext): TaskNew => {
+    return {
+      name: "New General Task",
+      type: "bytebase.general",
+      description: "",
+      stageProgressList: [
+        {
+          id: "1",
+          name: "Request",
+          type: "SIMPLE",
+          status: "PENDING",
+        },
+      ],
+      creatorId: ctx.currentUser.id,
+      payload: {},
+    };
   },
+  fieldList: [],
+};
+
+const allTaskTemplateList: TaskTemplate[] = [
+  DEFAULT_TEMPLATE,
   {
     type: "bytebase.datasource.create",
     buildTask: (ctx: TemplateContext): TaskNew => {
@@ -129,6 +131,10 @@ const allTaskTemplateList: TaskTemplate[] = [
     ],
   },
 ];
+
+export function defaulTemplate(): TaskTemplate {
+  return DEFAULT_TEMPLATE;
+}
 
 export function templateForType(type: TaskType): TaskTemplate | undefined {
   return allTaskTemplateList.find((template) => template.type === type);

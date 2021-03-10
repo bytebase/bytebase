@@ -118,7 +118,15 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, watchEffect, reactive } from "vue";
+import {
+  computed,
+  onMounted,
+  watch,
+  watchEffect,
+  reactive,
+  ref,
+  ComputedRef,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -139,7 +147,12 @@ import {
   StageStatus,
   PrincipalId,
 } from "../types";
-import { templateForType, TaskField } from "../plugins";
+import {
+  defaulTemplate,
+  templateForType,
+  TaskField,
+  TaskTemplate,
+} from "../plugins";
 
 type StageTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
 
@@ -224,7 +237,7 @@ const STAGE_TRANSITION_LIST: Transition[] = [
 
 interface LocalState {
   new: boolean;
-  task: Task | TaskNew;
+  task: ComputedRef<Task | TaskNew>;
 }
 
 interface ModalState {
@@ -259,18 +272,39 @@ export default {
       return props.taskSlug.toLowerCase() == "new";
     });
 
-    const newTaskemplateName =
-      (router.currentRoute.value.query.template as TaskType) ||
-      "bytebase.general";
-    const newTaskTemplate = templateForType(newTaskemplateName);
-    if (!newTaskTemplate) {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: `Unknown template '${newTaskTemplate}'.`,
-      });
-      return;
-    }
+    let newTaskTemplate = ref<TaskTemplate>(defaulTemplate());
+
+    const refreshTemplate = () => {
+      const taskType = router.currentRoute.value.query.template as TaskType;
+      if (taskType) {
+        const template = templateForType(taskType);
+        if (template) {
+          newTaskTemplate.value = template;
+        } else {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "CRITICAL",
+            title: `Unknown template '${taskType}'.`,
+            description: "Fallback to the default template",
+          });
+        }
+      }
+
+      if (!newTaskTemplate.value) {
+        newTaskTemplate.value = defaulTemplate();
+      }
+    };
+
+    // Vue doesn't natively react to query parameter change
+    // so we need to manually watch here.
+    watch(
+      () => router.currentRoute.value.query.template,
+      (curTemplate, prevTemplate) => {
+        refreshTemplate();
+      }
+    );
+
+    watchEffect(refreshTemplate);
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
@@ -278,23 +312,22 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const refreshState = () => {
-      const newTask: TaskNew = newTaskTemplate.buildTask({
-        environmentList: environmentList.value,
-        currentUser: currentUser.value,
-      });
-      newTask.creatorId = currentUser.value.id;
-      return {
-        new: isNew.value,
-        task: isNew.value
-          ? newTask
-          : cloneDeep(
-              store.getters["task/taskById"](idFromSlug(props.taskSlug))
-            ),
-      };
-    };
-
-    const state = reactive<LocalState>(refreshState());
+    const state = reactive<LocalState>({
+      new: isNew.value,
+      task: computed(() => {
+        if (isNew.value) {
+          const newTask: TaskNew = newTaskTemplate.value.buildTask({
+            environmentList: environmentList.value,
+            currentUser: currentUser.value,
+          });
+          newTask.creatorId = currentUser.value.id;
+          return newTask;
+        }
+        return cloneDeep(
+          store.getters["task/taskById"](idFromSlug(props.taskSlug))
+        );
+      }),
+    });
     const modalState = reactive<ModalState>({
       show: false,
       okText: "OK",
@@ -315,14 +348,6 @@ export default {
           (item) => item.category == "INPUT"
         ) || []
     );
-
-    const refreshTask = () => {
-      const updatedState = refreshState();
-      state.new = updatedState.new;
-      state.task = updatedState.task;
-    };
-
-    watchEffect(refreshTask);
 
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
