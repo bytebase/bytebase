@@ -76,7 +76,11 @@ export default {
           state.notification = notification;
           // We don't want user to miss "CRITICAL" notification and
           // thus don't automatically dismiss it.
-          if (notification && notification.style != "CRITICAL") {
+          if (
+            notification &&
+            notification.style != "CRITICAL" &&
+            !notification.manualHide
+          ) {
             setTimeout(() => {
               removeNotification(notification.id);
             }, NOTIFICAITON_DURATION);

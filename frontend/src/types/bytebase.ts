@@ -277,6 +277,7 @@ export type Notification = {
   style: BBNotificationStyle;
   title: string;
   description?: string;
+  manualHide?: boolean;
 };
 
 export type Command = {
