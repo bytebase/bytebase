@@ -59,6 +59,11 @@ export type PrincipalNew = {
   email: string;
 };
 
+export type PrincipalPatch = {
+  id: PrincipalId;
+  name?: string;
+};
+
 // RoleMapping
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 

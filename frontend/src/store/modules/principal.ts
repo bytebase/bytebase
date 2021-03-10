@@ -1,10 +1,10 @@
 import axios from "axios";
 import {
-  User,
   UNKNOWN_ID,
   PrincipalId,
   Principal,
   PrincipalNew,
+  PrincipalPatch,
   PrincipalState,
   PrincipalStatus,
   ResourceObject,
@@ -122,6 +122,24 @@ const actions = {
     commit("appendPrincipal", createdPrincipal);
 
     return createdPrincipal;
+  },
+
+  async patchPrincipal({ commit }: any, principal: PrincipalPatch) {
+    const { id, ...attrs } = principal;
+    const updatedPrincipal = convert(
+      (
+        await axios.patch(`/api/user/${principal.id}`, {
+          data: {
+            type: "user",
+            attributes: attrs,
+          },
+        })
+      ).data.data
+    );
+
+    commit("replacePrincipalInList", updatedPrincipal);
+
+    return updatedPrincipal;
   },
 };
 

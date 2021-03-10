@@ -27,6 +27,11 @@ export default function routes() {
     return schema.users.create(attrs);
   });
 
+  this.patch("/user/:userId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("user");
+    return schema.users.find(request.params.userId).update(attrs);
+  });
+
   // Auth
   this.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");

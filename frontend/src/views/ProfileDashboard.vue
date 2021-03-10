@@ -37,30 +37,71 @@
                         </svg>
                         <span>Message</span>
                       </button>
-                      <button
-                        v-if="isCurrentUser"
-                        type="button"
-                        class="btn-normal"
-                        @click.prevent="editUser"
-                      >
-                        <!-- Heroicon name: solid/pencil -->
-                        <svg
-                          class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
+                      <template v-if="isCurrentUser">
+                        <template v-if="state.editing">
+                          <button
+                            type="button"
+                            class="btn-normal"
+                            @click.prevent="cancelEdit"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-normal"
+                            :disabled="!valueChanged"
+                            @click.prevent="saveEdit"
+                          >
+                            <!-- Heroicon name: solid/save -->
+                            <svg
+                              class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"
+                              ></path>
+                            </svg>
+                            <span>Save</span>
+                          </button>
+                        </template>
+                        <button
+                          v-else
+                          type="button"
+                          class="btn-normal"
+                          @click.prevent="editUser"
                         >
-                          <path
-                            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                          ></path>
-                        </svg>
-                        <span>Edit</span>
-                      </button>
+                          <!-- Heroicon name: solid/pencil -->
+                          <svg
+                            class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                            ></path>
+                          </svg>
+                          <span>Edit</span>
+                        </button>
+                      </template>
                     </div>
                   </div>
                 </div>
                 <div class="block mt-6 min-w-0 flex-1">
-                  <h1 class="text-2xl font-bold text-main truncate">
+                  <input
+                    v-if="state.editing"
+                    required
+                    id="name"
+                    name="name"
+                    type="text"
+                    class="textfield"
+                    ref="editNameTextField"
+                    :value="state.editingPrincipal.name"
+                    @input="updatePrincipal('name', $event.target.value)"
+                  />
+                  <h1 v-else class="text-2xl font-bold text-main truncate">
                     {{ principal.name }}
                   </h1>
                 </div>
@@ -86,9 +127,16 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
+import cloneDeep from "lodash-es/cloneDeep";
+import isEqual from "lodash-es/isEqual";
+import { Principal, PrincipalPatch } from "../types";
+
+interface LocalState {
+  editing: boolean;
+  editingPrincipal?: PrincipalPatch;
+}
 
 export default {
   name: "ProfileDashboard",
@@ -99,8 +147,33 @@ export default {
   },
   components: {},
   setup(props, ctx) {
+    const editNameTextField = ref();
+
     const store = useStore();
-    const router = useRouter();
+
+    const state = reactive<LocalState>({
+      editing: false,
+    });
+
+    const keyboardHandler = (e: KeyboardEvent) => {
+      if (state.editing) {
+        if (e.code == "Escape") {
+          cancelEdit();
+        } else if (e.code == "Enter" && e.metaKey) {
+          if (valueChanged.value) {
+            saveEdit();
+          }
+        }
+      }
+    };
+
+    onMounted(() => {
+      document.addEventListener("keydown", keyboardHandler);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener("keydown", keyboardHandler);
+    });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -115,11 +188,53 @@ export default {
       return currentUser.value.id == principal.value.id;
     });
 
-    const editUser = () => {
-      router.push({ name: "setting.profile" });
+    const valueChanged = computed(() => {
+      return !isEqual(principal.value, state.editingPrincipal);
+    });
+
+    const updatePrincipal = (field: string, value: string) => {
+      (state.editingPrincipal as any)[field] = value;
     };
 
-    return { isCurrentUser, principal, editUser };
+    const editUser = () => {
+      const clone = cloneDeep(principal.value);
+      state.editingPrincipal = {
+        id: clone.id,
+        name: clone.name,
+      };
+      state.editing = true;
+
+      nextTick(() => editNameTextField.value.focus());
+    };
+
+    const cancelEdit = () => {
+      state.editingPrincipal = undefined;
+      state.editing = false;
+    };
+
+    const saveEdit = () => {
+      store
+        .dispatch("principal/patchPrincipal", state.editingPrincipal)
+        .then(() => {
+          state.editingPrincipal = undefined;
+          state.editing = false;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    return {
+      editNameTextField,
+      state,
+      isCurrentUser,
+      principal,
+      valueChanged,
+      updatePrincipal,
+      editUser,
+      cancelEdit,
+      saveEdit,
+    };
   },
 };
 </script>
