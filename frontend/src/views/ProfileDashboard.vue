@@ -89,13 +89,11 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { PrincipalId } from "../types";
 
 export default {
   name: "ProfileDashboard",
   props: {
     principalId: {
-      required: true,
       type: String,
     },
   },
@@ -107,7 +105,10 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const principal = computed(() => {
-      return store.getters["principal/principalById"](props.principalId);
+      if (props.principalId) {
+        return store.getters["principal/principalById"](props.principalId);
+      }
+      return store.getters["principal/principalById"](currentUser.value.id);
     });
 
     const isCurrentUser = computed(() => {

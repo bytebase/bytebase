@@ -130,6 +130,12 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            // "u" stands for user. Strictly speaking, it's not accurate because we
+            // may refer to other principal type in the future. But from the endusers'
+            // perspective, they are more familiar with the "user" concept.
+            // We make an exception to use a shorthand here because it's a commonly
+            // accessed endpint, and maybe in the future, we will further provide a
+            // shortlink like u/<<uid>>
             path: "u/:principalId",
             name: "workspace.profile",
             meta: {
@@ -162,8 +168,8 @@ const routes: Array<RouteRecordRaw> = [
                 path: "",
                 name: "setting.profile",
                 meta: { title: () => "Profile" },
-                component: () => import("../views/SettingAccountProfile.vue"),
-                alias: "account/profile",
+                component: () => import("../views/ProfileDashboard.vue"),
+                alias: "profile",
                 props: true,
               },
               {

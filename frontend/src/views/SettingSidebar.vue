@@ -45,7 +45,7 @@
         </div>
         <div class="space-y-1">
           <router-link
-            to="/setting/account/profile"
+            to="/setting/profile"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Profile
