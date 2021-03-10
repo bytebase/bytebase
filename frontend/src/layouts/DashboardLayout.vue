@@ -4,8 +4,8 @@
     <template #default>
       <div>
         <ProvideContext>
-          <BannerDemo v-if="isDemo()" />
           <div class="relative h-screen overflow-hidden flex flex-col">
+            <BannerDemo v-if="isDemo()" />
             <nav class="bg-white border-b border-block-border">
               <div class="max-w-full mx-auto px-4">
                 <DashboardHeader />
