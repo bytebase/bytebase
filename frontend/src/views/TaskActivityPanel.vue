@@ -9,10 +9,10 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in state.activityList" :key="index">
+          <li v-for="(activity, index) in activityList" :key="index">
             <div :id="'activity' + (index + 1)" class="relative pb-6">
               <span
-                v-if="index != state.activityList.length - 1"
+                v-if="index != activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                 aria-hidden="true"
               ></span>
@@ -314,7 +314,6 @@ import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
 interface LocalState {
   showDeleteCommentModal: boolean;
   editCommentMode: boolean;
-  activityList: Activity[];
   activeComment?: Activity;
 }
 
@@ -341,7 +340,6 @@ export default {
     const state = reactive<LocalState>({
       showDeleteCommentModal: false,
       editCommentMode: false,
-      activityList: [],
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -374,15 +372,16 @@ export default {
     const prepareActivityList = () => {
       store
         .dispatch("activity/fetchActivityListForTask", props.task.id)
-        .then((list) => {
-          state.activityList = list;
-        })
         .catch((error) => {
           console.log(error);
         });
     };
 
     watchEffect(prepareActivityList);
+
+    const activityList = computed(() =>
+      store.getters["activity/activityListByTask"](props.task.id)
+    );
 
     const cancelEditComment = () => {
       editComment.value = "";
@@ -536,6 +535,7 @@ export default {
       editComment,
       editCommentTextArea,
       currentUser,
+      activityList,
       actionSentence,
       doCreateComment,
       cancelEditComment,
