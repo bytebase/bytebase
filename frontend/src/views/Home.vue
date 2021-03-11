@@ -1,7 +1,11 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-2 py-1">
+    <div class="px-2 py-2 flex justify-between items-center">
       <EnvironmentTabFilter @select-environment="selectEnvironment" />
+      <BBTableSearch
+        ref="searchField"
+        @change-text="(text) => changeSearchText(text)"
+      />
     </div>
     <TaskTable
       :taskSectionList="[
@@ -25,11 +29,10 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, reactive } from "vue";
+import { watchEffect, computed, nextTick, onMounted, reactive, ref } from "vue";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import TaskTable from "../components/TaskTable.vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import { activeStage, activeEnvironmentId } from "../utils";
 import { Environment, Task, StageStatus } from "../types";
 
@@ -38,6 +41,7 @@ interface LocalState {
   subscribeList: Task[];
   closeList: Task[];
   selectedEnvironment?: Environment;
+  searchText: string;
 }
 
 export default {
@@ -48,14 +52,21 @@ export default {
   },
   props: {},
   setup(props, ctx) {
+    const searchField = ref();
+
     const state = reactive<LocalState>({
       attentionList: [],
       subscribeList: [],
       closeList: [],
+      searchText: "",
     });
     const store = useStore();
-    const router = useRouter();
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    onMounted(() => {
+      // Focus on the internal search field when mounted
+      searchField.value.$el.querySelector("#search").focus();
+    });
 
     const prepareTaskList = () => {
       store
@@ -92,20 +103,28 @@ export default {
         });
     };
 
+    watchEffect(prepareTaskList);
+
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
     };
 
+    const changeSearchText = (searchText: string) => {
+      state.searchText = searchText;
+    };
+
     const filteredList = (list: Task[]) => {
-      if (!state.selectedEnvironment) {
+      if (!state.selectedEnvironment && !state.searchText) {
         // Select "All"
         return list;
       }
       return list.filter((task) => {
-        if (state.selectedEnvironment) {
-          return activeEnvironmentId(task) === state.selectedEnvironment.id;
-        }
-        return false;
+        return (
+          (!state.selectedEnvironment ||
+            activeEnvironmentId(task) === state.selectedEnvironment.id) &&
+          (!state.searchText ||
+            task.name.toLowerCase().includes(state.searchText.toLowerCase()))
+        );
       });
     };
 
@@ -132,12 +151,12 @@ export default {
       return aStatusOrder - bStatusOrder;
     };
 
-    watchEffect(prepareTaskList);
-
     return {
+      searchField,
       state,
       filteredList,
       selectEnvironment,
+      changeSearchText,
       openTaskSorter,
     };
   },
