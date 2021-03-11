@@ -90,6 +90,10 @@
   @apply select-none inline-flex border border-transparent rounded-md text-accent-text bg-success hover:bg-success-hover disabled:bg-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
+.tab {
+  @apply rounded-md text-control font-normal text-sm focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+}
+
 .control {
   @apply focus:ring-control focus:border-control border-control-border rounded-md select-none;
 }

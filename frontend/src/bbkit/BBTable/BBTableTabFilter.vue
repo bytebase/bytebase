@@ -26,7 +26,7 @@
       <button
         v-for="(item, index) in tabList"
         :key="index"
-        class="px-3 py-1 rounded-md text-control font-normal text-sm focus:outline-none"
+        class="tab px-3 py-1"
         :class="buttonClass(index == selectedIndex)"
         @click.prevent="$emit('select-index', index)"
       >
