@@ -15,7 +15,7 @@ import Signup from "../views/auth/Signup.vue";
 import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
-import { idFromSlug } from "../utils";
+import { isDev, idFromSlug } from "../utils";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -304,14 +304,16 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const loginUser = store.getters["auth/currentUser"]();
-  console.log("LoginUser:", loginUser);
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
     : HOME_MODULE;
   const toModule = to.name ? to.name.toString().split(".")[0] : HOME_MODULE;
 
-  console.log("Route module:", fromModule, "->", toModule);
+  if (isDev()) {
+    console.log("LoginUser:", loginUser);
+    console.log("Route module:", fromModule, "->", toModule);
+  }
 
   if (toModule != fromModule) {
     store.dispatch("router/setBackPath", from.fullPath);
