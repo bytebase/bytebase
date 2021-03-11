@@ -15,6 +15,7 @@
     "axios": "^0.20.0",
     "faker": "^5.1.0",
     "focus-visible": "^5.2.0",
+    "highlight.js": "^10.6.0",
     "lodash-es": "^4.17.20",
     "miragejs": "^0.1.41",
     "moment": "^2.29.1",

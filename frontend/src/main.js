@@ -1,6 +1,7 @@
 import { createApp } from "vue";
-import App from "./App.vue";
 import moment from "moment";
+import highlight from "./bbkit/directives/highlight";
+import App from "./App.vue";
 import { store } from "./store";
 import { router } from "./router";
 import "./assets/css/tailwind.css";
@@ -39,6 +40,10 @@ app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
 
 app
+  // Need to use a directive on the element.
+  // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
+  // to re-render the page and remove the event listener required for
+  .directive("highlight", highlight)
   .use(store)
   .use(router)
   .component("BBAlert", BBAlert)
