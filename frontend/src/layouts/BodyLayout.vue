@@ -78,7 +78,7 @@
           v-if="showIntro"
           class="flex-shrink-0 flex justify-center border-t border-block-border py-2"
         >
-          <IntroList />
+          <Quickstart />
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border p-4">
           <a href="#" class="flex-shrink-0 w-full group block">
@@ -169,7 +169,7 @@ import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
-import IntroList from "../components/IntroList.vue";
+import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 
 interface LocalState {
@@ -180,7 +180,7 @@ export default {
   name: "BodyLayout",
   components: {
     Breadcrumb,
-    IntroList,
+    Quickstart,
     QuickActionPanel,
   },
   setup(props, ctx) {

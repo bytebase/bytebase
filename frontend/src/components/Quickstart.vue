@@ -80,7 +80,7 @@ type IntroItem = {
 };
 
 export default {
-  name: "IntroList",
+  name: "Quickstart",
   emits: [""],
   components: {},
   props: {},
