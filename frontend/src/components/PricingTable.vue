@@ -178,6 +178,10 @@
           <li class="flex space-x-3">
             <span class="ml-8 text-sm text-gray-500">Audit log</span>
           </li>
+
+          <li class="flex space-x-3">
+            <span class="ml-8 text-sm text-gray-500">Roadmap sharing</span>
+          </li>
         </ul>
       </div>
     </div>
@@ -187,7 +191,7 @@
     >
       <div class="px-6 pt-6 pb-4">
         <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
-          Team
+          Standard
           <span
             class="ml-1 absolute inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
           >
@@ -201,10 +205,10 @@
         >
         <div class="mt-6 flex justify-center flex-row">
           <span class="text-4xl font-medium text-gray-900 line-through">{{
-            state.isMonthly ? "$9" : "$12"
+            state.isMonthly ? "$12" : "$16"
           }}</span>
           <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
-            state.isMonthly ? "$6" : "$8"
+            state.isMonthly ? "$9" : "$12"
           }}</span>
           <div class="ml-2 flex flex-col">
             <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
@@ -216,7 +220,7 @@
           </div>
         </div>
 
-        <div class="mt-8 text-sm text-center">Email support</div>
+        <div class="mt-8 text-sm text-center">Priority support</div>
       </div>
       <div class="pt-6 pb-8 px-6">
         <h3 class="text-xs font-medium text-gray-900 tracking-wide uppercase">
@@ -360,6 +364,10 @@
           <li class="flex space-x-3">
             <span class="ml-8 text-sm text-gray-500">Audit log</span>
           </li>
+
+          <li class="flex space-x-3">
+            <span class="ml-8 text-sm text-gray-500">Roadmap sharing</span>
+          </li>
         </ul>
       </div>
     </div>
@@ -369,7 +377,7 @@
     >
       <div class="px-6 pt-6 pb-4">
         <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
-          Enterprice
+          Premium
         </h2>
         <div
           class="mt-8 block w-full border border-gray-800 rounded-md py-4 text-2xl font-semibold text-gray-800 text-center whitespace-nowrap"
@@ -377,12 +385,23 @@
           Coming soon
         </div>
         <div class="mt-6 flex justify-center flex-row">
-          <span class="text-base font-medium text-gray-500 whitespace-nowrap"
-            >Custom pricing</span
-          >
+          <span class="text-4xl font-medium text-gray-900 line-through">{{
+            state.isMonthly ? "$36" : "$48"
+          }}</span>
+          <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
+            state.isMonthly ? "$27" : "$36"
+          }}</span>
+          <div class="ml-2 flex flex-col">
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
+              >per user</span
+            >
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
+              >per month</span
+            >
+          </div>
         </div>
 
-        <div class="mt-12 text-sm text-center">Didicated support</div>
+        <div class="mt-8 text-sm text-center">Priority support</div>
       </div>
       <div class="pt-6 pb-8 px-6">
         <h3 class="text-xs font-medium text-gray-900 tracking-wide uppercase">
@@ -567,6 +586,28 @@
               />
             </svg>
             <span class="text-sm text-main">Audit log</span>
+          </li>
+
+          <li class="flex space-x-3">
+            <!-- Heroicon name: solid/check -->
+            <svg
+              class="flex-shrink-0 h-5 w-5 text-green-500"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span class="text-sm text-main">Roadmap sharing</span>
+          </li>
+
+          <li class="flex space-x-3">
+            <span class="ml-8 text-sm text-main">A lot more ...</span>
           </li>
         </ul>
       </div>

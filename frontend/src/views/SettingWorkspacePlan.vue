@@ -6,7 +6,7 @@
           Pricing Plans
         </h1>
         <p class="mt-5 text-xl text-gray-500 sm:text-center">
-          During beta period, we offer a 33% discount for the Team plan.
+          During beta period, we offer a 25% discount for the Team plan.
         </p>
         <PricingTable />
       </div>
