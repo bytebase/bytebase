@@ -41,32 +41,35 @@
   </div>
   <!-- Description -->
   <label for="description" class="sr-only">Edit Description</label>
-  <!-- Use border-white focus:border-white to have the invisible border width
-      otherwise it will have 1px jiggling switching between focus/unfocus state -->
-  <textarea
-    ref="editDescriptionTextArea"
-    :rows="$props.new ? 10 : 5"
-    class="mt-2 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
-    :class="state.edit ? 'focus:ring-control focus-visible:ring-2' : ''"
-    :style="
-      state.edit
-        ? ''
-        : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
-    "
-    placeholder="Add some description..."
-    :readonly="!state.edit"
-    v-model="state.editDescription"
-    @input="
-      (e) => {
-        sizeToFit(e.target);
-      }
-    "
-    @focus="
-      (e) => {
-        sizeToFit(e.target);
-      }
-    "
-  ></textarea>
+  <!-- TODO: Has control flickering switching between edit/non-edit mode -->
+  <template v-if="state.edit">
+    <textarea
+      ref="editDescriptionTextArea"
+      :rows="$props.new ? 10 : 5"
+      class="whitespace-pre-wrap mt-2 w-full focus:ring-control focus-visible:ring-2 resize-none border-white focus:border-white outline-none"
+      placeholder="Add some description..."
+      v-model="state.editDescription"
+      @input="
+        (e) => {
+          sizeToFit(e.target);
+        }
+      "
+      @focus="
+        (e) => {
+          sizeToFit(e.target);
+        }
+      "
+    ></textarea>
+  </template>
+  <div
+    v-else
+    class="mt-4"
+    style="margin-left: 5px; margin-top: 9px; margin-bottom: 23px"
+  >
+    <div v-highlight class="whitespace-pre-wrap">
+      {{ state.editDescription }}
+    </div>
+  </div>
 </template>
 
 <script lang="ts">

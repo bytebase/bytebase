@@ -177,37 +177,38 @@
                   <template
                     v-if="activity.actionType == 'bytebase.task.comment.create'"
                   >
-                    <div class="mt-2 text-sm text-control whitespace-pre-wrap">
-                      <template
-                        v-if="
-                          state.editCommentMode &&
-                          state.activeComment.id == activity.id
+                    <template
+                      v-if="
+                        state.editCommentMode &&
+                        state.activeComment.id == activity.id
+                      "
+                    >
+                      <label for="comment" class="sr-only">Edit Comment</label>
+                      <textarea
+                        ref="editCommentTextArea"
+                        class="textarea block w-full resize-none mt-1 text-sm text-control whitespace-pre-wrap"
+                        placeholder="Leave a comment..."
+                        v-model="editComment"
+                        @input="
+                          (e) => {
+                            sizeToFit(e.target);
+                          }
                         "
-                      >
-                        <label for="comment" class="sr-only"
-                          >Edit Comment</label
-                        >
-                        <textarea
-                          ref="editCommentTextArea"
-                          rows="3"
-                          class="textarea block w-full resize-none"
-                          placeholder="Leave a comment..."
-                          v-model="editComment"
-                          @input="
-                            (e) => {
-                              sizeToFit(e.target);
-                            }
-                          "
-                          @focus="
-                            (e) => {
-                              sizeToFit(e.target);
-                            }
-                          "
-                        ></textarea>
-                      </template>
-                      <template v-else>
+                        @focus="
+                          (e) => {
+                            sizeToFit(e.target);
+                          }
+                        "
+                      ></textarea>
+                    </template>
+                    <!-- The margin value is intentionally set to avoid flickering when switching between edit mode. -->
+                    <div
+                      v-else
+                      class="text-sm ml-1.5 mt-2 mb-0.5 whitespace-pre-wrap"
+                    >
+                      <div v-highlight>
                         {{ activity.payload.comment }}
-                      </template>
+                      </div>
                     </div>
                   </template>
                 </div>

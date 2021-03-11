@@ -1,12 +1,13 @@
 import hljs from "highlight.js";
 import "highlight.js/styles/github-gist.css";
 
+hljs.configure({
+  languages: ["sql"],
+});
+
 const directive = {
   beforeMount(el) {
-    let blocks = el.querySelectorAll("pre code");
-    blocks.forEach((block) => {
-      hljs.highlightBlock(block);
-    });
+    hljs.highlightBlock(el);
   },
 };
 

@@ -5,9 +5,6 @@
       <div>
         <ProvideContext>
           <div class="relative h-screen overflow-hidden flex flex-col">
-            <pre
-              v-highlight
-            ><code>SELECT * FROM a WHERE b = 'xxx' GROUP BY 'yyy' ORDER BY 'zzz' HAVING c = 'jjj'</code></pre>
             <BannerDemo v-if="isDemo()" />
             <nav class="bg-white border-b border-block-border">
               <div class="max-w-full mx-auto px-4">
