@@ -23,6 +23,7 @@
 import { watchEffect, reactive, computed } from "vue";
 import { useStore } from "vuex";
 import { RoleMapping, Principal } from "../types";
+import { feature } from "../utils";
 
 interface LocalState {
   showMenu: boolean;
@@ -46,13 +47,17 @@ export default {
     });
     const store = useStore();
 
-    const principalList = computed(() =>
-      store.getters["roleMapping/roleMappingList"]().map(
-        (roleMapping: RoleMapping) => {
-          return roleMapping.principal;
-        }
-      )
-    );
+    const principalList = computed(() => {
+      let list: RoleMapping[] = store.getters["roleMapping/roleMappingList"]();
+      if (feature("bytebase.admin")) {
+        list = list.filter((item) => {
+          return item.role == "DBA" || item.role == "OWNER";
+        });
+      }
+      return list.map((roleMapping: RoleMapping) => {
+        return roleMapping.principal;
+      });
+    });
 
     const selectedPrincipal = computed(() =>
       principalList.value.find(
