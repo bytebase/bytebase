@@ -12,6 +12,7 @@ import {
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
+  BBTableSearch,
   BBTableTabFilter,
 } from "./BBTable";
 
@@ -29,5 +30,6 @@ export {
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
+  BBTableSearch,
   BBTableTabFilter,
 };
