@@ -62,7 +62,7 @@
     >
       <div
         v-show="state.showMenu"
-        class="z-50 absolute mt-1 w-full rounded-md bg-white shadow-lg"
+        class="z-50 absolute w-full rounded-md bg-white shadow-lg"
       >
         <ul
           tabindex="-1"
