@@ -541,6 +541,11 @@ inherits@2:
   resolved "https://registry.yarnpkg.com/inherits/-/inherits-2.0.4.tgz#0fa2c64f932917c3433a0ded55363aae37416b7c"
   integrity sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==
 
+inter-ui@^3.15.0:
+  version "3.15.0"
+  resolved "https://registry.yarnpkg.com/inter-ui/-/inter-ui-3.15.0.tgz#05f9a13e59c7c513cedc907d244809231a79f889"
+  integrity sha512-6v0WK8FHkVYbNQZ7L9O5tP8280pgTBR9ydxqYwssMuUH6SZO70ZFK/NQ1Ob8nNmOOzpUJAzT0WE73ty96z1tAQ==
+
 is-arrayish@^0.3.1:
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/is-arrayish/-/is-arrayish-0.3.2.tgz#4574a2ae56f7ab206896fb431eaeed066fdf8f03"

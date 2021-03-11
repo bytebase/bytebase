@@ -4,6 +4,7 @@ import highlight from "./bbkit/directives/highlight";
 import App from "./App.vue";
 import { store } from "./store";
 import { router } from "./router";
+import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 import { makeServer } from "./miragejs/server";
 import {
