@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
+  <div class="pt-1 overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
     <div
       v-if="quickActionList.includes('instance.create')"
       class="flex flex-col items-center w-28"
