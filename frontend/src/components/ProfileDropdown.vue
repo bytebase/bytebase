@@ -52,6 +52,12 @@
           role="menuitem"
           >Settings</router-link
         >
+        <a
+          @click.prevent="resetQuickstart"
+          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+          role="menuitem"
+          >Reset Quickstart</a
+        >
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
@@ -60,12 +66,6 @@
           class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
           role="menuitem"
           >Changelog</a
-        >
-        <a
-          @click.prevent="showQuickstart"
-          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-          role="menuitem"
-          >Quickstart</a
         >
         <a
           href="#"
@@ -115,7 +115,27 @@ export default {
         });
     };
 
-    const showQuickstart = () => {
+    const resetQuickstart = () => {
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "environment.create",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "instance.create",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "datasource.create",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "table.create",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "member.invite",
+        newState: false,
+      });
       store.dispatch("uistate/saveIntroStateByKey", {
         key: "hidden",
         newState: false,
@@ -145,7 +165,7 @@ export default {
 
     return {
       currentUser,
-      showQuickstart,
+      resetQuickstart,
       logout,
       switchToOwner,
       switchToDBA,
