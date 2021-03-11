@@ -483,7 +483,6 @@ export default {
           (item) => item.category == "INPUT"
         )) {
           if (field.required && isEmpty(state.task.payload[field.id])) {
-            debugger;
             return false;
           }
         }
