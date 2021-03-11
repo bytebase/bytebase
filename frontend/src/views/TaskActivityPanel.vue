@@ -10,7 +10,7 @@
         <!-- Activity feed-->
         <ul>
           <li v-for="(activity, index) in activityList" :key="index">
-            <div :id="'activity' + (index + 1)" class="relative pb-6">
+            <div :id="'activity' + (index + 1)" class="relative pb-4">
               <span
                 v-if="index != activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
@@ -20,7 +20,7 @@
                 <template v-if="activity.actionType == 'bytebase.task.create'">
                   <div class="relative pl-0.5">
                     <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-8 ring-white flex items-center justify-center"
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <svg
                         class="w-5 h-5 text-control"
@@ -44,7 +44,7 @@
                 >
                   <div class="relative pl-0.5">
                     <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-8 ring-white flex items-center justify-center"
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <svg
                         class="w-4 h-4 text-control"
@@ -62,7 +62,7 @@
                 <template v-else>
                   <div class="relative">
                     <BBAvatar
-                      class="rounded-full ring-8 ring-white"
+                      class="rounded-full ring-4 ring-white"
                       :username="activity.creator.name"
                     >
                     </BBAvatar>
