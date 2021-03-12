@@ -56,8 +56,8 @@ const actions = {
   ) {
     const dataSourceList = (
       await axios.get(`/api/instance/${instanceId}/datasource`)
-    ).data.data.map((env: ResourceObject) => {
-      return convert(env);
+    ).data.data.map((datasource: ResourceObject) => {
+      return convert(datasource);
     });
 
     commit("setDataSourceListByInstanceId", { instanceId, dataSourceList });
