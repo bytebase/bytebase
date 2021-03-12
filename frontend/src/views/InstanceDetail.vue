@@ -125,9 +125,9 @@ input[type="number"] {
             Admin Data Source Info
           </h3>
           <p class="mt-1 text-sm text-gray-500">
-            This data source usually has admin privilege and is the default data
-            source used by the instance owner (e.g. DBA) connecting to the
-            instance to perform administrative operations.
+            This data source usually has admin/super privilege and is the
+            default data source used by the instance owner (e.g. DBA) connecting
+            to the instance to perform administrative operations.
           </p>
         </div>
       </div>
