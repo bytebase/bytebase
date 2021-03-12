@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
@@ -26,6 +26,16 @@ export default {
     const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const prepareBookmarkList = () => {
+      store
+        .dispatch("bookmark/fetchBookmarkListByUser", currentUser.value.id)
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    watchEffect(prepareBookmarkList);
 
     const bookmarkList = computed(() =>
       store.getters["bookmark/bookmarkListByUser"](currentUser.value.id)
