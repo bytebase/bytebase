@@ -385,11 +385,8 @@
           Coming soon
         </div>
         <div class="mt-6 flex justify-center flex-row">
-          <span class="text-4xl font-medium text-gray-900 line-through">{{
-            state.isMonthly ? "$36" : "$48"
-          }}</span>
           <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
-            state.isMonthly ? "$27" : "$36"
+            state.isMonthly ? "$36" : "$48"
           }}</span>
           <div class="ml-2 flex flex-col">
             <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
@@ -604,10 +601,6 @@
               />
             </svg>
             <span class="text-sm text-main">Roadmap sharing</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-main">A lot more ...</span>
           </li>
         </ul>
       </div>
