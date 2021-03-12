@@ -132,7 +132,7 @@ export default {
           title: "Environment",
         },
         {
-          title: "Title",
+          title: "Name",
         },
         {
           title: "Progress",

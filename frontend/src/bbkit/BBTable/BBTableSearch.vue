@@ -26,7 +26,7 @@
         name="search"
         id="search"
         class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
-        placeholder="Search"
+        :placeholder="placeholder"
         @input="$emit('change-text', $event.target.value)"
       />
     </div>
@@ -37,7 +37,12 @@
 export default {
   name: "BBTableSearch",
   emits: ["change-text"],
-  props: {},
+  props: {
+    placeholder: {
+      default: "Search",
+      type: String,
+    },
+  },
   setup(props, ctx) {},
 };
 </script>

@@ -4,6 +4,7 @@
       <EnvironmentTabFilter @select-environment="selectEnvironment" />
       <BBTableSearch
         ref="searchField"
+        :placeholder="'Search instance name'"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
