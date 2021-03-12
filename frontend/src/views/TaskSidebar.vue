@@ -37,7 +37,7 @@
           </h2>
           <template v-if="field.type == 'String'">
             <div
-              class="w-full flex"
+              class="w-full flex select-none"
               @focusin="
                 if (!$props.new) {
                   state.activeCustomFieldIndex = index;
