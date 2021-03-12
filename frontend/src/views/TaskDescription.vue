@@ -128,17 +128,19 @@ export default {
     };
 
     const resizeTextAreaHandler = () => {
-      sizeToFit(editDescriptionTextArea.value);
+      if (state.edit) {
+        sizeToFit(editDescriptionTextArea.value);
+      }
     };
 
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
       window.addEventListener("resize", resizeTextAreaHandler);
       nextTick(() => {
-        sizeToFit(editDescriptionTextArea.value);
         if (props.new) {
           state.edit = true;
           editDescriptionTextArea.value.focus();
+          sizeToFit(editDescriptionTextArea.value);
         }
       });
     });
@@ -163,7 +165,9 @@ export default {
       (curNew, prevNew) => {
         state.editDescription = curNew.description;
         nextTick(() => {
-          sizeToFit(editDescriptionTextArea.value);
+          if (state.edit) {
+            sizeToFit(editDescriptionTextArea.value);
+          }
         });
       }
     );
@@ -178,20 +182,14 @@ export default {
 
     const saveEdit = () => {
       emit("update-description", state.editDescription, (updatedTask: Task) => {
-        state.edit = false;
         state.editDescription = updatedTask.description;
-        nextTick(() => {
-          sizeToFit(editDescriptionTextArea.value);
-        });
+        state.edit = false;
       });
     };
 
     const cancelEdit = () => {
-      state.edit = false;
       state.editDescription = props.task.description;
-      nextTick(() => {
-        sizeToFit(editDescriptionTextArea.value);
-      });
+      state.edit = false;
     };
 
     return {
