@@ -88,6 +88,7 @@ import { reactive, computed, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { RouterSlug, User, Bookmark } from "../types";
+import { idFromSlug } from "../utils";
 
 interface BreadcrumbItem {
   name: string;
@@ -119,12 +120,29 @@ export default {
         currentRoute.value
       );
       const instanceSlug = routeSlug.instanceSlug;
+      const dataSourceSlug = routeSlug.dataSourceSlug;
+
       const list: Array<BreadcrumbItem> = [];
       if (instanceSlug) {
         list.push({
           name: "Instance",
           path: "/instance",
         });
+
+        if (dataSourceSlug) {
+          const instance = store.getters["instance/instanceById"](
+            idFromSlug(instanceSlug)
+          );
+          list.push({
+            name: instance.name,
+            path: `/instance/${instanceSlug}`,
+          });
+
+          list.push({
+            name: "Data Source",
+            path: `/instance/${instanceSlug}`,
+          });
+        }
       }
 
       if (currentRoute.value.meta.title) {

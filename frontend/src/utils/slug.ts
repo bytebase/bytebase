@@ -5,6 +5,7 @@ export function taskSlug(taskName: string, taskId: TaskId) {
   return [slug(taskName), taskId].join("-");
 }
 
+// On the other hand, it's not possible to de-slug due to slug's one-way algorithm
 export function instanceSlug(
   environmentName: string,
   instanceName: string,
