@@ -13,14 +13,6 @@
               <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
                   <BBAvatar :size="'huge'" :username="principal.name" />
-                  <div class="block mt-6 min-w-0 flex-1">
-                    <router-link
-                      :to="'/setting/member'"
-                      class="text-xl font-semibold text-main hover:underline focus:outline-none"
-                    >
-                      {{ role }}
-                    </router-link>
-                  </div>
                   <div
                     class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
                   >
@@ -123,6 +115,15 @@
             <!-- Description list -->
             <div class="mt-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+                <div class="sm:col-span-1">
+                  <dt class="text-sm font-medium text-control-light">Role</dt>
+                  <dd class="mt-1 text-sm text-main">
+                    <router-link :to="'/setting/member'" class="normal-link">
+                      {{ role }}
+                    </router-link>
+                  </dd>
+                </div>
+
                 <div class="sm:col-span-1">
                   <dt class="text-sm font-medium text-control-light">Email</dt>
                   <dd class="mt-1 text-sm text-main">
