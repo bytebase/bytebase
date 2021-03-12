@@ -23,6 +23,7 @@
       </div>
       <input
         type="text"
+        autocomplete="off"
         name="search"
         id="search"
         class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
