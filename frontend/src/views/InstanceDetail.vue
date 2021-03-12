@@ -298,7 +298,7 @@ input[type="number"] {
 </template>
 
 <script lang="ts">
-import { computed, onMounted, onUnmounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -366,6 +366,19 @@ export default {
     onUnmounted(() => {
       document.removeEventListener("keydown", escHandler);
     });
+
+    const prepareDatabaseList = () => {
+      store
+        .dispatch(
+          "database/fetchDatabaseListByInstanceId",
+          idFromSlug(props.instanceSlug)
+        )
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    watchEffect(prepareDatabaseList);
 
     const assignInstance = (instance: Instance | InstanceNew) => {
       if (!state.new) {

@@ -229,7 +229,7 @@ export type Instance = {
 };
 export type InstanceNew = Omit<Instance, "id">;
 
-export type DataSourceType = "ADMIN" | "READWRITE" | "READONLY";
+export type DataSourceType = "ADMIN" | "RW" | "RO";
 // Data Source
 export type DataSource = {
   id: string;
@@ -240,12 +240,34 @@ export type DataSource = {
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
+  // If empty, it means it can access all databases from an instance.
+  database?: string;
 };
 export type DataSourceNew = {
   name: string;
   type: DataSourceType;
   username?: string;
   password?: string;
+};
+
+// We periodically sync the underlying db schema and stores those info
+// in the "database" object.
+
+// "OK" means find the exact match
+// "MISMATCH" means we find the database with the same name, but the fingerprint is different,
+//            this usually indicates the underlying database has been recreated (might for a entirely different purpose)
+// "NOT_FOUND" means no matching database name found, this ususally means someone changes
+//            the underlying db name.
+export type DatabaseSyncStatus = "OK" | "MISMATCH" | "NOT_FOUND";
+// Database
+export type Database = {
+  id: string;
+  name: string;
+  createdTs: number;
+  lastUpdatedTs: number;
+  syncStatus: DatabaseSyncStatus;
+  fingerprint: string;
+  instance: Instance;
 };
 
 // Auth
@@ -339,6 +361,10 @@ export interface InstanceState {
 export interface DataSourceState {
   dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
   dataSourceById: Map<DataSourceId, DataSource>;
+}
+
+export interface DatabaseState {
+  databaseListByInstanceId: Map<InstanceId, Database[]>;
 }
 
 export interface NotificationState {

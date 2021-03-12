@@ -7,6 +7,7 @@ import roleMapping from "./modules/roleMapping";
 import environment from "./modules/environment";
 import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
+import database from "./modules/database";
 import principal from "./modules/principal";
 import auth from "./modules/auth";
 import task from "./modules/task";
@@ -29,6 +30,7 @@ export const store: Store<any> = createStore({
     environment,
     instance,
     dataSource,
+    database,
     principal,
     auth,
     task,

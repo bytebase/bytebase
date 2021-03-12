@@ -41,9 +41,40 @@ export default {
     afterCreate(instance, server) {
       server.create("dataSource", {
         instance,
-        name: instance.name + " ds1",
+        name: instance.name + " admin ds1",
         type: "ADMIN",
       });
+
+      for (let i = 0; i < 3; i++) {
+        const db = server.create("database", {
+          instance,
+          name: instance.name + " db1",
+        });
+
+        server.create("dataSource", {
+          instance,
+          name: instance.name + " " + db.name + " admin",
+          type: "ADMIN",
+          username: "root",
+          password: "pwdRoot",
+        });
+
+        server.create("dataSource", {
+          instance,
+          name: instance.name + " " + db.name + " rw",
+          type: "RW",
+          username: "rootRW",
+          password: "pwdRW",
+        });
+
+        server.create("dataSource", {
+          instance,
+          name: instance.name + " " + db.name + " ro",
+          type: "RO",
+          username: "rootRO",
+          password: "pwdRO",
+        });
+      }
     },
   }),
 };

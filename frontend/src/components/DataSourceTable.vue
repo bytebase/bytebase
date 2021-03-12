@@ -43,10 +43,17 @@
           class="w-4 table-cell"
           :title="columnList[5].title"
         />
+        <BBTableHeaderCell
+          class="w-4 table-cell"
+          :title="columnList[6].title"
+        />
       </template>
       <template v-slot:body="{ rowData: dataSource }">
         <BBTableCell :leftPadding="4" class="w-4 table-cell text-gray-500">
           <span class="">{{ dataSource.name }}</span>
+        </BBTableCell>
+        <BBTableCell class="w-24 table-cell">
+          {{ dataSource.database }}
         </BBTableCell>
         <BBTableCell class="w-24 table-cell">
           {{ dataSource.type }}
@@ -80,6 +87,9 @@ import { Instance, DataSource } from "../types";
 const columnList: BBTableColumn[] = [
   {
     title: "Name",
+  },
+  {
+    title: "Database",
   },
   {
     title: "Type",
@@ -145,9 +155,9 @@ export default {
         ) {
           if (item.type === "ADMIN") {
             adminList.push(item);
-          } else if (item.type === "READWRITE") {
+          } else if (item.type === "RW") {
             readWriteList.push(item);
-          } else if (item.type === "READONLY") {
+          } else if (item.type === "RO") {
             readOnlyList.push(item);
           }
         }

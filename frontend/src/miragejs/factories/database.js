@@ -1,9 +1,10 @@
 import { Factory } from "miragejs";
+import faker from "faker";
 
 export default {
-  dataSource: Factory.extend({
+  database: Factory.extend({
     name(i) {
-      return "ds" + i;
+      return "db" + i;
     },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
@@ -11,22 +12,19 @@ export default {
     lastUpdatedTs(i) {
       return Date.now() - i * 3600 * 1000;
     },
-    type(i) {
+    syncStatus(i) {
       if (i % 3 == 0) {
-        return "ADMIN";
+        return "OK";
       }
       if (i % 3 == 1) {
-        return "RW";
+        return "MISMATCH";
       }
       if (i % 3 == 2) {
-        return "RO";
+        return "NOT_FOUND";
       }
     },
-    username() {
-      return "root";
-    },
-    password(i) {
-      return "pwd" + i;
+    fingerprint(i) {
+      return faker.fake("{{random.alpha}}");
     },
   }),
 };

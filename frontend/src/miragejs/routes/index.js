@@ -448,6 +448,21 @@ export default function routes() {
     }
   );
 
+  // Database
+  this.get("/instance/:instanceId/database", function (schema, request) {
+    const instance = schema.databases.find(request.params.instanceId);
+    if (instance) {
+      return schema.databases.where((database) => {
+        return database.instanceId == instance.id;
+      });
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Instance " + request.params.instanceId + " not found" }
+    );
+  });
+
   // Bookmark
   this.get("/bookmark", function (schema, request) {
     const {
