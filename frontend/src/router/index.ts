@@ -158,10 +158,10 @@ const routes: Array<RouteRecordRaw> = [
             components: {
               content: () => import("../layouts/SettingLayout.vue"),
               leftSidebar: () => import("../views/SettingSidebar.vue"),
-              props: {
-                content: true,
-                leftSidebar: true,
-              },
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
             },
             children: [
               {
