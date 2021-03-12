@@ -271,6 +271,7 @@ export type ActivateInfo = {
 export type RouterSlug = {
   taskSlug?: string;
   instanceSlug?: string;
+  dataSourceSlug?: string;
   principalId?: PrincipalId;
 };
 

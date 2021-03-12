@@ -22,6 +22,18 @@ const getters = {
       };
     }
 
+    // /instance/:instanceSlug/ds/:dataSourceSlug
+    // Total 3 elements, 2nd element is the instance slug, 3rd element is the data source slug
+    const dataSourceComponents = currentRoute.path.match(
+      "/instance/([0-9a-zA-Z_-]+)/ds/([0-9a-zA-Z_-]+)"
+    ) || ["/", undefined];
+    if (dataSourceComponents[1]) {
+      return {
+        instanceSlug: dataSourceComponents[1],
+        dataSourceSlug: dataSourceComponents[2],
+      };
+    }
+
     // /instance/:instanceSlug
     // Total 2 elements, 2nd element is the instance slug
     const instanceComponents = currentRoute.path.match(

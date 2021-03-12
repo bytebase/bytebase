@@ -264,6 +264,27 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true },
           },
           {
+            path: "instance/:instanceSlug/ds/:dataSourceSlug",
+            name: "workspace.datasource.detail",
+            meta: {
+              title: (route: RouteLocationNormalized) => {
+                const slug = route.params.dataSourceSlug as string;
+                if (slug.toLowerCase() == "new") {
+                  return "New";
+                }
+                return store.getters["dataSource/dataSourceById"](
+                  idFromSlug(slug)
+                ).name;
+              },
+              allowBookmark: true,
+            },
+            components: {
+              content: () => import("../views/DataSourceDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
+          },
+          {
             path: "task/:taskSlug",
             name: "workspace.task.detail",
             meta: {
@@ -365,6 +386,7 @@ router.beforeEach((to, from, next) => {
   const routerSlug = store.getters["router/routeSlug"](to);
   const taskSlug = routerSlug.taskSlug;
   const instanceSlug = routerSlug.instanceSlug;
+  const dataSourceSlug = routerSlug.dataSourceSlug;
   const principalId = routerSlug.principalId;
 
   console.log("RouterSlug:", routerSlug);
@@ -396,7 +418,24 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
       .then((instance) => {
-        next();
+        if (!dataSourceSlug) {
+          next();
+        } else {
+          store
+            .dispatch("dataSource/fetchDataSourceById", {
+              instanceId: instance.id,
+              dataSourceId: idFromSlug(dataSourceSlug),
+            })
+            .then((dataSource) => {
+              next();
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+            });
+        }
       })
       .catch((error) => {
         next({
