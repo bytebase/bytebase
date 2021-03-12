@@ -25,10 +25,7 @@ export type EnvironmentId = string;
 
 export type InstanceId = string;
 
-export type DataSourceId = {
-  id: string;
-  instanceId: InstanceId;
-};
+export type DataSourceId = string;
 
 export type CommandId = string;
 export type CommandRegisterId = string;
@@ -232,17 +229,24 @@ export type Instance = {
 };
 export type InstanceNew = Omit<Instance, "id">;
 
-export type DataSourceType = "ADMIN" | "NORMAL";
+export type DataSourceType = "ADMIN" | "READWRITE" | "READONLY";
 // Data Source
 export type DataSource = {
   id: string;
   name: string;
+  createdTs: number;
+  lastUpdatedTs: number;
   type: DataSourceType;
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
 };
-export type DataSourceNew = Omit<DataSource, "id">;
+export type DataSourceNew = {
+  name: string;
+  type: DataSourceType;
+  username?: string;
+  password?: string;
+};
 
 // Auth
 export type LoginInfo = {

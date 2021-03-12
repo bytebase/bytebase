@@ -24,7 +24,7 @@ const state: () => DataSourceState = () => ({
 const getters = {
   adminDataSourceByInstanceId: (state: DataSourceState) => (
     instanceId: InstanceId
-  ) => {
+  ): DataSource | undefined => {
     const list = state.dataSourceListByInstanceId.get(instanceId);
     if (list) {
       for (const item of list) {
@@ -33,16 +33,18 @@ const getters = {
         }
       }
     }
-    return null;
+    return undefined;
   },
 
   dataSourceListByInstanceId: (state: DataSourceState) => (
     instanceId: InstanceId
-  ) => {
-    return state.dataSourceListByInstanceId.get(instanceId);
+  ): DataSource[] => {
+    return state.dataSourceListByInstanceId.get(instanceId) || [];
   },
 
-  dataSourceById: (state: DataSourceState) => (dataSourceId: DataSourceId) => {
+  dataSourceById: (state: DataSourceState) => (
+    dataSourceId: DataSourceId
+  ): DataSource | undefined => {
     return state.dataSourceById.get(dataSourceId);
   },
 };
@@ -63,11 +65,17 @@ const actions = {
     return dataSourceList;
   },
 
-  async fetchDataSourceById({ commit }: any, dataSourceId: DataSourceId) {
+  async fetchDataSourceById(
+    { commit }: any,
+    {
+      instanceId,
+      dataSourceId,
+    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
+  ) {
     const dataSource = convert(
       (
         await axios.get(
-          `/api/instance/${dataSourceId.instanceId}/datasource/${dataSourceId.id}`
+          `/api/instance/${instanceId}/datasource/${dataSourceId}`
         )
       ).data.data
     );
@@ -145,10 +153,13 @@ const actions = {
 
   async deleteDataSourceById(
     { state, commit }: { state: DataSourceState; commit: any },
-    dataSourceId: DataSourceId
+    {
+      instanceId,
+      dataSourceId,
+    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
   ) {
     await axios.delete(
-      `/api/instance/${dataSourceId.instanceId}/datasource/${dataSourceId.id}`
+      `/api/instance/${instanceId}/datasource/${dataSourceId}`
     );
 
     commit("setDataSourceById", {
@@ -228,13 +239,14 @@ const mutations = {
 
   deleteDataSourceInListById(
     state: DataSourceState,
-    dataSourceId: DataSourceId
+    {
+      instanceId,
+      dataSourceId,
+    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
   ) {
-    const list = state.dataSourceListByInstanceId.get(dataSourceId.instanceId);
+    const list = state.dataSourceListByInstanceId.get(instanceId);
     if (list) {
-      const i = list.findIndex(
-        (item: DataSource) => item.id == dataSourceId.id
-      );
+      const i = list.findIndex((item: DataSource) => item.id == dataSourceId);
       if (i != -1) {
         list.splice(i, 1);
       }

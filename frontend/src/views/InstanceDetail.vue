@@ -13,7 +13,7 @@ input[type="number"] {
 </style>
 
 <template>
-  <form class="px-4 space-y-6 divide-y divide-control-border">
+  <div class="px-4 space-y-6 divide-y divide-control-border">
     <!-- Instance Name -->
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
@@ -261,7 +261,11 @@ input[type="number"] {
         </div>
       </div>
     </div>
-  </form>
+
+    <div v-if="!state.new" class="pt-6 space-y-4">
+      <DataSourceTable :instance="state.instance" />
+    </div>
+  </div>
   <BBAlert
     v-if="state.showDeleteModal"
     :style="'CRITICAL'"
@@ -300,6 +304,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { urlfy, idFromSlug } from "../utils";
+import DataSourceTable from "../components/DataSourceTable.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, InstanceNew, DataSource, DataSourceNew } from "../types";
 
@@ -324,6 +329,7 @@ export default {
   name: "InstanceDetail",
   emits: ["delete"],
   components: {
+    DataSourceTable,
     EnvironmentSelect,
   },
   props: {
