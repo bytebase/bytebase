@@ -7,18 +7,18 @@
       <button
         type="button"
         class="relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
-        :class="state.isMonthly ? 'bg-white border-gray-200 shadow-sm' : ''"
-        @click.prevent="state.isMonthly = true"
-      >
-        Monthly billing
-      </button>
-      <button
-        type="button"
-        class="ml-0.5 relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
         :class="state.isMonthly ? '' : 'bg-white border-gray-200 shadow-sm'"
         @click.prevent="state.isMonthly = false"
       >
         Yearly billing
+      </button>
+      <button
+        type="button"
+        class="ml-0.5 relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
+        :class="state.isMonthly ? 'bg-white border-gray-200 shadow-sm' : ''"
+        @click.prevent="state.isMonthly = true"
+      >
+        Monthly billing
       </button>
     </div>
   </div>
@@ -205,10 +205,10 @@
         >
         <div class="mt-6 flex justify-center flex-row">
           <span class="text-4xl font-medium text-gray-900 line-through">{{
-            state.isMonthly ? "$12" : "$16"
+            state.isMonthly ? "$16" : "$12"
           }}</span>
           <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
-            state.isMonthly ? "$9" : "$12"
+            state.isMonthly ? "$12" : "$9"
           }}</span>
           <div class="ml-2 flex flex-col">
             <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
@@ -386,7 +386,7 @@
         </div>
         <div class="mt-6 flex justify-center flex-row">
           <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
-            state.isMonthly ? "$36" : "$48"
+            state.isMonthly ? "$48" : "$36"
           }}</span>
           <div class="ml-2 flex flex-col">
             <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
