@@ -23,7 +23,6 @@ export default {
   props: {},
   setup(props, ctx) {
     const store = useStore();
-    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
