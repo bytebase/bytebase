@@ -125,7 +125,7 @@ export type StageProgressPatch = {
 type TaskTypeGeneral = "bytebase.general";
 
 type TaskTypeDataSource =
-  | "bytebase.datasource.create"
+  | "bytebase.datasource.request"
   | "bytebase.datasource.schema.update";
 
 export type TaskType = TaskTypeGeneral | TaskTypeDataSource;

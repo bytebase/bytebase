@@ -31,11 +31,11 @@ const DEFAULT_TEMPLATE = {
 const allTaskTemplateList: TaskTemplate[] = [
   DEFAULT_TEMPLATE,
   {
-    type: "bytebase.datasource.create",
+    type: "bytebase.datasource.request",
     buildTask: (ctx: TemplateContext): TaskNew => {
       return {
         name: "New Data Source",
-        type: "bytebase.datasource.create",
+        type: "bytebase.datasource.request",
         description: "Estimated QPS: 10",
         stageProgressList: [
           {

@@ -104,9 +104,9 @@ export default {
       },
       {
         name: "Request a database",
-        link: "/task/new?template=bytebase.datasource.create",
+        link: "/task/new?template=bytebase.datasource.request",
         done: computed(() =>
-          store.getters["uistate/introStateByKey"]("datasource.create")
+          store.getters["uistate/introStateByKey"]("datasource.request")
         ),
       },
       {

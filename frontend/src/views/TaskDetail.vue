@@ -414,9 +414,9 @@ export default {
         .then((createdTask) => {
           router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
 
-          if (taskTemplate.value.type == "bytebase.datasource.create") {
+          if (taskTemplate.value.type == "bytebase.datasource.request") {
             store.dispatch("uistate/saveIntroStateByKey", {
-              key: "datasource.create",
+              key: "datasource.request",
               newState: true,
             });
           } else if (

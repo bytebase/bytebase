@@ -78,7 +78,7 @@ const routes: Array<RouteRecordRaw> = [
               quickActionList: [
                 "instance.create",
                 "user.manage",
-                "datasource.create",
+                "datasource.request",
                 "datasource.schema.update",
                 "ticket.create",
               ],

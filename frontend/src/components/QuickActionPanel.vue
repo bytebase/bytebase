@@ -109,11 +109,11 @@
     </div>
 
     <div
-      v-if="quickActionList.includes('datasource.create')"
+      v-if="quickActionList.includes('datasource.request')"
       class="flex flex-col items-center w-28"
     >
       <router-link
-        to="/task/new?template=bytebase.datasource.create"
+        to="/task/new?template=bytebase.datasource.request"
         class="p-3 btn-icon-primary"
       >
         <svg

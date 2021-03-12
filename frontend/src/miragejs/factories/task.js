@@ -26,7 +26,7 @@ export default {
       }
     },
     type() {
-      return "bytebase.datasource.create";
+      return "bytebase.datasource.request";
     },
     description() {
       return faker.fake("{{lorem.paragraphs}}");
