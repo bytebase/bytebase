@@ -36,7 +36,7 @@
             target="_blank"
             class="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-accent bg-white hover:bg-indigo-50"
           >
-            Download Now ->
+            Deploy Yours ->
           </a>
         </div>
         <div class="order-2 flex-shrink-0 sm:order-3 sm:ml-3">
