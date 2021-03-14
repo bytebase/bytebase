@@ -224,7 +224,7 @@ export type EnvironmentNew = Omit<Environment, "id">;
 export type Instance = {
   id: InstanceId;
   name: string;
-  environmentId: string;
+  environment: Environment;
   externalLink?: string;
   host: string;
   port?: string;

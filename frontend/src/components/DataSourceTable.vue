@@ -177,15 +177,12 @@ export default {
 
     const clickDataSource = function (section: number, row: number) {
       const ds = dataSourceSectionList.value[section].list![row];
-      const environmentName = store.getters["environment/environmentById"](
-        props.instance.environmentId
-      )?.name;
+      const environmentName = props.instance.environment.name;
       router.push(
-        `/instance/${instanceSlug(
-          environmentName,
-          props.instance.name,
-          props.instance.id
-        )}/ds/${dataSourceSlug(ds.name, ds.id)}`
+        `/instance/${instanceSlug(props.instance)}/ds/${dataSourceSlug(
+          ds.name,
+          ds.id
+        )}`
       );
     };
 

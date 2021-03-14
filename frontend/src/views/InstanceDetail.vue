@@ -404,7 +404,11 @@ export default {
     if (state.new) {
       state.instance = {
         name: "New Instance",
-        environmentId: "",
+        environment: {
+          id: "-1",
+          name: "<<Unknown Environment",
+          order: -1,
+        },
         host: "127.0.0.1",
       };
       state.adminDataSource = cloneDeep(INIT_DATA_SOURCE);

@@ -72,7 +72,7 @@ export default {
       return list.filter((instance) => {
         return (
           (!state.selectedEnvironment ||
-            instance.environmentId == state.selectedEnvironment.id) &&
+            instance.environment.id == state.selectedEnvironment.id) &&
           (!state.searchText ||
             instance.name
               .toLowerCase()

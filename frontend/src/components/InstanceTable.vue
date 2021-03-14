@@ -104,13 +104,7 @@ export default {
 
     const clickInstance = function (section: number, row: number) {
       const instance = props.instanceList[row];
-      router.push(
-        `/instance/${instanceSlug(
-          environmentName(instance.environmentId),
-          instance.name,
-          instance.id
-        )}`
-      );
+      router.push(`/instance/${instanceSlug(instance)}`);
     };
 
     const environmentName = function (id: EnvironmentId) {

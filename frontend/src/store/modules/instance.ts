@@ -5,12 +5,17 @@ import {
   InstanceNew,
   InstanceState,
   ResourceObject,
+  Environment,
 } from "../../types";
 
-function convert(instance: ResourceObject): Instance {
+function convert(instance: ResourceObject, rootGetters: any): Instance {
+  const environment = rootGetters["environment/environmentList"]().find(
+    (env: Environment) => env.id == instance.attributes.environmentId
+  );
   return {
     id: instance.id,
-    ...(instance.attributes as Omit<Instance, "id">),
+    environment,
+    ...(instance.attributes as Omit<Instance, "id" | "environment">),
   };
 }
 
@@ -30,10 +35,10 @@ const getters = {
 };
 
 const actions = {
-  async fetchInstanceList({ commit }: any) {
+  async fetchInstanceList({ commit, rootGetters }: any) {
     const instanceList = (await axios.get(`/api/instance`)).data.data.map(
       (instance: ResourceObject) => {
-        return convert(instance);
+        return convert(instance, rootGetters);
       }
     );
 
@@ -42,9 +47,13 @@ const actions = {
     return instanceList;
   },
 
-  async fetchInstanceById({ commit }: any, instanceId: InstanceId) {
+  async fetchInstanceById(
+    { commit, rootGetters }: any,
+    instanceId: InstanceId
+  ) {
     const instance = convert(
-      (await axios.get(`/api/instance/${instanceId}`)).data.data
+      (await axios.get(`/api/instance/${instanceId}`)).data.data,
+      rootGetters
     );
     commit("setInstanceById", {
       instanceId,
@@ -53,7 +62,7 @@ const actions = {
     return instance;
   },
 
-  async createInstance({ commit }: any, newInstance: InstanceNew) {
+  async createInstance({ commit, rootGetters }: any, newInstance: InstanceNew) {
     const createdInstance = convert(
       (
         await axios.post(`/api/instance`, {
@@ -62,7 +71,8 @@ const actions = {
             attributes: newInstance,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("appendInstance", createdInstance);
@@ -70,7 +80,7 @@ const actions = {
     return createdInstance;
   },
 
-  async patchInstance({ commit }: any, instance: Instance) {
+  async patchInstance({ commit, rootGetters }: any, instance: Instance) {
     const { id, ...attrs } = instance;
     const updatedInstance = convert(
       (
@@ -80,7 +90,8 @@ const actions = {
             attributes: attrs,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("replaceInstanceInList", updatedInstance);

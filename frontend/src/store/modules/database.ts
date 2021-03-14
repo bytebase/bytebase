@@ -61,7 +61,11 @@ const getters = {
       instance: {
         id: "-1",
         name: "<<Unknown instance>>",
-        environmentId: "-1",
+        environment: {
+          id: "-1",
+          name: "<<Unknown environment>>",
+          order: -1,
+        },
         host: "",
       },
     };
