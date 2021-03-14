@@ -452,9 +452,13 @@ export default function routes() {
   this.get("/instance/:instanceId/database", function (schema, request) {
     const instance = schema.databases.find(request.params.instanceId);
     if (instance) {
-      return schema.databases.where((database) => {
-        return database.instanceId == instance.id;
-      });
+      return schema.databases
+        .where((database) => {
+          return database.instanceId == instance.id;
+        })
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        );
     }
     return new Response(
       404,
