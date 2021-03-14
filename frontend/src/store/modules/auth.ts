@@ -8,6 +8,13 @@ import {
   ResourceObject,
 } from "../../types";
 
+const GUEST: User = {
+  id: "0",
+  status: "ACTIVE",
+  name: "Guest",
+  email: "guest@bytebase.com",
+};
+
 function convert(user: ResourceObject): User {
   return {
     id: user.id,
@@ -16,11 +23,11 @@ function convert(user: ResourceObject): User {
 }
 
 const state: () => AuthState = () => ({
-  currentUser: null,
+  currentUser: GUEST,
 });
 
 const getters = {
-  currentUser: (state: AuthState) => () => {
+  currentUser: (state: AuthState) => (): User => {
     if (state.currentUser) {
       return state.currentUser;
     }
@@ -28,7 +35,7 @@ const getters = {
     if (user) {
       return JSON.parse(user);
     }
-    return null;
+    return GUEST;
   },
 };
 
@@ -85,8 +92,8 @@ const actions = {
 
   async logout({ commit }: any) {
     localStorage.removeItem("bb.auth.user");
-    commit("setCurrentUser", null);
-    return null;
+    commit("setCurrentUser", GUEST);
+    return GUEST;
   },
 };
 

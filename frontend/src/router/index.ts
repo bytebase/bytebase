@@ -17,6 +17,7 @@ import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
 import { isDev, idFromSlug } from "../utils";
+import { User } from "../types";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -330,7 +331,8 @@ export const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const loginUser = store.getters["auth/currentUser"]();
+  const loginUser: User = store.getters["auth/currentUser"]();
+  const isGuest = loginUser.id == "0";
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
@@ -352,7 +354,7 @@ router.beforeEach((to, from, next) => {
     to.name === ACTIVATE_MODULE ||
     to.name === PASSWORD_RESET_MODULE
   ) {
-    if (loginUser) {
+    if (!isGuest) {
       next({ name: HOME_MODULE, replace: true });
     } else {
       if (to.name === ACTIVATE_MODULE) {
@@ -370,7 +372,7 @@ router.beforeEach((to, from, next) => {
     }
     return;
   } else {
-    if (!loginUser) {
+    if (isGuest) {
       next({ name: SIGNIN_MODULE, replace: true });
       return;
     }

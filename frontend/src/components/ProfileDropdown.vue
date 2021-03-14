@@ -106,9 +106,7 @@ export default {
       store
         .dispatch("auth/logout")
         .then(() => {
-          // If using router.push, looks like hook reactive to currentUser would get called first.
-          // So we just do a reload here.
-          location.reload();
+          router.push({ name: "auth.signin" });
         })
         .catch((error: Error) => {
           console.log(error);
