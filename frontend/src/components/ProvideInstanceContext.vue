@@ -18,15 +18,23 @@ export default {
     const store = useStore();
 
     if (props.instanceSlug.toLowerCase() != "new") {
-      await store.dispatch(
-        "database/fetchDatabaseListByInstanceId",
-        idFromSlug(props.instanceSlug)
-      );
+      await store
+        .dispatch(
+          "database/fetchDatabaseListByInstanceId",
+          idFromSlug(props.instanceSlug)
+        )
+        .catch((error) => {
+          console.error(error);
+        });
       // This depends on database/fetchDatabaseListByInstanceId to convert its database id to database object.
-      await store.dispatch(
-        "dataSource/fetchDataSourceListByInstanceId",
-        idFromSlug(props.instanceSlug)
-      );
+      await store
+        .dispatch(
+          "dataSource/fetchDataSourceListByInstanceId",
+          idFromSlug(props.instanceSlug)
+        )
+        .catch((error) => {
+          console.error(error);
+        });
     }
   },
 };
