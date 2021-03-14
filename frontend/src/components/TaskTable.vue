@@ -52,7 +52,7 @@
       <BBTableCell class="w-4 table-cell text-gray-500">
         <span class="">#{{ task.id }}</span>
       </BBTableCell>
-      <BBTableCell :rightPadding="1" class="w-4">
+      <BBTableCell class="w-4">
         <span
           class="flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-mono bg-gray-500 text-white"
         >
@@ -62,13 +62,13 @@
       <BBTableCell class="w-24 table-cell">
         {{ activeEnvironmentName(task) }}
       </BBTableCell>
-      <BBTableCell :leftPadding="1" class="truncate">
+      <BBTableCell class="truncate">
         {{ task.name }}
       </BBTableCell>
       <BBTableCell class="w-12 hidden sm:table-cell">
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
-      <BBTableCell :rightPadding="4" class="w-32 hidden md:table-cell">
+      <BBTableCell class="w-32 hidden md:table-cell">
         {{ humanizeTs(task.lastUpdatedTs) }}
       </BBTableCell>
       <BBTableCell class="w-36 hidden sm:table-cell">
