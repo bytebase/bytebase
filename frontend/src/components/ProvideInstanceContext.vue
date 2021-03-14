@@ -17,15 +17,17 @@ export default {
   async setup(props) {
     const store = useStore();
 
-    await store.dispatch(
-      "database/fetchDatabaseListByInstanceId",
-      idFromSlug(props.instanceSlug)
-    );
-    // This depends on database/fetchDatabaseListByInstanceId to convert its database id to database object.
-    await store.dispatch(
-      "dataSource/fetchDataSourceListByInstanceId",
-      idFromSlug(props.instanceSlug)
-    );
+    if (props.instanceSlug.toLowerCase() != "new") {
+      await store.dispatch(
+        "database/fetchDatabaseListByInstanceId",
+        idFromSlug(props.instanceSlug)
+      );
+      // This depends on database/fetchDatabaseListByInstanceId to convert its database id to database object.
+      await store.dispatch(
+        "dataSource/fetchDataSourceListByInstanceId",
+        idFromSlug(props.instanceSlug)
+      );
+    }
   },
 };
 </script>
