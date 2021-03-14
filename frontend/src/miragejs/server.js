@@ -15,7 +15,7 @@ const config = (environment) => {
     serializers: {
       application: JSONAPISerializer.extend({
         shouldIncludeLinkageData(relationshipKey, model) {
-          return false;
+          return true;
         },
         keyForAttribute(modelName) {
           return modelName;
