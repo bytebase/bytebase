@@ -91,7 +91,7 @@ export default {
           title: "Host:Port",
         },
         {
-          title: "Link",
+          title: "External link",
         },
         {
           title: "Created",
