@@ -10,13 +10,16 @@ export default {
   async setup() {
     const store = useStore();
 
-    await store.dispatch("principal/fetchPrincipalList");
-    // This depends on principal/fetchPrincipalList
-    await store.dispatch("roleMapping/fetchRoleMappingList");
-
-    await store.dispatch("environment/fetchEnvironmentList");
-
-    await store.dispatch("uistate/restoreState");
+    // Group the await to prepare the context in one batch.
+    // If we split the await one by one, the execution flow will be interrupted
+    // by router.beforeEach, which will pre-maturely fetches data relying on the
+    // context here.
+    await Promise.all([
+      store.dispatch("environment/fetchEnvironmentList"),
+      store.dispatch("principal/fetchPrincipalList"),
+      store.dispatch("roleMapping/fetchRoleMappingList"),
+      store.dispatch("uistate/restoreState"),
+    ]);
   },
 };
 </script>
