@@ -48,7 +48,7 @@ export default {
       for (let i = 0; i < 3; i++) {
         const database = server.create("database", {
           instance,
-          name: instance.name + " db1",
+          name: instance.name + " db" + (i + 1),
         });
 
         server.create("dataSource", {
