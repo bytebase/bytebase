@@ -27,6 +27,8 @@ export type InstanceId = string;
 
 export type DataSourceId = string;
 
+export type DatabaseId = string;
+
 export type CommandId = string;
 export type CommandRegisterId = string;
 
@@ -233,6 +235,7 @@ export type DataSourceType = "ADMIN" | "RW" | "RO";
 // Data Source
 export type DataSource = {
   id: string;
+  instanceId: InstanceId;
   name: string;
   createdTs: number;
   lastUpdatedTs: number;
@@ -261,7 +264,7 @@ export type DataSourceNew = {
 export type DatabaseSyncStatus = "OK" | "MISMATCH" | "NOT_FOUND";
 // Database
 export type Database = {
-  id: string;
+  id: DatabaseId;
   name: string;
   createdTs: number;
   lastUpdatedTs: number;

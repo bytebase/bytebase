@@ -1,11 +1,14 @@
 import axios from "axios";
 import {
   Database,
+  DatabaseId,
   InstanceId,
   DatabaseState,
   ResourceObject,
+  Instance,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
+import instance from "./instance";
 
 function convert(database: ResourceObject, rootGetters: any): Database {
   const instance = rootGetters["instance/instanceById"](
@@ -27,6 +30,41 @@ const getters = {
     instanceId: InstanceId
   ): Database[] => {
     return state.databaseListByInstanceId.get(instanceId) || [];
+  },
+
+  databaseById: (state: DatabaseState) => (
+    databaseId: DatabaseId,
+    instanceId?: InstanceId
+  ): Database => {
+    let database = undefined;
+    if (instanceId) {
+      const list = state.databaseListByInstanceId.get(instanceId) || [];
+      database = list.find((item) => item.id == databaseId);
+    } else {
+      for (let [_, list] of state.databaseListByInstanceId) {
+        database = list.find((item) => item.id == databaseId);
+        if (database) {
+          break;
+        }
+      }
+    }
+    if (database) {
+      return database;
+    }
+    return {
+      id: "-1",
+      name: "<<Unknown database>>",
+      createdTs: 0,
+      lastUpdatedTs: 0,
+      syncStatus: "NOT_FOUND",
+      fingerprint: "",
+      instance: {
+        id: "-1",
+        name: "<<Unknown instance>>",
+        environmentId: "-1",
+        host: "",
+      },
+    };
   },
 };
 

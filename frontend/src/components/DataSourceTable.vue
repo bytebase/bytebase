@@ -20,54 +20,36 @@
       <template v-slot:header>
         <BBTableHeaderCell
           :leftPadding="4"
-          class="w-4 table-cell"
+          class="w-24"
           :title="columnList[0].title"
         />
-        <BBTableHeaderCell
-          class="w-4 table-cell"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell
-          class="w-4 table-cell"
-          :title="columnList[2].title"
-        />
-        <BBTableHeaderCell
-          class="w-24 table-cell"
-          :title="columnList[3].title"
-        />
-        <BBTableHeaderCell
-          class="w-4 table-cell"
-          :title="columnList[4].title"
-        />
-        <BBTableHeaderCell
-          class="w-4 table-cell"
-          :title="columnList[5].title"
-        />
-        <BBTableHeaderCell
-          class="w-4 table-cell"
-          :title="columnList[6].title"
-        />
+        <BBTableHeaderCell class="w-24" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-4" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-8" :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-8" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
       </template>
       <template v-slot:body="{ rowData: dataSource }">
-        <BBTableCell :leftPadding="4" class="w-4 table-cell text-gray-500">
+        <BBTableCell :leftPadding="4" class="text-gray-500">
           <span class="">{{ dataSource.name }}</span>
         </BBTableCell>
-        <BBTableCell class="w-24 table-cell">
-          {{ dataSource.database }}
+        <BBTableCell>
+          {{ dataSource.database ? dataSource.database.name : "*" }}
         </BBTableCell>
-        <BBTableCell class="w-24 table-cell">
+        <BBTableCell>
           {{ dataSource.type }}
         </BBTableCell>
-        <BBTableCell class="w-24 table-cell">
+        <BBTableCell>
           {{ dataSource.username }}
         </BBTableCell>
-        <BBTableCell class="w-24 table-cell">
+        <BBTableCell>
           {{ dataSource.password }}
         </BBTableCell>
-        <BBTableCell class="w-24 table-cell">
+        <BBTableCell>
           {{ humanizeTs(dataSource.lastUpdatedTs) }}
         </BBTableCell>
-        <BBTableCell class="w-24 table-cell">
+        <BBTableCell>
           {{ humanizeTs(dataSource.createdTs) }}
         </BBTableCell>
       </template>
@@ -76,13 +58,13 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect, PropType } from "vue";
+import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import { BBTableColumn } from "../bbkit/types";
 
-import { idFromSlug, dataSourceSlug, instanceSlug } from "../utils";
-import { Instance, DataSource } from "../types";
+import { dataSourceSlug, instanceSlug } from "../utils";
+import { Instance } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -128,19 +110,6 @@ export default {
     const state = reactive<LocalState>({
       searchText: "",
     });
-
-    const prepareDataSourceList = () => {
-      store
-        .dispatch(
-          "dataSource/fetchDataSourceListByInstanceId",
-          props.instance.id
-        )
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    watchEffect(prepareDataSourceList);
 
     const dataSourceSectionList = computed(() => {
       const adminList = [];

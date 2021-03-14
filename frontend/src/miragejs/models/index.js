@@ -54,11 +54,12 @@ export default {
 
   dataSource: Model.extend({
     instance: belongsTo(),
-    database: hasMany(),
+    database: belongsTo(),
   }),
 
   database: Model.extend({
     instance: belongsTo(),
+    database: hasMany(),
   }),
 
   batchUpdate: Model,

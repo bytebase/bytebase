@@ -298,7 +298,7 @@ input[type="number"] {
 </template>
 
 <script lang="ts">
-import { computed, onMounted, onUnmounted, reactive, watchEffect } from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -367,19 +367,6 @@ export default {
       document.removeEventListener("keydown", escHandler);
     });
 
-    const prepareDatabaseList = () => {
-      store
-        .dispatch(
-          "database/fetchDatabaseListByInstanceId",
-          idFromSlug(props.instanceSlug)
-        )
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    watchEffect(prepareDatabaseList);
-
     const assignInstance = (instance: Instance | InstanceNew) => {
       if (!state.new) {
         state.originalInstance = instance as Instance;
@@ -432,22 +419,12 @@ export default {
       // because the operation is async, we need to have a init object to avoid
       // adding v-if="state.adminDataSource" guard
       assignAdminDataSource(cloneDeep(INIT_DATA_SOURCE));
-      store
-        .dispatch(
-          "dataSource/fetchDataSourceListByInstanceId",
-          idFromSlug(props.instanceSlug)
-        )
-        .then(() => {
-          const dataSource = store.getters[
-            "dataSource/adminDataSourceByInstanceId"
-          ](idFromSlug(props.instanceSlug));
-          if (dataSource) {
-            assignAdminDataSource(dataSource);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      const dataSource = store.getters[
+        "dataSource/adminDataSourceByInstanceId"
+      ](idFromSlug(props.instanceSlug));
+      if (dataSource) {
+        assignAdminDataSource(dataSource);
+      }
     }
 
     const valueChanged = computed(() => {
