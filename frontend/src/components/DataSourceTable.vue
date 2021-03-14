@@ -7,7 +7,7 @@
       <BBTableSearch
         class="w-56"
         ref="searchField"
-        :placeholder="'Search data source name'"
+        :placeholder="'Search name, database'"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -120,7 +120,10 @@ export default {
       )) {
         if (
           !state.searchText ||
-          item.name.toLowerCase().includes(state.searchText.toLowerCase())
+          item.name.toLowerCase().includes(state.searchText.toLowerCase()) ||
+          item.database?.name
+            .toLowerCase()
+            .includes(state.searchText.toLowerCase())
         ) {
           if (item.type === "ADMIN") {
             adminList.push(item);
