@@ -3,6 +3,7 @@ import bookmark from "./bookmark";
 import environment from "./environment";
 import instance from "./instance";
 import dataSource from "./dataSource";
+import dataSourceMember from "./dataSourceMember";
 import database from "./database";
 import task from "./task";
 import taskPatch from "./taskPatch";
@@ -27,6 +28,7 @@ export default {
   ...environment,
   ...instance,
   ...dataSource,
+  ...dataSourceMember,
   ...database,
   ...task,
   ...taskPatch,

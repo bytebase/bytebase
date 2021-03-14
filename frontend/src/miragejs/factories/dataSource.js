@@ -25,5 +25,18 @@ export default {
     password(i) {
       return "pwd" + i;
     },
+    afterCreate(dataSource, server) {
+      server.create("dataSourceMember", {
+        dataSource,
+        principalId: "1",
+        taskId: "2",
+      });
+
+      server.create("dataSourceMember", {
+        dataSource,
+        principalId: "2",
+        taskId: "3",
+      });
+    },
   }),
 };

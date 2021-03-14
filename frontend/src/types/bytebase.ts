@@ -27,6 +27,8 @@ export type InstanceId = string;
 
 export type DataSourceId = string;
 
+export type DataSourceMemberId = string;
+
 export type DatabaseId = string;
 
 export type CommandId = string;
@@ -246,11 +248,19 @@ export type DataSource = {
   // If empty, it means it can access all databases from an instance.
   database?: string;
 };
+
 export type DataSourceNew = {
   name: string;
   type: DataSourceType;
   username?: string;
   password?: string;
+};
+
+export type DataSourceMember = {
+  id: DataSourceMemberId;
+  principal: Principal;
+  taskId?: TaskId;
+  createdTs: number;
 };
 
 // We periodically sync the underlying db schema and stores those info
@@ -364,6 +374,7 @@ export interface InstanceState {
 export interface DataSourceState {
   dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
   dataSourceById: Map<DataSourceId, DataSource>;
+  memberListById: Map<DataSourceId, DataSourceMember[]>;
 }
 
 export interface DatabaseState {

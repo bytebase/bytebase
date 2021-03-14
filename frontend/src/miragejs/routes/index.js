@@ -422,8 +422,18 @@ export default function routes() {
     function (schema, request) {
       const instance = schema.instances.find(request.params.instanceId);
       if (instance) {
+        const dataSource = schema.dataSources.find(request.params.id);
+        if (!dataSource) {
+          return new Response(
+            404,
+            {},
+            {
+              errors: "Data source " + request.params.id + " not found",
+            }
+          );
+        }
         const attrs = this.normalizedRequestAttrs("data-source");
-        return schema.dataSources.find(request.params.id).update(attrs);
+        return dataSource.update(attrs);
       }
       return new Response(
         404,
@@ -438,7 +448,43 @@ export default function routes() {
     function (schema, request) {
       const instance = schema.instances.find(request.params.instanceId);
       if (instance) {
-        return schema.dataSources.find(request.params.id).destroy();
+        const dataSource = schema.dataSources.find(request.params.id);
+        if (!dataSource) {
+          return new Response(
+            404,
+            {},
+            {
+              errors: "Data source " + request.params.id + " not found",
+            }
+          );
+        }
+        dataSource.destroy();
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Instance " + request.params.instanceId + " not found" }
+      );
+    }
+  );
+
+  // Data Source Member
+  this.get(
+    "/instance/:instanceId/datasource/:id/member",
+    function (schema, request) {
+      const instance = schema.instances.find(request.params.instanceId);
+      if (instance) {
+        const dataSource = schema.dataSources.find(request.params.id);
+        if (dataSource) {
+          return schema.dataSourceMembers.where((dataSourceMember) => {
+            return dataSourceMember.dataSourceId == dataSource.id;
+          });
+        }
+        return new Response(
+          404,
+          {},
+          { errors: "Data source " + request.params.id + " not found" }
+        );
       }
       return new Response(
         404,

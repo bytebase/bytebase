@@ -3,6 +3,7 @@ import {
   DataSourceId,
   DataSource,
   DataSourceNew,
+  DataSourceMember,
   DataSourceState,
   DataSourceType,
   InstanceId,
@@ -26,9 +27,28 @@ function convert(dataSource: ResourceObject, rootGetters: any): DataSource {
   };
 }
 
+function convertMember(
+  dataSourceMember: ResourceObject,
+  rootGetters: any
+): DataSourceMember {
+  const principal = rootGetters["principal/principalById"](
+    dataSourceMember.attributes.principalId
+  );
+
+  return {
+    id: dataSourceMember.id,
+    principal,
+    ...(dataSourceMember.attributes as Omit<
+      DataSourceMember,
+      "id" | "principal"
+    >),
+  };
+}
+
 const state: () => DataSourceState = () => ({
   dataSourceListByInstanceId: new Map(),
   dataSourceById: new Map(),
+  memberListById: new Map(),
 });
 
 const getters = {
@@ -56,6 +76,12 @@ const getters = {
     dataSourceId: DataSourceId
   ): DataSource | undefined => {
     return state.dataSourceById.get(dataSourceId);
+  },
+
+  memberListById: (state: DataSourceState) => (
+    dataSourceId: DataSourceId
+  ): DataSourceMember[] => {
+    return state.memberListById.get(dataSourceId) || [];
   },
 };
 
@@ -182,6 +208,29 @@ const actions = {
 
     commit("deleteDataSourceInListById", dataSourceId);
   },
+
+  async fetchMemberListById(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      dataSourceId,
+    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
+  ) {
+    const dataSourceMemberList = (
+      await axios.get(
+        `/api/instance/${instanceId}/datasource/${dataSourceId}/member`
+      )
+    ).data.data.map((dataSourceMember: ResourceObject) => {
+      return convertMember(dataSourceMember, rootGetters);
+    });
+
+    commit("setDataSourceMemberListById", {
+      dataSourceId,
+      dataSourceMemberList,
+    });
+
+    return dataSourceMemberList;
+  },
 };
 
 const mutations = {
@@ -264,6 +313,19 @@ const mutations = {
         list.splice(i, 1);
       }
     }
+  },
+
+  setDataSourceMemberListById(
+    state: DataSourceState,
+    {
+      dataSourceId,
+      dataSourceMemberList,
+    }: {
+      dataSourceId: DataSourceId;
+      dataSourceMemberList: DataSourceMember[];
+    }
+  ) {
+    state.memberListById.set(dataSourceId, dataSourceMemberList);
   },
 };
 

@@ -55,6 +55,11 @@ export default {
   dataSource: Model.extend({
     instance: belongsTo(),
     database: belongsTo(),
+    dataSourceMember: hasMany(),
+  }),
+
+  dataSourceMember: Model.extend({
+    dataSource: belongsTo(),
   }),
 
   database: Model.extend({
