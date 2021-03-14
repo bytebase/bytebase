@@ -42,7 +42,7 @@ export default {
       server.create("dataSource", {
         instance,
         name: instance.name + " admin ds1",
-        type: "ADMIN",
+        type: "RW",
       });
 
       for (let i = 0; i < 3; i++) {
@@ -54,19 +54,19 @@ export default {
         server.create("dataSource", {
           instance,
           database,
-          name: instance.name + " " + " admin ds2",
-          type: "ADMIN",
-          username: "root",
-          password: "pwdRoot",
+          name: instance.name + " " + " rw ds2",
+          type: "RW",
+          username: "rootRW",
+          password: "pwdRW",
         });
 
         server.create("dataSource", {
           instance,
           database,
-          name: instance.name + " " + " rw ds3",
-          type: "RW",
-          username: "rootRW",
-          password: "pwdRW",
+          name: instance.name + " " + " ro ds3",
+          type: "RO",
+          username: "rootRO",
+          password: "pwdRO",
         });
 
         server.create("dataSource", {

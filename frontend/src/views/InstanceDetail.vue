@@ -117,17 +117,17 @@ input[type="number"] {
         />
       </div>
     </div>
-    <!-- Datasource Info -->
+    <!-- Read/Write Datasource Info -->
     <div class="pt-6">
       <div class="flex justify-between">
         <div>
           <h3 class="text-lg leading-6 font-medium text-gray-900">
-            Admin Data Source Info
+            Read/Write Data Source Info
           </h3>
           <p class="mt-1 text-sm text-gray-500">
-            This data source usually has admin/super privilege and is the
-            default data source used by the instance owner (e.g. DBA) connecting
-            to the instance to perform administrative operations.
+            This is the data source used by bytebase to perform DDL and
+            non-SELECT DML operations. Note, bytebase does NOT need admin/SUPER
+            privilege. TODO: Add grant statement.
           </p>
         </div>
       </div>
@@ -309,8 +309,8 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { Instance, InstanceNew, DataSource, DataSourceNew } from "../types";
 
 const INIT_DATA_SOURCE: DataSourceNew = {
-  name: "Admin Data Source",
-  type: "ADMIN",
+  name: "Read/Write Data Source",
+  type: "RW",
   username: "root",
 };
 

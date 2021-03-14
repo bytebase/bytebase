@@ -231,7 +231,7 @@ export type Instance = {
 };
 export type InstanceNew = Omit<Instance, "id">;
 
-export type DataSourceType = "ADMIN" | "RW" | "RO";
+export type DataSourceType = "RW" | "RO";
 // Data Source
 export type DataSource = {
   id: string;

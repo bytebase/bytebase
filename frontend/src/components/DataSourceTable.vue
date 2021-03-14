@@ -112,7 +112,6 @@ export default {
     });
 
     const dataSourceSectionList = computed(() => {
-      const adminList = [];
       const readWriteList = [];
       const readOnlyList = [];
       for (const item of store.getters["dataSource/dataSourceListByInstanceId"](
@@ -125,9 +124,7 @@ export default {
             .toLowerCase()
             .includes(state.searchText.toLowerCase())
         ) {
-          if (item.type === "ADMIN") {
-            adminList.push(item);
-          } else if (item.type === "RW") {
+          if (item.type === "RW") {
             readWriteList.push(item);
           } else if (item.type === "RO") {
             readOnlyList.push(item);
@@ -135,10 +132,6 @@ export default {
         }
       }
       const dataSource = [];
-      dataSource.push({
-        title: "Admin",
-        list: adminList,
-      });
       dataSource.push({
         title: "Read and write",
         list: readWriteList,

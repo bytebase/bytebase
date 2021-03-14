@@ -12,13 +12,10 @@ export default {
       return Date.now() - i * 3600 * 1000;
     },
     type(i) {
-      if (i % 3 == 0) {
-        return "ADMIN";
-      }
-      if (i % 3 == 1) {
+      if (i % 2 == 0) {
         return "RW";
       }
-      if (i % 3 == 2) {
+      if (i % 2 == 1) {
         return "RO";
       }
     },

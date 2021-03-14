@@ -38,7 +38,7 @@ const getters = {
     const list = state.dataSourceListByInstanceId.get(instanceId);
     if (list) {
       for (const item of list) {
-        if (item.type == "ADMIN") {
+        if (item.type == "RW") {
           return item;
         }
       }
