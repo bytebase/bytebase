@@ -61,10 +61,10 @@
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { BBTableColumn } from "../bbkit/types";
+import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 
 import { dataSourceSlug, instanceSlug } from "../utils";
-import { Instance } from "../types";
+import { Instance, Database, DataSource } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -112,39 +112,71 @@ export default {
     });
 
     const dataSourceSectionList = computed(() => {
-      const readWriteList = [];
-      const readOnlyList = [];
-      for (const item of store.getters["dataSource/dataSourceListByInstanceId"](
+      const databaseList = store.getters["database/databaseListByInstanceId"](
         props.instance.id
-      )) {
+      );
+      const dataSourceListByDatabase: Map<string, DataSource[]> = new Map();
+      for (const dataSource of store.getters[
+        "dataSource/dataSourceListByInstanceId"
+      ](props.instance.id)) {
         if (
           !state.searchText ||
-          item.name.toLowerCase().includes(state.searchText.toLowerCase()) ||
-          item.database?.name
+          dataSource.name
+            .toLowerCase()
+            .includes(state.searchText.toLowerCase()) ||
+          dataSource.database?.name
             .toLowerCase()
             .includes(state.searchText.toLowerCase())
         ) {
-          if (item.type === "RW") {
-            readWriteList.push(item);
-          } else if (item.type === "RO") {
-            readOnlyList.push(item);
+          const databaseName = dataSource.database
+            ? dataSource.database.name
+            : "*";
+          const list = dataSourceListByDatabase.get(databaseName);
+          if (list) {
+            list.push(dataSource);
+          } else {
+            dataSourceListByDatabase.set(databaseName, [dataSource]);
           }
         }
       }
-      const dataSource = [];
-      dataSource.push({
-        title: "Read and write",
-        list: readWriteList,
-      });
-      dataSource.push({
-        title: "Read only",
-        list: readOnlyList,
-      });
-      return dataSource;
+
+      dataSourceListByDatabase.forEach((list) =>
+        list.sort((a: DataSource, b: DataSource) => {
+          if (a.type == b.type) {
+            return a.name.localeCompare(b.name, undefined, {
+              sensitivity: "base",
+            });
+          }
+          if (a.type == "RW") {
+            return -1;
+          }
+          return 1;
+        })
+      );
+
+      const sectionList = dataSourceListByDatabase.get("*")
+        ? [
+            {
+              title: "All databases (*)",
+              list: dataSourceListByDatabase.get("*"),
+            },
+          ]
+        : [];
+
+      for (const database of databaseList) {
+        if (dataSourceListByDatabase.get(database.name)) {
+          sectionList.push({
+            title: database.name,
+            list: dataSourceListByDatabase.get(database.name),
+          });
+        }
+      }
+
+      return sectionList;
     });
 
     const clickDataSource = function (section: number, row: number) {
-      const ds = dataSourceSectionList.value[section].list[row];
+      const ds = dataSourceSectionList.value[section].list![row];
       const environmentName = store.getters["environment/environmentById"](
         props.instance.environmentId
       )?.name;
