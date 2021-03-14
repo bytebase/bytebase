@@ -327,7 +327,7 @@ export type NotificationFilter = {
 
 // Store
 export interface AuthState {
-  currentUser: User | null;
+  currentUser: User | undefined;
 }
 
 export interface RoleMappingState {

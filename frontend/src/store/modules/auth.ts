@@ -23,7 +23,7 @@ function convert(user: ResourceObject): User {
 }
 
 const state: () => AuthState = () => ({
-  currentUser: GUEST,
+  currentUser: undefined,
 });
 
 const getters = {
@@ -82,17 +82,19 @@ const actions = {
     return activatedUser;
   },
 
-  async fetchCurrentUser({ commit }: any) {
-    const currentUser = convert((await axios.get("/api/user/1")).data.data);
-
-    localStorage.setItem("bb.auth.user", JSON.stringify(currentUser));
-    commit("setCurrentUser", currentUser);
-    return currentUser;
+  async restoreUser({ commit }: any) {
+    const jsonUser = localStorage.getItem("bb.auth.user");
+    if (jsonUser) {
+      const user: User = JSON.parse(jsonUser);
+      commit("setCurrentUser", user);
+      return user;
+    }
+    return undefined;
   },
 
   async logout({ commit }: any) {
     localStorage.removeItem("bb.auth.user");
-    commit("setCurrentUser", GUEST);
+    commit("setCurrentUser", undefined);
     return GUEST;
   },
 };
