@@ -363,6 +363,18 @@ export default function routes() {
   });
 
   this.delete("/instance/:instanceId", function (schema, request) {
+    // Delete data source and database before instance itself.
+    // Otherwise, the instanceId will be set to null.
+    const dataSourceList = schema.dataSources.where({
+      instanceId: request.params.instanceId,
+    });
+    dataSourceList.models.forEach((item) => item.destroy());
+
+    const databaseList = schema.databases.where({
+      instanceId: request.params.instanceId,
+    });
+    databaseList.models.forEach((item) => item.destroy());
+
     return schema.instances.find(request.params.instanceId).destroy();
   });
 

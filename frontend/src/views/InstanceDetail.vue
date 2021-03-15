@@ -265,6 +265,7 @@ input[type="number"] {
     :style="'CRITICAL'"
     :okText="'Delete'"
     :title="'Delete instance \'' + state.instance.name + '\' ?'"
+    :description="'All associated data sources will also be deleted. You cannot undo this action.'"
     @ok="
       () => {
         state.showDeleteModal = false;
