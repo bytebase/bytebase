@@ -36,7 +36,8 @@
             <div>
               <div class="flex items-center">
                 <h1 class="text-xl font-bold leading-7 text-main truncate">
-                  {{ dataSource.name }} - {{ dataSource.type }}
+                  {{ dataSource.name }} -
+                  <span v-data-source-type>{{ dataSource.type }}</span>
                 </h1>
               </div>
               <dl class="flex flex-col mt-2 sm:flex-row sm:flex-wrap">

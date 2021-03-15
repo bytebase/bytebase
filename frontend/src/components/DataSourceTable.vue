@@ -33,7 +33,7 @@
         <BBTableCell :leftPadding="4">
           <span class="">{{ dataSource.name }}</span>
         </BBTableCell>
-        <BBTableCell>
+        <BBTableCell v-data-source-type>
           {{ dataSource.type }}
         </BBTableCell>
         <BBTableCell>

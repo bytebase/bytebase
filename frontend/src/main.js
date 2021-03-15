@@ -24,6 +24,7 @@ import {
   BBTableSearch,
   BBTableTabFilter,
 } from "./bbkit";
+import dataSourceType from "./directives/data-source-type";
 import { isDemo, isDevOrDemo, humanizeTs, sizeToFit } from "./utils";
 
 if (isDevOrDemo()) {
@@ -46,6 +47,7 @@ app
   // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
   // to re-render the page and remove the event listener required for
   .directive("highlight", highlight)
+  .directive("data-source-type", dataSourceType)
   .use(store)
   .use(router)
   .component("BBAlert", BBAlert)
