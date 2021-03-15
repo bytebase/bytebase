@@ -1,36 +1,49 @@
 <template>
+  <h2 class="text-xl leading-7 font-bold text-main">User list</h2>
   <BBTable
+    class="mt-2"
     :columnList="columnList"
     :dataSource="memberList"
     :showHeader="true"
     :rowClickable="false"
   >
+    <template v-slot:header>
+      <BBTableHeaderCell
+        :leftPadding="4"
+        class="w-auto table-cell"
+        :title="columnList[0].title"
+      />
+      <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
+      <BBTableHeaderCell class="w-8 table-cell" :title="columnList[2].title" />
+    </template>
     <template v-slot:body="{ rowData: member }">
-      <BBTableCell :leftPadding="4" class="w-24">
-        <BBAvatar :username="member.principal.name" />
-        <div class="flex flex-col">
-          <div class="flex flex-row items-center space-x-2">
-            <router-link :to="`/u/${member.principal.id}`" class="normal-link"
-              >{{ member.principal.name }}
-            </router-link>
-            <span
-              v-if="currentUser.id == member.principal.id"
-              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-            >
-              You
+      <BBTableCell :leftPadding="4" class="table-cell">
+        <div class="flex flex-row items-center space-x-2">
+          <BBAvatar :username="member.principal.name" />
+          <div class="flex flex-col">
+            <div class="flex flex-row items-center space-x-2">
+              <router-link :to="`/u/${member.principal.id}`" class="normal-link"
+                >{{ member.principal.name }}
+              </router-link>
+              <span
+                v-if="currentUser.id == member.principal.id"
+                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+              >
+                You
+              </span>
+            </div>
+            <span class="textlabel">
+              {{ member.principal.email }}
             </span>
           </div>
-          <span class="textlabel">
-            {{ member.principal.email }}
-          </span>
         </div>
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell>
         <router-link :to="`/task/${member.taskId}`" class="normal-link"
-          >t/{{ member.taskId }}
+          >task/{{ member.taskId }}
         </router-link>
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell>
         {{ humanizeTs(member.createdTs) }}
       </BBTableCell>
     </template>
