@@ -16,7 +16,7 @@
             </p>
           </div>
           <div v-if="!$props.new">
-            <p class="mt-2 text-sm text-gray-500">
+            <p class="mt-2 text-sm text-control-light">
               #{{ task.id }} opened by
               <span href="#" class="font-medium text-control">{{
                 task.creator.name
