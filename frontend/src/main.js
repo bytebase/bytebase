@@ -10,6 +10,7 @@ import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
   BBAvatar,
+  BBButtonTrash,
   BBContextMenu,
   BBModal,
   BBNotification,
@@ -52,6 +53,7 @@ app
   .use(router)
   .component("BBAlert", BBAlert)
   .component("BBAvatar", BBAvatar)
+  .component("BBButtonTrash", BBButtonTrash)
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)
   .component("BBNotification", BBNotification)
