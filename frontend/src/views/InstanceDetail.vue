@@ -235,13 +235,13 @@ input[type="number"] {
       </div>
       <!-- Update button group -->
       <div v-else class="flex justify-between">
-        <button
-          type="button"
-          class="btn-danger py-2 px-4"
-          @click.prevent="state.showDeleteModal = true"
-        >
-          Delete
-        </button>
+        <BBButtonTrash
+          :buttonText="'Delete this entire instance'"
+          :requireConfirm="true"
+          :confirmTitle="`Are you sure to delete '${state.instance.name}'?`"
+          :confirmDescription="'All associated data sources will also be deleted. You cannot undo this action.'"
+          @confirm="doDelete"
+        />
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
@@ -260,21 +260,6 @@ input[type="number"] {
       <DataSourceTable :instance="state.instance" />
     </div>
   </form>
-  <BBAlert
-    v-if="state.showDeleteModal"
-    :style="'CRITICAL'"
-    :okText="'Delete'"
-    :title="'Delete instance \'' + state.instance.name + '\' ?'"
-    :description="'All associated data sources will also be deleted. You cannot undo this action.'"
-    @ok="
-      () => {
-        state.showDeleteModal = false;
-        doDelete();
-      }
-    "
-    @cancel="state.showDeleteModal = false"
-  >
-  </BBAlert>
   <BBAlert
     v-if="state.showCancelModal"
     :style="'WARN'"
@@ -314,7 +299,6 @@ interface LocalState {
   originalInstance?: Instance;
   instance?: Instance | InstanceNew;
   adminDataSource?: DataSource | DataSourceNew;
-  showDeleteModal: boolean;
   showCancelModal: boolean;
   showPassword: boolean;
 }
@@ -338,17 +322,12 @@ export default {
 
     const state = reactive<LocalState>({
       new: props.instanceSlug.toLowerCase() == "new",
-      showDeleteModal: false,
       showCancelModal: false,
       showPassword: false,
     });
 
     const escHandler = (e: KeyboardEvent) => {
-      if (
-        e.code == "Escape" &&
-        !state.showDeleteModal &&
-        !state.showCancelModal
-      ) {
+      if (e.code == "Escape" && !state.showCancelModal) {
         cancel();
       }
     };
