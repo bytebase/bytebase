@@ -46,15 +46,16 @@ export default {
       });
 
       for (let i = 0; i < 3; i++) {
+        const dbName = "db" + (i + 1);
         const database = server.create("database", {
           instance,
-          name: instance.name + " db" + (i + 1),
+          name: dbName,
         });
 
         server.create("dataSource", {
           instance,
           database,
-          name: instance.name + " " + " rw ds2",
+          name: dbName + " rw ds2",
           type: "RW",
           username: "rootRW",
           password: "pwdRW",
@@ -63,7 +64,7 @@ export default {
         server.create("dataSource", {
           instance,
           database,
-          name: instance.name + " " + " ro ds3",
+          name: dbName + " ro ds3",
           type: "RO",
           username: "rootRO",
           password: "pwdRO",
@@ -72,7 +73,7 @@ export default {
         server.create("dataSource", {
           instance,
           database,
-          name: instance.name + " " + " ro ds4",
+          name: dbName + " ro ds4",
           type: "RO",
           username: "rootRO",
           password: "pwdRO",
