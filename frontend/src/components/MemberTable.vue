@@ -169,10 +169,7 @@ export default {
       const myRoleMapping = store.getters[
         "roleMapping/roleMappingByPrincipalId"
       ](currentUser.value.id);
-      if (myRoleMapping.role != "OWNER") {
-        return false;
-      }
-      return true;
+      return myRoleMapping.role == "OWNER";
     });
 
     const changeRole = (id: RoleMappingId, role: RoleType) => {
