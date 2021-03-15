@@ -1,6 +1,13 @@
 <template>
   <div>
-    <h2 class="text-xl leading-7 font-bold text-main">User list</h2>
+    <div class="flex justify-between items-center">
+      <h2 class="text-xl leading-7 font-bold text-main">User list</h2>
+      <BBTableSearch
+        ref="searchField"
+        :placeholder="'Search user'"
+        @change-text="(text) => changeSearchText(text)"
+      />
+    </div>
     <BBTable
       class="mt-2"
       :columnList="columnList"
@@ -75,9 +82,9 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { DataSourceMemberId } from "../types";
+import { DataSourceMember, DataSourceMemberId } from "../types";
 
 const columnList = [
   {
@@ -91,6 +98,10 @@ const columnList = [
   },
   {},
 ];
+
+interface LocalState {
+  searchText: string;
+}
 
 export default {
   name: "DataSourceMemberTable",
@@ -112,6 +123,10 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
+    const state = reactive<LocalState>({
+      searchText: "",
+    });
+
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareMemberList = () => {
@@ -127,9 +142,19 @@ export default {
 
     watchEffect(prepareMemberList);
 
-    const memberList = computed(() =>
-      store.getters["dataSource/memberListById"](props.dataSourceId)
-    );
+    const memberList = computed(() => {
+      const list = store.getters["dataSource/memberListById"](
+        props.dataSourceId
+      );
+      if (state.searchText) {
+        return list.filter((member: DataSourceMember) =>
+          member.principal.name
+            .toLowerCase()
+            .includes(state.searchText.toLowerCase())
+        );
+      }
+      return list;
+    });
 
     const deleteMember = (id: DataSourceMemberId) => {
       store
@@ -143,11 +168,16 @@ export default {
         });
     };
 
+    const changeSearchText = (searchText: string) => {
+      state.searchText = searchText;
+    };
+
     return {
       columnList,
       currentUser,
       memberList,
       deleteMember,
+      changeSearchText,
     };
   },
 };
