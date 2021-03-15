@@ -246,7 +246,14 @@ export type DataSource = {
   username?: string;
   password?: string;
   // If empty, it means it can access all databases from an instance.
-  database?: string;
+  // TODO: unlike other objects like environment, here we don't expand
+  // to the database object, this is due to timing issue during rendering.
+  // Unlike environment which is a global state that we can load upon
+  // startup, the database info is per instance, and the author haven't
+  // figured out a elegant way to guarantee it's loaded before the router
+  // fetches the specific data source and requires the database info for
+  // the conversion
+  databaseId?: DatabaseId;
 };
 
 export type DataSourceNew = {

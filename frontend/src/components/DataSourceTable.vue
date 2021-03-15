@@ -23,19 +23,15 @@
           class="w-24"
           :title="columnList[0].title"
         />
-        <BBTableHeaderCell class="w-24" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-4" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-4" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-8" :title="columnList[2].title" />
         <BBTableHeaderCell class="w-8" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-8" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
       </template>
       <template v-slot:body="{ rowData: dataSource }">
-        <BBTableCell :leftPadding="4" class="text-gray-500">
+        <BBTableCell :leftPadding="4">
           <span class="">{{ dataSource.name }}</span>
-        </BBTableCell>
-        <BBTableCell>
-          {{ dataSource.database ? dataSource.database.name : "*" }}
         </BBTableCell>
         <BBTableCell>
           {{ dataSource.type }}
@@ -69,9 +65,6 @@ import { Instance, Database, DataSource } from "../types";
 const columnList: BBTableColumn[] = [
   {
     title: "Name",
-  },
-  {
-    title: "Database",
   },
   {
     title: "Type",
@@ -119,18 +112,20 @@ export default {
       for (const dataSource of store.getters[
         "dataSource/dataSourceListByInstanceId"
       ](props.instance.id)) {
+        let databaseName = "*";
+        if (dataSource.databaseId) {
+          databaseName = store.getters["database/databaseById"](
+            dataSource.databaseId,
+            props.instance.id
+          ).name;
+        }
         if (
           !state.searchText ||
           dataSource.name
             .toLowerCase()
             .includes(state.searchText.toLowerCase()) ||
-          dataSource.database?.name
-            .toLowerCase()
-            .includes(state.searchText.toLowerCase())
+          databaseName.toLowerCase().includes(state.searchText.toLowerCase())
         ) {
-          const databaseName = dataSource.database
-            ? dataSource.database.name
-            : "*";
           const list = dataSourceListByDatabase.get(databaseName);
           if (list) {
             list.push(dataSource);
@@ -157,7 +152,7 @@ export default {
       const sectionList = dataSourceListByDatabase.get("*")
         ? [
             {
-              title: "All databases (*)",
+              title: "* (All databases)",
               list: dataSourceListByDatabase.get("*"),
             },
           ]

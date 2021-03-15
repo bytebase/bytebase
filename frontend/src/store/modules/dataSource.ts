@@ -11,19 +11,20 @@ import {
   ResourceIdentifier,
 } from "../../types";
 
-function convert(dataSource: ResourceObject, rootGetters: any): DataSource {
+function convert(dataSource: ResourceObject): DataSource {
   const databaseId = dataSource.relationships!.database.data
     ? (dataSource.relationships!.database.data as ResourceIdentifier).id
     : undefined;
   const instanceId = (dataSource.relationships!.instance
     .data as ResourceIdentifier).id;
-
   return {
     id: dataSource.id,
-    database: databaseId
-      ? rootGetters["database/databaseById"](databaseId, instanceId)
-      : undefined,
-    ...(dataSource.attributes as Omit<DataSource, "id" | "database">),
+    instanceId,
+    databaseId,
+    ...(dataSource.attributes as Omit<
+      DataSource,
+      "id" | "instanceId" | "databaseId"
+    >),
   };
 }
 
@@ -87,13 +88,13 @@ const getters = {
 
 const actions = {
   async fetchDataSourceListByInstanceId(
-    { commit, rootGetters }: any,
+    { commit }: any,
     instanceId: InstanceId
   ) {
     const dataSourceList = (
       await axios.get(`/api/instance/${instanceId}/datasource`)
     ).data.data.map((datasource: ResourceObject) => {
-      return convert(datasource, rootGetters);
+      return convert(datasource);
     });
 
     commit("setDataSourceListByInstanceId", { instanceId, dataSourceList });
@@ -102,7 +103,7 @@ const actions = {
   },
 
   async fetchDataSourceById(
-    { commit, rootGetters }: any,
+    { commit }: any,
     {
       instanceId,
       dataSourceId,
@@ -113,8 +114,7 @@ const actions = {
         await axios.get(
           `/api/instance/${instanceId}/datasource/${dataSourceId}`
         )
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("setDataSourceById", {
@@ -125,7 +125,7 @@ const actions = {
   },
 
   async createDataSource(
-    { commit, rootGetters }: any,
+    { commit }: any,
     {
       instanceId,
       newDataSource,
@@ -139,8 +139,7 @@ const actions = {
             attributes: newDataSource,
           },
         })
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("appendDataSourceByInstanceId", {
@@ -152,7 +151,7 @@ const actions = {
   },
 
   async patchDataSource(
-    { commit, rootGetters }: any,
+    { commit }: any,
     {
       instanceId,
       dataSource,
@@ -173,8 +172,7 @@ const actions = {
             },
           }
         )
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("setDataSourceById", {

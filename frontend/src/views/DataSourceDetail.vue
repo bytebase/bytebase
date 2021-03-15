@@ -65,7 +65,8 @@
                     :to="`/instance/${instanceSlug}`"
                     class="normal-link"
                   >
-                    {{ instance.name }}
+                    {{ instance.name }} -
+                    {{ databaseName }}
                   </router-link>
                 </dd>
                 <dt class="sr-only">Environment</dt>
@@ -177,9 +178,21 @@ export default {
       return store.getters["instance/instanceById"](instanceId);
     });
 
+    const databaseName = computed(() => {
+      if (dataSource.value.databaseId) {
+        const database = store.getters["database/databaseById"](
+          dataSource.value.databaseId,
+          instanceId
+        );
+        return database.name;
+      }
+      return "* (All databases)";
+    });
+
     return {
       dataSource,
       instance,
+      databaseName,
     };
   },
 };
