@@ -13,7 +13,7 @@ input[type="number"] {
 </style>
 
 <template>
-  <form class="px-4 space-y-6 divide-y divide-control-border">
+  <form class="px-4 space-y-6">
     <!-- Instance Name -->
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
@@ -118,7 +118,7 @@ input[type="number"] {
       </div>
     </div>
     <!-- Read/Write Datasource Info -->
-    <div class="pt-6">
+    <div v-if="state.new" class="py-6 border-t border-b divide-control-border">
       <div class="flex justify-between">
         <div>
           <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -174,7 +174,7 @@ input[type="number"] {
               >
                 <svg
                   v-if="state.showPassword"
-                  class="w-7 h-7"
+                  class="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -189,7 +189,7 @@ input[type="number"] {
                 </svg>
                 <svg
                   v-else
-                  class="w-7 h-7"
+                  class="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -217,7 +217,7 @@ input[type="number"] {
     <!-- Action Button Group -->
     <div>
       <!-- Create button group -->
-      <div v-if="state.new" class="flex justify-end pt-5">
+      <div v-if="state.new" class="flex justify-end">
         <button
           type="button"
           class="btn-normal py-2 px-4"
@@ -234,7 +234,7 @@ input[type="number"] {
         </button>
       </div>
       <!-- Update button group -->
-      <div v-else class="flex justify-between pt-5">
+      <div v-else class="flex justify-between">
         <button
           type="button"
           class="btn-danger py-2 px-4"
@@ -242,27 +242,21 @@ input[type="number"] {
         >
           Delete
         </button>
-        <div>
-          <button
-            type="button"
-            class="btn-normal py-2 px-4"
-            @click.prevent="cancel"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-            :disabled="!valueChanged"
-            @click.prevent="doUpdate(state.instance, state.adminDataSource)"
-          >
-            Update
-          </button>
-        </div>
+        <button
+          type="button"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="!valueChanged"
+          @click.prevent="doUpdate(state.instance)"
+        >
+          Update
+        </button>
       </div>
     </div>
 
-    <div v-if="!state.new" class="pt-6 space-y-4">
+    <div
+      v-if="!state.new"
+      class="py-6 space-y-4 border-t divide-control-border"
+    >
       <DataSourceTable :instance="state.instance" />
     </div>
   </form>
@@ -318,7 +312,6 @@ interface LocalState {
   new: boolean;
   originalInstance?: Instance;
   instance?: Instance | InstanceNew;
-  originalAdminDataSource?: DataSource;
   adminDataSource?: DataSource | DataSourceNew;
   showDeleteModal: boolean;
   showCancelModal: boolean;
@@ -375,14 +368,6 @@ export default {
       state.instance = cloneDeep(state.originalInstance);
     };
 
-    const assignAdminDataSource = (dataSource: DataSource | DataSourceNew) => {
-      if (!state.new) {
-        state.originalAdminDataSource = dataSource as DataSource;
-      }
-      // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
-      state.adminDataSource = cloneDeep(state.originalAdminDataSource);
-    };
-
     const updateInstance = (field: string, value: string) => {
       (state.instance as any)[field] = value;
     };
@@ -418,25 +403,10 @@ export default {
       assignInstance(
         store.getters["instance/instanceById"](idFromSlug(props.instanceSlug))
       );
-
-      // On the other hand, we need to fetch data source remotely first and
-      // because the operation is async, we need to have a init object to avoid
-      // adding v-if="state.adminDataSource" guard
-      assignAdminDataSource(cloneDeep(INIT_DATA_SOURCE));
-      const dataSource = store.getters[
-        "dataSource/adminDataSourceByInstanceId"
-      ](idFromSlug(props.instanceSlug));
-      if (dataSource) {
-        assignAdminDataSource(dataSource);
-      }
     }
 
     const valueChanged = computed(() => {
-      return (
-        state.new ||
-        !isEqual(state.originalInstance, state.instance) ||
-        !isEqual(state.originalAdminDataSource, state.adminDataSource)
-      );
+      return state.new || !isEqual(state.originalInstance, state.instance);
     });
 
     const goBack = () => {
@@ -485,34 +455,20 @@ export default {
         });
     };
 
-    const doUpdate = (
-      updatedInstance: Instance,
-      updatedAdminDataSource: DataSource
-    ) => {
+    const doUpdate = (updatedInstance: Instance) => {
       store
         .dispatch("instance/patchInstance", updatedInstance)
         .then((instance) => {
           assignInstance(instance);
 
-          store
-            .dispatch("dataSource/patchDataSource", {
-              instanceId: updatedInstance.id,
-              dataSource: updatedAdminDataSource,
-            })
-            .then((dataSource) => {
-              assignAdminDataSource(dataSource);
-              store.dispatch("notification/pushNotification", {
-                module: "bytebase",
-                style: "SUCCESS",
-                title: `Successfully updated instance '${updatedInstance.name}'.`,
-              });
-              router.push({
-                name: "workspace.instance",
-              });
-            })
-            .catch((error) => {
-              console.log(error);
-            });
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully updated instance '${updatedInstance.name}'.`,
+          });
+          router.push({
+            name: "workspace.instance",
+          });
         })
         .catch((error) => {
           console.log(error);
@@ -521,28 +477,18 @@ export default {
 
     const doDelete = () => {
       store
-        .dispatch("dataSource/deleteDataSourceById", {
-          id: state.originalAdminDataSource!.id,
-          instanceId: state.originalInstance!.id,
-        })
+        .dispatch("instance/deleteInstanceById", state.originalInstance!.id)
         .then(() => {
-          store
-            .dispatch("instance/deleteInstanceById", state.originalInstance!.id)
-            .then(() => {
-              store.dispatch("notification/pushNotification", {
-                module: "bytebase",
-                style: "SUCCESS",
-                title: `Successfully deleted instance '${
-                  state.originalInstance!.name
-                }'.`,
-              });
-              router.push({
-                name: "workspace.instance",
-              });
-            })
-            .catch((error) => {
-              console.log(error);
-            });
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully deleted instance '${
+              state.originalInstance!.name
+            }'.`,
+          });
+          router.push({
+            name: "workspace.instance",
+          });
         })
         .catch((error) => {
           console.log(error);

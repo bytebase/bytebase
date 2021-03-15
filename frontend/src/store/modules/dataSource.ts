@@ -6,7 +6,6 @@ import {
   DataSourceMember,
   DataSourceMemberId,
   DataSourceState,
-  DataSourceType,
   InstanceId,
   ResourceObject,
   ResourceIdentifier,
@@ -49,7 +48,6 @@ function convertMember(
 
 const state: () => DataSourceState = () => ({
   dataSourceListByInstanceId: new Map(),
-  dataSourceById: new Map(),
   memberListById: new Map(),
 });
 
@@ -75,9 +73,32 @@ const getters = {
   },
 
   dataSourceById: (state: DataSourceState) => (
-    dataSourceId: DataSourceId
+    dataSourceId: DataSourceId,
+    instanceId?: InstanceId
   ): DataSource | undefined => {
-    return state.dataSourceById.get(dataSourceId);
+    let dataSource = undefined;
+    if (instanceId) {
+      const list = state.dataSourceListByInstanceId.get(instanceId) || [];
+      dataSource = list.find((item) => item.id == dataSourceId);
+    } else {
+      for (let [_, list] of state.dataSourceListByInstanceId) {
+        dataSource = list.find((item) => item.id == dataSourceId);
+        if (dataSource) {
+          break;
+        }
+      }
+    }
+    if (dataSource) {
+      return dataSource;
+    }
+    return {
+      id: "-1",
+      instanceId: "-1",
+      name: "<<Unknown data source>>",
+      createdTs: 0,
+      lastUpdatedTs: 0,
+      type: "RO",
+    };
   },
 
   memberListById: (state: DataSourceState) => (
@@ -118,10 +139,11 @@ const actions = {
       ).data.data
     );
 
-    commit("setDataSourceById", {
-      dataSourceId,
+    commit("upsertDataSourceInListByInstanceId", {
+      instanceId,
       dataSource,
     });
+
     return dataSource;
   },
 
@@ -143,9 +165,9 @@ const actions = {
       ).data.data
     );
 
-    commit("appendDataSourceByInstanceId", {
-      dataSource: createdDataSource,
+    commit("upsertDataSourceInListByInstanceId", {
       instanceId,
+      dataSource: createdDataSource,
     });
 
     return createdDataSource;
@@ -176,14 +198,9 @@ const actions = {
       ).data.data
     );
 
-    commit("setDataSourceById", {
-      instanceId: instanceId,
-      updatedDataSource,
-    });
-
-    commit("replaceDataSourceInListByInstanceId", {
-      instanceId: instanceId,
-      updatedDataSource,
+    commit("upsertDataSourceInListByInstanceId", {
+      instanceId,
+      dataSource: updatedDataSource,
     });
 
     return updatedDataSource;
@@ -199,11 +216,6 @@ const actions = {
     await axios.delete(
       `/api/instance/${instanceId}/datasource/${dataSourceId}`
     );
-
-    commit("setDataSourceById", {
-      dataSourceId: dataSourceId,
-      dataSource: null,
-    });
 
     commit("deleteDataSourceInListById", dataSourceId);
   },
@@ -265,20 +277,7 @@ const mutations = {
     state.dataSourceListByInstanceId.set(instanceId, dataSourceList);
   },
 
-  setDataSourceById(
-    state: DataSourceState,
-    {
-      dataSourceId,
-      dataSource,
-    }: {
-      dataSourceId: DataSourceId;
-      dataSource: DataSource;
-    }
-  ) {
-    state.dataSourceById.set(dataSourceId, dataSource);
-  },
-
-  appendDataSourceByInstanceId(
+  upsertDataSourceInListByInstanceId(
     state: DataSourceState,
     {
       instanceId,
@@ -290,30 +289,14 @@ const mutations = {
   ) {
     const list = state.dataSourceListByInstanceId.get(instanceId);
     if (list) {
-      list.push(dataSource);
+      const i = list.findIndex((item: DataSource) => item.id == dataSource.id);
+      if (i != -1) {
+        list[i] = dataSource;
+      } else {
+        list.push(dataSource);
+      }
     } else {
       state.dataSourceListByInstanceId.set(instanceId, [dataSource]);
-    }
-  },
-
-  replaceDataSourceInListByInstanceId(
-    state: DataSourceState,
-    {
-      instanceId,
-      updatedDataSource,
-    }: {
-      instanceId: InstanceId;
-      updatedDataSource: DataSource;
-    }
-  ) {
-    const list = state.dataSourceListByInstanceId.get(instanceId);
-    if (list) {
-      const i = list.findIndex(
-        (item: DataSource) => item.id == updatedDataSource.id
-      );
-      if (i != -1) {
-        list[i] = updatedDataSource;
-      }
     }
   },
 

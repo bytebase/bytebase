@@ -380,7 +380,6 @@ export interface InstanceState {
 
 export interface DataSourceState {
   dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
-  dataSourceById: Map<DataSourceId, DataSource>;
   memberListById: Map<DataSourceId, DataSourceMember[]>;
 }
 
