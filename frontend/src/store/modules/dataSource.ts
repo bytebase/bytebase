@@ -4,6 +4,7 @@ import {
   DataSource,
   DataSourceNew,
   DataSourceMember,
+  DataSourceMemberId,
   DataSourceState,
   DataSourceType,
   InstanceId,
@@ -229,6 +230,25 @@ const actions = {
 
     return dataSourceMemberList;
   },
+
+  async deleteDataSourceMemberById(
+    { state, commit }: { state: DataSourceState; commit: any },
+    {
+      instanceId,
+      dataSourceId,
+      dataSourceMemberId,
+    }: {
+      instanceId: InstanceId;
+      dataSourceId: DataSourceId;
+      dataSourceMemberId: DataSourceMemberId;
+    }
+  ) {
+    await axios.delete(
+      `/api/instance/${instanceId}/datasource/${dataSourceId}/member/${dataSourceMemberId}`
+    );
+
+    commit("deleteDataSourceMemberById", { dataSourceId, dataSourceMemberId });
+  },
 };
 
 const mutations = {
@@ -324,6 +344,24 @@ const mutations = {
     }
   ) {
     state.memberListById.set(dataSourceId, dataSourceMemberList);
+  },
+
+  deleteDataSourceMemberById(
+    state: DataSourceState,
+    {
+      dataSourceId,
+      dataSourceMemberId,
+    }: { dataSourceId: DataSourceId; dataSourceMemberId: DataSourceMemberId }
+  ) {
+    const list = state.memberListById.get(dataSourceId);
+    if (list) {
+      const i = list.findIndex(
+        (item: DataSourceMember) => item.id == dataSourceMemberId
+      );
+      if (i != -1) {
+        list.splice(i, 1);
+      }
+    }
   },
 };
 

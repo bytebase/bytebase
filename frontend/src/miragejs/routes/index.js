@@ -458,7 +458,7 @@ export default function routes() {
             }
           );
         }
-        dataSource.destroy();
+        return dataSource.destroy();
       }
       return new Response(
         404,
@@ -485,6 +485,44 @@ export default function routes() {
           {},
           { errors: "Data source " + request.params.id + " not found" }
         );
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Instance " + request.params.instanceId + " not found" }
+      );
+    }
+  );
+
+  this.delete(
+    "/instance/:instanceId/datasource/:dataSourceId/member/:id",
+    function (schema, request) {
+      const instance = schema.instances.find(request.params.instanceId);
+      if (instance) {
+        const dataSource = schema.dataSources.find(request.params.dataSourceId);
+        if (!dataSource) {
+          return new Response(
+            404,
+            {},
+            {
+              errors:
+                "Data source " + request.params.dataSourceId + " not found",
+            }
+          );
+        }
+        const dataSourceMember = schema.dataSourceMembers.find(
+          request.params.id
+        );
+        if (!dataSourceMember) {
+          return new Response(
+            404,
+            {},
+            {
+              errors: "Data source member " + request.params.id + " not found",
+            }
+          );
+        }
+        return dataSourceMember.destroy();
       }
       return new Response(
         404,

@@ -15,6 +15,11 @@
       />
       <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
       <BBTableHeaderCell class="w-8 table-cell" :title="columnList[2].title" />
+      <BBTableHeaderCell
+        v-if="allowEdit"
+        class="w-8 table-cell"
+        :title="columnList[3].title"
+      />
     </template>
     <template v-slot:body="{ rowData: member }">
       <BBTableCell :leftPadding="4" class="table-cell">
@@ -46,6 +51,15 @@
       <BBTableCell>
         {{ humanizeTs(member.createdTs) }}
       </BBTableCell>
+      <BBTableCell>
+        <BBButtonTrash
+          v-if="allowEdit"
+          :requireConfirm="true"
+          :okText="'Revoke'"
+          :confirmTitle="`Are you sure to revoke access from '${member.principal.name}'`"
+          @confirm="deleteMember(member.id)"
+        />
+      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -53,6 +67,7 @@
 <script lang="ts">
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
+import { DataSourceMemberId } from "../types";
 
 const columnList = [
   {
@@ -64,6 +79,7 @@ const columnList = [
   {
     title: "Added time",
   },
+  {},
 ];
 
 export default {
@@ -101,10 +117,31 @@ export default {
       store.getters["dataSource/memberListById"](props.dataSourceId)
     );
 
+    const allowEdit = computed(() => {
+      const myRoleMapping = store.getters[
+        "roleMapping/roleMappingByPrincipalId"
+      ](currentUser.value.id);
+      return myRoleMapping.role == "OWNER" || myRoleMapping.role == "DBA";
+    });
+
+    const deleteMember = (id: DataSourceMemberId) => {
+      store
+        .dispatch("dataSource/deleteDataSourceMemberById", {
+          instanceId: props.instanceId,
+          dataSourceId: props.dataSourceId,
+          dataSourceMemberId: id,
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
     return {
       columnList,
       currentUser,
       memberList,
+      allowEdit,
+      deleteMember,
     };
   },
 };
