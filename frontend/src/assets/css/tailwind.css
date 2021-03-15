@@ -147,7 +147,7 @@
 }
 
 .normal-link {
-  @apply text-main hover:underline focus:outline-none;
+  @apply text-blue-600 hover:underline hover:text-blue-800 focus:outline-none;
 }
 
 .icon-link {
