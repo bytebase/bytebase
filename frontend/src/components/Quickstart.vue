@@ -42,7 +42,7 @@
                     />
                   </svg>
                 </template>
-                <template v-else-if="index == 0 || introList[index - 1].done">
+                <template v-else-if="isStepActive(index)">
                   <span
                     class="absolute h-4 w-4 rounded-full bg-blue-200"
                   ></span>
@@ -125,6 +125,15 @@ export default {
       },
     ]);
 
+    const isStepActive = (index: number): boolean => {
+      for (let i = index - 1; i >= 0; i--) {
+        if (!introList[i].done) {
+          return false;
+        }
+      }
+      return !introList[index].done;
+    };
+
     const hideQuickstart = () => {
       store
         .dispatch("uistate/saveIntroStateByKey", {
@@ -146,7 +155,7 @@ export default {
         });
     };
 
-    return { introList, hideQuickstart };
+    return { introList, isStepActive, hideQuickstart };
   },
 };
 </script>
