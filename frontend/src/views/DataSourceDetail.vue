@@ -214,9 +214,9 @@
                     class="textfield"
                     v-model="state.editingDataSource.username"
                   />
-                  <template v-else>
+                  <div v-else class="mt-2.5 mb-3">
                     {{ dataSource.username }}
-                  </template>
+                  </div>
                 </dd>
               </div>
 
@@ -277,10 +277,12 @@
                     class="textfield"
                     v-model="state.editingDataSource.password"
                   />
-                  <template v-else-if="state.showPassword">
-                    {{ dataSource.password }}
-                  </template>
-                  <template v-else> ****** </template>
+                  <div v-else class="mt-2.5 mb-3">
+                    <template v-if="state.showPassword">
+                      {{ dataSource.password }}
+                    </template>
+                    <template v-else> ****** </template>
+                  </div>
                 </dd>
               </div>
             </dl>
