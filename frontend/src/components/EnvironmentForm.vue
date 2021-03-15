@@ -36,16 +36,14 @@
       </button>
     </div>
     <!-- Update button group -->
-    <div v-else class="flex justify-between pt-5">
+    <div v-else class="flex justify-between items-center pt-5">
       <div>
-        <button
-          v-show="allowDelete"
-          type="button"
-          class="btn-danger py-2 px-4"
-          @click.prevent="$emit('delete')"
-        >
-          Delete
-        </button>
+        <BBButtonTrash
+          v-if="allowDelete"
+          :buttonText="'Delete this environment'"
+          :requireConfirm="false"
+          @confirm="$emit('delete')"
+        />
       </div>
       <div>
         <button

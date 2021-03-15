@@ -11,6 +11,7 @@
     :style="'CRITICAL'"
     :okText="'Delete'"
     :title="'Delete environment \'' + state.environment.name + '\' ?'"
+    :description="'You cannot undo this action.'"
     @ok="
       () => {
         state.showDeleteModal = false;
