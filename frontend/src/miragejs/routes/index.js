@@ -470,6 +470,12 @@ export default function routes() {
             }
           );
         }
+        const dataSourceMemberList = schema.dataSourceMembers.where(
+          (dataSourceMember) => {
+            return dataSourceMember.dataSourceId == dataSource.id;
+          }
+        );
+        dataSourceMemberList.models.forEach((member) => member.destroy());
         return dataSource.destroy();
       }
       return new Response(

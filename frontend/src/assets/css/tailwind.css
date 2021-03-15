@@ -63,7 +63,7 @@
 }
 
 .btn-secondary {
-  @apply select-none inline-flex text-main hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex items-center text-main hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-select {
@@ -75,7 +75,7 @@
 }
 
 .btn-icon {
-  @apply cursor-pointer select-none rounded-full text-control bg-transparent hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
+  @apply cursor-pointer flex flex-row items-center select-none rounded-full text-control bg-transparent hover:text-control-hover disabled:opacity-50 disabled:cursor-not-allowed focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1;
 }
 
 .btn-icon-primary {

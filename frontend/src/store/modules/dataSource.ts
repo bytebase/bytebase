@@ -203,7 +203,10 @@ const actions = {
       `/api/instance/${instanceId}/datasource/${dataSourceId}`
     );
 
-    commit("deleteDataSourceInListById", dataSourceId);
+    commit("deleteDataSourceInListById", {
+      instanceId,
+      dataSourceId,
+    });
   },
 
   async fetchMemberListById(

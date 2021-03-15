@@ -172,25 +172,26 @@
               <span>Save</span>
             </button>
           </template>
-          <button
-            v-else
-            type="button"
-            class="btn-normal"
-            @click.prevent="editDataSource"
-          >
-            <!-- Heroicon name: solid/pencil -->
-            <svg
-              class="-ml-1 mr-2 h-5 w-5 text-control-light"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
+          <template v-else>
+            <button
+              type="button"
+              class="btn-normal"
+              @click.prevent="editDataSource"
             >
-              <path
-                d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-              ></path>
-            </svg>
-            <span>Edit</span>
-          </button>
+              <!-- Heroicon name: solid/pencil -->
+              <svg
+                class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                ></path>
+              </svg>
+              <span>Edit</span>
+            </button>
+          </template>
         </div>
       </div>
 
@@ -288,10 +289,24 @@
             </dl>
           </div>
 
+          <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
+            v-if="dataSource.id != '-1'"
+            :allowEdit="allowEdit"
             :instanceId="instance.id"
             :dataSourceId="dataSource.id"
           />
+
+          <div class="mt-6 flex justify-start">
+            <BBButtonTrash
+              v-if="allowEdit"
+              :buttonText="'Delete this entire data source'"
+              :requireConfirm="true"
+              :confirmTitle="`Are you sure to delete '${dataSource.name}'?`"
+              :confirmDescription="'All existing users using this data source to connect the database will fail. You cannot undo this action.'"
+              @confirm="doDelete"
+            />
+          </div>
         </div>
       </form>
     </main>
@@ -301,6 +316,7 @@
 <script lang="ts">
 import { computed, nextTick, reactive, ref } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
@@ -330,6 +346,8 @@ export default {
     const editNameTextField = ref();
 
     const store = useStore();
+    const router = useRouter();
+
     const instanceId = idFromSlug(props.instanceSlug);
     const dataSourceId = idFromSlug(props.dataSourceSlug);
 
@@ -337,6 +355,8 @@ export default {
       editing: false,
       showPassword: false,
     });
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const dataSource = computed(() => {
       return store.getters["dataSource/dataSourceById"](
@@ -358,6 +378,13 @@ export default {
         return database.name;
       }
       return "* (All databases)";
+    });
+
+    const allowEdit = computed(() => {
+      const myRoleMapping = store.getters[
+        "roleMapping/roleMappingByPrincipalId"
+      ](currentUser.value.id);
+      return myRoleMapping.role == "OWNER" || myRoleMapping.role == "DBA";
     });
 
     const allowSave = computed(() => {
@@ -394,16 +421,38 @@ export default {
         });
     };
 
+    const doDelete = () => {
+      const name = dataSource.value.name;
+      store
+        .dispatch("dataSource/deleteDataSourceById", {
+          instanceId,
+          dataSourceId,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully deleted data source '${name}'.`,
+          });
+          router.push(`/instance/${props.instanceSlug}`);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    };
+
     return {
       editNameTextField,
       state,
       dataSource,
       instance,
       databaseName,
+      allowEdit,
       allowSave,
       editDataSource,
       cancelEdit,
       saveEdit,
+      doDelete,
     };
   },
 };

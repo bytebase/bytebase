@@ -94,6 +94,10 @@ export default {
       required: true,
       type: String,
     },
+    allowEdit: {
+      required: true,
+      type: Boolean,
+    },
   },
   setup(props, ctx) {
     const store = useStore();
@@ -117,13 +121,6 @@ export default {
       store.getters["dataSource/memberListById"](props.dataSourceId)
     );
 
-    const allowEdit = computed(() => {
-      const myRoleMapping = store.getters[
-        "roleMapping/roleMappingByPrincipalId"
-      ](currentUser.value.id);
-      return myRoleMapping.role == "OWNER" || myRoleMapping.role == "DBA";
-    });
-
     const deleteMember = (id: DataSourceMemberId) => {
       store
         .dispatch("dataSource/deleteDataSourceMemberById", {
@@ -140,7 +137,6 @@ export default {
       columnList,
       currentUser,
       memberList,
-      allowEdit,
       deleteMember,
     };
   },
