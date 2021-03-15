@@ -24,7 +24,7 @@ import {
   BBTableSearch,
   BBTableTabFilter,
 } from "./bbkit";
-import { isDevOrDemo, humanizeTs, sizeToFit } from "./utils";
+import { isDemo, isDevOrDemo, humanizeTs, sizeToFit } from "./utils";
 
 if (isDevOrDemo()) {
   makeServer();
@@ -37,6 +37,7 @@ app.config.globalProperties.window = window;
 app.config.globalProperties.console = console;
 app.config.globalProperties.moment = moment;
 app.config.globalProperties.humanizeTs = humanizeTs;
+app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
 

@@ -1,23 +1,13 @@
 <template>
-  <!-- Suspense is experimental, be aware of the potential change -->
-  <Suspense>
-    <template #default>
-      <ProvideContext>
-        <div class="relative h-screen overflow-hidden flex flex-col">
-          <BannerDemo v-if="isDemo()" />
-          <nav class="bg-white border-b border-block-border">
-            <div class="max-w-full mx-auto px-4">
-              <DashboardHeader />
-            </div>
-          </nav>
-          <router-view name="body" />
-        </div>
-      </ProvideContext>
-    </template>
-    <template #fallback>
-      <span>Loading...</span>
-    </template>
-  </Suspense>
+  <div class="relative h-screen overflow-hidden flex flex-col">
+    <BannerDemo v-if="isDemo" />
+    <nav class="bg-white border-b border-block-border">
+      <div class="max-w-full mx-auto px-4">
+        <DashboardHeader />
+      </div>
+    </nav>
+    <router-view name="body" />
+  </div>
   <BBNotification
     :placement="'BOTTOM_RIGHT'"
     :showing="state.notification != null"
@@ -36,7 +26,6 @@ import ProvideContext from "../components/ProvideContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import { Notification } from "../types";
-import { isDemo } from "../utils";
 
 const NOTIFICAITON_DURATION = 8000;
 
@@ -90,7 +79,6 @@ export default {
 
     return {
       state,
-      isDemo,
       removeNotification,
     };
   },
