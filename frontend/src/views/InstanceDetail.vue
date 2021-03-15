@@ -13,7 +13,7 @@ input[type="number"] {
 </style>
 
 <template>
-  <form class="px-4 space-y-6">
+  <form class="px-6 space-y-6">
     <!-- Instance Name -->
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
       <div class="sm:col-span-2">
