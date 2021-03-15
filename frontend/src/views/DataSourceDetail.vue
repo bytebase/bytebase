@@ -195,11 +195,56 @@
         </div>
       </div>
 
-      <form class="mt-6">
+      <div class="mt-6">
         <div class="max-w-6xl mx-auto px-4">
           <!-- Description list -->
           <div class="max-w-5xl mx-auto px-4 mb-6">
             <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <dt class="text-sm font-medium text-control-light">
+                  Connection string
+                </dt>
+                <dd class="mt-2.5 text-sm text-main">
+                  <div class="space-y-4">
+                    <div
+                      class="flex"
+                      v-for="(connection, index) in connectionStringList"
+                      :key="index"
+                    >
+                      <span
+                        class="whitespace-nowrap inline-flex items-center px-3 rounded-l-md border border-l border-r-0 border-control-border bg-gray-50 text-control-light sm:text-sm"
+                      >
+                        {{ connection.name }}
+                      </span>
+                      <span
+                        class="flex-1 min-w-0 block w-full inline-flex items-center px-3 py-2 border border-r border-control-border sm:text-sm"
+                      >
+                        {{ connection.value }}
+                      </span>
+                      <button
+                        class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+                        @click.prevent="copyText(connection)"
+                      >
+                        <svg
+                          class="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                          ></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </dd>
+              </div>
+
               <div class="sm:col-span-1">
                 <dt class="text-sm font-medium text-control-light">
                   Username<span v-if="state.editing" class="text-red-600"
@@ -308,7 +353,7 @@
             />
           </div>
         </div>
-      </form>
+      </div>
     </main>
   </div>
 </template>
@@ -319,9 +364,15 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug } from "../utils";
 import { DataSource } from "../types";
+
+type Connection = {
+  name: string;
+  value: string;
+};
 
 interface LocalState {
   editing: boolean;
@@ -378,6 +429,60 @@ export default {
         return database.name;
       }
       return "* (All databases)";
+    });
+
+    const connectionStringList = computed<Connection[]>(() => {
+      // If host starts with "/", we assume it's a local socket.
+      const isSocket = instance.value.host.startsWith("/");
+      const cliOptionList = isSocket
+        ? [`mysql -S ${instance.value.host}`]
+        : [`mysql -h ${instance.value.host}`];
+      if (instance.value.port) {
+        cliOptionList.push(`-P ${instance.value.port}`);
+      }
+      if (dataSource.value.databaseId) {
+        cliOptionList.push(`-D ${databaseName.value}`);
+      }
+      if (dataSource.value.username) {
+        cliOptionList.push(`-u ${dataSource.value.username}`);
+      }
+      if (dataSource.value.password) {
+        if (state.showPassword) {
+          cliOptionList.push(`-p${dataSource.value.password}`);
+        } else {
+          cliOptionList.push(`-p`);
+        }
+      }
+
+      let jdbcString = `JDBC can't connect to socket ${instance.value.host} `;
+      if (!isSocket) {
+        jdbcString = `jdbc:mysql://${instance.value.host}`;
+        if (instance.value.port) {
+          jdbcString += `:${instance.value.port}`;
+        }
+        if (dataSource.value.databaseId) {
+          jdbcString += `/${databaseName.value}`;
+        }
+        const optionList = [];
+        if (dataSource.value.username) {
+          optionList.push(`user=${dataSource.value.username}`);
+        }
+        if (dataSource.value.password) {
+          if (state.showPassword) {
+            optionList.push(`password=${dataSource.value.password}`);
+          } else {
+            optionList.push(`password=******`);
+          }
+        }
+        if (optionList.length > 0) {
+          jdbcString += `&${optionList.join("&")}`;
+        }
+      }
+
+      return [
+        { name: "CLI", value: cliOptionList.join(" ") },
+        { name: "JDBC", value: jdbcString },
+      ];
     });
 
     const allowEdit = computed(() => {
@@ -441,18 +546,30 @@ export default {
         });
     };
 
+    const copyText = (connection: Connection) => {
+      toClipboard(connection.value).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "INFO",
+          title: `${connection.name} string copied to clipboard.`,
+        });
+      });
+    };
+
     return {
       editNameTextField,
       state,
       dataSource,
       instance,
       databaseName,
+      connectionStringList,
       allowEdit,
       allowSave,
       editDataSource,
       cancelEdit,
       saveEdit,
       doDelete,
+      copyText,
     };
   },
 };

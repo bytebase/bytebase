@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import moment from "moment";
+import VueClipboard from "vue3-clipboard";
 import highlight from "./bbkit/directives/highlight";
 import App from "./App.vue";
 import { store } from "./store";
@@ -51,6 +52,7 @@ app
   .directive("data-source-type", dataSourceType)
   .use(store)
   .use(router)
+  .use(VueClipboard)
   .component("BBAlert", BBAlert)
   .component("BBAvatar", BBAvatar)
   .component("BBButtonTrash", BBButtonTrash)

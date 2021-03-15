@@ -8,6 +8,7 @@
     "demo": "vite build --mode demo"
   },
   "dependencies": {
+    "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
     "@types/uuid": "^8.3.0",
@@ -27,6 +28,7 @@
     "uuid": "^8.3.2",
     "vue": "^3.0.5",
     "vue-router": "^4.0.3",
+    "vue3-clipboard": "^1.0.0",
     "vuex": "^4.0.0"
   },
   "devDependencies": {
