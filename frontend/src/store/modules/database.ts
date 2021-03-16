@@ -5,15 +5,15 @@ import {
   InstanceId,
   DatabaseState,
   ResourceObject,
-  Instance,
+  ResourceIdentifier,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
 import instance from "./instance";
 
 function convert(database: ResourceObject, rootGetters: any): Database {
-  const instance = rootGetters["instance/instanceById"](
-    database.attributes.instanceId
-  );
+  const instanceId = (database.relationships!.instance
+    .data as ResourceIdentifier).id;
+  const instance = rootGetters["instance/instanceById"](instanceId);
   return {
     id: database.id,
     instance,
