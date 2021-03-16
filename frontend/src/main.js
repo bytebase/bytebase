@@ -28,7 +28,7 @@ import {
   BBTableTabFilter,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
-import { isDemo, isDevOrDemo, humanizeTs, sizeToFit } from "./utils";
+import { isDemo, isDevOrDemo, humanizeTs, sizeToFit, urlfy } from "./utils";
 
 if (isDevOrDemo()) {
   makeServer();
@@ -44,6 +44,7 @@ app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
+app.config.globalProperties.sizeToFit = urlfy;
 
 app
   // Need to use a directive on the element.
