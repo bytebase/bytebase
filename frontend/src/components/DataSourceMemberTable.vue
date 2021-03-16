@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center">
-      <h2 class="text-xl leading-7 font-bold text-main">User list</h2>
+      <h2 class="text-lg leading-7 font-medium text-main">User list</h2>
       <BBTableSearch
         ref="searchField"
         :placeholder="'Search user'"

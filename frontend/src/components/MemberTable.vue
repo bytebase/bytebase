@@ -1,5 +1,5 @@
 <template>
-  <p class="text-xl font-bold leading-7 text-main">Current members</p>
+  <p class="text-lg font-medium leading-7 text-main">Current members</p>
   <BBTable
     class="mt-2"
     :columnList="columnList"
