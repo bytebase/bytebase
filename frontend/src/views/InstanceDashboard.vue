@@ -8,19 +8,18 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <InstanceTable :instanceList="filteredList(state.instanceList)" />
+    <InstanceTable :instanceList="filteredList(instanceList)" />
   </div>
 </template>
 
 <script lang="ts">
-import { watchEffect, onMounted, reactive, ref } from "vue";
+import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
 
 interface LocalState {
-  instanceList: Instance[];
   selectedEnvironment?: Environment;
   searchText: string;
 }
@@ -35,7 +34,6 @@ export default {
     const searchField = ref();
 
     const state = reactive<LocalState>({
-      instanceList: [],
       searchText: "",
     });
     const store = useStore();
@@ -46,15 +44,12 @@ export default {
     });
 
     const prepareInstanceList = () => {
-      store
-        .dispatch("instance/fetchInstanceList")
-        .then((instanceList: Instance[]) => {
-          state.instanceList = instanceList;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("instance/fetchInstanceList").catch((error) => {
+        console.error(error);
+      });
     };
+
+    watchEffect(prepareInstanceList);
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
@@ -63,6 +58,10 @@ export default {
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
     };
+
+    const instanceList = computed(() => {
+      return store.getters["instance/instanceList"]();
+    });
 
     const filteredList = (list: Instance[]) => {
       if (!state.selectedEnvironment && !state.searchText) {
@@ -81,11 +80,10 @@ export default {
       });
     };
 
-    watchEffect(prepareInstanceList);
-
     return {
       searchField,
       state,
+      instanceList,
       filteredList,
       selectEnvironment,
       changeSearchText,
