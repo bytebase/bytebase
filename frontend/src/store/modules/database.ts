@@ -51,6 +51,8 @@ const getters = {
     if (database) {
       return database;
     }
+
+    const ts = Date.now();
     return {
       id: "-1",
       name: "<<Unknown database>>",
@@ -67,6 +69,8 @@ const getters = {
           order: -1,
         },
         host: "",
+        createdTs: ts,
+        lastUpdatedTs: ts,
       },
     };
   },

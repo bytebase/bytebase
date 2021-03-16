@@ -286,12 +286,19 @@ import isEqual from "lodash-es/isEqual";
 import { urlfy, idFromSlug } from "../utils";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { Instance, InstanceNew, DataSource, DataSourceNew } from "../types";
+import {
+  Instance,
+  InstanceNew,
+  DataSource,
+  DataSourceNew,
+  ALL_DATABASE_ID,
+} from "../types";
 
 const INIT_DATA_SOURCE: DataSourceNew = {
   name: "Read/Write Data Source",
   type: "RW",
   username: "root",
+  databaseId: ALL_DATABASE_ID,
 };
 
 interface LocalState {

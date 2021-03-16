@@ -180,6 +180,7 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
+        databaseId: ALL_DATABASE_ID,
       },
       showPassword: false,
     });

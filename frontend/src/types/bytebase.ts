@@ -30,7 +30,7 @@ export type DataSourceId = string;
 export type DataSourceMemberId = string;
 
 export type DatabaseId = string;
-export const ALL_DATABASE_ID: DatabaseId = "-1";
+export const ALL_DATABASE_ID: DatabaseId = "0";
 
 export type CommandId = string;
 export type CommandRegisterId = string;
@@ -234,7 +234,7 @@ export type Instance = {
   host: string;
   port?: string;
 };
-export type InstanceNew = Omit<Instance, "id">;
+export type InstanceNew = Omit<Instance, "id" | "createdTs" | "lastUpdatedTs">;
 
 export type DataSourceType = "RW" | "RO";
 // Data Source
@@ -248,7 +248,6 @@ export type DataSource = {
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
-  // If empty, it means it can access all databases from an instance.
   // TODO: unlike other objects like environment, here we don't expand
   // to the database object, this is due to timing issue during rendering.
   // Unlike environment which is a global state that we can load upon
@@ -256,13 +255,13 @@ export type DataSource = {
   // figured out a elegant way to guarantee it's loaded before the router
   // fetches the specific data source and requires the database info for
   // the conversion
-  databaseId?: DatabaseId;
+  databaseId: DatabaseId;
 };
 
 export type DataSourceNew = {
   name: string;
   type: DataSourceType;
-  databaseId?: string;
+  databaseId: string;
   username?: string;
   password?: string;
 };

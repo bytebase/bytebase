@@ -12,9 +12,8 @@ import {
 } from "../../types";
 
 function convert(dataSource: ResourceObject): DataSource {
-  const databaseId = dataSource.relationships!.database.data
-    ? (dataSource.relationships!.database.data as ResourceIdentifier).id
-    : undefined;
+  const databaseId = (dataSource.relationships!.database
+    .data as ResourceIdentifier).id;
   const instanceId = (dataSource.relationships!.instance
     .data as ResourceIdentifier).id;
   return {
@@ -84,6 +83,7 @@ const getters = {
       createdTs: 0,
       lastUpdatedTs: 0,
       type: "RO",
+      databaseId: "-1",
     };
   },
 

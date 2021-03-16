@@ -361,7 +361,7 @@ import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug } from "../utils";
-import { DataSource } from "../types";
+import { ALL_DATABASE_ID, DataSource } from "../types";
 
 type Connection = {
   name: string;
@@ -415,7 +415,7 @@ export default {
     });
 
     const databaseName = computed(() => {
-      if (dataSource.value.databaseId) {
+      if (dataSource.value.databaseId != ALL_DATABASE_ID) {
         const database = store.getters["database/databaseById"](
           dataSource.value.databaseId,
           instanceId
@@ -434,7 +434,7 @@ export default {
       if (instance.value.port) {
         cliOptionList.push(`-P ${instance.value.port}`);
       }
-      if (dataSource.value.databaseId) {
+      if (dataSource.value.databaseId != ALL_DATABASE_ID) {
         cliOptionList.push(`-D ${databaseName.value}`);
       }
       if (dataSource.value.username) {
@@ -454,7 +454,7 @@ export default {
         if (instance.value.port) {
           jdbcString += `:${instance.value.port}`;
         }
-        if (dataSource.value.databaseId) {
+        if (dataSource.value.databaseId != ALL_DATABASE_ID) {
           jdbcString += `/${databaseName.value}`;
         }
         const optionList = [];

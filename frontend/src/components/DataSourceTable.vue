@@ -136,7 +136,7 @@ import DataSourceNewForm from "../components/DataSourceNewForm.vue";
 import { BBTableColumn } from "../bbkit/types";
 
 import { dataSourceSlug, instanceSlug } from "../utils";
-import { Instance, DataSource, DataSourceNew } from "../types";
+import { Instance, DataSource, DataSourceNew, ALL_DATABASE_ID } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -193,7 +193,7 @@ export default {
         "dataSource/dataSourceListByInstanceId"
       ](props.instance.id)) {
         let databaseName = "*";
-        if (dataSource.databaseId) {
+        if (dataSource.databaseId != ALL_DATABASE_ID) {
           databaseName = store.getters["database/databaseById"](
             dataSource.databaseId,
             props.instance.id
