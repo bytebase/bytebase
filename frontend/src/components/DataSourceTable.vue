@@ -47,12 +47,33 @@
           </svg>
         </button>
       </div>
-      <BBTableSearch
-        class="w-56"
-        ref="searchField"
-        :placeholder="'Search name, database'"
-        @change-text="(text) => changeSearchText(text)"
-      />
+      <div class="flex flex-row items-center space-x-4">
+        <button
+          class="w-8 h-8 items-center flex justify-center btn-icon-primary"
+          @click.prevent="state.showCreateModal = true"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            ></path>
+          </svg>
+        </button>
+        <BBTableSearch
+          class="w-56"
+          ref="searchField"
+          :placeholder="'Search name, database'"
+          @change-text="(text) => changeSearchText(text)"
+        />
+      </div>
     </div>
     <BBTable
       :columnList="columnList"
@@ -94,16 +115,28 @@
       </template>
     </BBTable>
   </div>
+  <BBModal
+    v-if="state.showCreateModal"
+    :title="'Create data source'"
+    @close="state.showCreateModal = false"
+  >
+    <DataSourceNewForm
+      :instanceId="instance.id"
+      @create="doCreate"
+      @cancel="state.showCreateModal = false"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import DataSourceNewForm from "../components/DataSourceNewForm.vue";
+import { BBTableColumn } from "../bbkit/types";
 
 import { dataSourceSlug, instanceSlug } from "../utils";
-import { Instance, Database, DataSource } from "../types";
+import { Instance, DataSource, DataSourceNew } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -129,11 +162,12 @@ const columnList: BBTableColumn[] = [
 interface LocalState {
   searchText: string;
   showPassword: boolean;
+  showCreateModal: boolean;
 }
 
 export default {
   name: "DataSourceTable",
-  components: {},
+  components: { DataSourceNewForm },
   props: {
     instance: {
       required: true,
@@ -147,6 +181,7 @@ export default {
     const state = reactive<LocalState>({
       searchText: "",
       showPassword: false,
+      showCreateModal: false,
     });
 
     const dataSourceSectionList = computed(() => {
@@ -215,14 +250,33 @@ export default {
       return sectionList;
     });
 
+    const doCreate = (newDataSource: DataSourceNew) => {
+      store
+        .dispatch("dataSource/createDataSource", {
+          instanceId: props.instance.id,
+          newDataSource: newDataSource,
+        })
+        .then((dataSource) => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully created data source '${dataSource.name}'.`,
+          });
+          router.push(
+            `/instance/${instanceSlug(props.instance)}/ds/${dataSourceSlug(
+              dataSource
+            )}`
+          );
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
     const clickDataSource = function (section: number, row: number) {
       const ds = dataSourceSectionList.value[section].list![row];
-      const environmentName = props.instance.environment.name;
       router.push(
-        `/instance/${instanceSlug(props.instance)}/ds/${dataSourceSlug(
-          ds.name,
-          ds.id
-        )}`
+        `/instance/${instanceSlug(props.instance)}/ds/${dataSourceSlug(ds)}`
       );
     };
 
@@ -234,6 +288,7 @@ export default {
       state,
       columnList,
       dataSourceSectionList,
+      doCreate,
       clickDataSource,
       changeSearchText,
     };

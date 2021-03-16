@@ -1,4 +1,4 @@
-import { DataSourceId, Instance, TaskId } from "../types";
+import { DataSource, Instance, TaskId } from "../types";
 import slug from "slug";
 
 export function taskSlug(taskName: string, taskId: TaskId) {
@@ -14,11 +14,8 @@ export function instanceSlug(instance: Instance): string {
   ].join("-");
 }
 
-export function dataSourceSlug(
-  dataSourceName: string,
-  dataSourceId: DataSourceId
-): string {
-  return [slug(dataSourceName), dataSourceId].join("-");
+export function dataSourceSlug(dataSource: DataSource): string {
+  return [slug(dataSource.name), dataSource.id].join("-");
 }
 
 export function idFromSlug(slug: string) {
