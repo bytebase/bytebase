@@ -39,7 +39,7 @@
           </svg>
         </button>
       </div>
-      <div class="max-h-screen w-full">
+      <div class="pt-2 max-h-screen w-full">
         <slot />
       </div>
     </div>
