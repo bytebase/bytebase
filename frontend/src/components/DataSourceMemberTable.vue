@@ -72,7 +72,7 @@
             v-if="allowEdit"
             :requireConfirm="true"
             :okText="'Revoke'"
-            :confirmTitle="`Are you sure to revoke access from '${member.principal.name}'`"
+            :confirmTitle="`Are you sure to revoke access from '${member.principal.name}'?`"
             @confirm="deleteMember(member.id)"
           />
         </BBTableCell>
