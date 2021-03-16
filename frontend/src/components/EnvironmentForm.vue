@@ -112,20 +112,22 @@ export default {
       return !isEqual(props.environment, state.environment);
     });
 
+    const updateEnvironment = (field: string, value: string) => {
+      if (state.environment) {
+        (state.environment as any)[field] = value;
+      }
+    };
+
+    const revertEnvironment = () => {
+      state.environment = cloneDeep(props.environment);
+    };
+
     return {
       state,
       valueChanged,
+      updateEnvironment,
+      revertEnvironment,
     };
-  },
-  methods: {
-    updateEnvironment: function (field: string, value: string) {
-      if (this.state.environment) {
-        (this.state.environment as any)[field] = value;
-      }
-    },
-    revertEnvironment: function () {
-      this.state.environment = cloneDeep(this.$props.environment);
-    },
   },
 };
 </script>
