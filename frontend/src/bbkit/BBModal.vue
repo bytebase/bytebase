@@ -11,12 +11,12 @@
       class="relative max-h-screen w-full max-w-max bg-white shadow-lg rounded-lg p-8 flex space-y-6 divide-y divide-block-border"
     >
       <div>
-        <div class="absolute left-0 top-0 my-4 mx-8 text-2xl text-black">
+        <div class="absolute left-0 top-0 my-4 mx-8 text-xl text-main">
           {{ $props.title }}
         </div>
         <button
           v-if="showClose"
-          class="absolute right-0 top-0 my-4 mx-4 text-gray-500"
+          class="absolute right-0 top-0 my-4 mx-4 text-control-light"
           aria-label="close"
           @click.prevent="close"
         >
