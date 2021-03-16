@@ -13,6 +13,12 @@ export default {
         return "prod env " + i;
       }
     },
+    createdTs(i) {
+      return Date.now() - (i + 1) * 1800 * 1000;
+    },
+    lastUpdatedTs(i) {
+      return Date.now() - i * 3600 * 1000;
+    },
     externalLink() {
       return "google.com";
     },

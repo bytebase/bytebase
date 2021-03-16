@@ -30,6 +30,7 @@ export type DataSourceId = string;
 export type DataSourceMemberId = string;
 
 export type DatabaseId = string;
+export const ALL_DATABASE_ID: DatabaseId = "-1";
 
 export type CommandId = string;
 export type CommandRegisterId = string;
@@ -225,6 +226,8 @@ export type EnvironmentNew = Omit<Environment, "id">;
 // Instance
 export type Instance = {
   id: InstanceId;
+  createdTs: number;
+  lastUpdatedTs: number;
   name: string;
   environment: Environment;
   externalLink?: string;
@@ -236,7 +239,7 @@ export type InstanceNew = Omit<Instance, "id">;
 export type DataSourceType = "RW" | "RO";
 // Data Source
 export type DataSource = {
-  id: string;
+  id: DataSourceId;
   instanceId: InstanceId;
   name: string;
   createdTs: number;
@@ -259,6 +262,7 @@ export type DataSource = {
 export type DataSourceNew = {
   name: string;
   type: DataSourceType;
+  databaseId?: string;
   username?: string;
   password?: string;
 };
@@ -374,7 +378,6 @@ export interface EnvironmentState {
 }
 
 export interface InstanceState {
-  instanceList: Instance[];
   instanceById: Map<InstanceId, Instance>;
 }
 

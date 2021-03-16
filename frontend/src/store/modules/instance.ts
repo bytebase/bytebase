@@ -20,13 +20,18 @@ function convert(instance: ResourceObject, rootGetters: any): Instance {
 }
 
 const state: () => InstanceState = () => ({
-  instanceList: [],
   instanceById: new Map(),
 });
 
 const getters = {
   instanceList: (state: InstanceState) => () => {
-    return state.instanceList;
+    const list = [];
+    for (const [_, instance] of state.instanceById) {
+      list.push(instance);
+    }
+    return list.sort((a: Instance, b: Instance) => {
+      return b.createdTs - a.createdTs;
+    });
   },
 
   instanceById: (state: InstanceState) => (instanceId: InstanceId) => {
@@ -55,6 +60,7 @@ const actions = {
       (await axios.get(`/api/instance/${instanceId}`)).data.data,
       rootGetters
     );
+
     commit("setInstanceById", {
       instanceId,
       instance,
@@ -75,7 +81,10 @@ const actions = {
       rootGetters
     );
 
-    commit("appendInstance", createdInstance);
+    commit("setInstanceById", {
+      instanceId: createdInstance.id,
+      instance: createdInstance,
+    });
 
     return createdInstance;
   },
@@ -94,28 +103,29 @@ const actions = {
       rootGetters
     );
 
-    commit("replaceInstanceInList", updatedInstance);
+    commit("setInstanceById", {
+      instanceId: updatedInstance.id,
+      instance: updatedInstance,
+    });
 
     return updatedInstance;
   },
 
   async deleteInstanceById(
-    { state, commit }: { state: InstanceState; commit: any },
+    { commit }: { state: InstanceState; commit: any },
     instanceId: InstanceId
   ) {
     await axios.delete(`/api/instance/${instanceId}`);
 
-    const newList = state.instanceList.filter((item: Instance) => {
-      return item.id != instanceId;
-    });
-
-    commit("setInstanceList", newList);
+    commit("deleteInstanceById", instanceId);
   },
 };
 
 const mutations = {
   setInstanceList(state: InstanceState, instanceList: Instance[]) {
-    state.instanceList = instanceList;
+    instanceList.forEach((instance) => {
+      state.instanceById.set(instance.id, instance);
+    });
   },
 
   setInstanceById(
@@ -131,17 +141,8 @@ const mutations = {
     state.instanceById.set(instanceId, instance);
   },
 
-  appendInstance(state: InstanceState, newInstance: Instance) {
-    state.instanceList.push(newInstance);
-  },
-
-  replaceInstanceInList(state: InstanceState, updatedInstance: Instance) {
-    const i = state.instanceList.findIndex(
-      (item: Instance) => item.id == updatedInstance.id
-    );
-    if (i != -1) {
-      state.instanceList[i] = updatedInstance;
-    }
+  deleteInstanceById(state: InstanceState, instanceId: InstanceId) {
+    state.instanceById.delete(instanceId);
   },
 };
 
