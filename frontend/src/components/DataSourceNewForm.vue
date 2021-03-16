@@ -3,7 +3,7 @@
     class="px-4 space-y-4"
     @submit.prevent="$emit('create', state.dataSource)"
   >
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
       <div class="sm:col-span-2">
         <label for="name" class="text-lg leading-6 font-medium text-control">
           Name <span class="text-red-600">*</span>
@@ -20,7 +20,7 @@
       </div>
     </div>
 
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
       <div class="sm:col-span-2">
         <label
           for="database"
@@ -38,9 +38,22 @@
           "
         />
       </div>
+
+      <div class="sm:col-span-1">
+        <BBSwitch
+          class="mt-10"
+          :label="'Read-only'"
+          :value="state.dataSource.type == 'RO'"
+          @toggle="
+            (on) => {
+              updateDataSource('type', on ? 'RO' : 'RW');
+            }
+          "
+        />
+      </div>
     </div>
 
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
       <div class="sm:col-span-2">
         <label
           for="username"
@@ -49,7 +62,6 @@
           Username
         </label>
         <input
-          required
           id="username"
           name="username"
           type="text"
@@ -60,7 +72,7 @@
       </div>
     </div>
 
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
       <div class="sm:col-span-2">
         <div class="flex flex-row space-x-1">
           <label
@@ -112,7 +124,6 @@
           </button>
         </div>
         <input
-          required
           id="password"
           name="password"
           autocomplete="off"
