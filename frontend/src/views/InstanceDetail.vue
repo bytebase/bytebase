@@ -327,7 +327,7 @@ export default {
     });
 
     const escHandler = (e: KeyboardEvent) => {
-      if (e.code == "Escape" && !state.showCancelModal) {
+      if (e.code == "Escape" && state.new && !state.showCancelModal) {
         cancel();
       }
     };
