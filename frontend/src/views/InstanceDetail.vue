@@ -244,7 +244,7 @@ input[type="number"] {
         />
         <button
           type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          class="btn-normal ml-3 inline-flex justify-center py-2 px-4"
           :disabled="!valueChanged"
           @click.prevent="doUpdate(state.instance)"
         >
