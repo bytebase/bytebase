@@ -5,25 +5,7 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900">
           All Data Source
         </h3>
-        <button
-          class="items-center flex justify-center btn-icon-primary"
-          @click.prevent="state.showCreateModal = true"
-        >
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            ></path>
-          </svg>
-        </button>
+        <BBButtonAdd @add="state.showCreateModal = true" />
       </div>
       <div class="flex flex-row items-center space-x-2">
         <button

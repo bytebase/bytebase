@@ -11,6 +11,7 @@ import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
   BBAvatar,
+  BBButtonAdd,
   BBButtonTrash,
   BBContextMenu,
   BBModal,
@@ -57,6 +58,7 @@ app
   .use(VueClipboard)
   .component("BBAlert", BBAlert)
   .component("BBAvatar", BBAvatar)
+  .component("BBButtonAdd", BBButtonAdd)
   .component("BBButtonTrash", BBButtonTrash)
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)
