@@ -16,7 +16,12 @@
       :value="dataSource.id"
       :selected="dataSource.id == state.selectedId"
     >
-      {{ dataSource.name }}
+      <template v-if="dataSource.type == 'RO'">
+        {{ dataSource.name }} (readonly)
+      </template>
+      <template v-else>
+        {{ dataSource.name }}
+      </template>
     </option>
   </select>
 </template>
