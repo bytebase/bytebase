@@ -84,17 +84,17 @@
         </BBTableCell>
       </template>
     </BBTable>
+    <BBModal
+      v-if="state.showCreateModal"
+      :title="'Grant data source'"
+      @close="state.showCreateModal = false"
+    >
+      <DataSourceMemberForm
+        :dataSource="dataSource"
+        @dismiss="state.showCreateModal = false"
+      />
+    </BBModal>
   </div>
-  <BBModal
-    v-if="state.showCreateModal"
-    :title="'Grant data source'"
-    @close="state.showCreateModal = false"
-  >
-    <DataSourceMemberForm
-      :dataSource="dataSource"
-      @dismiss="state.showCreateModal = false"
-    />
-  </BBModal>
 </template>
 
 <script lang="ts">
