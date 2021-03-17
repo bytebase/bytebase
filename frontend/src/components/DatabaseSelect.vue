@@ -7,6 +7,9 @@
       }
     "
   >
+    <option disabled :selected="undefined === state.selectedId">
+      Not selected
+    </option>
     <option
       v-for="(database, index) in databaseList"
       :key="index"
@@ -35,10 +38,6 @@ export default {
     selectedId: {
       type: String,
     },
-    selectDefault: {
-      default: true,
-      type: Boolean,
-    },
     instanceId: {
       required: true,
       type: String,
@@ -63,11 +62,6 @@ export default {
       fullList.push(...list);
       return fullList;
     });
-
-    if (!props.selectedId && props.selectDefault) {
-      state.selectedId = ALL_DATABASE_ID;
-      emit("select-database-id", state.selectedId);
-    }
 
     return {
       state,
