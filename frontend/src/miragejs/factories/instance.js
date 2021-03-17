@@ -52,6 +52,18 @@ export default {
         databaseId: ALL_DATABASE_ID,
         name: instance.name + " admin ds1",
         type: "RW",
+        username: "adminRW",
+        password: "pwdadminRW",
+      });
+
+      server.create("dataSource", {
+        workspaceId: instance.workspaceId,
+        instance,
+        databaseId: ALL_DATABASE_ID,
+        name: instance.name + " admin ds2",
+        type: "RO",
+        username: "adminRO",
+        password: "pwdadminRO",
       });
 
       for (let i = 0; i < 3; i++) {
@@ -66,20 +78,10 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           database,
-          name: dbName + " rw ds2",
+          name: dbName + " rw ds3",
           type: "RW",
           username: "rootRW",
           password: "pwdRW",
-        });
-
-        server.create("dataSource", {
-          workspaceId: instance.workspaceId,
-          instance,
-          database,
-          name: dbName + " ro ds3",
-          type: "RO",
-          username: "rootRO",
-          password: "pwdRO",
         });
 
         server.create("dataSource", {
