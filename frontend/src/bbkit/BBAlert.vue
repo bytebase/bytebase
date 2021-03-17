@@ -147,21 +147,21 @@
             </div>
           </div>
         </div>
-        <div class="mt-5 sm:mt-4 sm:ml-10 sm:pl-4 sm:flex">
+        <div class="mt-5 flex justify-end">
           <button
             type="button"
-            class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-error text-base font-medium text-white hover:bg-error-hover focus:outline-none focus-visible:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
+            class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:w-auto"
+            @click.prevent="cancel"
+          >
+            {{ cancelText }}
+          </button>
+          <button
+            type="button"
+            class="sm:ml-3 inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-error text-base font-medium text-white hover:bg-error-hover focus:outline-none focus-visible:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             v-bind:class="okButtonStyle"
             @click.prevent="$emit('ok', payload)"
           >
             {{ okText }}
-          </button>
-          <button
-            type="button"
-            class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:ml-3 sm:w-auto"
-            @click.prevent="cancel"
-          >
-            {{ cancelText }}
           </button>
         </div>
       </div>
