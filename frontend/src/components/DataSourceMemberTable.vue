@@ -78,8 +78,8 @@
             v-if="allowEdit"
             :requireConfirm="true"
             :okText="'Revoke'"
-            :confirmTitle="`Are you sure to revoke access from '${member.principal.name}'?`"
-            @confirm="deleteMember(member.id)"
+            :confirmTitle="`Are you sure to revoke '${member.principal.name}' access from '${dataSource.name}'?`"
+            @confirm="deleteMember(member)"
           />
         </BBTableCell>
       </template>
@@ -171,12 +171,19 @@ export default {
       return list;
     });
 
-    const deleteMember = (id: DataSourceMemberId) => {
+    const deleteMember = (member: DataSourceMember) => {
       store
         .dispatch("dataSource/deleteDataSourceMemberById", {
           instanceId: props.dataSource.instanceId,
           dataSourceId: props.dataSource.id,
-          dataSourceMemberId: id,
+          dataSourceMemberId: member.id,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "INFO",
+            title: `Successfully revoked '${member.principal.name}' access from '${props.dataSource.name}'.`,
+          });
         })
         .catch((error) => {
           console.log(error);
