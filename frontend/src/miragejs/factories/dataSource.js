@@ -27,12 +27,14 @@ export default {
     },
     afterCreate(dataSource, server) {
       server.create("dataSourceMember", {
+        workspaceId: dataSource.workspaceId,
         dataSource,
         principalId: "1",
         taskId: "2",
       });
 
       server.create("dataSourceMember", {
+        workspaceId: dataSource.workspaceId,
         dataSource,
         principalId: "2",
         taskId: "3",

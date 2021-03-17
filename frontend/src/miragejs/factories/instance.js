@@ -47,6 +47,7 @@ export default {
     },
     afterCreate(instance, server) {
       server.create("dataSource", {
+        workspaceId: instance.workspaceId,
         instance,
         databaseId: ALL_DATABASE_ID,
         name: instance.name + " admin ds1",
@@ -56,11 +57,13 @@ export default {
       for (let i = 0; i < 3; i++) {
         const dbName = "db" + (i + 1);
         const database = server.create("database", {
+          workspaceId: instance.workspaceId,
           instance,
           name: dbName,
         });
 
         server.create("dataSource", {
+          workspaceId: instance.workspaceId,
           instance,
           database,
           name: dbName + " rw ds2",
@@ -70,6 +73,7 @@ export default {
         });
 
         server.create("dataSource", {
+          workspaceId: instance.workspaceId,
           instance,
           database,
           name: dbName + " ro ds3",
@@ -79,6 +83,7 @@ export default {
         });
 
         server.create("dataSource", {
+          workspaceId: instance.workspaceId,
           instance,
           database,
           name: dbName + " ro ds4",

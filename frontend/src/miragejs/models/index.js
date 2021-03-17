@@ -53,16 +53,19 @@ export default {
   }),
 
   dataSource: Model.extend({
+    workspace: belongsTo(),
     instance: belongsTo(),
     database: belongsTo(),
     dataSourceMember: hasMany(),
   }),
 
   dataSourceMember: Model.extend({
+    workspace: belongsTo(),
     dataSource: belongsTo(),
   }),
 
   database: Model.extend({
+    workspace: belongsTo(),
     instance: belongsTo(),
     database: hasMany(),
   }),
