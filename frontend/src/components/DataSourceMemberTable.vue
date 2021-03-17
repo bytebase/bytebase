@@ -63,7 +63,10 @@
           </div>
         </BBTableCell>
         <BBTableCell>
-          <router-link :to="`/task/${member.taskId}`" class="normal-link"
+          <router-link
+            v-if="member.taskId"
+            :to="`/task/${member.taskId}`"
+            class="normal-link"
             >task/{{ member.taskId }}
           </router-link>
         </BBTableCell>
