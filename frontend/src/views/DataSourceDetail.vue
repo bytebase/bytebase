@@ -216,7 +216,7 @@
                       {{ connection.name }}
                     </span>
                     <span
-                      class="flex-1 min-w-0 block w-full inline-flex items-center px-3 py-2 border border-r border-control-border sm:text-sm"
+                      class="flex-1 min-w-0 block w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm"
                     >
                       {{ connection.value }}
                     </span>
