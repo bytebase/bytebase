@@ -488,11 +488,11 @@ export default function routes() {
 
   // Data Source Member
   this.get(
-    "/instance/:instanceId/datasource/:id/member",
+    "/instance/:instanceId/datasource/:dataSourceId/member",
     function (schema, request) {
       const instance = schema.instances.find(request.params.instanceId);
       if (instance) {
-        const dataSource = schema.dataSources.find(request.params.id);
+        const dataSource = schema.dataSources.find(request.params.dataSourceId);
         if (dataSource) {
           return schema.dataSourceMembers.where((dataSourceMember) => {
             return dataSourceMember.dataSourceId == dataSource.id;
@@ -501,7 +501,40 @@ export default function routes() {
         return new Response(
           404,
           {},
-          { errors: "Data source " + request.params.id + " not found" }
+          {
+            errors: "Data source " + request.params.dataSourceId + " not found",
+          }
+        );
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Instance " + request.params.instanceId + " not found" }
+      );
+    }
+  );
+
+  // Be careful to use :dataSourceId instead of :id otherwise this.normalizedRequestAttrs
+  // would de-serialize to id, which would prevent auto increment id logic.
+  this.post(
+    "/instance/:instanceId/datasource/:dataSourceId/member",
+    function (schema, request) {
+      const instance = schema.instances.find(request.params.instanceId);
+      if (instance) {
+        const dataSource = schema.dataSources.find(request.params.dataSourceId);
+        if (dataSource) {
+          const newDataSourceMember = {
+            ...this.normalizedRequestAttrs("data-source-member"),
+            dataSourceId: request.params.dataSourceId,
+          };
+          return schema.dataSourceMembers.create(newDataSourceMember);
+        }
+        return new Response(
+          404,
+          {},
+          {
+            errors: "Data source " + request.params.dataSourceId + " not found",
+          }
         );
       }
       return new Response(

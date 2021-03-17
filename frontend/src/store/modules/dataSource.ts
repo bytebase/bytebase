@@ -4,6 +4,7 @@ import {
   DataSource,
   DataSourceNew,
   DataSourceMember,
+  DataSourceMemberNew,
   DataSourceMemberId,
   DataSourceState,
   InstanceId,
@@ -31,16 +32,19 @@ function convertMember(
   dataSourceMember: ResourceObject,
   rootGetters: any
 ): DataSourceMember {
+  const dataSourceId = (dataSourceMember.relationships!.dataSource
+    .data as ResourceIdentifier).id;
   const principal = rootGetters["principal/principalById"](
     dataSourceMember.attributes.principalId
   );
 
   return {
     id: dataSourceMember.id,
+    dataSourceId,
     principal,
     ...(dataSourceMember.attributes as Omit<
       DataSourceMember,
-      "id" | "principal"
+      "id" | "principal" | "dataSourceId"
     >),
   };
 }
@@ -232,6 +236,41 @@ const actions = {
     return dataSourceMemberList;
   },
 
+  async createDataSourceMember(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      dataSourceId,
+      newDataSourceMember,
+    }: {
+      instanceId: InstanceId;
+      dataSourceId: DataSourceId;
+      newDataSourceMember: DataSourceMemberNew;
+    }
+  ) {
+    const createdDataSourceMember = convertMember(
+      (
+        await axios.post(
+          `/api/instance/${instanceId}/datasource/${dataSourceId}/member`,
+          {
+            data: {
+              type: "dataSourceMember",
+              attributes: newDataSourceMember,
+            },
+          }
+        )
+      ).data.data,
+      rootGetters
+    );
+
+    commit("upsertDataSourceMemberInListById", {
+      dataSourceId,
+      dataSourceMember: createdDataSourceMember,
+    });
+
+    return createdDataSourceMember;
+  },
+
   async deleteDataSourceMemberById(
     { state, commit }: { state: DataSourceState; commit: any },
     {
@@ -316,6 +355,34 @@ const mutations = {
     }
   ) {
     state.memberListById.set(dataSourceId, dataSourceMemberList);
+  },
+
+  upsertDataSourceMemberInListById(
+    state: DataSourceState,
+    {
+      dataSourceId,
+      dataSourceMember,
+    }: {
+      dataSourceId: DataSourceId;
+      dataSourceMember: DataSourceMember;
+    }
+  ) {
+    console.log(state.memberListById);
+    console.log(dataSourceId);
+    console.log(dataSourceMember);
+    const list = state.memberListById.get(dataSourceId);
+    if (list) {
+      const i = list.findIndex(
+        (item: DataSourceMember) => item.id == dataSourceMember.id
+      );
+      if (i != -1) {
+        list[i] = dataSourceMember;
+      } else {
+        list.push(dataSourceMember);
+      }
+    } else {
+      state.memberListById.set(dataSourceId, [dataSourceMember]);
+    }
   },
 
   deleteDataSourceMemberById(

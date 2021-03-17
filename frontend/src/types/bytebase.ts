@@ -268,9 +268,15 @@ export type DataSourceNew = {
 
 export type DataSourceMember = {
   id: DataSourceMemberId;
+  dataSourceId: DataSourceId;
   principal: Principal;
   taskId?: TaskId;
   createdTs: number;
+};
+
+export type DataSourceMemberNew = {
+  principalId: PrincipalId;
+  taskId?: TaskId;
 };
 
 // We periodically sync the underlying db schema and stores those info

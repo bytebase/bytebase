@@ -332,8 +332,7 @@
           <DataSourceMemberTable
             v-if="dataSource.id != '-1'"
             :allowEdit="allowEdit"
-            :instanceId="instance.id"
-            :dataSourceId="dataSource.id"
+            :dataSource="dataSource"
           />
 
           <div class="flex justify-start">

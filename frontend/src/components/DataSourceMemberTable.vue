@@ -1,7 +1,10 @@
 <template>
   <div>
     <div class="flex justify-between items-center">
-      <h2 class="text-lg leading-7 font-medium text-main">User list</h2>
+      <div class="inline-flex items-center space-x-2">
+        <h2 class="text-lg leading-7 font-medium text-main">User list</h2>
+        <BBButtonAdd @add="state.showCreateModal = true" />
+      </div>
       <BBTableSearch
         ref="searchField"
         :placeholder="'Search user'"
@@ -79,12 +82,23 @@
       </template>
     </BBTable>
   </div>
+  <BBModal
+    v-if="state.showCreateModal"
+    :title="'Grant data source'"
+    @close="state.showCreateModal = false"
+  >
+    <DataSourceMemberForm
+      :dataSource="dataSource"
+      @dismiss="state.showCreateModal = false"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
-import { DataSourceMember, DataSourceMemberId } from "../types";
+import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
+import { DataSource, DataSourceMember, DataSourceMemberId } from "../types";
 
 const columnList = [
   {
@@ -101,19 +115,16 @@ const columnList = [
 
 interface LocalState {
   searchText: string;
+  showCreateModal: boolean;
 }
 
 export default {
   name: "DataSourceMemberTable",
-  components: {},
+  components: { DataSourceMemberForm },
   props: {
-    instanceId: {
+    dataSource: {
       required: true,
-      type: String,
-    },
-    dataSourceId: {
-      required: true,
-      type: String,
+      type: Object as PropType<DataSource>,
     },
     allowEdit: {
       required: true,
@@ -125,6 +136,7 @@ export default {
 
     const state = reactive<LocalState>({
       searchText: "",
+      showCreateModal: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -132,8 +144,8 @@ export default {
     const prepareMemberList = () => {
       store
         .dispatch("dataSource/fetchMemberListById", {
-          instanceId: props.instanceId,
-          dataSourceId: props.dataSourceId,
+          instanceId: props.dataSource.instanceId,
+          dataSourceId: props.dataSource.id,
         })
         .catch((error) => {
           console.log(error);
@@ -144,7 +156,7 @@ export default {
 
     const memberList = computed(() => {
       const list = store.getters["dataSource/memberListById"](
-        props.dataSourceId
+        props.dataSource.id
       );
       if (state.searchText) {
         return list.filter((member: DataSourceMember) =>
@@ -159,8 +171,8 @@ export default {
     const deleteMember = (id: DataSourceMemberId) => {
       store
         .dispatch("dataSource/deleteDataSourceMemberById", {
-          instanceId: props.instanceId,
-          dataSourceId: props.dataSourceId,
+          instanceId: props.dataSource.instanceId,
+          dataSourceId: props.dataSource.id,
           dataSourceMemberId: id,
         })
         .catch((error) => {
@@ -173,6 +185,7 @@ export default {
     };
 
     return {
+      state,
       columnList,
       currentUser,
       memberList,
