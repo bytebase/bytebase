@@ -4,6 +4,7 @@ export type BBTableColumn = {
 
 export type BBTableSectionDataSource<T> = {
   title: string;
+  link?: string;
   list: T[];
 };
 

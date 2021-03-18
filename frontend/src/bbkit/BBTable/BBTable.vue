@@ -23,7 +23,14 @@
               :colspan="columnList.length"
               class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
             >
-              {{ section.title }}
+              <template v-if="section.link">
+                <router-link :to="section.link" class="normal-link">
+                  {{ section.title }}
+                </router-link>
+              </template>
+              <template v-else>
+                {{ section.title }}
+              </template>
             </th>
             <template v-if="section.list.length > 0">
               <tr v-if="showHeader" class="bg-gray-50">
