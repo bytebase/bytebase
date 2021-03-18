@@ -279,6 +279,24 @@
                 </div>
               </dd>
             </div>
+
+            <div class="sm:col-span-1">
+              <dt class="text-sm font-medium text-control-light">Updated</dt>
+              <dd class="mt-1 text-sm text-main">
+                <div lass="mt-2.5 mb-3">
+                  {{ humanizeTs(dataSource.lastUpdatedTs) }}
+                </div>
+              </dd>
+            </div>
+
+            <div class="sm:col-span-1">
+              <dt class="text-sm font-medium text-control-light">Created</dt>
+              <dd class="mt-1 text-sm text-main">
+                <div lass="mt-2.5 mb-3">
+                  {{ humanizeTs(dataSource.createdTs) }}
+                </div>
+              </dd>
+            </div>
           </dl>
 
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
