@@ -68,7 +68,7 @@
 
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2">
-          <div class="flex flex-row space-x-1">
+          <div class="flex flex-row items-center space-x-1">
             <label for="username" class="textlabel"> Password </label>
             <button
               class="btn-icon"
