@@ -36,19 +36,19 @@ export default {
     });
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
+      // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
+      // thus we rervese the order to put more important ones first.
+      return cloneDeep(
+        store.getters["environment/environmentList"]()
+      ).reverse();
     });
 
     const tabList = computed(() => {
       const list = ["All"];
       list.push(
-        // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
-        // thus we rervese the order to put more important ones first.
-        ...cloneDeep(environmentList.value)
-          .reverse()
-          .map((environment: Environment) => {
-            return environment.name;
-          })
+        ...environmentList.value.map((environment: Environment) => {
+          return environment.name;
+        })
       );
       return list;
     });
