@@ -23,9 +23,12 @@ export type BBStep = {
 };
 
 export type BBOutlineItem = {
+  id: string;
   name: string;
   link?: string;
-  childList?: [];
+  childList?: BBOutlineItem[];
+  // Only applicable if childList is specified.
+  childCollapse?: boolean;
 };
 
 export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";

@@ -1,12 +1,12 @@
 <template>
   <div
     @click.prevent="toggleExpand"
-    class="outline-title flex text-xs px-2 py-2"
+    class="outline-title flex py-1"
     :class="allowCollapse ? 'collapsible' : ''"
     @mouseenter="state.hoverTitle = true"
     @mouseleave="state.hoverTitle = false"
   >
-    {{ title }}
+    <span :class="titleClass()">{{ title }}</span>
     <template v-if="allowCollapse && state.hoverTitle">
       <svg
         v-if="expandState"
@@ -24,17 +24,27 @@
       </svg>
     </template>
   </div>
-  <div v-if="expandState" class="space-y-1">
+  <div v-if="!allowCollapse || expandState">
     <div
       role="group"
       v-for="(item, index) in itemList"
-      :key="item.id"
+      :key="index"
       @mouseenter="state.hoverIndex = index"
       @mouseleave="state.hoverIndex = -1"
     >
+      <BBOutline
+        v-if="item.childList"
+        :id="[id, item.id].join('.')"
+        :title="item.name"
+        :itemList="item.childList"
+        :allowCollapse="item.childCollapse"
+        :level="level + 1"
+      />
       <router-link
+        v-else-if="item.link"
         :to="item.link"
-        class="outline-item flex justify-between px-3 py-1"
+        class="outline-item flex justify-between pr-1 py-1"
+        :class="'pl-' + (level + 1) * 3"
       >
         <span class="truncate">{{ item.name }}</span>
         <button
@@ -58,6 +68,7 @@
           </svg>
         </button>
       </router-link>
+      <span v-else class="pl-1 py-1 truncate">{{ item.name }}</span>
     </div>
   </div>
 </template>
@@ -99,6 +110,10 @@ export default {
       default: false,
       type: Boolean,
     },
+    level: {
+      default: 0,
+      type: Number,
+    },
   },
   setup(props, ctx) {
     const store = useStore();
@@ -134,9 +149,16 @@ export default {
       }
     };
 
+    const titleClass = () => {
+      return (
+        (props.level > 0 ? "text-main" : "") + " pl-" + 2 * (props.level + 1)
+      );
+    };
+
     return {
       state,
       expandState,
+      titleClass,
       toggleExpand,
     };
   },
