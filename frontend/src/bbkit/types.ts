@@ -22,6 +22,12 @@ export type BBStep = {
   link(): string;
 };
 
+export type BBOutlineItem = {
+  name: string;
+  link?: string;
+  childList?: [];
+};
+
 export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
 export type BBNotificationPlacement =
   | "TOP_LEFT"

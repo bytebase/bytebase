@@ -69,13 +69,9 @@ interface LocalState {
   expandState: boolean;
 }
 
-type OutlineItem = {
-  name: string;
-  link: string;
-};
-
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
+import { BBOutlineItem } from "./types";
 
 export default {
   name: "BBOutline",
@@ -93,7 +89,7 @@ export default {
     },
     itemList: {
       required: true,
-      type: Object as PropType<OutlineItem[]>,
+      type: Object as PropType<BBOutlineItem[]>,
     },
     allowDelete: {
       default: false,
