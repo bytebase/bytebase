@@ -3,6 +3,7 @@
 </template>
 
 <script lang="ts">
+import { watchEffect } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
 
@@ -17,23 +18,21 @@ export default {
   async setup(props) {
     const store = useStore();
 
-    await store
-      .dispatch(
-        "database/fetchDatabaseListByInstanceId",
-        idFromSlug(props.instanceSlug)
-      )
-      .catch((error) => {
-        console.error(error);
-      });
-    // This depends on database/fetchDatabaseListByInstanceId to convert its database id to database object.
-    await store
-      .dispatch(
-        "dataSource/fetchDataSourceListByInstanceId",
-        idFromSlug(props.instanceSlug)
-      )
-      .catch((error) => {
-        console.error(error);
-      });
+    const prepareInstanceContext = async function () {
+      await Promise.all([
+        store.dispatch(
+          "database/fetchDatabaseListByInstanceId",
+          idFromSlug(props.instanceSlug)
+        ),
+        // This depends on database/fetchDatabaseListByInstanceId to convert its database id to database object.
+        store.dispatch(
+          "dataSource/fetchDataSourceListByInstanceId",
+          idFromSlug(props.instanceSlug)
+        ),
+      ]);
+    };
+
+    watchEffect(prepareInstanceContext);
   },
 };
 </script>
