@@ -53,88 +53,41 @@
                   {{ dataSource.name }}
                 </h1>
               </div>
-              <dl class="flex flex-col mt-2 sm:flex-row sm:flex-wrap">
+              <dl
+                class="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:flex-wrap"
+              >
                 <dt class="sr-only">RoleType</dt>
                 <dd
-                  class="flex items-center text-sm text-control-light font-medium sm:mr-4"
+                  v-data-source-type
+                  class="flex items-center text-sm text-control font-medium sm:mr-4"
                 >
-                  <!-- Heroicon name: solid/pencil -->
-                  <svg
-                    v-if="dataSource.type == 'RW'"
-                    class="mr-1.5 w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    xmlns="http://www.w3.org/2000/svg"
+                  {{ dataSource.type }}
+                </dd>
+                <dt class="sr-only">Database</dt>
+                <dd class="flex items-center text-sm sm:mr-4">
+                  <span class="textlabel">Database&nbsp;-&nbsp;</span>
+                  <router-link
+                    :to="`/instance/${instanceSlug}/db/${databaseSlug(
+                      database
+                    )}`"
+                    class="normal-link"
                   >
-                    <path
-                      d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                    ></path>
-                  </svg>
-                  <!-- Heroicon name: solid/pencil -->
-                  <svg
-                    v-if="dataSource.type == 'RO'"
-                    class="mr-1.5 w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
-                    <path
-                      fill-rule="evenodd"
-                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                      clip-rule="evenodd"
-                    ></path>
-                  </svg>
-                  <span v-data-source-type class="text-control">{{
-                    dataSource.type
-                  }}</span>
+                    {{ database.name }}
+                  </router-link>
                 </dd>
                 <dt class="sr-only">Instance</dt>
-                <dd
-                  class="flex items-center text-sm text-control-light font-medium sm:mr-4"
-                >
-                  <!-- Heroicon name: solid/database -->
-                  <svg
-                    class="mr-1.5 w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"
-                    ></path>
-                    <path
-                      d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"
-                    ></path>
-                    <path
-                      d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"
-                    ></path>
-                  </svg>
+                <dd class="flex items-center text-sm sm:mr-4">
+                  <span class="textlabel">Instance&nbsp;-&nbsp;</span>
                   <router-link
                     :to="`/instance/${instanceSlug}`"
                     class="normal-link"
                   >
-                    {{ instance.name }} -
-                    {{ databaseName }}
+                    {{ instance.name }}
                   </router-link>
                 </dd>
                 <dt class="sr-only">Environment</dt>
-                <dd
-                  class="flex items-center text-sm text-control-light font-medium"
-                >
-                  <!-- Heroicon name: solid/globle-alt -->
-                  <svg
-                    class="mr-1.5 w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z"
-                      clip-rule="evenodd"
-                    ></path>
-                  </svg>
+                <dd class="flex items-center text-sm">
+                  <span class="textlabel">Environment&nbsp;-&nbsp;</span>
                   <router-link to="/environment" class="normal-link">
                     {{ instance.environment.name }}
                   </router-link>
@@ -414,12 +367,11 @@ export default {
       return store.getters["instance/instanceById"](instanceId);
     });
 
-    const databaseName = computed(() => {
-      const database = store.getters["database/databaseById"](
+    const database = computed(() => {
+      return store.getters["database/databaseById"](
         dataSource.value.databaseId,
         instanceId
       );
-      return database.name;
     });
 
     const connectionStringList = computed<Connection[]>(() => {
@@ -431,8 +383,8 @@ export default {
       if (instance.value.port) {
         cliOptionList.push(`-P ${instance.value.port}`);
       }
-      if (databaseName.value != ALL_DATABASE_NAME) {
-        cliOptionList.push(`-D ${databaseName.value}`);
+      if (database.value.name != ALL_DATABASE_NAME) {
+        cliOptionList.push(`-D ${database.value.name}`);
       }
       if (dataSource.value.username) {
         cliOptionList.push(`-u ${dataSource.value.username}`);
@@ -451,8 +403,8 @@ export default {
         if (instance.value.port) {
           jdbcString += `:${instance.value.port}`;
         }
-        if (databaseName.value != ALL_DATABASE_NAME) {
-          jdbcString += `/${databaseName.value}`;
+        if (database.value.name != ALL_DATABASE_NAME) {
+          jdbcString += `/${database.value.name}`;
         }
         const optionList = [];
         if (dataSource.value.username) {
@@ -552,7 +504,7 @@ export default {
       state,
       dataSource,
       instance,
-      databaseName,
+      database,
       connectionStringList,
       allowEdit,
       allowSave,
