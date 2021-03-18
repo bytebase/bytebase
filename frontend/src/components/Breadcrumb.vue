@@ -139,18 +139,6 @@ export default {
             name: instance.name,
             path: `/instance/${instanceSlug}`,
           });
-
-          if (databaseSlug) {
-            list.push({
-              name: "Database",
-              path: `/instance/${instanceSlug}`,
-            });
-          } else {
-            list.push({
-              name: "Data Source",
-              path: `/instance/${instanceSlug}`,
-            });
-          }
         }
       }
 
