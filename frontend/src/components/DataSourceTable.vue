@@ -208,14 +208,7 @@ export default {
         })
       );
 
-      const sectionList = dataSourceListByDatabase.get("*")
-        ? [
-            {
-              title: "* (All databases)",
-              list: dataSourceListByDatabase.get("*"),
-            },
-          ]
-        : [];
+      const sectionList = [];
 
       for (const database of databaseList) {
         if (dataSourceListByDatabase.get(database.name)) {
