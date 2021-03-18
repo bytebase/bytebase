@@ -305,7 +305,7 @@
             :dataSource="dataSource"
           />
 
-          <div class="flex justify-start">
+          <div class="pt-4 flex justify-start">
             <BBButtonTrash
               v-if="allowEdit"
               :buttonText="'Delete this entire data source'"
