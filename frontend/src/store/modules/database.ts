@@ -71,6 +71,7 @@ const getters = {
       createdTs: 0,
       lastUpdatedTs: 0,
       syncStatus: "NOT_FOUND",
+      lastSuccessfulSyncTs: ts,
       fingerprint: "",
       instance: {
         id: "-1",
