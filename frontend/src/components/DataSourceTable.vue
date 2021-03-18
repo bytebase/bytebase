@@ -119,7 +119,7 @@ import { useRouter } from "vue-router";
 import DataSourceNewForm from "../components/DataSourceNewForm.vue";
 import { BBTableColumn } from "../bbkit/types";
 
-import { dataSourceSlug, instanceSlug } from "../utils";
+import { databaseSlug, dataSourceSlug, instanceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceNew } from "../types";
 
 const columnList: BBTableColumn[] = [
@@ -220,6 +220,9 @@ export default {
         if (dataSourceListByDatabase.get(database.name)) {
           sectionList.push({
             title: database.name,
+            link: `/instance/${instanceSlug(props.instance)}/db/${databaseSlug(
+              database
+            )}`,
             list: dataSourceListByDatabase.get(database.name),
           });
         }
