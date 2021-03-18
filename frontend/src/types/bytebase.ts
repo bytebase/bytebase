@@ -396,6 +396,11 @@ export interface DataSourceState {
 
 export interface DatabaseState {
   databaseListByInstanceId: Map<InstanceId, Database[]>;
+  // It would be quite expensive to find user's data source list
+  // if iterating through dataSourceListByInstanceId. so we create
+  // a separate map for quick access. Needs to be careful to not
+  // introduce inconsistent data source entries between these two maps.
+  databaseListByUserId: Map<UserId, Database[]>;
 }
 
 export interface NotificationState {

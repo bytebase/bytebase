@@ -32,6 +32,27 @@ export default function routes() {
     return schema.users.find(request.params.userId).update(attrs);
   });
 
+  this.get("/user/:userId/database", function (schema, request) {
+    return schema.databases.where((database) => {
+      const dataSourceList = schema.dataSources.where({
+        workspaceId: WORKSPACE_ID,
+        databaseId: database.id,
+      });
+
+      for (const dataSource of dataSourceList.models) {
+        if (
+          schema.dataSourceMembers.findBy({
+            dataSourceId: dataSource.id,
+            principalId: request.params.userId,
+          })
+        ) {
+          return true;
+        }
+      }
+      return false;
+    });
+  });
+
   // Auth
   this.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");

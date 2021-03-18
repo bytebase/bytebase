@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  UserId,
   Database,
   DatabaseId,
   InstanceId,
@@ -23,6 +24,7 @@ function convert(database: ResourceObject, rootGetters: any): Database {
 
 const state: () => DatabaseState = () => ({
   databaseListByInstanceId: new Map(),
+  databaseListByUserId: new Map(),
 });
 
 const getters = {
@@ -32,13 +34,23 @@ const getters = {
     return state.databaseListByInstanceId.get(instanceId) || [];
   },
 
+  databaseListByUserId: (state: DatabaseState) => (
+    userId: UserId
+  ): Database[] => {
+    return state.databaseListByUserId.get(userId) || [];
+  },
+
   databaseById: (state: DatabaseState) => (
     databaseId: DatabaseId,
-    instanceId?: InstanceId
+    instanceId?: InstanceId,
+    userId?: UserId
   ): Database => {
     let database = undefined;
     if (instanceId) {
       const list = state.databaseListByInstanceId.get(instanceId) || [];
+      database = list.find((item) => item.id == databaseId);
+    } else if (userId) {
+      const list = state.databaseListByUserId.get(userId) || [];
       database = list.find((item) => item.id == databaseId);
     } else {
       for (let [_, list] of state.databaseListByInstanceId) {
@@ -91,6 +103,18 @@ const actions = {
 
     return databaseList;
   },
+
+  async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
+    const databaseList = (
+      await axios.get(`/api/user/${userId}/database`)
+    ).data.data.map((database: ResourceObject) => {
+      return convert(database, rootGetters);
+    });
+
+    commit("setDatabaseListByUserId", { userId, databaseList });
+
+    return databaseList;
+  },
 };
 
 const mutations = {
@@ -105,6 +129,19 @@ const mutations = {
     }
   ) {
     state.databaseListByInstanceId.set(instanceId, databaseList);
+  },
+
+  setDatabaseListByUserId(
+    state: DatabaseState,
+    {
+      userId,
+      databaseList,
+    }: {
+      userId: UserId;
+      databaseList: Database[];
+    }
+  ) {
+    state.databaseListByUserId.set(userId, databaseList);
   },
 };
 

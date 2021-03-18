@@ -24,6 +24,7 @@
     </div>
     <div>
       <BookmarkListSidePanel />
+      <DatabaseListSidePanel />
     </div>
   </nav>
 </template>
@@ -31,6 +32,7 @@
 <script lang="ts">
 import { reactive } from "vue";
 import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
+import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
 
 interface LocalState {
   hasUnreadMessage: boolean;
@@ -41,6 +43,7 @@ export default {
   props: {},
   components: {
     BookmarkListSidePanel,
+    DatabaseListSidePanel,
   },
   setup(props, ctx) {
     const state = reactive<LocalState>({
