@@ -198,7 +198,7 @@
       <div class="mt-6">
         <div class="max-w-6xl mx-auto px-6 space-y-6">
           <!-- Description list -->
-          <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+          <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
             <div class="sm:col-span-2">
               <dt class="text-sm font-medium text-control-light">
                 Connection string
@@ -330,6 +330,7 @@
 
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
+            class="pt-4 border-t border-control-border"
             v-if="dataSource.id != '-1'"
             :allowEdit="allowEdit"
             :dataSource="dataSource"
