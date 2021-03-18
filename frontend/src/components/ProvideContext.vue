@@ -18,6 +18,7 @@ export default {
       store.dispatch("environment/fetchEnvironmentList"),
       store.dispatch("principal/fetchPrincipalList"),
       store.dispatch("roleMapping/fetchRoleMappingList"),
+      store.dispatch("instance/fetchInstanceList"),
       store.dispatch("uistate/restoreState"),
     ]);
   },
