@@ -19,6 +19,7 @@
         <template v-for="(section, i) in sectionDataSource" :key="i">
           <tbody class="bg-normal divide-y divide-block-border">
             <th
+              v-if="!compactSection || sectionDataSource.length > 1"
               :colspan="columnList.length"
               class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
             >
@@ -96,6 +97,13 @@ export default {
     },
     sectionDataSource: {
       type: Object as PropType<BBTableSectionDataSource<Object>[]>,
+    },
+    // Only applicable to sectionDataSource. If true, when there is only one
+    // section, it won't render the extra section header. In another words, it will
+    // just look like a non-section list.
+    compactSection: {
+      default: false,
+      type: Boolean,
     },
     showHeader: {
       default: true,
