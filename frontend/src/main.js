@@ -45,7 +45,7 @@ app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
-app.config.globalProperties.sizeToFit = urlfy;
+app.config.globalProperties.urlfy = urlfy;
 
 app
   // Need to use a directive on the element.
