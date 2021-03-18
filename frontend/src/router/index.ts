@@ -246,6 +246,18 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
+            path: "db",
+            name: "workspace.database",
+            meta: {
+              title: () => "Database",
+            },
+            components: {
+              content: () => import("../views/DatabaseDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
             path: "instance/:instanceSlug",
             name: "workspace.instance.detail",
             components: {
@@ -400,6 +412,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.environment" ||
     to.name === "workspace.instance" ||
+    to.name === "workspace.database" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();

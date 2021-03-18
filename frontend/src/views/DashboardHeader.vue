@@ -12,12 +12,16 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-4 flex items-baseline space-x-4">
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md"
+            >Databases</router-link
+          >
+
           <router-link to="/instance" class="bar-link px-2 py-2 rounded-md"
-            >Instance</router-link
+            >Instances</router-link
           >
 
           <router-link to="/environment" class="bar-link px-2 py-2 rounded-md"
-            >Environment</router-link
+            >Environments</router-link
           >
           <router-link
             to="/setting/member"
