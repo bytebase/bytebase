@@ -45,6 +45,10 @@
           </dl>
         </div>
       </div>
+
+      <div class="px-4 py-6 space-y-4 border-t divide-control-border">
+        <DataSourceTable :instance="instance" :database="database" />
+      </div>
     </main>
   </div>
 </template>
@@ -56,7 +60,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
+import DataSourceTable from "../components/DataSourceTable.vue";
 import { idFromSlug } from "../utils";
 import { ALL_DATABASE_NAME, DataSource } from "../types";
 
@@ -78,7 +82,7 @@ export default {
       type: String,
     },
   },
-  components: {},
+  components: { DataSourceTable },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

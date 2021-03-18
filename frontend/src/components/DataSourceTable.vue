@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center">
       <div class="inline-flex items-center space-x-2">
         <h3 class="text-lg leading-6 font-medium text-gray-900">
-          All Data Source
+          {{ database ? "Data source list" : "All data source" }}
         </h3>
         <BBButtonAdd @add="state.showCreateModal = true" />
       </div>
@@ -61,6 +61,7 @@
       :columnList="columnList"
       :sectionDataSource="dataSourceSectionList"
       :showHeader="true"
+      :compactSection="database != undefined"
       @click-row="clickDataSource"
     >
       <template v-slot:header>
@@ -104,6 +105,7 @@
   >
     <DataSourceNewForm
       :instanceId="instance.id"
+      :databaseId="database?.id"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -118,7 +120,7 @@ import DataSourceNewForm from "../components/DataSourceNewForm.vue";
 import { BBTableColumn } from "../bbkit/types";
 
 import { dataSourceSlug, instanceSlug } from "../utils";
-import { Instance, DataSource, DataSourceNew } from "../types";
+import { Instance, Database, DataSource, DataSourceNew } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -155,6 +157,10 @@ export default {
       required: true,
       type: Object as PropType<Instance>,
     },
+    // If database is specified, then we just list the data source for that database.
+    database: {
+      type: Object as PropType<Database>,
+    },
   },
   setup(props, ctx) {
     const store = useStore();
@@ -167,9 +173,9 @@ export default {
     });
 
     const dataSourceSectionList = computed(() => {
-      const databaseList = store.getters["database/databaseListByInstanceId"](
-        props.instance.id
-      );
+      const databaseList = props.database
+        ? [props.database]
+        : store.getters["database/databaseListByInstanceId"](props.instance.id);
       const dataSourceListByDatabase: Map<string, DataSource[]> = new Map();
       for (const dataSource of store.getters[
         "dataSource/dataSourceListByInstanceId"

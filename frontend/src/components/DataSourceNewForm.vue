@@ -162,6 +162,9 @@ export default {
       required: true,
       type: String,
     },
+    databaseId: {
+      type: String,
+    },
   },
   components: { DatabaseSelect },
   setup(props, ctx) {
@@ -169,7 +172,9 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
-        databaseId: ALL_DATABASE_PLACEHOLDER_ID,
+        databaseId: props.databaseId
+          ? props.databaseId
+          : ALL_DATABASE_PLACEHOLDER_ID,
       },
       showPassword: false,
     });
