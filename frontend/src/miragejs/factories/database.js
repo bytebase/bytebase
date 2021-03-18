@@ -23,6 +23,9 @@ export default {
         return "NOT_FOUND";
       }
     },
+    lastSuccessfulSyncTs(i) {
+      return Date.now() - i * 3600 * 1000;
+    },
     fingerprint(i) {
       return faker.fake("{{random.alpha}}");
     },

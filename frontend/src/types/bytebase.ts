@@ -298,6 +298,7 @@ export type Database = {
   createdTs: number;
   lastUpdatedTs: number;
   syncStatus: DatabaseSyncStatus;
+  lastSuccessfulSyncTs: number;
   fingerprint: string;
   instance: Instance;
 };
