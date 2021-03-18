@@ -39,9 +39,9 @@
         <router-link
           v-if="item.path"
           :to="item.path"
-          class="text-sm link max-w-prose truncate"
-          active-class="link"
-          exact-active-class="link"
+          class="text-sm anchor-link max-w-prose truncate"
+          active-class="anchor-link"
+          exact-active-class="anchor-link"
           >{{ item.name }}</router-link
         >
         <div v-else class="text-sm max-w-prose truncate">
@@ -135,10 +135,21 @@ export default {
           const instance = store.getters["instance/instanceById"](
             idFromSlug(instanceSlug)
           );
+
           list.push({
             name: instance.name,
             path: `/instance/${instanceSlug}`,
           });
+
+          if (databaseSlug) {
+            list.push({
+              name: "Database",
+            });
+          } else {
+            list.push({
+              name: "Data source",
+            });
+          }
         }
       }
 
