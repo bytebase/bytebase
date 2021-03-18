@@ -1,6 +1,6 @@
 <template>
   <!-- Navigation -->
-  <nav class="px-2 space-y-1">
+  <nav class="px-2 space-y-2">
     <div class="space-y-1">
       <router-link
         to="/"
@@ -24,6 +24,8 @@
     </div>
     <div>
       <BookmarkListSidePanel />
+    </div>
+    <div class="mt-4">
       <DatabaseListSidePanel />
     </div>
   </nav>
