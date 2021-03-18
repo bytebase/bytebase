@@ -44,7 +44,7 @@
         v-else-if="item.link"
         :to="item.link"
         class="outline-item flex justify-between pr-1 py-1"
-        :class="'pl-' + (level + 1) * 3"
+        :class="'pl-' + (4 + level * 3)"
       >
         <span class="truncate">{{ item.name }}</span>
         <button
