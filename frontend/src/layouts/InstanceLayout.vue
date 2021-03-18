@@ -29,6 +29,9 @@ export default {
       required: true,
       type: String,
     },
+    databaseSlug: {
+      type: String,
+    },
     dataSourceSlug: {
       type: String,
     },

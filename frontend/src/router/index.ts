@@ -272,6 +272,21 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "db/:databaseSlug",
+                name: "workspace.instance.database.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.databaseSlug as string;
+                    return store.getters["database/databaseById"](
+                      idFromSlug(slug)
+                    ).name;
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/DatabaseDetail.vue"),
+                props: true,
+              },
+              {
                 path: "ds/:dataSourceSlug",
                 name: "workspace.instance.datasource.detail",
                 meta: {
@@ -394,6 +409,7 @@ router.beforeEach((to, from, next) => {
   const routerSlug = store.getters["router/routeSlug"](to);
   const taskSlug = routerSlug.taskSlug;
   const instanceSlug = routerSlug.instanceSlug;
+  const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
   const principalId = routerSlug.principalId;
 
@@ -422,9 +438,22 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
       .then((instance) => {
-        if (!dataSourceSlug) {
-          next();
-        } else {
+        if (databaseSlug) {
+          store
+            .dispatch("database/fetchDatabaseById", {
+              instanceId: instance.id,
+              databaseId: idFromSlug(databaseSlug),
+            })
+            .then((database) => {
+              next();
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+            });
+        } else if (dataSourceSlug) {
           store
             .dispatch("dataSource/fetchDataSourceById", {
               instanceId: instance.id,
@@ -439,6 +468,8 @@ router.beforeEach((to, from, next) => {
                 replace: false,
               });
             });
+        } else {
+          next();
         }
       })
       .catch((error) => {

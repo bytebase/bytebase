@@ -623,6 +623,26 @@ export default function routes() {
     );
   });
 
+  this.get("/instance/:instanceId/database/:id", function (schema, request) {
+    const instance = schema.instances.find(request.params.instanceId);
+    if (instance) {
+      const database = schema.databases.find(request.params.id);
+      if (database) {
+        return database;
+      }
+      return new Response(
+        404,
+        {},
+        { errors: "Database " + request.params.id + " not found" }
+      );
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Instance " + request.params.instanceId + " not found" }
+    );
+  });
+
   // Bookmark
   this.get("/bookmark", function (schema, request) {
     const {

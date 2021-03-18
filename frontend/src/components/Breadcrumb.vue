@@ -89,6 +89,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { RouterSlug, User, Bookmark } from "../types";
 import { idFromSlug } from "../utils";
+import database from "../store/modules/database";
 
 interface BreadcrumbItem {
   name: string;
@@ -120,6 +121,7 @@ export default {
         currentRoute.value
       );
       const instanceSlug = routeSlug.instanceSlug;
+      const databaseSlug = routeSlug.databaseSlug;
       const dataSourceSlug = routeSlug.dataSourceSlug;
 
       const list: Array<BreadcrumbItem> = [];
@@ -129,7 +131,7 @@ export default {
           path: "/instance",
         });
 
-        if (dataSourceSlug) {
+        if (databaseSlug || dataSourceSlug) {
           const instance = store.getters["instance/instanceById"](
             idFromSlug(instanceSlug)
           );
@@ -138,10 +140,17 @@ export default {
             path: `/instance/${instanceSlug}`,
           });
 
-          list.push({
-            name: "Data Source",
-            path: `/instance/${instanceSlug}`,
-          });
+          if (databaseSlug) {
+            list.push({
+              name: "Database",
+              path: `/instance/${instanceSlug}`,
+            });
+          } else {
+            list.push({
+              name: "Data Source",
+              path: `/instance/${instanceSlug}`,
+            });
+          }
         }
       }
 

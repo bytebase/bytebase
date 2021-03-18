@@ -13,6 +13,7 @@ import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
 import { Database, Environment, EnvironmentId } from "../types";
+import { instanceSlug, databaseSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
 export default {
@@ -52,7 +53,9 @@ export default {
         dbList.push({
           id: database.id,
           name: database.name,
-          link: "/",
+          link: `/instance/${instanceSlug(database.instance)}/db/${databaseSlug(
+            database
+          )}`,
         });
       }
       return environmentList.value.map(

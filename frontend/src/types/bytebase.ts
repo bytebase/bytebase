@@ -325,6 +325,7 @@ export type ActivateInfo = {
 export type RouterSlug = {
   taskSlug?: string;
   instanceSlug?: string;
+  databaseSlug?: string;
   dataSourceSlug?: string;
   principalId?: PrincipalId;
 };
@@ -398,8 +399,10 @@ export interface DatabaseState {
   databaseListByInstanceId: Map<InstanceId, Database[]>;
   // It would be quite expensive to find user's data source list
   // if iterating through dataSourceListByInstanceId. so we create
-  // a separate map for quick access. Needs to be careful to not
-  // introduce inconsistent data source entries between these two maps.
+  // a separate map for quick access.
+  // NOTE: For the same database, we don't reconcile the state between
+  // the 2 maps, which means each map may contain a different state for
+  // that database.
   databaseListByUserId: Map<UserId, Database[]>;
 }
 

@@ -115,6 +115,27 @@ const actions = {
 
     return databaseList;
   },
+
+  async fetchDatabaseById(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      databaseId,
+    }: { instanceId: InstanceId; databaseId: DatabaseId }
+  ) {
+    const database = convert(
+      (await axios.get(`/api/instance/${instanceId}/database/${databaseId}`))
+        .data.data,
+      rootGetters
+    );
+
+    commit("upsertDatabaseInListByInstanceId", {
+      instanceId,
+      database,
+    });
+
+    return database;
+  },
 };
 
 const mutations = {
@@ -129,6 +150,29 @@ const mutations = {
     }
   ) {
     state.databaseListByInstanceId.set(instanceId, databaseList);
+  },
+
+  upsertDatabaseInListByInstanceId(
+    state: DatabaseState,
+    {
+      instanceId,
+      database,
+    }: {
+      instanceId: InstanceId;
+      database: Database;
+    }
+  ) {
+    const list = state.databaseListByInstanceId.get(instanceId);
+    if (list) {
+      const i = list.findIndex((item: Database) => item.id == database.id);
+      if (i != -1) {
+        list[i] = database;
+      } else {
+        list.push(database);
+      }
+    } else {
+      state.databaseListByInstanceId.set(instanceId, [database]);
+    }
   },
 
   setDatabaseListByUserId(
