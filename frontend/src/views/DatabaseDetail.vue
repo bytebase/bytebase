@@ -10,7 +10,9 @@
           <div class="flex items-center">
             <div>
               <div class="flex items-center">
-                <h1 class="pb-2 text-xl font-bold leading-6 text-main truncate">
+                <h1
+                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
+                >
                   {{ database.name }}
                 </h1>
               </div>
@@ -51,32 +53,30 @@
       </div>
 
       <div class="mt-6">
-        <div class="max-w-6xl mx-auto px-6 space-y-6">
+        <div
+          class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border"
+        >
           <!-- Description list -->
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">Updated</dt>
               <dd class="mt-1 text-sm text-main">
-                <div class="mt-2.5 mb-3">
-                  {{ humanizeTs(database.lastUpdatedTs) }}
-                </div>
+                {{ humanizeTs(database.lastUpdatedTs) }}
               </dd>
             </div>
 
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">Created</dt>
               <dd class="mt-1 text-sm text-main">
-                <div class="mt-2.5 mb-3">
-                  {{ humanizeTs(database.createdTs) }}
-                </div>
+                {{ humanizeTs(database.createdTs) }}
               </dd>
             </div>
           </dl>
-        </div>
-      </div>
 
-      <div class="px-4 py-6 space-y-4 border-t divide-control-border">
-        <DataSourceTable :instance="instance" :database="database" />
+          <div class="pt-6">
+            <DataSourceTable :instance="instance" :database="database" />
+          </div>
+        </div>
       </div>
     </main>
   </div>

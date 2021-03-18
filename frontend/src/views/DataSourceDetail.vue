@@ -149,14 +149,16 @@
       </div>
 
       <div class="mt-6">
-        <div class="max-w-6xl mx-auto px-6 space-y-6">
+        <div
+          class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border"
+        >
           <!-- Description list -->
-          <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+          <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
               <dt class="text-sm font-medium text-control-light">
                 Connection string
               </dt>
-              <dd class="mt-2.5 text-sm text-main">
+              <dd class="mt-2 text-sm text-main">
                 <div class="space-y-4">
                   <div
                     class="flex"
@@ -283,25 +285,21 @@
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">Updated</dt>
               <dd class="mt-1 text-sm text-main">
-                <div lass="mt-2.5 mb-3">
-                  {{ humanizeTs(dataSource.lastUpdatedTs) }}
-                </div>
+                {{ humanizeTs(dataSource.lastUpdatedTs) }}
               </dd>
             </div>
 
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">Created</dt>
               <dd class="mt-1 text-sm text-main">
-                <div lass="mt-2.5 mb-3">
-                  {{ humanizeTs(dataSource.createdTs) }}
-                </div>
+                {{ humanizeTs(dataSource.createdTs) }}
               </dd>
             </div>
           </dl>
 
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
-            class="pt-4 border-t border-control-border"
+            class="pt-6"
             v-if="dataSource.id != '-1'"
             :allowEdit="allowEdit"
             :dataSource="dataSource"
