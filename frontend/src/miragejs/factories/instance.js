@@ -1,4 +1,5 @@
 import { Factory } from "miragejs";
+import faker from "faker";
 
 export default {
   instance: Factory.extend({
@@ -72,7 +73,7 @@ export default {
       });
 
       for (let i = 0; i < 3; i++) {
-        const dbName = "db" + (i + 1);
+        const dbName = "db" + faker.fake("{{lorem.word}}") + (i + 1);
         const database = server.create("database", {
           workspaceId: instance.workspaceId,
           instance,
