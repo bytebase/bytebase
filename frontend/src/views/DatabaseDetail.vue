@@ -83,9 +83,6 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const instanceId = idFromSlug(props.instanceSlug);
-    const databaseId = idFromSlug(props.databaseSlug);
-
     const state = reactive<LocalState>({
       editing: false,
       showPassword: false,
@@ -94,11 +91,16 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const database = computed(() => {
-      return store.getters["database/databaseById"](databaseId, instanceId);
+      return store.getters["database/databaseById"](
+        idFromSlug(props.databaseSlug),
+        idFromSlug(props.instanceSlug)
+      );
     });
 
     const instance = computed(() => {
-      return store.getters["instance/instanceById"](instanceId);
+      return store.getters["instance/instanceById"](
+        idFromSlug(props.instanceSlug)
+      );
     });
 
     return {
