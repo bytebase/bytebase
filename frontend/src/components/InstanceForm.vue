@@ -16,8 +16,8 @@ input[type="number"] {
   <form class="space-y-6 divide-y divide-block-border">
     <div class="">
       <!-- Instance Name -->
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-        <div class="sm:col-span-2">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+        <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel">
             Instance Name <span style="color: red">*</span>
           </label>
@@ -37,6 +37,7 @@ input[type="number"] {
             Environment <span style="color: red">*</span>
           </label>
           <EnvironmentSelect
+            class="mt-1"
             id="environment"
             name="environment"
             :selectedId="state.instance.environmentId"
@@ -48,40 +49,36 @@ input[type="number"] {
           />
         </div>
 
-        <div class="sm:col-span-5">
+        <div class="sm:col-span-2 sm:col-start-1">
           <label for="host" class="textlabel block">
             Host or Socket <span style="color: red">*</span>
           </label>
-          <div class="mt-1">
-            <input
-              required
-              type="text"
-              id="host"
-              name="host"
-              placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
-              class="textfield mt-1 w-full"
-              :value="state.instance.host"
-              @input="updateInstance('host', $event.target.value)"
-            />
-          </div>
+          <input
+            required
+            type="text"
+            id="host"
+            name="host"
+            placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
+            class="textfield mt-1 w-full"
+            :value="state.instance.host"
+            @input="updateInstance('host', $event.target.value)"
+          />
         </div>
 
         <div class="sm:col-span-1">
           <label for="port" class="textlabel block"> Port </label>
-          <div class="mt-1">
-            <input
-              type="number"
-              id="port"
-              name="port"
-              placeholder="3306"
-              class="textfield mt-1 w-full"
-              :value="state.instance.port"
-              @input="updateInstance('port', $event.target.value)"
-            />
-          </div>
+          <input
+            type="number"
+            id="port"
+            name="port"
+            placeholder="3306"
+            class="textfield mt-1 w-full"
+            :value="state.instance.port"
+            @input="updateInstance('port', $event.target.value)"
+          />
         </div>
 
-        <div class="sm:col-span-6 sm:col-start-1">
+        <div class="sm:col-span-3 sm:col-start-1">
           <label for="externallink" class="textlabel inline-flex">
             <span class="">External Link</span>
             <button
@@ -125,47 +122,36 @@ input[type="number"] {
             <h3 class="text-lg leading-6 font-medium text-gray-900">
               Read/Write Data Source Info
             </h3>
-            <p class="mt-1 text-sm text-gray-500">
-              This is the data source used by bytebase to perform DDL and
-              non-SELECT DML operations. Note, bytebase does NOT need
-              admin/SUPER privilege. TODO: Add grant statement.
+            <p class="mt-1 text-sm text-gray-500 max-w-xl">
+              This is the data source used by bytebase to perform DDL and DML
+              operations. Note, bytebase does NOT need admin/SUPER privilege.
+              TODO: Add grant statement.
             </p>
           </div>
         </div>
-        <div class="mt-4">
+        <div class="pt-4">
           <button type="button" class="btn-normal">Test Connection</button>
         </div>
-        <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-          <div class="sm:col-span-2 sm:col-start-1">
+        <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+          <div class="sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block"> Username </label>
-            <div class="mt-1">
-              <!-- For mysql, username can be empty indicating anonymous user. 
+            <!-- For mysql, username can be empty indicating anonymous user. 
             But it's a very bad practice to use anonymous user for admin operation,
             thus we make it REQUIRED here. -->
-              <input
-                id="username"
-                name="username"
-                type="text"
-                class="textfield mt-1 w-full"
-                :value="state.newDataSource.username"
-                @input="updateDataSource('username', $event.target.value)"
-              />
-            </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="textfield mt-1 w-full"
+              :value="state.newDataSource.username"
+              @input="updateDataSource('username', $event.target.value)"
+            />
           </div>
 
-          <div class="sm:col-span-2 sm:col-start-1">
-            <label for="password" class="textlabel block"> Password </label>
-            <div class="mt-1 inline-flex">
-              <input
-                id="password"
-                name="password"
-                autocomplete="off"
-                :type="state.showPassword ? 'text' : 'password'"
-                class="textfield mt-1 w-full"
-                :value="state.newDataSource.password"
-                @input="updateDataSource('password', $event.target.value)"
-              />
-              <div class="ml-2 flex items-center">
+          <div class="sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-row items-center">
+              <label for="password" class="textlabel block"> Password </label>
+              <div class="ml-1 flex items-center">
                 <button
                   class="btn-icon"
                   @click.prevent="state.showPassword = !state.showPassword"
@@ -209,6 +195,15 @@ input[type="number"] {
                 </button>
               </div>
             </div>
+            <input
+              id="password"
+              name="password"
+              autocomplete="off"
+              :type="state.showPassword ? 'text' : 'password'"
+              class="textfield mt-1 w-full"
+              :value="state.newDataSource.password"
+              @input="updateDataSource('password', $event.target.value)"
+            />
           </div>
         </div>
       </div>
