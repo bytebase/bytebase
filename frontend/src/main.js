@@ -29,7 +29,15 @@ import {
   BBTableTabFilter,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
-import { isDemo, isDevOrDemo, humanizeTs, sizeToFit, urlfy } from "./utils";
+import {
+  isDemo,
+  isDevOrDemo,
+  humanizeTs,
+  sizeToFit,
+  urlfy,
+  instanceSlug,
+  databaseSlug,
+} from "./utils";
 
 if (isDevOrDemo()) {
   makeServer();
@@ -46,6 +54,8 @@ app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
+app.config.globalProperties.instanceSlug = instanceSlug;
+app.config.globalProperties.databaseSlug = databaseSlug;
 
 app
   // Need to use a directive on the element.
