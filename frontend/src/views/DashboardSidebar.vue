@@ -7,7 +7,7 @@
         class="outline-item group flex items-center px-2 py-2"
       >
         <svg
-          class="mr-3 h-6 w-6 text-control-light group-hover:text-control-light group-focus:text-control-light-hover"
+          class="mr-2 h-4 w-4 text-control-light group-hover:text-control-light group-focus:text-control-light-hover"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
