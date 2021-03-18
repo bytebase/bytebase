@@ -12,7 +12,12 @@ import { computed, watchEffect, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
-import { Database, Environment, EnvironmentId } from "../types";
+import {
+  ALL_DATABASE_NAME,
+  Database,
+  Environment,
+  EnvironmentId,
+} from "../types";
 import { instanceSlug, databaseSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
@@ -49,14 +54,16 @@ export default {
         envToDbMap.set(environment.id, []);
       }
       for (const database of databaseList) {
-        const dbList = envToDbMap.get(database.instance.environment.id)!;
-        dbList.push({
-          id: database.id,
-          name: database.name,
-          link: `/instance/${instanceSlug(database.instance)}/db/${databaseSlug(
-            database
-          )}`,
-        });
+        if (database.name != ALL_DATABASE_NAME) {
+          const dbList = envToDbMap.get(database.instance.environment.id)!;
+          dbList.push({
+            id: database.id,
+            name: database.name,
+            link: `/instance/${instanceSlug(
+              database.instance
+            )}/db/${databaseSlug(database)}`,
+          });
+        }
       }
       return environmentList.value.map(
         (environment: Environment): BBOutlineItem => {
