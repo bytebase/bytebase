@@ -267,14 +267,14 @@ import {
   Instance,
   InstanceNew,
   DataSourceNew,
-  ALL_DATABASE_ID,
+  ALL_DATABASE_PLACEHOLDER_ID,
 } from "../types";
 
 const INIT_DATA_SOURCE: DataSourceNew = {
   name: "Read/Write Data Source",
   type: "RW",
   username: "root",
-  databaseId: ALL_DATABASE_ID,
+  databaseId: ALL_DATABASE_PLACEHOLDER_ID,
 };
 
 interface LocalState {

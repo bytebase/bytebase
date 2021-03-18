@@ -28,6 +28,7 @@
           </label>
           <DatabaseSelect
             class="mt-1"
+            :selectedId="state.dataSource.databaseId"
             :instanceId="instanceId"
             @select-database-id="
               (databaseId) => {
@@ -146,7 +147,7 @@
 <script lang="ts">
 import { computed, reactive } from "vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { DataSourceNew, ALL_DATABASE_ID } from "../types";
+import { DataSourceNew, ALL_DATABASE_PLACEHOLDER_ID } from "../types";
 
 interface LocalState {
   dataSource: DataSourceNew;
@@ -168,7 +169,7 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
-        databaseId: ALL_DATABASE_ID,
+        databaseId: ALL_DATABASE_PLACEHOLDER_ID,
       },
       showPassword: false,
     });

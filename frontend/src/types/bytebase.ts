@@ -30,7 +30,10 @@ export type DataSourceId = string;
 export type DataSourceMemberId = string;
 
 export type DatabaseId = string;
-export const ALL_DATABASE_ID: DatabaseId = "0";
+// This is a placeholder database id which will later be converted to
+// the actual database id referencing all databases.
+export const ALL_DATABASE_PLACEHOLDER_ID = "0";
+export const ALL_DATABASE_NAME: string = "*";
 
 export type CommandId = string;
 export type CommandRegisterId = string;

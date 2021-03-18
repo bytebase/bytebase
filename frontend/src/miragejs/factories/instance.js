@@ -1,5 +1,4 @@
 import { Factory } from "miragejs";
-import { ALL_DATABASE_ID } from "../../types";
 
 export default {
   instance: Factory.extend({
@@ -46,10 +45,16 @@ export default {
       }
     },
     afterCreate(instance, server) {
+      const allDatabase = server.create("database", {
+        workspaceId: instance.workspaceId,
+        instance,
+        name: "*",
+      });
+
       server.create("dataSource", {
         workspaceId: instance.workspaceId,
         instance,
-        databaseId: ALL_DATABASE_ID,
+        database: allDatabase,
         name: instance.name + " admin ds1",
         type: "RW",
         username: "adminRW",
@@ -59,7 +64,7 @@ export default {
       server.create("dataSource", {
         workspaceId: instance.workspaceId,
         instance,
-        databaseId: ALL_DATABASE_ID,
+        database: allDatabase,
         name: instance.name + " admin ds2",
         type: "RO",
         username: "adminRO",

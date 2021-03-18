@@ -24,7 +24,11 @@
 <script lang="ts">
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
-import { ALL_DATABASE_ID } from "../types";
+import {
+  ALL_DATABASE_NAME,
+  ALL_DATABASE_PLACEHOLDER_ID,
+  Database,
+} from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -36,6 +40,7 @@ export default {
   components: {},
   props: {
     selectedId: {
+      default: ALL_DATABASE_PLACEHOLDER_ID,
       type: String,
     },
     instanceId: {
@@ -53,15 +58,20 @@ export default {
       const list = store.getters["database/databaseListByInstanceId"](
         props.instanceId
       );
-      const fullList = [
-        {
-          id: ALL_DATABASE_ID,
-          name: "* (All databases)",
-        },
-      ];
-      fullList.push(...list);
-      return fullList;
+      return list;
     });
+
+    if (
+      props.selectedId == ALL_DATABASE_PLACEHOLDER_ID &&
+      databaseList.value &&
+      databaseList.value.length > 0
+    ) {
+      const allDatabase = databaseList.value.find(
+        (item: Database) => item.name == ALL_DATABASE_NAME
+      );
+      state.selectedId = allDatabase.id;
+      emit("select-database-id", state.selectedId);
+    }
 
     return {
       state,

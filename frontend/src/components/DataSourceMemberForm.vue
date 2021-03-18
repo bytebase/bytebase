@@ -149,7 +149,6 @@ import InstanceSelect from "../components/InstanceSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import { instanceSlug } from "../utils";
 import {
-  ALL_DATABASE_ID,
   DataSource,
   DataSourceMember,
   DataSourceMemberNew,
@@ -192,14 +191,11 @@ export default {
     const router = useRouter();
 
     const databaseName = computed(() => {
-      if (props.dataSource.databaseId != ALL_DATABASE_ID) {
-        const database = store.getters["database/databaseById"](
-          props.dataSource.databaseId,
-          props.dataSource.instanceId
-        );
-        return database.name;
-      }
-      return "* (All databases)";
+      const database = store.getters["database/databaseById"](
+        props.dataSource.databaseId,
+        props.dataSource.instanceId
+      );
+      return database.name;
     });
 
     const instance = computed(() => {
