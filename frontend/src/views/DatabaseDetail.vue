@@ -10,12 +10,43 @@
           <div class="flex items-center">
             <div>
               <div class="flex items-center">
-                <h1 class="text-xl font-bold leading-6 text-main truncate">
+                <h1 class="pb-2 text-xl font-bold leading-6 text-main truncate">
                   {{ database.name }}
                 </h1>
               </div>
             </div>
           </div>
+          <dl
+            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+          >
+            <dt class="sr-only">Instance</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+              <router-link
+                :to="`/instance/${instanceSlug}`"
+                class="normal-link"
+              >
+                {{ database.instance.name }}
+              </router-link>
+            </dd>
+            <dt class="sr-only">Environment</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">Environment&nbsp;-&nbsp;</span>
+              <router-link to="/environment" class="normal-link">
+                {{ database.instance.environment.name }}
+              </router-link>
+            </dd>
+            <dt class="sr-only">Sync Status</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">Sync status&nbsp;-&nbsp;</span>
+              {{ database.syncStatus }}
+            </dd>
+            <dt class="sr-only">Last successful sync</dt>
+            <dd class="flex items-center text-sm">
+              <span class="textlabel">Last successful sync&nbsp;-&nbsp;</span>
+              {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+            </dd>
+          </dl>
         </div>
       </div>
 
@@ -24,21 +55,19 @@
           <!-- Description list -->
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
             <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                Environment
-              </dt>
+              <dt class="text-sm font-medium text-control-light">Updated</dt>
               <dd class="mt-1 text-sm text-main">
                 <div class="mt-2.5 mb-3">
-                  {{ database.instance.environment.name }}
+                  {{ humanizeTs(database.lastUpdatedTs) }}
                 </div>
               </dd>
             </div>
 
             <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">Instance</dt>
+              <dt class="text-sm font-medium text-control-light">Created</dt>
               <dd class="mt-1 text-sm text-main">
                 <div class="mt-2.5 mb-3">
-                  {{ database.instance.name }}
+                  {{ humanizeTs(database.createdTs) }}
                 </div>
               </dd>
             </div>
