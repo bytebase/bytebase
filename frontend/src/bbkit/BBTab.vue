@@ -133,7 +133,7 @@ export default {
       const width =
         "w-1/" + (props.tabTitleList.length + (props.allowCreate ? 1 : 0));
       if (selected) {
-        return width + " text-control-hover border-control-hover";
+        return width + " text-control-hover border-accent";
       }
       return (
         width +
