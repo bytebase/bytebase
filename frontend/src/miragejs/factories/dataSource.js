@@ -33,12 +33,22 @@ export default {
         taskId: "2",
       });
 
-      server.create("dataSourceMember", {
-        workspaceId: dataSource.workspaceId,
-        dataSource,
-        principalId: "2",
-        taskId: "3",
-      });
+      if (dataSource.id % 2 == 0) {
+        server.create("dataSourceMember", {
+          workspaceId: dataSource.workspaceId,
+          dataSource,
+          principalId: "2",
+          taskId: "3",
+        });
+      }
+
+      if (dataSource.id % 4 == 0) {
+        server.create("dataSourceMember", {
+          workspaceId: dataSource.workspaceId,
+          dataSource,
+          principalId: "3",
+        });
+      }
     },
   }),
 };
