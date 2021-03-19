@@ -233,6 +233,16 @@ export default function routes() {
 
       const changeList = [];
 
+      if (attrs.name) {
+        if (task.name != attrs.name) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.NAME,
+            oldValue: task.name,
+            newValue: attrs.name,
+          });
+        }
+      }
+
       if (attrs.status) {
         if (task.status != attrs.status) {
           changeList.push({

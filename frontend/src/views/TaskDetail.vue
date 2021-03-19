@@ -6,7 +6,11 @@
   >
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
-      <TaskHighlightPanel :task="state.task" :new="state.new">
+      <TaskHighlightPanel
+        :task="state.task"
+        :new="state.new"
+        @update-name="updateName"
+      >
         <template v-if="state.new">
           <button
             type="button"
@@ -368,6 +372,18 @@ export default {
         ) || []
     );
 
+    const updateName = (
+      newName: string,
+      postUpdated: (updatedTask: Task) => void
+    ) => {
+      patchTask(
+        {
+          name: newName,
+        },
+        postUpdated
+      );
+    };
+
     const updateDescription = (
       newDescription: string,
       postUpdated: (updatedTask: Task) => void
@@ -529,6 +545,7 @@ export default {
     return {
       state,
       modalState,
+      updateName,
       updateDescription,
       updateTaskStatus,
       updateAssigneeId,

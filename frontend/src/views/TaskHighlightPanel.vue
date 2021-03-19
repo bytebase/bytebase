@@ -4,15 +4,31 @@
       <div class="flex items-center">
         <div>
           <div class="flex items-center">
-            <TaskStatusIcon
-              v-if="!$props.new"
-              :taskStatus="task.status"
-              :stageStatus="activeStage(task).status"
+            <div>
+              <TaskStatusIcon
+                v-if="!$props.new"
+                class="mt-0.5"
+                :taskStatus="task.status"
+                :stageStatus="activeStage(task).status"
+              />
+            </div>
+            <input
+              v-if="state.editing"
+              required
+              ref="nameTextField"
+              id="name"
+              name="name"
+              type="text"
+              class="textfield ml-2 my-0.5 w-full"
+              v-model="state.name"
+              @blur="trySaveName"
             />
+            <!-- Extra padding is to prevent flickering when entering the edit mode -->
             <p
-              class="ml-2 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
+              v-else
+              class="ml-2 mt-2 mb-1.5 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
             >
-              {{ task.name }}
+              <span @click.prevent="clickName">{{ state.name }}</span>
             </p>
           </div>
           <div v-if="!$props.new">
@@ -37,13 +53,19 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { reactive, ref, nextTick, PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import { activeStage } from "../utils";
 import { Task } from "../types";
 
+interface LocalState {
+  editing: boolean;
+  name: string;
+}
+
 export default {
   name: "TaskHighlightPanel",
+  emits: ["update-name"],
   props: {
     task: {
       required: true,
@@ -55,8 +77,32 @@ export default {
     },
   },
   components: { TaskStatusIcon },
-  setup(props, ctx) {
-    return { activeStage };
+  setup(props, { emit }) {
+    const nameTextField = ref();
+
+    const state = reactive<LocalState>({
+      editing: false,
+      name: props.task.name,
+    });
+
+    const clickName = () => {
+      state.editing = true;
+      nextTick(() => {
+        nameTextField.value.focus();
+      });
+    };
+
+    const trySaveName = () => {
+      if (state.name != props.task.name) {
+        emit("update-name", state.name, (updatedTask: Task) => {
+          state.editing = false;
+        });
+      } else {
+        state.editing = false;
+      }
+    };
+
+    return { nameTextField, state, activeStage, clickName, trySaveName };
   },
 };
 </script>

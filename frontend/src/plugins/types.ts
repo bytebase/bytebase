@@ -4,9 +4,10 @@ import { Environment, Principal, TaskNew } from "../types";
 export type TaskFieldId = number;
 
 export enum TaskBuiltinFieldId {
-  STATUS = 10000,
-  ASSIGNEE = 10001,
-  DESCRIPTION = 10002,
+  NAME = 10000,
+  STATUS = 10001,
+  ASSIGNEE = 10002,
+  DESCRIPTION = 10003,
 }
 
 export type TaskFieldType = "String" | "Environment";

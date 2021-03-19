@@ -454,12 +454,16 @@ export default {
             let name = "Unknown Field";
             let oldValue = undefined;
             let newValue = undefined;
-            if (update.fieldId == TaskBuiltinFieldId.STATUS) {
-              name = "Status";
+            if (update.fieldId == TaskBuiltinFieldId.NAME) {
+              name = "name";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.STATUS) {
+              name = "status";
               oldValue = update.oldValue;
               newValue = update.newValue;
             } else if (update.fieldId == TaskBuiltinFieldId.ASSIGNEE) {
-              name = "Assignee";
+              name = "assignee";
               if (update.oldValue) {
                 oldValue = store.getters["principal/principalById"](
                   update.oldValue
@@ -471,7 +475,7 @@ export default {
                 ).name;
               }
             } else if (update.fieldId == TaskBuiltinFieldId.DESCRIPTION) {
-              name = "Description";
+              name = "description";
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);
               if (field) {
