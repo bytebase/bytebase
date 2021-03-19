@@ -58,6 +58,7 @@
             <span class="block w-full rounded-md shadow-sm">
               <button
                 type="submit"
+                :disabled="!allowSignin"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
                 Sign in
@@ -83,11 +84,11 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { LoginInfo } from "../../types";
-import { isDev, isDevOrDemo } from "../../utils";
+import { isDev, isDevOrDemo, isValidEmail } from "../../utils";
 
 interface LocalState {
   email: string;
@@ -103,6 +104,10 @@ export default {
     const state = reactive<LocalState>({
       email: isDevOrDemo() ? "demo@example.com" : "",
       password: isDev() ? "1024" : "",
+    });
+
+    const allowSignin = computed(() => {
+      return isValidEmail(state.email) && state.password;
     });
 
     const trySignin = () => {
@@ -123,6 +128,7 @@ export default {
 
     return {
       state,
+      allowSignin,
       trySignin,
     };
   },

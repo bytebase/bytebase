@@ -72,6 +72,7 @@
             <span class="block w-full rounded-md shadow-sm">
               <button
                 type="submit"
+                :disabled="!allowSignup"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
                 Register
@@ -99,10 +100,11 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { SignupInfo } from "../../types";
+import { isValidEmail } from "../../utils";
 
 interface LocalState {
   email: string;
@@ -122,6 +124,10 @@ export default {
       password: "",
       name: "",
       nameManuallyEdited: false,
+    });
+
+    const allowSignup = computed(() => {
+      return isValidEmail(state.email) && state.password;
     });
 
     const onTextEmail = () => {
@@ -169,6 +175,7 @@ export default {
 
     return {
       state,
+      allowSignup,
       onTextEmail,
       onTextName,
       trySignup,

@@ -9,7 +9,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form @submit.prevent="trySignin" class="space-y-6">
+        <form @submit.prevent="tryReset" class="space-y-6">
           <div>
             <label
               for="email"
@@ -22,7 +22,7 @@
               <input
                 id="email"
                 type="email"
-                v-model="email"
+                v-model="state.email"
                 required
                 placeholder="jim@example.com"
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
@@ -34,6 +34,7 @@
             <span class="block w-full rounded-md shadow-sm">
               <button
                 type="submit"
+                :disabled="!allowReset"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
                 Send reset link
@@ -58,18 +59,29 @@
 </template>
 
 <script lang="ts">
+import { computed, reactive } from "vue";
+import { isValidEmail } from "../../utils";
+
+interface LocalState {
+  email: string;
+}
+
 export default {
   name: "PasswordReset",
-  setup(props, ctx) {},
-  data: function () {
-    return {
-      email: null,
+  setup(props, ctx) {
+    const state = reactive<LocalState>({
+      email: "",
+    });
+
+    const allowReset = computed(() => {
+      return isValidEmail(state.email);
+    });
+
+    const tryReset = () => {
+      console.log("Reset Email", state.email);
     };
-  },
-  methods: {
-    tryReset: function () {
-      console.log("Reset Email", this.email);
-    },
+
+    return { state, allowReset, tryReset };
   },
 };
 </script>
