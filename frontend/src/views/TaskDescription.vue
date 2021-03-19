@@ -136,9 +136,11 @@ export default {
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
       window.addEventListener("resize", resizeTextAreaHandler);
+      if (props.new) {
+        state.edit = true;
+      }
       nextTick(() => {
         if (props.new) {
-          state.edit = true;
           editDescriptionTextArea.value.focus();
           sizeToFit(editDescriptionTextArea.value);
         }
