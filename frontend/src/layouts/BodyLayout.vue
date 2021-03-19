@@ -206,7 +206,15 @@ export default {
     });
 
     const quickActionList = computed(() => {
-      return router.currentRoute.value.meta.quickActionList;
+      const user = store.getters["auth/currentUser"]();
+      const role = store.getters["roleMapping/roleMappingByPrincipalId"](
+        user.id
+      ).role;
+      const listByRole = router.currentRoute.value.meta.quickActionListByRole;
+      if (listByRole?.get(role)?.length > 0) {
+        return listByRole.get(role);
+      }
+      return undefined;
     });
 
     const showBreadcrumb = computed(() => {

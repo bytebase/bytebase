@@ -77,13 +77,35 @@ const routes: Array<RouteRecordRaw> = [
             path: "",
             name: HOME_MODULE,
             meta: {
-              quickActionList: [
-                "instance.create",
-                "user.manage",
-                "datasource.request",
-                "datasource.schema.update",
-                "ticket.create",
-              ],
+              quickActionListByRole: new Map([
+                [
+                  "OWNER",
+                  [
+                    "quickaction.bytebase.user.manage",
+                    "quickaction.bytebase.instance.create",
+                    "quickaction.bytebase.database.schema.update",
+                    "quickaction.bytebase.database.request",
+                    "quickaction.bytebase.database.troubleshoot",
+                  ],
+                ],
+                [
+                  "DBA",
+                  [
+                    "quickaction.bytebase.instance.create",
+                    "quickaction.bytebase.database.schema.update",
+                    "quickaction.bytebase.database.request",
+                    "quickaction.bytebase.database.troubleshoot",
+                  ],
+                ],
+                [
+                  "DEVELOPER",
+                  [
+                    "quickaction.bytebase.database.troubleshoot",
+                    "quickaction.bytebase.database.schema.update",
+                    "quickaction.bytebase.database.request",
+                  ],
+                ],
+              ]),
             },
             components: {
               content: Home,
@@ -224,7 +246,22 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.environment",
             meta: {
               title: () => "Environment",
-              quickActionList: ["environment.create", "environment.reorder"],
+              quickActionListByRole: new Map([
+                [
+                  "OWNER",
+                  [
+                    "quickaction.bytebase.environment.create",
+                    "quickaction.bytebase.environment.reorder",
+                  ],
+                ],
+                [
+                  "DBA",
+                  [
+                    "quickaction.bytebase.environment.create",
+                    "quickaction.bytebase.environment.reorder",
+                  ],
+                ],
+              ]),
             },
             components: {
               content: () => import("../views/EnvironmentDashboard.vue"),
@@ -237,7 +274,10 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.instance",
             meta: {
               title: () => "Instance",
-              quickActionList: ["instance.create"],
+              quickActionListByRole: new Map([
+                ["OWNER", ["quickaction.bytebase.instance.create"]],
+                ["DBA", ["quickaction.bytebase.instance.create"]],
+              ]),
             },
             components: {
               content: () => import("../views/InstanceDashboard.vue"),

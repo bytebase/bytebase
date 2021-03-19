@@ -347,6 +347,7 @@ export type Command = {
   run: () => void;
 };
 
+// Notification
 // "id" and "createdTs" is auto generated upon the notification store
 // receives.
 export type NewNotification = Omit<Notification, "id" | "createdTs">;
@@ -355,6 +356,23 @@ export type NotificationFilter = {
   module: string;
   id?: string;
 };
+
+// Quick Action Type
+export type EnvironmentQuickActionType =
+  | "quickaction.bytebase.environment.create"
+  | "quickaction.bytebase.environment.reorder";
+export type InstanceQuickActionType = "quickaction.bytebase.instance.create";
+export type UserQuickActionType = "quickaction.bytebase.user.manage";
+export type DatabaseQuickActionType =
+  | "quickaction.bytebase.database.request"
+  | "quickaction.bytebase.database.schema.update"
+  | "quickaction.bytebase.database.troubleshoot";
+
+export type QuickActionType =
+  | EnvironmentQuickActionType
+  | InstanceQuickActionType
+  | UserQuickActionType
+  | DatabaseQuickActionType;
 
 // Store
 export interface AuthState {
