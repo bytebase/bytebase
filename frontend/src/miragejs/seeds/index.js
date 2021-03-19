@@ -1,5 +1,5 @@
 import faker from "faker";
-import { taskSlug } from "../../utils";
+import { instanceSlug, databaseSlug, taskSlug } from "../../utils";
 
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
@@ -271,6 +271,7 @@ const workspacesSeeder = (server) => {
   });
 
   // Bookmarks
+  // Workspace 1
   // Task 1
   const task1 = server.schema.tasks.find(1);
   server.create("bookmark", {
@@ -289,6 +290,26 @@ const workspacesSeeder = (server) => {
     creatorId: ws1Owner.id,
   });
 
+  // Instance 1
+  const instance1 = server.schema.instances.find(1);
+  instance1.environment = environmentList1[0];
+  server.create("bookmark", {
+    workspace: workspace1,
+    name: instance1.name,
+    link: `/instance/${instanceSlug(instance1)}`,
+    creatorId: ws1Owner.id,
+  });
+
+  // Database 1
+  const db1 = server.schema.databases.find("2");
+  server.create("bookmark", {
+    workspace: workspace1,
+    name: db1.name,
+    link: `/instance/${instanceSlug(instance1)}/db/${databaseSlug(db1)}`,
+    creatorId: ws1Owner.id,
+  });
+
+  // Workspace 2
   // Task 3
   const task3 = server.schema.tasks.findBy({
     workspaceId: workspace2.id,
