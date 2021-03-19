@@ -31,11 +31,11 @@ const DEFAULT_TEMPLATE = {
 const allTaskTemplateList: TaskTemplate[] = [
   DEFAULT_TEMPLATE,
   {
-    type: "bytebase.datasource.request",
+    type: "bytebase.database.request",
     buildTask: (ctx: TemplateContext): TaskNew => {
       return {
-        name: "New Data Source",
-        type: "bytebase.datasource.request",
+        name: "Request new database",
+        type: "bytebase.database.request",
         description: "Estimated QPS: 10",
         stageProgressList: [
           {
@@ -89,11 +89,11 @@ const allTaskTemplateList: TaskTemplate[] = [
     ],
   },
   {
-    type: "bytebase.datasource.schema.update",
+    type: "bytebase.database.schema.update",
     buildTask: (ctx: TemplateContext): TaskNew => {
       return {
         name: "Update Schema",
-        type: "bytebase.datasource.schema.update",
+        type: "bytebase.database.schema.update",
         description: "DDL: ",
         stageProgressList: ctx.environmentList.map((env) => {
           return {

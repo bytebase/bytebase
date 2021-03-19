@@ -104,14 +104,14 @@ export default {
       },
       {
         name: "Request a database",
-        link: "/task/new?template=bytebase.datasource.request",
+        link: "/task/new?template=bytebase.database.request",
         done: computed(() =>
-          store.getters["uistate/introStateByKey"]("datasource.request")
+          store.getters["uistate/introStateByKey"]("database.request")
         ),
       },
       {
         name: "Create a table",
-        link: "/task/new?template=bytebase.datasource.schema.update",
+        link: "/task/new?template=bytebase.database.schema.update",
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")
         ),

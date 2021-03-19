@@ -112,7 +112,7 @@
         class="flex flex-col items-center w-28"
       >
         <router-link
-          to="/task/new?template=bytebase.datasource.request"
+          to="/task/new?template=bytebase.database.request"
           class="p-3 btn-icon-primary"
         >
           <svg
@@ -140,7 +140,7 @@
         class="flex flex-col items-center w-28"
       >
         <router-link
-          to="/task/new?template=bytebase.datasource.schema.update"
+          to="/task/new?template=bytebase.database.schema.update"
           class="btn-icon-primary p-3"
         >
           <svg

@@ -134,11 +134,13 @@ export type StageProgressPatch = {
 // Task
 type TaskTypeGeneral = "bytebase.general";
 
-type TaskTypeDataSource =
-  | "bytebase.datasource.request"
-  | "bytebase.datasource.schema.update";
+type TaskTypeDatabase =
+  | "bytebase.database.request"
+  | "bytebase.database.schema.update";
 
-export type TaskType = TaskTypeGeneral | TaskTypeDataSource;
+type TaskTypeDataSource = "bytebase.datasource.request";
+
+export type TaskType = TaskTypeGeneral | TaskTypeDatabase | TaskTypeDataSource;
 
 export type TaskStatus = "OPEN" | "DONE" | "CANCELED";
 

@@ -124,7 +124,7 @@ export default {
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "datasource.request",
+        key: "database.request",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
