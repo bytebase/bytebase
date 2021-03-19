@@ -29,7 +29,7 @@
       v-if="quickActionList.includes('user.manage')"
       class="flex flex-col items-center w-28"
     >
-      <button class="btn-icon-primary p-3">
+      <router-link to="/setting/member" class="btn-icon-primary p-3">
         <svg
           class="w-6 h-6"
           fill="none"
@@ -44,7 +44,7 @@
             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
           ></path>
         </svg>
-      </button>
+      </router-link>
       <h3
         class="mt-1 text-center text-base font-normal text-main tracking-tight"
       >
@@ -153,7 +153,7 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
           ></path>
         </svg>
       </router-link>
@@ -178,11 +178,19 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+            d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"
+          ></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"
           ></path>
         </svg>
       </router-link>
-      <h3 class="mt-1 text-center text-base font-normal text-main">Ticket</h3>
+      <h3 class="mt-1 text-center text-base font-normal text-main">
+        Troubleshoot
+      </h3>
     </div>
 
     <div
