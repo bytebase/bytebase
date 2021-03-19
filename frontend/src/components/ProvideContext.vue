@@ -22,6 +22,10 @@ export default {
       store.dispatch("instance/fetchInstanceList"),
       store.dispatch("uistate/restoreState"),
     ]);
+
+    // Refresh the user after fetchRoleMappingList / fetchPrincipalList.
+    // The user info may change remoted and thus we need to refresh both in-memory and local cache state.
+    store.dispatch("auth/refreshUser");
   },
 };
 </script>

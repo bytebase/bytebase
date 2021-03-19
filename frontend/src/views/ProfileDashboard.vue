@@ -236,6 +236,7 @@ export default {
         .then(() => {
           state.editingPrincipal = undefined;
           state.editing = false;
+          store.dispatch("auth/refreshUser");
         })
         .catch((error) => {
           console.log(error);

@@ -1,4 +1,5 @@
 import axios from "axios";
+import isEqual from "lodash-es/isEqual";
 import {
   Principal,
   AuthState,
@@ -26,14 +27,7 @@ const state: () => AuthState = () => ({
 
 const getters = {
   currentUser: (state: AuthState) => (): Principal => {
-    if (state.currentUser) {
-      return state.currentUser;
-    }
-    const user = localStorage.getItem("bb.auth.user");
-    if (user) {
-      return JSON.parse(user);
-    }
-    return GUEST;
+    return state.currentUser;
   },
 };
 
@@ -90,12 +84,23 @@ const actions = {
       commit("setCurrentUser", user);
       return user;
     }
-    return undefined;
+    return GUEST;
+  },
+
+  async refreshUser({ commit, state, rootGetters }: any) {
+    const refreshedUser = rootGetters["principal/principalById"](
+      state.currentUser.id
+    );
+    if (!isEqual(refreshedUser, state.currentUser)) {
+      localStorage.setItem("bb.auth.user", JSON.stringify(refreshedUser));
+      commit("setCurrentUser", refreshedUser);
+    }
+    return refreshedUser;
   },
 
   async logout({ commit }: any) {
     localStorage.removeItem("bb.auth.user");
-    commit("setCurrentUser", undefined);
+    commit("setCurrentUser", GUEST);
     return GUEST;
   },
 };
