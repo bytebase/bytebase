@@ -55,7 +55,9 @@ export default {
         });
       }
       return list.map((roleMapping: RoleMapping) => {
-        return roleMapping.principal;
+        return store.getters["principal/principalById"](
+          roleMapping.principalId
+        );
       });
     });
 

@@ -152,10 +152,16 @@ export default {
       if (invite.email) {
         if (!isValidEmail(invite.email)) {
           return "Invalid email address";
-        } else if (
-          store.getters["roleMapping/roleMappingByEmail"](invite.email)
-        ) {
-          return "Already a member";
+        } else {
+          const principal = store.getters["principal/principalByEmail"](
+            invite.email
+          );
+          if (
+            principal &&
+            store.getters["roleMapping/roleMappingByPrincipalId"](principal.id)
+          ) {
+            return "Already a member";
+          }
         }
       }
       return "";

@@ -16,8 +16,9 @@ export default {
     // context here.
     await Promise.all([
       store.dispatch("environment/fetchEnvironmentList"),
-      store.dispatch("principal/fetchPrincipalList"),
       store.dispatch("roleMapping/fetchRoleMappingList"),
+      // fetchPrincipalList relies on fetchRoleMappingList to find the role of the principal.
+      store.dispatch("principal/fetchPrincipalList"),
       store.dispatch("instance/fetchInstanceList"),
       store.dispatch("uistate/restoreState"),
     ]);

@@ -50,35 +50,16 @@ export type User = {
 };
 export type NewUser = Omit<User, "id">;
 
-// Principal
-export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
-
-export type Principal = {
-  id: PrincipalId;
-  status: PrincipalStatus;
-  name: string;
-  email: string;
-};
-
-export type PrincipalNew = {
-  email: string;
-};
-
-export type PrincipalPatch = {
-  id: PrincipalId;
-  name?: string;
-};
-
 // RoleMapping
-export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
+export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
 
 export type RoleMapping = {
   id: RoleMappingId;
   createdTs: number;
   lastUpdatedTs: number;
   role: RoleType;
-  principal: Principal;
-  updater: Principal;
+  principalId: PrincipalId;
+  updaterId: PrincipalId;
 };
 
 export type RoleMappingNew = {
@@ -91,6 +72,26 @@ export type RoleMappingNew = {
 export type RoleMappingPatch = {
   id: RoleMappingId;
   role: RoleType;
+};
+
+// Principal
+export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
+
+export type Principal = {
+  id: PrincipalId;
+  status: PrincipalStatus;
+  name: string;
+  email: string;
+  role: RoleType;
+};
+
+export type PrincipalNew = {
+  email: string;
+};
+
+export type PrincipalPatch = {
+  id: PrincipalId;
+  name?: string;
 };
 
 // Bookmark

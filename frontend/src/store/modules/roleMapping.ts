@@ -9,22 +9,10 @@ import {
   PrincipalId,
 } from "../../types";
 
-function convert(roleMapping: ResourceObject, rootGetters: any): RoleMapping {
-  const principal = rootGetters["principal/principalById"](
-    roleMapping.attributes.principalId
-  );
-  const updater = rootGetters["principal/principalById"](
-    roleMapping.attributes.updaterId
-  );
-
+function convert(roleMapping: ResourceObject): RoleMapping {
   return {
     id: roleMapping.id,
-    principal,
-    updater,
-    ...(roleMapping.attributes as Omit<
-      RoleMapping,
-      "id" | "principal" | "updater"
-    >),
+    ...(roleMapping.attributes as Omit<RoleMapping, "id">),
   };
 }
 
@@ -33,26 +21,31 @@ const state: () => RoleMappingState = () => ({
 });
 
 const getters = {
-  roleMappingList: (state: RoleMappingState) => () => {
+  roleMappingList: (state: RoleMappingState) => (): RoleMapping[] => {
     return state.roleMappingList;
   },
   roleMappingByPrincipalId: (state: RoleMappingState) => (
     id: PrincipalId
-  ): RoleMapping | undefined => {
-    return state.roleMappingList.find((item) => item.principal.id == id);
-  },
-  roleMappingByEmail: (state: RoleMappingState) => (
-    email: string
-  ): RoleMapping | undefined => {
-    return state.roleMappingList.find((item) => item.principal.email == email);
+  ): RoleMapping => {
+    const ts = Date.now();
+    return (
+      state.roleMappingList.find((item) => item.principalId == id) || {
+        id: "-1",
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        role: "GUEST",
+        principalId: "-1",
+        updaterId: "-1",
+      }
+    );
   },
 };
 
 const actions = {
-  async fetchRoleMappingList({ commit, rootGetters }: any) {
+  async fetchRoleMappingList({ commit }: any) {
     const roleMappingList = (await axios.get(`/api/rolemapping`)).data.data.map(
       (roleMapping: ResourceObject) => {
-        return convert(roleMapping, rootGetters);
+        return convert(roleMapping);
       }
     );
 
@@ -60,10 +53,7 @@ const actions = {
     return roleMappingList;
   },
 
-  async createdRoleMapping(
-    { commit, rootGetters }: any,
-    newRoleMapping: RoleMappingNew
-  ) {
+  async createdRoleMapping({ commit }: any, newRoleMapping: RoleMappingNew) {
     const createdRoleMapping = convert(
       (
         await axios.post(`/api/rolemapping`, {
@@ -72,8 +62,7 @@ const actions = {
             attributes: newRoleMapping,
           },
         })
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("appendRoleMapping", createdRoleMapping);
@@ -81,10 +70,7 @@ const actions = {
     return createdRoleMapping;
   },
 
-  async patchRoleMapping(
-    { commit, rootGetters }: any,
-    roleMapping: RoleMappingPatch
-  ) {
+  async patchRoleMapping({ commit }: any, roleMapping: RoleMappingPatch) {
     const { id, ...attrs } = roleMapping;
     const updatedRoleMapping = convert(
       (
@@ -94,8 +80,7 @@ const actions = {
             attributes: attrs,
           },
         })
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("replaceRoleMappingInList", updatedRoleMapping);

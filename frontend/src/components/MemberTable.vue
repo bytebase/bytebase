@@ -20,37 +20,37 @@
         :title="columnList[3].title"
       />
     </template>
-    <template v-slot:body="{ rowData: roleMapping }">
+    <template v-slot:body="{ rowData: roleMappingUI }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
-          <template v-if="'INVITED' == roleMapping.principal.status">
+          <template v-if="'INVITED' == roleMappingUI.principal.status">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
             >
               Invited
             </span>
             <span class="textlabel">
-              {{ roleMapping.principal.email }}
+              {{ roleMappingUI.principal.email }}
             </span>
           </template>
           <template v-else>
-            <BBAvatar :username="roleMapping.principal.name" />
+            <BBAvatar :username="roleMappingUI.principal.name" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
-                  :to="`/u/${roleMapping.principal.id}`"
+                  :to="`/u/${roleMappingUI.principal.id}`"
                   class="normal-link"
-                  >{{ roleMapping.principal.name }}
+                  >{{ roleMappingUI.principal.name }}
                 </router-link>
                 <span
-                  v-if="currentUser.id == roleMapping.principal.id"
+                  v-if="currentUser.id == roleMappingUI.principal.id"
                   class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
                 >
                   You
                 </span>
               </div>
               <span class="textlabel">
-                {{ roleMapping.principal.email }}
+                {{ roleMappingUI.principal.email }}
               </span>
             </div>
           </template>
@@ -58,11 +58,11 @@
       </BBTableCell>
       <BBTableCell class="">
         <RoleSelect
-          :selectedRole="roleMapping.role"
+          :selectedRole="roleMappingUI.role"
           :disabled="!allowEdit"
           @change-role="
             (role) => {
-              changeRole(roleMapping.id, role);
+              changeRole(roleMappingUI.id, role);
             }
           "
         />
@@ -70,11 +70,13 @@
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
           <span>
-            {{ humanizeTs(roleMapping.lastUpdatedTs) }}
+            {{ humanizeTs(roleMappingUI.lastUpdatedTs) }}
           </span>
           <span>by</span>
-          <router-link :to="`/u/${roleMapping.updater.id}`" class="normal-link"
-            >{{ roleMapping.updater.name }}
+          <router-link
+            :to="`/u/${roleMappingUI.updater.id}`"
+            class="normal-link"
+            >{{ roleMappingUI.updater.name }}
           </router-link>
         </div>
       </BBTableCell>
@@ -83,8 +85,8 @@
           v-if="allowEdit"
           :requireConfirm="true"
           :okText="'Revoke'"
-          :confirmTitle="`Are you sure to revoke '${roleMapping.role}' from '${roleMapping.principal.name}'`"
-          @confirm="deleteRole(roleMapping.id)"
+          :confirmTitle="`Are you sure to revoke '${roleMappingUI.role}' from '${roleMappingUI.principal.name}'`"
+          @confirm="deleteRole(roleMappingUI.id)"
         />
       </BBTableCell>
     </template>
@@ -95,8 +97,13 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { RoleMapping, RoleMappingId, RoleType } from "../types";
+import { Principal, RoleMapping, RoleMappingId, RoleType } from "../types";
 import { BBTableColumn } from "../bbkit/types";
+
+type RoleMappingUI = RoleMapping & {
+  principal: Principal;
+  updater: Principal;
+};
 
 const columnList: BBTableColumn[] = [
   {
@@ -135,18 +142,27 @@ export default {
     watchEffect(prepareRoleMappingList);
 
     const dataSource = computed(() => {
-      const ownerList = [];
-      const dbaList = [];
-      const developerList = [];
+      const ownerList: RoleMappingUI[] = [];
+      const dbaList: RoleMappingUI[] = [];
+      const developerList: RoleMappingUI[] = [];
       for (const roleMapping of store.getters[
         "roleMapping/roleMappingList"
       ]()) {
-        if (roleMapping.role === "OWNER") {
-          ownerList.push(roleMapping);
-        } else if (roleMapping.role === "DBA") {
-          dbaList.push(roleMapping);
-        } else if (roleMapping.role === "DEVELOPER") {
-          developerList.push(roleMapping);
+        const roleMappingUI = {
+          ...roleMapping,
+          principal: store.getters["principal/principalById"](
+            roleMapping.principalId
+          ),
+          updater: store.getters["principal/principalById"](
+            roleMapping.updaterId
+          ),
+        };
+        if (roleMappingUI.role === "OWNER") {
+          ownerList.push(roleMappingUI);
+        } else if (roleMappingUI.role === "DBA") {
+          dbaList.push(roleMappingUI);
+        } else if (roleMappingUI.role === "DEVELOPER") {
+          developerList.push(roleMappingUI);
         }
       }
       const dataSource = [];
