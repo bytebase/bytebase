@@ -17,7 +17,7 @@ import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
 import { isDev, idFromSlug } from "../utils";
-import { User } from "../types";
+import { Principal } from "../types";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -398,7 +398,7 @@ export const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const loginUser: User = store.getters["auth/currentUser"]();
+  const loginUser: Principal = store.getters["auth/currentUser"]();
   const isGuest = loginUser.id == "0";
 
   const fromModule = from.name

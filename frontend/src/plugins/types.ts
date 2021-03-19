@@ -1,4 +1,4 @@
-import { Environment, TaskNew, User } from "../types";
+import { Environment, Principal, TaskNew } from "../types";
 
 // Task
 export type TaskFieldId = number;
@@ -39,7 +39,7 @@ export type TaskField = {
 // Template
 export type TemplateContext = {
   environmentList: Environment[];
-  currentUser: User;
+  currentUser: Principal;
 };
 
 export type TaskTemplate = {

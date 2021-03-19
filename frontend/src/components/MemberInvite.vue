@@ -156,10 +156,7 @@ export default {
           const principal = store.getters["principal/principalByEmail"](
             invite.email
           );
-          if (
-            principal &&
-            store.getters["roleMapping/roleMappingByPrincipalId"](principal.id)
-          ) {
+          if (principal && principal.role != "GUEST") {
             return "Already a member";
           }
         }

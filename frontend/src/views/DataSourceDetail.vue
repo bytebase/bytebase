@@ -445,10 +445,9 @@ export default {
     });
 
     const allowEdit = computed(() => {
-      const myRoleMapping = store.getters[
-        "roleMapping/roleMappingByPrincipalId"
-      ](currentUser.value.id);
-      return myRoleMapping.role == "OWNER" || myRoleMapping.role == "DBA";
+      return (
+        currentUser.value.role == "OWNER" || currentUser.value.role == "DBA"
+      );
     });
 
     const allowSave = computed(() => {

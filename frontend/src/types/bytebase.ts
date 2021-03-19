@@ -39,16 +39,6 @@ export type CommandId = string;
 export type CommandRegisterId = string;
 
 // Persistent State Models
-// User
-export type UserStatus = "INVITED" | "ACTIVE";
-
-export type User = {
-  id: UserId;
-  status: UserStatus;
-  name: string;
-  email: string;
-};
-export type NewUser = Omit<User, "id">;
 
 // RoleMapping
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
@@ -75,6 +65,9 @@ export type RoleMappingPatch = {
 };
 
 // Principal
+// This is a facet of the underlying identity entity.
+// For now, there is only user type. In the future,
+// we may support application/bot identity.
 export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
 
 export type Principal = {
@@ -93,6 +86,14 @@ export type PrincipalPatch = {
   id: PrincipalId;
   name?: string;
 };
+
+export type User = {
+  id: UserId;
+  status: PrincipalStatus;
+  name: string;
+  email: string;
+};
+export type NewUser = Omit<User, "id">;
 
 // Bookmark
 export type Bookmark = {
@@ -377,7 +378,7 @@ export type QuickActionType =
 
 // Store
 export interface AuthState {
-  currentUser: User | undefined;
+  currentUser: Principal;
 }
 
 export interface RoleMappingState {

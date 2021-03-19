@@ -192,13 +192,11 @@ export default {
       if (props.principalId) {
         return store.getters["principal/principalById"](props.principalId);
       }
-      return store.getters["principal/principalById"](currentUser.value.id);
+      return store.getters["auth/currentUser"]();
     });
 
     const role = computed(() => {
-      const role = store.getters["roleMapping/roleMappingByPrincipalId"](
-        principal.value.id
-      ).role;
+      const role = principal.value.role;
       return role == "DBA"
         ? role
         : role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();

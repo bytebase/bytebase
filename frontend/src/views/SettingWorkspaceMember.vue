@@ -22,13 +22,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const allowInvite = computed(() => {
-      const myRoleMapping = store.getters[
-        "roleMapping/roleMappingByPrincipalId"
-      ](currentUser.value.id);
-      if (myRoleMapping.role != "OWNER") {
-        return false;
-      }
-      return true;
+      return currentUser.value.role == "OWNER";
     });
 
     return {

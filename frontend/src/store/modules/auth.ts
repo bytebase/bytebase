@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  User,
+  Principal,
   AuthState,
   LoginInfo,
   SignupInfo,
@@ -8,26 +8,24 @@ import {
   ResourceObject,
 } from "../../types";
 
-const GUEST: User = {
+const GUEST: Principal = {
   id: "0",
   status: "ACTIVE",
   name: "Guest",
   email: "guest@bytebase.com",
+  role: "GUEST",
 };
 
-function convert(user: ResourceObject): User {
-  return {
-    id: user.id,
-    ...(user.attributes as Omit<User, "id">),
-  };
+function convert(user: ResourceObject, rootGetters: any): Principal {
+  return rootGetters["principal/principalById"](user.id);
 }
 
 const state: () => AuthState = () => ({
-  currentUser: undefined,
+  currentUser: GUEST,
 });
 
 const getters = {
-  currentUser: (state: AuthState) => (): User => {
+  currentUser: (state: AuthState) => (): Principal => {
     if (state.currentUser) {
       return state.currentUser;
     }
@@ -40,13 +38,14 @@ const getters = {
 };
 
 const actions = {
-  async login({ commit }: any, loginInfo: LoginInfo) {
+  async login({ commit, rootGetters }: any, loginInfo: LoginInfo) {
     const loggedInUser = convert(
       (
         await axios.post("/api/auth/login", {
           data: { type: "loginInfo", attributes: loginInfo },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     localStorage.setItem("bb.auth.user", JSON.stringify(loggedInUser));
@@ -54,13 +53,14 @@ const actions = {
     return loggedInUser;
   },
 
-  async signup({ commit }: any, signupInfo: SignupInfo) {
+  async signup({ commit, rootGetters }: any, signupInfo: SignupInfo) {
     const newUser = convert(
       (
         await axios.post("/api/auth/signup", {
           data: { type: "signupInfo", attributes: signupInfo },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     localStorage.setItem("bb.auth.user", JSON.stringify(newUser));
@@ -68,13 +68,14 @@ const actions = {
     return newUser;
   },
 
-  async activate({ commit }: any, activateInfo: ActivateInfo) {
+  async activate({ commit, rootGetters }: any, activateInfo: ActivateInfo) {
     const activatedUser = convert(
       (
         await axios.post("/api/auth/activate", {
           data: { type: "activateInfo", attributes: activateInfo },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     localStorage.setItem("bb.auth.user", JSON.stringify(activatedUser));
@@ -85,7 +86,7 @@ const actions = {
   async restoreUser({ commit }: any) {
     const jsonUser = localStorage.getItem("bb.auth.user");
     if (jsonUser) {
-      const user: User = JSON.parse(jsonUser);
+      const user: Principal = JSON.parse(jsonUser);
       commit("setCurrentUser", user);
       return user;
     }
@@ -100,7 +101,7 @@ const actions = {
 };
 
 const mutations = {
-  setCurrentUser(state: AuthState, user: User) {
+  setCurrentUser(state: AuthState, user: Principal) {
     state.currentUser = user;
   },
 };
