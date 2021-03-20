@@ -67,7 +67,7 @@ export default {
   database: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),
-    database: hasMany(),
+    dataSource: hasMany(),
   }),
 
   batchUpdate: Model,
