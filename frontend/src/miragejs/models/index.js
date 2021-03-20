@@ -52,6 +52,12 @@ export default {
     database: hasMany(),
   }),
 
+  database: Model.extend({
+    workspace: belongsTo(),
+    instance: belongsTo(),
+    dataSource: hasMany(),
+  }),
+
   dataSource: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),
@@ -62,12 +68,6 @@ export default {
   dataSourceMember: Model.extend({
     workspace: belongsTo(),
     dataSource: belongsTo(),
-  }),
-
-  database: Model.extend({
-    workspace: belongsTo(),
-    instance: belongsTo(),
-    dataSource: hasMany(),
   }),
 
   batchUpdate: Model,
