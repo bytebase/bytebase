@@ -17,7 +17,9 @@
         </div>
       </div>
       <div class="flex flex-row space-x-2">
-        <h2 class="flex items-center textlabel w-36">Assignee</h2>
+        <h2 class="flex items-center textlabel w-36">
+          Assignee<span v-if="$props.new" class="text-red-600">*</span>
+        </h2>
         <div class="w-full">
           <PrincipalSelect
             :selectedId="task.assignee?.id"
