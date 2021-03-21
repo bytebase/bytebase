@@ -1,3 +1,4 @@
+import isEmpty from "lodash-es/isEmpty";
 import {
   TaskTemplate,
   TemplateContext,
@@ -56,12 +57,18 @@ const template: TaskTemplate = {
       name: "DB name",
       type: "NewDatabase",
       required: true,
-      preprocessor: (payload: DatabaseFieldPayload): DatabaseFieldPayload => {
+      isEmpty: (value: DatabaseFieldPayload): boolean => {
+        if (value.isNew) {
+          return isEmpty(value.name);
+        }
+        return isEmpty(value.id);
+      },
+      preprocessor: (value: DatabaseFieldPayload): DatabaseFieldPayload => {
         // In case caller passes corrupted data.
         // Handled here instead of the caller, because it's
         // preprocessor specific behavior to handle fallback.
-        payload.name = payload.name?.toLowerCase();
-        return payload;
+        value.name = value.name?.toLowerCase();
+        return value;
       },
       placeholder: "New database name",
     },

@@ -501,7 +501,8 @@ export default {
           if (
             field.type != "Switch" && // Switch is boolean value which always presents
             field.required &&
-            isEmpty(state.task.payload[field.id])
+            ((field.isEmpty && field.isEmpty(state.task.payload[field.id])) ||
+              isEmpty(state.task.payload[field.id]))
           ) {
             return false;
           }
