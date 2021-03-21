@@ -1,48 +1,46 @@
 <template>
   <div class="md:flex md:items-center md:justify-between">
     <div class="flex-1 min-w-0">
-      <div class="flex items-center">
-        <div>
-          <div class="flex items-center">
-            <div>
-              <TaskStatusIcon
-                v-if="!$props.new"
-                class="mt-0.5"
-                :taskStatus="task.status"
-                :stageStatus="activeStage(task).status"
-              />
-            </div>
-            <input
-              v-if="state.editing"
-              required
-              ref="nameTextField"
-              id="name"
-              name="name"
-              type="text"
-              class="textfield ml-2 my-0.5 w-full"
-              v-model="state.name"
-              @blur="trySaveName"
+      <div class="flex flex-col">
+        <div class="flex items-center">
+          <div>
+            <TaskStatusIcon
+              v-if="!$props.new"
+              class="mt-0.5"
+              :taskStatus="task.status"
+              :stageStatus="activeStage(task).status"
             />
-            <!-- Extra padding is to prevent flickering when entering the edit mode -->
-            <p
-              v-else
-              class="ml-2 mt-2 mb-1.5 text-xl font-bold leading-7 text-main whitespace-nowrap md:w-96 lg:w-160 truncate"
-            >
-              <span @click.prevent="clickName">{{ state.name }}</span>
-            </p>
           </div>
-          <div v-if="!$props.new">
-            <p class="mt-2 text-sm text-control-light">
-              #{{ task.id }} opened by
-              <span href="#" class="font-medium text-control">{{
-                task.creator.name
-              }}</span>
-              at
-              <span href="#" class="font-medium text-control">{{
-                moment(task.lastUpdatedTs).format("LLL")
-              }}</span>
-            </p>
-          </div>
+          <input
+            v-if="state.editing"
+            required
+            ref="nameTextField"
+            id="name"
+            name="name"
+            type="text"
+            class="textfield ml-2 my-0.5 w-full"
+            v-model="state.name"
+            @blur="trySaveName"
+          />
+          <!-- Extra padding is to prevent flickering when entering the edit mode -->
+          <p
+            v-else
+            class="ml-2 mt-2 mb-1.5 w-full text-xl font-bold leading-7 text-main whitespace-nowrap truncate"
+          >
+            <span @click.prevent="clickName">{{ state.name }}</span>
+          </p>
+        </div>
+        <div v-if="!$props.new">
+          <p class="mt-2 text-sm text-control-light">
+            #{{ task.id }} opened by
+            <span href="#" class="font-medium text-control">{{
+              task.creator.name
+            }}</span>
+            at
+            <span href="#" class="font-medium text-control">{{
+              moment(task.lastUpdatedTs).format("LLL")
+            }}</span>
+          </p>
         </div>
       </div>
     </div>
