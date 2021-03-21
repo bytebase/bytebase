@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, ref, nextTick, PropType } from "vue";
+import { reactive, ref, nextTick, watch, PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import { activeStage } from "../utils";
 import { Task } from "../types";
@@ -84,6 +84,13 @@ export default {
       editing: false,
       name: props.task.name,
     });
+
+    watch(
+      () => props.task,
+      (curTask, prevTask) => {
+        state.name = curTask.name;
+      }
+    );
 
     const clickName = () => {
       state.editing = true;
