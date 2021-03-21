@@ -498,7 +498,11 @@ export default {
         for (const field of newTaskTemplate.value.fieldList.filter(
           (item) => item.category == "INPUT"
         )) {
-          if (field.required && isEmpty(state.task.payload[field.id])) {
+          if (
+            field.type != "Switch" && // Switch is boolean value which always presents
+            field.required &&
+            isEmpty(state.task.payload[field.id])
+          ) {
             return false;
           }
         }
