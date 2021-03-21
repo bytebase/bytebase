@@ -33,11 +33,11 @@
       </div>
       <template v-for="(field, index) in fieldList" :key="index">
         <div class="flex flex-row space-x-2">
-          <h2 class="flex items-center textlabel w-36">
-            {{ field.name }}
-            <span v-if="field.required" class="text-red-600">*</span>
-          </h2>
           <template v-if="field.type == 'String'">
+            <h2 class="flex items-center textlabel w-36">
+              {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </h2>
             <div
               class="w-full flex select-none"
               @focusin="
@@ -129,6 +129,10 @@
             </div>
           </template>
           <template v-else-if="field.type == 'Environment'">
+            <h2 class="flex items-center textlabel w-36">
+              {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </h2>
             <div class="w-full">
               <EnvironmentSelect
                 :name="field.id"
@@ -137,6 +141,74 @@
                 @select-environment-id="
                   (environmentId) => {
                     $emit('update-custom-field', field, environmentId);
+                  }
+                "
+              />
+            </div>
+          </template>
+          <template v-else-if="field.type == 'NewDatabase'">
+            <h2 class="flex items-center textlabel w-36">
+              {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </h2>
+            <div class="flex flex-col w-full">
+              <BBSwitch
+                :label="'New database'"
+                :value="state.createNewDatabase"
+                @toggle="
+                  (on) => {
+                    state.createNewDatabase = on;
+                  }
+                "
+              />
+              <input
+                v-if="state.createNewDatabase"
+                type="text"
+                autocomplete="off"
+                class="textfield w-full mt-4"
+                :ref="customFieldRefList[index]"
+                :name="field.id"
+                :value="fieldValue(field).name"
+                :placeholder="field.placeholder"
+                @input="trySaveDatabaseName(field, $event.target.value)"
+              />
+              <DatabaseSelect
+                v-else
+                class="mt-4"
+                :ref="customFieldRefList[index]"
+                name="field.id"
+                :selectedId="fieldValue(field).id"
+                :environmentId="environmentId()"
+                @select-database-id="
+                  (databaseId) => {
+                    trySaveDatabaseId(field, databaseId);
+                  }
+                "
+              />
+              <BBSwitch
+                class="mt-4"
+                :label="'Read only'"
+                :value="fieldValue(field).readOnly"
+                @toggle="
+                  (on) => {
+                    trySaveDatabaseReadOnly(field, on);
+                  }
+                "
+              />
+            </div>
+          </template>
+          <template v-else-if="field.type == 'Switch'">
+            <h2 class="flex items-center textlabel w-36">
+              {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </h2>
+            <div class="flex justify-start">
+              <BBSwitch
+                :value="fieldValue(field)"
+                :ref="customFieldRefList[index]"
+                @toggle="
+                  (on) => {
+                    $emit('update-custom-field', field, on);
                   }
                 "
               />
@@ -188,16 +260,24 @@ import {
   reactive,
   ref,
 } from "vue";
+import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
+import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import TaskStatusSelect from "../components/TaskStatusSelect.vue";
-import { TaskField } from "../plugins";
-import { Task } from "../types";
+import {
+  TaskField,
+  TaskBuiltinFieldId,
+  DatabaseFieldPayload,
+} from "../plugins";
+import { DatabaseId, Task } from "../types";
 import { activeStageIsRunning } from "../utils";
 
 interface LocalState {
   activeCustomFieldIndex: number;
+  // For "bytebase.database.request" task
+  createNewDatabase: boolean;
 }
 
 export default {
@@ -217,10 +297,16 @@ export default {
       type: Object as PropType<TaskField[]>,
     },
   },
-  components: { EnvironmentSelect, PrincipalSelect, TaskStatusSelect },
+  components: {
+    DatabaseSelect,
+    EnvironmentSelect,
+    PrincipalSelect,
+    TaskStatusSelect,
+  },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       activeCustomFieldIndex: -1,
+      createNewDatabase: true,
     });
 
     const customFieldSaveButton = ref();
@@ -255,10 +341,14 @@ export default {
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const fieldValue = (field: TaskField): string => {
-      return field.preprocessor
-        ? field.preprocessor(props.task.payload[field.id])
-        : props.task.payload[field.id];
+    const fieldValue = (field: TaskField): string | DatabaseFieldPayload => {
+      // Do a deep clone to prevent caller accidentally changes the original data.
+      let value = cloneDeep(props.task.payload[field.id]);
+      return field.preprocessor ? field.preprocessor(value) : value;
+    };
+
+    const environmentId = (): string => {
+      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
     };
 
     const trySaveCustomTextField = (customFieldIndex: number) => {
@@ -297,6 +387,42 @@ export default {
       state.activeCustomFieldIndex = -1;
     };
 
+    const trySaveDatabaseName = (
+      field: TaskField,
+      value: string | DatabaseId
+    ) => {
+      const payload: DatabaseFieldPayload = fieldValue(
+        field
+      ) as DatabaseFieldPayload;
+      if (value != payload.name) {
+        payload.name = value;
+        emit("update-custom-field", field, payload);
+      }
+    };
+
+    const trySaveDatabaseId = (
+      field: TaskField,
+      value: string | DatabaseId
+    ) => {
+      const payload: DatabaseFieldPayload = fieldValue(
+        field
+      ) as DatabaseFieldPayload;
+      if (value != payload.id) {
+        payload.id = value;
+        emit("update-custom-field", field, payload);
+      }
+    };
+
+    const trySaveDatabaseReadOnly = (field: TaskField, value: boolean) => {
+      const payload: DatabaseFieldPayload = fieldValue(
+        field
+      ) as DatabaseFieldPayload;
+      if (value != payload.readOnly) {
+        payload.readOnly = value;
+        emit("update-custom-field", field, payload);
+      }
+    };
+
     return {
       state,
       customFieldSaveButton,
@@ -304,7 +430,11 @@ export default {
       customFieldRefList,
       activeStageIsRunning,
       fieldValue,
+      environmentId,
       trySaveCustomTextField,
+      trySaveDatabaseName,
+      trySaveDatabaseId,
+      trySaveDatabaseReadOnly,
     };
   },
 };

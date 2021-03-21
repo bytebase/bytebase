@@ -119,8 +119,12 @@ const workspacesSeeder = (server) => {
       },
     ],
     payload: {
-      1: environmentList1[1].id,
-      2: "db1",
+      5: environmentList1[1].id,
+      7: {
+        isNew: true,
+        name: "db1",
+        readOnly: false,
+      },
     },
     workspace: workspace1,
   });

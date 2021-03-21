@@ -1,16 +1,26 @@
-import { Environment, Principal, TaskNew } from "../types";
+import { Environment, Principal, TaskNew, DatabaseId } from "../types";
 
 // Task
 export type TaskFieldId = number;
 
 export enum TaskBuiltinFieldId {
-  NAME = 10000,
-  STATUS = 10001,
-  ASSIGNEE = 10002,
-  DESCRIPTION = 10003,
+  NAME = 1,
+  STATUS = 2,
+  ASSIGNEE = 3,
+  DESCRIPTION = 4,
+  ENVIRONMENT = 5,
+  INSTANCE = 6,
+  DATABASE = 7,
 }
 
-export type TaskFieldType = "String" | "Environment";
+export const CUSTOM_FIELD_ID_BEGIN = 101;
+
+export type TaskFieldType =
+  | "String"
+  | "Environment"
+  | "Database"
+  | "NewDatabase"
+  | "Switch";
 
 export type TaskField = {
   category: "INPUT" | "OUTPUT";
@@ -35,6 +45,16 @@ export type TaskField = {
   preprocessor?: (item: any) => any;
   // Placeholder displayed on UI.
   placeholder?: string;
+};
+
+// Field payload for "Database" and "NewDatabase" field
+export type DatabaseFieldPayload = {
+  isNew: boolean;
+  // If isNew is true, name stores the new database name, otherwise, is null.
+  name?: string;
+  // If isNew is false, id stores the database id, otherwise, is null.
+  id?: DatabaseId;
+  readOnly: boolean;
 };
 
 // Template

@@ -3,6 +3,8 @@ import {
   TaskFieldId,
   TaskTemplate,
   TemplateContext,
+  TaskBuiltinFieldId,
+  DatabaseFieldPayload,
 } from "../types";
 import { EnvironmentId, TaskType, TaskNew } from "../../types";
 
@@ -33,6 +35,20 @@ const allTaskTemplateList: TaskTemplate[] = [
   {
     type: "bytebase.database.request",
     buildTask: (ctx: TemplateContext): TaskNew => {
+      const payload: any = {};
+      if (ctx.environmentList.length > 0) {
+        // Set the last element as the default value.
+        // Normally the last environment is the prod env and is most commonly used.
+        payload[TaskBuiltinFieldId.ENVIRONMENT] =
+          ctx.environmentList[ctx.environmentList.length - 1].id;
+      }
+      payload[TaskBuiltinFieldId.DATABASE] = {
+        isNew: true,
+        name: "",
+        // Set read-only defaults to true since only read access is needed most of the time
+        // and sticks to the least privilege rule.
+        readOnly: true,
+      };
       return {
         name: "Request new database",
         type: "bytebase.database.request",
@@ -40,43 +56,39 @@ const allTaskTemplateList: TaskTemplate[] = [
         stageProgressList: [
           {
             id: "1",
-            name: "Request Data Source",
+            name: "Request database",
             type: "SIMPLE",
             status: "PENDING",
           },
         ],
         creatorId: ctx.currentUser.id,
-        payload: {},
+        payload,
       };
     },
     fieldList: [
       {
         category: "INPUT",
-        id: 1,
+        id: TaskBuiltinFieldId.ENVIRONMENT,
         slug: "env",
         name: "Environment",
         type: "Environment",
         required: true,
-        preprocessor: (environmentId: EnvironmentId): string => {
-          // In case caller passes corrupted data.
-          // Handled here instead of the caller, because it's
-          // preprocessor specific behavior to handle fallback.
-          return environmentId;
-        },
       },
       {
         category: "INPUT",
-        id: 2,
+        id: TaskBuiltinFieldId.DATABASE,
         slug: "db",
-        name: "DB Name",
-        type: "String",
+        name: "DB name",
+        type: "NewDatabase",
         required: true,
-        preprocessor: (name: string): string => {
+        preprocessor: (payload: DatabaseFieldPayload): DatabaseFieldPayload => {
           // In case caller passes corrupted data.
           // Handled here instead of the caller, because it's
           // preprocessor specific behavior to handle fallback.
-          return name?.toLowerCase();
+          payload.name = payload.name?.toLowerCase();
+          return payload;
         },
+        placeholder: "New database name...",
       },
       {
         category: "OUTPUT",
@@ -116,10 +128,10 @@ const allTaskTemplateList: TaskTemplate[] = [
     fieldList: [
       {
         category: "INPUT",
-        id: 1,
+        id: TaskBuiltinFieldId.DATABASE,
         slug: "db",
         name: "DB Name",
-        type: "String",
+        type: "Database",
         required: true,
         preprocessor: (name: string): string => {
           // In case caller passes corrupted data.
