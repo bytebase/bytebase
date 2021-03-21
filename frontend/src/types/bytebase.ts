@@ -427,6 +427,8 @@ export interface DatabaseState {
   // the 2 maps, which means each map may contain a different state for
   // that database.
   databaseListByUserId: Map<UserId, Database[]>;
+  // Similar to databaseListByUserId
+  databaseListByEnvironmentId: Map<EnvironmentId, Database[]>;
 }
 
 export interface NotificationState {

@@ -61,7 +61,6 @@ export default {
         databaseList.value &&
         databaseList.value.length > 0
       ) {
-        console.log("hit");
         state.selectedId = databaseList.value[0].id;
         emit("select-database-id", state.selectedId);
       }

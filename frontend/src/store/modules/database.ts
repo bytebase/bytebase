@@ -7,6 +7,7 @@ import {
   DatabaseState,
   ResourceObject,
   ResourceIdentifier,
+  EnvironmentId,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
 import instance from "./instance";
@@ -25,6 +26,7 @@ function convert(database: ResourceObject, rootGetters: any): Database {
 const state: () => DatabaseState = () => ({
   databaseListByInstanceId: new Map(),
   databaseListByUserId: new Map(),
+  databaseListByEnvironmentId: new Map(),
 });
 
 const getters = {
@@ -38,6 +40,12 @@ const getters = {
     userId: UserId
   ): Database[] => {
     return state.databaseListByUserId.get(userId) || [];
+  },
+
+  databaseListByEnvironmentId: (state: DatabaseState) => (
+    environmentId: EnvironmentId
+  ): Database[] => {
+    return state.databaseListByEnvironmentId.get(environmentId) || [];
   },
 
   databaseById: (state: DatabaseState) => (
@@ -117,6 +125,21 @@ const actions = {
     return databaseList;
   },
 
+  async fetchDatabaseListByEnvironmentId(
+    { commit, rootGetters }: any,
+    environmentId: EnvironmentId
+  ) {
+    const databaseList = (
+      await axios.get(`/api/database?environment=${environmentId}`)
+    ).data.data.map((database: ResourceObject) => {
+      return convert(database, rootGetters);
+    });
+
+    commit("setDatabaseListByEnvironmentId", { environmentId, databaseList });
+
+    return databaseList;
+  },
+
   async fetchDatabaseById(
     { commit, rootGetters }: any,
     {
@@ -187,6 +210,19 @@ const mutations = {
     }
   ) {
     state.databaseListByUserId.set(userId, databaseList);
+  },
+
+  setDatabaseListByEnvironmentId(
+    state: DatabaseState,
+    {
+      environmentId,
+      databaseList,
+    }: {
+      environmentId: EnvironmentId;
+      databaseList: Database[];
+    }
+  ) {
+    state.databaseListByEnvironmentId.set(environmentId, databaseList);
   },
 };
 

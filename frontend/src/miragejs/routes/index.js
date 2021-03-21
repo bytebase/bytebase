@@ -3,6 +3,7 @@
  */
 import { Response } from "miragejs";
 import { TaskBuiltinFieldId } from "../../plugins";
+import { ALL_DATABASE_NAME } from "../../types";
 
 const WORKSPACE_ID = 1;
 
@@ -615,8 +616,32 @@ export default function routes() {
   );
 
   // Database
+  this.get("/database", function (schema, request) {
+    const {
+      queryParams: { environment: environmentId },
+    } = request;
+    const instanceIdList = schema.instances
+      .where({ workspaceId: WORKSPACE_ID, environmentId })
+      .models.map((instance) => instance.id);
+    if (instanceIdList.length == 0) {
+      return [];
+    }
+    return schema.databases
+      .where((database) => {
+        // If environment is specified, then we don't include the database representing all databases,
+        // since the all databases is per instance.
+        if (environmentId && database.name == ALL_DATABASE_NAME) {
+          return false;
+        }
+        return instanceIdList.includes(database.instanceId);
+      })
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      );
+  });
+
   this.get("/instance/:instanceId/database", function (schema, request) {
-    const instance = schema.databases.find(request.params.instanceId);
+    const instance = schema.instances.find(request.params.instanceId);
     if (instance) {
       return schema.databases
         .where((database) => {
