@@ -164,8 +164,8 @@ export default {
 
     watch(
       () => props.task,
-      (curNew, prevNew) => {
-        state.editDescription = curNew.description;
+      (curTask, prevTask) => {
+        state.editDescription = curTask.description;
         nextTick(() => {
           if (state.edit) {
             sizeToFit(editDescriptionTextArea.value);
