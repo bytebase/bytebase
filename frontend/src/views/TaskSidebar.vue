@@ -56,7 +56,7 @@
                     e.relatedTarget !== customFieldSaveButton &&
                     e.relatedTarget !== customFieldCancelButton
                   ) {
-                    trySaveCustomTextField(index);
+                    trySaveCustomField(index);
                   }
                 }
               "
@@ -76,7 +76,7 @@
                 :placeholder="field.placeholder"
                 @input="
                   if ($props.new) {
-                    trySaveCustomTextField(index);
+                    trySaveCustomField(index);
                   }
                 "
               />
@@ -87,7 +87,7 @@
                   tabindex="-1"
                   class="-ml-px px-1 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
                   ref="customFieldSaveButton"
-                  @click="trySaveCustomTextField(index)"
+                  @click="trySaveCustomField(index)"
                 >
                   <svg
                     class="w-6 h-6 text-success"
@@ -351,7 +351,7 @@ export default {
       return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
     };
 
-    const trySaveCustomTextField = (customFieldIndex: number) => {
+    const trySaveCustomField = (customFieldIndex: number) => {
       const field = props.fieldList[customFieldIndex];
       let value = "";
       if (field.type === "String") {
@@ -431,7 +431,7 @@ export default {
       activeStageIsRunning,
       fieldValue,
       environmentId,
-      trySaveCustomTextField,
+      trySaveCustomField,
       trySaveDatabaseName,
       trySaveDatabaseId,
       trySaveDatabaseReadOnly,
