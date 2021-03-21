@@ -11,8 +11,12 @@
     <TaskTable
       :taskSectionList="[
         {
-          title: 'Attention',
-          list: filteredList(state.attentionList).sort(openTaskSorter),
+          title: 'Created',
+          list: filteredList(state.createdList).sort(openTaskSorter),
+        },
+        {
+          title: 'Assigned',
+          list: filteredList(state.assignedList).sort(openTaskSorter),
         },
         {
           title: 'Subscribed',
@@ -38,7 +42,8 @@ import { activeStage, activeEnvironmentId } from "../utils";
 import { Environment, Task, StageStatus } from "../types";
 
 interface LocalState {
-  attentionList: Task[];
+  createdList: Task[];
+  assignedList: Task[];
   subscribeList: Task[];
   closeList: Task[];
   selectedEnvironment?: Environment;
@@ -56,7 +61,8 @@ export default {
     const searchField = ref();
 
     const state = reactive<LocalState>({
-      attentionList: [],
+      createdList: [],
+      assignedList: [],
       subscribeList: [],
       closeList: [],
       searchText: "",
@@ -73,17 +79,17 @@ export default {
       store
         .dispatch("task/fetchTaskListForUser", currentUser.value.id)
         .then((taskList: Task[]) => {
-          state.attentionList = [];
+          state.createdList = [];
+          state.assignedList = [];
           state.subscribeList = [];
           state.closeList = [];
           for (const task of taskList) {
             // "OPEN"
             if (task.status === "OPEN") {
-              if (
-                task.creator.id === currentUser.value.id ||
-                task.assignee?.id === currentUser.value.id
-              ) {
-                state.attentionList.push(task);
+              if (task.creator.id === currentUser.value.id) {
+                state.createdList.push(task);
+              } else if (task.assignee?.id === currentUser.value.id) {
+                state.assignedList.push(task);
               } else if (task.subscriberIdList.includes(currentUser.value.id)) {
                 state.subscribeList.push(task);
               }
