@@ -412,10 +412,7 @@ export default {
       }
     };
 
-    const updateCustomField = (field: TaskField, value: string) => {
-      if (field.preprocessor) {
-        value = field.preprocessor(value);
-      }
+    const updateCustomField = (field: TaskField, value: any) => {
       state.task.payload[field.id] = value;
       if (!state.new) {
         patchTask({

@@ -14,11 +14,7 @@
           type="text"
           class="flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm"
           :name="field.id"
-          :value="
-            field.preprocessor
-              ? field.preprocessor(task.payload[field.id])
-              : task.payload[field.id]
-          "
+          :value="task.payload[field.id]"
           @input="$emit('update-custom-field', field, $event.target.value)"
         />
         <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->

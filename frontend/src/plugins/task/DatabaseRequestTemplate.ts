@@ -63,13 +63,6 @@ const template: TaskTemplate = {
         }
         return isEmpty(value.id);
       },
-      preprocessor: (value: DatabaseFieldPayload): DatabaseFieldPayload => {
-        // In case caller passes corrupted data.
-        // Handled here instead of the caller, because it's
-        // preprocessor specific behavior to handle fallback.
-        value.name = value.name?.toLowerCase();
-        return value;
-      },
       placeholder: "New database name",
     },
     {
