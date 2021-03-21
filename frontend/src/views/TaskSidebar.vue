@@ -222,7 +222,7 @@
       class="mt-6 border-t border-block-border pt-6 space-y-6"
     >
       <div class="flex flex-row space-x-2">
-        <h2 class="flex items-center textlabel w-36">Reporter</h2>
+        <h2 class="flex items-center textlabel w-36">Creator</h2>
         <ul class="w-full">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
