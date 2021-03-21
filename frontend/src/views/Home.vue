@@ -11,12 +11,12 @@
     <TaskTable
       :taskSectionList="[
         {
-          title: 'Created',
-          list: filteredList(state.createdList).sort(openTaskSorter),
-        },
-        {
           title: 'Assigned',
           list: filteredList(state.assignedList).sort(openTaskSorter),
+        },
+        {
+          title: 'Created',
+          list: filteredList(state.createdList).sort(openTaskSorter),
         },
         {
           title: 'Subscribed',
