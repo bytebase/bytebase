@@ -32,6 +32,7 @@
     "vuex": "^4.0.0"
   },
   "devDependencies": {
+    "@types/faker": "^5.1.7",
     "@types/lodash-es": "^4.17.4",
     "@types/slug": "^0.9.1",
     "@vitejs/plugin-vue": "^1.1.4",

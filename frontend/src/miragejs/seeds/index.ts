@@ -4,7 +4,7 @@ import { instanceSlug, databaseSlug, taskSlug } from "../../utils";
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
  */
-const workspacesSeeder = (server) => {
+const workspacesSeeder = (server: any) => {
   // Workspace id is ALWAYS 1 for on-premise deployment
   const workspace1 = server.schema.workspaces.find(1);
 
@@ -161,7 +161,6 @@ const workspacesSeeder = (server) => {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
       },
-      assigneeId: ws1Owner.id,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -191,8 +190,6 @@ const workspacesSeeder = (server) => {
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
       type: "bytebase.database.schema.update",
-      creatorId: ws1Owner.id,
-      assigneeId: ws1DBA.id,
       creatorId: ws1Owner.id,
       assigneeId: ws1DBA.id,
       subscriberIdList: [ws1Dev2.id],
@@ -229,8 +226,6 @@ const workspacesSeeder = (server) => {
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
-      creatorId: ws1Dev2.id,
-      assigneeId: ws1DBA.id,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillStage(environmentList1),
       workspace: workspace1,
@@ -259,8 +254,6 @@ const workspacesSeeder = (server) => {
 
   task = server.create("task", {
     type: "bytebase.database.schema.update",
-    creatorId: ws2Dev.id,
-    assigneeId: ws2DBA.id,
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
     ...fillStage(environmentList2),
@@ -326,7 +319,7 @@ const workspacesSeeder = (server) => {
   });
 };
 
-const fillStage = (environmentList) => {
+const fillStage = (environmentList: any[]) => {
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
     return {
@@ -559,7 +552,7 @@ const fillStage = (environmentList) => {
   }
 };
 
-export default function seeds(server) {
+export default function seeds(server: any) {
   server.loadFixtures();
   workspacesSeeder(server);
 }
