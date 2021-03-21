@@ -132,9 +132,9 @@ export default {
     const openTaskSorter = (a: Task, b: Task) => {
       const statusOrder = (status: StageStatus) => {
         switch (status) {
-          case "PENDING":
-            return 0;
           case "FAILED":
+            return 0;
+          case "PENDING":
             return 1;
           case "RUNNING":
             return 2;
