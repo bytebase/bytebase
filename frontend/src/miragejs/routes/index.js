@@ -220,18 +220,6 @@ export default function routes() {
     const attrs = this.normalizedRequestAttrs("task-patch");
     const task = schema.tasks.find(request.params.taskId);
     if (task) {
-      if (attrs.stageProgressList) {
-        attrs.stageProgressList = task.stageProgressList.map((item) => {
-          for (const stage of attrs.stageProgressList) {
-            if (item.id === stage.id) {
-              item.status = stage.status;
-              break;
-            }
-          }
-          return item;
-        });
-      }
-
       const changeList = [];
 
       if (attrs.name) {
@@ -272,6 +260,21 @@ export default function routes() {
             oldValue: task.description,
             newValue: attrs.description,
           });
+        }
+      }
+
+      if (attrs.stageProgress !== undefined) {
+        const stage = task.stageProgressList.find(
+          (item) => item.id == attrs.stageProgress.id
+        );
+        if (stage) {
+          changeList.push({
+            fieldId: [TaskBuiltinFieldId.STAGE, stage.id].join("."),
+            oldValue: stage.status,
+            newValue: attrs.stageProgress.status,
+          });
+          stage.status = attrs.stageProgress.status;
+          attrs.stageProgressList = task.stageProgressList;
         }
       }
 

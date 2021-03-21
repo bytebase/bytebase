@@ -67,7 +67,7 @@ const template: TaskTemplate = {
     },
     {
       category: "OUTPUT",
-      id: 99,
+      id: "99",
       slug: "datasource",
       name: "Data Source URL",
       type: "String",

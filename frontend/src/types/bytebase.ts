@@ -177,7 +177,7 @@ export type TaskPatch = {
   status?: TaskStatus;
   description?: string;
   assigneeId?: PrincipalId;
-  stageProgressList?: StageProgressPatch[];
+  stageProgress?: StageProgressPatch;
   payload?: TaskPayload;
 };
 

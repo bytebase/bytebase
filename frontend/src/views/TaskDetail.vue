@@ -481,12 +481,10 @@ export default {
 
     const doChangeStageStatus = (transition: Transition) => {
       patchTask({
-        stageProgressList: [
-          {
-            id: activeStage(state.task as Task).id,
-            status: transition.to,
-          },
-        ],
+        stageProgress: {
+          id: activeStage(state.task as Task).id,
+          status: transition.to,
+        },
       });
     };
 

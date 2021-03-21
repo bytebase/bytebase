@@ -1,5 +1,14 @@
-import { Task, StageProgress, EnvironmentId } from "../types";
+import { Task, StageId, StageProgress, EnvironmentId } from "../types";
 import { templateForType } from "../plugins";
+
+export function stageName(task: Task, stageId: StageId): string {
+  for (const stageProgress of task.stageProgressList) {
+    if (stageProgress.id == stageId) {
+      return stageProgress.name;
+    }
+  }
+  return "<<Unknown stage>>";
+}
 
 export function activeStage(task: Task): StageProgress {
   for (const stageProgress of task.stageProgressList) {

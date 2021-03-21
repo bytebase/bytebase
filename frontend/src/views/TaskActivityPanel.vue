@@ -309,7 +309,7 @@ import {
   ActionTaskFieldUpdatePayload,
   Environment,
 } from "../types";
-import { sizeToFit } from "../utils";
+import { sizeToFit, stageName } from "../utils";
 import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
 
 interface LocalState {
@@ -476,6 +476,13 @@ export default {
               }
             } else if (update.fieldId == TaskBuiltinFieldId.DESCRIPTION) {
               name = "description";
+            } else if (
+              update.fieldId.split(".")[0] == TaskBuiltinFieldId.STAGE
+            ) {
+              const stageId = update.fieldId.split(".")[1];
+              name = stageName(props.task, stageId);
+              oldValue = update.oldValue;
+              newValue = update.newValue;
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);
               if (field) {

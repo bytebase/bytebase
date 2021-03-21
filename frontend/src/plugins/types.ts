@@ -1,16 +1,17 @@
 import { Environment, Principal, TaskNew, DatabaseId } from "../types";
 
 // Task
-export type TaskFieldId = number;
+export type TaskFieldId = string;
 
 export enum TaskBuiltinFieldId {
-  NAME = 1,
-  STATUS = 2,
-  ASSIGNEE = 3,
-  DESCRIPTION = 4,
-  ENVIRONMENT = 5,
-  INSTANCE = 6,
-  DATABASE = 7,
+  NAME = "1",
+  STATUS = "2",
+  ASSIGNEE = "3",
+  DESCRIPTION = "4",
+  ENVIRONMENT = "5",
+  INSTANCE = "6",
+  DATABASE = "7",
+  STAGE = "8", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
 }
 
 export const CUSTOM_FIELD_ID_BEGIN = 101;
