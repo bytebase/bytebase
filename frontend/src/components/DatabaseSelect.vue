@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import {
   ALL_DATABASE_NAME,
@@ -40,11 +40,12 @@ export default {
   components: {},
   props: {
     selectedId: {
-      default: ALL_DATABASE_PLACEHOLDER_ID,
+      type: String,
+    },
+    environmentId: {
       type: String,
     },
     instanceId: {
-      required: true,
       type: String,
     },
   },
@@ -54,24 +55,51 @@ export default {
       selectedId: props.selectedId,
     });
 
+    const selectDefaultIfNeeded = () => {
+      if (
+        !props.selectedId &&
+        databaseList.value &&
+        databaseList.value.length > 0
+      ) {
+        console.log("hit");
+        state.selectedId = databaseList.value[0].id;
+        emit("select-database-id", state.selectedId);
+      }
+    };
+
+    const prepareDatabaseListByEnvironment = () => {
+      if (props.environmentId) {
+        store
+          .dispatch(
+            "database/fetchDatabaseListByEnvironmentId",
+            props.environmentId
+          )
+          .then(() => {
+            selectDefaultIfNeeded();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+    };
+
+    if (props.environmentId) {
+      watchEffect(prepareDatabaseListByEnvironment);
+    }
+
     const databaseList = computed(() => {
-      const list = store.getters["database/databaseListByInstanceId"](
-        props.instanceId
-      );
-      return list;
+      if (props.environmentId) {
+        return store.getters["database/databaseListByEnvironmentId"](
+          props.environmentId
+        );
+      } else {
+        return store.getters["database/databaseListByInstanceId"](
+          props.instanceId
+        );
+      }
     });
 
-    if (
-      props.selectedId == ALL_DATABASE_PLACEHOLDER_ID &&
-      databaseList.value &&
-      databaseList.value.length > 0
-    ) {
-      const allDatabase = databaseList.value.find(
-        (item: Database) => item.name == ALL_DATABASE_NAME
-      );
-      state.selectedId = allDatabase.id;
-      emit("select-database-id", state.selectedId);
-    }
+    selectDefaultIfNeeded();
 
     return {
       state,
