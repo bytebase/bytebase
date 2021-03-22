@@ -182,7 +182,7 @@
                     <textarea
                       ref="editCommentTextArea"
                       class="textarea block w-full resize-none mt-1 text-sm text-control whitespace-pre-wrap"
-                      placeholder="Leave a comment..."
+                      placeholder="Add a note..."
                       v-model="editComment"
                       @input="
                         (e) => {
