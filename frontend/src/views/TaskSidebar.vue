@@ -2,18 +2,15 @@
   <aside>
     <h2 class="sr-only">Details</h2>
     <div class="space-y-6">
-      <div v-if="!$props.new" class="flex flex-row space-x-2">
+      <div v-if="!$props.new" class="flex flex-row space-x-2 pb-4 border-b">
         <h2 class="flex items-center textlabel w-36">Status</h2>
         <div class="w-full">
-          <TaskStatusSelect
-            :disabled="activeStageIsRunning(task)"
-            :selectedStatus="task.status"
-            @start-transition="
-              (transition, didTransit) => {
-                $emit('start-status-transition', transition, didTransit);
-              }
-            "
-          />
+          <span class="flex items-center space-x-2">
+            <TaskStatusIcon :taskStatus="task.status" :size="'normal'" />
+            <span class="text-main capitalize">
+              {{ task.status.toLowerCase() }}
+            </span>
+          </span>
         </div>
       </div>
       <div class="flex flex-row space-x-2">
@@ -265,7 +262,7 @@ import isEmpty from "lodash-es/isEmpty";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
-import TaskStatusSelect from "../components/TaskStatusSelect.vue";
+import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import {
   TaskField,
   TaskBuiltinFieldId,
@@ -305,7 +302,7 @@ export default {
     DatabaseSelect,
     EnvironmentSelect,
     PrincipalSelect,
-    TaskStatusSelect,
+    TaskStatusIcon,
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
