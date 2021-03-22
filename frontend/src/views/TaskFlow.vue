@@ -1,15 +1,17 @@
 <template>
   <nav aria-label="Progress">
     <ol
-      class="border-t border-b border-block-border divide-y divide-gray-300 md:flex md:divide-y-0"
+      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0"
     >
       <li
         v-for="(stage, index) in stageList"
         :key="index"
         class="relative md:flex-1 md:flex"
       >
-        <div class="cursor-default group flex items-center w-full">
-          <span class="px-4 py-3 flex items-center text-sm font-medium">
+        <div
+          class="cursor-default group flex items-center justify-between w-full"
+        >
+          <span class="pl-2 py-3 flex items-center text-sm font-medium">
             <div
               class="relative w-6 h-6 flex items-center justify-center rounded-full select-none"
               :class="stageIconClass(stage)"
@@ -77,16 +79,135 @@
                 </svg>
               </template>
             </div>
-            <span class="ml-4 text-sm" :class="stageTextClass(stage)">{{
+            <span class="ml-2 text-sm" :class="stageTextClass(stage)">{{
               stage.title
             }}</span>
           </span>
+          <div
+            v-if="
+              activeStage(task).id === stage.id &&
+              applicableStageTransitionList.length > 0
+            "
+            class="flex flex-row space-x-1 mr-4"
+          >
+            <button
+              class="btn-icon"
+              @click.prevent="
+                tryChangeStageStatus(applicableStageTransitionList[0])
+              "
+            >
+              <template v-if="applicableStageTransitionList[0].type == 'RUN'">
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  ></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </template>
+              <template
+                v-else-if="applicableStageTransitionList[0].type == 'RETRY'"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  ></path>
+                </svg>
+              </template>
+              <template
+                v-else-if="applicableStageTransitionList[0].type == 'STOP'"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                  ></path>
+                </svg>
+              </template>
+            </button>
+            <template v-if="applicableStageTransitionList.length > 1">
+              <button
+                class="btn-icon"
+                @click.prevent="$refs.menu.toggle($event)"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                  ></path>
+                </svg>
+              </button>
+              <BBContextMenu
+                ref="menu"
+                class="origin-bottom-right absolute mt-6 -right-8 w-16 rounded-md shadow-lg"
+              >
+                <template
+                  v-for="(
+                    transition, index
+                  ) in applicableStageTransitionList.slice(1)"
+                  :key="index"
+                >
+                  <a
+                    @click.prevent="tryChangeStageStatus(transition)"
+                    class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+                    role="menuitem"
+                  >
+                    {{ transition.actionName }}
+                  </a>
+                </template>
+              </BBContextMenu>
+            </template>
+          </div>
         </div>
 
         <!-- Arrow separator -->
         <div
           v-if="index != stageList.length - 1"
-          class="hidden md:block absolute top-0 right-0 h-full w-5"
+          class="hidden lg:block absolute top-0 right-0 h-full w-5"
           aria-hidden="true"
         >
           <svg
@@ -106,12 +227,100 @@
       </li>
     </ol>
   </nav>
+  <BBAlert
+    v-if="modalState.show"
+    :style="'INFO'"
+    :okText="modalState.okText"
+    :cancelText="'No'"
+    :title="modalState.title"
+    :payload="modalState.payload"
+    @ok="
+      (transition) => {
+        modalState.show = false;
+        doChangeStageStatus(transition);
+      }
+    "
+    @cancel="modalState.show = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
-import { Task, StageId } from "../types";
+import { computed, reactive, PropType } from "vue";
+import { useStore } from "vuex";
+import { Task, StageId, StageStatus } from "../types";
 import { activeStage } from "../utils";
+
+type StageTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
+
+// The first transition in the list is the primary action and the rests are
+// the normal action which is hidden in the vertical dots icon.
+const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
+  StageStatus,
+  StageTransitionType[]
+> = new Map([
+  ["PENDING", []],
+  ["RUNNING", []],
+  ["DONE", []],
+  ["FAILED", []],
+  ["SKIPPED", []],
+]);
+
+const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
+  StageStatus,
+  StageTransitionType[]
+> = new Map([
+  ["PENDING", ["RUN", "SKIP"]],
+  ["RUNNING", ["STOP"]],
+  ["DONE", []],
+  ["FAILED", ["RETRY", "SKIP"]],
+  ["SKIPPED", []],
+]);
+
+const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
+  StageStatus,
+  StageTransitionType[]
+> = new Map([
+  ["PENDING", []],
+  ["RUNNING", []],
+  ["DONE", []],
+  ["FAILED", []],
+  ["SKIPPED", []],
+]);
+
+interface Transition {
+  type: StageTransitionType;
+  actionName: string;
+  requireRunnable: boolean;
+  to: StageStatus;
+}
+
+const STAGE_TRANSITION_LIST: Transition[] = [
+  {
+    type: "RUN",
+    actionName: "Run",
+    requireRunnable: true,
+    to: "RUNNING",
+  },
+  {
+    type: "RETRY",
+    actionName: "Rerun",
+    requireRunnable: true,
+    to: "RUNNING",
+  },
+  {
+    type: "STOP",
+    actionName: "Stop",
+    requireRunnable: true,
+    to: "PENDING",
+  },
+  {
+    type: "SKIP",
+    actionName: "Skip",
+    requireRunnable: false,
+    to: "SKIPPED",
+  },
+];
 
 interface FlowItem {
   id: StageId;
@@ -120,8 +329,16 @@ interface FlowItem {
   link: () => string;
 }
 
+interface ModalState {
+  show: boolean;
+  okText: string;
+  title: string;
+  payload?: Transition;
+}
+
 export default {
   name: "TaskFlow",
+  emits: ["change-stage-status"],
   props: {
     task: {
       required: true,
@@ -129,7 +346,17 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {
+  setup(props, { emit }) {
+    const store = useStore();
+
+    const modalState = reactive<ModalState>({
+      show: false,
+      okText: "OK",
+      title: "",
+    });
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
     const stageList = computed<FlowItem[]>(() => {
       return props.task.stageProgressList.map((stageProgress) => {
         return {
@@ -183,11 +410,50 @@ export default {
       }
     };
 
+    const applicableStageTransitionList = computed(() => {
+      return STAGE_TRANSITION_LIST.filter((transition) => {
+        const actionListForRole =
+          currentUser.value.id === (props.task as Task).creator.id
+            ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
+            : currentUser.value.id === (props.task as Task).assignee?.id
+            ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
+            : GUEST_APPLICABLE_STAGE_ACTION_LIST;
+        const stage = activeStage(props.task as Task);
+        return (
+          stage.type === "ENVIRONMENT" &&
+          actionListForRole.get(stage.status)!.includes(transition.type) &&
+          (!transition.requireRunnable || stage.runnable)
+        );
+      });
+    });
+
+    const tryChangeStageStatus = (transition: Transition) => {
+      modalState.okText = transition.actionName;
+      modalState.title =
+        transition.actionName +
+        ' "' +
+        activeStage(props.task as Task).name +
+        '" ?';
+      modalState.payload = transition;
+      modalState.show = true;
+    };
+
+    const doChangeStageStatus = (transition: Transition) => {
+      emit("change-stage-status", {
+        id: activeStage(props.task as Task).id,
+        status: transition.to,
+      });
+    };
+
     return {
+      modalState,
       stageList,
       activeStage,
       stageIconClass,
       stageTextClass,
+      applicableStageTransitionList,
+      tryChangeStageStatus,
+      doChangeStageStatus,
     };
   },
 };

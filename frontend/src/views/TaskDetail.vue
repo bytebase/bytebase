@@ -22,7 +22,7 @@
           </button>
         </template>
         <!-- Action Button List -->
-        <template
+        <!-- <template
           v-else
           v-for="(transition, index) in applicableStageTransitionList()"
           :key="index"
@@ -35,12 +35,16 @@
           >
             {{ transition.actionName }}
           </button>
-        </template>
+        </template> -->
       </TaskHighlightPanel>
     </div>
 
     <!-- Flow Bar -->
-    <TaskFlow v-if="showTaskFlowBar" :task="state.task" />
+    <TaskFlow
+      v-if="showTaskFlowBar"
+      :task="state.task"
+      @change-stage-status="changeStageStatus"
+    />
 
     <!-- Output Panel -->
     <!-- Only render the top border if TaskFlow is not displayed, otherwise it would overlap with the bottom border of the TaskFlow -->
@@ -102,22 +106,6 @@
       </div>
     </main>
   </div>
-  <BBAlert
-    v-if="modalState.show"
-    :style="'INFO'"
-    :okText="modalState.okText"
-    :cancelText="'No'"
-    :title="modalState.title"
-    :payload="modalState.payload"
-    @ok="
-      (transition) => {
-        modalState.show = false;
-        doChangeStageStatus(transition);
-      }
-    "
-    @cancel="modalState.show = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -134,7 +122,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
-import { idFromSlug, taskSlug, activeStage } from "../utils";
+import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskFlow from "../views/TaskFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
@@ -147,7 +135,7 @@ import {
   TaskType,
   TaskPatch,
   TaskStatus,
-  StageStatus,
+  StageProgressPatch,
   PrincipalId,
 } from "../types";
 import {
@@ -157,96 +145,9 @@ import {
   TaskTemplate,
 } from "../plugins";
 
-type StageTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
-
-const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
-  StageStatus,
-  StageTransitionType[]
-> = new Map([
-  ["PENDING", []],
-  ["RUNNING", []],
-  ["DONE", []],
-  ["FAILED", []],
-  ["SKIPPED", []],
-]);
-
-const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
-  StageStatus,
-  StageTransitionType[]
-> = new Map([
-  ["PENDING", ["RUN", "SKIP"]],
-  ["RUNNING", ["STOP"]],
-  ["DONE", []],
-  ["FAILED", ["RETRY", "SKIP"]],
-  ["SKIPPED", []],
-]);
-
-const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
-  StageStatus,
-  StageTransitionType[]
-> = new Map([
-  ["PENDING", []],
-  ["RUNNING", []],
-  ["DONE", []],
-  ["FAILED", []],
-  ["SKIPPED", []],
-]);
-
-// Use enum so it's easier to do numeric comparison to sort the button.
-enum ActionType {
-  PRIMARY = 0,
-  NORMAL = 1,
-}
-
-interface Transition {
-  type: StageTransitionType;
-  actionName: string;
-  actionType: ActionType;
-  requireRunnable: boolean;
-  to: StageStatus;
-}
-
-const STAGE_TRANSITION_LIST: Transition[] = [
-  {
-    type: "RUN",
-    actionName: "Run",
-    actionType: ActionType.PRIMARY,
-    requireRunnable: true,
-    to: "RUNNING",
-  },
-  {
-    type: "RETRY",
-    actionName: "Rerun",
-    actionType: ActionType.PRIMARY,
-    requireRunnable: true,
-    to: "RUNNING",
-  },
-  {
-    type: "STOP",
-    actionName: "Stop",
-    actionType: ActionType.PRIMARY,
-    requireRunnable: true,
-    to: "PENDING",
-  },
-  {
-    type: "SKIP",
-    actionName: "Skip",
-    actionType: ActionType.NORMAL,
-    requireRunnable: false,
-    to: "SKIPPED",
-  },
-];
-
 interface LocalState {
   new: boolean;
   task: ComputedRef<Task | TaskNew>;
-}
-
-interface ModalState {
-  show: boolean;
-  okText: string;
-  title: string;
-  payload?: Transition;
 }
 
 export default {
@@ -339,12 +240,6 @@ export default {
     };
 
     const state = reactive<LocalState>(refreshState());
-
-    const modalState = reactive<ModalState>({
-      show: false,
-      okText: "OK",
-      title: "",
-    });
 
     const refreshTask = () => {
       const updatedState = refreshState();
@@ -467,23 +362,9 @@ export default {
         });
     };
 
-    const tryChangeStageStatus = (transition: Transition) => {
-      modalState.okText = transition.actionName;
-      modalState.title =
-        transition.actionName +
-        ' "' +
-        activeStage(state.task as Task).name +
-        '" ?';
-      modalState.payload = transition;
-      modalState.show = true;
-    };
-
-    const doChangeStageStatus = (transition: Transition) => {
+    const changeStageStatus = (stageProgress: StageProgressPatch) => {
       patchTask({
-        stageProgress: {
-          id: activeStage(state.task as Task).id,
-          status: transition.to,
-        },
+        stageProgress,
       });
     };
 
@@ -505,32 +386,6 @@ export default {
       return true;
     });
 
-    const applicableStageTransitionList = () => {
-      return STAGE_TRANSITION_LIST.filter((transition) => {
-        const actionListForRole =
-          currentUser.value.id === (state.task as Task).creator.id
-            ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser.value.id === (state.task as Task).assignee?.id
-            ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
-            : GUEST_APPLICABLE_STAGE_ACTION_LIST;
-        const stage = activeStage(state.task as Task);
-        return (
-          stage.type === "ENVIRONMENT" &&
-          actionListForRole.get(stage.status)!.includes(transition.type) &&
-          (!transition.requireRunnable || stage.runnable)
-        );
-      }).sort((a, b) => b.actionType - a.actionType);
-    };
-
-    const actionButtonClass = (actionType: ActionType) => {
-      switch (actionType) {
-        case ActionType.PRIMARY:
-          return "btn-primary";
-        case ActionType.NORMAL:
-          return "btn-normal";
-      }
-    };
-
     const showTaskFlowBar = computed(() => {
       return !state.new && state.task.stageProgressList.length > 1;
     });
@@ -541,18 +396,14 @@ export default {
 
     return {
       state,
-      modalState,
       updateName,
       updateDescription,
       updateTaskStatus,
       updateAssigneeId,
       updateCustomField,
       doCreate,
-      tryChangeStageStatus,
-      doChangeStageStatus,
+      changeStageStatus,
       allowCreate,
-      applicableStageTransitionList,
-      actionButtonClass,
       currentUser,
       taskTemplate,
       outputFieldList,
