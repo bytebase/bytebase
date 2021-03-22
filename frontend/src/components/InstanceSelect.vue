@@ -8,7 +8,7 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Not selected
+      Select instance
     </option>
     <option
       v-for="(instance, index) in instanceList"

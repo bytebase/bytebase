@@ -8,7 +8,7 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Not selected
+      Select database
     </option>
     <option
       v-for="(database, index) in databaseList"

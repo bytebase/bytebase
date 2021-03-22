@@ -8,7 +8,7 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Not selected
+      Select environment
     </option>
     <option
       v-for="(environment, index) in environmentList"

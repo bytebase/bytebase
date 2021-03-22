@@ -8,7 +8,7 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Not selected
+      Select data source
     </option>
     <option
       v-for="(dataSource, index) in dataSourceList"
