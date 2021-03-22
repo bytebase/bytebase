@@ -157,7 +157,7 @@ import {
   TaskTemplate,
 } from "../plugins";
 
-type StageTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
+type StageTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
 
 const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
   StageStatus,
@@ -175,7 +175,7 @@ const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
   StageTransitionType[]
 > = new Map([
   ["PENDING", ["RUN", "SKIP"]],
-  ["RUNNING", ["CANCEL"]],
+  ["RUNNING", ["STOP"]],
   ["DONE", []],
   ["FAILED", ["RETRY", "SKIP"]],
   ["SKIPPED", []],
@@ -223,8 +223,8 @@ const STAGE_TRANSITION_LIST: Transition[] = [
     to: "RUNNING",
   },
   {
-    type: "CANCEL",
-    actionName: "Cancel",
+    type: "STOP",
+    actionName: "Stop",
     actionType: ActionType.PRIMARY,
     requireRunnable: true,
     to: "PENDING",
