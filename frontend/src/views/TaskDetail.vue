@@ -204,7 +204,7 @@ const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
   TaskStatus,
   TaskStatusTransitionType[]
 > = new Map([
-  ["OPEN", ["RESOLVE"]],
+  ["OPEN", ["RESOLVE", "ABORT"]],
   ["DONE", ["REOPEN"]],
   ["CANCELED", ["REOPEN"]],
 ]);
