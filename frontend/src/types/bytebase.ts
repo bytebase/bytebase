@@ -152,7 +152,6 @@ export type Task = {
   createdTs: number;
   lastUpdatedTs: number;
   status: TaskStatus;
-  category: "DDL" | "DML" | "OPS";
   type: TaskType;
   description: string;
   stageProgressList: StageProgress[];

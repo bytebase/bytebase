@@ -15,16 +15,6 @@ export default {
     status() {
       return "OPEN";
     },
-    category() {
-      let dice = Math.random();
-      if (dice < 0.33) {
-        return "DDL";
-      } else if (dice < 0.66) {
-        return "DML";
-      } else {
-        return "OPS";
-      }
-    },
     type() {
       return "bytebase.database.request";
     },

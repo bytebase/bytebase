@@ -17,28 +17,24 @@
         :title="state.columnList[1].title"
       />
       <BBTableHeaderCell
-        class="w-4 table-cell"
+        class="w-24 table-cell"
         :title="state.columnList[2].title"
       />
       <BBTableHeaderCell
-        class="w-24 table-cell"
+        class="table-cell"
         :title="state.columnList[3].title"
       />
       <BBTableHeaderCell
-        class="table-cell"
+        class="w-12 hidden sm:table-cell"
         :title="state.columnList[4].title"
       />
       <BBTableHeaderCell
-        class="w-12 hidden sm:table-cell"
+        class="w-32 hidden md:table-cell"
         :title="state.columnList[5].title"
       />
       <BBTableHeaderCell
-        class="w-32 hidden md:table-cell"
-        :title="state.columnList[6].title"
-      />
-      <BBTableHeaderCell
         class="w-36 hidden sm:table-cell"
-        :title="state.columnList[7].title"
+        :title="state.columnList[6].title"
       />
     </template>
     <template v-slot:body="{ rowData: task }">
@@ -51,13 +47,6 @@
 
       <BBTableCell class="w-4 table-cell text-gray-500">
         <span class="">#{{ task.id }}</span>
-      </BBTableCell>
-      <BBTableCell class="w-4">
-        <span
-          class="flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-mono bg-gray-500 text-white"
-        >
-          {{ task.category }}
-        </span>
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">
         {{ activeEnvironmentName(task) }}
@@ -124,9 +113,6 @@ export default {
         },
         {
           title: "ID",
-        },
-        {
-          title: "Type",
         },
         {
           title: "Environment",
