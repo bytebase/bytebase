@@ -320,17 +320,6 @@ const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
   ["SKIPPED", []],
 ]);
 
-const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
-  StageStatus,
-  StageTransitionType[]
-> = new Map([
-  ["PENDING", []],
-  ["RUNNING", []],
-  ["DONE", []],
-  ["FAILED", []],
-  ["SKIPPED", []],
-]);
-
 interface FlowItem {
   id: StageId;
   title: string;
@@ -424,14 +413,19 @@ export default {
       if (stage.type != "ENVIRONMENT") {
         return false;
       }
-      const actionListForRole =
-        currentUser.value.id === (props.task as Task).assignee?.id
-          ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
-          : currentUser.value.id === (props.task as Task).creator.id
-          ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-          : GUEST_APPLICABLE_STAGE_ACTION_LIST;
-
-      const list = actionListForRole.get(stage.status)!;
+      const list: StageTransitionType[] = [];
+      if (currentUser.value.id === (props.task as Task).assignee?.id) {
+        list.push(...ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!);
+      }
+      if (currentUser.value.id === (props.task as Task).creator.id) {
+        CREATOR_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!.forEach(
+          (item) => {
+            if (list.indexOf(item) == -1) {
+              list.push(item);
+            }
+          }
+        );
+      }
       return list
         .filter((type) => {
           const transition = STAGE_TRANSITION_LIST.get(type)!;
