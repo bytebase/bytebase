@@ -6,7 +6,7 @@ import {
   DatabaseFieldPayload,
 } from "../types";
 
-import { TaskNew } from "../../types";
+import { TaskNew, EnvironmentId } from "../../types";
 
 const template: TaskTemplate = {
   type: "bytebase.database.request",
@@ -49,6 +49,9 @@ const template: TaskTemplate = {
       name: "Environment",
       type: "Environment",
       required: true,
+      isEmpty: (value: EnvironmentId): boolean => {
+        return isEmpty(value);
+      },
     },
     {
       category: "INPUT",
@@ -72,6 +75,9 @@ const template: TaskTemplate = {
       name: "Data Source URL",
       type: "String",
       required: true,
+      isEmpty: (value: string): boolean => {
+        return isEmpty(value?.trim());
+      },
     },
   ],
 };

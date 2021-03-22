@@ -128,10 +128,15 @@
       :okText="updateStatusModalState.okText"
       :task="state.task"
       :transition="updateStatusModalState.payload.transition"
+      :outputFieldList="outputFieldList"
       @submit="
-        (comment) => {
+        (outputValueList, comment) => {
           updateStatusModalState.show = false;
-          doTaskStatusTransition(updateStatusModalState.payload, comment);
+          doTaskStatusTransition(
+            updateStatusModalState.payload,
+            outputValueList,
+            comment
+          );
         }
       "
       @cancel="
@@ -399,13 +404,24 @@ export default {
 
     const doTaskStatusTransition = (
       payload: UpdateStatusModalStatePayload,
+      outputValueList: string[],
       comment?: string
     ) => {
+      let payloadChanged = false;
+      for (let i = 0; i < outputValueList.length; i++) {
+        const field = outputFieldList.value[i];
+        if (state.task.payload[field.id] != outputValueList[i]) {
+          state.task.payload[field.id] = outputValueList[i];
+          payloadChanged = true;
+        }
+      }
+
       const theComment = comment ? comment.trim() : undefined;
       patchTask(
         {
           status: payload.transition.to,
           comment: theComment ? theComment : undefined,
+          payload: payloadChanged ? state.task.payload : undefined,
         },
         () => {
           payload.didTransit();
@@ -493,8 +509,7 @@ export default {
           if (
             field.type != "Switch" && // Switch is boolean value which always presents
             field.required &&
-            ((field.isEmpty && field.isEmpty(state.task.payload[field.id])) ||
-              isEmpty(state.task.payload[field.id]))
+            isEmpty(state.task.payload[field.id])
           ) {
             return false;
           }

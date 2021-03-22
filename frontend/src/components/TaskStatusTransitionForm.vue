@@ -1,15 +1,37 @@
 <template>
   <div class="px-4 space-y-6 divide-y divide-gray-200">
-    <div class="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-      <div class="sm:col-span-6">
-        <label for="about" class="block text-sm font-medium text-gray-700">
-          Note
-        </label>
+    <div class="mt-2 grid grid-cols-1 gap-x-4 sm:grid-cols-4">
+      <template v-if="transition.type == 'RESOLVE'">
+        <template v-for="(field, index) in outputFieldList" :key="index">
+          <div class="sm:col-span-1">
+            <label class="textlabel">
+              {{ field.name
+              }}<span v-if="field.required" class="text-red-600">*</span>
+            </label>
+          </div>
+          <div class="sm:col-span-4 sm:col-start-1">
+            <div class="mt-1 flex rounded-md shadow-sm">
+              <input
+                type="text"
+                :name="field.id"
+                :id="field.id"
+                v-model="state.outputValueList[index]"
+                autocomplete="off"
+                class="w-full textfield"
+              />
+            </div>
+          </div>
+          <div v-if="index == outputFieldList.length - 1" class="mt-4" />
+        </template>
+      </template>
+
+      <div class="sm:col-span-4 w-112 min-w-full">
+        <label for="about" class="textlabel"> Note </label>
         <div class="mt-1">
           <textarea
             ref="commentTextArea"
             rows="3"
-            class="textarea block w-full resize-none mt-1 text-sm text-control whitespace-pre-wrap"
+            class="textarea block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
             placeholder="Add an optional note..."
             v-model="state.comment"
             @input="
@@ -40,7 +62,8 @@
         type="button"
         class="ml-3 px-4 py-2"
         v-bind:class="submitButtonStyle"
-        @click.prevent="$emit('submit', state.comment)"
+        :disabled="!allowSubmit"
+        @click.prevent="$emit('submit', state.outputValueList, state.comment)"
       >
         {{ okText }}
       </button>
@@ -49,11 +72,14 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, ref, PropType } from "vue";
+import { computed, onMounted, reactive, ref, PropType } from "vue";
+import cloneDeep from "lodash-es/cloneDeep";
 import { Task, TaskStatusTransition } from "../types";
+import { TaskField } from "../plugins";
 
 interface LocalState {
   comment: string;
+  outputValueList: string[];
 }
 
 export default {
@@ -65,13 +91,16 @@ export default {
       default: "OK",
     },
     task: {
-      // Can be false when create is true
-      required: false,
+      required: true,
       type: Object as PropType<Task>,
     },
     transition: {
       required: true,
       type: Object as PropType<TaskStatusTransition>,
+    },
+    outputFieldList: {
+      required: true,
+      type: Object as PropType<TaskField[]>,
     },
   },
   setup(props, ctx) {
@@ -79,6 +108,13 @@ export default {
 
     const state = reactive<LocalState>({
       comment: "",
+      outputValueList: [],
+    });
+
+    onMounted(() => {
+      for (const field of props.outputFieldList) {
+        state.outputValueList.push(cloneDeep(props.task.payload[field.id]));
+      }
     });
 
     const submitButtonStyle = computed(() => {
@@ -92,10 +128,24 @@ export default {
       }
     });
 
+    const allowSubmit = computed(() => {
+      if (props.transition.type != "RESOLVE") {
+        return true;
+      }
+      for (let i = 0; i < props.outputFieldList.length; i++) {
+        const field = props.outputFieldList[i];
+        if (field.required && field.isEmpty(state.outputValueList[i])) {
+          return false;
+        }
+      }
+      return true;
+    });
+
     return {
       state,
       commentTextArea,
       submitButtonStyle,
+      allowSubmit,
     };
   },
 };

@@ -44,8 +44,7 @@ export type TaskField = {
   required: boolean;
   // Whether the value is empty, one use case is together with "required" field to validate
   // whether it's ready to submit the data.
-  // If not present, we will use the loadash/isEmpty check.
-  isEmpty?: (value: any) => boolean;
+  isEmpty: (value: any) => boolean;
   // Placeholder displayed on UI.
   placeholder?: string;
 };

@@ -18,9 +18,10 @@
         <input
           type="text"
           class="flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
-          :disabled="!isAssignee"
+          :disabled="!allowEdit"
           :name="field.id"
           :value="task.payload[field.id]"
+          autocomplete="off"
           @input="$emit('update-custom-field', field, $event.target.value)"
         />
         <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
@@ -107,6 +108,13 @@ export default {
       return currentUser.value.id === props.task.assignee?.id;
     });
 
+    const allowEdit = computed(() => {
+      return (
+        currentUser.value.id === props.task.assignee?.id &&
+        props.task.status == "OPEN"
+      );
+    });
+
     const isValidLink = (link: string) => {
       return link?.trim().length > 0;
     };
@@ -135,7 +143,7 @@ export default {
       }
     };
 
-    return { state, isAssignee, isValidLink, copyText, goToLink };
+    return { state, allowEdit, isValidLink, copyText, goToLink };
   },
 };
 </script>
