@@ -250,6 +250,52 @@ import { activeStage } from "../utils";
 
 type StageTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
 
+interface Transition {
+  type: StageTransitionType;
+  actionName: string;
+  requireRunnable: boolean;
+  to: StageStatus;
+}
+
+const STAGE_TRANSITION_LIST: Map<StageTransitionType, Transition> = new Map([
+  [
+    "RUN",
+    {
+      type: "RUN",
+      actionName: "Run",
+      requireRunnable: true,
+      to: "RUNNING",
+    },
+  ],
+  [
+    "RETRY",
+    {
+      type: "RETRY",
+      actionName: "Rerun",
+      requireRunnable: true,
+      to: "RUNNING",
+    },
+  ],
+  [
+    "STOP",
+    {
+      type: "STOP",
+      actionName: "Stop",
+      requireRunnable: true,
+      to: "PENDING",
+    },
+  ],
+  [
+    "SKIP",
+    {
+      type: "SKIP",
+      actionName: "Skip",
+      requireRunnable: false,
+      to: "SKIPPED",
+    },
+  ],
+]);
+
 // The first transition in the list is the primary action and the rests are
 // the normal action which is hidden in the vertical dots icon.
 const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
@@ -284,40 +330,6 @@ const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
   ["FAILED", []],
   ["SKIPPED", []],
 ]);
-
-interface Transition {
-  type: StageTransitionType;
-  actionName: string;
-  requireRunnable: boolean;
-  to: StageStatus;
-}
-
-const STAGE_TRANSITION_LIST: Transition[] = [
-  {
-    type: "RUN",
-    actionName: "Run",
-    requireRunnable: true,
-    to: "RUNNING",
-  },
-  {
-    type: "RETRY",
-    actionName: "Rerun",
-    requireRunnable: true,
-    to: "RUNNING",
-  },
-  {
-    type: "STOP",
-    actionName: "Stop",
-    requireRunnable: true,
-    to: "PENDING",
-  },
-  {
-    type: "SKIP",
-    actionName: "Skip",
-    requireRunnable: false,
-    to: "SKIPPED",
-  },
-];
 
 interface FlowItem {
   id: StageId;
@@ -408,20 +420,24 @@ export default {
     };
 
     const applicableStageTransitionList = computed(() => {
-      return STAGE_TRANSITION_LIST.filter((transition) => {
-        const actionListForRole =
-          currentUser.value.id === (props.task as Task).creator.id
-            ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
-            : currentUser.value.id === (props.task as Task).assignee?.id
-            ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
-            : GUEST_APPLICABLE_STAGE_ACTION_LIST;
-        const stage = activeStage(props.task as Task);
-        return (
-          stage.type === "ENVIRONMENT" &&
-          actionListForRole.get(stage.status)!.includes(transition.type) &&
-          (!transition.requireRunnable || stage.runnable)
-        );
-      });
+      const stage = activeStage(props.task as Task);
+      if (stage.type != "ENVIRONMENT") {
+        return false;
+      }
+      const actionListForRole =
+        currentUser.value.id === (props.task as Task).assignee?.id
+          ? ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST
+          : currentUser.value.id === (props.task as Task).creator.id
+          ? CREATOR_APPLICABLE_STAGE_ACTION_LIST
+          : GUEST_APPLICABLE_STAGE_ACTION_LIST;
+
+      const list = actionListForRole.get(stage.status)!;
+      return list
+        .filter((type) => {
+          const transition = STAGE_TRANSITION_LIST.get(type)!;
+          return !transition.requireRunnable || stage.runnable;
+        })
+        .map((type) => STAGE_TRANSITION_LIST.get(type));
     });
 
     const tryChangeStageStatus = (transition: Transition) => {
