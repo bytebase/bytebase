@@ -39,8 +39,13 @@
           <div class="flex-1 h-0 py-4 overflow-y-auto">
             <router-view name="leftSidebar" />
           </div>
-          <div class="flex-shrink-0 flex border-t border-block-border p-4">
-            <a href="#" class="flex-shrink-0 group block">
+          <div
+            class="flex-shrink-0 flex border-t border-block-border px-4 py-2"
+          >
+            <a
+              href="https://github.com/bytebase/bytebase/discussions"
+              class="flex-shrink-0 text-main group block"
+            >
               <div class="flex items-center">
                 <svg
                   class="w-5 h-5"
@@ -56,12 +61,7 @@
                     d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   ></path>
                 </svg>
-                <a
-                  href="https://github.com/bytebase/bytebase/discussions"
-                  target="_blank"
-                  class="ml-1 text-sm"
-                  >Help &amp; Feedback</a
-                >
+                <span class="ml-1 text-sm">Help &amp; Feedback</span>
               </div>
             </a>
           </div>
@@ -85,8 +85,11 @@
         >
           <Quickstart />
         </div>
-        <div class="flex-shrink-0 flex border-t border-block-border p-4">
-          <a href="#" class="flex-shrink-0 w-full group block">
+        <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
+          <a
+            href="https://github.com/bytebase/bytebase/discussions"
+            class="flex-shrink-0 w-full text-main group block"
+          >
             <div class="flex items-center">
               <svg
                 class="w-5 h-5"
@@ -102,12 +105,7 @@
                   d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 ></path>
               </svg>
-              <a
-                href="https://github.com/bytebase/bytebase/discussions"
-                target="_blank"
-                class="ml-1 text-sm"
-                >Help &amp; Feedback</a
-              >
+              <span class="ml-1 text-sm">Help &amp; Feedback</span>
             </div>
           </a>
         </div>
