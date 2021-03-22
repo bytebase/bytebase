@@ -63,7 +63,6 @@ const actions = {
       taskId,
       task,
     });
-    console.log(task);
     return task;
   },
 
