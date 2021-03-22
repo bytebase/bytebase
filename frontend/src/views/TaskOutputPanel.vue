@@ -22,7 +22,7 @@
           :name="field.id"
           :value="task.payload[field.id]"
           autocomplete="off"
-          @input="$emit('update-custom-field', field, $event.target.value)"
+          @blur="$emit('update-custom-field', field, $event.target.value)"
         />
         <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
         <button
