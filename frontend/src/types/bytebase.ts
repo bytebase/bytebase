@@ -179,6 +179,7 @@ export type TaskPatch = {
   assigneeId?: PrincipalId;
   stageProgress?: StageProgressPatch;
   payload?: TaskPayload;
+  comment?: string;
 };
 
 export type TaskStatusTransitionType = "RESOLVE" | "ABORT" | "REOPEN";
@@ -227,10 +228,6 @@ export type TaskActionType =
 
 export type ActionType = TaskActionType;
 
-export type ActionTaskCommentCreatePayload = {
-  comment: string;
-};
-
 export type ActionTaskFieldUpdatePayload = {
   changeList: {
     fieldId: TaskFieldId;
@@ -239,9 +236,7 @@ export type ActionTaskFieldUpdatePayload = {
   }[];
 };
 
-export type ActionPayloadType =
-  | ActionTaskCommentCreatePayload
-  | ActionTaskFieldUpdatePayload;
+export type ActionPayloadType = ActionTaskFieldUpdatePayload;
 
 export type Activity = {
   id: ActivityId;
@@ -252,6 +247,7 @@ export type Activity = {
   // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
   containerId: TaskId;
   creator: Principal;
+  comment: string;
   payload?: ActionPayloadType;
 };
 export type ActivityNew = Omit<Activity, "id">;

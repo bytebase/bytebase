@@ -94,9 +94,7 @@ const actions = {
           data: {
             type: "activitypatch",
             attributes: {
-              payload: {
-                comment: updatedComment,
-              },
+              comment: updatedComment,
             },
           },
         })

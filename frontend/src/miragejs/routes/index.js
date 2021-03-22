@@ -210,6 +210,7 @@ export default function routes() {
       actionType: "bytebase.task.create",
       containerId: createdTask.id,
       creatorId: attrs.creatorId,
+      comment: "",
       workspaceId: WORKSPACE_ID,
     });
 
@@ -290,20 +291,27 @@ export default function routes() {
         }
       }
 
-      const ts = Date.now();
-      const updatedTask = task.update({ ...attrs, lastUpdatedTs: ts });
+      if (changeList.length) {
+        const ts = Date.now();
+        const updatedTask = task.update({ ...attrs, lastUpdatedTs: ts });
 
-      schema.activities.create({
-        createdTs: ts,
-        lastUpdatedTs: ts,
-        actionType: "bytebase.task.field.update",
-        containerId: updatedTask.id,
-        creatorId: attrs.updaterId,
-        payload: changeList.length > 0 ? { changeList } : undefined,
-        workspaceId: WORKSPACE_ID,
-      });
+        const payload = {
+          changeList,
+        };
 
-      return updatedTask;
+        schema.activities.create({
+          createdTs: ts,
+          lastUpdatedTs: ts,
+          actionType: "bytebase.task.field.update",
+          containerId: updatedTask.id,
+          creatorId: attrs.updaterId,
+          comment: attrs.comment,
+          payload,
+          workspaceId: WORKSPACE_ID,
+        });
+        return updatedTask;
+      }
+      return task;
     }
     return new Response(
       404,

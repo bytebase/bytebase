@@ -17,8 +17,8 @@ export default {
     creatorId() {
       return "100";
     },
-    payload() {
-      return {};
+    comment() {
+      return "";
     },
   }),
 };

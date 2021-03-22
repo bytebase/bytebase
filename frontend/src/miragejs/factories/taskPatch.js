@@ -26,6 +26,9 @@ export default {
         },
       ];
     },
+    comment() {
+      return "my update comment";
+    },
     payload() {
       return {
         // Requested Database name

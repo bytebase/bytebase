@@ -97,9 +97,7 @@ const workspacesSeeder = (server: any) => {
         id: user.id,
         name: user.name,
       },
-      payload: {
-        comment: faker.fake("{{lorem.paragraph}}"),
-      },
+      comment: faker.fake("{{lorem.paragraph}}"),
       workspace: workspace1,
     });
   }
@@ -145,9 +143,7 @@ const workspacesSeeder = (server: any) => {
       actionType: "bytebase.task.comment.create",
       containerId: task.id,
       creatorId: user.id,
-      payload: {
-        comment: faker.fake("{{lorem.paragraph}}"),
-      },
+      comment: faker.fake("{{lorem.paragraph}}"),
       workspace: workspace1,
     });
   }
@@ -179,9 +175,7 @@ const workspacesSeeder = (server: any) => {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creatorId: user.id,
-        payload: {
-          comment: faker.fake("{{lorem.paragraph}}"),
-        },
+        comment: faker.fake("{{lorem.paragraph}}"),
         workspace: workspace1,
       });
     }
@@ -213,9 +207,7 @@ const workspacesSeeder = (server: any) => {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creatorId: user.id,
-        payload: {
-          comment: faker.fake("{{lorem.paragraph}}"),
-        },
+        comment: faker.fake("{{lorem.paragraph}}"),
         workspace: workspace1,
       });
     }
@@ -244,9 +236,7 @@ const workspacesSeeder = (server: any) => {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creatorId: user.id,
-        payload: {
-          comment: faker.fake("{{lorem.paragraph}}"),
-        },
+        comment: faker.fake("{{lorem.paragraph}}"),
         workspace: workspace1,
       });
     }

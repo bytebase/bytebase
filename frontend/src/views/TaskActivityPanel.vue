@@ -93,16 +93,13 @@
                       </a>
                     </div>
                     <div
-                      v-if="
-                        currentUser.id == activity.creator.id &&
-                        activity.actionType == 'bytebase.task.comment.create'
-                      "
+                      v-if="currentUser.id == activity.creator.id"
                       class="space-x-2 flex items-center text-control-light"
                     >
                       <template
                         v-if="
                           state.editCommentMode &&
-                          state.activeComment.id == activity.id
+                          state.activeActivity.id == activity.id
                         "
                       >
                         <button
@@ -115,10 +112,7 @@
                         <button
                           type="button"
                           class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                          :disabled="
-                            editComment.length == 0 ||
-                            editComment == activity.payload.comment
-                          "
+                          :disabled="!allowUpdateComment"
                           @click.prevent="doUpdateComment"
                         >
                           Save
@@ -128,10 +122,14 @@
                       <div v-else class="mr-2 flex items-center space-x-2">
                         <!-- Delete Comment Button-->
                         <button
+                          v-if="
+                            activity.actionType ==
+                            'bytebase.task.comment.create'
+                          "
                           class="btn-icon"
                           @click.prevent="
                             {
-                              state.activeComment = activity;
+                              state.activeActivity = activity;
                               state.showDeleteCommentModal = true;
                             }
                           "
@@ -175,42 +173,38 @@
                     </div>
                   </div>
                   <template
-                    v-if="activity.actionType == 'bytebase.task.comment.create'"
+                    v-if="
+                      state.editCommentMode &&
+                      state.activeActivity.id == activity.id
+                    "
                   >
-                    <template
-                      v-if="
-                        state.editCommentMode &&
-                        state.activeComment.id == activity.id
+                    <label for="comment" class="sr-only">Edit Comment</label>
+                    <textarea
+                      ref="editCommentTextArea"
+                      class="textarea block w-full resize-none mt-1 text-sm text-control whitespace-pre-wrap"
+                      placeholder="Leave a comment..."
+                      v-model="editComment"
+                      @input="
+                        (e) => {
+                          sizeToFit(e.target);
+                        }
                       "
-                    >
-                      <label for="comment" class="sr-only">Edit Comment</label>
-                      <textarea
-                        ref="editCommentTextArea"
-                        class="textarea block w-full resize-none mt-1 text-sm text-control whitespace-pre-wrap"
-                        placeholder="Leave a comment..."
-                        v-model="editComment"
-                        @input="
-                          (e) => {
-                            sizeToFit(e.target);
-                          }
-                        "
-                        @focus="
-                          (e) => {
-                            sizeToFit(e.target);
-                          }
-                        "
-                      ></textarea>
-                    </template>
-                    <!-- The margin value is intentionally set to avoid flickering when switching between edit mode. -->
-                    <div
-                      v-else
-                      class="text-sm ml-1.5 mt-2 mb-0.5 whitespace-pre-wrap"
-                    >
-                      <div v-highlight>
-                        {{ activity.payload.comment }}
-                      </div>
-                    </div>
+                      @focus="
+                        (e) => {
+                          sizeToFit(e.target);
+                        }
+                      "
+                    ></textarea>
                   </template>
+                  <!-- The margin value is intentionally set to avoid flickering when switching between edit mode. -->
+                  <div
+                    v-else-if="activity.comment"
+                    class="text-sm ml-1.5 mt-2 mb-0.5 whitespace-pre-wrap"
+                  >
+                    <div v-highlight>
+                      {{ activity.comment }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -280,9 +274,9 @@
     :description="'You cannot undo this action.'"
     @ok="
       () => {
-        doDeleteComment(state.activeComment);
+        doDeleteComment(state.activeActivity);
         state.showDeleteCommentModal = false;
-        state.activeComment = null;
+        state.activeActivity = null;
       }
     "
     @cancel="state.showDeleteCommentModal = false"
@@ -305,7 +299,6 @@ import { useStore } from "vuex";
 import {
   Task,
   Activity,
-  ActionTaskCommentCreatePayload,
   ActionTaskFieldUpdatePayload,
   Environment,
 } from "../types";
@@ -315,7 +308,7 @@ import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
 interface LocalState {
   showDeleteCommentModal: boolean;
   editCommentMode: boolean;
-  activeComment?: Activity;
+  activeActivity?: Activity;
 }
 
 export default {
@@ -351,7 +344,9 @@ export default {
         if (e.code == "Escape") {
           cancelEditComment();
         } else if (e.code == "Enter" && e.metaKey) {
-          doUpdateComment();
+          if (allowUpdateComment.value) {
+            doUpdateComment();
+          }
         }
       } else if (newCommentTextArea.value === document.activeElement) {
         if (e.code == "Enter" && e.metaKey) {
@@ -386,7 +381,7 @@ export default {
 
     const cancelEditComment = () => {
       editComment.value = "";
-      state.activeComment = undefined;
+      state.activeActivity = undefined;
       state.editCommentMode = false;
     };
 
@@ -413,8 +408,8 @@ export default {
     };
 
     const onUpdateComment = (activity: Activity) => {
-      editComment.value = (activity.payload! as ActionTaskCommentCreatePayload).comment;
-      state.activeComment = activity;
+      editComment.value = activity.comment;
+      state.activeActivity = activity;
       state.editCommentMode = true;
       nextTick(() => {
         editCommentTextArea.value.focus();
@@ -424,7 +419,7 @@ export default {
     const doUpdateComment = () => {
       const activityPatch = store
         .dispatch("activity/updateComment", {
-          activityId: state.activeComment!.id,
+          activityId: state.activeActivity!.id,
           updatedComment: editComment.value,
         })
         .then(() => {
@@ -434,6 +429,10 @@ export default {
           console.log(error);
         });
     };
+
+    const allowUpdateComment = computed(() => {
+      return editComment.value != state.activeActivity!.comment;
+    });
 
     const doDeleteComment = (activity: Activity) => {
       store.dispatch("activity/deleteActivity", activity).catch((error) => {
@@ -553,6 +552,7 @@ export default {
       cancelEditComment,
       onUpdateComment,
       doUpdateComment,
+      allowUpdateComment,
       doDeleteComment,
     };
   },
