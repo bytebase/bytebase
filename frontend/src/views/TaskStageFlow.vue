@@ -337,7 +337,7 @@ interface ModalState {
 }
 
 export default {
-  name: "TaskFlow",
+  name: "TaskStageFlow",
   emits: ["change-stage-status"],
   props: {
     task: {

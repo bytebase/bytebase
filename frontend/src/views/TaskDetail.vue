@@ -39,19 +39,19 @@
       </TaskHighlightPanel>
     </div>
 
-    <!-- Flow Bar -->
-    <TaskFlow
-      v-if="showTaskFlowBar"
+    <!-- Stage Flow Bar -->
+    <TaskStageFlow
+      v-if="showTaskStageFlowBar"
       :task="state.task"
       @change-stage-status="changeStageStatus"
     />
 
     <!-- Output Panel -->
-    <!-- Only render the top border if TaskFlow is not displayed, otherwise it would overlap with the bottom border of the TaskFlow -->
+    <!-- Only render the top border if TaskStageFlow is not displayed, otherwise it would overlap with the bottom border of the TaskStageFlow -->
     <div
       v-if="showTaskOutputPanel"
       class="px-2 md:flex md:flex-col"
-      :class="showTaskFlowBar ? '' : 'lg:border-t py-4'"
+      :class="showTaskStageFlowBar ? '' : 'lg:border-t py-4'"
     >
       <TaskOutputPanel
         :task="state.task"
@@ -64,7 +64,7 @@
     <main
       class="flex-1 relative overflow-y-auto focus:outline-none"
       :class="
-        showTaskFlowBar && !showTaskOutputPanel
+        showTaskStageFlowBar && !showTaskOutputPanel
           ? ''
           : 'lg:border-t lg:border-block-border'
       "
@@ -124,7 +124,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
-import TaskFlow from "../views/TaskFlow.vue";
+import TaskStageFlow from "./TaskStageFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
 import TaskDescription from "../views/TaskDescription.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
@@ -160,7 +160,7 @@ export default {
   },
   components: {
     TaskHighlightPanel,
-    TaskFlow,
+    TaskStageFlow,
     TaskOutputPanel,
     TaskDescription,
     TaskActivityPanel,
@@ -386,7 +386,7 @@ export default {
       return true;
     });
 
-    const showTaskFlowBar = computed(() => {
+    const showTaskStageFlowBar = computed(() => {
       return !state.new && state.task.stageProgressList.length > 1;
     });
 
@@ -408,7 +408,7 @@ export default {
       taskTemplate,
       outputFieldList,
       inputFieldList,
-      showTaskFlowBar,
+      showTaskStageFlowBar,
       showTaskOutputPanel,
     };
   },
