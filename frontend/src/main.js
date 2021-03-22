@@ -1,7 +1,6 @@
 import { createApp } from "vue";
 import moment from "moment";
 import VueClipboard from "vue3-clipboard";
-import highlight from "./bbkit/directives/highlight";
 import App from "./App.vue";
 import { store } from "./store";
 import { router } from "./router";
@@ -29,6 +28,7 @@ import {
   BBTableTabFilter,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
+import highlight from "./directives/highlight";
 import {
   isDemo,
   isDevOrDemo,
