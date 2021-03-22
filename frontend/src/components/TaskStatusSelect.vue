@@ -4,7 +4,7 @@
     :itemList="['OPEN', 'DONE', 'CANCELED']"
     :placeholder="'Unknown Status'"
     :disabled="disabled"
-    @select-item="(status) => $emit('change-status', status)"
+    @select-item="(status, didSelect) => changeStatus(status, didSelect)"
   >
     <template v-slot:menuItem="{ item }">
       <span class="flex items-center space-x-2">
@@ -20,11 +20,11 @@
 <script lang="ts">
 import { PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
-import { TaskStatus } from "../types";
+import { TaskStatus, TaskStatusTransitionType } from "../types";
 
 export default {
   name: "TaskStatusSelect",
-  emits: ["change-status"],
+  emits: ["start-transition"],
   components: { TaskStatusIcon },
   props: {
     selectedStatus: {
@@ -35,8 +35,24 @@ export default {
       type: Boolean,
     },
   },
-  setup() {
-    return {};
+  setup(_, { emit }) {
+    const changeStatus = (newStatus: TaskStatus, didChange: () => {}) => {
+      let transition: TaskStatusTransitionType;
+      switch (newStatus) {
+        case "OPEN":
+          transition = "REOPEN";
+          break;
+        case "DONE":
+          transition = "RESOLVE";
+          break;
+        case "CANCELED":
+          transition = "ABORT";
+          break;
+      }
+      emit("start-transition", transition, didChange);
+    };
+
+    return { changeStatus };
   },
 };
 </script>

@@ -83,8 +83,9 @@
             class="text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
             @click="
               if (item !== state.selectedItem) {
-                $emit('select-item', item);
-                state.selectedItem = item;
+                $emit('select-item', item, () => {
+                  state.selectedItem = item;
+                });
               }
               close();
             "

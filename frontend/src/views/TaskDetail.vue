@@ -32,8 +32,16 @@
           >
             <button
               type="button"
-              :class="index == 0 ? 'btn-primary' : 'btn-normal mr-2'"
-              @click.prevent="updateTaskStatus(transition.to)"
+              :class="
+                index == 0
+                  ? transition.type == 'RESOLVE'
+                    ? 'btn-success'
+                    : transition.type == 'ABORT'
+                    ? 'btn-normal'
+                    : 'btn-primary'
+                  : 'btn-normal mr-2'
+              "
+              @click.prevent="tryStartTaskStatusTransition(transition.type)"
             >
               {{ transition.actionName }}
             </button>
@@ -82,7 +90,7 @@
               :task="state.task"
               :new="state.new"
               :fieldList="inputFieldList"
-              @update-task-status="updateTaskStatus"
+              @start-status-transition="tryStartTaskStatusTransition"
               @update-assignee-id="updateAssigneeId"
               @update-custom-field="updateCustomField"
             />
@@ -109,6 +117,22 @@
       </div>
     </main>
   </div>
+  <BBAlert
+    v-if="updateStatusModalState.show"
+    :style="updateStatusModalState.style"
+    :okText="updateStatusModalState.okText"
+    :cancelText="'No'"
+    :title="updateStatusModalState.title"
+    :payload="updateStatusModalState.payload"
+    @ok="
+      (payload) => {
+        updateStatusModalState.show = false;
+        doTaskStatusTransition(payload);
+      }
+    "
+    @cancel="updateStatusModalState.show = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -138,8 +162,11 @@ import {
   TaskType,
   TaskPatch,
   TaskStatus,
+  TaskStatusTransition,
+  TaskStatusTransitionType,
   StageProgressPatch,
   PrincipalId,
+  TASK_STATUS_TRANSITION_LIST,
 } from "../types";
 import {
   defaulTemplate,
@@ -147,44 +174,6 @@ import {
   TaskField,
   TaskTemplate,
 } from "../plugins";
-
-type TaskStatusTransitionType = "RESOLVE" | "ABORT" | "REOPEN";
-
-interface Transition {
-  type: TaskStatusTransitionType;
-  actionName: string;
-  to: TaskStatus;
-}
-
-const STATUS_TRANSITION_LIST: Map<
-  TaskStatusTransitionType,
-  Transition
-> = new Map([
-  [
-    "RESOLVE",
-    {
-      type: "RESOLVE",
-      actionName: "Resolve",
-      to: "DONE",
-    },
-  ],
-  [
-    "ABORT",
-    {
-      type: "ABORT",
-      actionName: "Abort",
-      to: "CANCELED",
-    },
-  ],
-  [
-    "REOPEN",
-    {
-      type: "REOPEN",
-      actionName: "Reopen",
-      to: "OPEN",
-    },
-  ],
-]);
 
 // The first transition in the list is the primary action and the rests are
 // the normal action. For now there are at most 1 primary 1 normal action.
@@ -205,6 +194,19 @@ const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
   ["DONE", ["REOPEN"]],
   ["CANCELED", ["REOPEN"]],
 ]);
+
+type UpdateStatusModalStatePayload = {
+  transition: TaskStatusTransition;
+  didTransit: () => {};
+};
+
+interface UpdateStatusModalState {
+  show: boolean;
+  style: string;
+  okText: string;
+  title: string;
+  payload?: UpdateStatusModalStatePayload;
+}
 
 interface LocalState {
   new: boolean;
@@ -231,6 +233,13 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
+
+    const updateStatusModalState = reactive<UpdateStatusModalState>({
+      show: false,
+      style: "INFO",
+      okText: "OK",
+      title: "",
+    });
 
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
@@ -351,10 +360,42 @@ export default {
       );
     };
 
-    const updateTaskStatus = (newStatus: TaskStatus) => {
-      patchTask({
-        status: newStatus,
-      });
+    const tryStartTaskStatusTransition = (
+      type: TaskStatusTransitionType,
+      didTransit: () => {}
+    ) => {
+      const transition = TASK_STATUS_TRANSITION_LIST.get(type)!;
+      updateStatusModalState.okText = transition.actionName;
+      switch (transition.to) {
+        case "OPEN":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = "Reopen task?";
+          break;
+        case "DONE":
+          updateStatusModalState.style = "SUCCESS";
+          updateStatusModalState.title = "Resolve task?";
+          break;
+        case "CANCELED":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = "Abort task?";
+          break;
+      }
+      updateStatusModalState.payload = {
+        transition,
+        didTransit,
+      };
+      updateStatusModalState.show = true;
+    };
+
+    const doTaskStatusTransition = (payload: UpdateStatusModalStatePayload) => {
+      patchTask(
+        {
+          status: payload.transition.to,
+        },
+        () => {
+          payload.didTransit();
+        }
+      );
     };
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
@@ -472,15 +513,17 @@ export default {
         });
       }
       return list.map((type: TaskStatusTransitionType) =>
-        STATUS_TRANSITION_LIST.get(type)
+        TASK_STATUS_TRANSITION_LIST.get(type)
       );
     });
 
     return {
+      updateStatusModalState,
       state,
       updateName,
       updateDescription,
-      updateTaskStatus,
+      tryStartTaskStatusTransition,
+      doTaskStatusTransition,
       updateAssigneeId,
       updateCustomField,
       doCreate,

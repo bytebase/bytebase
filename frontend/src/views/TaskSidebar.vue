@@ -8,9 +8,9 @@
           <TaskStatusSelect
             :disabled="activeStageIsRunning(task)"
             :selectedStatus="task.status"
-            @change-status="
-              (value) => {
-                $emit('update-task-status', value);
+            @start-transition="
+              (transition, didTransit) => {
+                $emit('start-status-transition', transition, didTransit);
               }
             "
           />
@@ -282,7 +282,11 @@ interface LocalState {
 
 export default {
   name: "TaskSidebar",
-  emits: ["update-task-status", "update-assignee-id", "update-custom-field"],
+  emits: [
+    "start-status-transition",
+    "update-assignee-id",
+    "update-custom-field",
+  ],
   props: {
     task: {
       required: true,

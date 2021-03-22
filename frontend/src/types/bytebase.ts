@@ -181,6 +181,44 @@ export type TaskPatch = {
   payload?: TaskPayload;
 };
 
+export type TaskStatusTransitionType = "RESOLVE" | "ABORT" | "REOPEN";
+
+export interface TaskStatusTransition {
+  type: TaskStatusTransitionType;
+  actionName: string;
+  to: TaskStatus;
+}
+
+export const TASK_STATUS_TRANSITION_LIST: Map<
+  TaskStatusTransitionType,
+  TaskStatusTransition
+> = new Map([
+  [
+    "RESOLVE",
+    {
+      type: "RESOLVE",
+      actionName: "Resolve",
+      to: "DONE",
+    },
+  ],
+  [
+    "ABORT",
+    {
+      type: "ABORT",
+      actionName: "Abort",
+      to: "CANCELED",
+    },
+  ],
+  [
+    "REOPEN",
+    {
+      type: "REOPEN",
+      actionName: "Reopen",
+      to: "OPEN",
+    },
+  ],
+]);
+
 // Activity
 export type TaskActionType =
   | "bytebase.task.create"
