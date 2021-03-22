@@ -1,5 +1,10 @@
 <template>
-  <h2 class="px-4 text-lg font-medium">Result</h2>
+  <h2 class="px-4 text-lg font-medium">
+    Result
+    <span class="text-base font-normal text-control-light">
+      (assignee should fill the required field(s) before resolving the task)
+    </span>
+  </h2>
 
   <div class="my-2 mx-4 space-y-2">
     <template v-for="(field, index) in fieldList" :key="index">
@@ -12,7 +17,8 @@
         </span>
         <input
           type="text"
-          class="flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm"
+          class="flex-1 min-w-0 block w-full px-3 py-2 border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
+          :disabled="!isAssignee"
           :name="field.id"
           :value="task.payload[field.id]"
           @input="$emit('update-custom-field', field, $event.target.value)"
@@ -20,7 +26,9 @@
         <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
         <button
           tabindex="-1"
-          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+          :disabled="!task.payload[field.id]"
+          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
+          @click.prevent="copyText(field)"
         >
           <svg
             class="w-6 h-6"
@@ -39,7 +47,9 @@
         </button>
         <button
           tabindex="-1"
-          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+          :disabled="!isValidLink(task.payload[field.id])"
+          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+          @click.prevent="goToLink(task.payload[field.id])"
         >
           <svg
             class="w-6 h-6"
@@ -62,7 +72,10 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "vue";
+import { PropType, computed, reactive } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { TaskField } from "../plugins";
 import { Task } from "../types";
 
@@ -83,9 +96,46 @@ export default {
   },
   components: {},
   setup(props, ctx) {
+    const store = useStore();
+    const router = useRouter();
+
     const state = reactive<LocalState>({});
 
-    return { state };
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const isAssignee = computed(() => {
+      return currentUser.value.id === props.task.assignee?.id;
+    });
+
+    const isValidLink = (link: string) => {
+      return link?.trim().length > 0;
+    };
+
+    const copyText = (field: TaskField) => {
+      toClipboard(props.task.payload[field.id]).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "INFO",
+          title: `${field.name} copied to clipboard.`,
+        });
+      });
+    };
+
+    const goToLink = (link: string) => {
+      const myLink = link.trim();
+      const parts = myLink.split("://");
+      if (parts.length > 1) {
+        window.open(myLink, "_blank");
+      } else {
+        if (!myLink.startsWith("/")) {
+          router.push("/" + myLink);
+        } else {
+          router.push(myLink);
+        }
+      }
+    };
+
+    return { state, isAssignee, isValidLink, copyText, goToLink };
   },
 };
 </script>

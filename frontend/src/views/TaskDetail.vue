@@ -452,7 +452,7 @@ export default {
     });
 
     const showTaskOutputPanel = computed(() => {
-      return false && !state.new && outputFieldList.value.length > 0;
+      return !state.new && outputFieldList.value.length > 0;
     });
 
     const applicableStatusTransitionList = computed(() => {
