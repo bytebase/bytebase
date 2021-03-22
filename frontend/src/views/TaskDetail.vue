@@ -440,11 +440,13 @@ export default {
     };
 
     const updateCustomField = (field: TaskField, value: any) => {
-      state.task.payload[field.id] = value;
-      if (!state.new) {
-        patchTask({
-          payload: state.task.payload,
-        });
+      if (state.task.payload[field.id] != value) {
+        state.task.payload[field.id] = value;
+        if (!state.new) {
+          patchTask({
+            payload: state.task.payload,
+          });
+        }
       }
     };
 
