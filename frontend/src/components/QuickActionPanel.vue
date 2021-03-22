@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-1 overflow-hidden grid grid-cols-3 gap-2 sm:inline-flex">
+  <div class="pt-1 overflow-hidden grid grid-cols-3 sm:inline-flex">
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
         v-if="quickAction == 'quickaction.bytebase.instance.create'"
@@ -130,7 +130,9 @@
             ></path>
           </svg>
         </router-link>
-        <h3 class="mt-1 text-base font-normal text-main tracking-tight">
+        <h3
+          class="mt-1 text-base text-center font-normal text-main tracking-tight"
+        >
           Request DB
         </h3>
       </div>
@@ -154,12 +156,12 @@
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
             ></path>
           </svg>
         </router-link>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Edit Schema
+          Alter Schema
         </h3>
       </div>
 
