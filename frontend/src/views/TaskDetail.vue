@@ -194,9 +194,8 @@ const GUEST_APPLICABLE_STAGE_ACTION_LIST: Map<
 
 // Use enum so it's easier to do numeric comparison to sort the button.
 enum ActionType {
-  SUCCESS = 0,
-  PRIMARY = 1,
-  NORMAL = 2,
+  PRIMARY = 0,
+  NORMAL = 1,
 }
 
 interface Transition {
@@ -525,8 +524,6 @@ export default {
 
     const actionButtonClass = (actionType: ActionType) => {
       switch (actionType) {
-        case ActionType.SUCCESS:
-          return "btn-success";
         case ActionType.PRIMARY:
           return "btn-primary";
         case ActionType.NORMAL:
