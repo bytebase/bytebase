@@ -22,20 +22,23 @@
           </button>
         </template>
         <!-- Action Button List -->
-        <!-- <template
-          v-else
-          v-for="(transition, index) in applicableStageTransitionList()"
-          :key="index"
+        <div
+          v-else-if="applicableStatusTransitionList.length > 0"
+          class="flex flex-row-reverse"
         >
-          <button
-            type="button"
-            class="px-4 py-2"
-            :class="actionButtonClass(transition.actionType)"
-            @click.prevent="tryChangeStageStatus(transition)"
+          <template
+            v-for="(transition, index) in applicableStatusTransitionList"
+            :key="index"
           >
-            {{ transition.actionName }}
-          </button>
-        </template> -->
+            <button
+              type="button"
+              :class="index == 0 ? 'btn-primary' : 'btn-normal mr-2'"
+              @click.prevent="updateTaskStatus(transition.to)"
+            >
+              {{ transition.actionName }}
+            </button>
+          </template>
+        </div>
       </TaskHighlightPanel>
     </div>
 
@@ -144,6 +147,64 @@ import {
   TaskField,
   TaskTemplate,
 } from "../plugins";
+
+type TaskStatusTransitionType = "RESOLVE" | "ABORT" | "REOPEN";
+
+interface Transition {
+  type: TaskStatusTransitionType;
+  actionName: string;
+  to: TaskStatus;
+}
+
+const STATUS_TRANSITION_LIST: Map<
+  TaskStatusTransitionType,
+  Transition
+> = new Map([
+  [
+    "RESOLVE",
+    {
+      type: "RESOLVE",
+      actionName: "Resolve",
+      to: "DONE",
+    },
+  ],
+  [
+    "ABORT",
+    {
+      type: "ABORT",
+      actionName: "Abort",
+      to: "CANCELED",
+    },
+  ],
+  [
+    "REOPEN",
+    {
+      type: "REOPEN",
+      actionName: "Reopen",
+      to: "OPEN",
+    },
+  ],
+]);
+
+// The first transition in the list is the primary action and the rests are
+// the normal action. For now there are at most 1 primary 1 normal action.
+const CREATOR_APPLICABLE_ACTION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
+> = new Map([
+  ["OPEN", ["ABORT"]],
+  ["DONE", ["REOPEN"]],
+  ["CANCELED", ["REOPEN"]],
+]);
+
+const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
+> = new Map([
+  ["OPEN", ["RESOLVE"]],
+  ["DONE", ["REOPEN"]],
+  ["CANCELED", ["REOPEN"]],
+]);
 
 interface LocalState {
   new: boolean;
@@ -394,6 +455,27 @@ export default {
       return false && !state.new && outputFieldList.value.length > 0;
     });
 
+    const applicableStatusTransitionList = computed(() => {
+      const list: TaskStatusTransitionType[] = [];
+      if (currentUser.value.id === (state.task as Task).assignee?.id) {
+        list.push(
+          ...ASSIGNEE_APPLICABLE_ACTION_LIST.get((state.task as Task).status)!
+        );
+      }
+      if (currentUser.value.id === (state.task as Task).creator.id) {
+        CREATOR_APPLICABLE_ACTION_LIST.get(
+          (state.task as Task).status
+        )!.forEach((item) => {
+          if (list.indexOf(item) == -1) {
+            list.push(item);
+          }
+        });
+      }
+      return list.map((type: TaskStatusTransitionType) =>
+        STATUS_TRANSITION_LIST.get(type)
+      );
+    });
+
     return {
       state,
       updateName,
@@ -410,6 +492,7 @@ export default {
       inputFieldList,
       showTaskStageFlowBar,
       showTaskOutputPanel,
+      applicableStatusTransitionList,
     };
   },
 };
