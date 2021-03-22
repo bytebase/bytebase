@@ -11,7 +11,7 @@
         <div
           class="cursor-default group flex items-center justify-between w-full"
         >
-          <span class="pl-2 py-3 flex items-center text-sm font-medium">
+          <span class="pl-4 py-3 flex items-center text-sm font-medium">
             <div
               class="relative w-6 h-6 flex items-center justify-center rounded-full select-none"
               :class="stageIconClass(stage)"
