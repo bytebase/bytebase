@@ -17,27 +17,19 @@
     >
       <div v-if="isDevOrDemo">
         <div v-if="currentUser.email != 'demo@example.com'" class="py-1">
-          <a
-            @click.prevent="switchToOwner"
-            class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-            role="menuitem"
-          >
+          <a @click.prevent="switchToOwner" class="menu-item" role="menuitem">
             Switch to Owner
           </a>
         </div>
         <div v-if="currentUser.email != 'jerry@example.com'" class="py-1">
-          <a
-            @click.prevent="switchToDBA"
-            class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-            role="menuitem"
-          >
+          <a @click.prevent="switchToDBA" class="menu-item" role="menuitem">
             Switch to DBA
           </a>
         </div>
         <div v-if="currentUser.email != 'tom@example.com'" class="py-1">
           <a
             @click.prevent="switchToDeveloper"
-            class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+            class="menu-item"
             role="menuitem"
           >
             Switch to Dev
@@ -46,43 +38,27 @@
         <div class="border-t border-gray-100"></div>
       </div>
       <div class="py-1">
-        <router-link
-          to="/setting"
-          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-          role="menuitem"
+        <router-link to="/setting" class="menu-item" role="menuitem"
           >Settings</router-link
         >
-        <a
-          @click.prevent="resetQuickstart"
-          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-          role="menuitem"
+        <a @click.prevent="resetQuickstart" class="menu-item" role="menuitem"
           >Reset Quickstart</a
         >
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
-        <a
-          href="#"
-          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-          role="menuitem"
-          >Changelog</a
-        >
+        <a href="#" class="menu-item" role="menuitem">Changelog</a>
         <a
           href="https://github.com/bytebase/bytebase/discussions"
           target="_blank"
-          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+          class="menu-item"
           role="menuitem"
           >Support</a
         >
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
-        <a
-          @click.prevent="logout"
-          class="cursor-pointer block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-          role="menuitem"
-          >Logout</a
-        >
+        <a @click.prevent="logout" class="menu-item" role="menuitem">Logout</a>
       </div>
     </BBContextMenu>
   </div>

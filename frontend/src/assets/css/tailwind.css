@@ -138,6 +138,10 @@
   @apply text-control cursor-pointer w-full group items-center hover:bg-link-hover text-sm leading-5 focus:outline-none select-none;
 }
 
+.menu-item {
+  @apply cursor-pointer block px-4 py-2 text-sm leading-5 text-control hover:bg-control-bg hover:text-control-hover focus:outline-none focus:bg-control-bg focus:text-control-hover;
+}
+
 .bar-link {
   @apply text-main hover:bg-link-hover focus:outline-none;
 }
