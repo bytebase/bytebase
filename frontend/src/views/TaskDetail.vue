@@ -41,7 +41,9 @@
                     : 'btn-primary'
                   : 'btn-normal mr-2'
               "
-              @click.prevent="tryStartTaskStatusTransition(transition.type)"
+              @click.prevent="
+                tryStartTaskStatusTransition(transition.type, () => {})
+              "
             >
               {{ transition.actionName }}
             </button>
@@ -117,22 +119,28 @@
       </div>
     </main>
   </div>
-  <BBAlert
+  <BBModal
     v-if="updateStatusModalState.show"
-    :style="updateStatusModalState.style"
-    :okText="updateStatusModalState.okText"
-    :cancelText="'No'"
     :title="updateStatusModalState.title"
-    :payload="updateStatusModalState.payload"
-    @ok="
-      (payload) => {
-        updateStatusModalState.show = false;
-        doTaskStatusTransition(payload);
-      }
-    "
-    @cancel="updateStatusModalState.show = false"
+    @close="updateStatusModalState.show = false"
   >
-  </BBAlert>
+    <TaskStatusTransitionForm
+      :okText="updateStatusModalState.okText"
+      :task="state.task"
+      :transition="updateStatusModalState.payload.transition"
+      @submit="
+        (comment) => {
+          updateStatusModalState.show = false;
+          doTaskStatusTransition(updateStatusModalState.payload, comment);
+        }
+      "
+      @cancel="
+        () => {
+          updateStatusModalState.show = false;
+        }
+      "
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -156,6 +164,7 @@ import TaskOutputPanel from "../views/TaskOutputPanel.vue";
 import TaskDescription from "../views/TaskDescription.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
+import TaskStatusTransitionForm from "../components/TaskStatusTransitionForm.vue";
 import {
   Task,
   TaskNew,
@@ -228,6 +237,7 @@ export default {
     TaskDescription,
     TaskActivityPanel,
     TaskSidebar,
+    TaskStatusTransitionForm,
   },
 
   setup(props, ctx) {
@@ -387,10 +397,15 @@ export default {
       updateStatusModalState.show = true;
     };
 
-    const doTaskStatusTransition = (payload: UpdateStatusModalStatePayload) => {
+    const doTaskStatusTransition = (
+      payload: UpdateStatusModalStatePayload,
+      comment?: string
+    ) => {
+      const theComment = comment ? comment.trim() : undefined;
       patchTask(
         {
           status: payload.transition.to,
+          comment: theComment ? theComment : undefined,
         },
         () => {
           payload.didTransit();
