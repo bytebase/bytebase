@@ -51,6 +51,7 @@ import { onMounted, onUnmounted } from "vue";
 
 export default {
   name: "BBModal",
+  emits: ["close"],
   props: {
     title: {
       required: true,
