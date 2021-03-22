@@ -32,7 +32,7 @@
             ref="commentTextArea"
             rows="3"
             class="textarea block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
-            placeholder="Add an optional note..."
+            placeholder="(Optional) Add a note..."
             v-model="state.comment"
             @input="
               (e) => {
