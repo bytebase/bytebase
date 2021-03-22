@@ -230,7 +230,7 @@ export default {
 
     const buttonStyleMap: Record<string, string> = {
       INFO: "btn-primary",
-      SUCCESS: "btn-primary",
+      SUCCESS: "btn-success",
       WARN: "btn-danger",
       CRITICAL: "btn-danger",
     };
