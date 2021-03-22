@@ -17,7 +17,7 @@
         :title="state.columnList[1].title"
       />
       <BBTableHeaderCell
-        class="w-24 table-cell"
+        class="w-12 table-cell"
         :title="state.columnList[2].title"
       />
       <BBTableHeaderCell
@@ -29,7 +29,7 @@
         :title="state.columnList[4].title"
       />
       <BBTableHeaderCell
-        class="w-32 hidden md:table-cell"
+        class="w-36 hidden md:table-cell"
         :title="state.columnList[5].title"
       />
       <BBTableHeaderCell
@@ -38,29 +38,29 @@
       />
     </template>
     <template v-slot:body="{ rowData: task }">
-      <BBTableCell :leftPadding="4" class="w-4 table-cell">
+      <BBTableCell :leftPadding="4" class="table-cell">
         <TaskStatusIcon
           :taskStatus="task.status"
           :stageStatus="activeStage(task).status"
         />
       </BBTableCell>
 
-      <BBTableCell class="w-4 table-cell text-gray-500">
+      <BBTableCell class="table-cell text-gray-500">
         <span class="">#{{ task.id }}</span>
       </BBTableCell>
-      <BBTableCell class="w-24 table-cell">
+      <BBTableCell class="table-cell">
         {{ activeEnvironmentName(task) }}
       </BBTableCell>
       <BBTableCell class="truncate">
         {{ task.name }}
       </BBTableCell>
-      <BBTableCell class="w-12 hidden sm:table-cell">
+      <BBTableCell class="hidden sm:table-cell">
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
-      <BBTableCell class="w-32 hidden md:table-cell">
+      <BBTableCell class="hidden md:table-cell">
         {{ humanizeTs(task.lastUpdatedTs) }}
       </BBTableCell>
-      <BBTableCell class="w-36 hidden sm:table-cell">
+      <BBTableCell class="hidden sm:table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'small'"
