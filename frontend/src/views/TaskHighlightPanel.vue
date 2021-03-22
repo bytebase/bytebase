@@ -25,7 +25,8 @@
           <!-- Extra padding is to prevent flickering when entering the edit mode -->
           <p
             v-else
-            class="ml-2 mt-2 mb-1.5 w-full text-xl font-bold leading-7 text-main whitespace-nowrap truncate"
+            class="ml-2 mt-2 mb-1.5 w-full text-xl font-bold leading-7 whitespace-nowrap truncate"
+            :class="task.status == 'OPEN' ? 'text-main' : 'text-control-light'"
           >
             <span @click.prevent="clickName">{{ state.name }}</span>
           </p>

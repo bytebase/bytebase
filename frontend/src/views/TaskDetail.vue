@@ -36,9 +36,7 @@
                 index == 0
                   ? transition.type == 'RESOLVE'
                     ? 'btn-success'
-                    : transition.type == 'ABORT'
-                    ? 'btn-normal'
-                    : 'btn-primary'
+                    : 'btn-normal'
                   : 'btn-normal mr-2'
               "
               @click.prevent="
