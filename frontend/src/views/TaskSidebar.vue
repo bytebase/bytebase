@@ -159,16 +159,15 @@
                   }
                 "
               />
-              <input
+              <BBTextField
                 v-if="state.createNewDatabase"
                 type="text"
-                autocomplete="off"
-                class="textfield w-full mt-4"
+                class="w-full mt-4"
+                :required="true"
                 :ref="customFieldRefList[index]"
-                :name="field.id"
                 :value="fieldValue(field).name"
                 :placeholder="field.placeholder"
-                @input="trySaveDatabaseName(field, $event.target.value)"
+                @end-editing="(text) => trySaveDatabaseName(field, text)"
               />
               <DatabaseSelect
                 v-else
