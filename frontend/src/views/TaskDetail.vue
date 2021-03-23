@@ -159,6 +159,7 @@ import {
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
+import isEmpty from "lodash-es/isEmpty";
 import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
@@ -513,6 +514,15 @@ export default {
     };
 
     const allowCreate = computed(() => {
+      const newTask = state.task as TaskNew;
+      if (isEmpty(newTask.name)) {
+        return false;
+      }
+
+      if (!newTask.assigneeId) {
+        return false;
+      }
+
       if (newTaskTemplate.value.fieldList) {
         for (const field of newTaskTemplate.value.fieldList.filter(
           (item) => item.category == "INPUT"
