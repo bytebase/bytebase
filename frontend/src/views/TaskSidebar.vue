@@ -72,16 +72,16 @@
               <div class="flex flex-row space-x-4">
                 <BBCheckbox
                   :label="'New'"
-                  :value="state.createNewDatabase"
+                  :value="fieldValue(field).isNew"
                   class="items-center"
                   @toggle="
                     (on) => {
-                      state.createNewDatabase = on;
+                      trySaveDatabaseNew(field, on);
                     }
                   "
                 />
                 <BBTextField
-                  v-if="state.createNewDatabase"
+                  v-if="fieldValue(field).isNew"
                   type="text"
                   class="w-full"
                   :required="true"
@@ -102,7 +102,7 @@
                 />
               </div>
               <BBSwitch
-                v-if="!state.createNewDatabase"
+                v-if="!fieldValue(field).isNew"
                 class="mt-4 flex"
                 style="margin-left: 4.25rem"
                 :label="'Read only'"
@@ -183,10 +183,7 @@ import {
 import { DatabaseId, EnvironmentId, Task } from "../types";
 import { activeStageIsRunning } from "../utils";
 
-interface LocalState {
-  // For "bytebase.database.request" task
-  createNewDatabase: boolean;
-}
+interface LocalState {}
 
 export default {
   name: "TaskSidebar",
@@ -216,9 +213,7 @@ export default {
     TaskStatusIcon,
   },
   setup(props, { emit }) {
-    const state = reactive<LocalState>({
-      createNewDatabase: true,
-    });
+    const state = reactive<LocalState>({});
 
     const fieldValue = (field: TaskField): string | DatabaseFieldPayload => {
       // Do a deep clone to prevent caller accidentally changes the original data.
@@ -238,10 +233,15 @@ export default {
       }
     };
 
-    const trySaveDatabaseName = (
-      field: TaskField,
-      value: string | DatabaseId
-    ) => {
+    const trySaveDatabaseNew = (field: TaskField, isNew: boolean) => {
+      const payload: DatabaseFieldPayload = cloneDeep(
+        fieldValue(field)
+      ) as DatabaseFieldPayload;
+      payload.isNew = isNew;
+      trySaveCustomField(field, payload);
+    };
+
+    const trySaveDatabaseName = (field: TaskField, value: string) => {
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
       ) as DatabaseFieldPayload;
@@ -249,10 +249,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseId = (
-      field: TaskField,
-      value: string | DatabaseId
-    ) => {
+    const trySaveDatabaseId = (field: TaskField, value: DatabaseId) => {
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
       ) as DatabaseFieldPayload;
@@ -274,6 +271,7 @@ export default {
       fieldValue,
       environmentId,
       trySaveCustomField,
+      trySaveDatabaseNew,
       trySaveDatabaseName,
       trySaveDatabaseId,
       trySaveDatabaseReadOnly,
