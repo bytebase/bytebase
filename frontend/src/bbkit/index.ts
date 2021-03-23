@@ -11,6 +11,7 @@ import BBSelect from "./BBSelect.vue";
 import BBStepBar from "./BBStepBar.vue";
 import BBTab from "./BBTab.vue";
 import BBTabPanel from "./BBTabPanel.vue";
+import BBTextField from "./BBTextField.vue";
 import {
   BBTable,
   BBTableCell,
@@ -38,4 +39,5 @@ export {
   BBTableHeaderCell,
   BBTableSearch,
   BBTableTabFilter,
+  BBTextField,
 };

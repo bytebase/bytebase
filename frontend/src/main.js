@@ -26,6 +26,7 @@ import {
   BBTableHeaderCell,
   BBTableSearch,
   BBTableTabFilter,
+  BBTextField,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
 import highlight from "./directives/highlight";
@@ -84,4 +85,5 @@ app
   .component("BBTableHeaderCell", BBTableHeaderCell)
   .component("BBTableSearch", BBTableSearch)
   .component("BBTableTabFilter", BBTableTabFilter)
+  .component("BBTextField", BBTextField)
   .mount("#app");
