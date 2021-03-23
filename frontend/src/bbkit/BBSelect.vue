@@ -21,7 +21,11 @@
       <template v-if="state.selectedItem">
         <slot name="menuItem" :item="state.selectedItem" />
       </template>
-      <div v-else>{{ placeholder }}</div>
+      <template v-else>
+        <slot name="placeholder" :placeholder="placeholder">{{
+          placeholder
+        }}</slot>
+      </template>
       <span
         class="ml-3 absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none"
       >
