@@ -58,6 +58,8 @@ export default {
     dataSource: hasMany(),
   }),
 
+  databasePatch: Model,
+
   dataSource: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),

@@ -5,6 +5,7 @@ import instance from "./instance";
 import dataSource from "./dataSource";
 import dataSourceMember from "./dataSourceMember";
 import database from "./database";
+import databasePatch from "./databasePatch";
 import task from "./task";
 import taskPatch from "./taskPatch";
 import activity from "./activity";
@@ -30,6 +31,7 @@ export default {
   ...dataSource,
   ...dataSourceMember,
   ...database,
+  ...databasePatch,
   ...task,
   ...taskPatch,
   ...activity,

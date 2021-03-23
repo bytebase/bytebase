@@ -385,10 +385,15 @@ export type Database = {
   name: string;
   createdTs: number;
   lastUpdatedTs: number;
+  ownerId: PrincipalId;
   syncStatus: DatabaseSyncStatus;
   lastSuccessfulSyncTs: number;
   fingerprint: string;
   instance: Instance;
+};
+
+export type DatabasePatch = {
+  ownerId: PrincipalId;
 };
 
 // Auth

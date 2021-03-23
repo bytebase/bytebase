@@ -50,6 +50,8 @@ export default {
         workspaceId: instance.workspaceId,
         instance,
         name: "*",
+        // Demo Owner
+        ownerId: "1",
       });
 
       server.create("dataSource", {
@@ -78,6 +80,7 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           name: dbName,
+          ownerId: (i % 3).toString(),
         });
 
         server.create("dataSource", {

@@ -8,6 +8,7 @@ import {
   ResourceObject,
   ResourceIdentifier,
   EnvironmentId,
+  PrincipalId,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
 import instance from "./instance";
@@ -78,6 +79,7 @@ const getters = {
       name: "<<Unknown database>>",
       createdTs: 0,
       lastUpdatedTs: 0,
+      ownerId: "-1",
       syncStatus: "NOT_FOUND",
       lastSuccessfulSyncTs: ts,
       fingerprint: "",
@@ -159,6 +161,40 @@ const actions = {
     });
 
     return database;
+  },
+
+  async updateOwner(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      databaseId,
+      ownerId,
+    }: {
+      instanceId: InstanceId;
+      databaseId: DatabaseId;
+      ownerId: PrincipalId;
+    }
+  ) {
+    const updatedDatabase = convert(
+      (
+        await axios.patch(`/api/database/${databaseId}`, {
+          data: {
+            type: "databasepatch",
+            attributes: {
+              ownerId,
+            },
+          },
+        })
+      ).data.data,
+      rootGetters
+    );
+
+    commit("upsertDatabaseInListByInstanceId", {
+      instanceId,
+      database: updatedDatabase,
+    });
+
+    return updatedDatabase;
   },
 };
 

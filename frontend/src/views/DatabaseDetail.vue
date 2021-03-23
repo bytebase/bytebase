@@ -58,14 +58,32 @@
         >
           <!-- Description list -->
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-            <div class="sm:col-span-1">
+            <div class="col-span-1">
+              <label for="user" class="textlabel">
+                Owner <span class="text-red-600">*</span>
+              </label>
+              <PrincipalSelect
+                class="mt-1 w-64"
+                id="owner"
+                name="owner"
+                :disabled="!isOwner"
+                :selectedId="database.ownerId"
+                @select-principal="
+                  (principal) => {
+                    updateDatabaseOwner(principal.id);
+                  }
+                "
+              />
+            </div>
+
+            <div class="col-span-1 col-start-1">
               <dt class="text-sm font-medium text-control-light">Updated</dt>
               <dd class="mt-1 text-sm text-main">
                 {{ humanizeTs(database.lastUpdatedTs) }}
               </dd>
             </div>
 
-            <div class="sm:col-span-1">
+            <div class="col-span-1">
               <dt class="text-sm font-medium text-control-light">Created</dt>
               <dd class="mt-1 text-sm text-main">
                 {{ humanizeTs(database.createdTs) }}
@@ -83,15 +101,13 @@
 </template>
 
 <script lang="ts">
-import { computed, nextTick, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DataSourceTable from "../components/DataSourceTable.vue";
+import PrincipalSelect from "../components/PrincipalSelect.vue";
 import { idFromSlug } from "../utils";
-import { ALL_DATABASE_NAME, DataSource } from "../types";
+import { PrincipalId, DataSource } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -111,7 +127,7 @@ export default {
       type: String,
     },
   },
-  components: { DataSourceTable },
+  components: { DataSourceTable, PrincipalSelect },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
@@ -136,10 +152,33 @@ export default {
       );
     });
 
+    const isOwner = computed(() => {
+      return (
+        currentUser.value.id == database.value.ownerId ||
+        currentUser.value.role == "DBA" ||
+        currentUser.value.role == "OWNER"
+      );
+    });
+
+    const updateDatabaseOwner = (newOwnerId: PrincipalId) => {
+      store
+        .dispatch("database/updateOwner", {
+          instanceId: instance.value.id,
+          databaseId: database.value.id,
+          ownerId: newOwnerId,
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.error(error);
+        });
+    };
+
     return {
       state,
       database,
       instance,
+      isOwner,
+      updateDatabaseOwner,
     };
   },
 };

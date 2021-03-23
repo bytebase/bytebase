@@ -651,6 +651,19 @@ export default function routes() {
       );
   });
 
+  this.patch("/database/:databaseId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("database-patch");
+    const database = schema.databases.find(request.params.databaseId);
+    if (database) {
+      return database.update({ ...attrs, lastUpdatedTs: Date.now() });
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Database " + request.params.databaseId + " not found" }
+    );
+  });
+
   this.get("/instance/:instanceId/database", function (schema, request) {
     const instance = schema.instances.find(request.params.instanceId);
     if (instance) {
