@@ -3,6 +3,8 @@
     class="btn-select w-full"
     @change="
       (e) => {
+        state.selectedId = e.target.value;
+        console.log('active select', state.selectedId);
         $emit('select-database-id', e.target.value);
       }
     "
@@ -22,13 +24,9 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
-import {
-  ALL_DATABASE_NAME,
-  ALL_DATABASE_PLACEHOLDER_ID,
-  Database,
-} from "../types";
+import { Database } from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -57,7 +55,7 @@ export default {
 
     const selectDefaultIfNeeded = () => {
       if (
-        !props.selectedId &&
+        !state.selectedId &&
         databaseList.value &&
         databaseList.value.length > 0
       ) {
@@ -68,14 +66,14 @@ export default {
 
     const prepareDatabaseListByEnvironment = () => {
       if (props.environmentId) {
+        // TODO: need to revisit this, instead of fetching each time
+        // we maybe able to let the outside context to provide the database list
+        // and we just do a get here.
         store
           .dispatch(
             "database/fetchDatabaseListByEnvironmentId",
             props.environmentId
           )
-          .then(() => {
-            selectDefaultIfNeeded();
-          })
           .catch((error) => {
             console.log(error);
           });
@@ -97,6 +95,22 @@ export default {
         );
       }
     });
+
+    // The database list might change if environmentId changes, and the previous selected id
+    // might not exist in the new list. In such case, we need to invalidate the selection
+    // and emit the event.
+    watch(
+      () => databaseList.value,
+      (curList, _) => {
+        if (
+          state.selectedId &&
+          !curList.find((database: Database) => database.id == state.selectedId)
+        ) {
+          state.selectedId = undefined;
+          selectDefaultIfNeeded();
+        }
+      }
+    );
 
     selectDefaultIfNeeded();
 
