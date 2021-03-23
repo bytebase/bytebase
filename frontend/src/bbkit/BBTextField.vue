@@ -3,7 +3,7 @@
     type="text"
     ref="inputField"
     autocomplete="off"
-    class="text-main sm:text-sm focus:ring-control focus:border-control disabled:bg-gray-50"
+    class="text-main sm:text-sm rounded-md focus:ring-control focus:border-control disabled:bg-gray-50"
     :class="hasError ? 'border-error' : 'border-control-border'"
     v-model="value"
     :disabled="disabled"
