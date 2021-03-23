@@ -36,95 +36,14 @@
               {{ field.name }}
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
-            <div
-              class="w-full flex select-none"
-              @focusin="
-                if (!$props.new) {
-                  state.activeCustomFieldIndex = index;
-                }
-              "
-              @focusout="
-                (e) => {
-                  // If we lose focus because of clicking the save/cancel button,
-                  // we should NOT reset the active index. Otherwise, the button
-                  // will be removed from the DOM before firing the click event.
-                  if (
-                    !$props.new &&
-                    state.activeCustomFieldIndex == index &&
-                    e.relatedTarget !== customFieldSaveButton &&
-                    e.relatedTarget !== customFieldCancelButton
-                  ) {
-                    trySaveCustomField(index);
-                  }
-                }
-              "
-            >
-              <input
-                type="text"
-                autocomplete="off"
-                class="flex-1 min-w-0 block w-full border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm"
-                :class="
-                  state.activeCustomFieldIndex === index
-                    ? 'rounded-l-md'
-                    : 'rounded-md'
-                "
-                :ref="customFieldRefList[index]"
-                :name="field.id"
-                :value="fieldValue(field)"
-                :placeholder="field.placeholder"
-                @input="
-                  if ($props.new) {
-                    trySaveCustomField(index);
-                  }
-                "
-              />
-              <template
-                v-if="!$props.new && state.activeCustomFieldIndex === index"
-              >
-                <button
-                  tabindex="-1"
-                  class="-ml-px px-1 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
-                  ref="customFieldSaveButton"
-                  @click="trySaveCustomField(index)"
-                >
-                  <svg
-                    class="w-6 h-6 text-success"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 13l4 4L19 7"
-                    ></path>
-                  </svg>
-                </button>
-                <button
-                  tabindex="-1"
-                  class="-ml-px px-1 border border-control-border text-sm font-medium rounded-r-md text-control-light bg-control-bg hover:bg-control-bg-hover focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
-                  ref="customFieldCancelButton"
-                  @click="state.activeCustomFieldIndex = -1"
-                >
-                  <svg
-                    class="w-6 h-6 text-control"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    ></path>
-                  </svg>
-                </button>
-              </template>
-            </div>
+            <BBTextField
+              type="text"
+              class="w-full mt-4"
+              :required="true"
+              :value="fieldValue(field)"
+              :placeholder="field.placeholder"
+              @end-editing="(text) => trySaveCustomField(field, text)"
+            />
           </template>
           <template v-else-if="field.type == 'Environment'">
             <h2 class="flex items-center textlabel w-36">
@@ -138,7 +57,7 @@
                 :selectDefault="false"
                 @select-environment-id="
                   (environmentId) => {
-                    $emit('update-custom-field', field, environmentId);
+                    trySaveCustomField(field, environmentId);
                   }
                 "
               />
@@ -164,7 +83,6 @@
                 type="text"
                 class="w-full mt-4"
                 :required="true"
-                :ref="customFieldRefList[index]"
                 :value="fieldValue(field).name"
                 :placeholder="field.placeholder"
                 @end-editing="(text) => trySaveDatabaseName(field, text)"
@@ -172,7 +90,6 @@
               <DatabaseSelect
                 v-else
                 class="mt-4"
-                :ref="customFieldRefList[index]"
                 name="field.id"
                 :selectedId="fieldValue(field).id"
                 :environmentId="environmentId()"
@@ -203,10 +120,9 @@
             <div class="flex justify-start">
               <BBSwitch
                 :value="fieldValue(field)"
-                :ref="customFieldRefList[index]"
                 @toggle="
                   (on) => {
-                    $emit('update-custom-field', field, on);
+                    trySaveCustomField(field, on);
                   }
                 "
               />
@@ -249,17 +165,9 @@
 </template>
 
 <script lang="ts">
-import {
-  PropType,
-  Ref,
-  onMounted,
-  onUnmounted,
-  nextTick,
-  reactive,
-  ref,
-} from "vue";
+import { PropType, reactive } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
-import isEmpty from "lodash-es/isEmpty";
+import isEqual from "lodash-es/isEqual";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
@@ -269,11 +177,10 @@ import {
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
 } from "../plugins";
-import { DatabaseId, Task } from "../types";
+import { DatabaseId, EnvironmentId, Task } from "../types";
 import { activeStageIsRunning } from "../utils";
 
 interface LocalState {
-  activeCustomFieldIndex: number;
   // For "bytebase.database.request" task
   createNewDatabase: boolean;
 }
@@ -307,40 +214,7 @@ export default {
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
-      activeCustomFieldIndex: -1,
       createNewDatabase: true,
-    });
-
-    const customFieldSaveButton = ref();
-    const customFieldCancelButton = ref();
-    const customFieldRefList: Ref<HTMLElement | undefined>[] = [];
-    for (const _ of props.fieldList) {
-      customFieldRefList.push(ref());
-    }
-
-    const keyboardHandler = (e: KeyboardEvent) => {
-      if (state.activeCustomFieldIndex != -1) {
-        if (e.code == "Escape") {
-          const index = state.activeCustomFieldIndex;
-          state.activeCustomFieldIndex = -1;
-          nextTick(() =>
-            (customFieldRefList[index].value as HTMLElement).blur()
-          );
-        } else if (e.code == "Enter") {
-          nextTick(() =>
-            (customFieldRefList[state.activeCustomFieldIndex]
-              .value as HTMLElement).blur()
-          );
-        }
-      }
-    };
-
-    onMounted(() => {
-      document.addEventListener("keydown", keyboardHandler);
-    });
-
-    onUnmounted(() => {
-      document.removeEventListener("keydown", keyboardHandler);
     });
 
     const fieldValue = (field: TaskField): string | DatabaseFieldPayload => {
@@ -352,75 +226,47 @@ export default {
       return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
     };
 
-    const trySaveCustomField = (customFieldIndex: number) => {
-      const field = props.fieldList[customFieldIndex];
-      let value = "";
-      if (field.type === "String") {
-        const el = customFieldRefList[customFieldIndex]
-          .value as HTMLInputElement;
-        value = el.value;
-      } else if (field.type === "Environment") {
-        const el = customFieldRefList[customFieldIndex]
-          .value as HTMLSelectElement;
-        value = el.value;
-      }
-
-      if (!props.new && field.required && isEmpty(value)) {
-        // Refocus
-        nextTick(() =>
-          (customFieldRefList[customFieldIndex].value as HTMLElement).focus()
-        );
-        return;
-      }
-
-      if (value != fieldValue(field)) {
+    const trySaveCustomField = (
+      field: TaskField,
+      value: string | EnvironmentId | DatabaseFieldPayload
+    ) => {
+      if (!isEqual(value, fieldValue(field))) {
         emit("update-custom-field", field, value);
       }
-
-      state.activeCustomFieldIndex = -1;
     };
 
     const trySaveDatabaseName = (
       field: TaskField,
       value: string | DatabaseId
     ) => {
-      const payload: DatabaseFieldPayload = fieldValue(
-        field
+      const payload: DatabaseFieldPayload = cloneDeep(
+        fieldValue(field)
       ) as DatabaseFieldPayload;
-      if (value != payload.name) {
-        payload.name = value;
-        emit("update-custom-field", field, payload);
-      }
+      payload.name = value;
+      trySaveCustomField(field, payload);
     };
 
     const trySaveDatabaseId = (
       field: TaskField,
       value: string | DatabaseId
     ) => {
-      const payload: DatabaseFieldPayload = fieldValue(
-        field
+      const payload: DatabaseFieldPayload = cloneDeep(
+        fieldValue(field)
       ) as DatabaseFieldPayload;
-      if (value != payload.id) {
-        payload.id = value;
-        emit("update-custom-field", field, payload);
-      }
+      payload.id = value;
+      trySaveCustomField(field, payload);
     };
 
     const trySaveDatabaseReadOnly = (field: TaskField, value: boolean) => {
-      const payload: DatabaseFieldPayload = fieldValue(
-        field
+      const payload: DatabaseFieldPayload = cloneDeep(
+        fieldValue(field)
       ) as DatabaseFieldPayload;
-      if (value != payload.readOnly) {
-        payload.readOnly = value;
-        emit("update-custom-field", field, payload);
-      }
+      payload.readOnly = value;
+      trySaveCustomField(field, payload);
     };
 
     return {
       state,
-      customFieldSaveButton,
-      customFieldCancelButton,
-      customFieldRefList,
       activeStageIsRunning,
       fieldValue,
       environmentId,
