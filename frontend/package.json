@@ -13,7 +13,7 @@
     "@tailwindcss/typography": "^0.4.0",
     "@types/uuid": "^8.3.0",
     "autoprefixer": "^9",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "faker": "^5.1.0",
     "focus-visible": "^5.2.0",
     "highlight.js": "^10.6.0",
