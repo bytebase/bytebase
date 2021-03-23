@@ -12,26 +12,23 @@
             />
           </div>
           <input
-            v-if="state.editing"
             required
+            autocomplete="off"
             ref="nameTextField"
             id="name"
             name="name"
             type="text"
-            class="ml-2 my-0.5 w-full text-main focus:ring-control focus:border-control sm:text-lg font-bold border-control-border rounded-md"
+            placeholder="Task name"
+            class="ml-2 my-0.5 w-full text-main focus:ring-control sm:text-lg font-bold rounded-md"
+            :class="
+              state.editing
+                ? 'focus:border-control border-control-border'
+                : 'border-white'
+            "
             v-model="state.name"
+            @click.prevent="state.editing = true"
             @blur="trySaveName"
           />
-          <!-- Extra padding is to prevent flickering when entering the edit mode -->
-          <p
-            v-else
-            class="ml-2 mt-3 mb-2.5 w-full text-lg font-bold leading-7 whitespace-nowrap truncate"
-            :class="task.status == 'OPEN' ? 'text-main' : 'text-control-light'"
-          >
-            <span @click.prevent="clickName">{{
-              state.name ? state.name : "Task name"
-            }}</span>
-          </p>
         </div>
         <div v-if="!$props.new">
           <p class="text-sm text-control-light">
@@ -58,6 +55,7 @@ import { reactive, ref, nextTick, watch, PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import { activeStage } from "../utils";
 import { Task } from "../types";
+import { isEmpty } from "lodash";
 
 interface LocalState {
   editing: boolean;
@@ -93,15 +91,12 @@ export default {
       }
     );
 
-    const clickName = () => {
-      state.editing = true;
-      nextTick(() => {
-        nameTextField.value.focus();
-      });
-    };
-
     const trySaveName = () => {
-      if (state.name != props.task.name) {
+      if (isEmpty(state.name)) {
+        nextTick(() => {
+          nameTextField.value.focus();
+        });
+      } else if (state.name != props.task.name) {
         emit("update-name", state.name, (updatedTask: Task) => {
           state.editing = false;
         });
@@ -110,7 +105,7 @@ export default {
       }
     };
 
-    return { nameTextField, state, activeStage, clickName, trySaveName };
+    return { nameTextField, state, activeStage, trySaveName };
   },
 };
 </script>
