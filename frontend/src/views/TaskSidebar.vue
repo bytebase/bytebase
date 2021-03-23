@@ -64,44 +64,47 @@
             </div>
           </template>
           <template v-else-if="field.type == 'NewDatabase'">
-            <h2 class="flex textlabel mt-0.5 w-36">
+            <h2 class="flex textlabel mt-2 w-36">
               {{ field.name }}
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
             <div class="flex flex-col w-full">
-              <BBSwitch
-                :label="'New database'"
-                :value="state.createNewDatabase"
-                @toggle="
-                  (on) => {
-                    state.createNewDatabase = on;
-                  }
-                "
-              />
-              <BBTextField
-                v-if="state.createNewDatabase"
-                type="text"
-                class="w-full mt-4"
-                :required="true"
-                :value="fieldValue(field).name"
-                :placeholder="field.placeholder"
-                @end-editing="(text) => trySaveDatabaseName(field, text)"
-              />
-              <DatabaseSelect
-                v-else
-                class="mt-4"
-                name="field.id"
-                :selectedId="fieldValue(field).id"
-                :environmentId="environmentId()"
-                @select-database-id="
-                  (databaseId) => {
-                    trySaveDatabaseId(field, databaseId);
-                  }
-                "
-              />
+              <div class="flex flex-row space-x-4">
+                <BBCheckbox
+                  :label="'New'"
+                  :value="state.createNewDatabase"
+                  class="items-center"
+                  @toggle="
+                    (on) => {
+                      state.createNewDatabase = on;
+                    }
+                  "
+                />
+                <BBTextField
+                  v-if="state.createNewDatabase"
+                  type="text"
+                  class="w-full"
+                  :required="true"
+                  :value="fieldValue(field).name"
+                  :placeholder="field.placeholder"
+                  @end-editing="(text) => trySaveDatabaseName(field, text)"
+                />
+                <DatabaseSelect
+                  v-else
+                  name="field.id"
+                  :selectedId="fieldValue(field).id"
+                  :environmentId="environmentId()"
+                  @select-database-id="
+                    (databaseId) => {
+                      trySaveDatabaseId(field, databaseId);
+                    }
+                  "
+                />
+              </div>
               <BBSwitch
                 v-if="!state.createNewDatabase"
-                class="mt-4"
+                class="mt-4 flex"
+                style="margin-left: 4.25rem"
                 :label="'Read only'"
                 :value="fieldValue(field).readOnly"
                 @toggle="
