@@ -2,6 +2,7 @@ import BBAlert from "./BBAlert.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBButtonAdd from "./BBButtonAdd.vue";
 import BBButtonTrash from "./BBButtonTrash.vue";
+import BBCheckbox from "./BBCheckbox.vue";
 import BBContextMenu from "./BBContextMenu.vue";
 import BBModal from "./BBModal.vue";
 import BBNotification from "./BBNotification.vue";
@@ -25,6 +26,7 @@ export {
   BBAvatar,
   BBButtonAdd,
   BBButtonTrash,
+  BBCheckbox,
   BBContextMenu,
   BBModal,
   BBNotification,
