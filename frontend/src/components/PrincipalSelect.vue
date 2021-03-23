@@ -20,9 +20,9 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, reactive, computed } from "vue";
+import { watchEffect, reactive, computed, PropType } from "vue";
 import { useStore } from "vuex";
-import { RoleMapping, Principal } from "../types";
+import { RoleMapping, Principal, RoleType } from "../types";
 import { feature } from "../utils";
 
 interface LocalState {
@@ -40,6 +40,10 @@ export default {
       default: false,
       type: Boolean,
     },
+    allowAllRoles: {
+      default: true,
+      type: Boolean,
+    },
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
@@ -48,12 +52,17 @@ export default {
     const store = useStore();
 
     const principalList = computed(() => {
-      let list: RoleMapping[] = store.getters["roleMapping/roleMappingList"]();
-      if (feature("bytebase.admin")) {
-        list = list.filter((item) => {
-          return item.role == "DBA" || item.role == "OWNER";
-        });
-      }
+      const list: RoleMapping[] = store.getters[
+        "roleMapping/roleMappingList"
+      ]().filter((item: RoleMapping) => {
+        return (
+          props.allowAllRoles ||
+          !feature("bytebase.admin") ||
+          item.role == "DBA" ||
+          item.role == "OWNER"
+        );
+      });
+
       return list.map((roleMapping: RoleMapping) => {
         return store.getters["principal/principalById"](
           roleMapping.principalId

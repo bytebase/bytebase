@@ -20,6 +20,7 @@
         <div class="w-full">
           <PrincipalSelect
             :selectedId="task.assignee?.id"
+            :allowAllRoles="false"
             @select-principal="
               (principal) => {
                 $emit('update-assignee-id', principal.id);
