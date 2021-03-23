@@ -1,4 +1,4 @@
-import { Environment, Principal, TaskNew, DatabaseId } from "../types";
+import { Environment, Principal, TaskNew, Task, DatabaseId } from "../types";
 
 // Task
 export type TaskFieldId = string;
@@ -22,6 +22,16 @@ export type TaskFieldType =
   | "Database"
   | "NewDatabase"
   | "Switch";
+
+export type TaskFieldReferenceProvider = {
+  title: string;
+  link: string;
+};
+
+export type TaskFieldReferenceProviderContext = {
+  task: Task;
+  field: TaskField;
+};
 
 export type TaskField = {
   category: "INPUT" | "OUTPUT";
@@ -47,6 +57,13 @@ export type TaskField = {
   isEmpty: (value: any) => boolean;
   // Placeholder displayed on UI.
   placeholder?: string;
+  // Provides the reference to the place where the field originates. e.g. the request database
+  // task requires to fill the data source field when resolving the task, while the data source value
+  // can be found in the data source / database page. This provider can return the relevant link to
+  // be displayed on the UI, which helps user navigate to the place to acquire the required info.
+  provider?: (
+    ctx: TaskFieldReferenceProviderContext
+  ) => TaskFieldReferenceProvider;
 };
 
 // Field payload for "Database" and "NewDatabase" field

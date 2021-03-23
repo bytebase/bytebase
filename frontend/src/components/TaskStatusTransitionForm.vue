@@ -3,11 +3,21 @@
     <div class="mt-2 grid grid-cols-1 gap-x-4 sm:grid-cols-4">
       <template v-if="transition.type == 'RESOLVE'">
         <template v-for="(field, index) in outputFieldList" :key="index">
-          <div class="sm:col-span-1">
-            <label class="textlabel">
-              {{ field.name
-              }}<span v-if="field.required" class="text-red-600">*</span>
-            </label>
+          <div class="flex flex-row items-center text-sm">
+            <div class="sm:col-span-1">
+              <label class="textlabel">
+                {{ field.name
+                }}<span v-if="field.required" class="text-red-600">*</span>
+              </label>
+            </div>
+            <template v-if="fieldProvider(field)">
+              <router-link
+                :to="fieldProvider(field).link"
+                class="ml-2 normal-link"
+              >
+                {{ fieldProvider(field).title }}
+              </router-link>
+            </template>
           </div>
           <div class="sm:col-span-4 sm:col-start-1">
             <div class="mt-1 flex rounded-md shadow-sm">
@@ -75,7 +85,11 @@
 import { computed, onMounted, reactive, ref, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Task, TaskStatusTransition } from "../types";
-import { TaskField } from "../plugins";
+import {
+  TaskField,
+  TaskFieldReferenceProvider,
+  TaskFieldReferenceProviderContext,
+} from "../plugins";
 
 interface LocalState {
   comment: string;
@@ -141,11 +155,24 @@ export default {
       return true;
     });
 
+    const fieldProvider = (
+      field: TaskField
+    ): TaskFieldReferenceProvider | undefined => {
+      if (field.provider) {
+        return field.provider({
+          task: props.task,
+          field,
+        });
+      }
+      return undefined;
+    };
+
     return {
       state,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,
+      fieldProvider,
     };
   },
 };

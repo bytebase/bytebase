@@ -1,12 +1,14 @@
 import isEmpty from "lodash-es/isEmpty";
 import {
+  TaskField,
   TaskTemplate,
   TemplateContext,
   TaskBuiltinFieldId,
+  TaskFieldReferenceProviderContext,
   DatabaseFieldPayload,
 } from "../types";
-
-import { TaskNew, EnvironmentId } from "../../types";
+import { linkfy, validLink } from "../../utils";
+import { Task, TaskNew, EnvironmentId } from "../../types";
 
 const template: TaskTemplate = {
   type: "bytebase.database.request",
@@ -72,11 +74,55 @@ const template: TaskTemplate = {
       category: "OUTPUT",
       id: "99",
       slug: "datasource",
-      name: "Data Source URL",
+      name: "Data source",
       type: "String",
       required: true,
       isEmpty: (value: string): boolean => {
         return isEmpty(value?.trim());
+      },
+      provider: ({ task, field }: { task: Task; field: TaskField }) => {
+        const currentValue = task.payload[field.id];
+        if (validLink(currentValue)) {
+          return {
+            title: "view data source",
+            link: linkfy(currentValue),
+          };
+        }
+
+        let title = "create data source";
+        let link = "/db/new";
+        const databasePayload: DatabaseFieldPayload =
+          task.payload[TaskBuiltinFieldId.DATABASE];
+        if (!databasePayload.isNew) {
+          title = "assign data source";
+        }
+
+        const queryParamList: string[] = [];
+
+        const environmentId = task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+        if (environmentId) {
+          queryParamList.push(`env=${environmentId}`);
+        }
+
+        if (databasePayload.name) {
+          queryParamList.push(`name=${databasePayload.name}`);
+        }
+
+        // If we are creating a new database, we always assign RW to the owner.
+        if (!databasePayload.isNew && databasePayload.readOnly) {
+          queryParamList.push(`readonly=true`);
+        }
+
+        queryParamList.push(`owner=${task.creator.id}`);
+
+        queryParamList.push(`task=${task.id}`);
+
+        link += "?" + queryParamList.join("&");
+
+        return {
+          title,
+          link,
+        };
       },
     },
   ],
