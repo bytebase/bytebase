@@ -159,7 +159,6 @@ import {
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
-import isEmpty from "lodash-es/isEmpty";
 import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
@@ -513,7 +512,7 @@ export default {
           if (
             field.type != "Switch" && // Switch is boolean value which always presents
             field.required &&
-            isEmpty(state.task.payload[field.id])
+            field.isEmpty(state.task.payload[field.id])
           ) {
             return false;
           }
