@@ -224,83 +224,49 @@
       </li>
     </ol>
   </nav>
-  <BBAlert
+  <BBModal
     v-if="modalState.show"
-    :style="'INFO'"
-    :okText="modalState.okText"
-    :cancelText="'No'"
     :title="modalState.title"
-    :payload="modalState.payload"
-    @ok="
-      (transition) => {
-        modalState.show = false;
-        doChangeStageStatus(transition);
-      }
-    "
-    @cancel="modalState.show = false"
+    @close="modalState.show = false"
   >
-  </BBAlert>
+    <StageStatusTransitionForm
+      :okText="modalState.okText"
+      :task="task"
+      :transition="modalState.transition"
+      @submit="
+        (transition, comment) => {
+          modalState.show = false;
+          doChangeStageStatus(transition, comment);
+        }
+      "
+      @cancel="
+        () => {
+          modalState.show = false;
+        }
+      "
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
-import { Task, StageId, StageStatus } from "../types";
+import StageStatusTransitionForm from "../components/StageStatusTransitionForm.vue";
+import {
+  Task,
+  StageId,
+  StageStatus,
+  StageStatusTransitionType,
+  StageStatusTransition,
+  STAGE_TRANSITION_LIST,
+} from "../types";
 import { activeStage } from "../utils";
-
-type StageTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
-
-interface Transition {
-  type: StageTransitionType;
-  actionName: string;
-  requireRunnable: boolean;
-  to: StageStatus;
-}
-
-const STAGE_TRANSITION_LIST: Map<StageTransitionType, Transition> = new Map([
-  [
-    "RUN",
-    {
-      type: "RUN",
-      actionName: "Run",
-      requireRunnable: true,
-      to: "RUNNING",
-    },
-  ],
-  [
-    "RETRY",
-    {
-      type: "RETRY",
-      actionName: "Rerun",
-      requireRunnable: true,
-      to: "RUNNING",
-    },
-  ],
-  [
-    "STOP",
-    {
-      type: "STOP",
-      actionName: "Stop",
-      requireRunnable: true,
-      to: "PENDING",
-    },
-  ],
-  [
-    "SKIP",
-    {
-      type: "SKIP",
-      actionName: "Skip",
-      requireRunnable: false,
-      to: "SKIPPED",
-    },
-  ],
-]);
 
 // The first transition in the list is the primary action and the rests are
 // the normal action which is hidden in the vertical dots icon.
 const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
   StageStatus,
-  StageTransitionType[]
+  StageStatusTransitionType[]
 > = new Map([
   ["PENDING", []],
   ["RUNNING", []],
@@ -311,7 +277,7 @@ const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
 
 const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
   StageStatus,
-  StageTransitionType[]
+  StageStatusTransitionType[]
 > = new Map([
   ["PENDING", ["RUN", "SKIP"]],
   ["RUNNING", ["STOP"]],
@@ -331,7 +297,7 @@ interface ModalState {
   show: boolean;
   okText: string;
   title: string;
-  payload?: Transition;
+  transition?: StageStatusTransition;
 }
 
 export default {
@@ -343,7 +309,7 @@ export default {
       type: Object as PropType<Task>,
     },
   },
-  components: {},
+  components: { StageStatusTransitionForm },
   setup(props, { emit }) {
     const store = useStore();
 
@@ -413,7 +379,7 @@ export default {
       if (stage.type != "ENVIRONMENT") {
         return false;
       }
-      const list: StageTransitionType[] = [];
+      const list: StageStatusTransitionType[] = [];
       if (currentUser.value.id === (props.task as Task).assignee?.id) {
         list.push(...ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!);
       }
@@ -434,22 +400,29 @@ export default {
         .map((type) => STAGE_TRANSITION_LIST.get(type));
     });
 
-    const tryChangeStageStatus = (transition: Transition) => {
+    const tryChangeStageStatus = (transition: StageStatusTransition) => {
       modalState.okText = transition.actionName;
       modalState.title =
         transition.actionName +
         ' "' +
         activeStage(props.task as Task).name +
         '" ?';
-      modalState.payload = transition;
+      modalState.transition = transition;
       modalState.show = true;
     };
 
-    const doChangeStageStatus = (transition: Transition) => {
-      emit("change-stage-status", {
-        id: activeStage(props.task as Task).id,
-        status: transition.to,
-      });
+    const doChangeStageStatus = (
+      transition: StageStatusTransition,
+      comment?: string
+    ) => {
+      emit(
+        "change-stage-status",
+        {
+          id: activeStage(props.task as Task).id,
+          status: transition.to,
+        },
+        comment
+      );
     };
 
     return {

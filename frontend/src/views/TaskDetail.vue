@@ -495,9 +495,13 @@ export default {
         });
     };
 
-    const changeStageStatus = (stageProgress: StageProgressPatch) => {
+    const changeStageStatus = (
+      stageProgress: StageProgressPatch,
+      comment?: string
+    ) => {
       patchTask({
         stageProgress,
+        comment,
       });
     };
 

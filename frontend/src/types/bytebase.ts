@@ -219,6 +219,57 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
   ],
 ]);
 
+export type StageStatusTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
+
+export interface StageStatusTransition {
+  type: StageStatusTransitionType;
+  actionName: string;
+  requireRunnable: boolean;
+  to: StageStatus;
+}
+
+export const STAGE_TRANSITION_LIST: Map<
+  StageStatusTransitionType,
+  StageStatusTransition
+> = new Map([
+  [
+    "RUN",
+    {
+      type: "RUN",
+      actionName: "Run",
+      requireRunnable: true,
+      to: "RUNNING",
+    },
+  ],
+  [
+    "RETRY",
+    {
+      type: "RETRY",
+      actionName: "Rerun",
+      requireRunnable: true,
+      to: "RUNNING",
+    },
+  ],
+  [
+    "STOP",
+    {
+      type: "STOP",
+      actionName: "Stop",
+      requireRunnable: true,
+      to: "PENDING",
+    },
+  ],
+  [
+    "SKIP",
+    {
+      type: "SKIP",
+      actionName: "Skip",
+      requireRunnable: false,
+      to: "SKIPPED",
+    },
+  ],
+]);
+
 // Activity
 export type TaskActionType =
   | "bytebase.task.create"
