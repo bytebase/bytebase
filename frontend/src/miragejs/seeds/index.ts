@@ -40,6 +40,14 @@ const workspacesSeeder = (server: any) => {
       name: "instance " + i + " " + faker.fake("{{lorem.word}}"),
       environmentId: environmentList1[i].id,
     });
+    if (i == 3) {
+      // Create an extra instance for prod.
+      server.create("instance", {
+        workspace: workspace1,
+        name: "instance " + (i + 1) + " " + faker.fake("{{lorem.word}}"),
+        environmentId: environmentList1[i].id,
+      });
+    }
   }
 
   for (let i = 0; i < 4; i++) {
