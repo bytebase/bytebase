@@ -4,7 +4,12 @@
     :itemList="principalList"
     :placeholder="'Unassigned'"
     :disabled="disabled"
-    @select-item="(item) => $emit('select-principal', item)"
+    @select-item="
+      (item) => {
+        state.selectedId = item.id;
+        $emit('select-principal', item);
+      }
+    "
   >
     <template v-slot:menuItem="{ item }">
       <!--TODO: Have to set a fixed width, otherwise the width would change based on the selected text.
@@ -20,12 +25,13 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, reactive, computed, PropType } from "vue";
+import { reactive, computed, watch } from "vue";
 import { useStore } from "vuex";
-import { RoleMapping, Principal, RoleType } from "../types";
+import { RoleMapping, Principal, PrincipalId } from "../types";
 import { feature } from "../utils";
 
 interface LocalState {
+  selectedId?: PrincipalId;
   showMenu: boolean;
 }
 
@@ -47,6 +53,7 @@ export default {
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
+      selectedId: props.selectedId,
       showMenu: false,
     });
     const store = useStore();
@@ -70,9 +77,16 @@ export default {
       });
     });
 
+    watch(
+      () => props.selectedId,
+      (cur, _) => {
+        state.selectedId = cur;
+      }
+    );
+
     const selectedPrincipal = computed(() =>
       principalList.value.find(
-        (principal: Principal) => principal.id == props.selectedId
+        (principal: Principal) => principal.id == state.selectedId
       )
     );
 
