@@ -28,7 +28,9 @@
             class="ml-2 mt-3 mb-2.5 w-full text-lg font-bold leading-7 whitespace-nowrap truncate"
             :class="task.status == 'OPEN' ? 'text-main' : 'text-control-light'"
           >
-            <span @click.prevent="clickName">{{ state.name }}</span>
+            <span @click.prevent="clickName">{{
+              state.name ? state.name : "Task name"
+            }}</span>
           </p>
         </div>
         <div v-if="!$props.new">

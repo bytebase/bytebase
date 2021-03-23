@@ -352,12 +352,16 @@ export default {
       newName: string,
       postUpdated: (updatedTask: Task) => void
     ) => {
-      patchTask(
-        {
-          name: newName,
-        },
-        postUpdated
-      );
+      if (state.new) {
+        (state.task as TaskNew).name = newName;
+      } else {
+        patchTask(
+          {
+            name: newName,
+          },
+          postUpdated
+        );
+      }
     };
 
     const updateDescription = (
