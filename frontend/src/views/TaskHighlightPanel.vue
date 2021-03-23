@@ -18,21 +18,21 @@
             id="name"
             name="name"
             type="text"
-            class="textfield ml-2 my-0.5 w-full"
+            class="ml-2 my-0.5 w-full text-main focus:ring-control focus:border-control sm:text-lg font-bold border-control-border rounded-md"
             v-model="state.name"
             @blur="trySaveName"
           />
           <!-- Extra padding is to prevent flickering when entering the edit mode -->
           <p
             v-else
-            class="ml-2 mt-2 mb-1.5 w-full text-xl font-bold leading-7 whitespace-nowrap truncate"
+            class="ml-2 mt-3 mb-2.5 w-full text-lg font-bold leading-7 whitespace-nowrap truncate"
             :class="task.status == 'OPEN' ? 'text-main' : 'text-control-light'"
           >
             <span @click.prevent="clickName">{{ state.name }}</span>
           </p>
         </div>
         <div v-if="!$props.new">
-          <p class="mt-2 text-sm text-control-light">
+          <p class="text-sm text-control-light">
             #{{ task.id }} opened by
             <span href="#" class="font-medium text-control">{{
               task.creator.name
