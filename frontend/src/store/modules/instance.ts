@@ -6,6 +6,7 @@ import {
   InstanceState,
   ResourceObject,
   Environment,
+  EnvironmentId,
 } from "../../types";
 
 function convert(instance: ResourceObject, rootGetters: any): Instance {
@@ -32,6 +33,15 @@ const getters = {
     return list.sort((a: Instance, b: Instance) => {
       return b.createdTs - a.createdTs;
     });
+  },
+
+  instanceListByEnvironmentId: (state: InstanceState, getters: any) => (
+    environmentId: EnvironmentId
+  ) => {
+    const list = getters["instanceList"]();
+    return list.filter(
+      (item: Instance) => item.environment.id == environmentId
+    );
   },
 
   instanceById: (state: InstanceState) => (instanceId: InstanceId) => {
