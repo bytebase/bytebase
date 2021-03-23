@@ -3,9 +3,10 @@
     type="text"
     ref="inputField"
     autocomplete="off"
-    class="text-main sm:text-sm rounded-md focus:ring-control focus:border-control"
+    class="text-main sm:text-sm focus:ring-control focus:border-control disabled:bg-gray-50"
     :class="hasError ? 'border-error' : 'border-control-border'"
     v-model="value"
+    :disabled="disabled"
     :placeholder="placeholder"
     @blur="onBlur"
     @input="hasError = false"
@@ -30,6 +31,10 @@ export default {
     },
     placeholder: {
       type: String,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {
