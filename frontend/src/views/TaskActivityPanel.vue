@@ -484,31 +484,29 @@ export default {
               newValue = update.newValue;
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);
-              if (field) {
-                name = field.name;
-                if (field.type === "String") {
-                  oldValue = update.oldValue;
-                  newValue = update.newValue;
-                } else if (field.type === "Environment") {
-                  if (update.oldValue) {
-                    const environment: Environment = store.getters[
-                      "environment/environmentById"
-                    ](update.oldValue);
-                    if (environment) {
-                      oldValue = environment.name;
-                    } else {
-                      oldValue = "Unknown Environment";
-                    }
+              name = field.name;
+              if (field.type === "String") {
+                oldValue = update.oldValue;
+                newValue = update.newValue;
+              } else if (field.type === "Environment") {
+                if (update.oldValue) {
+                  const environment: Environment = store.getters[
+                    "environment/environmentById"
+                  ](update.oldValue);
+                  if (environment) {
+                    oldValue = environment.name;
+                  } else {
+                    oldValue = "Unknown Environment";
                   }
-                  if (update.newValue) {
-                    const environment: Environment = store.getters[
-                      "environment/environmentById"
-                    ](update.newValue);
-                    if (environment) {
-                      newValue = environment.name;
-                    } else {
-                      newValue = "Unknown Environment";
-                    }
+                }
+                if (update.newValue) {
+                  const environment: Environment = store.getters[
+                    "environment/environmentById"
+                  ](update.newValue);
+                  if (environment) {
+                    newValue = environment.name;
+                  } else {
+                    newValue = "Unknown Environment";
                   }
                 }
               }

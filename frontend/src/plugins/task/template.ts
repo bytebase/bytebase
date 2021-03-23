@@ -5,6 +5,7 @@ import {
   TemplateContext,
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
+  UNKNOWN_FIELD,
 } from "../types";
 import { EnvironmentId, TaskType, TaskNew } from "../../types";
 import DatabaseRequestTemplate from "./DatabaseRequestTemplate";
@@ -49,9 +50,11 @@ export function templateForType(type: TaskType): TaskTemplate | undefined {
 export function fieldFromId(
   template: TaskTemplate,
   fieldId: TaskFieldId
-): TaskField | undefined {
+): TaskField {
   if (template.fieldList) {
-    return template.fieldList.find((field) => field.id == fieldId);
+    return (
+      template.fieldList.find((field) => field.id == fieldId) || UNKNOWN_FIELD
+    );
   }
-  return undefined;
+  return UNKNOWN_FIELD;
 }

@@ -1,4 +1,11 @@
-import { Environment, Principal, TaskNew, Task, DatabaseId } from "../types";
+import {
+  Environment,
+  Principal,
+  TaskNew,
+  Task,
+  DatabaseId,
+  UNKNOWN_ID,
+} from "../types";
 
 // Task
 export type TaskFieldId = string;
@@ -64,6 +71,16 @@ export type TaskField = {
   provider?: (
     ctx: TaskFieldReferenceProviderContext
   ) => TaskFieldReferenceProvider;
+};
+
+export const UNKNOWN_FIELD: TaskField = {
+  category: "INPUT",
+  id: UNKNOWN_ID,
+  slug: "",
+  name: "<<Unknown field>>",
+  type: "String",
+  required: false,
+  isEmpty: () => true,
 };
 
 // Field payload for "Database" and "NewDatabase" field
