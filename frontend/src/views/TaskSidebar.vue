@@ -144,7 +144,7 @@
             </div>
           </template>
           <template v-else-if="field.type == 'NewDatabase'">
-            <h2 class="flex items-center textlabel w-36">
+            <h2 class="flex textlabel mt-0.5 w-36">
               {{ field.name }}
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
@@ -183,6 +183,7 @@
                 "
               />
               <BBSwitch
+                v-if="!state.createNewDatabase"
                 class="mt-4"
                 :label="'Read only'"
                 :value="fieldValue(field).readOnly"
