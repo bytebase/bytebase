@@ -651,6 +651,35 @@ export default function routes() {
       );
   });
 
+  this.post("/database", function (schema, request) {
+    const ts = Date.now();
+    const { taskId, creatorId, ...attrs } = this.normalizedRequestAttrs(
+      "database"
+    );
+    const newDatabase = {
+      ...attrs,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      syncStatus: "OK",
+      lastSuccessfulSyncTs: ts,
+      workspaceId: WORKSPACE_ID,
+    };
+
+    if (taskId) {
+      schema.activities.create({
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        actionType: "bytebase.task",
+        containerId: taskId,
+        creatorId: creatorId,
+        comment: `Created database ${newDatabase.name}`,
+        workspaceId: WORKSPACE_ID,
+      });
+    }
+    const createdDatabase = schema.databases.create(newDatabase);
+    return createdDatabase;
+  });
+
   this.patch("/database/:databaseId", function (schema, request) {
     const attrs = this.normalizedRequestAttrs("database-patch");
     const database = schema.databases.find(request.params.databaseId);
@@ -760,6 +789,7 @@ export default function routes() {
       ...attrs,
       createdTs: ts,
       lastUpdatedTs: ts,
+      actionType: "bytebase.task.comment.create",
       workspaceId: WORKSPACE_ID,
     };
     const createdActivity = schema.activities.create(newActivity);

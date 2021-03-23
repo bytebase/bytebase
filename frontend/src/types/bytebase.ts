@@ -392,6 +392,14 @@ export type Database = {
   instance: Instance;
 };
 
+export type DatabaseNew = {
+  name: string;
+  instanceId: InstanceId;
+  ownerId: PrincipalId;
+  creatorId: PrincipalId;
+  taskId?: TaskId;
+};
+
 export type DatabasePatch = {
   ownerId: PrincipalId;
 };
@@ -458,6 +466,7 @@ export type InstanceQuickActionType = "quickaction.bytebase.instance.create";
 export type UserQuickActionType = "quickaction.bytebase.user.manage";
 export type DatabaseQuickActionType =
   | "quickaction.bytebase.database.request"
+  | "quickaction.bytebase.database.create"
   | "quickaction.bytebase.database.schema.update"
   | "quickaction.bytebase.database.troubleshoot";
 

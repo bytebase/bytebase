@@ -2,6 +2,7 @@ import axios from "axios";
 import {
   UserId,
   Database,
+  DatabaseNew,
   DatabaseId,
   InstanceId,
   DatabaseState,
@@ -161,6 +162,27 @@ const actions = {
     });
 
     return database;
+  },
+
+  async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
+    const createdDatabase: Database = convert(
+      (
+        await axios.post(`/api/database`, {
+          data: {
+            type: "database",
+            attributes: newDatabase,
+          },
+        })
+      ).data.data,
+      rootGetters
+    );
+
+    commit("upsertDatabaseInListByInstanceId", {
+      instanceId: createdDatabase.instance.id,
+      database: createdDatabase,
+    });
+
+    return createdDatabase;
   },
 
   async updateOwner(

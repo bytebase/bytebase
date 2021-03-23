@@ -290,9 +290,47 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.database",
             meta: {
               title: () => "Database",
+              quickActionListByRole: new Map([
+                [
+                  "OWNER",
+                  [
+                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.schema.update",
+                    "quickaction.bytebase.database.request",
+                  ],
+                ],
+                [
+                  "DBA",
+                  [
+                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.schema.update",
+                    "quickaction.bytebase.database.request",
+                  ],
+                ],
+                [
+                  "DEVELOPER",
+                  [
+                    "quickaction.bytebase.database.schema.update",
+                    "quickaction.bytebase.database.request",
+                    "quickaction.bytebase.database.troubleshoot",
+                  ],
+                ],
+              ]),
             },
             components: {
               content: () => import("../views/DatabaseDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
+            path: "db/new",
+            name: "workspace.database.create",
+            meta: {
+              title: () => "Create database",
+            },
+            components: {
+              content: () => import("../views/DatabaseNew.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },
@@ -453,6 +491,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.environment" ||
     to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
+    to.name === "workspace.database.create" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();
