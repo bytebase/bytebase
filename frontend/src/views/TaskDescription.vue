@@ -52,6 +52,10 @@
       @input="
         (e) => {
           sizeToFit(e.target);
+          // When creating the task, we will emit the event on keystroke to update the in-memory state.
+          if ($props.new) {
+            $emit('update-description', state.editDescription);
+          }
         }
       "
       @focus="

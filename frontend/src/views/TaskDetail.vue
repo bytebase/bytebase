@@ -368,12 +368,16 @@ export default {
       newDescription: string,
       postUpdated: (updatedTask: Task) => void
     ) => {
-      patchTask(
-        {
-          description: newDescription,
-        },
-        postUpdated
-      );
+      if (state.new) {
+        (state.task as TaskNew).description = newDescription;
+      } else {
+        patchTask(
+          {
+            description: newDescription,
+          },
+          postUpdated
+        );
+      }
     };
 
     const tryStartTaskStatusTransition = (
