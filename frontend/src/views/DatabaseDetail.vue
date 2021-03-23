@@ -68,9 +68,9 @@
                 name="owner"
                 :disabled="!isOwner"
                 :selectedId="database.ownerId"
-                @select-principal="
-                  (principal) => {
-                    updateDatabaseOwner(principal.id);
+                @select-principal-id="
+                  (principalId) => {
+                    updateDatabaseOwner(principalId);
                   }
                 "
               />

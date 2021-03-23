@@ -5,9 +5,9 @@
     :placeholder="'Unassigned'"
     :disabled="disabled"
     @select-item="
-      (item) => {
-        state.selectedId = item.id;
-        $emit('select-principal', item);
+      (principal) => {
+        state.selectedId = principal.id;
+        $emit('select-principal-id', principal.id);
       }
     "
   >
@@ -37,7 +37,7 @@ interface LocalState {
 
 export default {
   name: "PrincipalSelect",
-  emits: ["select-principal"],
+  emits: ["select-principal-id"],
   props: {
     selectedId: {
       type: String,

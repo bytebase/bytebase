@@ -83,9 +83,9 @@ input[type="number"] {
             id="user"
             name="user"
             :selectedId="principalId"
-            @select-principal="
-              (principal) => {
-                updateDataSourceMember('principalId', principal.id);
+            @select-principal-id="
+              (principalId) => {
+                updateDataSourceMember('principalId', principalId);
               }
             "
           />

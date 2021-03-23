@@ -73,9 +73,9 @@ input[type="number"] {
           id="owner"
           name="owner"
           :selectedId="state.ownerId"
-          @select-principal="
-            (principal) => {
-              state.ownerId = principal.id;
+          @select-principal-id="
+            (principalId) => {
+              state.ownerId = principalId;
             }
           "
         />

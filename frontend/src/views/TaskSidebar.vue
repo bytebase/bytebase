@@ -21,9 +21,9 @@
           <PrincipalSelect
             :selectedId="task.assignee?.id"
             :allowAllRoles="false"
-            @select-principal="
-              (principal) => {
-                $emit('update-assignee-id', principal.id);
+            @select-principal-id="
+              (principalId) => {
+                $emit('update-assignee-id', principalId);
               }
             "
           />
