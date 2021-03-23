@@ -1,6 +1,6 @@
 import { TaskTemplate, TemplateContext, TaskBuiltinFieldId } from "../types";
 
-import { TaskNew } from "../../types";
+import { TaskNew, DatabaseId, UNKNOWN_ID } from "../../types";
 
 const template: TaskTemplate = {
   type: "bytebase.database.schema.update",
@@ -35,6 +35,9 @@ const template: TaskTemplate = {
       name: "DB Name",
       type: "Database",
       required: true,
+      isEmpty: (value: DatabaseId): boolean => {
+        return value != undefined && value != UNKNOWN_ID;
+      },
     },
   ],
 };
