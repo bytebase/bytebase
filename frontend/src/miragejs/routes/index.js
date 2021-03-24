@@ -41,11 +41,11 @@ export default function routes() {
         databaseId: database.id,
       });
 
+      console.log(request.params.userId);
       for (const dataSource of dataSourceList.models) {
         if (
-          schema.dataSourceMembers.findBy({
-            dataSourceId: dataSource.id,
-            principalId: request.params.userId,
+          dataSource.memberList.find((item) => {
+            return item.principalId == request.params.userId;
           })
         ) {
           return true;
@@ -531,33 +531,6 @@ export default function routes() {
   );
 
   // Data Source Member
-  this.get(
-    "/instance/:instanceId/datasource/:dataSourceId/member",
-    function (schema, request) {
-      const instance = schema.instances.find(request.params.instanceId);
-      if (instance) {
-        const dataSource = schema.dataSources.find(request.params.dataSourceId);
-        if (dataSource) {
-          return schema.dataSourceMembers.where((dataSourceMember) => {
-            return dataSourceMember.dataSourceId == dataSource.id;
-          });
-        }
-        return new Response(
-          404,
-          {},
-          {
-            errors: "Data source " + request.params.dataSourceId + " not found",
-          }
-        );
-      }
-      return new Response(
-        404,
-        {},
-        { errors: "Instance " + request.params.instanceId + " not found" }
-      );
-    }
-  );
-
   // Be careful to use :dataSourceId instead of :id otherwise this.normalizedRequestAttrs
   // would de-serialize to id, which would prevent auto increment id logic.
   this.post(
@@ -571,7 +544,17 @@ export default function routes() {
             ...this.normalizedRequestAttrs("data-source-member"),
             dataSourceId: request.params.dataSourceId,
           };
-          return schema.dataSourceMembers.create(newDataSourceMember);
+          const newList = dataSource.memberList;
+          const member = newList.find(
+            (item) => item.principalId == newDataSourceMember.principalId
+          );
+          if (!member) {
+            newList.push(newDataSourceMember);
+            return dataSource.update({
+              memberList: newList,
+            });
+          }
+          return dataSource;
         }
         return new Response(
           404,
@@ -590,7 +573,7 @@ export default function routes() {
   );
 
   this.delete(
-    "/instance/:instanceId/datasource/:dataSourceId/member/:id",
+    "/instance/:instanceId/datasource/:dataSourceId/member/:memberId",
     function (schema, request) {
       const instance = schema.instances.find(request.params.instanceId);
       if (instance) {
@@ -605,19 +588,17 @@ export default function routes() {
             }
           );
         }
-        const dataSourceMember = schema.dataSourceMembers.find(
-          request.params.id
+        const newList = dataSource.memberList;
+        const index = newList.findIndex(
+          (item) => item.principalId == request.params.memberId
         );
-        if (!dataSourceMember) {
-          return new Response(
-            404,
-            {},
-            {
-              errors: "Data source member " + request.params.id + " not found",
-            }
-          );
+        if (index >= 0) {
+          newList.splice(index, 1);
+          return dataSource.update({
+            memberList: newList,
+          });
         }
-        return dataSourceMember.destroy();
+        return dataSource;
       }
       return new Response(
         404,

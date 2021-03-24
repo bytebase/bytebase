@@ -218,9 +218,9 @@ export default {
     const updateDataSourceMember = (field: string, value: string) => {
       if (field == "principalId") {
         state.principalId = value;
-        const member = store.getters["dataSource/memberListById"](
-          props.dataSource.id
-        ).find((item: DataSourceMember) => item.principal.id == value);
+        const member = props.dataSource.memberList.find(
+          (item: DataSourceMember) => item.principal.id == value
+        );
         if (member) {
           state.principalError = `${member.principal.name} already exists`;
         } else {

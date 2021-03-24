@@ -25,30 +25,30 @@ export default {
     password(i) {
       return "pwd" + i;
     },
-    afterCreate(dataSource, server) {
-      server.create("dataSourceMember", {
-        workspaceId: dataSource.workspaceId,
-        dataSource,
-        principalId: "1",
-        taskId: "2",
-      });
-
-      if (dataSource.id % 2 == 0) {
-        server.create("dataSourceMember", {
-          workspaceId: dataSource.workspaceId,
-          dataSource,
+    afterCreate(dataSource, server) {},
+    memberList(i) {
+      const list = [
+        {
+          principalId: "1",
+          taskId: (i + 1).toString(),
+          createdTs: Date.now() - (i + 1) * 1800 * 1000,
+        },
+      ];
+      if (i % 2 == 0) {
+        list.push({
           principalId: "2",
-          taskId: "3",
+          taskId: (i + 1).toString(),
+          createdTs: Date.now() - (i + 1) * 1800 * 1000,
         });
       }
-
-      if (dataSource.id % 4 == 0) {
-        server.create("dataSourceMember", {
-          workspaceId: dataSource.workspaceId,
-          dataSource,
+      if (i % 4 == 0) {
+        list.push({
           principalId: "3",
+          taskId: (i + 1).toString(),
+          createdTs: Date.now() - (i + 1) * 1800 * 1000,
         });
       }
+      return list;
     },
   }),
 };

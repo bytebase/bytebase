@@ -67,10 +67,7 @@ export default {
     dataSourceMember: hasMany(),
   }),
 
-  dataSourceMember: Model.extend({
-    workspace: belongsTo(),
-    dataSource: belongsTo(),
-  }),
+  dataSourceMember: Model,
 
   batchUpdate: Model,
 

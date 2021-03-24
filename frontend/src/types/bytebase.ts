@@ -27,8 +27,6 @@ export type InstanceId = string;
 
 export type DataSourceId = string;
 
-export type DataSourceMemberId = string;
-
 export type DatabaseId = string;
 // This is a placeholder database id which will later be converted to
 // the actual database id referencing all databases.
@@ -348,6 +346,9 @@ export type DataSource = {
   // fetches the specific data source and requires the database info for
   // the conversion
   databaseId: DatabaseId;
+  // Returns the member list directly because we need it quite frequently in order
+  // to do various access check.
+  memberList: DataSourceMember[];
 };
 
 export type DataSourceNew = {
@@ -359,8 +360,6 @@ export type DataSourceNew = {
 };
 
 export type DataSourceMember = {
-  id: DataSourceMemberId;
-  dataSourceId: DataSourceId;
   principal: Principal;
   taskId?: TaskId;
   createdTs: number;
@@ -516,7 +515,6 @@ export interface InstanceState {
 
 export interface DataSourceState {
   dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
-  memberListById: Map<DataSourceId, DataSourceMember[]>;
 }
 
 export interface DatabaseState {

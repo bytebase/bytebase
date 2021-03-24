@@ -5,53 +5,43 @@ import {
   DataSourceNew,
   DataSourceMember,
   DataSourceMemberNew,
-  DataSourceMemberId,
   DataSourceState,
   InstanceId,
+  PrincipalId,
   ResourceObject,
   ResourceIdentifier,
 } from "../../types";
 
-function convert(dataSource: ResourceObject): DataSource {
+function convert(dataSource: ResourceObject, rootGetters: any): DataSource {
   const databaseId = (dataSource.relationships!.database
     .data as ResourceIdentifier).id;
   const instanceId = (dataSource.relationships!.instance
     .data as ResourceIdentifier).id;
+  const memberList = (dataSource.attributes.memberList as []).map(
+    (item: any): DataSourceMember => {
+      return {
+        principal: rootGetters["principal/principalById"](item.principalId),
+        taskId: item.taskId,
+        createdTs: item.createdTs,
+      };
+    }
+  );
   return {
+    // Somehow "memberList" doesn't get omitted, but we put the actual memberList last,
+    // which will overwrite whatever exists before.
+    ...(dataSource.attributes as Omit<
+      DataSource,
+      "id" | "instanceId" | "databaseId" | "memberList"
+    >),
     id: dataSource.id,
     instanceId,
     databaseId,
-    ...(dataSource.attributes as Omit<
-      DataSource,
-      "id" | "instanceId" | "databaseId"
-    >),
-  };
-}
-
-function convertMember(
-  dataSourceMember: ResourceObject,
-  rootGetters: any
-): DataSourceMember {
-  const dataSourceId = (dataSourceMember.relationships!.dataSource
-    .data as ResourceIdentifier).id;
-  const principal = rootGetters["principal/principalById"](
-    dataSourceMember.attributes.principalId
-  );
-
-  return {
-    id: dataSourceMember.id,
-    dataSourceId,
-    principal,
-    ...(dataSourceMember.attributes as Omit<
-      DataSourceMember,
-      "id" | "principal" | "dataSourceId"
-    >),
+    memberList,
   };
 }
 
 const state: () => DataSourceState = () => ({
   dataSourceListByInstanceId: new Map(),
-  memberListById: new Map(),
 });
 
 const getters = {
@@ -88,25 +78,20 @@ const getters = {
       lastUpdatedTs: 0,
       type: "RO",
       databaseId: "-1",
+      memberList: [],
     };
-  },
-
-  memberListById: (state: DataSourceState) => (
-    dataSourceId: DataSourceId
-  ): DataSourceMember[] => {
-    return state.memberListById.get(dataSourceId) || [];
   },
 };
 
 const actions = {
   async fetchDataSourceListByInstanceId(
-    { commit }: any,
+    { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
     const dataSourceList = (
       await axios.get(`/api/instance/${instanceId}/datasource`)
     ).data.data.map((datasource: ResourceObject) => {
-      return convert(datasource);
+      return convert(datasource, rootGetters);
     });
 
     commit("setDataSourceListByInstanceId", { instanceId, dataSourceList });
@@ -115,7 +100,7 @@ const actions = {
   },
 
   async fetchDataSourceById(
-    { commit }: any,
+    { commit, rootGetters }: any,
     {
       instanceId,
       dataSourceId,
@@ -126,7 +111,8 @@ const actions = {
         await axios.get(
           `/api/instance/${instanceId}/datasource/${dataSourceId}`
         )
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("upsertDataSourceInListByInstanceId", {
@@ -138,7 +124,7 @@ const actions = {
   },
 
   async createDataSource(
-    { commit }: any,
+    { commit, rootGetters }: any,
     {
       instanceId,
       newDataSource,
@@ -152,7 +138,8 @@ const actions = {
             attributes: newDataSource,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("upsertDataSourceInListByInstanceId", {
@@ -164,7 +151,7 @@ const actions = {
   },
 
   async patchDataSource(
-    { commit }: any,
+    { commit, rootGetters }: any,
     {
       instanceId,
       dataSource,
@@ -185,7 +172,8 @@ const actions = {
             },
           }
         )
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("upsertDataSourceInListByInstanceId", {
@@ -213,29 +201,6 @@ const actions = {
     });
   },
 
-  async fetchMemberListById(
-    { commit, rootGetters }: any,
-    {
-      instanceId,
-      dataSourceId,
-    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
-  ) {
-    const dataSourceMemberList = (
-      await axios.get(
-        `/api/instance/${instanceId}/datasource/${dataSourceId}/member`
-      )
-    ).data.data.map((dataSourceMember: ResourceObject) => {
-      return convertMember(dataSourceMember, rootGetters);
-    });
-
-    commit("setDataSourceMemberListById", {
-      dataSourceId,
-      dataSourceMemberList,
-    });
-
-    return dataSourceMemberList;
-  },
-
   async createDataSourceMember(
     { commit, rootGetters }: any,
     {
@@ -248,7 +213,8 @@ const actions = {
       newDataSourceMember: DataSourceMemberNew;
     }
   ) {
-    const createdDataSourceMember = convertMember(
+    // It's patching the data source and returns the updated data source
+    const updatedDataSource = convert(
       (
         await axios.post(
           `/api/instance/${instanceId}/datasource/${dataSourceId}/member`,
@@ -263,31 +229,40 @@ const actions = {
       rootGetters
     );
 
-    commit("upsertDataSourceMemberInListById", {
-      dataSourceId,
-      dataSourceMember: createdDataSourceMember,
+    commit("upsertDataSourceInListByInstanceId", {
+      instanceId,
+      dataSource: updatedDataSource,
     });
 
-    return createdDataSourceMember;
+    return updatedDataSource;
   },
 
-  async deleteDataSourceMemberById(
-    { state, commit }: { state: DataSourceState; commit: any },
+  async deleteDataSourceMemberByMemberId(
+    { commit, rootGetters }: any,
     {
       instanceId,
       dataSourceId,
-      dataSourceMemberId,
+      memberId,
     }: {
       instanceId: InstanceId;
       dataSourceId: DataSourceId;
-      dataSourceMemberId: DataSourceMemberId;
+      memberId: PrincipalId;
     }
   ) {
-    await axios.delete(
-      `/api/instance/${instanceId}/datasource/${dataSourceId}/member/${dataSourceMemberId}`
+    // It's patching the data source and returns the updated data source
+    const updatedDataSource = convert(
+      (
+        await axios.delete(
+          `/api/instance/${instanceId}/datasource/${dataSourceId}/member/${memberId}`
+        )
+      ).data.data,
+      rootGetters
     );
 
-    commit("deleteDataSourceMemberById", { dataSourceId, dataSourceMemberId });
+    commit("upsertDataSourceInListByInstanceId", {
+      instanceId,
+      dataSource: updatedDataSource,
+    });
   },
 };
 
@@ -338,65 +313,6 @@ const mutations = {
     const list = state.dataSourceListByInstanceId.get(instanceId);
     if (list) {
       const i = list.findIndex((item: DataSource) => item.id == dataSourceId);
-      if (i != -1) {
-        list.splice(i, 1);
-      }
-    }
-  },
-
-  setDataSourceMemberListById(
-    state: DataSourceState,
-    {
-      dataSourceId,
-      dataSourceMemberList,
-    }: {
-      dataSourceId: DataSourceId;
-      dataSourceMemberList: DataSourceMember[];
-    }
-  ) {
-    state.memberListById.set(dataSourceId, dataSourceMemberList);
-  },
-
-  upsertDataSourceMemberInListById(
-    state: DataSourceState,
-    {
-      dataSourceId,
-      dataSourceMember,
-    }: {
-      dataSourceId: DataSourceId;
-      dataSourceMember: DataSourceMember;
-    }
-  ) {
-    console.log(state.memberListById);
-    console.log(dataSourceId);
-    console.log(dataSourceMember);
-    const list = state.memberListById.get(dataSourceId);
-    if (list) {
-      const i = list.findIndex(
-        (item: DataSourceMember) => item.id == dataSourceMember.id
-      );
-      if (i != -1) {
-        list[i] = dataSourceMember;
-      } else {
-        list.push(dataSourceMember);
-      }
-    } else {
-      state.memberListById.set(dataSourceId, [dataSourceMember]);
-    }
-  },
-
-  deleteDataSourceMemberById(
-    state: DataSourceState,
-    {
-      dataSourceId,
-      dataSourceMemberId,
-    }: { dataSourceId: DataSourceId; dataSourceMemberId: DataSourceMemberId }
-  ) {
-    const list = state.memberListById.get(dataSourceId);
-    if (list) {
-      const i = list.findIndex(
-        (item: DataSourceMember) => item.id == dataSourceMemberId
-      );
       if (i != -1) {
         list.splice(i, 1);
       }

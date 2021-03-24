@@ -14,7 +14,7 @@
     <BBTable
       class="mt-2"
       :columnList="columnList"
-      :dataSource="memberList"
+      :dataSource="dataSource.memberList"
       :showHeader="true"
       :rowClickable="false"
     >
@@ -101,7 +101,7 @@
 import { computed, reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
-import { DataSource, DataSourceMember, DataSourceMemberId } from "../types";
+import { DataSource, DataSourceMember } from "../types";
 
 const columnList = [
   {
@@ -142,41 +142,16 @@ export default {
       showCreateModal: false,
     });
 
+    console.log(props.dataSource.memberList);
+
     const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    const prepareMemberList = () => {
-      store
-        .dispatch("dataSource/fetchMemberListById", {
-          instanceId: props.dataSource.instanceId,
-          dataSourceId: props.dataSource.id,
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    watchEffect(prepareMemberList);
-
-    const memberList = computed(() => {
-      const list = store.getters["dataSource/memberListById"](
-        props.dataSource.id
-      );
-      if (state.searchText) {
-        return list.filter((member: DataSourceMember) =>
-          member.principal.name
-            .toLowerCase()
-            .includes(state.searchText.toLowerCase())
-        );
-      }
-      return list;
-    });
 
     const deleteMember = (member: DataSourceMember) => {
       store
-        .dispatch("dataSource/deleteDataSourceMemberById", {
+        .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
           instanceId: props.dataSource.instanceId,
           dataSourceId: props.dataSource.id,
-          dataSourceMemberId: member.id,
+          memberId: member.principal.id,
         })
         .then(() => {
           store.dispatch("notification/pushNotification", {
@@ -198,7 +173,6 @@ export default {
       state,
       columnList,
       currentUser,
-      memberList,
       deleteMember,
       changeSearchText,
     };
