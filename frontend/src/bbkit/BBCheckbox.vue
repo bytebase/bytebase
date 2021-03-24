@@ -3,7 +3,8 @@
     <div class="flex items-center h-5">
       <input
         type="checkbox"
-        class="focus:ring-accent h-4 w-4 text-accent border-control-border rounded"
+        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+        :disabled="disabled"
         :checked="value"
         @input="
           () => {
@@ -14,7 +15,11 @@
       />
     </div>
     <div v-if="label" class="ml-2 text-sm">
-      <label class="font-medium text-main">{{ label }}</label>
+      <label
+        class="font-medium"
+        :class="disabled ? 'text-gray-400' : 'text-main'"
+        >{{ label }}</label
+      >
     </div>
   </div>
 </template>
@@ -32,6 +37,10 @@ export default {
     },
     value: {
       default: true,
+      type: Boolean,
+    },
+    disabled: {
+      default: false,
       type: Boolean,
     },
   },
