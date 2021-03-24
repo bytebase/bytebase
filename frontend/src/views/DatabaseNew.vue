@@ -204,12 +204,14 @@ input[type="number"] {
 import { computed, reactive, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
-import { instanceSlug, databaseSlug } from "../utils";
+import { instanceSlug, databaseSlug, taskSlug } from "../utils";
 import {
+  Task,
   TaskId,
   Database,
   DataSourceNew,
@@ -218,6 +220,8 @@ import {
   InstanceId,
   PrincipalId,
 } from "../types";
+import { TaskField, templateForType } from "../plugins";
+import { isEqual } from "lodash";
 
 interface LocalState {
   databaseName?: string;
@@ -328,6 +332,71 @@ export default {
           createdDatabase
         )}`
       );
+
+      // If task id is provided, we will set the database and data source output field
+      // if it's not set before. This is based on the assumption that user creates
+      // the database/data source to fullfill that particular task (e.g. completing
+      // the request db workflow)
+      let linkedTask: Task | undefined = undefined;
+      if (state.taskId) {
+        const task = await store.dispatch("task/fetchTaskById", state.taskId);
+
+        const template = templateForType(task.type);
+        if (template) {
+          const databaseOutputField = template.fieldList.find(
+            (item: TaskField) =>
+              item.category == "OUTPUT" && item.type == "Database"
+          );
+
+          const dataSourceOutputField = template.fieldList.find(
+            (item: TaskField) =>
+              item.category == "OUTPUT" && item.type == "DataSource"
+          );
+
+          if (databaseOutputField || dataSourceOutputField) {
+            const payload = cloneDeep(task.payload);
+            // Only sets the value if it's empty to prevent accidentally overwriting
+            // the existing legit data (e.g. someone provides a wrong task id)
+            if (
+              databaseOutputField &&
+              isEmpty(payload[databaseOutputField.id])
+            ) {
+              payload[databaseOutputField.id] = createdDatabase.id;
+            }
+            if (
+              dataSourceOutputField &&
+              isEmpty(payload[dataSourceOutputField.id])
+            ) {
+              payload[dataSourceOutputField.id] = createdDataSource.id;
+            }
+
+            if (!isEqual(payload, task.payload)) {
+              await store.dispatch("task/patchTask", {
+                taskId: task.id,
+                taskPatch: {
+                  payload,
+                  updaterId: currentUser.value.id,
+                },
+              });
+              linkedTask = task;
+            }
+          }
+        }
+      }
+
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "SUCCESS",
+        title: `Succesfully created database '${createdDatabase.name}'.`,
+        description: linkedTask
+          ? `Task '${linkedTask.name}' is also linked with the created database and its data source.`
+          : "Also created a default Read & Write data source.",
+        link: linkedTask
+          ? `/task/${taskSlug(linkedTask.name, linkedTask.id)}`
+          : undefined,
+        linkTitle: linkedTask ? "View task" : undefined,
+        manualHide: linkedTask != undefined,
+      });
     };
 
     return {
