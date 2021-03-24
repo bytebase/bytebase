@@ -1,5 +1,4 @@
 <template>
-  <!-- This example requires Tailwind CSS v2.0+ -->
   <div
     class="fixed inset-0 flex px-4 py-6 pointer-events-none sm:p-6"
     :class="placementClass"

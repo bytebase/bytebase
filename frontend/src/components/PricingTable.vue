@@ -1,5 +1,4 @@
 <template>
-  <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="sm:flex sm:flex-col sm:align-center">
     <div
       class="relative self-center mt-6 bg-gray-100 rounded-lg p-0.5 flex sm:mt-8"
