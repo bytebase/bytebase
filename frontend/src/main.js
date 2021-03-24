@@ -39,6 +39,7 @@ import {
   urlfy,
   instanceSlug,
   databaseSlug,
+  dataSourceSlug,
 } from "./utils";
 
 if (isDevOrDemo()) {
@@ -58,6 +59,7 @@ app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;
+app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 
 app
   // Need to use a directive on the element.

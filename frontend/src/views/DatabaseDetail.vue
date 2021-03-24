@@ -94,6 +94,46 @@
           <div class="pt-6">
             <DataSourceTable :instance="instance" :database="database" />
           </div>
+
+          <template
+            v-for="(item, index) of [
+              { type: 'RW', list: readWriteDataSourceList },
+              { type: 'RO', list: readOnlyDataSourceList },
+            ]"
+            :key="index"
+          >
+            <div v-if="item.list.length" class="pt-6">
+              <div
+                v-data-source-type
+                class="text-lg leading-6 font-medium text-main mb-4"
+              >
+                {{ item.type }}
+              </div>
+              <div class="space-y-4">
+                <div v-for="(ds, index) of item.list" :key="index">
+                  <div class="relative mb-2">
+                    <div
+                      class="absolute inset-0 flex items-center"
+                      aria-hidden="true"
+                    >
+                      <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-start">
+                      <router-link
+                        :to="`/instance/${instanceSlug}/ds/${dataSourceSlug(
+                          ds
+                        )}`"
+                        class="pr-3 bg-white font-medium normal-link"
+                      >
+                        {{ ds.name }}
+                      </router-link>
+                    </div>
+                  </div>
+                  <DataSourceConnectionPanel :dataSource="ds" />
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </main>
@@ -105,6 +145,7 @@ import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
+import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import { idFromSlug } from "../utils";
 import { PrincipalId, DataSource } from "../types";
@@ -127,7 +168,7 @@ export default {
       type: String,
     },
   },
-  components: { DataSourceTable, PrincipalSelect },
+  components: { DataSourceConnectionPanel, DataSourceTable, PrincipalSelect },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
@@ -150,6 +191,26 @@ export default {
       return store.getters["instance/instanceById"](
         idFromSlug(props.instanceSlug)
       );
+    });
+
+    const dataSourceList = computed(() => {
+      return store.getters["dataSource/dataSourceListByInstanceId"](
+        instance.value.id
+      ).filter((dataSource: DataSource) => {
+        return dataSource.databaseId == database.value.id;
+      });
+    });
+
+    const readWriteDataSourceList = computed(() => {
+      return dataSourceList.value.filter((dataSource: DataSource) => {
+        return dataSource.type == "RW";
+      });
+    });
+
+    const readOnlyDataSourceList = computed(() => {
+      return dataSourceList.value.filter((dataSource: DataSource) => {
+        return dataSource.type == "RO";
+      });
     });
 
     const isOwner = computed(() => {
@@ -178,6 +239,8 @@ export default {
       database,
       instance,
       isOwner,
+      readWriteDataSourceList,
+      readOnlyDataSourceList,
       updateDatabaseOwner,
     };
   },
