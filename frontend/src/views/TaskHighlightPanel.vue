@@ -6,28 +6,17 @@
           <div>
             <TaskStatusIcon
               v-if="!$props.new"
-              class="mt-0.5"
               :taskStatus="task.status"
               :stageStatus="activeStage(task).status"
             />
           </div>
-          <input
-            required
-            autocomplete="off"
-            ref="nameTextField"
-            id="name"
-            name="name"
-            type="text"
-            placeholder="Task name"
-            class="ml-2 my-0.5 w-full text-main focus:ring-control sm:text-lg font-bold rounded-md"
-            :class="
-              state.editing
-                ? 'focus:border-control border-control-border'
-                : 'border-white'
-            "
-            v-model="state.name"
-            @click.prevent="state.editing = true"
-            @blur="trySaveName"
+          <BBTextField
+            class="ml-2 my-0.5 w-full text-lg font-bold"
+            :required="true"
+            :bordered="false"
+            :value="state.name"
+            :placeholder="'Task name'"
+            @end-editing="(text) => trySaveName(text)"
           />
         </div>
         <div v-if="!$props.new">
@@ -86,22 +75,15 @@ export default {
 
     watch(
       () => props.task,
-      (curTask, prevTask) => {
+      (curTask, _) => {
         state.name = curTask.name;
       }
     );
 
-    const trySaveName = () => {
-      if (isEmpty(state.name)) {
-        nextTick(() => {
-          nameTextField.value.focus();
-        });
-      } else if (state.name != props.task.name) {
-        emit("update-name", state.name, (updatedTask: Task) => {
-          state.editing = false;
-        });
-      } else {
-        state.editing = false;
+    const trySaveName = (text: string) => {
+      state.name = text;
+      if (text != props.task.name) {
+        emit("update-name", state.name);
       }
     };
 

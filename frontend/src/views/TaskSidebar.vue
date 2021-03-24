@@ -37,8 +37,7 @@
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
             <BBTextField
-              type="text"
-              class="w-full mt-4"
+              class="w-full mt-4 text-sm"
               :required="true"
               :value="fieldValue(field)"
               :placeholder="field.placeholder"
@@ -83,7 +82,7 @@
                 <BBTextField
                   v-if="fieldValue(field).isNew"
                   type="text"
-                  class="w-full"
+                  class="w-full text-sm"
                   :required="true"
                   :value="fieldValue(field).name"
                   :placeholder="field.placeholder"

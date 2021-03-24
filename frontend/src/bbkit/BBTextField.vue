@@ -3,8 +3,14 @@
     type="text"
     ref="inputField"
     autocomplete="off"
-    class="text-main sm:text-sm rounded-md focus:ring-control focus:border-control disabled:bg-gray-50"
-    :class="hasError ? 'border-error' : 'border-control-border'"
+    class="text-main rounded-md focus:ring-control focus:border-control disabled:bg-gray-50"
+    :class="
+      hasError
+        ? 'border-error'
+        : bordered
+        ? 'border-control-border'
+        : 'border-transparent'
+    "
     v-model="value"
     :disabled="disabled"
     :placeholder="placeholder"
@@ -14,7 +20,7 @@
 </template>
 
 <script lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 
 export default {
@@ -34,6 +40,10 @@ export default {
     },
     disabled: {
       default: false,
+      type: Boolean,
+    },
+    bordered: {
+      default: true,
       type: Boolean,
     },
   },
