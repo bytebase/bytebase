@@ -89,6 +89,13 @@ export default {
 
     const introList: IntroItem[] = reactive([
       {
+        name: "Bookmark a task",
+        link: "/task/hello-world-1",
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("bookmark.create");
+        }),
+      },
+      {
         name: "Add an environment",
         link: "/environment",
         done: computed(() => {

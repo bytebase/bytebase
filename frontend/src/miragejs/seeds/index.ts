@@ -71,7 +71,9 @@ const workspacesSeeder = (server: any) => {
 
   let task = server.create("task", {
     type: "bytebase.general",
-    name: "General Task",
+    name: "Hello, World!",
+    description:
+      "Welcome to Bytebase, this is the task interface where developers and DBAs collaborate on database management tasks such as: \n\n - Requesting new database\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this task by clicking the star icon on the top of this page.",
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
@@ -263,45 +265,6 @@ const workspacesSeeder = (server: any) => {
     containerId: task.id,
     creatorId: ws1Dev1.id,
     workspace: workspace2,
-  });
-
-  // Bookmarks
-  // Workspace 1
-  // Task 1
-  const task1 = server.schema.tasks.find(1);
-  server.create("bookmark", {
-    workspace: workspace1,
-    name: task1.name,
-    link: `/task/${taskSlug(task1.name, task1.id)}`,
-    creatorId: ws1Owner.id,
-  });
-
-  // Task 2
-  const task2 = server.schema.tasks.find(2);
-  server.create("bookmark", {
-    workspace: workspace1,
-    name: task2.name,
-    link: `/task/${taskSlug(task2.name, task2.id)}`,
-    creatorId: ws1Owner.id,
-  });
-
-  // Instance 1
-  const instance1 = server.schema.instances.find(1);
-  instance1.environment = environmentList1[0];
-  server.create("bookmark", {
-    workspace: workspace1,
-    name: instance1.name,
-    link: `/instance/${instanceSlug(instance1)}`,
-    creatorId: ws1Owner.id,
-  });
-
-  // Database 1
-  const db1 = server.schema.databases.find("2");
-  server.create("bookmark", {
-    workspace: workspace1,
-    name: db1.name,
-    link: `/instance/${instanceSlug(instance1)}/db/${databaseSlug(db1)}`,
-    creatorId: ws1Owner.id,
   });
 
   // Workspace 2

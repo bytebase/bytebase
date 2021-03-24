@@ -177,6 +177,12 @@ export default {
             link: currentRoute.value.path,
             creatorId: currentUser.value.id,
           })
+          .then(() => {
+            store.dispatch("uistate/saveIntroStateByKey", {
+              key: "bookmark.create",
+              newState: true,
+            });
+          })
           .catch((error) => {
             console.log(error);
           });
