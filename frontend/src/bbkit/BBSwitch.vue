@@ -2,8 +2,9 @@
   <div class="flex items-center">
     <button
       type="button"
-      class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent select-none"
+      class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
       :class="on ? 'bg-accent' : 'bg-gray-200'"
+      :disabled="disabled"
       aria-pressed="false"
       @click.prevent="
         () => {
@@ -20,7 +21,11 @@
         :class="on ? 'translate-x-5' : 'translate-x-0'"
       ></span>
     </button>
-    <span v-if="label" class="ml-2 text-sm font-medium text-main items-center">
+    <span
+      v-if="label"
+      class="ml-2 text-sm font-medium items-center"
+      :class="disabled ? 'text-gray-400' : 'text-main'"
+    >
       {{ label }}
     </span>
   </div>
@@ -39,6 +44,10 @@ export default {
     },
     value: {
       default: true,
+      type: Boolean,
+    },
+    disabled: {
+      default: false,
       type: Boolean,
     },
   },
