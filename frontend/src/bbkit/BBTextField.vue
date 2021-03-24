@@ -3,25 +3,32 @@
     type="text"
     ref="inputField"
     autocomplete="off"
-    class="text-main rounded-md focus:ring-control focus:border-control disabled:bg-gray-50"
+    class="text-main rounded-md disabled:bg-gray-50"
     :class="
-      hasError
-        ? 'border-error'
+      state.hasError
+        ? 'border-error focus:ring-error focus:border-error'
         : bordered
-        ? 'border-control-border'
-        : 'border-transparent'
+        ? 'border-control-border focus:ring-control focus:border-control'
+        : 'border-transparent focus:ring-control focus:border-control'
     "
-    v-model="value"
+    v-model="state.text"
     :disabled="disabled"
     :placeholder="placeholder"
+    @focus="onFocus"
     @blur="onBlur"
-    @input="hasError = false"
+    @input="onInput"
   />
 </template>
 
 <script lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
+
+interface LocalState {
+  text: string;
+  originalText: string;
+  hasError: boolean;
+}
 
 export default {
   name: "BBTextField",
@@ -49,20 +56,50 @@ export default {
   },
   setup(props, { emit }) {
     const inputField = ref<HTMLInputElement>();
-    let hasError = ref(false);
+
+    const state = reactive<LocalState>({
+      text: props.value,
+      originalText: "",
+      hasError: false,
+    });
+
+    watch(
+      () => props.value,
+      (cur, _) => {
+        state.text = cur;
+      }
+    );
+
+    const onFocus = () => {
+      state.originalText = state.text;
+    };
 
     const onBlur = () => {
-      if (props.required && isEmpty(props.value!.trim())) {
-        hasError.value = true;
+      if (props.required && isEmpty(state.text.trim())) {
+        state.hasError = true;
+        nextTick(() => {
+          state.text = state.originalText;
+          inputField.value!.focus();
+          nextTick(() => {
+            inputField.value!.select();
+          });
+        });
       } else {
-        emit("end-editing", props.value);
+        state.hasError = false;
+        emit("end-editing", state.text);
       }
     };
 
+    const onInput = () => {
+      state.hasError = false;
+    };
+
     return {
-      onBlur,
       inputField,
-      hasError,
+      state,
+      onFocus,
+      onBlur,
+      onInput,
     };
   },
 };
