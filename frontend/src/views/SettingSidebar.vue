@@ -118,7 +118,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 interface LocalState {
-  expandState: boolean;
+  collapseState: boolean;
 }
 
 export default {
@@ -130,15 +130,15 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      expandState: true,
+      collapseState: true,
     });
 
     const goBack = () => {
       router.push(store.getters["router/backPath"]());
     };
 
-    const toggleExpand = () => {
-      state.expandState = !state.expandState;
+    const toggleCollapse = () => {
+      state.collapseState = !state.collapseState;
     };
 
     const integrationList = [
@@ -152,7 +152,7 @@ export default {
       state,
       integrationList,
       goBack,
-      toggleExpand,
+      toggleCollapse,
     };
   },
 };

@@ -1,6 +1,6 @@
 <template>
   <div
-    @click.prevent="toggleExpand"
+    @click.prevent="toggleCollapse"
     class="outline-title flex py-1"
     :class="allowCollapse ? 'collapsible' : ''"
     @mouseenter="state.hoverTitle = true"
@@ -9,22 +9,22 @@
     <span :class="titleClass()">{{ title }}</span>
     <template v-if="allowCollapse && state.hoverTitle">
       <svg
-        v-if="expandState"
-        class="mr-2 h-4 w-4 transform rotate-90 group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
+        v-if="collapseState"
+        class="mr-2 h-4 w-4 transform group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
       </svg>
       <svg
         v-else
-        class="mr-2 h-4 w-4 transform group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
+        class="mr-2 h-4 w-4 transform rotate-90 group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
       </svg>
     </template>
   </div>
-  <div v-if="!allowCollapse || expandState">
+  <div v-if="!allowCollapse || !collapseState">
     <div
       role="group"
       v-for="(item, index) in itemList"
@@ -77,7 +77,7 @@
 interface LocalState {
   hoverIndex: number;
   hoverTitle: boolean;
-  expandState: boolean;
+  collapseState: boolean;
 }
 
 import { computed, reactive, PropType } from "vue";
@@ -88,8 +88,8 @@ export default {
   name: "BBOutline",
   emits: ["delete-index"],
   props: {
-    // Used for storing the expand state.
-    // Empty id means not to store expand state.
+    // Used for storing the collapse state.
+    // Empty id means not to store collapse state.
     id: {
       default: "",
       type: String,
@@ -121,30 +121,30 @@ export default {
     const state = reactive<LocalState>({
       hoverIndex: -1,
       hoverTitle: false,
-      expandState: true,
+      collapseState: true,
     });
 
-    const expandState = computed(() => {
+    const collapseState = computed(() => {
       if (props.id) {
-        return store.getters["uistate/expandStateByKey"](props.id);
+        return store.getters["uistate/collapseStateByKey"](props.id);
       }
-      return state.expandState;
+      return state.collapseState;
     });
 
-    const toggleExpand = () => {
+    const toggleCollapse = () => {
       if (props.allowCollapse) {
         if (props.id) {
-          const newState = !expandState.value;
+          const newState = !collapseState.value;
           store
-            .dispatch("uistate/saveExpandStateByKey", {
+            .dispatch("uistate/savecollapseStateByKey", {
               key: props.id,
-              expand: newState,
+              collapse: newState,
             })
             .catch((error) => {
               console.log(error);
             });
         } else {
-          state.expandState = !state.expandState;
+          state.collapseState = !state.collapseState;
         }
       }
     };
@@ -157,9 +157,9 @@ export default {
 
     return {
       state,
-      expandState,
+      collapseState,
       titleClass,
-      toggleExpand,
+      toggleCollapse,
     };
   },
 };

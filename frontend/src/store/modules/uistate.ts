@@ -1,15 +1,15 @@
 import isUndefined from "lodash-es/isUndefined";
 
-const EXPAND_MODULE = "ui.list.expand";
+const COLLAPSE_MODULE = "ui.list.collapse";
 const INTRO_MODULE = "ui.intro";
 
 export interface UIState {
-  expandStateByKey: Map<string, boolean>;
+  collapseStateByKey: Map<string, boolean>;
   introStateByKey: Map<string, boolean>;
 }
 
 const state: () => UIState = () => ({
-  expandStateByKey: new Map(),
+  collapseStateByKey: new Map(),
   introStateByKey: new Map(),
 });
 
@@ -42,8 +42,8 @@ const saveStateByKey = function (
 };
 
 const getters = {
-  expandStateByKey: (state: UIState) => (key: string) => {
-    return stateByKey(state.expandStateByKey, EXPAND_MODULE, key);
+  collapseStateByKey: (state: UIState) => (key: string) => {
+    return stateByKey(state.collapseStateByKey, COLLAPSE_MODULE, key);
   },
 
   introStateByKey: (state: UIState) => (key: string) => {
@@ -53,10 +53,12 @@ const getters = {
 
 const actions = {
   async restoreState({ commit }: any) {
-    const storedExpandState = localStorage.getItem(EXPAND_MODULE);
-    const expandState = storedExpandState ? JSON.parse(storedExpandState) : {};
-    if (expandState) {
-      commit("setExpandState", expandState);
+    const storedCollapseState = localStorage.getItem(COLLAPSE_MODULE);
+    const collapseState = storedCollapseState
+      ? JSON.parse(storedCollapseState)
+      : {};
+    if (collapseState) {
+      commit("setCollapseState", collapseState);
     }
 
     const storedIntroState = localStorage.getItem(INTRO_MODULE);
@@ -66,18 +68,18 @@ const actions = {
     }
   },
 
-  async saveExpandStateByKey(
+  async savecollapseStateByKey(
     { commit }: any,
     {
       key,
-      expand,
+      collapse,
     }: {
       key: string;
-      expand: boolean;
+      collapse: boolean;
     }
   ) {
-    const state = saveStateByKey(EXPAND_MODULE, key, expand);
-    commit("setExpandStateByKey", { key, expand: state });
+    const state = saveStateByKey(COLLAPSE_MODULE, key, collapse);
+    commit("setcollapseStateByKey", { key, collapse: state });
     return state;
   },
 
@@ -98,25 +100,25 @@ const actions = {
 };
 
 const mutations = {
-  setExpandState(state: UIState, fullState: any) {
+  setCollapseState(state: UIState, fullState: any) {
     const newMap = new Map();
     for (const key in fullState) {
       newMap.set(key, fullState[key]);
     }
-    state.expandStateByKey = newMap;
+    state.collapseStateByKey = newMap;
   },
 
-  setExpandStateByKey(
+  setcollapseStateByKey(
     state: UIState,
     {
       key,
-      expand,
+      collapse,
     }: {
       key: string;
-      expand: boolean;
+      collapse: boolean;
     }
   ) {
-    state.expandStateByKey.set(key, expand);
+    state.collapseStateByKey.set(key, collapse);
   },
 
   setIntroState(state: UIState, fullState: any) {
