@@ -112,10 +112,6 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const isAssignee = computed(() => {
-      return currentUser.value.id === props.task.assignee?.id;
-    });
-
     const allowEdit = computed(() => {
       return (
         currentUser.value.id === props.task.assignee?.id &&
