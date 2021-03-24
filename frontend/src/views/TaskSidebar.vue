@@ -68,7 +68,7 @@
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
             <div class="flex flex-col w-full">
-              <div class="flex flex-row space-x-4">
+              <div class="flex flex-row space-x-2">
                 <BBCheckbox
                   :label="'New'"
                   :value="fieldValue(field).isNew"
@@ -103,7 +103,7 @@
               <BBSwitch
                 v-if="!fieldValue(field).isNew"
                 class="mt-4 flex"
-                style="margin-left: 4.25rem"
+                style="margin-left: 3.75rem"
                 :label="'Read only'"
                 :value="fieldValue(field).readOnly"
                 @toggle="
