@@ -7,7 +7,9 @@ import {
   TaskPatch,
   TaskState,
   ResourceObject,
+  Principal,
 } from "../../types";
+import principal from "./principal";
 
 function convert(task: ResourceObject, rootGetters: any): Task {
   const creator = rootGetters["principal/principalById"](
@@ -19,12 +21,21 @@ function convert(task: ResourceObject, rootGetters: any): Task {
       task.attributes.assigneeId
     );
   }
+  const subscriberList = (task.attributes.subscriberIdList as Principal[]).map(
+    (principalId) => {
+      return rootGetters["principal/principalById"](principalId);
+    }
+  );
 
   return {
     id: task.id,
     creator,
     assignee,
-    ...(task.attributes as Omit<Task, "id" | "creator" | "assignee">),
+    subscriberList,
+    ...(task.attributes as Omit<
+      Task,
+      "id" | "creator" | "assignee" | "subscriberList"
+    >),
   };
 }
 

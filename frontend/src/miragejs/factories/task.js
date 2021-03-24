@@ -37,7 +37,7 @@ export default {
       return "200";
     },
     subscriberIdList() {
-      return new Array();
+      return [];
     },
     payload() {
       return {

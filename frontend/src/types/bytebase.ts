@@ -157,7 +157,7 @@ export type Task = {
   stageProgressList: StageProgress[];
   creator: Principal;
   assignee?: Principal;
-  subscriberIdList: Array<string>;
+  subscriberList: Principal[];
   payload: TaskPayload;
 };
 
@@ -168,6 +168,7 @@ export type TaskNew = {
   stageProgressList: StageProgress[];
   creatorId: PrincipalId;
   assigneeId?: PrincipalId;
+  subscriberIdList: PrincipalId[];
   payload: TaskPayload;
 };
 

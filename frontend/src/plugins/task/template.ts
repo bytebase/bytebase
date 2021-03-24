@@ -27,6 +27,7 @@ const DEFAULT_TEMPLATE = {
         },
       ],
       creatorId: ctx.currentUser.id,
+      subscriberIdList: [],
       payload: {},
     };
   },

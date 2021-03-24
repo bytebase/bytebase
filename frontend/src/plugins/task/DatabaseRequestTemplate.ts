@@ -40,6 +40,7 @@ const template: TaskTemplate = {
         },
       ],
       creatorId: ctx.currentUser.id,
+      subscriberIdList: [],
       payload,
     };
   },

@@ -90,7 +90,11 @@ export default {
                 state.createdList.push(task);
               } else if (task.assignee?.id === currentUser.value.id) {
                 state.assignedList.push(task);
-              } else if (task.subscriberIdList.includes(currentUser.value.id)) {
+              } else if (
+                task.subscriberList.find(
+                  (item) => item.id == currentUser.value.id
+                )
+              ) {
                 state.subscribeList.push(task);
               }
             }
