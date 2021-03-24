@@ -19,6 +19,7 @@
         </h2>
         <div class="w-full">
           <PrincipalSelect
+            :disabled="!allowEditAssignee"
             :selectedId="task.assignee?.id"
             :allowAllRoles="false"
             @select-principal-id="
@@ -230,8 +231,10 @@ export default {
     TaskStatusIcon,
   },
   setup(props, { emit }) {
+    const store = useStore();
     const state = reactive<LocalState>({});
 
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
     const fieldValue = (field: TaskField): string | DatabaseFieldPayload => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       return cloneDeep(props.task.payload[field.id]);
@@ -241,6 +244,18 @@ export default {
       return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
     };
 
+    const allowEditAssignee = computed(() => {
+      // We allow the current assignee or DBA/Owner to re-assign the task.
+      // Though only DBA/Owner can be assigned to the task, the current
+      // assignee might not have DBA/Owner role in case its role is revoked after
+      // being assigned to the task.
+      return (
+        props.new ||
+        currentUser.value.id == props.task.assignee?.id ||
+        currentUser.value.role == "DBA" ||
+        currentUser.value.role == "OWNER"
+      );
+    });
     const trySaveCustomField = (
       field: TaskField,
       value: string | EnvironmentId | DatabaseFieldPayload
@@ -285,6 +300,7 @@ export default {
     return {
       state,
       activeStageIsRunning,
+      allowEditAssignee,
       fieldValue,
       environmentId,
       trySaveCustomField,
