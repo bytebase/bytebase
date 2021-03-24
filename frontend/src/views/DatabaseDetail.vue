@@ -66,7 +66,7 @@
                 class="mt-1 w-64"
                 id="owner"
                 name="owner"
-                :disabled="!isOwner"
+                :disabled="!allowChangeOwner"
                 :selectedId="database.ownerId"
                 @select-principal-id="
                   (principalId) => {
@@ -91,7 +91,7 @@
             </div>
           </dl>
 
-          <div class="pt-6">
+          <div v-if="isDBAorAbove" class="pt-6">
             <DataSourceTable :instance="instance" :database="database" />
           </div>
 
@@ -119,7 +119,10 @@
                       <div class="w-full border-t border-gray-300"></div>
                     </div>
                     <div class="relative flex justify-start">
+                      <!-- Only displays the data source link for DBA and above. Since for now
+                           we don't need to expose the data source concept to the end user -->
                       <router-link
+                        v-if="isDBAorAbove"
                         :to="`/instance/${instanceSlug}/ds/${dataSourceSlug(
                           ds
                         )}`"
@@ -127,6 +130,9 @@
                       >
                         {{ ds.name }}
                       </router-link>
+                      <div v-else class="pr-3 bg-white font-medium text-main">
+                        {{ "Connection " + (index + 1) }}
+                      </div>
                     </div>
                   </div>
                   <DataSourceConnectionPanel :dataSource="ds" />
@@ -193,6 +199,18 @@ export default {
       );
     });
 
+    const isDBAorAbove = computed(() => {
+      return (
+        currentUser.value.role == "DBA" || currentUser.value.role == "OWNER"
+      );
+    });
+
+    const allowChangeOwner = computed(() => {
+      return (
+        currentUser.value.id == database.value.ownerId || isDBAorAbove.value
+      );
+    });
+
     const dataSourceList = computed(() => {
       return store.getters["dataSource/dataSourceListByInstanceId"](
         instance.value.id
@@ -213,14 +231,6 @@ export default {
       });
     });
 
-    const isOwner = computed(() => {
-      return (
-        currentUser.value.id == database.value.ownerId ||
-        currentUser.value.role == "DBA" ||
-        currentUser.value.role == "OWNER"
-      );
-    });
-
     const updateDatabaseOwner = (newOwnerId: PrincipalId) => {
       store
         .dispatch("database/updateOwner", {
@@ -238,7 +248,8 @@ export default {
       state,
       database,
       instance,
-      isOwner,
+      isDBAorAbove,
+      allowChangeOwner,
       readWriteDataSourceList,
       readOnlyDataSourceList,
       updateDatabaseOwner,
