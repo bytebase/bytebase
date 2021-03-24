@@ -446,6 +446,7 @@ export default {
     };
 
     const updateCustomField = (field: TaskField, value: any) => {
+      console.log("updateCustomField", field.name, value);
       if (state.task.payload[field.id] != value) {
         state.task.payload[field.id] = value;
         if (!state.new) {
