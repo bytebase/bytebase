@@ -97,7 +97,7 @@
           </div>
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
-            <TaskDescription
+            <TaskDescriptionPanel
               :task="state.task"
               :new="state.new"
               @update-description="updateDescription"
@@ -164,7 +164,7 @@ import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
-import TaskDescription from "../views/TaskDescription.vue";
+import TaskDescriptionPanel from "./TaskDescriptionPanel.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
 import TaskStatusTransitionForm from "../components/TaskStatusTransitionForm.vue";
@@ -237,7 +237,7 @@ export default {
     TaskHighlightPanel,
     TaskStageFlow,
     TaskOutputPanel,
-    TaskDescription,
+    TaskDescriptionPanel,
     TaskActivityPanel,
     TaskSidebar,
     TaskStatusTransitionForm,

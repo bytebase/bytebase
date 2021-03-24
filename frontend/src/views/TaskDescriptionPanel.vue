@@ -95,7 +95,7 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskDescription",
+  name: "TaskDescriptionPanel",
   emits: ["update-description"],
   props: {
     task: {
