@@ -553,15 +553,16 @@ export default {
     // - Anyone can comment
     // - Anyone can subscribe / unsubscribe
     const allowEditFields = computed(() => {
-      // For now, we allow creator and assignee to update the field any time.
-      // This may cause potential issue that the creator might change some of the
-      // fields after the assignee starts the work.
-      // In the future, we could provide options to enforce more strict rules
+      // For now, we allow creator and assignee to update the field any time
+      // when the task is OPEN. This may cause potential issue that the creator
+      // might change some of the fields after the assignee follows the previous info
+      // to deal the task. In the future, we could provide options to enforce more strict rules
       // e.g. disallow changing a particular field at a particular stage by a particular role.
       return (
         state.new ||
-        currentUser.value.id == (state.task as Task).assignee?.id ||
-        currentUser.value.id == (state.task as Task).creator.id
+        ((state.task as Task).status == "OPEN" &&
+          (currentUser.value.id == (state.task as Task).assignee?.id ||
+            currentUser.value.id == (state.task as Task).creator.id))
       );
     });
 
