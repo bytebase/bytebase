@@ -75,11 +75,9 @@ export default {
       });
 
       for (let i = 0; i < 3; i++) {
-        const dbName = "db" + faker.fake("{{lorem.word}}") + (i + 1);
         const database = server.create("database", {
           workspaceId: instance.workspaceId,
           instance,
-          name: dbName,
           ownerId: (i % 3).toString(),
         });
 
@@ -87,7 +85,7 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           database,
-          name: dbName + " rw ds3",
+          name: database.name + " rw ds3",
           type: "RW",
           username: "rootRW",
           password: "pwdRW",
@@ -97,7 +95,7 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           database,
-          name: dbName + " ro ds4",
+          name: database.name + " ro ds4",
           type: "RO",
           username: "rootRO",
           password: "pwdRO",
