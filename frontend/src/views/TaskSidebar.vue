@@ -62,6 +62,24 @@
               />
             </div>
           </template>
+          <template v-else-if="field.type == 'Database'">
+            <h2 class="flex items-center textlabel w-36">
+              {{ field.name }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </h2>
+            <div class="w-full">
+              <DatabaseSelect
+                :disabled="!environmentId()"
+                :selectedId="fieldValue(field)"
+                :environmentId="environmentId()"
+                @select-database-id="
+                  (databaseId) => {
+                    trySaveCustomField(field, databaseId);
+                  }
+                "
+              />
+            </div>
+          </template>
           <template v-else-if="field.type == 'NewDatabase'">
             <h2 class="flex textlabel mt-2 w-36">
               {{ field.name }}
@@ -90,7 +108,7 @@
                 />
                 <DatabaseSelect
                   v-else
-                  name="field.id"
+                  :disabled="!environmentId()"
                   :selectedId="fieldValue(field).id"
                   :environmentId="environmentId()"
                   @select-database-id="
