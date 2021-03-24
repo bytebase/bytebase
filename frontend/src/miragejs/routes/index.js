@@ -2,6 +2,7 @@
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
 import { Response } from "miragejs";
+import isEqual from "lodash-es/isEqual";
 import { TaskBuiltinFieldId } from "../../plugins";
 import { ALL_DATABASE_NAME } from "../../types";
 
@@ -282,7 +283,7 @@ export default function routes() {
       for (const fieldId in attrs.payload) {
         const oldValue = task.payload[fieldId];
         const newValue = attrs.payload[fieldId];
-        if (oldValue != newValue) {
+        if (!isEqual(oldValue, newValue)) {
           changeList.push({
             fieldId: fieldId,
             oldValue: task.payload[fieldId],
