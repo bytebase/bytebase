@@ -3,13 +3,13 @@
     type="text"
     ref="inputField"
     autocomplete="off"
-    class="text-main rounded-md disabled:bg-gray-50 disabled:cursor-not-allowed"
+    class="text-main rounded-md disabled:cursor-not-allowed"
     :class="
       state.hasError
         ? 'border-error focus:ring-error focus:border-error'
         : bordered
-        ? 'border-control-border focus:ring-control focus:border-control'
-        : 'border-transparent focus:ring-control focus:border-control'
+        ? 'border-control-border focus:ring-control focus:border-control disabled:bg-gray-50'
+        : 'border-transparent focus:ring-control focus:border-control disabled:text-control'
     "
     v-model="state.text"
     :disabled="disabled"
