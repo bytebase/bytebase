@@ -31,12 +31,22 @@
               <dl
                 class="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:flex-wrap"
               >
-                <dt class="sr-only">RoleType</dt>
-                <dd
-                  v-data-source-type
-                  class="flex items-center text-sm text-control font-medium sm:mr-4"
-                >
-                  {{ dataSource.type }}
+                <dt class="sr-only">Environment</dt>
+                <dd class="flex items-center text-sm sm:mr-4">
+                  <span class="textlabel">Environment&nbsp;-&nbsp;</span>
+                  <router-link to="/environment" class="normal-link">
+                    {{ instance.environment.name }}
+                  </router-link>
+                </dd>
+                <dt class="sr-only">Instance</dt>
+                <dd class="flex items-center text-sm sm:mr-4">
+                  <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+                  <router-link
+                    :to="`/instance/${instanceSlug}`"
+                    class="normal-link"
+                  >
+                    {{ instance.name }}
+                  </router-link>
                 </dd>
                 <dt class="sr-only">Database</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
@@ -50,22 +60,12 @@
                     {{ database.name }}
                   </router-link>
                 </dd>
-                <dt class="sr-only">Instance</dt>
-                <dd class="flex items-center text-sm sm:mr-4">
-                  <span class="textlabel">Instance&nbsp;-&nbsp;</span>
-                  <router-link
-                    :to="`/instance/${instanceSlug}`"
-                    class="normal-link"
-                  >
-                    {{ instance.name }}
-                  </router-link>
-                </dd>
-                <dt class="sr-only">Environment</dt>
-                <dd class="flex items-center text-sm">
-                  <span class="textlabel">Environment&nbsp;-&nbsp;</span>
-                  <router-link to="/environment" class="normal-link">
-                    {{ instance.environment.name }}
-                  </router-link>
+                <dt class="sr-only">RoleType</dt>
+                <dd
+                  v-data-source-type
+                  class="flex items-center text-sm text-control font-medium sm:mr-4"
+                >
+                  {{ dataSource.type }}
                 </dd>
               </dl>
             </div>

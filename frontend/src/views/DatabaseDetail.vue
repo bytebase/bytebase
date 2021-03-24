@@ -21,6 +21,13 @@
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
+            <dt class="sr-only">Environment</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">Environment&nbsp;-&nbsp;</span>
+              <router-link to="/environment" class="normal-link">
+                {{ database.instance.environment.name }}
+              </router-link>
+            </dd>
             <dt class="sr-only">Instance</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Instance&nbsp;-&nbsp;</span>
@@ -29,13 +36,6 @@
                 class="normal-link"
               >
                 {{ database.instance.name }}
-              </router-link>
-            </dd>
-            <dt class="sr-only">Environment</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Environment&nbsp;-&nbsp;</span>
-              <router-link to="/environment" class="normal-link">
-                {{ database.instance.environment.name }}
               </router-link>
             </dd>
             <dt class="sr-only">Sync Status</dt>
