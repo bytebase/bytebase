@@ -1,6 +1,7 @@
 <template>
   <select
-    class="btn-select w-full"
+    class="btn-select w-full disabled:cursor-not-allowed"
+    :disabled="disabled"
     @change="
       (e) => {
         $emit('select-data-source-id', e.target.value);
@@ -46,6 +47,10 @@ export default {
       required: true,
       type: String,
     },
+    disabled: {
+      default: false,
+      type: Boolean,
+    },
   },
   setup(props, { emit }) {
     const store = useStore();
@@ -58,8 +63,6 @@ export default {
         props.instanceId
       );
     });
-
-    console.log(dataSourceList.value);
 
     return {
       state,

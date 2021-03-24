@@ -1,6 +1,7 @@
 <template>
   <select
-    class="btn-select w-full"
+    class="btn-select w-full disabled:cursor-not-allowed"
+    :disabled="disabled"
     @change="
       (e) => {
         $emit('select-instance-id', e.target.value);
@@ -40,6 +41,10 @@ export default {
     },
     environmentId: {
       type: String,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {

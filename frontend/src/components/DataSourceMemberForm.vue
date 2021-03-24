@@ -25,7 +25,7 @@ input[type="number"] {
             class="mt-1"
             id="environment"
             name="environment"
-            disabled="true"
+            :disabled="true"
             :selectedId="state.environmentId"
           />
         </div>
@@ -38,7 +38,7 @@ input[type="number"] {
             class="mt-1"
             id="instance"
             name="instance"
-            disabled="true"
+            :disabled="true"
             :selectedId="dataSource.instanceId"
           />
         </div>
@@ -51,7 +51,7 @@ input[type="number"] {
             class="mt-1"
             id="database"
             name="database"
-            disabled="true"
+            :disabled="true"
             :instanceId="dataSource.instanceId"
             :selectedId="dataSource.databaseId"
           />
@@ -65,7 +65,7 @@ input[type="number"] {
             class="mt-1"
             id="datasource"
             name="datasource"
-            disabled="true"
+            :disabled="true"
             :instanceId="dataSource.instanceId"
             :selectedId="dataSource.id"
           />
