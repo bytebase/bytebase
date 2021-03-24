@@ -215,7 +215,14 @@ export default {
       return store.getters["dataSource/dataSourceListByInstanceId"](
         instance.value.id
       ).filter((dataSource: DataSource) => {
-        return dataSource.databaseId == database.value.id;
+        return (
+          dataSource.databaseId == database.value.id &&
+          (isDBAorAbove.value ||
+            // If the current user is not DBAorAbove, we will only show the granted data source.
+            dataSource.memberList.find((item) => {
+              return item.principal.id == currentUser.value.id;
+            }))
+        );
       });
     });
 
