@@ -3,7 +3,7 @@
     type="text"
     ref="inputField"
     autocomplete="off"
-    class="text-main rounded-md disabled:bg-gray-50"
+    class="text-main rounded-md disabled:bg-gray-50 disabled:cursor-not-allowed"
     :class="
       state.hasError
         ? 'border-error focus:ring-error focus:border-error'
