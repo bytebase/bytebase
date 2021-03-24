@@ -1,6 +1,7 @@
 <template>
   <select
-    class="btn-select w-full"
+    class="btn-select w-full disabled:cursor-not-allowed"
+    :disabled="disabled"
     @change="
       (e) => {
         state.selectedId = e.target.value;
@@ -44,6 +45,10 @@ export default {
     },
     instanceId: {
       type: String,
+    },
+    disabled: {
+      default: false,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {
