@@ -163,6 +163,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
+import isEqual from "lodash-es/isEqual";
 import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
@@ -419,7 +420,7 @@ export default {
       let payloadChanged = false;
       for (let i = 0; i < outputValueList.length; i++) {
         const field = outputFieldList.value[i];
-        if (state.task.payload[field.id] != outputValueList[i]) {
+        if (!isEqual(state.task.payload[field.id], outputValueList[i])) {
           state.task.payload[field.id] = outputValueList[i];
           payloadChanged = true;
         }
@@ -450,7 +451,7 @@ export default {
 
     const updateCustomField = (field: TaskField, value: any) => {
       console.log("updateCustomField", field.name, value);
-      if (state.task.payload[field.id] != value) {
+      if (!isEqual(state.task.payload[field.id], value)) {
         state.task.payload[field.id] = value;
         if (!state.new) {
           patchTask({
