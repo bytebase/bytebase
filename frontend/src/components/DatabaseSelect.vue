@@ -4,7 +4,6 @@
     @change="
       (e) => {
         state.selectedId = e.target.value;
-        console.log('active select', state.selectedId);
         $emit('select-database-id', e.target.value);
       }
     "
@@ -53,20 +52,9 @@ export default {
       selectedId: props.selectedId,
     });
 
-    const selectDefaultIfNeeded = () => {
-      if (
-        !state.selectedId &&
-        databaseList.value &&
-        databaseList.value.length > 0
-      ) {
-        state.selectedId = databaseList.value[0].id;
-        emit("select-database-id", state.selectedId);
-      }
-    };
-
     const prepareDatabaseListByEnvironment = () => {
       if (props.environmentId) {
-        // TODO: need to revisit this, instead of fetching each time
+        // TODO: need to revisit this, instead of fetching each time,
         // we maybe able to let the outside context to provide the database list
         // and we just do a get here.
         store
@@ -94,23 +82,27 @@ export default {
       }
     });
 
+    const invalidateSelectionIfNeeded = () => {
+      if (
+        state.selectedId &&
+        !databaseList.value.find(
+          (database: Database) => database.id == state.selectedId
+        )
+      ) {
+        state.selectedId = undefined;
+        emit("select-database-id", state.selectedId);
+      }
+    };
+
     // The database list might change if environmentId changes, and the previous selected id
     // might not exist in the new list. In such case, we need to invalidate the selection
     // and emit the event.
     watch(
       () => databaseList.value,
-      (curList, _) => {
-        if (
-          state.selectedId &&
-          !curList.find((database: Database) => database.id == state.selectedId)
-        ) {
-          state.selectedId = undefined;
-          selectDefaultIfNeeded();
-        }
+      () => {
+        invalidateSelectionIfNeeded();
       }
     );
-
-    selectDefaultIfNeeded();
 
     return {
       state,
