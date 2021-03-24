@@ -12,6 +12,7 @@
           </div>
           <BBTextField
             class="ml-2 my-0.5 w-full text-lg font-bold"
+            :disabled="!allowEdit"
             :required="true"
             :bordered="false"
             :value="state.name"
@@ -60,6 +61,10 @@ export default {
       type: Object as PropType<Task>,
     },
     new: {
+      required: true,
+      type: Boolean,
+    },
+    allowEdit: {
       required: true,
       type: Boolean,
     },

@@ -9,6 +9,7 @@
       <TaskHighlightPanel
         :task="state.task"
         :new="state.new"
+        :allowEdit="allowEditFields"
         @update-name="updateName"
       >
         <template v-if="state.new">
@@ -90,6 +91,7 @@
               :task="state.task"
               :new="state.new"
               :fieldList="inputFieldList"
+              :allowEdit="allowEditFields"
               @start-status-transition="tryStartTaskStatusTransition"
               @update-assignee-id="updateAssigneeId"
               @update-custom-field="updateCustomField"
@@ -100,6 +102,7 @@
             <TaskDescriptionPanel
               :task="state.task"
               :new="state.new"
+              :allowEdit="allowEditFields"
               @update-description="updateDescription"
             />
             <section
@@ -540,6 +543,28 @@ export default {
       return true;
     });
 
+    // We may consider consolidating all the editing logic in one place. But for now
+    // this controls editing "name, description and all custom fields".
+    // On the other hand:
+    // - Who can change task status is defined in a separate logic in this component
+    // - Who can change stage status is defined in TaskStageFlow
+    // - Who can reassign task is defined in TaskSidebar
+    // - Who can change output field value is defined in TaskSidebar
+    // - Anyone can comment
+    // - Anyone can subscribe / unsubscribe
+    const allowEditFields = computed(() => {
+      // For now, we allow creator and assignee to update the field any time.
+      // This may cause potential issue that the creator might change some of the
+      // fields after the assignee starts the work.
+      // In the future, we could provide options to enforce more strict rules
+      // e.g. disallow changing a particular field at a particular stage by a particular role.
+      return (
+        state.new ||
+        currentUser.value.id == (state.task as Task).assignee?.id ||
+        currentUser.value.id == (state.task as Task).creator.id
+      );
+    });
+
     const showTaskStageFlowBar = computed(() => {
       return !state.new && state.task.stageProgressList.length > 1;
     });
@@ -585,6 +610,7 @@ export default {
       taskTemplate,
       outputFieldList,
       inputFieldList,
+      allowEditFields,
       showTaskStageFlowBar,
       showTaskOutputPanel,
       applicableStatusTransitionList,

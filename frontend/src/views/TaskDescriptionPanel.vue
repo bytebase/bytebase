@@ -2,7 +2,7 @@
   <!-- Description Bar -->
   <div v-if="!$props.new" class="flex justify-end space-x-2">
     <button
-      v-if="!state.edit"
+      v-if="allowEdit && !state.edit"
       type="button"
       class="btn-icon"
       @click.prevent="beginEdit"
@@ -103,6 +103,10 @@ export default {
       type: Object as PropType<Task>,
     },
     new: {
+      required: true,
+      type: Boolean,
+    },
+    allowEdit: {
       required: true,
       type: Boolean,
     },

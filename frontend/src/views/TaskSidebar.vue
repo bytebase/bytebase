@@ -39,7 +39,7 @@
             </h2>
             <BBTextField
               class="w-full mt-4 text-sm"
-              :disabled="!allowEditCustomFields"
+              :disabled="!allowEdit"
               :required="true"
               :value="fieldValue(field)"
               :placeholder="field.placeholder"
@@ -53,7 +53,7 @@
             </h2>
             <div class="w-full">
               <EnvironmentSelect
-                :disabled="!allowEditCustomFields"
+                :disabled="!allowEdit"
                 :name="field.id"
                 :selectedId="fieldValue(field)"
                 :selectDefault="false"
@@ -72,7 +72,7 @@
             </h2>
             <div class="w-full">
               <DatabaseSelect
-                :disabled="!environmentId() || !allowEditCustomFields"
+                :disabled="!environmentId() || !allowEdit"
                 :selectedId="fieldValue(field)"
                 :environmentId="environmentId()"
                 @select-database-id="
@@ -91,7 +91,7 @@
             <div class="flex flex-col w-full">
               <div class="flex flex-row space-x-2">
                 <BBCheckbox
-                  :disabled="!allowEditCustomFields"
+                  :disabled="!allowEdit"
                   :label="'New'"
                   :value="fieldValue(field).isNew"
                   class="items-center"
@@ -105,7 +105,7 @@
                   v-if="fieldValue(field).isNew"
                   type="text"
                   class="w-full text-sm"
-                  :disabled="!allowEditCustomFields"
+                  :disabled="!allowEdit"
                   :required="true"
                   :value="fieldValue(field).name"
                   :placeholder="field.placeholder"
@@ -113,7 +113,7 @@
                 />
                 <DatabaseSelect
                   v-else
-                  :disabled="!environmentId() || !allowEditCustomFields"
+                  :disabled="!environmentId() || !allowEdit"
                   :selectedId="fieldValue(field).id"
                   :environmentId="environmentId()"
                   @select-database-id="
@@ -127,7 +127,7 @@
                 v-if="!fieldValue(field).isNew"
                 class="mt-4 flex"
                 style="margin-left: 3.75rem"
-                :disabled="!allowEditCustomFields"
+                :disabled="!allowEdit"
                 :label="'Read only'"
                 :value="fieldValue(field).readOnly"
                 @toggle="
@@ -145,7 +145,7 @@
             </h2>
             <div class="flex justify-start">
               <BBSwitch
-                :disabled="!allowEditCustomFields"
+                :disabled="!allowEdit"
                 :value="fieldValue(field)"
                 @toggle="
                   (on) => {
@@ -229,6 +229,10 @@ export default {
       required: true,
       type: Object as PropType<TaskField[]>,
     },
+    allowEdit: {
+      required: true,
+      type: Boolean,
+    },
   },
   components: {
     DatabaseSelect,
@@ -261,19 +265,6 @@ export default {
         currentUser.value.id == props.task.assignee?.id ||
         currentUser.value.role == "DBA" ||
         currentUser.value.role == "OWNER"
-      );
-    });
-
-    const allowEditCustomFields = computed(() => {
-      // For now, we allow creator and assignee to update the field any time.
-      // This may cause potential issue that the creator might change some of the
-      // fields after the assignee starts the work.
-      // In the future, we could provide options to enforce more strict rules
-      // e.g. disallow changing a particular field at a particular stage by a particular role.
-      return (
-        props.new ||
-        currentUser.value.id == props.task.assignee?.id ||
-        currentUser.value.id == props.task.creator.id
       );
     });
 
@@ -321,7 +312,6 @@ export default {
     return {
       state,
       allowEditAssignee,
-      allowEditCustomFields,
       fieldValue,
       environmentId,
       trySaveCustomField,
