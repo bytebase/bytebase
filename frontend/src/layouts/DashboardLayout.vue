@@ -15,6 +15,8 @@
     :title="state.notification?.title || ''"
     :description="state.notification?.description || ''"
     :payload="state.notification?.id"
+    :link="state.notification?.link"
+    :linkTitle="state.notification?.linkTitle"
     @close="removeNotification"
   />
 </template>

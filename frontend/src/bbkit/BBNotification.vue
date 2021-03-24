@@ -28,81 +28,97 @@
       >
         <div class="p-4">
           <div class="flex items-start">
-            <div v-if="style == 'SUCCESS'" class="flex-shrink-0">
-              <svg
-                class="h-6 w-6 text-success"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div v-else-if="style == 'WARN'" class="flex-shrink-0">
-              <svg
-                class="w-6 h-6 text-yellow-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                ></path>
-              </svg>
-            </div>
-            <div v-else-if="style == 'CRITICAL'" class="flex-shrink-0">
-              <svg
-                class="w-6 h-6 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-            </div>
-            <div v-else class="flex-shrink-0">
-              <svg
-                class="w-6 h-6 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
+            <div class="flex-shrink-0">
+              <template v-if="style == 'SUCCESS'">
+                <svg
+                  class="h-6 w-6 text-success"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </template>
+              <template v-else-if="style == 'WARN'">
+                <svg
+                  class="w-6 h-6 text-yellow-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  ></path>
+                </svg>
+              </template>
+              <template v-else-if="style == 'CRITICAL'">
+                <svg
+                  class="w-6 h-6 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </template>
+              <template v-else>
+                <svg
+                  class="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </template>
             </div>
             <div class="ml-3 w-0 flex-1 pt-0.5">
               <p class="text-sm font-medium text-gray-900">{{ title }}</p>
               <p class="mt-1 text-sm text-gray-500 whitespace-pre-wrap">
                 {{ description }}
               </p>
+              <div v-if="link" class="mt-2">
+                <button
+                  class="bg-white rounded-md text-sm font-medium text-accent hover:text-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                  @click.prevent="viewLink"
+                >
+                  {{ linkTitle }}
+                </button>
+                <button
+                  class="ml-6 bg-white rounded-md text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                  @click.prevent="$emit('close')"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
             <div class="ml-4 flex-shrink-0 flex">
               <button
                 class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
-                @click.prevent="$emit('close', payload)"
+                @click.prevent="$emit('close')"
               >
                 <span class="sr-only">Close</span>
                 <!-- Heroicon name: solid/x -->
@@ -130,6 +146,7 @@
 
 <script lang="ts">
 import { PropType } from "vue";
+import { useRouter } from "vue-router";
 import { BBNotificationStyle, BBNotificationPlacement } from "./types";
 
 // For <sm breakpoint, we always position it at the center.
@@ -164,12 +181,28 @@ export default {
       type: String,
       default: "",
     },
+    link: {
+      type: String,
+      default: "",
+    },
+    linkTitle: {
+      type: String,
+      default: "View",
+    },
     // Any payload pass through to "close" events
     payload: {},
   },
   setup(props, { emit }) {
+    const router = useRouter();
+
+    const viewLink = () => {
+      router.push(props.link);
+      emit("close");
+    };
+
     return {
       placementClass: placementClassMap.get(props.placement),
+      viewLink,
     };
   },
 };

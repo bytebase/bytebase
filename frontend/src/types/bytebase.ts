@@ -440,6 +440,8 @@ export type Notification = {
   style: BBNotificationStyle;
   title: string;
   description?: string;
+  link?: string;
+  linkTitle?: string;
   manualHide?: boolean;
 };
 
