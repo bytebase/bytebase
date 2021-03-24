@@ -80,9 +80,7 @@ export default {
       }
     };
 
-    if (props.environmentId) {
-      watchEffect(prepareDatabaseListByEnvironment);
-    }
+    watchEffect(prepareDatabaseListByEnvironment);
 
     const databaseList = computed(() => {
       if (props.environmentId) {
