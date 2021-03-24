@@ -103,11 +103,9 @@
             :key="index"
           >
             <div v-if="item.list.length" class="pt-6">
-              <div
-                v-data-source-type
-                class="text-lg leading-6 font-medium text-main mb-4"
-              >
-                {{ item.type }}
+              <div class="text-lg leading-6 font-medium text-main mb-4">
+                <span v-data-source-type>{{ item.type }}</span>
+                {{ isDBAorAbove ? "data source" : "connection" }}
               </div>
               <div class="space-y-4">
                 <div v-for="(ds, index) of item.list" :key="index">
