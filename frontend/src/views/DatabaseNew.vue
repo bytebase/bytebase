@@ -227,7 +227,7 @@ interface LocalState {
   databaseName?: string;
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
-  ownerId?: PrincipalId;
+  ownerId: PrincipalId;
   taskId?: TaskId;
   username: string;
   passsword: string;
@@ -271,7 +271,9 @@ export default {
             router.currentRoute.value.query.instance
           )?.id
         : undefined,
-      ownerId: router.currentRoute.value.query.owner as PrincipalId,
+      ownerId:
+        (router.currentRoute.value.query.owner as PrincipalId) ||
+        currentUser.value.id,
       taskId: router.currentRoute.value.query.task as TaskId,
       username: "",
       passsword: "",
