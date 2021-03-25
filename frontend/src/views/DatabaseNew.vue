@@ -374,10 +374,9 @@ export default {
         )}`
       );
 
-      // If a valid task id is provided, we will set the database and data source output field
+      // If a valid task id is provided, we will set the database output field
       // if it's not set before. This is based on the assumption that user creates
-      // the database/data source to fullfill that particular task (e.g. completing
-      // the request db workflow)
+      // the database to fullfill that particular task (e.g. completing the request db workflow)
       if (linkedTask) {
         const template = templateForType(linkedTask.type);
         if (template) {
@@ -386,12 +385,7 @@ export default {
               item.category == "OUTPUT" && item.type == "Database"
           );
 
-          const dataSourceOutputField = template.fieldList.find(
-            (item: TaskField) =>
-              item.category == "OUTPUT" && item.type == "DataSource"
-          );
-
-          if (databaseOutputField || dataSourceOutputField) {
+          if (databaseOutputField) {
             const payload = cloneDeep(linkedTask.payload);
             // Only sets the value if it's empty to prevent accidentally overwriting
             // the existing legit data (e.g. someone provides a wrong task id)
@@ -400,12 +394,6 @@ export default {
               isEmpty(payload[databaseOutputField.id])
             ) {
               payload[databaseOutputField.id] = createdDatabase.id;
-            }
-            if (
-              dataSourceOutputField &&
-              isEmpty(payload[dataSourceOutputField.id])
-            ) {
-              payload[dataSourceOutputField.id] = createdDataSource.id;
             }
 
             if (!isEqual(payload, linkedTask.payload)) {
@@ -424,10 +412,10 @@ export default {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "SUCCESS",
-        title: `Succesfully created database '${createdDatabase.name}'.`,
+        title: `Succesfully created database '${createdDatabase.name}' and its default Read & Write data source.`,
         description: linkedTask
-          ? `Task '${linkedTask.name}' is also linked with the created database and its data source.`
-          : "Also created a default Read & Write data source.",
+          ? `We also linked the created database to the requested task '${linkedTask.name}'.`
+          : "",
         link: linkedTask
           ? `/task/${taskSlug(linkedTask.name, linkedTask.id)}`
           : undefined,
