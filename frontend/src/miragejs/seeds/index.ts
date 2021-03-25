@@ -34,26 +34,19 @@ const workspacesSeeder = (server: any) => {
   workspace2.update({ environment: environmentList2 });
 
   // Instance
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     server.create("instance", {
       workspace: workspace1,
-      name: "instance " + i + " " + faker.fake("{{lorem.word}}"),
-      environmentId: environmentList1[i].id,
-    });
-    if (i == 3) {
+      name: "instance " + (i + 1) + " " + faker.fake("{{lorem.word}}"),
       // Create an extra instance for prod.
-      server.create("instance", {
-        workspace: workspace1,
-        name: "instance " + (i + 1) + " " + faker.fake("{{lorem.word}}"),
-        environmentId: environmentList1[i].id,
-      });
-    }
+      environmentId: i == 4 ? environmentList1[3].id : environmentList1[i].id,
+    });
   }
 
   for (let i = 0; i < 4; i++) {
     server.create("instance", {
       workspace: workspace2,
-      name: "ws2 instance " + i + " " + faker.fake("{{lorem.word}}"),
+      name: "ws2 instance " + (i + 1) + " " + faker.fake("{{lorem.word}}"),
       environmentId: environmentList2[i].id,
     });
   }
