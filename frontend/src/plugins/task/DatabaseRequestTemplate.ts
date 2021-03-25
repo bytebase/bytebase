@@ -80,53 +80,6 @@ const template: TaskTemplate = {
       isEmpty: (value: string): boolean => {
         return isEmpty(value?.trim());
       },
-      provider: ({ task, field }: { task: Task; field: TaskField }) => {
-        const currentValue = task.payload[field.id];
-        console.log(currentValue);
-        if (!isEmpty(currentValue)) {
-          return {
-            title: "view database",
-            link: linkfy("DATABASE", currentValue),
-          };
-        }
-
-        let title = "create database";
-        let link = "/db/new";
-        const databasePayload: DatabaseFieldPayload =
-          task.payload[TaskBuiltinFieldId.DATABASE];
-        if (!databasePayload.isNew) {
-          title = "assign database";
-        }
-
-        const queryParamList: string[] = [];
-
-        const environmentId = task.payload[TaskBuiltinFieldId.ENVIRONMENT];
-        if (environmentId) {
-          queryParamList.push(`environment=${environmentId}`);
-        }
-
-        if (databasePayload.name) {
-          queryParamList.push(`name=${databasePayload.name}`);
-        }
-
-        // If we are creating a new database, we always assign RW to the owner.
-        if (!databasePayload.isNew && databasePayload.readOnly) {
-          queryParamList.push(`readonly=true`);
-        }
-
-        queryParamList.push(`owner=${task.creator.id}`);
-
-        queryParamList.push(`task=${task.id}`);
-
-        queryParamList.push(`from=${task.type}`);
-
-        link += "?" + queryParamList.join("&");
-
-        return {
-          title,
-          link,
-        };
-      },
     },
   ],
 };

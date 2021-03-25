@@ -64,13 +64,6 @@ export type TaskField = {
   isEmpty: (value: any) => boolean;
   // Placeholder displayed on UI.
   placeholder?: string;
-  // Provides the reference to the place where the field originates. e.g. the request database
-  // task requires to fill the data source field when resolving the task, while the data source value
-  // can be found in the data source / database page. This provider can return the relevant link to
-  // be displayed on the UI, which helps user navigate to the place to acquire the required info.
-  provider?: (
-    ctx: TaskFieldReferenceProviderContext
-  ) => TaskFieldReferenceProvider;
 };
 
 export const UNKNOWN_FIELD: TaskField = {

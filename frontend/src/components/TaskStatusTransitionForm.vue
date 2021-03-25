@@ -10,26 +10,33 @@
                 }}<span v-if="field.required" class="text-red-600">*</span>
               </label>
             </div>
-            <template v-if="fieldProvider(field)">
-              <router-link
-                :to="fieldProvider(field).link"
-                class="ml-2 normal-link"
-              >
-                {{ fieldProvider(field).title }}
-              </router-link>
-            </template>
           </div>
           <div class="sm:col-span-4 sm:col-start-1">
-            <div class="mt-1 flex rounded-md shadow-sm">
-              <input
-                type="text"
-                :name="field.id"
-                :id="field.id"
-                v-model="state.outputValueList[index]"
-                autocomplete="off"
-                class="w-full textfield"
+            <template v-if="field.type == 'String'">
+              <div class="mt-1 flex rounded-md shadow-sm">
+                <input
+                  type="text"
+                  :name="field.id"
+                  :id="field.id"
+                  v-model="state.outputValueList[index]"
+                  autocomplete="off"
+                  class="w-full textfield"
+                />
+              </div>
+            </template>
+            <template v-if="field.type == 'Database'">
+              <DatabaseSelect
+                class="mt-1 w-64"
+                :mode="'ENVIRONMENT'"
+                :environmentId="environmentId"
+                :selectedId="state.outputValueList[index]"
+                @select-database-id="
+                  (databaseId) => {
+                    state.outputValueList[index] = databaseId;
+                  }
+                "
               />
-            </div>
+            </template>
           </div>
           <div v-if="index == outputFieldList.length - 1" class="mt-4" />
         </template>
@@ -82,13 +89,16 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, ref, PropType } from "vue";
+import { computed, onMounted, reactive, ref, watch, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
-import { Task, TaskStatusTransition } from "../types";
+import isEqual from "lodash-es/isEqual";
+import DatabaseSelect from "../components/DatabaseSelect.vue";
+import { DatabaseId, Task, TaskStatusTransition } from "../types";
 import {
   TaskField,
   TaskFieldReferenceProvider,
   TaskFieldReferenceProviderContext,
+  TaskBuiltinFieldId,
 } from "../plugins";
 
 interface LocalState {
@@ -117,18 +127,19 @@ export default {
       type: Object as PropType<TaskField[]>,
     },
   },
-  setup(props, ctx) {
+  components: { DatabaseSelect },
+  setup(props, { emit }) {
     const commentTextArea = ref("");
 
     const state = reactive<LocalState>({
       comment: "",
-      outputValueList: [],
+      outputValueList: props.outputFieldList.map((field) =>
+        cloneDeep(props.task.payload[field.id])
+      ),
     });
 
-    onMounted(() => {
-      for (const field of props.outputFieldList) {
-        state.outputValueList.push(cloneDeep(props.task.payload[field.id]));
-      }
+    const environmentId = computed(() => {
+      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
     });
 
     const submitButtonStyle = computed(() => {
@@ -155,24 +166,12 @@ export default {
       return true;
     });
 
-    const fieldProvider = (
-      field: TaskField
-    ): TaskFieldReferenceProvider | undefined => {
-      if (field.provider) {
-        return field.provider({
-          task: props.task,
-          field,
-        });
-      }
-      return undefined;
-    };
-
     return {
       state,
+      environmentId,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,
-      fieldProvider,
     };
   },
 };

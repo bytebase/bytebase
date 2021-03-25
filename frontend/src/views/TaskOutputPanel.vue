@@ -12,13 +12,15 @@
         <div class="textlabel">
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
-          <template v-if="fieldProvider(field)">
-            <router-link
-              :to="fieldProvider(field).link"
-              class="ml-2 normal-link"
-            >
-              {{ fieldProvider(field).title }}
-            </router-link>
+          <template v-if="allowEdit">
+            <template v-if="field.type == 'Database'">
+              <router-link
+                :to="createDatabaseLink(field)"
+                class="ml-2 normal-link"
+              >
+                (Create database)
+              </router-link>
+            </template>
           </template>
         </div>
         <template v-if="field.type == 'String'">
@@ -77,7 +79,10 @@
             </button>
           </div>
         </template>
-        <template v-if="field.type == 'Database'">
+        <div
+          v-if="field.type == 'Database'"
+          class="flex flex-row items-center space-x-2"
+        >
           <DatabaseSelect
             class="mt-1 w-64"
             :disabled="!allowEdit"
@@ -90,7 +95,15 @@
               }
             "
           />
-        </template>
+          <template v-if="databaseLink(field)">
+            <router-link
+              :to="databaseLink(field)"
+              class="ml-2 normal-link text-sm"
+            >
+              View
+            </router-link>
+          </template>
+        </div>
       </div>
     </template>
   </div>
@@ -103,10 +116,12 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
+import { fullDatabaseUrl } from "../utils";
 import {
   TaskField,
   TaskFieldReferenceProvider,
   TaskBuiltinFieldId,
+  DatabaseFieldPayload,
 } from "../plugins";
 import { DatabaseId, Task } from "../types";
 
@@ -134,20 +149,12 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const environmentId = computed(() => {
+      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+    });
+
     const fieldValue = (field: TaskField): string => {
       return props.task.payload[field.id];
-    };
-
-    const fieldProvider = (
-      field: TaskField
-    ): TaskFieldReferenceProvider | undefined => {
-      if (field.provider) {
-        return field.provider({
-          task: props.task,
-          field,
-        });
-      }
-      return undefined;
     };
 
     const allowEdit = computed(() => {
@@ -161,9 +168,44 @@ export default {
       return link?.trim().length > 0;
     };
 
-    const environmentId = computed(() => {
-      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
-    });
+    const createDatabaseLink = (field: TaskField) => {
+      const queryParamList: string[] = [];
+
+      if (environmentId.value) {
+        queryParamList.push(`environment=${environmentId.value}`);
+      }
+
+      // The created database info is stored in the predefined field with id TaskBuiltinFieldId.DATABASE
+      const databasePayload: DatabaseFieldPayload =
+        props.task.payload[TaskBuiltinFieldId.DATABASE];
+      if (databasePayload.name) {
+        queryParamList.push(`name=${databasePayload.name}`);
+      }
+
+      // If we are creating a new database, we always assign RW to the owner.
+      if (!databasePayload.isNew && databasePayload.readOnly) {
+        queryParamList.push(`readonly=true`);
+      }
+
+      queryParamList.push(`owner=${props.task.creator.id}`);
+
+      queryParamList.push(`task=${props.task.id}`);
+
+      queryParamList.push(`from=${props.task.type}`);
+
+      return "/db/new?" + queryParamList.join("&");
+    };
+
+    const databaseLink = (field: TaskField) => {
+      const databaseId = fieldValue(field);
+      if (databaseId) {
+        const database = store.getters["database/databaseById"](databaseId);
+        if (database) {
+          return fullDatabaseUrl(database);
+        }
+      }
+      return "";
+    };
 
     const copyText = (field: TaskField) => {
       toClipboard(props.task.payload[field.id]).then(() => {
@@ -200,11 +242,12 @@ export default {
 
     return {
       state,
+      environmentId,
       fieldValue,
-      fieldProvider,
       allowEdit,
       isValidLink,
-      environmentId,
+      createDatabaseLink,
+      databaseLink,
       copyText,
       goToLink,
       trySaveCustomField,
