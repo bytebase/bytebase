@@ -79,9 +79,10 @@ export default {
         state.hasError = true;
         nextTick(() => {
           state.text = state.originalText;
-          inputField.value!.focus();
+          // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
+          inputField.value?.focus();
           nextTick(() => {
-            inputField.value!.select();
+            inputField.value?.select();
           });
         });
       } else {
