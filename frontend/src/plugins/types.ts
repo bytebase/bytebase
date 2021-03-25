@@ -18,7 +18,8 @@ export enum TaskBuiltinFieldId {
   ENVIRONMENT = "5",
   INSTANCE = "6",
   DATABASE = "7",
-  STAGE = "8", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
+  DATA_SOURCE = "8",
+  STAGE = "9", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
 }
 
 export const CUSTOM_FIELD_ID_BEGIN = 101;
