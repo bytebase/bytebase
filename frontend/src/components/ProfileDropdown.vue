@@ -13,17 +13,30 @@
     </button>
     <BBContextMenu
       ref="menu"
-      class="origin-top-left absolute right-0 mt-2 w-36 rounded-md shadow-lg"
+      class="origin-top-left absolute right-0 mt-2 w-48 rounded-md shadow-lg"
     >
-      <div v-if="isDevOrDemo">
+      <router-link
+        class="px-4 py-3 menu-item"
+        :to="`/u/${currentUser.id}`"
+        role="menuitem"
+      >
+        <p class="text-sm text-main font-medium">
+          {{ currentUser.name }}
+        </p>
+        <p class="text-sm text-control truncate">
+          {{ currentUser.email }}
+        </p>
+      </router-link>
+      <div class="border-t border-gray-100"></div>
+      <div v-if="isDevOrDemo" class="py-1">
         <div v-if="currentUser.email != 'demo@example.com'" class="py-1">
           <a @click.prevent="switchToOwner" class="menu-item" role="menuitem">
-            Switch to Owner
+            Switch to Demo (Owner)
           </a>
         </div>
         <div v-if="currentUser.email != 'jerry@example.com'" class="py-1">
           <a @click.prevent="switchToDBA" class="menu-item" role="menuitem">
-            Switch to DBA
+            Switch to Jerry (DBA)
           </a>
         </div>
         <div v-if="currentUser.email != 'tom@example.com'" class="py-1">
@@ -32,11 +45,11 @@
             class="menu-item"
             role="menuitem"
           >
-            Switch to Dev
+            Switch to Tom (Dev)
           </a>
         </div>
-        <div class="border-t border-gray-100"></div>
       </div>
+      <div class="border-t border-gray-100"></div>
       <div class="py-1">
         <router-link to="/setting" class="menu-item" role="menuitem"
           >Settings</router-link
