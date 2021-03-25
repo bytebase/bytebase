@@ -118,6 +118,8 @@ const template: TaskTemplate = {
 
         queryParamList.push(`task=${task.id}`);
 
+        queryParamList.push(`from=${task.type}`);
+
         link += "?" + queryParamList.join("&");
 
         return {

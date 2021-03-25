@@ -23,6 +23,7 @@ input[type="number"] {
           class="mt-1"
           id="environment"
           name="environment"
+          :disabled="!allowEditEnvironment"
           :selectedId="state.environmentId"
           @select-environment-id="
             (environmentId) => {
@@ -60,6 +61,7 @@ input[type="number"] {
           name="name"
           type="text"
           class="textfield mt-1 w-full"
+          :disabled="!allowEditDatabaseName"
           v-model="state.databaseName"
         />
       </div>
@@ -72,6 +74,7 @@ input[type="number"] {
           class="mt-1"
           id="owner"
           name="owner"
+          :disabled="!allowEditOwner"
           :selectedId="state.ownerId"
           @select-principal-id="
             (principalId) => {
@@ -174,6 +177,7 @@ input[type="number"] {
               name="task"
               type="number"
               placeholder="Your task id (e.g. 1234)"
+              :disabled="!allowEditTask"
               v-model="state.taskId"
             />
           </template>
@@ -213,6 +217,7 @@ import { instanceSlug, databaseSlug, taskSlug } from "../utils";
 import {
   Task,
   TaskId,
+  TaskType,
   Database,
   DataSourceNew,
   EnvironmentId,
@@ -224,13 +229,14 @@ import { TaskField, templateForType } from "../plugins";
 import { isEqual } from "lodash";
 
 interface LocalState {
-  databaseName?: string;
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
+  databaseName?: string;
   ownerId: PrincipalId;
-  taskId?: TaskId;
   username: string;
   passsword: string;
+  taskId?: TaskId;
+  fromTaskType?: TaskType;
   showPassword: boolean;
 }
 
@@ -260,7 +266,6 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      databaseName: router.currentRoute.value.query.name as string,
       environmentId: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
@@ -271,12 +276,14 @@ export default {
             router.currentRoute.value.query.instance
           )?.id
         : undefined,
+      databaseName: router.currentRoute.value.query.name as string,
       ownerId:
         (router.currentRoute.value.query.owner as PrincipalId) ||
         currentUser.value.id,
-      taskId: router.currentRoute.value.query.task as TaskId,
       username: "",
       passsword: "",
+      taskId: router.currentRoute.value.query.task as TaskId,
+      fromTaskType: router.currentRoute.value.query.from as TaskType,
       showPassword: false,
     });
 
@@ -287,6 +294,29 @@ export default {
         state.instanceId &&
         state.ownerId
       );
+    });
+
+    const allowEditEnvironment = computed(() => {
+      return (
+        state.fromTaskType != "bytebase.database.request" ||
+        !state.environmentId
+      );
+    });
+
+    const allowEditDatabaseName = computed(() => {
+      return (
+        state.fromTaskType != "bytebase.database.request" || !state.databaseName
+      );
+    });
+
+    const allowEditOwner = computed(() => {
+      return (
+        state.fromTaskType != "bytebase.database.request" || !state.ownerId
+      );
+    });
+
+    const allowEditTask = computed(() => {
+      return state.fromTaskType != "bytebase.database.request" || !state.taskId;
     });
 
     const cancel = () => {
@@ -407,6 +437,10 @@ export default {
     return {
       state,
       allowCreate,
+      allowEditEnvironment,
+      allowEditDatabaseName,
+      allowEditOwner,
+      allowEditTask,
       cancel,
       create,
     };
