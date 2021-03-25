@@ -75,7 +75,7 @@
                 :disabled="!allowEdit"
                 :selectedId="fieldValue(field)"
                 :mode="'ENVIRONMENT'"
-                :environmentId="environmentId()"
+                :environmentId="environmentId"
                 @select-database-id="
                   (databaseId) => {
                     trySaveCustomField(field, databaseId);
@@ -117,7 +117,7 @@
                   :disabled="!allowEdit"
                   :selectedId="fieldValue(field).id"
                   :mode="'ENVIRONMENT'"
-                  :environmentId="environmentId()"
+                  :environmentId="environmentId"
                   @select-database-id="
                     (databaseId) => {
                       trySaveDatabaseId(field, databaseId);
@@ -253,9 +253,9 @@ export default {
       return cloneDeep(props.task.payload[field.id]);
     };
 
-    const environmentId = (): string => {
+    const environmentId = computed(() => {
       return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
-    };
+    });
 
     const allowEditAssignee = computed(() => {
       // We allow the current assignee or DBA/Owner to re-assign the task.
