@@ -261,9 +261,9 @@ export default {
 
     const state = reactive<LocalState>({
       databaseName: router.currentRoute.value.query.name as string,
-      environmentId: router.currentRoute.value.query.enviornment
+      environmentId: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.enviornment
+            router.currentRoute.value.query.environment
           )?.id
         : undefined,
       instanceId: router.currentRoute.value.query.instance

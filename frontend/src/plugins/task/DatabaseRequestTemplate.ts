@@ -102,7 +102,7 @@ const template: TaskTemplate = {
 
         const environmentId = task.payload[TaskBuiltinFieldId.ENVIRONMENT];
         if (environmentId) {
-          queryParamList.push(`env=${environmentId}`);
+          queryParamList.push(`environment=${environmentId}`);
         }
 
         if (databasePayload.name) {
