@@ -4,10 +4,9 @@ import {
   TaskTemplate,
   TemplateContext,
   TaskBuiltinFieldId,
-  TaskFieldReferenceProviderContext,
   DatabaseFieldPayload,
 } from "../types";
-import { linkfy, validLink } from "../../utils";
+import { linkfy } from "../../utils";
 import { Task, TaskNew, EnvironmentId } from "../../types";
 
 const template: TaskTemplate = {
@@ -74,28 +73,29 @@ const template: TaskTemplate = {
     {
       category: "OUTPUT",
       id: "99",
-      slug: "datasource",
-      name: "Data source",
-      type: "String",
+      slug: "database",
+      name: "Database",
+      type: "Database",
       required: true,
       isEmpty: (value: string): boolean => {
         return isEmpty(value?.trim());
       },
       provider: ({ task, field }: { task: Task; field: TaskField }) => {
         const currentValue = task.payload[field.id];
-        if (validLink(currentValue)) {
+        console.log(currentValue);
+        if (!isEmpty(currentValue)) {
           return {
-            title: "view data source",
-            link: linkfy(currentValue),
+            title: "view database",
+            link: linkfy("DATABASE", currentValue),
           };
         }
 
-        let title = "create data source";
+        let title = "create database";
         let link = "/db/new";
         const databasePayload: DatabaseFieldPayload =
           task.payload[TaskBuiltinFieldId.DATABASE];
         if (!databasePayload.isNew) {
-          title = "assign data source";
+          title = "assign database";
         }
 
         const queryParamList: string[] = [];

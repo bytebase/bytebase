@@ -21,60 +21,76 @@
             </router-link>
           </template>
         </div>
-        <div class="mt-1 flex flex-row">
-          <input
-            type="text"
-            class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
+        <template v-if="field.type == 'String'">
+          <div class="mt-1 flex flex-row">
+            <input
+              type="text"
+              class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
+              :disabled="!allowEdit"
+              :name="field.id"
+              :value="fieldValue(field)"
+              autocomplete="off"
+              @blur="$emit('update-custom-field', field, $event.target.value)"
+            />
+            <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
+            <button
+              tabindex="-1"
+              :disabled="!fieldValue(field)"
+              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
+              @click.prevent="copyText(field)"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                ></path>
+              </svg>
+            </button>
+            <button
+              tabindex="-1"
+              :disabled="!isValidLink(fieldValue(field))"
+              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+              @click.prevent="goToLink(fieldValue(field))"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </template>
+        <template v-if="field.type == 'Database'">
+          <DatabaseSelect
+            class="mt-1 w-64"
             :disabled="!allowEdit"
-            :name="field.id"
-            :value="task.payload[field.id]"
-            autocomplete="off"
-            @blur="$emit('update-custom-field', field, $event.target.value)"
+            :mode="'ENVIRONMENT'"
+            :environmentId="environmentId"
+            :selectedId="fieldValue(field)"
+            @select-database-id="
+              (databaseId) => {
+                trySaveCustomField(field, databaseId);
+              }
+            "
           />
-          <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
-          <button
-            tabindex="-1"
-            :disabled="!task.payload[field.id]"
-            class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
-            @click.prevent="copyText(field)"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              ></path>
-            </svg>
-          </button>
-          <button
-            tabindex="-1"
-            :disabled="!isValidLink(task.payload[field.id])"
-            class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
-            @click.prevent="goToLink(task.payload[field.id])"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              ></path>
-            </svg>
-          </button>
-        </div>
+        </template>
       </div>
     </template>
   </div>
@@ -84,9 +100,15 @@
 import { PropType, computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { TaskField, TaskFieldReferenceProvider } from "../plugins";
-import { Task } from "../types";
+import DatabaseSelect from "../components/DatabaseSelect.vue";
+import {
+  TaskField,
+  TaskFieldReferenceProvider,
+  TaskBuiltinFieldId,
+} from "../plugins";
+import { DatabaseId, Task } from "../types";
 
 interface LocalState {}
 
@@ -103,8 +125,8 @@ export default {
       type: Object as PropType<TaskField[]>,
     },
   },
-  components: {},
-  setup(props, ctx) {
+  components: { DatabaseSelect },
+  setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
 
@@ -112,15 +134,8 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const allowEdit = computed(() => {
-      return (
-        currentUser.value.id === props.task.assignee?.id &&
-        props.task.status == "OPEN"
-      );
-    });
-
-    const isValidLink = (link: string) => {
-      return link?.trim().length > 0;
+    const fieldValue = (field: TaskField): string => {
+      return props.task.payload[field.id];
     };
 
     const fieldProvider = (
@@ -134,6 +149,21 @@ export default {
       }
       return undefined;
     };
+
+    const allowEdit = computed(() => {
+      return (
+        currentUser.value.id === props.task.assignee?.id &&
+        props.task.status == "OPEN"
+      );
+    });
+
+    const isValidLink = (link: string) => {
+      return link?.trim().length > 0;
+    };
+
+    const environmentId = computed(() => {
+      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+    });
 
     const copyText = (field: TaskField) => {
       toClipboard(props.task.payload[field.id]).then(() => {
@@ -159,7 +189,26 @@ export default {
       }
     };
 
-    return { state, allowEdit, isValidLink, fieldProvider, copyText, goToLink };
+    const trySaveCustomField = (
+      field: TaskField,
+      value: string | DatabaseId
+    ) => {
+      if (!isEqual(value, fieldValue(field))) {
+        emit("update-custom-field", field, value);
+      }
+    };
+
+    return {
+      state,
+      fieldValue,
+      fieldProvider,
+      allowEdit,
+      isValidLink,
+      environmentId,
+      copyText,
+      goToLink,
+      trySaveCustomField,
+    };
   },
 };
 </script>

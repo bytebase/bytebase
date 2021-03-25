@@ -1,20 +1,10 @@
-export type LinkType =
-  | "UNKNOWN"
-  | "USER"
-  | "TASK"
-  | "ENVIRONMENT"
-  | "INSTANCE"
-  | "DATABASE"
-  | "DATASOURCE"
-  | "BOOKMARK";
+export type ResourceType = "UNKNOWN" | "DATABASE";
 
-export function validLink(link: string): boolean {
-  return link != undefined;
-}
+const resourceToPrefix = new Map([
+  ["DATABASE", "/db"],
+  ["UNKNOWN", "/404"],
+]);
 
-export function linkfy(link: string): string {
-  if (!link.startsWith("/")) {
-    return "/" + link;
-  }
-  return link;
+export function linkfy(type: ResourceType, id: string): string {
+  return [resourceToPrefix.get(type), id].join("/");
 }
