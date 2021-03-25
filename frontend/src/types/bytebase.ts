@@ -357,6 +357,7 @@ export type DataSourceNew = {
   databaseId: string;
   username?: string;
   password?: string;
+  memberList: DataSourceMemberNew[];
 };
 
 export type DataSourceMember = {

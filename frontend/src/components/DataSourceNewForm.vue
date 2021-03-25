@@ -176,6 +176,7 @@ export default {
         databaseId: props.databaseId
           ? props.databaseId
           : ALL_DATABASE_PLACEHOLDER_ID,
+        memberList: [],
       },
       showPassword: false,
     });

@@ -308,6 +308,12 @@ export default {
         databaseId: createdDatabase.id,
         username: isEmpty(state.username) ? undefined : state.username,
         password: isEmpty(state.passsword) ? undefined : state.passsword,
+        memberList: [
+          {
+            principalId: state.ownerId,
+            taskId: state.taskId,
+          },
+        ],
       };
       const createdDataSource = await store.dispatch(
         "dataSource/createDataSource",
@@ -316,16 +322,6 @@ export default {
           newDataSource,
         }
       );
-
-      // Add the owner to the data source.
-      await store.dispatch("dataSource/createDataSourceMember", {
-        instanceId: state.instanceId,
-        dataSourceId: createdDataSource.id,
-        newDataSourceMember: {
-          principalId: state.ownerId,
-          taskId: state.taskId,
-        },
-      });
 
       router.push(
         `/instance/${instanceSlug(createdDatabase.instance)}/db/${databaseSlug(

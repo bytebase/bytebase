@@ -270,6 +270,7 @@ const INIT_DATA_SOURCE: DataSourceNew = {
   type: "RW",
   username: "root",
   databaseId: ALL_DATABASE_PLACEHOLDER_ID,
+  memberList: [],
 };
 
 interface LocalState {
