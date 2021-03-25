@@ -249,8 +249,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const fieldValue = (field: TaskField): string | DatabaseFieldPayload => {
-      // Do a deep clone to prevent caller accidentally changes the original data.
-      return cloneDeep(props.task.payload[field.id]);
+      return props.task.payload[field.id];
     };
 
     const environmentId = computed(() => {
@@ -280,6 +279,7 @@ export default {
     };
 
     const trySaveDatabaseNew = (field: TaskField, isNew: boolean) => {
+      // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
       ) as DatabaseFieldPayload;
@@ -288,6 +288,7 @@ export default {
     };
 
     const trySaveDatabaseName = (field: TaskField, value: string) => {
+      // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
       ) as DatabaseFieldPayload;
@@ -296,6 +297,7 @@ export default {
     };
 
     const trySaveDatabaseId = (field: TaskField, value: DatabaseId) => {
+      // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
       ) as DatabaseFieldPayload;
@@ -304,6 +306,7 @@ export default {
     };
 
     const trySaveDatabaseReadOnly = (field: TaskField, value: boolean) => {
+      // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
       ) as DatabaseFieldPayload;
