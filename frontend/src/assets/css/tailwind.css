@@ -103,7 +103,7 @@
 }
 
 .textfield {
-  @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
+  @apply text-main disabled:text-control focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
 }
 
 .textarea {

@@ -296,6 +296,8 @@ export default {
       );
     });
 
+    // If it's from database request task, we disallow changing the preset field.
+    // This is to prevent accidentally changing the requested field.
     const allowEditEnvironment = computed(() => {
       return (
         state.fromTaskType != "bytebase.database.request" ||
