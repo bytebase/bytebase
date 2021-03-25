@@ -294,13 +294,24 @@ export default {
     };
 
     const create = async () => {
+      // If taskId id provided, we check its existence first.
+      // We only set the taskId if it's valid.
+      let linkedTask: Task | undefined = undefined;
+      if (state.taskId) {
+        try {
+          linkedTask = await store.dispatch("task/fetchTaskById", state.taskId);
+        } catch (err) {
+          console.warn(`Unable to fetch linked task id ${state.taskId}`, err);
+        }
+      }
+
       // Create database
       const createdDatabase = await store.dispatch("database/createDatabase", {
         name: state.databaseName,
         instanceId: state.instanceId,
         ownerId: state.ownerId,
         creatorId: currentUser.value.id,
-        taskId: state.taskId,
+        taskId: linkedTask?.id,
       });
 
       // Create the default RW data source
@@ -313,7 +324,7 @@ export default {
         memberList: [
           {
             principalId: state.ownerId,
-            taskId: state.taskId,
+            taskId: linkedTask?.id,
           },
         ],
       };
@@ -331,15 +342,12 @@ export default {
         )}`
       );
 
-      // If task id is provided, we will set the database and data source output field
+      // If a valid task id is provided, we will set the database and data source output field
       // if it's not set before. This is based on the assumption that user creates
       // the database/data source to fullfill that particular task (e.g. completing
       // the request db workflow)
-      let linkedTask: Task | undefined = undefined;
-      if (state.taskId) {
-        const task = await store.dispatch("task/fetchTaskById", state.taskId);
-
-        const template = templateForType(task.type);
+      if (linkedTask) {
+        const template = templateForType(linkedTask.type);
         if (template) {
           const databaseOutputField = template.fieldList.find(
             (item: TaskField) =>
@@ -352,7 +360,7 @@ export default {
           );
 
           if (databaseOutputField || dataSourceOutputField) {
-            const payload = cloneDeep(task.payload);
+            const payload = cloneDeep(linkedTask.payload);
             // Only sets the value if it's empty to prevent accidentally overwriting
             // the existing legit data (e.g. someone provides a wrong task id)
             if (
@@ -368,15 +376,14 @@ export default {
               payload[dataSourceOutputField.id] = createdDataSource.id;
             }
 
-            if (!isEqual(payload, task.payload)) {
+            if (!isEqual(payload, linkedTask.payload)) {
               await store.dispatch("task/patchTask", {
-                taskId: task.id,
+                taskId: linkedTask.id,
                 taskPatch: {
                   payload,
                   updaterId: currentUser.value.id,
                 },
               });
-              linkedTask = task;
             }
           }
         }
