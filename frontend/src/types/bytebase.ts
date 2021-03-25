@@ -1,7 +1,6 @@
 import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
 import { TaskFieldId } from "../plugins";
-import instance from "../store/modules/instance";
 
 export const UNKNOWN_ID = "-1";
 

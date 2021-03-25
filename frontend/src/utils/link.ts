@@ -1,9 +1,6 @@
-export type ResourceType = "UNKNOWN" | "DATABASE";
+import { ResourceType } from "../types";
 
-const resourceToPrefix = new Map([
-  ["DATABASE", "/db"],
-  ["UNKNOWN", "/404"],
-]);
+const resourceToPrefix = new Map([["DATABASE", "/db"]]);
 
 export function linkfy(type: ResourceType, id: string): string {
   return [resourceToPrefix.get(type), id].join("/");

@@ -18,6 +18,12 @@ export function databaseSlug(database: Database): string {
   return [slug(database.name), database.id].join("-");
 }
 
+export function fullDatabaseUrl(database: Database): string {
+  return `/instance/${instanceSlug(database.instance)}/db/${databaseSlug(
+    database
+  )}`;
+}
+
 export function dataSourceSlug(dataSource: DataSource): string {
   return [slug(dataSource.name), dataSource.id].join("-");
 }

@@ -25,6 +25,15 @@ const state: () => InstanceState = () => ({
 });
 
 const getters = {
+  convert: (
+    state: InstanceState,
+    getters: any,
+    rootState: any,
+    rootGetters: any
+  ) => (instance: ResourceObject): Instance => {
+    return convert(instance, rootGetters);
+  },
+
   instanceList: (state: InstanceState) => () => {
     const list = [];
     for (const [_, instance] of state.instanceById) {

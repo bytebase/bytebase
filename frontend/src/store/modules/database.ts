@@ -4,20 +4,32 @@ import {
   Database,
   DatabaseNew,
   DatabaseId,
+  Instance,
   InstanceId,
   DatabaseState,
   ResourceObject,
   ResourceIdentifier,
   EnvironmentId,
   PrincipalId,
+  unknown,
 } from "../../types";
-import { isDevOrDemo, randomString } from "../../utils";
-import instance from "./instance";
 
-function convert(database: ResourceObject, rootGetters: any): Database {
+function convert(
+  database: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Database {
   const instanceId = (database.relationships!.instance
     .data as ResourceIdentifier).id;
-  const instance = rootGetters["instance/instanceById"](instanceId);
+  let instance: Instance = unknown("INSTANCE") as Instance;
+
+  for (const item of includedList) {
+    if (item.type == "instance" && item.id == instanceId) {
+      instance = rootGetters["instance/convert"](item);
+      break;
+    }
+  }
+
   return {
     id: database.id,
     instance,
@@ -105,10 +117,11 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    const databaseList = (
-      await axios.get(`/api/instance/${instanceId}/database`)
-    ).data.data.map((database: ResourceObject) => {
-      return convert(database, rootGetters);
+    const data = (
+      await axios.get(`/api/instance/${instanceId}/database?include=instance`)
+    ).data;
+    const databaseList = data.data.map((database: ResourceObject) => {
+      return convert(database, data.included, rootGetters);
     });
 
     commit("setDatabaseListByInstanceId", { instanceId, databaseList });
@@ -117,10 +130,11 @@ const actions = {
   },
 
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
-    const databaseList = (
-      await axios.get(`/api/user/${userId}/database`)
-    ).data.data.map((database: ResourceObject) => {
-      return convert(database, rootGetters);
+    const data = (
+      await axios.get(`/api/user/${userId}/database?include=instance`)
+    ).data;
+    const databaseList = data.data.map((database: ResourceObject) => {
+      return convert(database, data.included, rootGetters);
     });
 
     commit("setDatabaseListByUserId", { userId, databaseList });
@@ -132,10 +146,13 @@ const actions = {
     { commit, rootGetters }: any,
     environmentId: EnvironmentId
   ) {
-    const databaseList = (
-      await axios.get(`/api/database?environment=${environmentId}`)
-    ).data.data.map((database: ResourceObject) => {
-      return convert(database, rootGetters);
+    const data = (
+      await axios.get(
+        `/api/database?environment=${environmentId}&include=instance`
+      )
+    ).data;
+    const databaseList = data.data.map((database: ResourceObject) => {
+      return convert(database, data.included, rootGetters);
     });
 
     commit("setDatabaseListByEnvironmentId", { environmentId, databaseList });
@@ -150,11 +167,12 @@ const actions = {
       databaseId,
     }: { instanceId: InstanceId; databaseId: DatabaseId }
   ) {
-    const database = convert(
-      (await axios.get(`/api/instance/${instanceId}/database/${databaseId}`))
-        .data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.get(
+        `/api/instance/${instanceId}/database/${databaseId}?include=instance`
+      )
+    ).data;
+    const database = convert(data.data, data.included, rootGetters);
 
     commit("upsertDatabaseInListByInstanceId", {
       instanceId,
@@ -165,15 +183,17 @@ const actions = {
   },
 
   async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
+    const data = (
+      await axios.post(`/api/database?include=instance`, {
+        data: {
+          type: "database",
+          attributes: newDatabase,
+        },
+      })
+    ).data;
     const createdDatabase: Database = convert(
-      (
-        await axios.post(`/api/database`, {
-          data: {
-            type: "database",
-            attributes: newDatabase,
-          },
-        })
-      ).data.data,
+      data.data,
+      data.included,
       rootGetters
     );
 
@@ -197,19 +217,17 @@ const actions = {
       ownerId: PrincipalId;
     }
   ) {
-    const updatedDatabase = convert(
-      (
-        await axios.patch(`/api/database/${databaseId}`, {
-          data: {
-            type: "databasepatch",
-            attributes: {
-              ownerId,
-            },
+    const data = (
+      await axios.patch(`/api/database/${databaseId}?include=instance`, {
+        data: {
+          type: "databasepatch",
+          attributes: {
+            ownerId,
           },
-        })
-      ).data.data,
-      rootGetters
-    );
+        },
+      })
+    ).data;
+    const updatedDatabase = convert(data.data, data.included, rootGetters);
 
     commit("upsertDatabaseInListByInstanceId", {
       instanceId,

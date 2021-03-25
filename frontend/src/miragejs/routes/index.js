@@ -41,7 +41,6 @@ export default function routes() {
         databaseId: database.id,
       });
 
-      console.log(request.params.userId);
       for (const dataSource of dataSourceList.models) {
         if (
           dataSource.memberList.find((item) => {
