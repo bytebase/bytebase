@@ -1,8 +1,139 @@
 import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
 import { TaskFieldId } from "../plugins";
+import instance from "../store/modules/instance";
+
+export type ResourceType =
+  | "PRINCIPAL"
+  | "USER"
+  | "ENVIRONMENT"
+  | "INSTANCE"
+  | "DATABASE"
+  | "DATA_SOURCE"
+  | "TASK"
+  | "ACTIVITY"
+  | "BOOKMARK";
 
 export const UNKNOWN_ID = "-1";
+
+// Returns as function to avoid caller accidentally mutate it.
+export const unknown = (
+  type: ResourceType
+):
+  | Principal
+  | User
+  | Environment
+  | Instance
+  | Database
+  | DataSource
+  | Task
+  | Activity
+  | Bookmark => {
+  const UNKNOWN_PRINCIPAL: Principal = {
+    id: UNKNOWN_ID,
+    status: "UNKNOWN",
+    name: "<<Unknown principal>>",
+    email: "",
+    role: "GUEST",
+  };
+
+  const UNKNOWN_USER: User = {
+    id: UNKNOWN_ID,
+    status: "UNKNOWN",
+    name: "<<Unknown user>>",
+    email: "unknown@example.com",
+  };
+
+  const UNKNOWN_ENVIRONMENT: Environment = {
+    id: UNKNOWN_ID,
+    name: "<<Unknown environment>>",
+    order: 0,
+  };
+
+  const UNKNOWN_INSTANCE: Instance = {
+    id: UNKNOWN_ID,
+    environment: UNKNOWN_ENVIRONMENT,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    name: "<<Unknown instance>>",
+    host: "",
+  };
+
+  const UNKNOWN_DATABASE: Database = {
+    id: UNKNOWN_ID,
+    instance: UNKNOWN_INSTANCE,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    name: "<<Unknown database>>",
+    ownerId: UNKNOWN_ID,
+    syncStatus: "NOT_FOUND",
+    lastSuccessfulSyncTs: 0,
+    fingerprint: "",
+  };
+
+  const UNKNOWN_DATA_SOURCE: DataSource = {
+    id: UNKNOWN_ID,
+    instanceId: UNKNOWN_ID,
+    databaseId: UNKNOWN_ID,
+    memberList: [],
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    name: "<<Unknown data source>>",
+    type: "RO",
+  };
+
+  const UNKNOWN_TASK: Task = {
+    id: UNKNOWN_ID,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    name: "<<Unknown task>>",
+    status: "OPEN",
+    type: "bytebase.general",
+    description: "",
+    stageProgressList: [],
+    creator: UNKNOWN_PRINCIPAL,
+    subscriberList: [],
+    payload: {},
+  };
+
+  const UNKNOWN_ACTIVITY: Activity = {
+    id: UNKNOWN_ID,
+    containerId: UNKNOWN_ID,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    actionType: "bytebase.task.create",
+    creator: UNKNOWN_PRINCIPAL,
+    comment: "<<Unknown comment>>",
+  };
+
+  const UNKNOWN_BOOKMARK: Bookmark = {
+    id: UNKNOWN_ID,
+    name: "",
+    link: "",
+    creatorId: UNKNOWN_ID,
+  };
+
+  switch (type) {
+    case "PRINCIPAL":
+      return UNKNOWN_PRINCIPAL;
+    case "USER":
+      return UNKNOWN_USER;
+    case "ENVIRONMENT":
+      return UNKNOWN_ENVIRONMENT;
+    case "INSTANCE":
+      return UNKNOWN_INSTANCE;
+    case "DATABASE":
+      return UNKNOWN_DATABASE;
+    case "DATA_SOURCE":
+      return UNKNOWN_DATA_SOURCE;
+    case "TASK":
+      return UNKNOWN_TASK;
+    case "ACTIVITY":
+      return UNKNOWN_ACTIVITY;
+    case "BOOKMARK":
+      return UNKNOWN_BOOKMARK;
+  }
+};
 
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
