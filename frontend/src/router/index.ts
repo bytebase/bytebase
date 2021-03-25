@@ -445,7 +445,6 @@ router.beforeEach((to, from, next) => {
   const toModule = to.name ? to.name.toString().split(".")[0] : HOME_MODULE;
 
   if (isDev()) {
-    console.log("LoginUser:", loginUser);
     console.log("Route module:", fromModule, "->", toModule);
   }
 
