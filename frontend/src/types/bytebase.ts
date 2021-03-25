@@ -3,6 +3,8 @@ import { BBNotificationStyle } from "../bbkit/types";
 import { TaskFieldId } from "../plugins";
 import instance from "../store/modules/instance";
 
+export const UNKNOWN_ID = "-1";
+
 export type ResourceType =
   | "PRINCIPAL"
   | "USER"
@@ -13,8 +15,6 @@ export type ResourceType =
   | "TASK"
   | "ACTIVITY"
   | "BOOKMARK";
-
-export const UNKNOWN_ID = "-1";
 
 // Returns as function to avoid caller accidentally mutate it.
 export const unknown = (
@@ -277,9 +277,9 @@ export type TaskPayload = { [key: string]: any };
 
 export type Task = {
   id: TaskId;
-  name: string;
   createdTs: number;
   lastUpdatedTs: number;
+  name: string;
   status: TaskStatus;
   type: TaskType;
   description: string;
@@ -420,12 +420,12 @@ export type ActionPayloadType = ActionTaskFieldUpdatePayload;
 
 export type Activity = {
   id: ActivityId;
-  createdTs: number;
-  lastUpdatedTs: number;
-  actionType: ActionType;
   // The object where this activity belongs
   // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
   containerId: TaskId;
+  createdTs: number;
+  lastUpdatedTs: number;
+  actionType: ActionType;
   creator: Principal;
   comment: string;
   payload?: ActionPayloadType;
@@ -447,10 +447,10 @@ export type EnvironmentNew = Omit<Environment, "id">;
 // Instance
 export type Instance = {
   id: InstanceId;
+  environment: Environment;
   createdTs: number;
   lastUpdatedTs: number;
   name: string;
-  environment: Environment;
   externalLink?: string;
   host: string;
   port?: string;
@@ -462,13 +462,6 @@ export type DataSourceType = "RW" | "RO";
 export type DataSource = {
   id: DataSourceId;
   instanceId: InstanceId;
-  name: string;
-  createdTs: number;
-  lastUpdatedTs: number;
-  type: DataSourceType;
-  // In mysql, username can be empty which means anonymous user
-  username?: string;
-  password?: string;
   // TODO: unlike other objects like environment, here we don't expand
   // to the database object, this is due to timing issue during rendering.
   // Unlike environment which is a global state that we can load upon
@@ -480,15 +473,22 @@ export type DataSource = {
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
   memberList: DataSourceMember[];
+  createdTs: number;
+  lastUpdatedTs: number;
+  name: string;
+  type: DataSourceType;
+  // In mysql, username can be empty which means anonymous user
+  username?: string;
+  password?: string;
 };
 
 export type DataSourceNew = {
   name: string;
-  type: DataSourceType;
   databaseId: string;
+  memberList: DataSourceMemberNew[];
+  type: DataSourceType;
   username?: string;
   password?: string;
-  memberList: DataSourceMemberNew[];
 };
 
 export type DataSourceMember = {
@@ -514,14 +514,14 @@ export type DatabaseSyncStatus = "OK" | "MISMATCH" | "NOT_FOUND";
 // Database
 export type Database = {
   id: DatabaseId;
-  name: string;
+  instance: Instance;
   createdTs: number;
   lastUpdatedTs: number;
+  name: string;
   ownerId: PrincipalId;
   syncStatus: DatabaseSyncStatus;
   lastSuccessfulSyncTs: number;
   fingerprint: string;
-  instance: Instance;
 };
 
 export type DatabaseNew = {
