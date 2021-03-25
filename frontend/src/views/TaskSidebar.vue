@@ -72,8 +72,9 @@
             </h2>
             <div class="w-full">
               <DatabaseSelect
-                :disabled="!environmentId() || !allowEdit"
+                :disabled="!allowEdit"
                 :selectedId="fieldValue(field)"
+                :mode="'ENVIRONMENT'"
                 :environmentId="environmentId()"
                 @select-database-id="
                   (databaseId) => {
@@ -113,8 +114,9 @@
                 />
                 <DatabaseSelect
                   v-else
-                  :disabled="!environmentId() || !allowEdit"
+                  :disabled="!allowEdit"
                   :selectedId="fieldValue(field).id"
+                  :mode="'ENVIRONMENT'"
                   :environmentId="environmentId()"
                   @select-database-id="
                     (databaseId) => {

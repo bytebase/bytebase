@@ -29,6 +29,7 @@
           <DatabaseSelect
             class="mt-1"
             :selectedId="state.dataSource.databaseId"
+            :mode="'INSTANCE'"
             :instanceId="instanceId"
             @select-database-id="
               (databaseId) => {

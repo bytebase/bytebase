@@ -52,6 +52,7 @@ input[type="number"] {
             id="database"
             name="database"
             :disabled="true"
+            :mode="'INSTANCE'"
             :instanceId="dataSource.instanceId"
             :selectedId="dataSource.databaseId"
           />

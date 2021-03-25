@@ -10,7 +10,13 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Select database
+      <template v-if="mode == 'INSTANCE' && !instanceId">
+        Select instance first
+      </template>
+      <template v-else-if="mode == 'ENVIRONMENT' && !environmentId">
+        Select environment first
+      </template>
+      <template v-else> Select database </template>
     </option>
     <option
       v-for="(database, index) in databaseList"
@@ -24,7 +30,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watch, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import { Database } from "../types";
 
@@ -39,6 +45,10 @@ export default {
   props: {
     selectedId: {
       type: String,
+    },
+    mode: {
+      required: true,
+      type: String as PropType<"INSTANCE" | "ENVIRONMENT">,
     },
     environmentId: {
       type: String,
@@ -76,11 +86,11 @@ export default {
     watchEffect(prepareDatabaseListByEnvironment);
 
     const databaseList = computed(() => {
-      if (props.environmentId) {
+      if (props.mode == "ENVIRONMENT" && props.environmentId) {
         return store.getters["database/databaseListByEnvironmentId"](
           props.environmentId
         );
-      } else {
+      } else if (props.mode == "INSTANCE" && props.instanceId) {
         return store.getters["database/databaseListByInstanceId"](
           props.instanceId
         );
