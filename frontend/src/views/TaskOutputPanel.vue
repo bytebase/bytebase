@@ -8,7 +8,7 @@
 
   <div class="my-2 mx-4 space-y-2">
     <template v-for="(field, index) in fieldList" :key="index">
-      <div class="flex flex-col">
+      <div class="flex flex-col space-y-1">
         <div class="textlabel">
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
@@ -18,13 +18,13 @@
                 :to="databaseCreationLink(field)"
                 class="ml-2 normal-link"
               >
-                (Create database)
+                + Create
               </router-link>
             </template>
           </template>
         </div>
         <template v-if="field.type == 'String'">
-          <div class="mt-1 flex flex-row">
+          <div class="flex flex-row">
             <input
               type="text"
               class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
