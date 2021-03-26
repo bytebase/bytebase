@@ -261,11 +261,18 @@ export type StageRunnable = {
   run: () => void;
 };
 
+export type StageStep = {
+  name: string;
+  type: "EXECUTION" | "DATABASE";
+  payload?: Execution | DatabaseId;
+};
+
 export type Stage = {
   id: StageId;
   name: string;
   type: StageType;
   status: StageStatus;
+  stepList: StageStep[];
   environmentId?: EnvironmentId;
   runnable?: StageRunnable;
 };

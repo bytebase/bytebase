@@ -24,6 +24,7 @@ const DEFAULT_TEMPLATE = {
           name: "Request",
           type: "SIMPLE",
           status: "PENDING",
+          stepList: [],
         },
       ],
       creatorId: ctx.currentUser.id,
