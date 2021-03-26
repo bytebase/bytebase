@@ -18,7 +18,7 @@ export default {
     assigneeId() {
       return "200";
     },
-    stageProgress() {
+    stage() {
       return [
         {
           id: "1",

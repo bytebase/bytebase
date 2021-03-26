@@ -264,18 +264,18 @@ export default function routes() {
         }
       }
 
-      if (attrs.stageProgress !== undefined) {
-        const stage = task.stageProgressList.find(
-          (item) => item.id == attrs.stageProgress.id
+      if (attrs.stage !== undefined) {
+        const stage = task.stageList.find(
+          (item) => item.id == attrs.stage.id
         );
         if (stage) {
           changeList.push({
             fieldId: [TaskBuiltinFieldId.STAGE, stage.id].join("."),
             oldValue: stage.status,
-            newValue: attrs.stageProgress.status,
+            newValue: attrs.stage.status,
           });
-          stage.status = attrs.stageProgress.status;
-          attrs.stageProgressList = task.stageProgressList;
+          stage.status = attrs.stage.status;
+          attrs.stageList = task.stageList;
         }
       }
 

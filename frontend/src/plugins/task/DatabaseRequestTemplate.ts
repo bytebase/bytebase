@@ -30,7 +30,7 @@ const template: TaskTemplate = {
       name: "Request new database",
       type: "bytebase.database.request",
       description: "Estimated QPS: 10",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: "Request database",

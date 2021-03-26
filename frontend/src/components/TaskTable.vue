@@ -144,11 +144,11 @@ export default {
     const router = useRouter();
 
     const stageList = function (task: Task): BBStep[] {
-      return task.stageProgressList.map((stageProgress) => {
+      return task.stageList.map((stage) => {
         let stepStatus: BBStepStatus = "PENDING";
-        switch (stageProgress.status) {
+        switch (stage.status) {
           case "PENDING":
-            if (activeStage(task).id === stageProgress.id) {
+            if (activeStage(task).id === stage.id) {
               stepStatus = "PENDING_ACTIVE";
             } else {
               stepStatus = "PENDING";
@@ -168,7 +168,7 @@ export default {
             break;
         }
         return {
-          title: stageProgress.name,
+          title: stage.name,
           status: stepStatus,
           link: (): string => {
             return `/task/${task.id}`;

@@ -1,4 +1,5 @@
 import faker from "faker";
+import { Environment, Stage, Task } from "../../types";
 import { instanceSlug, databaseSlug, taskSlug } from "../../utils";
 
 /*
@@ -70,7 +71,7 @@ const workspacesSeeder = (server: any) => {
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-    stageProgressList: [
+    stageList: [
       {
         id: "1",
         name: "Request",
@@ -111,12 +112,18 @@ const workspacesSeeder = (server: any) => {
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-    stageProgressList: [
+    stageList: [
       {
         id: "1",
         name: "Request data source",
         type: "SIMPLE",
         status: "PENDING",
+        stepList: [
+          {
+            name: "Database name",
+            type: "DATABASE",
+          },
+        ],
       },
     ],
     payload: {
@@ -161,7 +168,7 @@ const workspacesSeeder = (server: any) => {
         name: ws1Dev1.name,
       },
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-      ...fillStage(environmentList1),
+      ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
     });
 
@@ -190,7 +197,7 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Owner.id,
       assigneeId: ws1DBA.id,
       subscriberIdList: [ws1Dev2.id],
-      ...fillStage(environmentList1),
+      ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
     });
 
@@ -222,7 +229,7 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
-      ...fillStage(environmentList1),
+      ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
     });
 
@@ -249,7 +256,7 @@ const workspacesSeeder = (server: any) => {
     type: "bytebase.database.schema.update",
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
-    ...fillStage(environmentList2),
+    ...fillTaskAndStageStatus(environmentList2),
     workspace: workspace2,
   });
 
@@ -273,12 +280,14 @@ const workspacesSeeder = (server: any) => {
   });
 };
 
-const fillStage = (environmentList: any[]) => {
+const fillTaskAndStageStatus = (
+  environmentList: Environment[]
+): Pick<Task, "status" | "stageList"> => {
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
     return {
       status: "OPEN",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: environmentList[0].name,
@@ -289,6 +298,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "PENDING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[0].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "2",
@@ -300,13 +315,19 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "PENDING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[1].name,
+              type: "EXECUTION",
+            },
+          ],
         },
       ],
     };
   } else if (i % 5 == 1) {
     return {
       status: "OPEN",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: environmentList[0].name,
@@ -317,6 +338,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[0].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "2",
@@ -328,6 +355,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[1].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "3",
@@ -339,6 +372,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "RUNNING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[2].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "4",
@@ -350,13 +389,19 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "PENDING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[3].name,
+              type: "EXECUTION",
+            },
+          ],
         },
       ],
     };
   } else if (i % 5 == 2) {
     return {
       status: "DONE",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: environmentList[0].name,
@@ -367,6 +412,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[0].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "2",
@@ -378,6 +429,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "SKIPPED",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[1].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "3",
@@ -389,6 +446,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[2].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "4",
@@ -400,13 +463,19 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[3].name,
+              type: "EXECUTION",
+            },
+          ],
         },
       ],
     };
   } else if (i % 5 == 3) {
     return {
       status: "OPEN",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: environmentList[0].name,
@@ -417,6 +486,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[0].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "2",
@@ -428,6 +503,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "FAILED",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[1].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "3",
@@ -439,6 +520,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "PENDING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[2].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "4",
@@ -450,13 +537,19 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "PENDING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[3].name,
+              type: "EXECUTION",
+            },
+          ],
         },
       ],
     };
   } else {
     return {
       status: "CANCELED",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: environmentList[0].name,
@@ -467,6 +560,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[0].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "2",
@@ -478,6 +577,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "SKIPPED",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[1].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "3",
@@ -489,6 +594,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "DONE",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[2].name,
+              type: "EXECUTION",
+            },
+          ],
         },
         {
           id: "4",
@@ -500,6 +611,12 @@ const fillStage = (environmentList: any[]) => {
             run: () => {},
           },
           status: "PENDING",
+          stepList: [
+            {
+              name: "Apply to " + environmentList[3].name,
+              type: "EXECUTION",
+            },
+          ],
         },
       ],
     };

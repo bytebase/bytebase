@@ -21,7 +21,7 @@ export default {
     description() {
       return faker.fake("{{lorem.paragraphs}}");
     },
-    stageProgressList() {
+    stageList() {
       return [
         {
           id: "1",

@@ -89,7 +89,7 @@ export const unknown = (
     status: "OPEN",
     type: "bytebase.general",
     description: "",
-    stageProgressList: [],
+    stageList: [],
     creator: UNKNOWN_PRINCIPAL,
     subscriberList: [],
     payload: {},
@@ -246,12 +246,9 @@ export type Stage = {
   id: StageId;
   name: string;
   type: StageType;
+  status: StageStatus;
   environmentId?: EnvironmentId;
   runnable?: StageRunnable;
-};
-
-export type StageProgress = Stage & {
-  status: StageStatus;
 };
 
 export type StageProgressPatch = {
@@ -282,7 +279,7 @@ export type Task = {
   status: TaskStatus;
   type: TaskType;
   description: string;
-  stageProgressList: StageProgress[];
+  stageList: Stage[];
   creator: Principal;
   assignee?: Principal;
   subscriberList: Principal[];
@@ -293,7 +290,7 @@ export type TaskNew = {
   name: string;
   type: TaskType;
   description: string;
-  stageProgressList: StageProgress[];
+  stageList: Stage[];
   creatorId: PrincipalId;
   assigneeId?: PrincipalId;
   subscriberIdList: PrincipalId[];
@@ -305,7 +302,7 @@ export type TaskPatch = {
   status?: TaskStatus;
   description?: string;
   assigneeId?: PrincipalId;
-  stageProgress?: StageProgressPatch;
+  stage?: StageProgressPatch;
   payload?: TaskPayload;
   comment?: string;
 };

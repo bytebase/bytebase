@@ -18,7 +18,7 @@ const template: TaskTemplate = {
       name: "Update Schema",
       type: "bytebase.database.schema.update",
       description: "DDL: ",
-      stageProgressList: ctx.environmentList.map((env) => {
+      stageList: ctx.environmentList.map((env) => {
         return {
           id: env.id,
           name: env.name,

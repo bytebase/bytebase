@@ -18,7 +18,7 @@ const DEFAULT_TEMPLATE = {
       name: "New General Task",
       type: "bytebase.general",
       description: "",
-      stageProgressList: [
+      stageList: [
         {
           id: "1",
           name: "Request",

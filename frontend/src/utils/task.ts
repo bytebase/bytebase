@@ -1,28 +1,28 @@
-import { Task, StageId, StageProgress, EnvironmentId } from "../types";
+import { Task, StageId, Stage, EnvironmentId } from "../types";
 import { templateForType } from "../plugins";
 
 export function stageName(task: Task, stageId: StageId): string {
-  for (const stageProgress of task.stageProgressList) {
-    if (stageProgress.id == stageId) {
-      return stageProgress.name;
+  for (const stage of task.stageList) {
+    if (stage.id == stageId) {
+      return stage.name;
     }
   }
   return "<<Unknown stage>>";
 }
 
-export function activeStage(task: Task): StageProgress {
-  for (const stageProgress of task.stageProgressList) {
+export function activeStage(task: Task): Stage {
+  for (const stage of task.stageList) {
     if (
-      stageProgress.status === "PENDING" ||
-      stageProgress.status === "RUNNING" ||
+      stage.status === "PENDING" ||
+      stage.status === "RUNNING" ||
       // "FAILED" is also a transient stage status, which requires user
       // to take further action (e.g. Cancel, Skip, Retry)
-      stageProgress.status === "FAILED"
+      stage.status === "FAILED"
     ) {
-      return stageProgress;
+      return stage;
     }
   }
-  return task.stageProgressList[task.stageProgressList.length - 1];
+  return task.stageList[task.stageList.length - 1];
 }
 
 export function activeStageIsRunning(task: Task): boolean {
@@ -30,9 +30,9 @@ export function activeStageIsRunning(task: Task): boolean {
 }
 
 export function activeEnvironmentId(task: Task): EnvironmentId | null {
-  const stageProgress = activeStage(task);
-  if (stageProgress.type === "ENVIRONMENT") {
-    return stageProgress.environmentId!;
+  const stage = activeStage(task);
+  if (stage.type === "ENVIRONMENT") {
+    return stage.environmentId!;
   }
   const taskTemplate = templateForType(task.type);
   if (taskTemplate) {

@@ -508,12 +508,9 @@ export default {
         });
     };
 
-    const changeStageStatus = (
-      stageProgress: StageProgressPatch,
-      comment?: string
-    ) => {
+    const changeStageStatus = (stage: StageProgressPatch, comment?: string) => {
       patchTask({
-        stageProgress,
+        stage,
         comment,
       });
     };
@@ -568,7 +565,7 @@ export default {
     });
 
     const showTaskStageFlowBar = computed(() => {
-      return !state.new && state.task.stageProgressList.length > 1;
+      return !state.new && state.task.stageList.length > 1;
     });
 
     const showTaskOutputPanel = computed(() => {

@@ -322,11 +322,11 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const stageList = computed<FlowItem[]>(() => {
-      return props.task.stageProgressList.map((stageProgress) => {
+      return props.task.stageList.map((stage) => {
         return {
-          id: stageProgress.id,
-          title: stageProgress.name,
-          status: stageProgress.status,
+          id: stage.id,
+          title: stage.name,
+          status: stage.status,
           link: (): string => {
             return `/task/${props.task.id}`;
           },
