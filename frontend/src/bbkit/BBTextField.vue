@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 
 interface LocalState {
@@ -53,14 +53,25 @@ export default {
       default: true,
       type: Boolean,
     },
+    focusOnMount: {
+      default: false,
+      type: Boolean,
+    },
   },
   setup(props, { emit }) {
-    const inputField = ref<HTMLInputElement>();
+    const inputField = ref();
 
     const state = reactive<LocalState>({
       text: props.value,
       originalText: "",
       hasError: false,
+    });
+
+    onMounted(() => {
+      if (props.focusOnMount) {
+        inputField.value.focus();
+        inputField.value.select();
+      }
     });
 
     watch(
@@ -80,9 +91,9 @@ export default {
         nextTick(() => {
           state.text = state.originalText;
           // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
-          inputField.value?.focus();
+          inputField.value.focus();
           nextTick(() => {
-            inputField.value?.select();
+            inputField.value.select();
           });
         });
       } else {
