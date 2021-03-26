@@ -2,7 +2,7 @@
   <BBSelect
     :selectedItem="selectedPrincipal"
     :itemList="principalList"
-    :placeholder="'Unassigned'"
+    :placeholder="'Not assigned'"
     :disabled="disabled"
     @select-item="
       (principal) => {
@@ -28,7 +28,7 @@
           -->
       <!-- Add my-0.5 padding to avoid flickering when switching to assignee -->
       <span class="flex my-0.5 lg:40 xl:w-44">
-        <span class="truncate">{{ placeholder }}</span>
+        <span class="truncate text-error">{{ placeholder }}</span>
       </span>
     </template>
   </BBSelect>
