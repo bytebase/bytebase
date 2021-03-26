@@ -119,6 +119,13 @@ export default {
       }
     );
 
+    watch(
+      () => props.selectedId,
+      (cur, _) => {
+        state.selectedId = cur;
+      }
+    );
+
     return {
       state,
       databaseList,
