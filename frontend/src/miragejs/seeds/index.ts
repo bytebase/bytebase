@@ -67,7 +67,7 @@ const workspacesSeeder = (server: any) => {
     type: "bytebase.general",
     name: "Hello, World!",
     description:
-      "Welcome to Bytebase, this is the task interface where developers and DBAs collaborate on database management tasks such as: \n\n - Requesting new database\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this task by clicking the star icon on the top of this page.",
+      "Welcome to Bytebase, this is the task interface where developers and DBAs collaborate on database management tasks such as: \n\n - Requesting a new database\n - Creating a table\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this task by clicking the star icon on the top of this page.",
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
@@ -152,8 +152,24 @@ const workspacesSeeder = (server: any) => {
     });
   }
 
+  const randomUpdateSchemaTaskName = (): string => {
+    const list = [
+      "Create table " + faker.fake("{{lorem.word}}"),
+      "Add index " + faker.fake("{{lorem.word}}"),
+      "Drop index " + faker.fake("{{lorem.word}}"),
+      "Add column " + faker.fake("{{lorem.word}}"),
+      "Drop column " + faker.fake("{{lorem.word}}"),
+      "Alter column " + faker.fake("{{lorem.word}}"),
+      "Add foreign key " + faker.fake("{{lorem.word}}"),
+      "Drop foreign key " + faker.fake("{{lorem.word}}"),
+    ];
+
+    return list[Math.floor(Math.random() * list.length)];
+  };
+
   for (let i = 0; i < 5; i++) {
     task = server.create("task", {
+      name: randomUpdateSchemaTaskName(),
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev1.id,
       assigneeId: ws1Owner.id,
@@ -187,6 +203,7 @@ const workspacesSeeder = (server: any) => {
 
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
+      name: randomUpdateSchemaTaskName(),
       type: "bytebase.database.schema.update",
       creatorId: ws1Owner.id,
       assigneeId: ws1DBA.id,
@@ -219,6 +236,7 @@ const workspacesSeeder = (server: any) => {
 
   for (let i = 0; i < 15; i++) {
     task = server.create("task", {
+      name: randomUpdateSchemaTaskName(),
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
@@ -247,6 +265,7 @@ const workspacesSeeder = (server: any) => {
   }
 
   task = server.create("task", {
+    name: randomUpdateSchemaTaskName(),
     type: "bytebase.database.schema.update",
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
