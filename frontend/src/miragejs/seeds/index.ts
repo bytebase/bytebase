@@ -77,6 +77,7 @@ const workspacesSeeder = (server: any) => {
         name: "Request",
         type: "SIMPLE",
         status: "PENDING",
+        stepList: [],
       },
     ],
     workspace: workspace1,
