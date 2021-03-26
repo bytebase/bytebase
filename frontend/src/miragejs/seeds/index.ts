@@ -67,7 +67,8 @@ const workspacesSeeder = (server: any) => {
     type: "bytebase.general",
     name: "Hello, World!",
     description:
-      "Welcome to Bytebase, this is the task interface where developers and DBAs collaborate on database management tasks such as: \n\n - Requesting a new database\n - Creating a table\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this task by clicking the star icon on the top of this page.",
+      "Welcome to Bytebase, this is the task interface where DBAs and developers collaborate on database management tasks such as: \n\n - Requesting a new database\n - Creating a table\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this task by clicking the star icon on the top of this page.",
+    sql: "SELECT 'DBA', 'Developer'\nFROM engineering\nWHERE taste='Good';",
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
@@ -152,25 +153,54 @@ const workspacesSeeder = (server: any) => {
     });
   }
 
-  const randomUpdateSchemaTaskName = (): string => {
-    const list = [
-      "Create table " + faker.fake("{{lorem.word}}"),
-      "Add index " + faker.fake("{{lorem.word}}"),
-      "Drop index " + faker.fake("{{lorem.word}}"),
-      "Add column " + faker.fake("{{lorem.word}}"),
-      "Drop column " + faker.fake("{{lorem.word}}"),
-      "Alter column " + faker.fake("{{lorem.word}}"),
-      "Add foreign key " + faker.fake("{{lorem.word}}"),
-      "Drop foreign key " + faker.fake("{{lorem.word}}"),
+  type SQLData = {
+    title: string;
+    sql: string;
+  };
+  const randomUpdateSchemaTaskName = (): SQLData => {
+    const tableName = faker.fake("{{lorem.word}}");
+    const list: SQLData[] = [
+      {
+        title: "Create table " + tableName,
+        sql: `CREATE TABLE ${tableName}(\nid INT NOT NULL,\nname TEXT,\nage INT,\nPRIMARY KEY (name)\n);`,
+      },
+      {
+        title: "Add index to " + tableName,
+        sql: `CREATE INDEX ${tableName}_idx\nON ${tableName} (name);`,
+      },
+      {
+        title: "Drop index from " + tableName,
+        sql: `ALTER TABLE ${tableName}\nDROP INDEX ${tableName}_idx;`,
+      },
+      {
+        title: "Add column to " + tableName,
+        sql: `ALTER TABLE ${tableName}\nADD email VARCHAR(255);`,
+      },
+      {
+        title: "Drop column from " + tableName,
+        sql: `ALTER TABLE ${tableName}\nDROP COLUMN email;`,
+      },
+      {
+        title: "Alter column to " + tableName,
+        sql: `ALTER TABLE ${tableName}\nMODIFY COLUMN email TEXT;`,
+      },
+      {
+        title: "Add foreign key to " + tableName,
+        sql: `ALTER TABLE ${tableName}\nADD CONSTRAINT FK_${tableName}\nFOREIGN KEY (id) REFERENCES ${tableName}(ID);`,
+      },
+      {
+        title: "Drop foreign key from " + tableName,
+        sql: `ALTER TABLE ${tableName}\nDROP FOREIGN KEY FK_${tableName};`,
+      },
     ];
 
     return list[Math.floor(Math.random() * list.length)];
   };
 
   for (let i = 0; i < 5; i++) {
-    const sql = randomUpdateSchemaTaskName();
+    const data = randomUpdateSchemaTaskName();
     task = server.create("task", {
-      name: sql,
+      name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev1.id,
       assigneeId: ws1Owner.id,
@@ -178,7 +208,7 @@ const workspacesSeeder = (server: any) => {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
       },
-      sql,
+      sql: data.sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
@@ -204,13 +234,13 @@ const workspacesSeeder = (server: any) => {
   }
 
   for (let i = 0; i < 15; i++) {
-    const sql = randomUpdateSchemaTaskName();
+    const data = randomUpdateSchemaTaskName();
     task = server.create("task", {
-      name: sql,
+      name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Owner.id,
       assigneeId: ws1DBA.id,
-      sql,
+      sql: data.sql,
       subscriberIdList: [ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
@@ -239,13 +269,13 @@ const workspacesSeeder = (server: any) => {
   }
 
   for (let i = 0; i < 15; i++) {
-    const sql = randomUpdateSchemaTaskName();
+    const data = randomUpdateSchemaTaskName();
     task = server.create("task", {
-      name: sql,
+      name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
-      sql,
+      sql: data.sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
@@ -269,13 +299,14 @@ const workspacesSeeder = (server: any) => {
       });
     }
   }
-  const sql = randomUpdateSchemaTaskName();
+
+  const data = randomUpdateSchemaTaskName();
   task = server.create("task", {
-    name: sql,
+    name: data.title,
     type: "bytebase.database.schema.update",
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
-    sql,
+    sql: data.sql,
     ...fillTaskAndStageStatus(environmentList2),
     workspace: workspace2,
   });
