@@ -98,7 +98,7 @@
           </div>
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
-            <section class="border-b mb-4">
+            <section v-if="showTaskSqlPanel" class="border-b mb-4">
               <TaskSqlPanel
                 :task="state.task"
                 :new="state.new"
@@ -613,6 +613,13 @@ export default {
       return !state.new && outputFieldList.value.length > 0;
     });
 
+    const showTaskSqlPanel = computed(() => {
+      return (
+        state.task.type == "bytebase.general" ||
+        state.task.type == "bytebase.database.schema.update"
+      );
+    });
+
     const applicableStatusTransitionList = computed(() => {
       const list: TaskStatusTransitionType[] = [];
       if (currentUser.value.id === (state.task as Task).assignee?.id) {
@@ -654,6 +661,7 @@ export default {
       allowEditFields,
       showTaskStageFlowBar,
       showTaskOutputPanel,
+      showTaskSqlPanel,
       applicableStatusTransitionList,
     };
   },
