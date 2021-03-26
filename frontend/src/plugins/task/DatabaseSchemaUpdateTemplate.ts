@@ -24,12 +24,6 @@ const template: TaskTemplate = {
           name: env.name,
           type: "ENVIRONMENT",
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + env.name,
-              type: "EXECUTION",
-            },
-          ],
           runnable: {
             auto: true,
             run: () => {

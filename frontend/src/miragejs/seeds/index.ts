@@ -77,7 +77,6 @@ const workspacesSeeder = (server: any) => {
         name: "Request",
         type: "SIMPLE",
         status: "PENDING",
-        stepList: [],
       },
     ],
     workspace: workspace1,
@@ -119,12 +118,6 @@ const workspacesSeeder = (server: any) => {
         name: "Request data source",
         type: "SIMPLE",
         status: "PENDING",
-        stepList: [
-          {
-            name: "Database name",
-            type: "DATABASE",
-          },
-        ],
       },
     ],
     payload: {
@@ -299,12 +292,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[0].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "2",
@@ -316,12 +303,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[1].name,
-              type: "EXECUTION",
-            },
-          ],
         },
       ],
     };
@@ -339,12 +320,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[0].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "2",
@@ -356,12 +331,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[1].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "3",
@@ -373,12 +342,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "RUNNING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[2].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "4",
@@ -390,12 +353,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[3].name,
-              type: "EXECUTION",
-            },
-          ],
         },
       ],
     };
@@ -413,12 +370,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[0].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "2",
@@ -430,12 +381,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "SKIPPED",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[1].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "3",
@@ -447,12 +392,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[2].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "4",
@@ -464,12 +403,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[3].name,
-              type: "EXECUTION",
-            },
-          ],
         },
       ],
     };
@@ -487,12 +420,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[0].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "2",
@@ -504,12 +431,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "FAILED",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[1].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "3",
@@ -521,12 +442,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[2].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "4",
@@ -538,12 +453,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[3].name,
-              type: "EXECUTION",
-            },
-          ],
         },
       ],
     };
@@ -561,12 +470,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[0].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "2",
@@ -578,12 +481,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "SKIPPED",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[1].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "3",
@@ -595,12 +492,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "DONE",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[2].name,
-              type: "EXECUTION",
-            },
-          ],
         },
         {
           id: "4",
@@ -612,12 +503,6 @@ const fillTaskAndStageStatus = (
             run: () => {},
           },
           status: "PENDING",
-          stepList: [
-            {
-              name: "Apply to " + environmentList[3].name,
-              type: "EXECUTION",
-            },
-          ],
         },
       ],
     };

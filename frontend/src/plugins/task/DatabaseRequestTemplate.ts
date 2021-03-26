@@ -36,12 +36,6 @@ const template: TaskTemplate = {
           name: "Request database",
           type: "SIMPLE",
           status: "PENDING",
-          stepList: [
-            {
-              name: "Provide database",
-              type: "DATABASE",
-            },
-          ],
         },
       ],
       creatorId: ctx.currentUser.id,
