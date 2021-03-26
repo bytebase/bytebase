@@ -19,7 +19,7 @@
     </div>
     <nav class="flex justify-center" aria-label="Progress">
       <ol class="space-y-4">
-        <li v-for="(intro, index) in introList" :key="index">
+        <li v-for="(intro, index) in effectiveList" :key="index">
           <!-- Complete Step -->
           <router-link :to="intro.link" class="group">
             <span class="flex items-start">
@@ -76,6 +76,7 @@ import { useStore } from "vuex";
 type IntroItem = {
   name: string;
   link: string;
+  allowDeveloper: boolean;
   done: ComputedRef<boolean>;
 };
 
@@ -87,10 +88,13 @@ export default {
   setup() {
     const store = useStore();
 
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
     const introList: IntroItem[] = reactive([
       {
         name: "Bookmark a task",
         link: "/task/hello-world-1",
+        allowDeveloper: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("bookmark.create");
         }),
@@ -98,6 +102,7 @@ export default {
       {
         name: "Add an environment",
         link: "/environment",
+        allowDeveloper: false,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("environment.create");
         }),
@@ -105,6 +110,7 @@ export default {
       {
         name: "Add an instance",
         link: "/instance",
+        allowDeveloper: false,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.create");
         }),
@@ -113,6 +119,7 @@ export default {
         name: "Request a database",
         link:
           "/task/new?template=bytebase.database.request&description=Estimated QPS: 10",
+        allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.request")
         ),
@@ -121,6 +128,7 @@ export default {
         name: "Create a table",
         link:
           "/task/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);",
+        allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")
         ),
@@ -128,11 +136,20 @@ export default {
       {
         name: "Invite a member",
         link: "/setting/member",
+        allowDeveloper: false,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("member.invite")
         ),
       },
     ]);
+
+    const devIntroList: IntroItem[] = introList.filter(
+      (item) => item.allowDeveloper
+    );
+
+    const effectiveList = computed(() => {
+      return currentUser.value.role == "DEVELOPER" ? devIntroList : introList;
+    });
 
     const isStepActive = (index: number): boolean => {
       for (let i = index - 1; i >= 0; i--) {
@@ -164,7 +181,11 @@ export default {
         });
     };
 
-    return { introList, isStepActive, hideQuickstart };
+    return {
+      effectiveList,
+      isStepActive,
+      hideQuickstart,
+    };
   },
 };
 </script>
