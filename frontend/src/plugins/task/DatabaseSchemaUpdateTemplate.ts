@@ -15,9 +15,9 @@ const template: TaskTemplate = {
         ctx.environmentList[ctx.environmentList.length - 1].id;
     }
     return {
-      name: "Update Schema",
+      name: "Change db",
       type: "bytebase.database.schema.update",
-      description: "DDL: ",
+      description: "",
       stageList: ctx.environmentList.map((env) => {
         return {
           id: env.id,

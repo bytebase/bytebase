@@ -28,9 +28,9 @@ const template: TaskTemplate = {
       readOnly: true,
     };
     return {
-      name: "Request new database",
+      name: "Request db",
       type: "bytebase.database.request",
-      description: "Estimated QPS: 10",
+      description: "",
       stageList: [
         {
           id: "1",

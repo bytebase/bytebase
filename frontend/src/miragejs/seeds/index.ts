@@ -162,7 +162,7 @@ const workspacesSeeder = (server: any) => {
     const list: SQLData[] = [
       {
         title: "Create table " + tableName,
-        sql: `CREATE TABLE ${tableName}(\nid INT NOT NULL,\nname TEXT,\nage INT,\nPRIMARY KEY (name)\n);`,
+        sql: `CREATE TABLE ${tableName} (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);`,
       },
       {
         title: "Add index to " + tableName,

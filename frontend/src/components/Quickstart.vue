@@ -111,14 +111,16 @@ export default {
       },
       {
         name: "Request a database",
-        link: "/task/new?template=bytebase.database.request",
+        link:
+          "/task/new?template=bytebase.database.request&description=Estimated QPS: 10",
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.request")
         ),
       },
       {
         name: "Create a table",
-        link: "/task/new?template=bytebase.database.schema.update",
+        link:
+          "/task/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);",
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")
         ),

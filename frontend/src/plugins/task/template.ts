@@ -15,7 +15,7 @@ const DEFAULT_TEMPLATE = {
   type: "bytebase.general",
   buildTask: (ctx: TemplateContext): TaskNew => {
     return {
-      name: "New General Task",
+      name: "",
       type: "bytebase.general",
       description: "",
       stageList: [

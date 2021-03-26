@@ -324,6 +324,22 @@ export default {
         environmentList: environmentList.value,
         currentUser: currentUser.value,
       });
+
+      if (router.currentRoute.value.query.name) {
+        newTask.name = router.currentRoute.value.query.name as string;
+      }
+      if (router.currentRoute.value.query.description) {
+        newTask.description = router.currentRoute.value.query
+          .description as string;
+      }
+      if (router.currentRoute.value.query.sql) {
+        newTask.sql = router.currentRoute.value.query.sql as string;
+      }
+      if (router.currentRoute.value.query.assignee) {
+        newTask.assigneeId = router.currentRoute.value.query
+          .assignee as PrincipalId;
+      }
+
       newTask.creatorId = currentUser.value.id;
       return {
         new: isNew.value,
