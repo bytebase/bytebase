@@ -265,9 +265,7 @@ export default function routes() {
       }
 
       if (attrs.stage !== undefined) {
-        const stage = task.stageList.find(
-          (item) => item.id == attrs.stage.id
-        );
+        const stage = task.stageList.find((item) => item.id == attrs.stage.id);
         if (stage) {
           changeList.push({
             fieldId: [TaskBuiltinFieldId.STAGE, stage.id].join("."),
@@ -276,6 +274,16 @@ export default function routes() {
           });
           stage.status = attrs.stage.status;
           attrs.stageList = task.stageList;
+        }
+      }
+
+      if (attrs.sql !== undefined) {
+        if (task.sql != attrs.sql) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.SQL,
+            oldValue: task.sql,
+            newValue: attrs.sql,
+          });
         }
       }
 

@@ -479,6 +479,10 @@ export default {
               name = stageName(props.task, stageId);
               oldValue = update.oldValue;
               newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.SQL) {
+              name = "SQL";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);
               name = field.name;

@@ -98,6 +98,14 @@
           </div>
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
+            <section class="border-b mb-4">
+              <TaskSqlPanel
+                :task="state.task"
+                :new="state.new"
+                :allowEdit="allowEditFields"
+                @update-sql="updateSql"
+              />
+            </section>
             <TaskDescriptionPanel
               :task="state.task"
               :new="state.new"
@@ -167,6 +175,7 @@ import { idFromSlug, taskSlug } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
+import TaskSqlPanel from "../views/TaskSqlPanel.vue";
 import TaskDescriptionPanel from "./TaskDescriptionPanel.vue";
 import TaskActivityPanel from "../views/TaskActivityPanel.vue";
 import TaskSidebar from "../views/TaskSidebar.vue";
@@ -240,6 +249,7 @@ export default {
     TaskHighlightPanel,
     TaskStageFlow,
     TaskOutputPanel,
+    TaskSqlPanel,
     TaskDescriptionPanel,
     TaskActivityPanel,
     TaskSidebar,
@@ -362,6 +372,22 @@ export default {
         patchTask(
           {
             name: newName,
+          },
+          postUpdated
+        );
+      }
+    };
+
+    const updateSql = (
+      newSql: string,
+      postUpdated: (updatedTask: Task) => void
+    ) => {
+      if (state.new) {
+        (state.task as TaskNew).sql = newSql;
+      } else {
+        patchTask(
+          {
+            sql: newSql,
           },
           postUpdated
         );
@@ -597,6 +623,7 @@ export default {
       state,
       updateName,
       updateDescription,
+      updateSql,
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
       updateAssigneeId,

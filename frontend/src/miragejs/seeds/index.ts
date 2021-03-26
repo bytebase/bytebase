@@ -168,8 +168,9 @@ const workspacesSeeder = (server: any) => {
   };
 
   for (let i = 0; i < 5; i++) {
+    const sql = randomUpdateSchemaTaskName();
     task = server.create("task", {
-      name: randomUpdateSchemaTaskName(),
+      name: sql,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev1.id,
       assigneeId: ws1Owner.id,
@@ -177,6 +178,7 @@ const workspacesSeeder = (server: any) => {
         id: ws1Dev1.id,
         name: ws1Dev1.name,
       },
+      sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
@@ -202,11 +204,13 @@ const workspacesSeeder = (server: any) => {
   }
 
   for (let i = 0; i < 15; i++) {
+    const sql = randomUpdateSchemaTaskName();
     task = server.create("task", {
-      name: randomUpdateSchemaTaskName(),
+      name: sql,
       type: "bytebase.database.schema.update",
       creatorId: ws1Owner.id,
       assigneeId: ws1DBA.id,
+      sql,
       subscriberIdList: [ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
@@ -235,11 +239,13 @@ const workspacesSeeder = (server: any) => {
   }
 
   for (let i = 0; i < 15; i++) {
+    const sql = randomUpdateSchemaTaskName();
     task = server.create("task", {
-      name: randomUpdateSchemaTaskName(),
+      name: sql,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
+      sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillTaskAndStageStatus(environmentList1),
       workspace: workspace1,
@@ -263,12 +269,13 @@ const workspacesSeeder = (server: any) => {
       });
     }
   }
-
+  const sql = randomUpdateSchemaTaskName();
   task = server.create("task", {
-    name: randomUpdateSchemaTaskName(),
+    name: sql,
     type: "bytebase.database.schema.update",
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
+    sql,
     ...fillTaskAndStageStatus(environmentList2),
     workspace: workspace2,
   });

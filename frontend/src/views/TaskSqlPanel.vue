@@ -1,7 +1,6 @@
 <template>
-  <!-- Description Bar -->
   <div class="flex justify-between">
-    <div class="textlabel">Description</div>
+    <div class="textlabel">SQL</div>
     <div v-if="!$props.new" class="space-x-2">
       <button
         v-if="allowEdit && !state.editing"
@@ -35,41 +34,45 @@
         v-if="state.editing"
         type="button"
         class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-        :disabled="state.editDescription == task.description"
+        :disabled="state.editSql == task.sql"
         @click.prevent="saveEdit"
       >
         Save
       </button>
     </div>
   </div>
-  <!-- Description -->
-  <label for="description" class="sr-only">Edit Description</label>
-  <!-- Use border-white focus:border-white to have the invisible border width
-      otherwise it will have 1px jiggling switching between focus/unfocus state -->
-  <textarea
-    ref="editDescriptionTextArea"
-    :rows="$props.new ? 10 : 5"
-    class="mt-2 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
-    :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
-    :style="
-      state.editing
-        ? ''
-        : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
-    "
-    placeholder="Add some description..."
-    :readonly="!state.editing"
-    v-model="state.editDescription"
-    @input="
-      (e) => {
-        sizeToFit(e.target);
-      }
-    "
-    @focus="
-      (e) => {
-        sizeToFit(e.target);
-      }
-    "
-  ></textarea>
+  <label class="sr-only">SQL statement</label>
+  <template v-if="state.editing">
+    <textarea
+      ref="editSqlTextArea"
+      class="whitespace-pre-wrap mt-2 w-full resize-none border-white focus:border-white outline-none"
+      :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
+      placeholder="Add SQL statement..."
+      v-model="state.editSql"
+      @input="
+        (e) => {
+          sizeToFit(e.target);
+          // When creating the task, we will emit the event on keystroke to update the in-memory state.
+          if ($props.new) {
+            $emit('update-sql', state.editSql);
+          }
+        }
+      "
+      @focus="
+        (e) => {
+          sizeToFit(e.target);
+        }
+      "
+    ></textarea>
+  </template>
+  <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
+  <!-- TODO: There is still flickering between edit/non-edit mode depending on the line height -->
+  <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
+    <div v-if="state.editSql" v-highlight class="whitespace-pre-wrap">
+      {{ state.editSql }}
+    </div>
+    <div v-else class="ml-2 text-control-light">Add SQL statement...</div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -87,12 +90,12 @@ import { sizeToFit } from "../utils";
 
 interface LocalState {
   editing: boolean;
-  editDescription: string;
+  editSql: string;
 }
 
 export default {
-  name: "TaskDescriptionPanel",
-  emits: ["update-description"],
+  name: "TaskSqlPanel",
+  emits: ["update-sql"],
   props: {
     task: {
       required: true,
@@ -109,22 +112,19 @@ export default {
   },
   components: {},
   setup(props, { emit }) {
-    const editDescriptionTextArea = ref();
+    const editSqlTextArea = ref();
 
     const state = reactive<LocalState>({
       editing: false,
-      editDescription: props.task.description,
+      editSql: props.task.sql || "",
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
-      if (
-        state.editing &&
-        editDescriptionTextArea.value === document.activeElement
-      ) {
+      if (state.editing && editSqlTextArea.value === document.activeElement) {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          if (state.editDescription != props.task.description) {
+          if (state.editSql != props.task.sql) {
             saveEdit();
           }
         }
@@ -132,7 +132,9 @@ export default {
     };
 
     const resizeTextAreaHandler = () => {
-      sizeToFit(editDescriptionTextArea.value);
+      if (state.editing) {
+        sizeToFit(editSqlTextArea.value);
+      }
     };
 
     onMounted(() => {
@@ -140,13 +142,10 @@ export default {
       window.addEventListener("resize", resizeTextAreaHandler);
       if (props.new) {
         state.editing = true;
+        nextTick(() => {
+          sizeToFit(editSqlTextArea.value);
+        });
       }
-      nextTick(() => {
-        sizeToFit(editDescriptionTextArea.value);
-        if (props.new) {
-          editDescriptionTextArea.value.focus();
-        }
-      });
     });
 
     onUnmounted(() => {
@@ -164,49 +163,27 @@ export default {
       }
     );
 
-    watch(
-      () => props.task,
-      (curTask, prevTask) => {
-        state.editDescription = curTask.description;
-        nextTick(() => {
-          sizeToFit(editDescriptionTextArea.value);
-        });
-      }
-    );
-
     const beginEdit = () => {
-      state.editDescription = props.task.description;
+      state.editSql = props.task.sql || "";
       state.editing = true;
       nextTick(() => {
-        editDescriptionTextArea.value.focus();
+        editSqlTextArea.value.focus();
       });
     };
 
     const saveEdit = () => {
-      emit("update-description", state.editDescription, (updatedTask: Task) => {
-        state.editDescription = updatedTask.description;
+      emit("update-sql", state.editSql, (updatedTask: Task) => {
+        state.editSql = updatedTask.sql || "";
         state.editing = false;
-        nextTick(() => {
-          sizeToFit(editDescriptionTextArea.value);
-        });
       });
     };
 
     const cancelEdit = () => {
-      state.editDescription = props.task.description;
+      state.editSql = props.task.sql || "";
       state.editing = false;
-      nextTick(() => {
-        sizeToFit(editDescriptionTextArea.value);
-      });
     };
 
-    return {
-      state,
-      editDescriptionTextArea,
-      beginEdit,
-      saveEdit,
-      cancelEdit,
-    };
+    return { editSqlTextArea, state, beginEdit, saveEdit, cancelEdit };
   },
 };
 </script>

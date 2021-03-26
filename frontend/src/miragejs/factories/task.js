@@ -21,6 +21,9 @@ export default {
     description() {
       return faker.fake("{{lorem.paragraphs}}");
     },
+    sql() {
+      return "SHOW TABLES";
+    },
     stageList() {
       return [
         {
