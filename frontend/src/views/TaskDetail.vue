@@ -92,7 +92,6 @@
               :new="state.new"
               :fieldList="inputFieldList"
               :allowEdit="allowEditFields"
-              @start-status-transition="tryStartTaskStatusTransition"
               @update-assignee-id="updateAssigneeId"
               @update-custom-field="updateCustomField"
             />

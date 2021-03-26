@@ -213,11 +213,7 @@ interface LocalState {}
 
 export default {
   name: "TaskSidebar",
-  emits: [
-    "start-status-transition",
-    "update-assignee-id",
-    "update-custom-field",
-  ],
+  emits: ["update-assignee-id", "update-custom-field"],
   props: {
     task: {
       required: true,
