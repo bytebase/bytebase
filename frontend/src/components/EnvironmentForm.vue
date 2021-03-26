@@ -14,60 +14,64 @@
           name="name"
           type="text"
           class="textfield mt-4 w-full"
+          :disabled="!allowEdit"
           :value="state.environment.name"
           @input="updateEnvironment('name', $event.target.value)"
         />
       </div>
     </div>
-    <!-- Create button group -->
-    <div v-if="create" class="flex justify-end pt-5">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="$emit('cancel')"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-      >
-        Create
-      </button>
-    </div>
-    <!-- Update button group -->
-    <div v-else class="flex justify-between items-center pt-5">
-      <div>
-        <BBButtonTrash
-          v-if="allowDelete"
-          :buttonText="'Delete this environment'"
-          :requireConfirm="false"
-          @confirm="$emit('delete')"
-        />
-      </div>
-      <div>
+    <template v-if="allowEdit">
+      <!-- Create button group -->
+      <div v-if="create" class="flex justify-end pt-5">
         <button
           type="button"
           class="btn-normal py-2 px-4"
-          :disabled="!valueChanged"
-          @click.prevent="revertEnvironment"
+          @click.prevent="$emit('cancel')"
         >
-          Revert
+          Cancel
         </button>
         <button
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!valueChanged"
         >
-          Update
+          Create
         </button>
       </div>
-    </div>
+      <!-- Update button group -->
+      <div v-else class="flex justify-between items-center pt-5">
+        <div>
+          <BBButtonTrash
+            v-if="allowDelete"
+            :buttonText="'Delete this environment'"
+            :requireConfirm="false"
+            @confirm="$emit('delete')"
+          />
+        </div>
+        <div>
+          <button
+            type="button"
+            class="btn-normal py-2 px-4"
+            :disabled="!valueChanged"
+            @click.prevent="revertEnvironment"
+          >
+            Revert
+          </button>
+          <button
+            type="submit"
+            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+            :disabled="!valueChanged"
+          >
+            Update
+          </button>
+        </div>
+      </div>
+    </template>
   </form>
 </template>
 
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
+import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { Environment, EnvironmentNew } from "../types";
@@ -95,7 +99,10 @@ export default {
     },
   },
   setup(props, ctx) {
+    const store = useStore();
     const state = reactive<LocalState>({});
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     // [NOTE] Ternary operator doesn't trigger VS type checking, so we use a separate
     // IF block.
@@ -107,6 +114,12 @@ export default {
         order: -1,
       };
     }
+
+    const allowEdit = computed(() => {
+      return (
+        currentUser.value.role == "DBA" || currentUser.value.role == "OWNER"
+      );
+    });
 
     const valueChanged = computed(() => {
       return !isEqual(props.environment, state.environment);
@@ -124,6 +137,7 @@ export default {
 
     return {
       state,
+      allowEdit,
       valueChanged,
       updateEnvironment,
       revertEnvironment,
