@@ -14,6 +14,7 @@
             class="ml-2 my-0.5 w-full text-lg font-bold"
             :disabled="!allowEdit"
             :required="true"
+            :focusOnMount="$props.new"
             :bordered="false"
             :value="state.name"
             :placeholder="'Task name'"
@@ -41,11 +42,10 @@
 </template>
 
 <script lang="ts">
-import { reactive, ref, nextTick, watch, PropType } from "vue";
+import { reactive, watch, PropType } from "vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import { activeStage } from "../utils";
 import { Task } from "../types";
-import { isEmpty } from "lodash";
 
 interface LocalState {
   editing: boolean;
@@ -71,8 +71,6 @@ export default {
   },
   components: { TaskStatusIcon },
   setup(props, { emit }) {
-    const nameTextField = ref();
-
     const state = reactive<LocalState>({
       editing: false,
       name: props.task.name,
@@ -92,7 +90,7 @@ export default {
       }
     };
 
-    return { nameTextField, state, activeStage, trySaveName };
+    return { state, activeStage, trySaveName };
   },
 };
 </script>
