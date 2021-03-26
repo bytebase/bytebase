@@ -12,10 +12,10 @@
         <div class="textlabel">
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
-          <template v-if="allowEdit">
+          <template v-if="allowEditDatabase">
             <template v-if="field.type == 'Database'">
               <router-link
-                :to="createDatabaseLink(field)"
+                :to="databaseCreationLink(field)"
                 class="ml-2 normal-link"
               >
                 (Create database)
@@ -85,19 +85,19 @@
         >
           <DatabaseSelect
             class="mt-1 w-64"
-            :disabled="!allowEdit"
+            :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
             :environmentId="environmentId"
-            :selectedId="fieldValue(field)"
+            :selectedId="effectiveDatabaseId(field)"
             @select-database-id="
               (databaseId) => {
                 trySaveCustomField(field, databaseId);
               }
             "
           />
-          <template v-if="databaseLink(field)">
+          <template v-if="databaseViewLink(field)">
             <router-link
-              :to="databaseLink(field)"
+              :to="databaseViewLink(field)"
               class="ml-2 normal-link text-sm"
             >
               View
@@ -123,7 +123,7 @@ import {
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
 } from "../plugins";
-import { DatabaseId, Task } from "../types";
+import { DatabaseId, EnvironmentId, Task } from "../types";
 
 interface LocalState {}
 
@@ -149,9 +149,11 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentId = computed(() => {
-      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
-    });
+    const environmentId = computed(
+      (): EnvironmentId => {
+        return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+      }
+    );
 
     const fieldValue = (field: TaskField): string => {
       return props.task.payload[field.id];
@@ -164,11 +166,33 @@ export default {
       );
     });
 
-    const isValidLink = (link: string) => {
+    const allowEditDatabase = computed((): boolean => {
+      if (!allowEdit.value) {
+        return false;
+      }
+
+      const databasePayload: DatabaseFieldPayload =
+        props.task.payload[TaskBuiltinFieldId.DATABASE];
+
+      return databasePayload.isNew;
+    });
+
+    const isValidLink = (link: string): boolean => {
       return link?.trim().length > 0;
     };
 
-    const createDatabaseLink = (field: TaskField) => {
+    // TODO: Make it reactive
+    const effectiveDatabaseId = (field: TaskField): DatabaseId | undefined => {
+      const databasePayload: DatabaseFieldPayload =
+        props.task.payload[TaskBuiltinFieldId.DATABASE];
+      if (!databasePayload.isNew) {
+        return databasePayload.id;
+      }
+
+      return fieldValue(field);
+    };
+
+    const databaseCreationLink = (field: TaskField): string => {
       const queryParamList: string[] = [];
 
       if (environmentId.value) {
@@ -196,8 +220,9 @@ export default {
       return "/db/new?" + queryParamList.join("&");
     };
 
-    const databaseLink = (field: TaskField) => {
-      const databaseId = fieldValue(field);
+    const databaseViewLink = (field: TaskField): string => {
+      const databaseId = effectiveDatabaseId(field);
+      console.log(databaseId);
       if (databaseId) {
         const database = store.getters["database/databaseById"](databaseId);
         if (database) {
@@ -245,9 +270,11 @@ export default {
       environmentId,
       fieldValue,
       allowEdit,
+      allowEditDatabase,
       isValidLink,
-      createDatabaseLink,
-      databaseLink,
+      effectiveDatabaseId,
+      databaseCreationLink,
+      databaseViewLink,
       copyText,
       goToLink,
       trySaveCustomField,
