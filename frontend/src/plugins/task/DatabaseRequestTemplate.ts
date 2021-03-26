@@ -5,6 +5,7 @@ import {
   TemplateContext,
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
+  CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
 import { linkfy } from "../../utils";
 import { Task, TaskNew, EnvironmentId } from "../../types";
@@ -72,7 +73,7 @@ const template: TaskTemplate = {
     },
     {
       category: "OUTPUT",
-      id: "99",
+      id: CUSTOM_FIELD_ID_BEGIN + 1,
       slug: "database",
       name: "Provided database",
       type: "Database",

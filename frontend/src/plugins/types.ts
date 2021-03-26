@@ -8,6 +8,7 @@ import {
 } from "../types";
 
 // Task
+// It has to be string type because the id for stage field contain multiple parts.
 export type TaskFieldId = string;
 
 export enum TaskBuiltinFieldId {
@@ -22,7 +23,7 @@ export enum TaskBuiltinFieldId {
   STAGE = "9", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
 }
 
-export const CUSTOM_FIELD_ID_BEGIN = 101;
+export const CUSTOM_FIELD_ID_BEGIN = "100";
 
 export type TaskFieldType =
   | "String"
