@@ -16,7 +16,10 @@
             >Databases</router-link
           >
 
-          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md"
+          <router-link
+            v-if="isDBAorAbove"
+            to="/instance"
+            class="bar-link px-2 py-2 rounded-md"
             >Instances</router-link
           >
 
@@ -118,7 +121,8 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
+import { useStore } from "vuex";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 
 interface LocalState {
@@ -129,11 +133,21 @@ export default {
   name: "DashboardHeader",
   components: { ProfileDropdown },
   setup(props, ctx) {
+    const store = useStore();
+
     const state = reactive<LocalState>({
       showMobileMenu: false,
     });
 
-    return { state };
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const isDBAorAbove = computed(() => {
+      return (
+        currentUser.value.role == "DBA" || currentUser.value.role == "OWNER"
+      );
+    });
+
+    return { state, isDBAorAbove };
   },
 };
 </script>
