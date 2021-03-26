@@ -6,6 +6,7 @@ export const UNKNOWN_ID = "-1";
 
 export type ResourceType =
   | "PRINCIPAL"
+  | "EXECUTION"
   | "USER"
   | "ENVIRONMENT"
   | "INSTANCE"
@@ -19,6 +20,7 @@ export type ResourceType =
 export const unknown = (
   type: ResourceType
 ):
+  | Execution
   | Principal
   | User
   | Environment
@@ -28,6 +30,10 @@ export const unknown = (
   | Task
   | Activity
   | Bookmark => {
+  const UNKNOWN_EXECUTION: Execution = {
+    id: UNKNOWN_ID,
+    status: "PENDING",
+  };
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
     status: "UNKNOWN",
@@ -113,6 +119,8 @@ export const unknown = (
   };
 
   switch (type) {
+    case "EXECUTION":
+      return UNKNOWN_EXECUTION;
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
     case "USER":
@@ -136,6 +144,9 @@ export const unknown = (
 
 // These ID format may change in the future, so we encapsulate with a type.
 // Also good for readability.
+
+export type ExecutionId = string;
+
 export type UserId = string;
 
 // For now, Principal is equal to UserId, in the future it may contain other id such as application, bot etc.
@@ -167,6 +178,14 @@ export type CommandId = string;
 export type CommandRegisterId = string;
 
 // Persistent State Models
+
+export type ExecutionStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED";
+
+export type Execution = {
+  id: ExecutionId;
+  status: ExecutionStatus;
+  link?: string;
+};
 
 // RoleMapping
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
