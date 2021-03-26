@@ -172,38 +172,35 @@
                       </div>
                     </div>
                   </div>
-                  <template
-                    v-if="
-                      state.editCommentMode &&
-                      state.activeActivity.id == activity.id
-                    "
-                  >
-                    <label for="comment" class="sr-only">Edit Comment</label>
-                    <textarea
-                      ref="editCommentTextArea"
-                      class="textarea block w-full resize-none mt-1 text-sm text-control whitespace-pre-wrap"
-                      placeholder="Add a note..."
-                      v-model="editComment"
-                      @input="
-                        (e) => {
-                          sizeToFit(e.target);
-                        }
+                  <div class="mt-2 text-sm text-control whitespace-pre-wrap">
+                    <template
+                      v-if="
+                        state.editCommentMode &&
+                        state.activeActivity.id == activity.id
                       "
-                      @focus="
-                        (e) => {
-                          sizeToFit(e.target);
-                        }
-                      "
-                    ></textarea>
-                  </template>
-                  <!-- The margin value is intentionally set to avoid flickering when switching between edit mode. -->
-                  <div
-                    v-else-if="activity.comment"
-                    class="text-sm ml-1.5 mt-2 mb-0.5 whitespace-pre-wrap"
-                  >
-                    <div v-highlight>
+                    >
+                      <label for="comment" class="sr-only">Edit Comment</label>
+                      <textarea
+                        ref="editCommentTextArea"
+                        rows="3"
+                        class="textarea block w-full resize-none"
+                        placeholder="Leave a comment..."
+                        v-model="editComment"
+                        @input="
+                          (e) => {
+                            sizeToFit(e.target);
+                          }
+                        "
+                        @focus="
+                          (e) => {
+                            sizeToFit(e.target);
+                          }
+                        "
+                      ></textarea>
+                    </template>
+                    <template v-else>
                       {{ activity.comment }}
-                    </div>
+                    </template>
                   </div>
                 </div>
               </div>
