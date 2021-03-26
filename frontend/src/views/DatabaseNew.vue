@@ -377,6 +377,7 @@ export default {
       // If a valid task id is provided, we will set the database output field
       // if it's not set before. This is based on the assumption that user creates
       // the database to fullfill that particular task (e.g. completing the request db workflow)
+      // TODO: If there is no applicable database field, we should also link the database to the task.
       if (linkedTask) {
         const template = templateForType(linkedTask.type);
         if (template) {

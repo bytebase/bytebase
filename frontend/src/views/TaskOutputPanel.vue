@@ -181,7 +181,6 @@ export default {
       return link?.trim().length > 0;
     };
 
-    // TODO: Make it reactive
     const effectiveDatabaseId = (field: TaskField): DatabaseId | undefined => {
       const databasePayload: DatabaseFieldPayload =
         props.task.payload[TaskBuiltinFieldId.DATABASE];
@@ -222,7 +221,6 @@ export default {
 
     const databaseViewLink = (field: TaskField): string => {
       const databaseId = effectiveDatabaseId(field);
-      console.log(databaseId);
       if (databaseId) {
         const database = store.getters["database/databaseById"](databaseId);
         if (database) {
