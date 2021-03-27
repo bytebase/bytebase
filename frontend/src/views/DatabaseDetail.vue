@@ -187,7 +187,7 @@ export default {
     const database = computed(() => {
       return store.getters["database/databaseById"](
         idFromSlug(props.databaseSlug),
-        idFromSlug(props.instanceSlug)
+        { instanceId: idFromSlug(props.instanceSlug) }
       );
     });
 

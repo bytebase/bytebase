@@ -217,7 +217,7 @@ export default {
     const database = computed(() => {
       return store.getters["database/databaseById"](
         dataSource.value.databaseId,
-        instanceId
+        { instanceId }
       );
     });
 

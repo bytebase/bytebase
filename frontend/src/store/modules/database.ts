@@ -13,6 +13,13 @@ import {
   PrincipalId,
   unknown,
 } from "../../types";
+import environment from "./environment";
+
+type IDParams = {
+  instanceId?: InstanceId;
+  userId?: UserId;
+  environmentId?: EnvironmentId;
+};
 
 function convert(
   database: ResourceObject,
@@ -64,26 +71,50 @@ const getters = {
 
   databaseById: (state: DatabaseState) => (
     databaseId: DatabaseId,
-    instanceId?: InstanceId,
-    userId?: UserId
+    idParams?: IDParams
   ): Database => {
     let database = undefined;
-    if (instanceId) {
-      const list = state.databaseListByInstanceId.get(instanceId) || [];
+    if (idParams?.instanceId) {
+      const list =
+        state.databaseListByInstanceId.get(idParams?.instanceId) || [];
       database = list.find((item) => item.id == databaseId);
-    } else if (userId) {
-      const list = state.databaseListByUserId.get(userId) || [];
+      if (database) {
+        return database;
+      }
+    } else if (idParams?.userId) {
+      const list = state.databaseListByUserId.get(idParams?.userId) || [];
       database = list.find((item) => item.id == databaseId);
+      if (database) {
+        return database;
+      }
+    } else if (idParams?.environmentId) {
+      const list =
+        state.databaseListByEnvironmentId.get(idParams?.environmentId) || [];
+      database = list.find((item) => item.id == databaseId);
+      if (database) {
+        return database;
+      }
     } else {
       for (let [_, list] of state.databaseListByInstanceId) {
         database = list.find((item) => item.id == databaseId);
         if (database) {
-          break;
+          return database;
         }
       }
-    }
-    if (database) {
-      return database;
+
+      for (let [_, list] of state.databaseListByUserId) {
+        database = list.find((item) => item.id == databaseId);
+        if (database) {
+          return database;
+        }
+      }
+
+      for (let [_, list] of state.databaseListByEnvironmentId) {
+        database = list.find((item) => item.id == databaseId);
+        if (database) {
+          return database;
+        }
+      }
     }
 
     const ts = Date.now();

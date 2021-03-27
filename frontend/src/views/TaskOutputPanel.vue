@@ -222,7 +222,9 @@ export default {
     const databaseViewLink = (field: TaskField): string => {
       const databaseId = effectiveDatabaseId(field);
       if (databaseId) {
-        const database = store.getters["database/databaseById"](databaseId);
+        const database = store.getters["database/databaseById"](databaseId, {
+          environmentId: environmentId.value,
+        });
         if (database) {
           return fullDatabaseUrl(database);
         }

@@ -180,10 +180,9 @@ export default {
       for (const dataSource of store.getters[
         "dataSource/dataSourceListByInstanceId"
       ](props.instance.id)) {
-        const databaseName = store.getters["database/databaseById"](
-          dataSource.databaseId,
-          props.instance.id
-        ).name;
+        const databaseName = store.getters[
+          "database/databaseById"
+        ](dataSource.databaseId, { instanceId: props.instance.id }).name;
         if (
           !state.searchText ||
           dataSource.name
