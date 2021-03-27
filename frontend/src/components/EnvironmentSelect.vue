@@ -25,6 +25,7 @@
 <script lang="ts">
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
+import cloneDeep from "lodash-es/cloneDeep";
 
 interface LocalState {
   selectedId?: string;
@@ -54,7 +55,9 @@ export default {
     });
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
+      return cloneDeep(
+        store.getters["environment/environmentList"]()
+      ).reverse();
     });
 
     if (
