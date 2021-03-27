@@ -28,24 +28,24 @@
         </p>
       </router-link>
       <div class="border-t border-gray-100"></div>
-      <div v-if="isDevOrDemo" class="py-1">
-        <div v-if="currentUser.email != 'demo@example.com'" class="py-1">
+      <div v-if="isDevOrDemo" class="md:hidden py-1">
+        <div v-if="currentUser.role != 'OWNER'" class="py-1">
           <a @click.prevent="switchToOwner" class="menu-item" role="menuitem">
-            Switch to Demo (Owner)
+            Switch to Owner
           </a>
         </div>
-        <div v-if="currentUser.email != 'jerry@example.com'" class="py-1">
+        <div v-if="currentUser.role != 'DBA'" class="py-1">
           <a @click.prevent="switchToDBA" class="menu-item" role="menuitem">
-            Switch to Jerry (DBA)
+            Switch to DBA
           </a>
         </div>
-        <div v-if="currentUser.email != 'tom@example.com'" class="py-1">
+        <div v-if="currentUser.email != 'DEVELOPER'" class="py-1">
           <a
             @click.prevent="switchToDeveloper"
             class="menu-item"
             role="menuitem"
           >
-            Switch to Tom (Dev)
+            Switch to Developer
           </a>
         </div>
       </div>
@@ -134,6 +134,18 @@ export default {
       });
     };
 
+    const isOwner = computed(() => {
+      return currentUser.value.role == "OWNER";
+    });
+
+    const isDBA = computed(() => {
+      return currentUser.value.role == "DBA";
+    });
+
+    const isDeveloper = computed(() => {
+      return currentUser.value.role == "DEVELOPER";
+    });
+
     const switchToOwner = () => {
       store.dispatch("auth/login", {
         email: "demo@example.com",
@@ -159,6 +171,9 @@ export default {
       currentUser,
       resetQuickstart,
       logout,
+      isOwner,
+      isDBA,
+      isDeveloper,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,

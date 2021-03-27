@@ -17,7 +17,7 @@
           >
 
           <router-link
-            v-if="isDBAorAbove"
+            v-if="currentUser.role == 'OWNER' || currentUser.role == 'DBA'"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
             >Instances</router-link
@@ -36,7 +36,40 @@
     </div>
     <div>
       <div class="flex items-center">
-        <router-link to="/inbox" class="icon-link p-1 rounded-full">
+        <div
+          v-if="isDevOrDemo"
+          class="hidden md:flex sm:flex-row items-center space-x-2"
+        >
+          <span class="hidden lg:block textlabel"
+            >{{ currentUser.name }}, switch to:</span
+          >
+          <div
+            v-if="currentUser.role != 'OWNER'"
+            class="text-sm normal-link"
+            @click.prevent="switchToOwner"
+          >
+            Owner
+          </div>
+          <div
+            v-if="currentUser.role != 'DBA'"
+            class="text-sm normal-link"
+            @click.prevent="switchToDBA"
+          >
+            DBA
+          </div>
+          <div
+            v-if="currentUser.role != 'DEVELOPER'"
+            class="text-sm normal-link"
+            @click.prevent="switchToDeveloper"
+          >
+            Developer
+          </div>
+        </div>
+        <router-link
+          v-if="false"
+          to="/inbox"
+          class="icon-link p-1 rounded-full"
+        >
           <span class="sr-only">View Inbox</span>
           <!-- Heroicon name: bell -->
           <svg
@@ -141,13 +174,42 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const isDBAorAbove = computed(() => {
-      return (
-        currentUser.value.role == "DBA" || currentUser.value.role == "OWNER"
-      );
+    const role = computed(() => {
+      const role = currentUser.value.role;
+      return role == "DBA"
+        ? role
+        : role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
     });
 
-    return { state, isDBAorAbove };
+    const switchToOwner = () => {
+      store.dispatch("auth/login", {
+        email: "demo@example.com",
+        password: "1024",
+      });
+    };
+
+    const switchToDBA = () => {
+      store.dispatch("auth/login", {
+        email: "jerry@example.com",
+        password: "aaa",
+      });
+    };
+
+    const switchToDeveloper = () => {
+      store.dispatch("auth/login", {
+        email: "tom@example.com",
+        password: "aaa",
+      });
+    };
+
+    return {
+      state,
+      currentUser,
+      role,
+      switchToOwner,
+      switchToDBA,
+      switchToDeveloper,
+    };
   },
 };
 </script>
