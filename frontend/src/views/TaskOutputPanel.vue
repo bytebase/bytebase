@@ -1,8 +1,8 @@
 <template>
   <h2 class="px-4 text-lg font-medium">
-    Result
+    Output
     <span class="text-base font-normal text-control-light">
-      (these fields will be filled by the assignee before resolving the task)
+      (these fields must be filled by the assignee before resolving the task)
     </span>
   </h2>
 

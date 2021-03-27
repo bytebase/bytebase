@@ -16,6 +16,7 @@
               <div class="mt-1 flex rounded-md shadow-sm">
                 <input
                   type="text"
+                  disabled="true"
                   :name="field.id"
                   :id="field.id"
                   v-model="state.outputValueList[index]"
@@ -27,6 +28,7 @@
             <template v-if="field.type == 'Database'">
               <DatabaseSelect
                 class="mt-1 w-64"
+                :disabled="true"
                 :mode="'ENVIRONMENT'"
                 :environmentId="environmentId"
                 :selectedId="state.outputValueList[index]"
@@ -79,7 +81,6 @@
         type="button"
         class="ml-3 px-4 py-2"
         v-bind:class="submitButtonStyle"
-        :disabled="!allowSubmit"
         @click.prevent="$emit('submit', state.outputValueList, state.comment)"
       >
         {{ okText }}
@@ -89,17 +90,11 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, ref, watch, PropType } from "vue";
+import { computed, reactive, ref, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { DatabaseId, Task, TaskStatusTransition } from "../types";
-import {
-  TaskField,
-  TaskFieldReferenceProvider,
-  TaskFieldReferenceProviderContext,
-  TaskBuiltinFieldId,
-} from "../plugins";
+import { Task, TaskStatusTransition } from "../types";
+import { TaskField, TaskBuiltinFieldId } from "../plugins";
 
 interface LocalState {
   comment: string;
@@ -153,25 +148,11 @@ export default {
       }
     });
 
-    const allowSubmit = computed(() => {
-      if (props.transition.type != "RESOLVE") {
-        return true;
-      }
-      for (let i = 0; i < props.outputFieldList.length; i++) {
-        const field = props.outputFieldList[i];
-        if (field.required && field.isEmpty(state.outputValueList[i])) {
-          return false;
-        }
-      }
-      return true;
-    });
-
     return {
       state,
       environmentId,
       commentTextArea,
       submitButtonStyle,
-      allowSubmit,
     };
   },
 };

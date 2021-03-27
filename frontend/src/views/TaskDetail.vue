@@ -40,6 +40,7 @@
                     : 'btn-normal'
                   : 'btn-normal mr-2'
               "
+              :disabled="transition.type == 'RESOLVE' && !allowResolve"
               @click.prevent="
                 tryStartTaskStatusTransition(transition.type, () => {})
               "
@@ -582,6 +583,16 @@ export default {
       return true;
     });
 
+    const allowResolve = computed(() => {
+      for (let i = 0; i < outputFieldList.value.length; i++) {
+        const field = outputFieldList.value[i];
+        if (field.required && field.isEmpty(state.task.payload[field.id])) {
+          return false;
+        }
+      }
+      return true;
+    });
+
     // We may consider consolidating all the editing logic in one place. But for now
     // this controls editing "name, description and all custom fields".
     // On the other hand:
@@ -620,26 +631,29 @@ export default {
       );
     });
 
-    const applicableStatusTransitionList = computed(() => {
-      const list: TaskStatusTransitionType[] = [];
-      if (currentUser.value.id === (state.task as Task).assignee?.id) {
-        list.push(
-          ...ASSIGNEE_APPLICABLE_ACTION_LIST.get((state.task as Task).status)!
+    const applicableStatusTransitionList = computed(
+      (): TaskStatusTransition[] => {
+        const list: TaskStatusTransitionType[] = [];
+        if (currentUser.value.id === (state.task as Task).assignee?.id) {
+          list.push(
+            ...ASSIGNEE_APPLICABLE_ACTION_LIST.get((state.task as Task).status)!
+          );
+        }
+        if (currentUser.value.id === (state.task as Task).creator.id) {
+          CREATOR_APPLICABLE_ACTION_LIST.get(
+            (state.task as Task).status
+          )!.forEach((item) => {
+            if (list.indexOf(item) == -1) {
+              list.push(item);
+            }
+          });
+        }
+        return list.map(
+          (type: TaskStatusTransitionType) =>
+            TASK_STATUS_TRANSITION_LIST.get(type)!
         );
       }
-      if (currentUser.value.id === (state.task as Task).creator.id) {
-        CREATOR_APPLICABLE_ACTION_LIST.get(
-          (state.task as Task).status
-        )!.forEach((item) => {
-          if (list.indexOf(item) == -1) {
-            list.push(item);
-          }
-        });
-      }
-      return list.map((type: TaskStatusTransitionType) =>
-        TASK_STATUS_TRANSITION_LIST.get(type)
-      );
-    });
+    );
 
     return {
       updateStatusModalState,
@@ -654,6 +668,7 @@ export default {
       doCreate,
       changeStageStatus,
       allowCreate,
+      allowResolve,
       currentUser,
       taskTemplate,
       outputFieldList,

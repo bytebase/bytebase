@@ -75,7 +75,7 @@ const template: TaskTemplate = {
       category: "OUTPUT",
       id: CUSTOM_FIELD_ID_BEGIN + 1,
       slug: "database",
-      name: "Provided database",
+      name: "Granted database",
       type: "Database",
       required: true,
       isEmpty: (value: string): boolean => {
