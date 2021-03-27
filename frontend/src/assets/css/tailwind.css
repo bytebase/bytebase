@@ -151,7 +151,7 @@
 }
 
 .normal-link {
-  @apply text-blue-600 hover:underline hover:text-blue-800 focus:outline-none;
+  @apply cursor-pointer text-blue-600 hover:underline hover:text-blue-800 focus:outline-none;
 }
 
 .icon-link {
