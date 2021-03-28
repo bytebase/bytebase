@@ -22,7 +22,7 @@ const template: TaskTemplate = {
         return {
           id: env.id,
           name: env.name,
-          type: "ENVIRONMENT",
+          type: "bytebase.stage.schema.update",
           status: "PENDING",
           runnable: {
             auto: true,

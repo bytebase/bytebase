@@ -40,7 +40,7 @@ export function activeStageIsRunning(task: Task): boolean {
 
 export function activeEnvironmentId(task: Task): EnvironmentId | null {
   const stage = activeStage(task);
-  if (stage.type === "ENVIRONMENT") {
+  if (stage.environmentId) {
     return stage.environmentId!;
   }
   const taskTemplate = templateForType(task.type);

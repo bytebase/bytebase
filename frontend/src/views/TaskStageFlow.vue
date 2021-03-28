@@ -376,9 +376,6 @@ export default {
 
     const applicableStageTransitionList = computed(() => {
       const stage = activeStage(props.task as Task);
-      if (stage.type != "ENVIRONMENT") {
-        return false;
-      }
       const list: StageStatusTransitionType[] = [];
       if (currentUser.value.id === (props.task as Task).assignee?.id) {
         list.push(...ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!);

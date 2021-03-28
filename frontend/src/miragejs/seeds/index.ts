@@ -1,5 +1,5 @@
 import faker from "faker";
-import { Environment, Stage, Task } from "../../types";
+import { Environment, Stage, StageType, Task } from "../../types";
 import { instanceSlug, databaseSlug, taskSlug } from "../../utils";
 
 /*
@@ -76,7 +76,7 @@ const workspacesSeeder = (server: any) => {
       {
         id: "1",
         name: "Request",
-        type: "SIMPLE",
+        type: "bytebase.stage.general",
         status: "PENDING",
       },
     ],
@@ -109,15 +109,15 @@ const workspacesSeeder = (server: any) => {
 
   task = server.create("task", {
     type: "bytebase.database.request",
-    name: "Request data source for environment - " + environmentList1[1].name,
+    name: "Request database for environment - " + environmentList1[1].name,
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
     stageList: [
       {
         id: "1",
-        name: "Request data source",
-        type: "SIMPLE",
+        name: "Create database",
+        type: "bytebase.stage.database.create",
         status: "PENDING",
       },
     ],
@@ -334,6 +334,7 @@ const workspacesSeeder = (server: any) => {
 const fillTaskAndStageStatus = (
   environmentList: Environment[]
 ): Pick<Task, "status" | "stageList"> => {
+  const type: StageType = "bytebase.stage.schema.update";
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
     return {
@@ -342,7 +343,7 @@ const fillTaskAndStageStatus = (
         {
           id: "1",
           name: environmentList[0].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[0].id,
           runnable: {
             auto: true,
@@ -353,7 +354,7 @@ const fillTaskAndStageStatus = (
         {
           id: "2",
           name: environmentList[1].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[1].id,
           runnable: {
             auto: true,
@@ -370,7 +371,7 @@ const fillTaskAndStageStatus = (
         {
           id: "1",
           name: environmentList[0].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[0].id,
           runnable: {
             auto: true,
@@ -381,7 +382,7 @@ const fillTaskAndStageStatus = (
         {
           id: "2",
           name: environmentList[1].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[1].id,
           runnable: {
             auto: true,
@@ -392,7 +393,7 @@ const fillTaskAndStageStatus = (
         {
           id: "3",
           name: environmentList[2].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[2].id,
           runnable: {
             auto: true,
@@ -403,7 +404,7 @@ const fillTaskAndStageStatus = (
         {
           id: "4",
           name: environmentList[3].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[3].id,
           runnable: {
             auto: true,
@@ -420,7 +421,7 @@ const fillTaskAndStageStatus = (
         {
           id: "1",
           name: environmentList[0].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[0].id,
           runnable: {
             auto: true,
@@ -431,7 +432,7 @@ const fillTaskAndStageStatus = (
         {
           id: "2",
           name: environmentList[1].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[1].id,
           runnable: {
             auto: true,
@@ -442,7 +443,7 @@ const fillTaskAndStageStatus = (
         {
           id: "3",
           name: environmentList[2].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[2].id,
           runnable: {
             auto: true,
@@ -453,7 +454,7 @@ const fillTaskAndStageStatus = (
         {
           id: "4",
           name: environmentList[3].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[3].id,
           runnable: {
             auto: true,
@@ -470,7 +471,7 @@ const fillTaskAndStageStatus = (
         {
           id: "1",
           name: environmentList[0].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[0].id,
           runnable: {
             auto: true,
@@ -481,7 +482,7 @@ const fillTaskAndStageStatus = (
         {
           id: "2",
           name: environmentList[1].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[1].id,
           runnable: {
             auto: true,
@@ -492,7 +493,7 @@ const fillTaskAndStageStatus = (
         {
           id: "3",
           name: environmentList[2].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[2].id,
           runnable: {
             auto: true,
@@ -503,7 +504,7 @@ const fillTaskAndStageStatus = (
         {
           id: "4",
           name: environmentList[3].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[3].id,
           runnable: {
             auto: true,
@@ -520,7 +521,7 @@ const fillTaskAndStageStatus = (
         {
           id: "1",
           name: environmentList[0].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[0].id,
           runnable: {
             auto: true,
@@ -531,7 +532,7 @@ const fillTaskAndStageStatus = (
         {
           id: "2",
           name: environmentList[1].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[1].id,
           runnable: {
             auto: true,
@@ -542,7 +543,7 @@ const fillTaskAndStageStatus = (
         {
           id: "3",
           name: environmentList[2].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[2].id,
           runnable: {
             auto: true,
@@ -553,7 +554,7 @@ const fillTaskAndStageStatus = (
         {
           id: "4",
           name: environmentList[3].name,
-          type: "ENVIRONMENT",
+          type,
           environmentId: environmentList[3].id,
           runnable: {
             auto: true,

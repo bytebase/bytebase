@@ -252,7 +252,12 @@ export type Bookmark = {
 export type BookmarkNew = Omit<Bookmark, "id">;
 
 // Stage
-export type StageType = "SIMPLE" | "ENVIRONMENT";
+export type StageType =
+  | "bytebase.stage.general"
+  | "bytebase.stage.transition"
+  | "bytebase.stage.database.create"
+  | "bytebase.stage.database.grant"
+  | "bytebase.stage.schema.update";
 
 export type StageStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 

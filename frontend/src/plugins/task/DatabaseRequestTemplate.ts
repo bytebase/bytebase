@@ -34,8 +34,8 @@ const template: TaskTemplate = {
       stageList: [
         {
           id: "1",
-          name: "Request database",
-          type: "SIMPLE",
+          name: "Create database",
+          type: "bytebase.stage.database.create",
           status: "PENDING",
         },
       ],

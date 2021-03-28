@@ -22,7 +22,7 @@ const DEFAULT_TEMPLATE = {
         {
           id: "1",
           name: "Request",
-          type: "SIMPLE",
+          type: "bytebase.stage.general",
           status: "PENDING",
         },
       ],
