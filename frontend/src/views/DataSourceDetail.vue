@@ -35,29 +35,27 @@
                 <dd class="flex items-center text-sm sm:mr-4">
                   <span class="textlabel">Environment&nbsp;-&nbsp;</span>
                   <router-link to="/environment" class="normal-link">
-                    {{ instance.environment.name }}
+                    {{ dataSource.instance.environment.name }}
                   </router-link>
                 </dd>
                 <dt class="sr-only">Instance</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
                   <span class="textlabel">Instance&nbsp;-&nbsp;</span>
                   <router-link
-                    :to="`/instance/${instanceSlug}`"
+                    :to="`/instance/${instanceSlug(dataSource.instance)}`"
                     class="normal-link"
                   >
-                    {{ instance.name }}
+                    {{ dataSource.instance.name }}
                   </router-link>
                 </dd>
                 <dt class="sr-only">Database</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
                   <span class="textlabel">Database&nbsp;-&nbsp;</span>
                   <router-link
-                    :to="`/instance/${instanceSlug}/db/${databaseSlug(
-                      database
-                    )}`"
+                    :to="`/db/${databaseSlug(dataSource.database)}`"
                     class="normal-link"
                   >
-                    {{ database.name }}
+                    {{ dataSource.database.name }}
                   </router-link>
                 </dd>
                 <dt class="sr-only">RoleType</dt>
@@ -166,7 +164,7 @@ import isEqual from "lodash-es/isEqual";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug } from "../utils";
-import { DataSource } from "../types";
+import { DataSource, Principal } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -177,10 +175,6 @@ interface LocalState {
 export default {
   name: "DataSourceDetail",
   props: {
-    instanceSlug: {
-      required: true,
-      type: String,
-    },
     dataSourceSlug: {
       required: true,
       type: String,
@@ -193,7 +187,6 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const instanceId = idFromSlug(props.instanceSlug);
     const dataSourceId = idFromSlug(props.dataSourceSlug);
 
     const state = reactive<LocalState>({
@@ -201,25 +194,15 @@ export default {
       showPassword: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = computed(
+      (): Principal => store.getters["auth/currentUser"]()
+    );
 
-    const dataSource = computed(() => {
-      return store.getters["dataSource/dataSourceById"](
-        dataSourceId,
-        instanceId
-      );
-    });
-
-    const instance = computed(() => {
-      return store.getters["instance/instanceById"](instanceId);
-    });
-
-    const database = computed(() => {
-      return store.getters["database/databaseById"](
-        dataSource.value.databaseId,
-        { instanceId }
-      );
-    });
+    const dataSource = computed(
+      (): DataSource => {
+        return store.getters["dataSource/dataSourceById"](dataSourceId);
+      }
+    );
 
     const allowEdit = computed(() => {
       return (
@@ -249,7 +232,7 @@ export default {
     const saveEdit = () => {
       store
         .dispatch("dataSource/patchDataSource", {
-          instanceId,
+          databaseId: dataSource.value.database.id,
           dataSource: state.editingDataSource,
         })
         .then(() => {
@@ -265,7 +248,7 @@ export default {
       const name = dataSource.value.name;
       store
         .dispatch("dataSource/deleteDataSourceById", {
-          instanceId,
+          databaseId: dataSource.value.database.id,
           dataSourceId,
         })
         .then(() => {
@@ -274,7 +257,7 @@ export default {
             style: "SUCCESS",
             title: `Successfully deleted data source '${name}'.`,
           });
-          router.push(`/instance/${props.instanceSlug}`);
+          router.push(`/db/${props.dataSourceSlug}`);
         })
         .catch((error) => {
           console.error(error);
@@ -285,8 +268,6 @@ export default {
       editNameTextField,
       state,
       dataSource,
-      instance,
-      database,
       allowEdit,
       allowSave,
       editDataSource,

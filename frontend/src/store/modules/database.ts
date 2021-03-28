@@ -13,7 +13,6 @@ import {
   PrincipalId,
   unknown,
 } from "../../types";
-import environment from "./environment";
 
 type IDParams = {
   instanceId?: InstanceId;
@@ -51,6 +50,15 @@ const state: () => DatabaseState = () => ({
 });
 
 const getters = {
+  convert: (
+    state: DatabaseState,
+    getters: any,
+    rootState: any,
+    rootGetters: any
+  ) => (database: ResourceObject, inlcudedList: ResourceObject[]): Database => {
+    return convert(database, [], rootGetters);
+  },
+
   databaseListByInstanceId: (state: DatabaseState) => (
     instanceId: InstanceId
   ): Database[] => {
@@ -194,15 +202,14 @@ const actions = {
   async fetchDatabaseById(
     { commit, rootGetters }: any,
     {
-      instanceId,
       databaseId,
-    }: { instanceId: InstanceId; databaseId: DatabaseId }
+      instanceId,
+    }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
-    const data = (
-      await axios.get(
-        `/api/instance/${instanceId}/database/${databaseId}?include=instance`
-      )
-    ).data;
+    const url = instanceId
+      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance`
+      : `/api/database/${databaseId}?include=instance`;
+    const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
     commit("upsertDatabaseInListByInstanceId", {

@@ -8,9 +8,9 @@ import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
 
 export default {
-  name: "ProvideInstanceContext",
+  name: "ProvideDatabaseContext",
   props: {
-    instanceSlug: {
+    databaseSlug: {
       required: true,
       type: String,
     },
@@ -18,20 +18,16 @@ export default {
   async setup(props) {
     const store = useStore();
 
-    const prepareInstanceContext = async function () {
+    const prepareDatabaseContext = async function () {
       await Promise.all([
         store.dispatch(
-          "database/fetchDatabaseListByInstanceId",
-          idFromSlug(props.instanceSlug)
-        ),
-        store.dispatch(
-          "dataSource/fetchDataSourceListByInstanceId",
-          idFromSlug(props.instanceSlug)
+          "dataSource/fetchDataSourceListByDatabaseId",
+          idFromSlug(props.databaseSlug)
         ),
       ]);
     };
 
-    watchEffect(prepareInstanceContext);
+    watchEffect(prepareDatabaseContext);
   },
 };
 </script>

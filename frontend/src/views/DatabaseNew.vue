@@ -351,6 +351,7 @@ export default {
         name: "Default RW",
         type: "RW",
         databaseId: createdDatabase.id,
+        instanceId: state.instanceId!,
         username: isEmpty(state.username) ? undefined : state.username,
         password: isEmpty(state.passsword) ? undefined : state.passsword,
         memberList: [
@@ -362,17 +363,10 @@ export default {
       };
       const createdDataSource = await store.dispatch(
         "dataSource/createDataSource",
-        {
-          instanceId: state.instanceId,
-          newDataSource,
-        }
+        newDataSource
       );
 
-      router.push(
-        `/instance/${instanceSlug(createdDatabase.instance)}/db/${databaseSlug(
-          createdDatabase
-        )}`
-      );
+      router.push(`/db/${databaseSlug(createdDatabase)}`);
 
       // If a valid task id is provided, we will set the database output field
       // if it's not set before. This is based on the assumption that user creates

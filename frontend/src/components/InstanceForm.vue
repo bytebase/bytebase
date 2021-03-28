@@ -263,6 +263,7 @@ import {
   InstanceNew,
   DataSourceNew,
   ALL_DATABASE_PLACEHOLDER_ID,
+  UNKNOWN_ID,
 } from "../types";
 
 const INIT_DATA_SOURCE: DataSourceNew = {
@@ -270,6 +271,7 @@ const INIT_DATA_SOURCE: DataSourceNew = {
   type: "RW",
   username: "root",
   databaseId: ALL_DATABASE_PLACEHOLDER_ID,
+  instanceId: UNKNOWN_ID,
   memberList: [],
 };
 
@@ -351,10 +353,7 @@ export default {
         .dispatch("instance/createInstance", newInstance)
         .then((instance) => {
           store
-            .dispatch("dataSource/createDataSource", {
-              instanceId: instance.id,
-              newDataSource,
-            })
+            .dispatch("dataSource/createDataSource", newDataSource)
             .then((dataSource) => {
               emit("dismiss");
 

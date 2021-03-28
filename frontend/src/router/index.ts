@@ -8,6 +8,7 @@ import {
 import SplashLayout from "../layouts/SplashLayout.vue";
 import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BodyLayout from "../layouts/BodyLayout.vue";
+import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
@@ -336,6 +337,56 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
+            path: "db/:databaseSlug",
+            name: "workspace.database.detail",
+            components: {
+              content: DatabaseLayout,
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
+            children: [
+              {
+                path: "",
+                name: "workspace.database.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.databaseSlug as string;
+                    if (slug.toLowerCase() == "new") {
+                      return "New";
+                    }
+                    return store.getters["database/databaseById"](
+                      idFromSlug(slug)
+                    ).name;
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/DatabaseDetail.vue"),
+                props: true,
+              },
+              {
+                path: "datasource/:dataSourceSlug",
+                name: "workspace.database.datasource.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.dataSourceSlug as string;
+                    if (slug.toLowerCase() == "new") {
+                      return "New";
+                    }
+                    return (
+                      "Data source - " +
+                      store.getters["dataSource/dataSourceById"](
+                        idFromSlug(slug)
+                      ).name
+                    );
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/DataSourceDetail.vue"),
+                props: true,
+              },
+            ],
+          },
+          {
             path: "instance/:instanceSlug",
             name: "workspace.instance.detail",
             components: {
@@ -359,39 +410,6 @@ const routes: Array<RouteRecordRaw> = [
                   },
                 },
                 component: () => import("../views/InstanceDetail.vue"),
-                props: true,
-              },
-              {
-                path: "db/:databaseSlug",
-                name: "workspace.instance.database.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.databaseSlug as string;
-                    return store.getters["database/databaseById"](
-                      idFromSlug(slug)
-                    ).name;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/DatabaseDetail.vue"),
-                props: true,
-              },
-              {
-                path: "ds/:dataSourceSlug",
-                name: "workspace.instance.datasource.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.dataSourceSlug as string;
-                    if (slug.toLowerCase() == "new") {
-                      return "New";
-                    }
-                    return store.getters["dataSource/dataSourceById"](
-                      idFromSlug(slug)
-                    ).name;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/DataSourceDetail.vue"),
                 props: true,
               },
             ],
@@ -525,30 +543,23 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (instanceSlug) {
+  if (databaseSlug) {
+    if (databaseSlug.toLowerCase() == "new") {
+      next();
+      return;
+    }
     store
-      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
-      .then((instance) => {
-        if (databaseSlug) {
-          store
-            .dispatch("database/fetchDatabaseById", {
-              instanceId: instance.id,
-              databaseId: idFromSlug(databaseSlug),
-            })
-            .then((database) => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-            });
-        } else if (dataSourceSlug) {
+      .dispatch("database/fetchDatabaseById", {
+        databaseId: idFromSlug(databaseSlug),
+      })
+      .then((database) => {
+        if (!dataSourceSlug) {
+          next();
+        } else {
           store
             .dispatch("dataSource/fetchDataSourceById", {
-              instanceId: instance.id,
               dataSourceId: idFromSlug(dataSourceSlug),
+              databaseId: database.id,
             })
             .then((dataSource) => {
               next();
@@ -559,9 +570,22 @@ router.beforeEach((to, from, next) => {
                 replace: false,
               });
             });
-        } else {
-          next();
         }
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+      });
+    return;
+  }
+
+  if (instanceSlug) {
+    store
+      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
+      .then((instance) => {
+        next();
       })
       .catch((error) => {
         next({

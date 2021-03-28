@@ -130,26 +130,20 @@ export default {
           name: "Instance",
           path: "/instance",
         });
+      } else if (databaseSlug) {
+        list.push({
+          name: "Database",
+          path: "/db",
+        });
 
-        if (databaseSlug || dataSourceSlug) {
-          const instance = store.getters["instance/instanceById"](
-            idFromSlug(instanceSlug)
+        if (dataSourceSlug) {
+          const database = store.getters["database/databaseById"](
+            idFromSlug(databaseSlug)
           );
-
           list.push({
-            name: instance.name,
-            path: `/instance/${instanceSlug}`,
+            name: database.name,
+            path: `/db/${databaseSlug}`,
           });
-
-          if (databaseSlug) {
-            list.push({
-              name: "Database",
-            });
-          } else {
-            list.push({
-              name: "Data source",
-            });
-          }
         }
       }
 

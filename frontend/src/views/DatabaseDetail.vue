@@ -32,7 +32,7 @@
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Instance&nbsp;-&nbsp;</span>
               <router-link
-                :to="`/instance/${instanceSlug}`"
+                :to="`/instance/${instanceSlug(database.instance)}`"
                 class="normal-link"
               >
                 {{ database.instance.name }}
@@ -92,7 +92,10 @@
           </dl>
 
           <div v-if="isDBAorAbove" class="pt-6">
-            <DataSourceTable :instance="instance" :database="database" />
+            <DataSourceTable
+              :instance="database.instance"
+              :database="database"
+            />
           </div>
 
           <template
@@ -121,7 +124,7 @@
                            we don't need to expose the data source concept to the end user -->
                       <router-link
                         v-if="isDBAorAbove"
-                        :to="`/instance/${instanceSlug}/ds/${dataSourceSlug(
+                        :to="`/db/${databaseSlug}/datasource/${dataSourceSlug(
                           ds
                         )}`"
                         class="pr-3 bg-white font-medium normal-link"
@@ -145,7 +148,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
@@ -163,10 +166,6 @@ interface LocalState {
 export default {
   name: "DatabaseDetail",
   props: {
-    instanceSlug: {
-      required: true,
-      type: String,
-    },
     databaseSlug: {
       required: true,
       type: String,
@@ -185,17 +184,24 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const database = computed(() => {
+      console.log(props.databaseSlug);
       return store.getters["database/databaseById"](
-        idFromSlug(props.databaseSlug),
-        { instanceId: idFromSlug(props.instanceSlug) }
+        idFromSlug(props.databaseSlug)
       );
     });
 
-    const instance = computed(() => {
-      return store.getters["instance/instanceById"](
-        idFromSlug(props.instanceSlug)
-      );
-    });
+    const prepareDataSourceList = () => {
+      store
+        .dispatch(
+          "dataSource/fetchDataSourceListByDatabaseId",
+          database.value.id
+        )
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    watchEffect(prepareDataSourceList);
 
     const isDBAorAbove = computed(() => {
       return (
@@ -210,16 +216,15 @@ export default {
     });
 
     const dataSourceList = computed(() => {
-      return store.getters["dataSource/dataSourceListByInstanceId"](
-        instance.value.id
+      return store.getters["dataSource/dataSourceListByDatabaseId"](
+        database.value.id
       ).filter((dataSource: DataSource) => {
         return (
-          dataSource.databaseId == database.value.id &&
-          (isDBAorAbove.value ||
-            // If the current user is not DBAorAbove, we will only show the granted data source.
-            dataSource.memberList.find((item) => {
-              return item.principal.id == currentUser.value.id;
-            }))
+          isDBAorAbove.value ||
+          // If the current user is not DBAorAbove, we will only show the granted data source.
+          dataSource.memberList.find((item) => {
+            return item.principal.id == currentUser.value.id;
+          })
         );
       });
     });
@@ -239,7 +244,7 @@ export default {
     const updateDatabaseOwner = (newOwnerId: PrincipalId) => {
       store
         .dispatch("database/updateOwner", {
-          instanceId: instance.value.id,
+          instanceId: database.value.instance.id,
           databaseId: database.value.id,
           ownerId: newOwnerId,
         })
@@ -252,7 +257,6 @@ export default {
     return {
       state,
       database,
-      instance,
       isDBAorAbove,
       allowChangeOwner,
       readWriteDataSourceList,

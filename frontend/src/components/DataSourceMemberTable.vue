@@ -149,7 +149,7 @@ export default {
     const deleteMember = (member: DataSourceMember) => {
       store
         .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
-          instanceId: props.dataSource.instanceId,
+          databaseId: props.dataSource.database.id,
           dataSourceId: props.dataSource.id,
           memberId: member.principal.id,
         })

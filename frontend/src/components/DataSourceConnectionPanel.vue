@@ -182,27 +182,21 @@ export default {
       showPassword: false,
     });
 
-    const instance = computed(() => {
-      return store.getters["instance/instanceById"](
-        props.dataSource.instanceId
-      );
-    });
-
     const database = computed(() => {
       return store.getters["database/databaseById"](
-        props.dataSource.databaseId,
-        { instanceId: props.dataSource.instanceId }
+        props.dataSource.database.id,
+        { instanceId: props.dataSource.instance.id }
       );
     });
 
     const connectionStringList = computed<Connection[]>(() => {
       // If host starts with "/", we assume it's a local socket.
-      const isSocket = instance.value.host.startsWith("/");
+      const isSocket = database.value.instance.host.startsWith("/");
       const cliOptionList = isSocket
-        ? [`mysql -S ${instance.value.host}`]
-        : [`mysql -h ${instance.value.host}`];
-      if (instance.value.port) {
-        cliOptionList.push(`-P ${instance.value.port}`);
+        ? [`mysql -S ${database.value.instance.host}`]
+        : [`mysql -h ${database.value.instance.host}`];
+      if (database.value.instance.port) {
+        cliOptionList.push(`-P ${database.value.instance.port}`);
       }
       if (database.value.name != ALL_DATABASE_NAME) {
         cliOptionList.push(`-D ${database.value.name}`);
@@ -218,11 +212,11 @@ export default {
         }
       }
 
-      let jdbcString = `JDBC can't connect to socket ${instance.value.host} `;
+      let jdbcString = `JDBC can't connect to socket ${database.value.instance.host} `;
       if (!isSocket) {
-        jdbcString = `jdbc:mysql://${instance.value.host}`;
-        if (instance.value.port) {
-          jdbcString += `:${instance.value.port}`;
+        jdbcString = `jdbc:mysql://${database.value.instance.host}`;
+        if (database.value.instance.port) {
+          jdbcString += `:${database.value.instance.port}`;
         }
         if (database.value.name != ALL_DATABASE_NAME) {
           jdbcString += `/${database.value.name}`;

@@ -19,9 +19,7 @@ export function databaseSlug(database: Database): string {
 }
 
 export function fullDatabaseUrl(database: Database): string {
-  return `/instance/${instanceSlug(database.instance)}/db/${databaseSlug(
-    database
-  )}`;
+  return `/db/${databaseSlug(database)}`;
 }
 
 export function dataSourceSlug(dataSource: DataSource): string {

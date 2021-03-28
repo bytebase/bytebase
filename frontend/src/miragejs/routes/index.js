@@ -430,23 +430,32 @@ export default function routes() {
   });
 
   // Data Source
-  this.get("/instance/:instanceId/datasource", function (schema, request) {
-    const instance = schema.instances.find(request.params.instanceId);
-    if (instance) {
+  this.get("/datasource", function (schema, request) {
+    const {
+      queryParams: { instance: instanceId },
+    } = request;
+    return schema.dataSources.where((dataSource) => {
+      return !instanceId || dataSource.instanceId == instanceId;
+    });
+  });
+
+  this.get("/database/:databaseId/datasource", function (schema, request) {
+    const database = schema.databases.find(request.params.databaseId);
+    if (database) {
       return schema.dataSources.where((dataSource) => {
-        return dataSource.instanceId == instance.id;
+        return dataSource.databaseId == database.id;
       });
     }
     return new Response(
       404,
       {},
-      { errors: "Instance " + request.params.instanceId + " not found" }
+      { errors: "Database " + request.params.databaseId + " not found" }
     );
   });
 
-  this.get("/instance/:instanceId/datasource/:id", function (schema, request) {
-    const instance = schema.instances.find(request.params.instanceId);
-    if (instance) {
+  this.get("/database/:databaseId/datasource/:id", function (schema, request) {
+    const database = schema.databases.find(request.params.databaseId);
+    if (database) {
       const dataSource = schema.dataSources.find(request.params.id);
       if (dataSource) {
         return dataSource;
@@ -460,31 +469,30 @@ export default function routes() {
     return new Response(
       404,
       {},
-      { errors: "Instance " + request.params.instanceId + " not found" }
+      { errors: "Database " + request.params.databaseId + " not found" }
     );
   });
 
-  this.post("/instance/:instanceId/datasource", function (schema, request) {
-    const instance = schema.instances.find(request.params.instanceId);
-    if (instance) {
+  this.post("/database/:databaseId/datasource", function (schema, request) {
+    const database = schema.databases.find(request.params.databaseId);
+    if (database) {
       const newDataSource = {
         ...this.normalizedRequestAttrs("data-source"),
-        instanceId: request.params.instanceId,
       };
       return schema.dataSources.create(newDataSource);
     }
     return new Response(
       404,
       {},
-      { errors: "Instance " + request.params.instanceId + " not found" }
+      { errors: "Dnstance " + request.params.databaseId + " not found" }
     );
   });
 
   this.patch(
-    "/instance/:instanceId/datasource/:id",
+    "/database/:databaseId/datasource/:id",
     function (schema, request) {
-      const instance = schema.instances.find(request.params.instanceId);
-      if (instance) {
+      const database = schema.databases.find(request.params.databaseId);
+      if (database) {
         const dataSource = schema.dataSources.find(request.params.id);
         if (!dataSource) {
           return new Response(
@@ -501,16 +509,16 @@ export default function routes() {
       return new Response(
         404,
         {},
-        { errors: "Instance " + request.params.instanceId + " not found" }
+        { errors: "Database " + request.params.databaseId + " not found" }
       );
     }
   );
 
   this.delete(
-    "/instance/:instanceId/datasource/:id",
+    "/database/:databaseId/datasource/:id",
     function (schema, request) {
-      const instance = schema.instances.find(request.params.instanceId);
-      if (instance) {
+      const database = schema.instances.find(request.params.databaseId);
+      if (database) {
         const dataSource = schema.dataSources.find(request.params.id);
         if (!dataSource) {
           return new Response(
@@ -532,7 +540,7 @@ export default function routes() {
       return new Response(
         404,
         {},
-        { errors: "Instance " + request.params.instanceId + " not found" }
+        { errors: "Database " + request.params.databaseId + " not found" }
       );
     }
   );
@@ -541,10 +549,10 @@ export default function routes() {
   // Be careful to use :dataSourceId instead of :id otherwise this.normalizedRequestAttrs
   // would de-serialize to id, which would prevent auto increment id logic.
   this.post(
-    "/instance/:instanceId/datasource/:dataSourceId/member",
+    "/database/:databaseId/datasource/:dataSourceId/member",
     function (schema, request) {
-      const instance = schema.instances.find(request.params.instanceId);
-      if (instance) {
+      const database = schema.databases.find(request.params.databaseId);
+      if (database) {
         const dataSource = schema.dataSources.find(request.params.dataSourceId);
         if (dataSource) {
           const newDataSourceMember = {
@@ -574,16 +582,16 @@ export default function routes() {
       return new Response(
         404,
         {},
-        { errors: "Instance " + request.params.instanceId + " not found" }
+        { errors: "Database " + request.params.databaseId + " not found" }
       );
     }
   );
 
   this.delete(
-    "/instance/:instanceId/datasource/:dataSourceId/member/:memberId",
+    "/database/:databaseId/datasource/:dataSourceId/member/:memberId",
     function (schema, request) {
-      const instance = schema.instances.find(request.params.instanceId);
-      if (instance) {
+      const database = schema.databases.find(request.params.databaseId);
+      if (database) {
         const dataSource = schema.dataSources.find(request.params.dataSourceId);
         if (!dataSource) {
           return new Response(
@@ -610,12 +618,24 @@ export default function routes() {
       return new Response(
         404,
         {},
-        { errors: "Instance " + request.params.instanceId + " not found" }
+        { errors: "Database " + request.params.databaseId + " not found" }
       );
     }
   );
 
   // Database
+  this.get("/database/:id", function (schema, request) {
+    const database = schema.databases.find(request.params.id);
+    if (database) {
+      return database;
+    }
+    return new Response(
+      404,
+      {},
+      { errors: "Database " + request.params.id + " not found" }
+    );
+  });
+
   this.get("/database", function (schema, request) {
     const {
       queryParams: { environment: environmentId },
@@ -692,26 +712,6 @@ export default function routes() {
         .sort((a, b) =>
           a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
         );
-    }
-    return new Response(
-      404,
-      {},
-      { errors: "Instance " + request.params.instanceId + " not found" }
-    );
-  });
-
-  this.get("/instance/:instanceId/database/:id", function (schema, request) {
-    const instance = schema.instances.find(request.params.instanceId);
-    if (instance) {
-      const database = schema.databases.find(request.params.id);
-      if (database) {
-        return database;
-      }
-      return new Response(
-        404,
-        {},
-        { errors: "Database " + request.params.id + " not found" }
-      );
     }
     return new Response(
       404,

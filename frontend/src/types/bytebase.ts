@@ -78,8 +78,8 @@ export const unknown = (
 
   const UNKNOWN_DATA_SOURCE: DataSource = {
     id: UNKNOWN_ID,
-    instanceId: UNKNOWN_ID,
-    databaseId: UNKNOWN_ID,
+    instance: UNKNOWN_INSTANCE,
+    database: UNKNOWN_DATABASE,
     memberList: [],
     createdTs: 0,
     lastUpdatedTs: 0,
@@ -479,15 +479,8 @@ export type DataSourceType = "RW" | "RO";
 // Data Source
 export type DataSource = {
   id: DataSourceId;
-  instanceId: InstanceId;
-  // TODO: unlike other objects like environment, here we don't expand
-  // to the database object, this is due to timing issue during rendering.
-  // Unlike environment which is a global state that we can load upon
-  // startup, the database info is per instance, and the author haven't
-  // figured out a elegant way to guarantee it's loaded before the router
-  // fetches the specific data source and requires the database info for
-  // the conversion
-  databaseId: DatabaseId;
+  database: Database;
+  instance: Instance;
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
   memberList: DataSourceMember[];
@@ -502,7 +495,8 @@ export type DataSource = {
 
 export type DataSourceNew = {
   name: string;
-  databaseId: string;
+  databaseId: DatabaseId;
+  instanceId: InstanceId;
   memberList: DataSourceMemberNew[];
   type: DataSourceType;
   username?: string;
@@ -664,6 +658,7 @@ export interface InstanceState {
 }
 
 export interface DataSourceState {
+  dataSourceListByDatabaseId: Map<DatabaseId, DataSource[]>;
   dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
 }
 

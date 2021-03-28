@@ -74,11 +74,7 @@ export default {
 
     const clickDatabase = function (section: number, row: number) {
       const database = props.databaseList[row];
-      router.push(
-        `/instance/${instanceSlug(database.instance)}/db/${databaseSlug(
-          database
-        )}`
-      );
+      router.push(`/db/${databaseSlug(database)}`);
     };
 
     return {

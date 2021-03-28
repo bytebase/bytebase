@@ -22,7 +22,7 @@ input[type="number"] {
             Environment <span style="color: red">*</span>
           </label>
           <EnvironmentSelect
-            class="mt-1"
+            class="mt-1 w-full"
             id="environment"
             name="environment"
             :disabled="true"
@@ -35,11 +35,11 @@ input[type="number"] {
             Instance <span class="text-red-600">*</span>
           </label>
           <InstanceSelect
-            class="mt-1"
+            class="mt-1 w-full"
             id="instance"
             name="instance"
             :disabled="true"
-            :selectedId="dataSource.instanceId"
+            :selectedId="dataSource.instance.id"
           />
         </div>
 
@@ -48,13 +48,13 @@ input[type="number"] {
             Database <span class="text-red-600">*</span>
           </label>
           <DatabaseSelect
-            class="mt-1"
+            class="mt-1 w-full"
             id="database"
             name="database"
             :disabled="true"
             :mode="'INSTANCE'"
-            :instanceId="dataSource.instanceId"
-            :selectedId="dataSource.databaseId"
+            :instanceId="dataSource.instance.id"
+            :selectedId="dataSource.database.id"
           />
         </div>
 
@@ -63,11 +63,11 @@ input[type="number"] {
             Data Source <span class="text-red-600">*</span>
           </label>
           <DataSourceSelect
-            class="mt-1"
+            class="mt-1 w-full"
             id="datasource"
             name="datasource"
             :disabled="true"
-            :instanceId="dataSource.instanceId"
+            :databaseId="dataSource.database.id"
             :selectedId="dataSource.id"
           />
         </div>
@@ -193,15 +193,15 @@ export default {
 
     const databaseName = computed(() => {
       const database = store.getters["database/databaseById"](
-        props.dataSource.databaseId,
-        { instanceId: props.dataSource.instanceId }
+        props.dataSource.database.id,
+        { instanceId: props.dataSource.instance.id }
       );
       return database.name;
     });
 
     const instance = computed(() => {
       return store.getters["instance/instanceById"](
-        props.dataSource.instanceId
+        props.dataSource.instance.id
       );
     });
 
@@ -239,19 +239,27 @@ export default {
     const doGrant = () => {
       store
         .dispatch("dataSource/createDataSourceMember", {
-          instanceId: props.dataSource.instanceId,
           dataSourceId: props.dataSource.id,
+          databaseId: props.dataSource.database.id,
           newDataSourceMember: {
             principalId: state.principalId,
             taskId: state.taskId,
           },
         })
-        .then((dataSourceMember: DataSourceMember) => {
+        .then((dataSource: DataSource) => {
           emit("dismiss");
+
+          const addedMember = dataSource.memberList.find(
+            (item: DataSourceMember) => {
+              return item.principal.id == state.principalId;
+            }
+          );
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully granted '${props.dataSource.name}' to '${dataSourceMember.principal.name}'.`,
+            title: `Successfully granted '${dataSource.name}' to '${
+              addedMember!.principal.id
+            }'.`,
           });
         })
         .catch((error) => {

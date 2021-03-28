@@ -59,9 +59,7 @@ export default {
           dbList.push({
             id: database.id,
             name: database.name,
-            link: `/instance/${instanceSlug(
-              database.instance
-            )}/db/${databaseSlug(database)}`,
+            link: `/db/${databaseSlug(database)}`,
           });
         }
       }

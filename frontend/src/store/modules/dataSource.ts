@@ -10,9 +10,17 @@ import {
   PrincipalId,
   ResourceObject,
   ResourceIdentifier,
+  DatabaseId,
+  unknown,
+  Database,
+  Instance,
 } from "../../types";
 
-function convert(dataSource: ResourceObject, rootGetters: any): DataSource {
+function convert(
+  dataSource: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): DataSource {
   const databaseId = (dataSource.relationships!.database
     .data as ResourceIdentifier).id;
   const instanceId = (dataSource.relationships!.instance
@@ -26,21 +34,39 @@ function convert(dataSource: ResourceObject, rootGetters: any): DataSource {
       };
     }
   );
+
+  let instance: Instance = unknown("INSTANCE") as Instance;
+  for (const item of includedList) {
+    if (item.type == "instance" && item.id == instanceId) {
+      instance = rootGetters["instance/convert"](item);
+      break;
+    }
+  }
+
+  let database: Database = unknown("DATABASE") as Database;
+  for (const item of includedList) {
+    if (item.type == "database" && item.id == databaseId) {
+      database = rootGetters["database/convert"](item);
+      break;
+    }
+  }
+
   return {
     // Somehow "memberList" doesn't get omitted, but we put the actual memberList last,
     // which will overwrite whatever exists before.
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "instanceId" | "databaseId" | "memberList"
+      "id" | "instanceId" | "database" | "memberList"
     >),
     id: dataSource.id,
-    instanceId,
-    databaseId,
+    instance,
+    database,
     memberList,
   };
 }
 
 const state: () => DataSourceState = () => ({
+  dataSourceListByDatabaseId: new Map(),
   dataSourceListByInstanceId: new Map(),
 });
 
@@ -51,16 +77,22 @@ const getters = {
     return state.dataSourceListByInstanceId.get(instanceId) || [];
   },
 
+  dataSourceListByDatabaseId: (state: DataSourceState) => (
+    databaseId: DatabaseId
+  ): DataSource[] => {
+    return state.dataSourceListByDatabaseId.get(databaseId) || [];
+  },
+
   dataSourceById: (state: DataSourceState) => (
     dataSourceId: DataSourceId,
-    instanceId?: InstanceId
-  ): DataSource | undefined => {
+    databaseId?: DatabaseId
+  ): DataSource => {
     let dataSource = undefined;
-    if (instanceId) {
-      const list = state.dataSourceListByInstanceId.get(instanceId) || [];
+    if (databaseId) {
+      const list = state.dataSourceListByDatabaseId.get(databaseId) || [];
       dataSource = list.find((item) => item.id == dataSourceId);
     } else {
-      for (let [_, list] of state.dataSourceListByInstanceId) {
+      for (let [_, list] of state.dataSourceListByDatabaseId) {
         dataSource = list.find((item) => item.id == dataSourceId);
         if (dataSource) {
           break;
@@ -70,16 +102,7 @@ const getters = {
     if (dataSource) {
       return dataSource;
     }
-    return {
-      id: "-1",
-      instanceId: "-1",
-      name: "<<Unknown data source>>",
-      createdTs: 0,
-      lastUpdatedTs: 0,
-      type: "RO",
-      databaseId: "-1",
-      memberList: [],
-    };
+    return unknown("DATA_SOURCE") as DataSource;
   },
 };
 
@@ -88,10 +111,13 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    const dataSourceList = (
-      await axios.get(`/api/instance/${instanceId}/datasource`)
-    ).data.data.map((datasource: ResourceObject) => {
-      return convert(datasource, rootGetters);
+    const data = (
+      await axios.get(
+        `/api/datasource?instance=${instanceId}&include=database,instance`
+      )
+    ).data;
+    const dataSourceList = data.data.map((datasource: ResourceObject) => {
+      return convert(datasource, data.included, rootGetters);
     });
 
     commit("setDataSourceListByInstanceId", { instanceId, dataSourceList });
@@ -99,24 +125,40 @@ const actions = {
     return dataSourceList;
   },
 
+  async fetchDataSourceListByDatabaseId(
+    { commit, rootGetters }: any,
+    databaseId: DatabaseId
+  ) {
+    const data = (
+      await axios.get(
+        `/api/database/${databaseId}/datasource?include=database,instance`
+      )
+    ).data;
+    const dataSourceList = data.data.map((datasource: ResourceObject) => {
+      return convert(datasource, data.included, rootGetters);
+    });
+
+    commit("setDataSourceListByDatabaseId", { databaseId, dataSourceList });
+
+    return dataSourceList;
+  },
+
   async fetchDataSourceById(
     { commit, rootGetters }: any,
     {
-      instanceId,
       dataSourceId,
-    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
+      databaseId,
+    }: { dataSourceId: DataSourceId; databaseId: DatabaseId }
   ) {
-    const dataSource = convert(
-      (
-        await axios.get(
-          `/api/instance/${instanceId}/datasource/${dataSourceId}`
-        )
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.get(
+        `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`
+      )
+    ).data;
+    const dataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByInstanceId", {
-      instanceId,
+    commit("upsertDataSourceInListByDatabaseId", {
+      databaseId,
       dataSource,
     });
 
@@ -125,25 +167,23 @@ const actions = {
 
   async createDataSource(
     { commit, rootGetters }: any,
-    {
-      instanceId,
-      newDataSource,
-    }: { instanceId: InstanceId; newDataSource: DataSourceNew }
+    newDataSource: DataSourceNew
   ) {
-    const createdDataSource = convert(
-      (
-        await axios.post(`/api/instance/${instanceId}/datasource`, {
+    const data = (
+      await axios.post(
+        `/api/database/${newDataSource.databaseId}/datasource?include=database,instance`,
+        {
           data: {
             type: "dataSource",
             attributes: newDataSource,
           },
-        })
-      ).data.data,
-      rootGetters
-    );
+        }
+      )
+    ).data;
+    const createdDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByInstanceId", {
-      instanceId,
+    commit("upsertDataSourceInListByDatabaseId", {
+      databaseId: newDataSource.databaseId,
       dataSource: createdDataSource,
     });
 
@@ -153,31 +193,23 @@ const actions = {
   async patchDataSource(
     { commit, rootGetters }: any,
     {
-      instanceId,
+      databaseId,
       dataSource,
     }: {
-      instanceId: InstanceId;
+      databaseId: DatabaseId;
       dataSource: DataSource;
     }
   ) {
     const { id, ...attrs } = dataSource;
-    const updatedDataSource = convert(
-      (
-        await axios.patch(
-          `/api/instance/${instanceId}/datasource/${dataSource.id}`,
-          {
-            data: {
-              type: "dataSource",
-              attributes: attrs,
-            },
-          }
-        )
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.post(
+        `/api/database/${databaseId}/datasource/${dataSource.id}?include=database,instance`
+      )
+    ).data;
+    const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByInstanceId", {
-      instanceId,
+    commit("upsertDataSourceInListByDatabaseId", {
+      databaseId,
       dataSource: updatedDataSource,
     });
 
@@ -187,16 +219,16 @@ const actions = {
   async deleteDataSourceById(
     { state, commit }: { state: DataSourceState; commit: any },
     {
-      instanceId,
+      databaseId,
       dataSourceId,
-    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
+    }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
   ) {
     await axios.delete(
-      `/api/instance/${instanceId}/datasource/${dataSourceId}`
+      `/api/database/${databaseId}/datasource/${dataSourceId}`
     );
 
-    commit("deleteDataSourceInListById", {
-      instanceId,
+    commit("deleteDataSourceInListByDatabaseId", {
+      databaseId,
       dataSourceId,
     });
   },
@@ -204,33 +236,31 @@ const actions = {
   async createDataSourceMember(
     { commit, rootGetters }: any,
     {
-      instanceId,
       dataSourceId,
+      databaseId,
       newDataSourceMember,
     }: {
-      instanceId: InstanceId;
       dataSourceId: DataSourceId;
+      databaseId: DatabaseId;
       newDataSourceMember: DataSourceMemberNew;
     }
   ) {
+    const data = (
+      await axios.post(
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member?include=database,instance`,
+        {
+          data: {
+            type: "dataSourceMember",
+            attributes: newDataSourceMember,
+          },
+        }
+      )
+    ).data;
     // It's patching the data source and returns the updated data source
-    const updatedDataSource = convert(
-      (
-        await axios.post(
-          `/api/instance/${instanceId}/datasource/${dataSourceId}/member`,
-          {
-            data: {
-              type: "dataSourceMember",
-              attributes: newDataSourceMember,
-            },
-          }
-        )
-      ).data.data,
-      rootGetters
-    );
+    const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByInstanceId", {
-      instanceId,
+    commit("upsertDataSourceInListByDatabaseId", {
+      databaseId,
       dataSource: updatedDataSource,
     });
 
@@ -240,27 +270,25 @@ const actions = {
   async deleteDataSourceMemberByMemberId(
     { commit, rootGetters }: any,
     {
-      instanceId,
+      databaseId,
       dataSourceId,
       memberId,
     }: {
-      instanceId: InstanceId;
+      databaseId: DatabaseId;
       dataSourceId: DataSourceId;
       memberId: PrincipalId;
     }
   ) {
+    const data = (
+      await axios.delete(
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}?include=database,instance`
+      )
+    ).data;
     // It's patching the data source and returns the updated data source
-    const updatedDataSource = convert(
-      (
-        await axios.delete(
-          `/api/instance/${instanceId}/datasource/${dataSourceId}/member/${memberId}`
-        )
-      ).data.data,
-      rootGetters
-    );
+    const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByInstanceId", {
-      instanceId,
+    commit("upsertDataSourceInListByDatabaseId", {
+      databaseId,
       dataSource: updatedDataSource,
     });
   },
@@ -280,17 +308,30 @@ const mutations = {
     state.dataSourceListByInstanceId.set(instanceId, dataSourceList);
   },
 
-  upsertDataSourceInListByInstanceId(
+  setDataSourceListByDatabaseId(
     state: DataSourceState,
     {
-      instanceId,
+      databaseId,
+      dataSourceList,
+    }: {
+      databaseId: DatabaseId;
+      dataSourceList: DataSource[];
+    }
+  ) {
+    state.dataSourceListByDatabaseId.set(databaseId, dataSourceList);
+  },
+
+  upsertDataSourceInListByDatabaseId(
+    state: DataSourceState,
+    {
+      databaseId,
       dataSource,
     }: {
-      instanceId: InstanceId;
+      databaseId: DatabaseId;
       dataSource: DataSource;
     }
   ) {
-    const list = state.dataSourceListByInstanceId.get(instanceId);
+    const list = state.dataSourceListByDatabaseId.get(databaseId);
     if (list) {
       const i = list.findIndex((item: DataSource) => item.id == dataSource.id);
       if (i != -1) {
@@ -299,18 +340,18 @@ const mutations = {
         list.push(dataSource);
       }
     } else {
-      state.dataSourceListByInstanceId.set(instanceId, [dataSource]);
+      state.dataSourceListByDatabaseId.set(databaseId, [dataSource]);
     }
   },
 
-  deleteDataSourceInListById(
+  deleteDataSourceInListByDatabaseId(
     state: DataSourceState,
     {
-      instanceId,
+      databaseId,
       dataSourceId,
-    }: { instanceId: InstanceId; dataSourceId: DataSourceId }
+    }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
   ) {
-    const list = state.dataSourceListByInstanceId.get(instanceId);
+    const list = state.dataSourceListByDatabaseId.get(databaseId);
     if (list) {
       const i = list.findIndex((item: DataSource) => item.id == dataSourceId);
       if (i != -1) {

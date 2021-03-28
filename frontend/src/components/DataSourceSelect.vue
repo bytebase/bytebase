@@ -43,7 +43,7 @@ export default {
     selectedId: {
       type: String,
     },
-    instanceId: {
+    databaseId: {
       required: true,
       type: String,
     },
@@ -59,8 +59,8 @@ export default {
     });
 
     const dataSourceList = computed(() => {
-      return store.getters["dataSource/dataSourceListByInstanceId"](
-        props.instanceId
+      return store.getters["dataSource/dataSourceListByDatabaseId"](
+        props.databaseId
       );
     });
 

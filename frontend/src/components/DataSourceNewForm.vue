@@ -21,35 +21,45 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3 items-center">
         <div class="sm:col-span-2">
           <label for="database" class="textlabel">
             Database <span class="text-red-600">*</span>
           </label>
-          <DatabaseSelect
-            class="mt-1"
-            :selectedId="state.dataSource.databaseId"
-            :mode="'INSTANCE'"
-            :instanceId="instanceId"
-            @select-database-id="
-              (databaseId) => {
-                updateDataSource('databaseId', databaseId);
-              }
-            "
-          />
-        </div>
-
-        <div class="sm:col-span-1">
-          <BBSwitch
-            class="mt-9"
-            :label="'Read-only'"
-            :value="state.dataSource.type == 'RO'"
-            @toggle="
-              (on) => {
-                updateDataSource('type', on ? 'RO' : 'RW');
-              }
-            "
-          />
+          <div v-if="database" class="flex flex-row justify-between space-x-2">
+            {{ database.name }}
+            <BBSwitch
+              :label="'Read-only'"
+              :value="state.dataSource.type == 'RO'"
+              @toggle="
+                (on) => {
+                  updateDataSource('type', on ? 'RO' : 'RW');
+                }
+              "
+            />
+          </div>
+          <div v-else class="flex flex-row justify-between space-x-2">
+            <DatabaseSelect
+              class="mt-1 w-full"
+              :selectedId="state.dataSource.databaseId"
+              :mode="'INSTANCE'"
+              :instanceId="instanceId"
+              @select-database-id="
+                (databaseId) => {
+                  updateDataSource('databaseId', databaseId);
+                }
+              "
+            />
+            <BBSwitch
+              :label="'Read-only'"
+              :value="state.dataSource.type == 'RO'"
+              @toggle="
+                (on) => {
+                  updateDataSource('type', on ? 'RO' : 'RW');
+                }
+              "
+            />
+          </div>
         </div>
       </div>
 
@@ -146,9 +156,9 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { DataSourceNew, ALL_DATABASE_PLACEHOLDER_ID } from "../types";
+import { DataSourceNew, ALL_DATABASE_PLACEHOLDER_ID, Database } from "../types";
 
 interface LocalState {
   dataSource: DataSourceNew;
@@ -163,8 +173,9 @@ export default {
       required: true,
       type: String,
     },
-    databaseId: {
-      type: String,
+    // If database is specified, then we just show that database instead of the database select
+    database: {
+      type: Object as PropType<Database>,
     },
   },
   components: { DatabaseSelect },
@@ -173,9 +184,10 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
-        databaseId: props.databaseId
-          ? props.databaseId
+        databaseId: props.database
+          ? props.database.id
           : ALL_DATABASE_PLACEHOLDER_ID,
+        instanceId: props.instanceId,
         memberList: [],
       },
       showPassword: false,

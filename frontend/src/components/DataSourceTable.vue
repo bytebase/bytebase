@@ -105,7 +105,7 @@
   >
     <DataSourceNewForm
       :instanceId="instance.id"
-      :databaseId="database?.id"
+      :database="database"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -176,28 +176,32 @@ export default {
       const databaseList = props.database
         ? [props.database]
         : store.getters["database/databaseListByInstanceId"](props.instance.id);
+      const dataSourceList = props.database
+        ? store.getters["dataSource/dataSourceListByDatabaseId"](
+            props.database.id
+          )
+        : store.getters["dataSource/dataSourceListByInstanceId"](
+            props.instance.id
+          );
       const dataSourceListByDatabase: Map<string, DataSource[]> = new Map();
-      for (const dataSource of store.getters[
-        "dataSource/dataSourceListByInstanceId"
-      ](props.instance.id)) {
-        const databaseName = store.getters[
-          "database/databaseById"
-        ](dataSource.databaseId, { instanceId: props.instance.id }).name;
-        if (
-          !state.searchText ||
-          dataSource.name
-            .toLowerCase()
-            .includes(state.searchText.toLowerCase()) ||
-          databaseName.toLowerCase().includes(state.searchText.toLowerCase())
-        ) {
-          const list = dataSourceListByDatabase.get(databaseName);
-          if (list) {
-            list.push(dataSource);
-          } else {
-            dataSourceListByDatabase.set(databaseName, [dataSource]);
+      databaseList.forEach((database: Database) => {
+        for (const dataSource of dataSourceList) {
+          if (
+            !state.searchText ||
+            dataSource.name
+              .toLowerCase()
+              .includes(state.searchText.toLowerCase()) ||
+            database.name.toLowerCase().includes(state.searchText.toLowerCase())
+          ) {
+            const list = dataSourceListByDatabase.get(database.name);
+            if (list) {
+              list.push(dataSource);
+            } else {
+              dataSourceListByDatabase.set(database.name, [dataSource]);
+            }
           }
         }
-      }
+      });
 
       dataSourceListByDatabase.forEach((list) =>
         list.sort((a: DataSource, b: DataSource) => {
@@ -219,9 +223,7 @@ export default {
         if (dataSourceListByDatabase.get(database.name)) {
           sectionList.push({
             title: database.name,
-            link: `/instance/${instanceSlug(props.instance)}/db/${databaseSlug(
-              database
-            )}`,
+            link: `/db/${databaseSlug(database)}`,
             list: dataSourceListByDatabase.get(database.name),
           });
         }
@@ -232,10 +234,7 @@ export default {
 
     const doCreate = (newDataSource: DataSourceNew) => {
       store
-        .dispatch("dataSource/createDataSource", {
-          instanceId: props.instance.id,
-          newDataSource: newDataSource,
-        })
+        .dispatch("dataSource/createDataSource", newDataSource)
         .then((dataSource) => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -243,9 +242,9 @@ export default {
             title: `Successfully created data source '${dataSource.name}'.`,
           });
           router.push(
-            `/instance/${instanceSlug(props.instance)}/ds/${dataSourceSlug(
-              dataSource
-            )}`
+            `/db/${databaseSlug(
+              dataSource.database
+            )}/datasource/${dataSourceSlug(dataSource)}`
           );
         })
         .catch((error) => {
@@ -254,9 +253,11 @@ export default {
     };
 
     const clickDataSource = function (section: number, row: number) {
-      const ds = dataSourceSectionList.value[section].list![row];
+      const dataSource = dataSourceSectionList.value[section].list![row];
       router.push(
-        `/instance/${instanceSlug(props.instance)}/ds/${dataSourceSlug(ds)}`
+        `/db/${databaseSlug(dataSource.database)}/datasource/${dataSourceSlug(
+          dataSource
+        )}`
       );
     };
 
