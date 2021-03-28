@@ -40,7 +40,7 @@
                     : 'btn-normal'
                   : 'btn-normal mr-2'
               "
-              :disabled="transition.type == 'RESOLVE' && !allowResolve"
+              :disabled="!allowTransition(transition)"
               @click.prevent="
                 tryStartTaskStatusTransition(transition.type, () => {})
               "
@@ -172,7 +172,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
-import { idFromSlug, taskSlug } from "../utils";
+import { idFromSlug, taskSlug, pendingResolve } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
@@ -427,6 +427,16 @@ export default {
       }
     };
 
+    const allowTransition = (transition: TaskStatusTransition): boolean => {
+      const task: Task = state.task as Task;
+      if (transition.type == "RESOLVE") {
+        if (pendingResolve(task)) {
+          return allowResolve.value;
+        }
+        return false;
+      }
+      return true;
+    };
     const tryStartTaskStatusTransition = (
       type: TaskStatusTransitionType,
       didTransit: () => {}
@@ -661,6 +671,7 @@ export default {
       updateName,
       updateDescription,
       updateSql,
+      allowTransition,
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
       updateAssigneeId,
@@ -668,7 +679,6 @@ export default {
       doCreate,
       changeStageStatus,
       allowCreate,
-      allowResolve,
       currentUser,
       taskTemplate,
       outputFieldList,
