@@ -23,7 +23,7 @@
     </button>
     <span
       v-if="label"
-      class="ml-2 text-sm font-medium items-center"
+      class="ml-2 text-sm font-medium items-center whitespace-nowrap"
       :class="disabled ? 'text-gray-400' : 'text-main'"
     >
       {{ label }}
