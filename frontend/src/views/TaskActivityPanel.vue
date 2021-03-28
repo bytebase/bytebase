@@ -489,6 +489,17 @@ export default {
               if (field.type === "String") {
                 oldValue = update.oldValue;
                 newValue = update.newValue;
+              } else if (field.type === "Database") {
+                if (update.oldValue) {
+                  oldValue = store.getters["database/databaseById"](
+                    update.oldValue
+                  ).name;
+                }
+                if (update.newValue) {
+                  newValue = store.getters["database/databaseById"](
+                    update.newValue
+                  ).name;
+                }
               } else if (field.type === "Environment") {
                 if (update.oldValue) {
                   const environment: Environment = store.getters[
