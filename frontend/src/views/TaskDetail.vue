@@ -63,8 +63,8 @@
     <!-- Only render the top border if TaskStageFlow is not displayed, otherwise it would overlap with the bottom border of the TaskStageFlow -->
     <div
       v-if="showTaskOutputPanel"
-      class="px-2 md:flex md:flex-col"
-      :class="showTaskStageFlowBar ? '' : 'lg:border-t py-4'"
+      class="px-2 py-4 md:flex md:flex-col"
+      :class="showTaskStageFlowBar ? '' : 'lg:border-t'"
     >
       <TaskOutputPanel
         :task="state.task"
