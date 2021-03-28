@@ -10,6 +10,15 @@ export function stageName(task: Task, stageId: StageId): string {
   return "<<Unknown stage>>";
 }
 
+// Returns true if the last stage of the task is DONE or SKIPPED
+export function pendingResolve(task: Task): boolean {
+  const lastStage = task.stageList[task.stageList.length - 1];
+  if (activeStage(task) == lastStage) {
+    return lastStage.status === "DONE" || lastStage.status === "SKIPPED";
+  }
+  return false;
+}
+
 export function activeStage(task: Task): Stage {
   for (const stage of task.stageList) {
     if (
