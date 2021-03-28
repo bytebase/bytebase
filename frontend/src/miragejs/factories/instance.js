@@ -78,7 +78,7 @@ export default {
         const database = server.create("database", {
           workspaceId: instance.workspaceId,
           instance,
-          ownerId: (i % 3).toString(),
+          ownerId: ((i % 3) + 1).toString(),
         });
 
         server.create("dataSource", {
