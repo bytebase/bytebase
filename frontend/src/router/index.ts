@@ -118,6 +118,18 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "403",
+            name: "error.403",
+            components: {
+              content: () => import("../views/Page403.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             path: "404",
             name: "error.404",
             components: {
@@ -455,6 +467,7 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const loginUser: Principal = store.getters["auth/currentUser"]();
+  const isDBAorAbove = loginUser.role == "OWNER" || loginUser.role == "DBA";
   const isGuest = loginUser.id == "0";
 
   const fromModule = from.name
@@ -501,17 +514,29 @@ router.beforeEach((to, from, next) => {
   }
 
   if (
+    to.name === "error.403" ||
     to.name === "error.404" ||
     to.name === "error.500" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.environment" ||
-    to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
     to.name === "workspace.database.create" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();
+    return;
+  }
+
+  if (to.name?.toString().startsWith("workspace.instance")) {
+    if (isDBAorAbove) {
+      next();
+    } else {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+    }
     return;
   }
 
