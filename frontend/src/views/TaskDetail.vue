@@ -326,6 +326,8 @@ export default {
         currentUser: currentUser.value,
       });
 
+      newTask.creatorId = currentUser.value.id;
+
       if (router.currentRoute.value.query.name) {
         newTask.name = router.currentRoute.value.query.name as string;
       }
@@ -341,7 +343,15 @@ export default {
           .assignee as PrincipalId;
       }
 
-      newTask.creatorId = currentUser.value.id;
+      for (const field of newTaskTemplate.value.fieldList.filter(
+        (item) => item.category == "INPUT"
+      )) {
+        const value = router.currentRoute.value.query[field.slug];
+        if (value) {
+          newTask.payload[field.id] = value;
+        }
+      }
+
       return {
         new: isNew.value,
         task: isNew.value
