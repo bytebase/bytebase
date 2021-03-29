@@ -82,8 +82,8 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "OWNER",
                   [
-                    "quickaction.bytebase.instance.create",
                     "quickaction.bytebase.user.manage",
+                    "quickaction.bytebase.instance.create",
                     "quickaction.bytebase.database.schema.update",
                     "quickaction.bytebase.database.request",
                     "quickaction.bytebase.database.troubleshoot",
