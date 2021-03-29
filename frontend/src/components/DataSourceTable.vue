@@ -52,7 +52,7 @@
         <BBTableSearch
           class="w-56"
           ref="searchField"
-          :placeholder="'Search name, database'"
+          :placeholder="database ? 'Search name' : 'Search name, database'"
           @change-text="(text) => changeSearchText(text)"
         />
       </div>
