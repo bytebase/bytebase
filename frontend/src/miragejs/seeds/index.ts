@@ -63,6 +63,8 @@ const workspacesSeeder = (server: any) => {
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
 
+  const db1 = server.schema.databases.find(1);
+
   let task = server.create("task", {
     type: "bytebase.general",
     name: "Hello, World!",
@@ -81,6 +83,10 @@ const workspacesSeeder = (server: any) => {
         status: "PENDING",
       },
     ],
+    payload: {
+      5: environmentList1[0].id,
+      7: db1.id,
+    },
     workspace: workspace1,
   });
 
