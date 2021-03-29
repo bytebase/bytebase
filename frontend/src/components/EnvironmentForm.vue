@@ -3,20 +3,17 @@
     class="px-4 space-y-6 divide-y divide-gray-200"
     @submit.prevent="$emit('submit', state.environment)"
   >
-    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-      <div class="sm:col-span-2">
+    <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4">
+      <div class="col-span-1">
         <label for="name" class="text-lg leading-6 font-medium text-control">
           Environment Name <span class="text-red-600">*</span>
         </label>
-        <input
-          required
-          id="name"
-          name="name"
-          type="text"
-          class="textfield mt-4 w-full"
+        <BBTextField
+          class="mt-4 w-full"
           :disabled="!allowEdit"
+          :required="true"
           :value="state.environment.name"
-          @input="updateEnvironment('name', $event.target.value)"
+          @input="state.environment.name = $event.target.value"
         />
       </div>
     </div>
@@ -33,6 +30,7 @@
         <button
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="!allowCreate"
         >
           Create
         </button>
@@ -74,6 +72,7 @@ import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
+import isEmpty from "lodash-es/isEmpty";
 import { Environment, EnvironmentNew } from "../types";
 
 interface LocalState {
@@ -125,11 +124,9 @@ export default {
       return !isEqual(props.environment, state.environment);
     });
 
-    const updateEnvironment = (field: string, value: string) => {
-      if (state.environment) {
-        (state.environment as any)[field] = value;
-      }
-    };
+    const allowCreate = computed(() => {
+      return !isEmpty(state.environment?.name);
+    });
 
     const revertEnvironment = () => {
       state.environment = cloneDeep(props.environment);
@@ -139,7 +136,7 @@ export default {
       state,
       allowEdit,
       valueChanged,
-      updateEnvironment,
+      allowCreate,
       revertEnvironment,
     };
   },
