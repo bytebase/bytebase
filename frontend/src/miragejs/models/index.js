@@ -44,10 +44,12 @@ export default {
 
   environment: Model.extend({
     workspace: belongsTo(),
+    instance: hasMany(),
   }),
 
   instance: Model.extend({
     workspace: belongsTo(),
+    environment: belongsTo(),
     dataSource: hasMany(),
     database: hasMany(),
   }),

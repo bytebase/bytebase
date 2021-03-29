@@ -478,7 +478,14 @@ export type Instance = {
   host: string;
   port?: string;
 };
-export type InstanceNew = Omit<Instance, "id" | "createdTs" | "lastUpdatedTs">;
+
+export type InstanceNew = {
+  environmentId: EnvironmentId;
+  name: string;
+  externalLink?: string;
+  host: string;
+  port?: string;
+};
 
 export type DataSourceType = "RW" | "RO";
 // Data Source

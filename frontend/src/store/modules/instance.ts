@@ -7,16 +7,22 @@ import {
   ResourceObject,
   Environment,
   EnvironmentId,
+  ResourceIdentifier,
 } from "../../types";
 
 function convert(instance: ResourceObject, rootGetters: any): Instance {
   const environment = rootGetters["environment/environmentList"]().find(
-    (env: Environment) => env.id == instance.attributes.environmentId
+    (env: Environment) => {
+      return (
+        env.id ==
+        (instance.relationships!.environment.data as ResourceIdentifier).id
+      );
+    }
   );
   return {
     id: instance.id,
-    environment,
     ...(instance.attributes as Omit<Instance, "id" | "environment">),
+    environment,
   };
 }
 

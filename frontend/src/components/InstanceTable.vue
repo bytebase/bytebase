@@ -12,7 +12,7 @@
         <img class="h-10 w-auto" src="../assets/db-mysql.svg" />
       </BBTableCell>
       <BBTableCell :leftPadding="4" class="w-24">
-        {{ environmentName(instance.environmentId) }}
+        {{ environmentName(instance.environment.id) }}
       </BBTableCell>
       <BBTableCell class="w-48">
         {{ instance.name }}

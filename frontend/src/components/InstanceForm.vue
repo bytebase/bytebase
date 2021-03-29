@@ -40,10 +40,18 @@ input[type="number"] {
             class="mt-1"
             id="environment"
             name="environment"
-            :selectedId="state.instance.environmentId"
+            :selectedId="
+              create
+                ? state.instance.environmentId
+                : state.instance.environment.id
+            "
             @select-environment-id="
               (environmentId) => {
-                updateInstance('environmentId', environmentId);
+                if (create) {
+                  state.instance.environmentId = environmentId;
+                } else {
+                  updateInstance('environmentId', environmentId);
+                }
               }
             "
           />
@@ -143,8 +151,8 @@ input[type="number"] {
               name="username"
               type="text"
               class="textfield mt-1 w-full"
-              :value="state.newDataSource.username"
-              @input="updateDataSource('username', $event.target.value)"
+              :value="state.username"
+              @input="state.username = $event.target.value"
             />
           </div>
 
@@ -201,8 +209,8 @@ input[type="number"] {
               autocomplete="off"
               :type="state.showPassword ? 'text' : 'password'"
               class="textfield mt-1 w-full"
-              :value="state.newDataSource.password"
-              @input="updateDataSource('password', $event.target.value)"
+              :value="state.password"
+              @input="state.password = $event.target.value"
             />
           </div>
         </div>
@@ -223,7 +231,9 @@ input[type="number"] {
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           :disabled="!allowCreate"
-          @click.prevent="doCreate(state.instance, state.newDataSource)"
+          @click.prevent="
+            doCreate(state.instance, state.username, state.password)
+          "
         >
           Create
         </button>
@@ -251,7 +261,7 @@ input[type="number"] {
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -262,23 +272,16 @@ import {
   Instance,
   InstanceNew,
   DataSourceNew,
-  ALL_DATABASE_PLACEHOLDER_ID,
   UNKNOWN_ID,
+  ALL_DATABASE_NAME,
+  User,
 } from "../types";
-
-const INIT_DATA_SOURCE: DataSourceNew = {
-  name: "Read/Write Data Source",
-  type: "RW",
-  username: "root",
-  databaseId: ALL_DATABASE_PLACEHOLDER_ID,
-  instanceId: UNKNOWN_ID,
-  memberList: [],
-};
 
 interface LocalState {
   originalInstance?: Instance;
   instance: Instance | InstanceNew;
-  newDataSource: DataSourceNew;
+  username?: string;
+  password?: string;
   showPassword: Boolean;
 }
 
@@ -301,21 +304,21 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    const currentUser: ComputedRef<User> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
+
     const state = reactive<LocalState>({
       originalInstance: props.instance,
       // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
       instance: props.instance
         ? cloneDeep(props.instance)
         : {
+            environmentId: UNKNOWN_ID,
             name: "New Instance",
-            environment: {
-              id: "-1",
-              name: "<<Unknown Environment>>",
-              order: -1,
-            },
             host: "127.0.0.1",
           },
-      newDataSource: cloneDeep(INIT_DATA_SOURCE),
+      username: "root",
       showPassword: false,
     });
 
@@ -331,48 +334,61 @@ export default {
       (state.instance as any)[field] = value;
     };
 
-    const updateDataSource = (field: string, value: string) => {
-      (state.newDataSource as any)[field] = value;
-    };
-
     const cancel = () => {
       emit("dismiss");
     };
 
-    // Both doCreate/Update/Delete make instance and data source create/patch/delete in
-    // seperate API. In the unlikely event, instance operation may succeed while
-    // the corresponding data source operation failed. We consiciously make this
-    // trade-off to make instance create/patch API clean without coupling data source logic.
-    // The logic here to group instance/data source operation together is a shortcut
-    // for the sake of UX, which shouldn't affect underlying modeling anyway.
-    const doCreate = (
+    // doCreate make instance, database and data source creation in seperate API.
+    // In the unlikely event, instance operation may succeed while the corresponding
+    // database/datasource operation failed. We consiciously make this trade-off to make
+    // instance create API clean without coupling database, data source logic.
+    // The logic here to group instance, database and data source operation together is
+    // for providing better UX, which shouldn't affect underlying modeling anyway.
+    const doCreate = async (
       newInstance: InstanceNew,
-      newDataSource: DataSourceNew
+      username?: string,
+      password?: string
     ) => {
+      const createdInstance = await store.dispatch(
+        "instance/createInstance",
+        newInstance
+      );
+
+      // Create the database representing all databases(*)
+      const createdDatabase = await store.dispatch("database/createDatabase", {
+        name: ALL_DATABASE_NAME,
+        instanceId: createdInstance.id,
+        ownerId: currentUser.value.id,
+        creatorId: currentUser.value.id,
+      });
+
+      const adminDataSource: DataSourceNew = {
+        name: "Admin data source",
+        databaseId: createdDatabase.id,
+        instanceId: createdInstance.id,
+        memberList: [],
+        type: "RW",
+        username,
+        password,
+      };
+
       store
-        .dispatch("instance/createInstance", newInstance)
-        .then((instance) => {
-          store
-            .dispatch("dataSource/createDataSource", newDataSource)
-            .then((dataSource) => {
-              emit("dismiss");
+        .dispatch("dataSource/createDataSource", adminDataSource)
+        .then(() => {
+          emit("dismiss");
 
-              router.push(`/instance/${instanceSlug(instance)}`);
+          router.push(`/instance/${instanceSlug(createdInstance)}`);
 
-              store.dispatch("notification/pushNotification", {
-                module: "bytebase",
-                style: "SUCCESS",
-                title: `Successfully created instance '${instance.name}'.`,
-              });
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully created instance '${createdInstance.name}'.`,
+          });
 
-              store.dispatch("uistate/saveIntroStateByKey", {
-                key: "instance.create",
-                newState: true,
-              });
-            })
-            .catch((error) => {
-              console.log(error);
-            });
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "instance.create",
+            newState: true,
+          });
         })
         .catch((error) => {
           console.log(error);
@@ -424,7 +440,6 @@ export default {
       allowCreate,
       allowUpdate,
       updateInstance,
-      updateDataSource,
       cancel,
       doCreate,
       doUpdate,
