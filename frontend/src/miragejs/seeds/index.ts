@@ -34,20 +34,37 @@ const workspacesSeeder = (server: any) => {
   }
   workspace2.update({ environment: environmentList2 });
 
+  const instanceNamelist = [
+    "On-premise instance",
+    "AWS instance",
+    "GCP instance",
+    "Azure instance",
+    "Ali Cloud instance",
+  ];
+
   // Instance
+  let instanceList1 = [];
   for (let i = 0; i < 5; i++) {
-    server.create("instance", {
-      workspace: workspace1,
-      name: "instance " + (i + 1) + " " + faker.fake("{{lorem.word}}"),
-      // Create an extra instance for prod.
-      environmentId: i == 4 ? environmentList1[3].id : environmentList1[i].id,
-    });
+    instanceList1.push(
+      server.create("instance", {
+        workspace: workspace1,
+        name:
+          instanceNamelist[
+            Math.floor(Math.random() * instanceNamelist.length)
+          ] +
+          (i + 1),
+        // Create an extra instance for prod.
+        environmentId: i == 4 ? environmentList1[3].id : environmentList1[i].id,
+      })
+    );
   }
 
   for (let i = 0; i < 4; i++) {
     server.create("instance", {
       workspace: workspace2,
-      name: "ws2 instance " + (i + 1) + " " + faker.fake("{{lorem.word}}"),
+      name:
+        instanceNamelist[Math.floor(Math.random() * instanceNamelist.length)] +
+        (i + 1),
       environmentId: environmentList2[i].id,
     });
   }
@@ -63,7 +80,24 @@ const workspacesSeeder = (server: any) => {
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
 
-  const db1 = server.schema.databases.find(1);
+  console.log(server.schema.databases.all());
+  // id=1 is *, so we use id=2
+  const db1 = server.schema.databases.findBy({
+    instanceId: instanceList1[0].id,
+    name: "shop2",
+  });
+  const db2 = server.schema.databases.findBy({
+    instanceId: instanceList1[1].id,
+    name: "shop6",
+  });
+  const db3 = server.schema.databases.findBy({
+    instanceId: instanceList1[2].id,
+    name: "shop10",
+  });
+  const db4 = server.schema.databases.findBy({
+    instanceId: instanceList1[3].id,
+    name: "shop14",
+  });
 
   let task = server.create("task", {
     type: "bytebase.general",
@@ -114,9 +148,19 @@ const workspacesSeeder = (server: any) => {
     });
   }
 
+  const dbName = db1.name;
+  const tableNameList = [
+    "warehouse",
+    "customer",
+    "order",
+    "item",
+    "stock",
+    "history",
+  ];
+
   task = server.create("task", {
     type: "bytebase.database.create",
-    name: "Request database for environment - " + environmentList1[1].name,
+    name: `Create database '${dbName}' for environment - ${environmentList1[1].name}`,
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
@@ -130,11 +174,7 @@ const workspacesSeeder = (server: any) => {
     ],
     payload: {
       5: environmentList1[1].id,
-      7: {
-        isNew: true,
-        name: "db1",
-        readOnly: false,
-      },
+      7: dbName,
     },
     workspace: workspace1,
   });
@@ -165,38 +205,39 @@ const workspacesSeeder = (server: any) => {
     sql: string;
   };
   const randomUpdateSchemaTaskName = (): SQLData => {
-    const tableName = faker.fake("{{lorem.word}}");
+    const tableName =
+      tableNameList[Math.floor(Math.random() * tableNameList.length)];
     const list: SQLData[] = [
       {
-        title: "Create table " + tableName,
+        title: "Create table " + [dbName, tableName].join("."),
         sql: `CREATE TABLE ${tableName} (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);`,
       },
       {
-        title: "Add index to " + tableName,
+        title: "Add index to " + [dbName, tableName].join("."),
         sql: `CREATE INDEX ${tableName}_idx\nON ${tableName} (name);`,
       },
       {
-        title: "Drop index from " + tableName,
+        title: "Drop index from " + [dbName, tableName].join("."),
         sql: `ALTER TABLE ${tableName}\nDROP INDEX ${tableName}_idx;`,
       },
       {
-        title: "Add column to " + tableName,
+        title: "Add column to " + [dbName, tableName].join("."),
         sql: `ALTER TABLE ${tableName}\nADD email VARCHAR(255);`,
       },
       {
-        title: "Drop column from " + tableName,
+        title: "Drop column from " + [dbName, tableName].join("."),
         sql: `ALTER TABLE ${tableName}\nDROP COLUMN email;`,
       },
       {
-        title: "Alter column to " + tableName,
+        title: "Alter column to " + [dbName, tableName].join("."),
         sql: `ALTER TABLE ${tableName}\nMODIFY COLUMN email TEXT;`,
       },
       {
-        title: "Add foreign key to " + tableName,
+        title: "Add foreign key to " + [dbName, tableName].join("."),
         sql: `ALTER TABLE ${tableName}\nADD CONSTRAINT FK_${tableName}\nFOREIGN KEY (id) REFERENCES ${tableName}(ID);`,
       },
       {
-        title: "Drop foreign key from " + tableName,
+        title: "Drop foreign key from " + [dbName, tableName].join("."),
         sql: `ALTER TABLE ${tableName}\nDROP FOREIGN KEY FK_${tableName};`,
       },
     ];

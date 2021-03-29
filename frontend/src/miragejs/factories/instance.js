@@ -4,15 +4,7 @@ import faker from "faker";
 export default {
   instance: Factory.extend({
     name(i) {
-      if (i == 0) {
-        return "dev env";
-      } else if (i == 1) {
-        return "test env";
-      } else if (i == 2) {
-        return "staging env";
-      } else {
-        return "prod env " + i;
-      }
+      return "instance " + (i + i);
     },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
@@ -58,7 +50,7 @@ export default {
         workspaceId: instance.workspaceId,
         instance,
         database: allDatabase,
-        name: instance.name + " admin ds1",
+        name: instance.name + " admin RW",
         type: "RW",
         username: "adminRW",
         password: "pwdadminRW",
@@ -68,7 +60,7 @@ export default {
         workspaceId: instance.workspaceId,
         instance,
         database: allDatabase,
-        name: instance.name + " admin ds2",
+        name: instance.name + " admin RO",
         type: "RO",
         username: "adminRO",
         password: "pwdadminRO",
@@ -85,7 +77,7 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           database,
-          name: database.name + " rw ds3",
+          name: database.name + " RW",
           type: "RW",
           username: "rootRW",
           password: "pwdRW",
@@ -95,7 +87,7 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           database,
-          name: database.name + " ro ds4",
+          name: database.name + " RO",
           type: "RO",
           username: "rootRO",
           password: "pwdRO",

@@ -5,7 +5,7 @@ export default {
   database: Factory.extend({
     name(i) {
       // i + 1 to accout for the "*" creation in the instance
-      return "db" + faker.fake("{{lorem.word}}") + (i + 1);
+      return "shop" + (i + 1);
     },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
