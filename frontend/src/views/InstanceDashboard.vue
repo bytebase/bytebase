@@ -1,7 +1,10 @@
 <template>
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
-      <EnvironmentTabFilter @select-environment="selectEnvironment" />
+      <EnvironmentTabFilter
+        :selectedId="state.selectedEnvironment?.id"
+        @select-environment="selectEnvironment"
+      />
       <BBTableSearch
         ref="searchField"
         :placeholder="'Search instance name'"
@@ -14,14 +17,15 @@
 
 <script lang="ts">
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
 
 interface LocalState {
-  selectedEnvironment?: Environment;
   searchText: string;
+  selectedEnvironment?: Environment;
 }
 
 export default {
@@ -33,10 +37,17 @@ export default {
   setup(props, ctx) {
     const searchField = ref();
 
+    const store = useStore();
+    const router = useRouter();
+
     const state = reactive<LocalState>({
       searchText: "",
+      selectedEnvironment: router.currentRoute.value.query.environment
+        ? store.getters["environment/environmentById"](
+            router.currentRoute.value.query.environment
+          )
+        : undefined,
     });
-    const store = useStore();
 
     onMounted(() => {
       // Focus on the internal search field when mounted
@@ -53,6 +64,14 @@ export default {
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
+      if (environment) {
+        router.replace({
+          name: "workspace.instance",
+          query: { environment: environment.id },
+        });
+      } else {
+        router.replace({ name: "workspace.instance" });
+      }
     };
 
     const changeSearchText = (searchText: string) => {

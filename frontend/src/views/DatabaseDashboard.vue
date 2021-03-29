@@ -1,7 +1,10 @@
 <template>
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
-      <EnvironmentTabFilter @select-environment="selectEnvironment" />
+      <EnvironmentTabFilter
+        :selectedId="state.selectedEnvironment?.id"
+        @select-environment="selectEnvironment"
+      />
       <BBTableSearch
         ref="searchField"
         :placeholder="'Search database name'"
@@ -15,14 +18,15 @@
 <script lang="ts">
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database } from "../types";
 
 interface LocalState {
-  selectedEnvironment?: Environment;
   searchText: string;
+  selectedEnvironment?: Environment;
 }
 
 export default {
@@ -32,11 +36,18 @@ export default {
     DatabaseTable,
   },
   setup(props, ctx) {
-    const store = useStore();
     const searchField = ref();
+
+    const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       searchText: "",
+      selectedEnvironment: router.currentRoute.value.query.environment
+        ? store.getters["environment/environmentById"](
+            router.currentRoute.value.query.environment
+          )
+        : undefined,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -58,6 +69,14 @@ export default {
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
+      if (environment) {
+        router.replace({
+          name: "workspace.database",
+          query: { environment: environment.id },
+        });
+      } else {
+        router.replace({ name: "workspace.database" });
+      }
     };
 
     const changeSearchText = (searchText: string) => {

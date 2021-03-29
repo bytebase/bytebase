@@ -1,7 +1,10 @@
 <template>
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
-      <EnvironmentTabFilter @select-environment="selectEnvironment" />
+      <EnvironmentTabFilter
+        :selectedId="state.selectedEnvironment?.id"
+        @select-environment="selectEnvironment"
+      />
       <BBTableSearch
         ref="searchField"
         :placeholder="'Search task name'"
@@ -35,9 +38,10 @@
 
 <script lang="ts">
 import { watchEffect, computed, nextTick, onMounted, reactive, ref } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import TaskTable from "../components/TaskTable.vue";
-import { useStore } from "vuex";
 import { activeStage, activeEnvironmentId } from "../utils";
 import { Environment, Task, StageStatus } from "../types";
 
@@ -46,8 +50,8 @@ interface LocalState {
   assignedList: Task[];
   subscribeList: Task[];
   closeList: Task[];
-  selectedEnvironment?: Environment;
   searchText: string;
+  selectedEnvironment?: Environment;
 }
 
 export default {
@@ -60,14 +64,22 @@ export default {
   setup(props, ctx) {
     const searchField = ref();
 
+    const store = useStore();
+    const router = useRouter();
+
     const state = reactive<LocalState>({
       createdList: [],
       assignedList: [],
       subscribeList: [],
       closeList: [],
       searchText: "",
+      selectedEnvironment: router.currentRoute.value.query.environment
+        ? store.getters["environment/environmentById"](
+            router.currentRoute.value.query.environment
+          )
+        : undefined,
     });
-    const store = useStore();
+
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     onMounted(() => {
@@ -118,6 +130,14 @@ export default {
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
+      if (environment) {
+        router.replace({
+          name: "workspace.home",
+          query: { environment: environment.id },
+        });
+      } else {
+        router.replace({ name: "workspace.home" });
+      }
     };
 
     const changeSearchText = (searchText: string) => {
