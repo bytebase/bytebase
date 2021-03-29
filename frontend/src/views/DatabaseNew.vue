@@ -25,30 +25,41 @@ input[type="number"] {
           name="environment"
           :disabled="!allowEditEnvironment"
           :selectedId="state.environmentId"
-          @select-environment-id="
-            (environmentId) => {
-              state.environmentId = environmentId;
-            }
-          "
+          @select-environment-id="selectEnvironment"
         />
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="instance" class="textlabel">
-          Instance <span class="text-red-600">*</span>
-        </label>
-        <InstanceSelect
-          class="mt-1"
-          id="instance"
-          name="instance"
-          :selectedId="state.instanceId"
-          :environmentId="state.environmentId"
-          @select-instance-id="
-            (instanceId) => {
-              state.instanceId = instanceId;
-            }
-          "
-        />
+        <div class="flex flex-row items-center">
+          <label for="instance" class="textlabel">
+            Instance <span class="text-red-600">*</span>
+          </label>
+          <router-link
+            :to="
+              state.environmentId
+                ? `/instance?environment=${state.environmentId}`
+                : '/instance'
+            "
+            class="ml-2 text-sm normal-link"
+          >
+            View list
+          </router-link>
+        </div>
+        <div class="flex flex-row space-x-2 items-center">
+          <InstanceSelect
+            class="mt-1"
+            id="instance"
+            name="instance"
+            :selectedId="state.instanceId"
+            :environmentId="state.environmentId"
+            @select-instance-id="selectInstance"
+          />
+          <template v-if="instanceLink">
+            <router-link :to="instanceLink" class="ml-2 normal-link text-sm">
+              View
+            </router-link>
+          </template>
+        </div>
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
@@ -62,6 +73,7 @@ input[type="number"] {
           type="text"
           class="textfield mt-1 w-full"
           :disabled="!allowEditDatabaseName"
+          @input="changeDatabaseName"
           v-model="state.databaseName"
         />
       </div>
@@ -76,11 +88,7 @@ input[type="number"] {
           name="owner"
           :disabled="!allowEditOwner"
           :selectedId="state.ownerId"
-          @select-principal-id="
-            (principalId) => {
-              state.ownerId = principalId;
-            }
-          "
+          @select-principal-id="selectOwner"
         />
       </div>
 
@@ -319,7 +327,73 @@ export default {
 
     const allowEditTask = computed(() => {
       return state.fromTaskType != "bytebase.database.request" || !state.taskId;
+    const instanceLink = computed((): string => {
+      if (state.instanceId) {
+        const instance = store.getters["instance/instanceById"](
+          state.instanceId
+        );
+        return `/instance/${instanceSlug(instance)}`;
+      }
+      return "";
     });
+
+    const selectEnvironment = (environmentId: EnvironmentId) => {
+      state.environmentId = environmentId;
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (environmentId) {
+        query.environmentId = environmentId;
+      } else {
+        delete query["instance"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query: {
+          ...router.currentRoute.value.query,
+          environment: environmentId,
+        },
+      });
+    };
+
+    const selectInstance = (instanceId: InstanceId) => {
+      state.instanceId = instanceId;
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (instanceId) {
+        query.instance = instanceId;
+      } else {
+        delete query["instance"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query,
+      });
+    };
+
+    const changeDatabaseName = () => {
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (!isEmpty(state.databaseName)) {
+        query.name = state.databaseName!;
+      } else {
+        delete query["name"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query,
+      });
+    };
+
+    const selectOwner = (ownerId: PrincipalId) => {
+      state.ownerId = ownerId;
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (ownerId) {
+        query.owner = ownerId;
+      } else {
+        delete query["owner"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query,
+      });
+    };
 
     const cancel = () => {
       router.go(-1);
@@ -426,6 +500,11 @@ export default {
       allowEditDatabaseName,
       allowEditOwner,
       allowEditTask,
+      instanceLink,
+      selectEnvironment,
+      selectInstance,
+      changeDatabaseName,
+      selectOwner,
       cancel,
       create,
     };

@@ -8,10 +8,10 @@ import {
   CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
 import { linkfy } from "../../utils";
-import { Task, TaskNew, EnvironmentId } from "../../types";
+import { Task, TaskNew, EnvironmentId, UNKNOWN_ID } from "../../types";
 
 const template: TaskTemplate = {
-  type: "bytebase.database.request",
+  type: "bytebase.database.create",
   buildTask: (ctx: TemplateContext): TaskNew => {
     const payload: any = {};
     if (ctx.environmentList.length > 0) {
@@ -20,16 +20,10 @@ const template: TaskTemplate = {
       payload[TaskBuiltinFieldId.ENVIRONMENT] =
         ctx.environmentList[ctx.environmentList.length - 1].id;
     }
-    payload[TaskBuiltinFieldId.DATABASE] = {
-      isNew: true,
-      name: "",
-      // Set read-only defaults to true since only read access is needed most of the time
-      // and sticks to the least privilege rule.
-      readOnly: true,
-    };
+    payload[TaskBuiltinFieldId.DATABASE] = "";
     return {
-      name: "Request db",
-      type: "bytebase.database.request",
+      name: "Request new db",
+      type: "bytebase.database.create",
       description: "",
       stageList: [
         {
@@ -63,11 +57,8 @@ const template: TaskTemplate = {
       name: "DB name",
       type: "NewDatabase",
       required: true,
-      isEmpty: (value: DatabaseFieldPayload): boolean => {
-        if (value.isNew) {
-          return isEmpty(value.name);
-        }
-        return isEmpty(value.id);
+      isEmpty: (dbName: string): boolean => {
+        return isEmpty(dbName);
       },
       placeholder: "New database name",
     },
@@ -75,11 +66,11 @@ const template: TaskTemplate = {
       category: "OUTPUT",
       id: CUSTOM_FIELD_ID_BEGIN + 1,
       slug: "database",
-      name: "Granted database",
+      name: "Created database",
       type: "Database",
       required: true,
-      isEmpty: (value: string): boolean => {
-        return isEmpty(value?.trim());
+      isEmpty: (databaseId: string): boolean => {
+        return isEmpty(databaseId) || databaseId == UNKNOWN_ID;
       },
     },
   ],
