@@ -111,7 +111,7 @@
 }
 
 .radio-set {
-  @apply h-9 items-center space-x-2;
+  @apply h-9 items-center space-x-4;
 }
 
 .radio {
@@ -119,11 +119,11 @@
 }
 
 .radio .btn {
-  @apply focus:ring-control h-4 w-4 text-control border-control-border select-none;
+  @apply focus:ring-accent h-4 w-4 text-accent select-none;
 }
 
 .radio .label {
-  @apply ml-2 block text-sm font-medium text-gray-700 select-none;
+  @apply ml-1.5 block text-sm font-medium text-gray-700 select-none;
 }
 
 .outline-title {
