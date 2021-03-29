@@ -14,10 +14,7 @@
         To: "opacity-0"
     -->
       <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-        <div
-          class="absolute inset-0 bg-gray-500 opacity-75"
-          @click.self="clickBackground"
-        ></div>
+        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
       </div>
 
       <!-- This element is to trick the browser into centering the modal contents. -->
@@ -195,22 +192,12 @@ export default {
       type: String,
       default: "Cancel",
     },
-    backgroundClose: {
-      type: Boolean,
-      default: true,
-    },
     // Any payload pass through to "ok" and "cancel" events
     payload: {},
   },
   setup(props, { emit }) {
     const cancel = () => {
       emit("cancel", props.payload);
-    };
-
-    const clickBackground = () => {
-      if (props.backgroundClose) {
-        cancel();
-      }
     };
 
     const escHandler = (e: KeyboardEvent) => {
@@ -239,7 +226,6 @@ export default {
     return {
       okButtonStyle,
       cancel,
-      clickBackground,
     };
   },
 };

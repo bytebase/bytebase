@@ -4,7 +4,6 @@
 <template>
   <div
     class="fixed inset-0 w-full h-screen flex items-center justify-center z-50"
-    @click.self="closeIfShown"
     style="background-color: rgba(209, 213, 219, 0.8)"
   >
     <div
@@ -61,20 +60,10 @@ export default {
       type: Boolean,
       default: true,
     },
-    backgroundClose: {
-      type: Boolean,
-      default: true,
-    },
   },
   setup(props, { emit }) {
     const close = () => {
       emit("close");
-    };
-
-    const closeIfShown = () => {
-      if (props.showClose && props.backgroundClose) {
-        close();
-      }
     };
 
     const escHandler = (e: KeyboardEvent) => {
@@ -93,7 +82,6 @@ export default {
 
     return {
       close,
-      closeIfShown,
     };
   },
 };
