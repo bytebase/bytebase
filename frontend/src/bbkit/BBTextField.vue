@@ -16,7 +16,7 @@
     :placeholder="placeholder"
     @focus="onFocus"
     @blur="onBlur"
-    @input="onInput"
+    @input="onInput($event)"
   />
 </template>
 
@@ -32,7 +32,7 @@ interface LocalState {
 
 export default {
   name: "BBTextField",
-  emits: ["end-editing"],
+  emits: ["end-editing", "input"],
   props: {
     required: {
       default: false,
@@ -102,8 +102,9 @@ export default {
       }
     };
 
-    const onInput = () => {
+    const onInput = (e: any) => {
       state.hasError = false;
+      emit("input", e);
     };
 
     return {
