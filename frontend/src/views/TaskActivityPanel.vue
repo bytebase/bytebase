@@ -500,6 +500,10 @@ export default {
                     update.newValue
                   ).name;
                 }
+              } else if (field.type === "NewDatabase") {
+                // Value is the new database name
+                oldValue = update.oldValue;
+                newValue = update.newValue;
               } else if (field.type === "Environment") {
                 if (update.oldValue) {
                   const environment: Environment = store.getters[

@@ -8,7 +8,7 @@ import {
   UNKNOWN_FIELD,
 } from "../types";
 import { EnvironmentId, TaskType, TaskNew } from "../../types";
-import DatabaseRequestTemplate from "./DatabaseRequestTemplate";
+import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
 
 const DEFAULT_TEMPLATE = {
@@ -36,7 +36,7 @@ const DEFAULT_TEMPLATE = {
 
 const allTaskTemplateList: TaskTemplate[] = [
   DEFAULT_TEMPLATE,
-  DatabaseRequestTemplate,
+  DatabaseCreateTemplate,
   DatabaseSchemaUpdateTemplate,
 ];
 

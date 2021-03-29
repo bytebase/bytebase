@@ -308,25 +308,24 @@ export default {
     // This is to prevent accidentally changing the requested field.
     const allowEditEnvironment = computed(() => {
       return (
-        state.fromTaskType != "bytebase.database.request" ||
-        !state.environmentId
+        state.fromTaskType != "bytebase.database.create" || !state.environmentId
       );
     });
 
     const allowEditDatabaseName = computed(() => {
       return (
-        state.fromTaskType != "bytebase.database.request" || !state.databaseName
+        state.fromTaskType != "bytebase.database.create" || !state.databaseName
       );
     });
 
     const allowEditOwner = computed(() => {
-      return (
-        state.fromTaskType != "bytebase.database.request" || !state.ownerId
-      );
+      return state.fromTaskType != "bytebase.database.create" || !state.ownerId;
     });
 
     const allowEditTask = computed(() => {
-      return state.fromTaskType != "bytebase.database.request" || !state.taskId;
+      return state.fromTaskType != "bytebase.database.create" || !state.taskId;
+    });
+
     const instanceLink = computed((): string => {
       if (state.instanceId) {
         const instance = store.getters["instance/instanceById"](

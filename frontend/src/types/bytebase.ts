@@ -284,7 +284,7 @@ export type StageProgressPatch = {
 type TaskTypeGeneral = "bytebase.general";
 
 type TaskTypeDatabase =
-  | "bytebase.database.request"
+  | "bytebase.database.create"
   | "bytebase.database.schema.update";
 
 type TaskTypeDataSource = "bytebase.datasource.request";
@@ -616,7 +616,7 @@ export type EnvironmentQuickActionType =
 export type InstanceQuickActionType = "quickaction.bytebase.instance.create";
 export type UserQuickActionType = "quickaction.bytebase.user.manage";
 export type DatabaseQuickActionType =
-  | "quickaction.bytebase.database.request"
+  | "quickaction.bytebase.database.create"
   | "quickaction.bytebase.database.create"
   | "quickaction.bytebase.database.schema.update"
   | "quickaction.bytebase.database.troubleshoot";

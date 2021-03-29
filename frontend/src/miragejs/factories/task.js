@@ -16,7 +16,7 @@ export default {
       return "OPEN";
     },
     type() {
-      return "bytebase.database.request";
+      return "bytebase.database.create";
     },
     description() {
       return faker.fake("{{lorem.paragraphs}}");

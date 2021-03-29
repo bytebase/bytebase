@@ -108,11 +108,11 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.request'"
+        v-if="quickAction == 'quickaction.bytebase.database.create'"
         class="flex flex-col items-center w-28"
       >
         <router-link
-          to="/task/new?template=bytebase.database.request"
+          to="/task/new?template=bytebase.database.create"
           class="p-3 btn-icon-primary"
         >
           <svg

@@ -72,6 +72,7 @@
             </h2>
             <div class="w-full">
               <DatabaseSelect
+                class="w-full"
                 :disabled="!allowEdit"
                 :selectedId="fieldValue(field)"
                 :mode="'ENVIRONMENT'"
@@ -89,54 +90,15 @@
               {{ field.name }}
               <span v-if="field.required" class="text-red-600">*</span>
             </h2>
-            <div class="flex flex-col w-full">
-              <div class="flex flex-row space-x-2">
-                <BBCheckbox
-                  :disabled="!allowEdit"
-                  :label="'New'"
-                  :value="fieldValue(field).isNew"
-                  class="items-center"
-                  @toggle="
-                    (on) => {
-                      trySaveDatabaseNew(field, on);
-                    }
-                  "
-                />
-                <BBTextField
-                  v-if="fieldValue(field).isNew"
-                  type="text"
-                  class="w-full text-sm"
-                  :disabled="!allowEdit"
-                  :required="true"
-                  :value="fieldValue(field).name"
-                  :placeholder="field.placeholder"
-                  @end-editing="(text) => trySaveDatabaseName(field, text)"
-                />
-                <DatabaseSelect
-                  v-else
-                  :disabled="!allowEdit"
-                  :selectedId="fieldValue(field).id"
-                  :mode="'ENVIRONMENT'"
-                  :environmentId="environmentId"
-                  @select-database-id="
-                    (databaseId) => {
-                      trySaveDatabaseId(field, databaseId);
-                    }
-                  "
-                />
-              </div>
-              <BBSwitch
-                v-if="!fieldValue(field).isNew"
-                class="mt-4 flex"
-                style="margin-left: 3.75rem"
+            <div class="w-full">
+              <BBTextField
+                type="text"
+                class="w-full text-sm"
                 :disabled="!allowEdit"
-                :label="'Read only'"
-                :value="fieldValue(field).readOnly"
-                @toggle="
-                  (on) => {
-                    trySaveDatabaseReadOnly(field, on);
-                  }
-                "
+                :required="true"
+                :value="fieldValue(field)"
+                :placeholder="field.placeholder"
+                @end-editing="(text) => trySaveCustomField(field, text)"
               />
             </div>
           </template>

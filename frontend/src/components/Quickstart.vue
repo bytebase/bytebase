@@ -116,12 +116,12 @@ export default {
         }),
       },
       {
-        name: "Request a database",
+        name: "Create a database",
         link:
-          "/task/new?template=bytebase.database.request&description=Estimated QPS: 10",
+          "/task/new?template=bytebase.database.create&description=Estimated QPS: 10",
         allowDeveloper: true,
         done: computed(() =>
-          store.getters["uistate/introStateByKey"]("database.request")
+          store.getters["uistate/introStateByKey"]("database.create")
         ),
       },
       {

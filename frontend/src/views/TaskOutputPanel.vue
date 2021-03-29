@@ -13,14 +13,12 @@
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
           <template v-if="allowEditDatabase">
-            <template v-if="field.type == 'Database'">
-              <router-link
-                :to="databaseCreationLink(field)"
-                class="ml-2 normal-link"
-              >
-                + Create
-              </router-link>
-            </template>
+            <router-link
+              :to="databaseCreationLink(field)"
+              class="ml-2 normal-link"
+            >
+              + Create
+            </router-link>
           </template>
         </div>
         <template v-if="field.type == 'String'">
@@ -80,7 +78,7 @@
           </div>
         </template>
         <div
-          v-if="field.type == 'Database'"
+          v-if="field.type == 'Database' || field.type == 'NewDatabase'"
           class="flex flex-row items-center space-x-2"
         >
           <DatabaseSelect
@@ -88,7 +86,7 @@
             :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
             :environmentId="environmentId"
-            :selectedId="effectiveDatabaseId(field)"
+            :selectedId="fieldValue(field)"
             @select-database-id="
               (databaseId) => {
                 trySaveCustomField(field, databaseId);
@@ -170,25 +168,11 @@ export default {
       if (!allowEdit.value) {
         return false;
       }
-
-      const databasePayload: DatabaseFieldPayload =
-        props.task.payload[TaskBuiltinFieldId.DATABASE];
-
-      return databasePayload.isNew;
+      return props.task.type == "bytebase.database.create";
     });
 
     const isValidLink = (link: string): boolean => {
       return link?.trim().length > 0;
-    };
-
-    const effectiveDatabaseId = (field: TaskField): DatabaseId | undefined => {
-      const databasePayload: DatabaseFieldPayload =
-        props.task.payload[TaskBuiltinFieldId.DATABASE];
-      if (!databasePayload.isNew) {
-        return databasePayload.id;
-      }
-
-      return fieldValue(field);
     };
 
     const databaseCreationLink = (field: TaskField): string => {
@@ -199,15 +183,9 @@ export default {
       }
 
       // The created database info is stored in the predefined field with id TaskBuiltinFieldId.DATABASE
-      const databasePayload: DatabaseFieldPayload =
-        props.task.payload[TaskBuiltinFieldId.DATABASE];
-      if (databasePayload.name) {
-        queryParamList.push(`name=${databasePayload.name}`);
-      }
-
-      // If we are creating a new database, we always assign RW to the owner.
-      if (!databasePayload.isNew && databasePayload.readOnly) {
-        queryParamList.push(`readonly=true`);
+      const databaseName = props.task.payload[TaskBuiltinFieldId.DATABASE];
+      if (databaseName) {
+        queryParamList.push(`name=${databaseName}`);
       }
 
       queryParamList.push(`owner=${props.task.creator.id}`);
@@ -220,7 +198,7 @@ export default {
     };
 
     const databaseViewLink = (field: TaskField): string => {
-      const databaseId = effectiveDatabaseId(field);
+      const databaseId = fieldValue(field);
       if (databaseId) {
         const database = store.getters["database/databaseById"](databaseId, {
           environmentId: environmentId.value,
@@ -272,7 +250,6 @@ export default {
       allowEdit,
       allowEditDatabase,
       isValidLink,
-      effectiveDatabaseId,
       databaseCreationLink,
       databaseViewLink,
       copyText,

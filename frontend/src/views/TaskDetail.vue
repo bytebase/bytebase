@@ -430,10 +430,10 @@ export default {
     const allowTransition = (transition: TaskStatusTransition): boolean => {
       const task: Task = state.task as Task;
       if (transition.type == "RESOLVE") {
-        if (pendingResolve(task)) {
-          return allowResolve.value;
-        }
-        return false;
+        // if (pendingResolve(task)) {
+        return allowResolve.value;
+        // }
+        // return false;
       }
       return true;
     };
@@ -519,9 +519,9 @@ export default {
         .then((createdTask) => {
           router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
 
-          if (taskTemplate.value.type == "bytebase.database.request") {
+          if (taskTemplate.value.type == "bytebase.database.create") {
             store.dispatch("uistate/saveIntroStateByKey", {
-              key: "database.request",
+              key: "database.create",
               newState: true,
             });
           } else if (

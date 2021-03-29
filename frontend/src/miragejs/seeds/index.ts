@@ -108,7 +108,7 @@ const workspacesSeeder = (server: any) => {
   }
 
   task = server.create("task", {
-    type: "bytebase.database.request",
+    type: "bytebase.database.create",
     name: "Request database for environment - " + environmentList1[1].name,
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
