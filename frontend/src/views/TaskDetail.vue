@@ -529,14 +529,7 @@ export default {
         .then((createdTask) => {
           router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
 
-          if (taskTemplate.value.type == "bytebase.database.create") {
-            store.dispatch("uistate/saveIntroStateByKey", {
-              key: "database.create",
-              newState: true,
-            });
-          } else if (
-            taskTemplate.value.type == "bytebase.database.schema.update"
-          ) {
+          if (taskTemplate.value.type == "bytebase.database.schema.update") {
             store.dispatch("uistate/saveIntroStateByKey", {
               key: "table.create",
               newState: true,
