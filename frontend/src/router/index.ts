@@ -66,12 +66,10 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: "/",
-    name: HOME_MODULE,
     component: DashboardLayout,
     children: [
       {
         path: "",
-        name: HOME_MODULE,
         components: { body: BodyLayout },
         children: [
           {
