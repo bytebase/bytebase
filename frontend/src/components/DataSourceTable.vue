@@ -187,11 +187,14 @@ export default {
       databaseList.forEach((database: Database) => {
         for (const dataSource of dataSourceList) {
           if (
-            !state.searchText ||
-            dataSource.name
-              .toLowerCase()
-              .includes(state.searchText.toLowerCase()) ||
-            database.name.toLowerCase().includes(state.searchText.toLowerCase())
+            dataSource.database.id == database.id &&
+            (!state.searchText ||
+              dataSource.name
+                .toLowerCase()
+                .includes(state.searchText.toLowerCase()) ||
+              database.name
+                .toLowerCase()
+                .includes(state.searchText.toLowerCase()))
           ) {
             const list = dataSourceListByDatabase.get(database.name);
             if (list) {
