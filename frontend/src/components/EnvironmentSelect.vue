@@ -23,9 +23,10 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
+import { Environment, EnvironmentId } from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -60,15 +61,45 @@ export default {
       ).reverse();
     });
 
-    if (
-      !props.selectedId &&
-      props.selectDefault &&
-      environmentList.value &&
-      environmentList.value.length > 0
-    ) {
-      state.selectedId = environmentList.value[0].id;
-      emit("select-environment-id", state.selectedId);
+    if (environmentList.value && environmentList.value.length > 0) {
+      if (
+        !props.selectedId ||
+        !environmentList.value.find(
+          (item: Environment) => item.id == props.selectedId
+        )
+      ) {
+        if (props.selectDefault) {
+          state.selectedId = environmentList.value[0].id;
+          emit("select-environment-id", state.selectedId);
+        }
+      }
     }
+
+    const invalidateSelectionIfNeeded = () => {
+      if (
+        state.selectedId &&
+        !environmentList.value.find(
+          (item: Environment) => item.id == state.selectedId
+        )
+      ) {
+        state.selectedId = undefined;
+        emit("select-environment-id", state.selectedId);
+      }
+    };
+
+    watch(
+      () => environmentList.value,
+      () => {
+        invalidateSelectionIfNeeded();
+      }
+    );
+
+    watch(
+      () => props.selectedId,
+      (cur, _) => {
+        state.selectedId = cur;
+      }
+    );
 
     return {
       state,
