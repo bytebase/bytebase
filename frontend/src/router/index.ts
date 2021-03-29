@@ -85,7 +85,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bytebase.instance.create",
                     "quickaction.bytebase.user.manage",
                     "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.request",
                     "quickaction.bytebase.database.troubleshoot",
                   ],
                 ],
@@ -94,7 +94,7 @@ const routes: Array<RouteRecordRaw> = [
                   [
                     "quickaction.bytebase.instance.create",
                     "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.request",
                     "quickaction.bytebase.database.troubleshoot",
                   ],
                 ],
@@ -103,7 +103,7 @@ const routes: Array<RouteRecordRaw> = [
                   [
                     "quickaction.bytebase.database.troubleshoot",
                     "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.request",
                   ],
                 ],
               ]),
@@ -307,24 +307,22 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "OWNER",
                   [
-                    "quickaction.bytebase.database.create",
                     "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.request",
                   ],
                 ],
                 [
                   "DBA",
                   [
-                    "quickaction.bytebase.database.create",
                     "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.request",
                   ],
                 ],
                 [
                   "DEVELOPER",
                   [
                     "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bytebase.database.request",
                     "quickaction.bytebase.database.troubleshoot",
                   ],
                 ],
