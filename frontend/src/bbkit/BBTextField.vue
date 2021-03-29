@@ -90,11 +90,13 @@ export default {
         state.hasError = true;
         nextTick(() => {
           state.text = state.originalText;
-          // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
-          inputField.value.focus();
-          nextTick(() => {
-            inputField.value.select();
-          });
+          if (inputField.value) {
+            // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
+            inputField.value.focus();
+            nextTick(() => {
+              inputField.value.select();
+            });
+          }
         });
       } else {
         state.hasError = false;
