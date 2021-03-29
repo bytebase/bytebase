@@ -42,7 +42,7 @@ const template: TaskTemplate = {
     {
       category: "INPUT",
       id: TaskBuiltinFieldId.ENVIRONMENT,
-      slug: "env",
+      slug: "environment",
       name: "Environment",
       type: "Environment",
       required: true,
@@ -53,7 +53,7 @@ const template: TaskTemplate = {
     {
       category: "INPUT",
       id: TaskBuiltinFieldId.DATABASE,
-      slug: "db",
+      slug: "database",
       name: "DB name",
       type: "NewDatabase",
       required: true,

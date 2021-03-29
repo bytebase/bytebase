@@ -111,10 +111,7 @@
         v-if="quickAction == 'quickaction.bytebase.database.request'"
         class="flex flex-col items-center w-28"
       >
-        <router-link
-          to="/task/new?template=bytebase.database.create"
-          class="p-3 btn-icon-primary"
-        >
+        <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
           <svg
             class="w-6 h-6"
             fill="none"
@@ -245,14 +242,22 @@
     </template>
   </div>
   <BBModal
-    v-if="state.showCreateInstanceModal"
-    :title="'Create Instance'"
-    @close="state.showCreateInstanceModal = false"
+    v-if="state.showModal"
+    :title="state.modalTitle"
+    @close="state.showModal = false"
   >
-    <InstanceForm
-      :create="true"
-      @dismiss="state.showCreateInstanceModal = false"
-    />
+    <template
+      v-if="state.quickActionType == 'quickaction.bytebase.instance.create'"
+    >
+      <InstanceForm :create="true" @dismiss="state.showModal = false" />
+    </template>
+    <template
+      v-else-if="
+        state.quickActionType == 'quickaction.bytebase.database.request'
+      "
+    >
+      <RequestDatabasePrepForm @dismiss="state.showModal = false" />
+    </template>
   </BBModal>
 </template>
 
@@ -260,15 +265,20 @@
 import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import InstanceForm from "../components/InstanceForm.vue";
+import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
+import { QuickActionType } from "../types";
 
 interface LocalState {
-  showCreateInstanceModal: Boolean;
+  showModal: Boolean;
+  modalTitle: string;
+  quickActionType: QuickActionType;
 }
 
 export default {
   name: "QuickActionPanel",
   components: {
     InstanceForm,
+    RequestDatabasePrepForm,
   },
   props: {
     quickActionList: {
@@ -280,11 +290,21 @@ export default {
     const store = useStore();
 
     const state = reactive<LocalState>({
-      showCreateInstanceModal: false,
+      showModal: false,
+      modalTitle: "",
+      quickActionType: "quickaction.bytebase.instance.create",
     });
 
     const createInstance = () => {
-      state.showCreateInstanceModal = true;
+      state.modalTitle = "Create instance";
+      state.quickActionType = "quickaction.bytebase.instance.create";
+      state.showModal = true;
+    };
+
+    const requestDatabase = () => {
+      state.modalTitle = "Request database";
+      state.quickActionType = "quickaction.bytebase.database.request";
+      state.showModal = true;
     };
 
     const createEnvironment = () => {
@@ -298,6 +318,7 @@ export default {
     return {
       state,
       createInstance,
+      requestDatabase,
       createEnvironment,
       reorderEnvironment,
     };
