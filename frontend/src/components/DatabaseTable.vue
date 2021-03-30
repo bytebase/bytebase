@@ -8,13 +8,13 @@
     @click-row="clickDatabase"
   >
     <template v-slot:body="{ rowData: database }">
-      <BBTableCell :leftPadding="4" class="w-16">
+      <BBTableCell :leftPadding="4" class="w-12">
         {{ database.instance.environment.name }}
       </BBTableCell>
-      <BBTableCell class="w-36">
+      <BBTableCell class="w-16">
         {{ database.name }}
       </BBTableCell>
-      <BBTableCell class="w-48">
+      <BBTableCell class="w-24">
         {{ database.instance.name }}
       </BBTableCell>
       <BBTableCell class="w-8">

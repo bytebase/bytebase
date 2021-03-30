@@ -8,16 +8,16 @@
     @click-row="clickInstance"
   >
     <template v-slot:body="{ rowData: instance }">
-      <BBTableCell :leftPadding="4" class="w-10">
+      <BBTableCell :leftPadding="4" class="w-8">
         <img class="h-10 w-auto" src="../assets/db-mysql.svg" />
       </BBTableCell>
-      <BBTableCell :leftPadding="4" class="w-24">
+      <BBTableCell :leftPadding="4" class="w-16">
         {{ environmentName(instance.environment.id) }}
       </BBTableCell>
-      <BBTableCell class="w-48">
+      <BBTableCell class="w-32">
         {{ instance.name }}
       </BBTableCell>
-      <BBTableCell class="w-64">
+      <BBTableCell class="w-48">
         <template v-if="instance.port"
           >{{ instance.host }}:{{ instance.port }}</template
         ><template v-else>{{ instance.host }}</template>
@@ -44,7 +44,7 @@
           </svg>
         </button>
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-16">
         {{ humanizeTs(instance.createdTs) }}
       </BBTableCell>
     </template>
