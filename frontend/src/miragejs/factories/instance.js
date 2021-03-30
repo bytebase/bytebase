@@ -66,33 +66,32 @@ export default {
         password: "pwdadminRO",
       });
 
-      for (let i = 0; i < 3; i++) {
-        const database = server.create("database", {
-          workspaceId: instance.workspaceId,
-          instance,
-          ownerId: ((i % 3) + 1).toString(),
-        });
+      const database = server.create("database", {
+        workspaceId: instance.workspaceId,
+        instance,
+        // Demo Owner
+        ownerId: "1",
+      });
 
-        server.create("dataSource", {
-          workspaceId: instance.workspaceId,
-          instance,
-          database,
-          name: database.name + " RW",
-          type: "RW",
-          username: "rootRW",
-          password: "pwdRW",
-        });
+      server.create("dataSource", {
+        workspaceId: instance.workspaceId,
+        instance,
+        database,
+        name: database.name + " RW",
+        type: "RW",
+        username: "rootRW",
+        password: "pwdRW",
+      });
 
-        server.create("dataSource", {
-          workspaceId: instance.workspaceId,
-          instance,
-          database,
-          name: database.name + " RO",
-          type: "RO",
-          username: "rootRO",
-          password: "pwdRO",
-        });
-      }
+      server.create("dataSource", {
+        workspaceId: instance.workspaceId,
+        instance,
+        database,
+        name: database.name + " RO",
+        type: "RO",
+        username: "rootRO",
+        password: "pwdRO",
+      });
     },
   }),
 };

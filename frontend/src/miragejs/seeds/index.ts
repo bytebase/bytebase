@@ -88,15 +88,15 @@ const workspacesSeeder = (server: any) => {
   });
   const db2 = server.schema.databases.findBy({
     instanceId: instanceList1[1].id,
-    name: "shop6",
+    name: "shop4",
   });
   const db3 = server.schema.databases.findBy({
     instanceId: instanceList1[2].id,
-    name: "shop10",
+    name: "shop6",
   });
   const db4 = server.schema.databases.findBy({
     instanceId: instanceList1[3].id,
-    name: "shop14",
+    name: "shop8",
   });
 
   let task = server.create("task", {
@@ -245,7 +245,7 @@ const workspacesSeeder = (server: any) => {
     return list[Math.floor(Math.random() * list.length)];
   };
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 3; i++) {
     const data = randomUpdateSchemaTaskName();
     task = server.create("task", {
       name: data.title,
@@ -281,7 +281,7 @@ const workspacesSeeder = (server: any) => {
     }
   }
 
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 3; i++) {
     const data = randomUpdateSchemaTaskName();
     task = server.create("task", {
       name: data.title,
@@ -316,7 +316,7 @@ const workspacesSeeder = (server: any) => {
     }
   }
 
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 3; i++) {
     const data = randomUpdateSchemaTaskName();
     task = server.create("task", {
       name: data.title,
