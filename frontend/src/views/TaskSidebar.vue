@@ -133,9 +133,12 @@
             <div class="flex-shrink-0">
               <BBAvatar :size="'small'" :username="task.creator.name" />
             </div>
-            <div class="text-sm font-medium text-main">
+            <router-link
+              :to="`/u/${task.creator.id}`"
+              class="text-sm font-medium text-main hover:underline"
+            >
               {{ task.creator.name }}
-            </div>
+            </router-link>
           </li>
         </ul>
       </div>

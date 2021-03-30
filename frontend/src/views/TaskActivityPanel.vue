@@ -71,9 +71,11 @@
                 <div class="ml-3 min-w-0 flex-1">
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
-                      <span class="font-medium text-main whitespace-nowrap">{{
-                        activity.creator.name
-                      }}</span>
+                      <router-link
+                        :to="`/u/${activity.creator.id}`"
+                        class="font-medium text-main whitespace-nowrap hover:underline"
+                        >{{ activity.creator.name }}</router-link
+                      >
                       <a
                         :href="'#activity' + (index + 1)"
                         class="ml-1 anchor-link whitespace-normal"

@@ -24,9 +24,11 @@
         <div v-if="!$props.new">
           <p class="text-sm text-control-light">
             #{{ task.id }} opened by
-            <span href="#" class="font-medium text-control">{{
-              task.creator.name
-            }}</span>
+            <router-link
+              :to="`/u/${task.creator.id}`"
+              class="font-medium text-control hover:underline"
+              >{{ task.creator.name }}</router-link
+            >
             at
             <span href="#" class="font-medium text-control">{{
               moment(task.lastUpdatedTs).format("LLL")
