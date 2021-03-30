@@ -116,7 +116,7 @@ export default {
         }),
       },
       {
-        name: "Create a database",
+        name: "Request a database",
         link:
           "/task/new?template=bytebase.database.create&description=Estimated QPS: 10",
         allowDeveloper: true,
