@@ -287,6 +287,16 @@ export default function routes() {
         }
       }
 
+      if (attrs.rollbackSql !== undefined) {
+        if (task.rollbackSql != attrs.rollbackSql) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.ROLLBACK_SQL,
+            oldValue: task.rollbackSql,
+            newValue: attrs.rollbackSql,
+          });
+        }
+      }
+
       for (const fieldId in attrs.payload) {
         const oldValue = task.payload[fieldId];
         const newValue = attrs.payload[fieldId];

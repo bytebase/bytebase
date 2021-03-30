@@ -103,8 +103,18 @@
               <TaskSqlPanel
                 :task="state.task"
                 :new="state.new"
+                :rollback="false"
                 :allowEdit="allowEditFields"
                 @update-sql="updateSql"
+              />
+            </section>
+            <section v-if="showTaskRollbackSqlPanel" class="border-b mb-4">
+              <TaskSqlPanel
+                :task="state.task"
+                :new="state.new"
+                :rollback="true"
+                :allowEdit="allowEditFields"
+                @update-sql="updateRollbackSql"
               />
             </section>
             <TaskDescriptionPanel
@@ -338,6 +348,10 @@ export default {
       if (router.currentRoute.value.query.sql) {
         newTask.sql = router.currentRoute.value.query.sql as string;
       }
+      if (router.currentRoute.value.query.rollbacksql) {
+        newTask.rollbackSql = router.currentRoute.value.query
+          .rollbacksql as string;
+      }
       if (router.currentRoute.value.query.assignee) {
         newTask.assigneeId = router.currentRoute.value.query
           .assignee as PrincipalId;
@@ -415,6 +429,22 @@ export default {
         patchTask(
           {
             sql: newSql,
+          },
+          postUpdated
+        );
+      }
+    };
+
+    const updateRollbackSql = (
+      newSql: string,
+      postUpdated: (updatedTask: Task) => void
+    ) => {
+      if (state.new) {
+        (state.task as TaskNew).rollbackSql = newSql;
+      } else {
+        patchTask(
+          {
+            rollbackSql: newSql,
           },
           postUpdated
         );
@@ -644,6 +674,10 @@ export default {
       );
     });
 
+    const showTaskRollbackSqlPanel = computed(() => {
+      return state.task.type == "bytebase.database.schema.update";
+    });
+
     const applicableStatusTransitionList = computed(
       (): TaskStatusTransition[] => {
         const list: TaskStatusTransitionType[] = [];
@@ -674,6 +708,7 @@ export default {
       updateName,
       updateDescription,
       updateSql,
+      updateRollbackSql,
       allowTransition,
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
@@ -690,6 +725,7 @@ export default {
       showTaskStageFlowBar,
       showTaskOutputPanel,
       showTaskSqlPanel,
+      showTaskRollbackSqlPanel,
       applicableStatusTransitionList,
     };
   },

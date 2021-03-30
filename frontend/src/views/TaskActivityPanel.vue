@@ -483,6 +483,10 @@ export default {
               name = "SQL";
               oldValue = update.oldValue;
               newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.ROLLBACK_SQL) {
+              name = "Rollback SQL";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);
               name = field.name;

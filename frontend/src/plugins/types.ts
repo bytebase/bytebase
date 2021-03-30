@@ -22,6 +22,7 @@ export enum TaskBuiltinFieldId {
   DATA_SOURCE = "8",
   STAGE = "9", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
   SQL = "10",
+  ROLLBACK_SQL = "11",
 }
 
 export const CUSTOM_FIELD_ID_BEGIN = "100";

@@ -22,7 +22,10 @@ export default {
       return faker.fake("{{lorem.paragraphs}}");
     },
     sql() {
-      return "SHOW TABLES";
+      return "CREATE TABLE t1 (id INT NOT NULL);";
+    },
+    rollbackSql() {
+      return "DROP TABLE t1;";
     },
     stageList() {
       return [

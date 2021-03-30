@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-between">
-    <div class="textlabel">SQL</div>
+    <div class="textlabel">{{ rollback ? "Rollback SQL" : "SQL" }}</div>
     <div v-if="!$props.new" class="space-x-2">
       <button
         v-if="allowEdit && !state.editing"
@@ -34,7 +34,7 @@
         v-if="state.editing"
         type="button"
         class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-        :disabled="state.editSql == task.sql"
+        :disabled="!allowSave"
         @click.prevent="saveEdit"
       >
         Save
@@ -84,9 +84,11 @@ import {
   ref,
   reactive,
   watch,
+  computed,
 } from "vue";
 import { Task } from "../types";
 import { sizeToFit } from "../utils";
+import command from "../store/modules/command";
 
 interface LocalState {
   editing: boolean;
@@ -105,6 +107,10 @@ export default {
       required: true,
       type: Boolean,
     },
+    rollback: {
+      required: true,
+      type: Boolean,
+    },
     allowEdit: {
       required: true,
       type: Boolean,
@@ -114,9 +120,13 @@ export default {
   setup(props, { emit }) {
     const editSqlTextArea = ref();
 
+    const effectiveSql = (task: Task): string => {
+      return (props.rollback ? task.rollbackSql : task.sql) || "";
+    };
+
     const state = reactive<LocalState>({
       editing: false,
-      editSql: props.task.sql || "",
+      editSql: effectiveSql(props.task),
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -124,8 +134,14 @@ export default {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          if (state.editSql != props.task.sql) {
-            saveEdit();
+          if (props.rollback) {
+            if (state.editSql != props.task.rollbackSql) {
+              saveEdit();
+            }
+          } else {
+            if (state.editSql != props.task.sql) {
+              saveEdit();
+            }
           }
         }
       }
@@ -163,8 +179,14 @@ export default {
       }
     );
 
+    const allowSave = computed(() => {
+      return props.rollback
+        ? state.editSql != props.task.rollbackSql
+        : state.editSql != props.task.sql;
+    });
+
     const beginEdit = () => {
-      state.editSql = props.task.sql || "";
+      state.editSql = effectiveSql(props.task);
       state.editing = true;
       nextTick(() => {
         editSqlTextArea.value.focus();
@@ -173,17 +195,24 @@ export default {
 
     const saveEdit = () => {
       emit("update-sql", state.editSql, (updatedTask: Task) => {
-        state.editSql = updatedTask.sql || "";
+        state.editSql = effectiveSql(updatedTask);
         state.editing = false;
       });
     };
 
     const cancelEdit = () => {
-      state.editSql = props.task.sql || "";
+      state.editSql = effectiveSql(props.task);
       state.editing = false;
     };
 
-    return { editSqlTextArea, state, beginEdit, saveEdit, cancelEdit };
+    return {
+      editSqlTextArea,
+      state,
+      allowSave,
+      beginEdit,
+      saveEdit,
+      cancelEdit,
+    };
   },
 };
 </script>

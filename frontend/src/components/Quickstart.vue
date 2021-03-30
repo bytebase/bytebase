@@ -127,7 +127,7 @@ export default {
       {
         name: "Create a table",
         link:
-          "/task/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);",
+          "/task/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")

@@ -308,6 +308,7 @@ export type Task = {
   assignee?: Principal;
   subscriberList: Principal[];
   sql?: string;
+  rollbackSql?: string;
   payload: TaskPayload;
 };
 
@@ -320,6 +321,7 @@ export type TaskNew = {
   assigneeId?: PrincipalId;
   subscriberIdList: PrincipalId[];
   sql?: string;
+  rollbackSql?: string;
   payload: TaskPayload;
 };
 
@@ -328,6 +330,7 @@ export type TaskPatch = {
   status?: TaskStatus;
   description?: string;
   sql?: string;
+  rollbackSql?: string;
   assigneeId?: PrincipalId;
   stage?: StageProgressPatch;
   payload?: TaskPayload;
