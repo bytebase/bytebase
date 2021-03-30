@@ -1,5 +1,5 @@
 import faker from "faker";
-import { Environment, Stage, StageType, Task } from "../../types";
+import { Database, Environment, Stage, StageType, Task } from "../../types";
 import { instanceSlug, databaseSlug, taskSlug } from "../../utils";
 
 /*
@@ -14,7 +14,7 @@ const workspacesSeeder = (server: any) => {
   const workspace2 = server.schema.workspaces.find(101);
 
   // Environment
-  let environmentList1 = [];
+  const environmentList1 = [];
   for (let i = 0; i < 4; i++) {
     environmentList1.push(
       server.create("environment", {
@@ -24,7 +24,7 @@ const workspacesSeeder = (server: any) => {
   }
   workspace1.update({ environment: environmentList1 });
 
-  let environmentList2 = [];
+  const environmentList2 = [];
   for (let i = 0; i < 4; i++) {
     environmentList2.push(
       server.create("environment", {
@@ -43,7 +43,7 @@ const workspacesSeeder = (server: any) => {
   ];
 
   // Instance
-  let instanceList1 = [];
+  const instanceList1 = [];
   for (let i = 0; i < 5; i++) {
     instanceList1.push(
       server.create("instance", {
@@ -69,6 +69,33 @@ const workspacesSeeder = (server: any) => {
     });
   }
 
+  // Database
+  const databaseList1 = [];
+  databaseList1.push(
+    server.schema.databases.findBy({
+      instanceId: instanceList1[0].id,
+      name: "shop2",
+    })
+  );
+  databaseList1.push(
+    server.schema.databases.findBy({
+      instanceId: instanceList1[1].id,
+      name: "shop4",
+    })
+  );
+  databaseList1.push(
+    server.schema.databases.findBy({
+      instanceId: instanceList1[2].id,
+      name: "shop6",
+    })
+  );
+  databaseList1.push(
+    server.schema.databases.findBy({
+      instanceId: instanceList1[3].id,
+      name: "shop8",
+    })
+  );
+
   // Task
   const ws1Owner = server.schema.users.find(1);
   const ws1DBA = server.schema.users.find(2);
@@ -79,25 +106,6 @@ const workspacesSeeder = (server: any) => {
 
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
-
-  console.log(server.schema.databases.all());
-  // id=1 is *, so we use id=2
-  const db1 = server.schema.databases.findBy({
-    instanceId: instanceList1[0].id,
-    name: "shop2",
-  });
-  const db2 = server.schema.databases.findBy({
-    instanceId: instanceList1[1].id,
-    name: "shop4",
-  });
-  const db3 = server.schema.databases.findBy({
-    instanceId: instanceList1[2].id,
-    name: "shop6",
-  });
-  const db4 = server.schema.databases.findBy({
-    instanceId: instanceList1[3].id,
-    name: "shop8",
-  });
 
   let task = server.create("task", {
     type: "bytebase.general",
@@ -119,7 +127,7 @@ const workspacesSeeder = (server: any) => {
     ],
     payload: {
       5: environmentList1[0].id,
-      7: db1.id,
+      7: databaseList1[0].id,
     },
     workspace: workspace1,
   });
@@ -148,7 +156,6 @@ const workspacesSeeder = (server: any) => {
     });
   }
 
-  const dbName = db1.name;
   const tableNameList = [
     "warehouse",
     "customer",
@@ -160,7 +167,7 @@ const workspacesSeeder = (server: any) => {
 
   task = server.create("task", {
     type: "bytebase.database.create",
-    name: `Create database '${dbName}' for environment - ${environmentList1[1].name}`,
+    name: `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`,
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
@@ -174,7 +181,7 @@ const workspacesSeeder = (server: any) => {
     ],
     payload: {
       5: environmentList1[1].id,
-      7: dbName,
+      7: databaseList1[1].name,
     },
     workspace: workspace1,
   });
@@ -209,35 +216,35 @@ const workspacesSeeder = (server: any) => {
       tableNameList[Math.floor(Math.random() * tableNameList.length)];
     const list: SQLData[] = [
       {
-        title: "Create table " + [dbName, tableName].join("."),
+        title: "Create table " + tableName,
         sql: `CREATE TABLE ${tableName} (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);`,
       },
       {
-        title: "Add index to " + [dbName, tableName].join("."),
+        title: "Add index to " + tableName,
         sql: `CREATE INDEX ${tableName}_idx\nON ${tableName} (name);`,
       },
       {
-        title: "Drop index from " + [dbName, tableName].join("."),
+        title: "Drop index from " + tableName,
         sql: `ALTER TABLE ${tableName}\nDROP INDEX ${tableName}_idx;`,
       },
       {
-        title: "Add column to " + [dbName, tableName].join("."),
+        title: "Add column to " + tableName,
         sql: `ALTER TABLE ${tableName}\nADD email VARCHAR(255);`,
       },
       {
-        title: "Drop column from " + [dbName, tableName].join("."),
+        title: "Drop column from " + tableName,
         sql: `ALTER TABLE ${tableName}\nDROP COLUMN email;`,
       },
       {
-        title: "Alter column to " + [dbName, tableName].join("."),
+        title: "Alter column to " + tableName,
         sql: `ALTER TABLE ${tableName}\nMODIFY COLUMN email TEXT;`,
       },
       {
-        title: "Add foreign key to " + [dbName, tableName].join("."),
+        title: "Add foreign key to " + tableName,
         sql: `ALTER TABLE ${tableName}\nADD CONSTRAINT FK_${tableName}\nFOREIGN KEY (id) REFERENCES ${tableName}(ID);`,
       },
       {
-        title: "Drop foreign key from " + [dbName, tableName].join("."),
+        title: "Drop foreign key from " + tableName,
         sql: `ALTER TABLE ${tableName}\nDROP FOREIGN KEY FK_${tableName};`,
       },
     ];
@@ -258,7 +265,7 @@ const workspacesSeeder = (server: any) => {
       },
       sql: data.sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-      ...fillTaskAndStageStatus(environmentList1),
+      ...fillTaskAndStageStatus(environmentList1, databaseList1),
       workspace: workspace1,
     });
 
@@ -290,7 +297,7 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Dev2.id],
-      ...fillTaskAndStageStatus(environmentList1),
+      ...fillTaskAndStageStatus(environmentList1, databaseList1),
       workspace: workspace1,
     });
 
@@ -325,7 +332,7 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
-      ...fillTaskAndStageStatus(environmentList1),
+      ...fillTaskAndStageStatus(environmentList1, databaseList1),
       workspace: workspace1,
     });
 
@@ -355,7 +362,7 @@ const workspacesSeeder = (server: any) => {
     creatorId: ws2Dev.id,
     assigneeId: ws2DBA.id,
     sql: data.sql,
-    ...fillTaskAndStageStatus(environmentList2),
+    ...fillTaskAndStageStatus(environmentList2, databaseList1),
     workspace: workspace2,
   });
 
@@ -380,7 +387,8 @@ const workspacesSeeder = (server: any) => {
 };
 
 const fillTaskAndStageStatus = (
-  environmentList: Environment[]
+  environmentList: Environment[],
+  databaseList: Database[]
 ): Pick<Task, "status" | "stageList"> => {
   const type: StageType = "bytebase.stage.schema.update";
   const i = Math.floor(Math.random() * 5);
@@ -393,6 +401,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[0].name,
           type,
           environmentId: environmentList[0].id,
+          databaseId: databaseList[0].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -404,6 +413,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[1].name,
           type,
           environmentId: environmentList[1].id,
+          databaseId: databaseList[1].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -432,6 +442,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[1].name,
           type,
           environmentId: environmentList[1].id,
+          databaseId: databaseList[1].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -443,6 +454,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[2].name,
           type,
           environmentId: environmentList[2].id,
+          databaseId: databaseList[2].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -454,6 +466,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[3].name,
           type,
           environmentId: environmentList[3].id,
+          databaseId: databaseList[3].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -471,6 +484,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[0].name,
           type,
           environmentId: environmentList[0].id,
+          databaseId: databaseList[0].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -482,6 +496,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[1].name,
           type,
           environmentId: environmentList[1].id,
+          databaseId: databaseList[1].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -493,6 +508,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[2].name,
           type,
           environmentId: environmentList[2].id,
+          databaseId: databaseList[2].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -504,6 +520,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[3].name,
           type,
           environmentId: environmentList[3].id,
+          databaseId: databaseList[3].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -521,6 +538,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[0].name,
           type,
           environmentId: environmentList[0].id,
+          databaseId: databaseList[0].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -532,6 +550,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[1].name,
           type,
           environmentId: environmentList[1].id,
+          databaseId: databaseList[1].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -543,6 +562,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[2].name,
           type,
           environmentId: environmentList[2].id,
+          databaseId: databaseList[2].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -554,6 +574,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[3].name,
           type,
           environmentId: environmentList[3].id,
+          databaseId: databaseList[3].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -571,6 +592,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[0].name,
           type,
           environmentId: environmentList[0].id,
+          databaseId: databaseList[0].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -582,6 +604,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[1].name,
           type,
           environmentId: environmentList[1].id,
+          databaseId: databaseList[1].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -593,6 +616,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[2].name,
           type,
           environmentId: environmentList[2].id,
+          databaseId: databaseList[2].id,
           runnable: {
             auto: true,
             run: () => {},
@@ -604,6 +628,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[3].name,
           type,
           environmentId: environmentList[3].id,
+          databaseId: databaseList[3].id,
           runnable: {
             auto: true,
             run: () => {},

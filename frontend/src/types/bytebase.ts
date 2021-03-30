@@ -272,6 +272,7 @@ export type Stage = {
   type: StageType;
   status: StageStatus;
   environmentId?: EnvironmentId;
+  databaseId?: DatabaseId;
   runnable?: StageRunnable;
 };
 

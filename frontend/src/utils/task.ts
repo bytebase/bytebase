@@ -1,4 +1,4 @@
-import { Task, StageId, Stage, EnvironmentId } from "../types";
+import { Task, StageId, Stage, EnvironmentId, DatabaseId } from "../types";
 import { templateForType } from "../plugins";
 
 export function stageName(task: Task, stageId: StageId): string {
@@ -49,6 +49,24 @@ export function activeEnvironmentId(task: Task): EnvironmentId | null {
       taskTemplate.fieldList?.filter((item) => item.category === "INPUT") || [];
     for (const field of inputFieldList) {
       if (field.type === "Environment") {
+        return task.payload[field.id];
+      }
+    }
+  }
+  return null;
+}
+
+export function activeDatabaseId(task: Task): DatabaseId | null {
+  const stage = activeStage(task);
+  if (stage.databaseId) {
+    return stage.databaseId!;
+  }
+  const taskTemplate = templateForType(task.type);
+  if (taskTemplate) {
+    const inputFieldList =
+      taskTemplate.fieldList?.filter((item) => item.category === "INPUT") || [];
+    for (const field of inputFieldList) {
+      if (field.type === "Database") {
         return task.payload[field.id];
       }
     }

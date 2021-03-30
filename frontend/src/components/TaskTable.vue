@@ -21,20 +21,24 @@
         :title="state.columnList[2].title"
       />
       <BBTableHeaderCell
-        class="table-cell"
+        class="w-12 table-cell"
         :title="state.columnList[3].title"
       />
       <BBTableHeaderCell
-        class="w-12 hidden sm:table-cell"
+        class="w-48 table-cell"
         :title="state.columnList[4].title"
       />
       <BBTableHeaderCell
-        class="w-36 hidden md:table-cell"
+        class="w-24 hidden sm:table-cell"
         :title="state.columnList[5].title"
       />
       <BBTableHeaderCell
-        class="w-36 hidden sm:table-cell"
+        class="w-24 hidden md:table-cell"
         :title="state.columnList[6].title"
+      />
+      <BBTableHeaderCell
+        class="w-36 hidden sm:table-cell"
+        :title="state.columnList[7].title"
       />
     </template>
     <template v-slot:body="{ rowData: task }">
@@ -50,6 +54,9 @@
       </BBTableCell>
       <BBTableCell class="table-cell">
         {{ activeEnvironmentName(task) }}
+      </BBTableCell>
+      <BBTableCell class="table-cell">
+        {{ activeDatabaseName(task) }}
       </BBTableCell>
       <BBTableCell class="truncate">
         {{ task.name }}
@@ -86,8 +93,13 @@ import {
   BBStepStatus,
 } from "../bbkit/types";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
-import { taskSlug, activeEnvironmentId, activeStage } from "../utils";
-import { EnvironmentId, Task } from "../types";
+import {
+  taskSlug,
+  activeEnvironmentId,
+  activeDatabaseId,
+  activeStage,
+} from "../utils";
+import { Task } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
@@ -118,6 +130,9 @@ export default {
           title: "Environment",
         },
         {
+          title: "Database",
+        },
+        {
           title: "Name",
         },
         {
@@ -137,6 +152,14 @@ export default {
       const id = activeEnvironmentId(task);
       if (id) {
         return store.getters["environment/environmentById"](id)?.name;
+      }
+      return "";
+    };
+
+    const activeDatabaseName = function (task: Task) {
+      const id = activeDatabaseId(task);
+      if (id) {
+        return store.getters["database/databaseById"](id).name;
       }
       return "";
     };
@@ -185,6 +208,7 @@ export default {
     return {
       state,
       activeEnvironmentName,
+      activeDatabaseName,
       stageList,
       activeStage,
       clickTask,
