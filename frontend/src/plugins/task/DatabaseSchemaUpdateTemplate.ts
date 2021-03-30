@@ -18,20 +18,14 @@ const template: TaskTemplate = {
       name: "Change db",
       type: "bytebase.database.schema.update",
       description: "",
-      stageList: ctx.environmentList.map((env) => {
-        return {
-          id: env.id,
-          name: env.name,
+      stageList: [
+        {
+          id: "1",
+          name: "Update schema",
           type: "bytebase.stage.schema.update",
           status: "PENDING",
-          runnable: {
-            auto: true,
-            run: () => {
-              console.log("Start", env.name);
-            },
-          },
-        };
-      }),
+        },
+      ],
       creatorId: ctx.currentUser.id,
       subscriberIdList: [],
       payload,
