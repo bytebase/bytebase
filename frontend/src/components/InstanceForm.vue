@@ -137,7 +137,7 @@ input[type="number"] {
             </p>
           </div>
         </div>
-        <div class="pt-4">
+        <div v-if="false" class="pt-4">
           <button type="button" class="btn-normal">Test Connection</button>
         </div>
         <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
