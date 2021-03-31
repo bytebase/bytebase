@@ -25,7 +25,7 @@ export default {
       return "CREATE TABLE t1 (id INT NOT NULL);";
     },
     rollbackSql() {
-      return "DROP TABLE t1;";
+      return "";
     },
     stageList() {
       return [
