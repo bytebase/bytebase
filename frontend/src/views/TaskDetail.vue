@@ -182,7 +182,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
-import { idFromSlug, taskSlug, pendingResolve } from "../utils";
+import { idFromSlug, taskSlug, isDemo } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
@@ -335,6 +335,11 @@ export default {
         environmentList: environmentList.value,
         currentUser: currentUser.value,
       });
+
+      // For demo mode, we assign the task to the current user, so it can also experience the assignee user flow.
+      if (isDemo()) {
+        newTask.assigneeId = currentUser.value.id;
+      }
 
       newTask.creatorId = currentUser.value.id;
 

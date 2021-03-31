@@ -20,7 +20,7 @@
         <div class="w-full">
           <PrincipalSelect
             :disabled="!allowEditAssignee"
-            :selectedId="task.assignee?.id"
+            :selectedId="$props.new ? task.assigneeId : task.assignee?.id"
             :allowAllRoles="false"
             @select-principal-id="
               (principalId) => {
