@@ -90,7 +90,7 @@
             href="https://github.com/bytebase/bytebase/discussions"
             class="flex-shrink-0 w-full text-main group block"
           >
-            <div class="flex items-center">
+            <div class="flex items-center py-1">
               <svg
                 class="w-5 h-5"
                 fill="none"
