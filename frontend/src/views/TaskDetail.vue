@@ -531,6 +531,15 @@ export default {
           payload: payloadChanged ? state.task.payload : undefined,
         },
         () => {
+          if (
+            payload.transition.to == "DONE" &&
+            taskTemplate.value.type == "bytebase.database.schema.update"
+          ) {
+            store.dispatch("uistate/saveIntroStateByKey", {
+              key: "table.create",
+              newState: true,
+            });
+          }
           payload.didTransit();
         }
       );
@@ -563,13 +572,6 @@ export default {
         .dispatch("task/createTask", state.task)
         .then((createdTask) => {
           router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
-
-          if (taskTemplate.value.type == "bytebase.database.schema.update") {
-            store.dispatch("uistate/saveIntroStateByKey", {
-              key: "table.create",
-              newState: true,
-            });
-          }
         })
         .catch((error) => {
           console.log(error);
