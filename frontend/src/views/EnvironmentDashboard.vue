@@ -50,6 +50,22 @@
       @cancel="state.showCreateModal = false"
     />
   </BBModal>
+
+  <BBAlert
+    v-if="state.showGuide"
+    :style="'INFO'"
+    :okText="'Do not show again'"
+    :cancelText="'Dismiss'"
+    :title="'How to setup \'Environment\' ?'"
+    :description="'Each environment in Bytebase maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment and most tasks also require specifying an environment first.'"
+    @ok="
+      () => {
+        doDismissGuide();
+      }
+    "
+    @cancel="state.showGuide = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -64,6 +80,7 @@ interface LocalState {
   reorderedEnvironmentList: Environment[];
   selectedIndex: number;
   showCreateModal: boolean;
+  showGuide: boolean;
   reorder: boolean;
 }
 
@@ -81,6 +98,7 @@ export default {
       reorderedEnvironmentList: [],
       selectedIndex: -1,
       showCreateModal: false,
+      showGuide: false,
       reorder: false,
     });
 
@@ -102,6 +120,12 @@ export default {
 
       if (environmentList.value.length > 0) {
         selectEnvironment(0);
+      }
+
+      if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
+        setTimeout(() => {
+          state.showGuide = true;
+        }, 1000);
       }
     });
 
@@ -156,6 +180,14 @@ export default {
         .catch((error) => {
           console.log(error);
         });
+    };
+
+    const doDismissGuide = () => {
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.environment",
+        newState: true,
+      });
+      state.showGuide = false;
     };
 
     const startReorder = () => {
@@ -227,6 +259,7 @@ export default {
       tabTitleList,
       createEnvironment,
       doCreate,
+      doDismissGuide,
       reorderEnvironment,
       orderChanged,
       discardReorder,

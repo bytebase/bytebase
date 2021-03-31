@@ -132,6 +132,15 @@ export default {
         key: "hidden",
         newState: false,
       });
+
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.environment",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.instance",
+        newState: false,
+      });
     };
 
     const isOwner = computed(() => {
