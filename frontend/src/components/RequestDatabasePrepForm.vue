@@ -20,7 +20,10 @@
 
       <template v-if="state.environmentId">
         <div class="col-span-2 col-start-2 w-64 space-y-2">
-          <div class="hidden sm:flex sm:flex-row radio-set justify-between">
+          <div
+            v-if="false"
+            class="hidden sm:flex sm:flex-row radio-set justify-between"
+          >
             <div class="radio">
               <input
                 name="Create new"
