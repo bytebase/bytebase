@@ -74,25 +74,25 @@ const workspacesSeeder = (server: any) => {
   databaseList1.push(
     server.schema.databases.findBy({
       instanceId: instanceList1[0].id,
-      name: "shop2",
+      name: "shop3",
     })
   );
   databaseList1.push(
     server.schema.databases.findBy({
       instanceId: instanceList1[1].id,
-      name: "shop4",
-    })
-  );
-  databaseList1.push(
-    server.schema.databases.findBy({
-      instanceId: instanceList1[2].id,
       name: "shop6",
     })
   );
   databaseList1.push(
     server.schema.databases.findBy({
+      instanceId: instanceList1[2].id,
+      name: "shop9",
+    })
+  );
+  databaseList1.push(
+    server.schema.databases.findBy({
       instanceId: instanceList1[3].id,
-      name: "shop8",
+      name: "shop12",
     })
   );
 
