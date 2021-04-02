@@ -102,7 +102,7 @@
               />
             </div>
           </template>
-          <template v-else-if="field.type == 'Switch'">
+          <template v-else-if="field.type == 'Boolean'">
             <h2 class="flex items-center textlabel w-36">
               {{ field.name }}
               <span v-if="field.required" class="text-red-600">*</span>

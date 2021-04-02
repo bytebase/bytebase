@@ -28,11 +28,11 @@ export enum TaskBuiltinFieldId {
 export const CUSTOM_FIELD_ID_BEGIN = "100";
 
 export type TaskFieldType =
+  | "Boolean"
   | "String"
   | "Environment"
   | "Database"
-  | "NewDatabase"
-  | "Switch";
+  | "NewDatabase";
 
 export type TaskFieldReferenceProvider = {
   title: string;

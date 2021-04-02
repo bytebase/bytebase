@@ -622,7 +622,7 @@ export default {
           (item) => item.category == "INPUT"
         )) {
           if (
-            field.type != "Switch" && // Switch is boolean value which always presents
+            field.type != "Boolean" && // Switch is boolean value which always is present
             field.required &&
             field.isEmpty(state.task.payload[field.id])
           ) {
