@@ -630,7 +630,8 @@ export type EnvironmentQuickActionType =
 export type InstanceQuickActionType = "quickaction.bytebase.instance.create";
 export type UserQuickActionType = "quickaction.bytebase.user.manage";
 export type DatabaseQuickActionType =
-  | "quickaction.bytebase.database.request"
+  | "quickaction.bytebase.database.create" // Used by DBA and Owner
+  | "quickaction.bytebase.database.request" // Used by Developer
   | "quickaction.bytebase.database.schema.update"
   | "quickaction.bytebase.database.troubleshoot";
 
