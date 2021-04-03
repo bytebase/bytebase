@@ -178,7 +178,7 @@ const actions = {
   },
 
   async createDataSource(
-    { commit, rootGetters }: any,
+    { commit, dispatch, rootGetters }: any,
     newDataSource: DataSourceNew
   ) {
     const data = (
@@ -199,11 +199,18 @@ const actions = {
       dataSource: createdDataSource,
     });
 
+    // Refresh the corresponding database as it contains data source.
+    dispatch(
+      "database/fetchDatabaseById",
+      { databaseId: newDataSource.databaseId },
+      { root: true }
+    );
+
     return createdDataSource;
   },
 
   async patchDataSource(
-    { commit, rootGetters }: any,
+    { commit, dispatch, rootGetters }: any,
     {
       databaseId,
       dataSource,
@@ -225,11 +232,14 @@ const actions = {
       dataSource: updatedDataSource,
     });
 
+    // Refresh the corresponding database as it contains data source.
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
+
     return updatedDataSource;
   },
 
   async deleteDataSourceById(
-    { state, commit }: { state: DataSourceState; commit: any },
+    { dispatch, commit }: any,
     {
       databaseId,
       dataSourceId,
@@ -243,10 +253,13 @@ const actions = {
       databaseId,
       dataSourceId,
     });
+
+    // Refresh the corresponding database as it contains data source.
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
   },
 
   async createDataSourceMember(
-    { commit, rootGetters }: any,
+    { commit, dispatch, rootGetters }: any,
     {
       dataSourceId,
       databaseId,
@@ -276,11 +289,14 @@ const actions = {
       dataSource: updatedDataSource,
     });
 
+    // Refresh the corresponding database as it contains data source and its membership info.
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
+
     return updatedDataSource;
   },
 
   async deleteDataSourceMemberByMemberId(
-    { commit, rootGetters }: any,
+    { commit, dispatch, rootGetters }: any,
     {
       databaseId,
       dataSourceId,
@@ -303,6 +319,9 @@ const actions = {
       databaseId,
       dataSource: updatedDataSource,
     });
+
+    // Refresh the corresponding database as it contains data source and its membership info.
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
   },
 };
 
