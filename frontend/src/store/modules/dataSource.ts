@@ -71,6 +71,18 @@ const state: () => DataSourceState = () => ({
 });
 
 const getters = {
+  convert: (
+    state: DataSourceState,
+    getters: any,
+    rootState: any,
+    rootGetters: any
+  ) => (dataSource: ResourceObject): DataSource => {
+    // Pass includedList with [] here, otherwise, it may cause cyclic dependency
+    // e.g. Database calls this to convert its dataSourceList, while data source here
+    // also tries to convert its database.
+    return convert(dataSource, [], rootGetters);
+  },
+
   dataSourceListByInstanceId: (state: DataSourceState) => (
     instanceId: InstanceId
   ): DataSource[] => {

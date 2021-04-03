@@ -67,6 +67,7 @@ export const unknown = (
   const UNKNOWN_DATABASE: Database = {
     id: UNKNOWN_ID,
     instance: UNKNOWN_INSTANCE,
+    dataSourceList: [],
     createdTs: 0,
     lastUpdatedTs: 0,
     name: "<<Unknown database>>",
@@ -543,6 +544,7 @@ export type DatabaseSyncStatus = "OK" | "MISMATCH" | "NOT_FOUND";
 export type Database = {
   id: DatabaseId;
   instance: Instance;
+  dataSourceList: DataSource[];
   createdTs: number;
   lastUpdatedTs: number;
   name: string;

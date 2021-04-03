@@ -12,6 +12,7 @@ import {
   EnvironmentId,
   PrincipalId,
   unknown,
+  DataSource,
 } from "../../types";
 
 type IDParams = {
@@ -29,17 +30,28 @@ function convert(
     .data as ResourceIdentifier).id;
   let instance: Instance = unknown("INSTANCE") as Instance;
 
+  const dataSourceList: DataSource[] = [];
   for (const item of includedList) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item);
-      break;
+    }
+    if (
+      item.type == "data-source" &&
+      (item.relationships!.database.data as ResourceIdentifier).id ==
+        database.id
+    ) {
+      dataSourceList.push(rootGetters["dataSource/convert"](item));
     }
   }
 
   return {
     id: database.id,
     instance,
-    ...(database.attributes as Omit<Database, "id" | "instance">),
+    dataSourceList,
+    ...(database.attributes as Omit<
+      Database,
+      "id" | "instance" | "dataSourceList"
+    >),
   };
 }
 
@@ -154,6 +166,7 @@ const getters = {
         createdTs: ts,
         lastUpdatedTs: ts,
       },
+      dataSourceList: [],
     };
   },
 };
@@ -164,7 +177,9 @@ const actions = {
     instanceId: InstanceId
   ) {
     const data = (
-      await axios.get(`/api/instance/${instanceId}/database?include=instance`)
+      await axios.get(
+        `/api/instance/${instanceId}/database?include=instance,dataSource`
+      )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
@@ -177,7 +192,9 @@ const actions = {
 
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
-      await axios.get(`/api/user/${userId}/database?include=instance`)
+      await axios.get(
+        `/api/user/${userId}/database?include=instance,dataSource`
+      )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
@@ -194,7 +211,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/database?environment=${environmentId}&include=instance`
+        `/api/database?environment=${environmentId}&include=instance,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -214,8 +231,8 @@ const actions = {
     }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
     const url = instanceId
-      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance`
-      : `/api/database/${databaseId}?include=instance`;
+      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,dataSource`
+      : `/api/database/${databaseId}?include=instance,dataSource`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
@@ -229,7 +246,7 @@ const actions = {
 
   async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
     const data = (
-      await axios.post(`/api/database?include=instance`, {
+      await axios.post(`/api/database?include=instance,dataSource`, {
         data: {
           type: "database",
           attributes: newDatabase,
@@ -263,14 +280,17 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/database/${databaseId}?include=instance`, {
-        data: {
-          type: "databasepatch",
-          attributes: {
-            ownerId,
+      await axios.patch(
+        `/api/database/${databaseId}?include=instance,dataSource`,
+        {
+          data: {
+            type: "databasepatch",
+            attributes: {
+              ownerId,
+            },
           },
-        },
-      })
+        }
+      )
     ).data;
     const updatedDatabase = convert(data.data, data.included, rootGetters);
 

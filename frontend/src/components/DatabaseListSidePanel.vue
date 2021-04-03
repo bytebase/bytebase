@@ -8,17 +8,12 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, ComputedRef } from "vue";
+import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
-import {
-  ALL_DATABASE_NAME,
-  Database,
-  Environment,
-  EnvironmentId,
-} from "../types";
-import { instanceSlug, databaseSlug } from "../utils";
+import { ALL_DATABASE_NAME, Environment, EnvironmentId } from "../types";
+import { databaseSlug, allowDatabaseAccess } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
 export default {
@@ -58,7 +53,9 @@ export default {
           const dbList = envToDbMap.get(database.instance.environment.id)!;
           dbList.push({
             id: database.id,
-            name: database.name,
+            name: allowDatabaseAccess(database, currentUser.value, "RW")
+              ? database.name
+              : database.name + " (read)",
             link: `/db/${databaseSlug(database)}`,
           });
         }
