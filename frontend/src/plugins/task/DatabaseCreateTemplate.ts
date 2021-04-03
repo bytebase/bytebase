@@ -74,9 +74,15 @@ const template: TaskTemplate = {
       name: "Created database",
       type: "Database",
       required: true,
+      // Returns true if it's set and matches the requested database name.
       resolved: (ctx: TaskContext): boolean => {
         const databaseId = ctx.task.payload[OUTPUT_DATABASE_FIELD_ID];
-        return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
+        if (isEmpty(databaseId) || databaseId == UNKNOWN_ID) {
+          return false;
+        }
+        const requestedName = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+        const database = ctx.store.getters["database/databaseById"](databaseId);
+        return database && database.name == requestedName;
       },
     },
   ],
