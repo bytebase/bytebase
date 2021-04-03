@@ -6,9 +6,12 @@ import {
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
   CUSTOM_FIELD_ID_BEGIN,
+  TaskContext,
 } from "../types";
 import { linkfy } from "../../utils";
 import { Task, TaskNew, EnvironmentId, UNKNOWN_ID } from "../../types";
+
+const OUTPUT_DATABASE_FIELD_ID = CUSTOM_FIELD_ID_BEGIN;
 
 const template: TaskTemplate = {
   type: "bytebase.database.create",
@@ -46,8 +49,9 @@ const template: TaskTemplate = {
       name: "Environment",
       type: "Environment",
       required: true,
-      isEmpty: (value: EnvironmentId): boolean => {
-        return isEmpty(value);
+      resolved: (ctx: TaskContext): boolean => {
+        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+        return !isEmpty(environmentId);
       },
     },
     {
@@ -57,20 +61,22 @@ const template: TaskTemplate = {
       name: "DB name",
       type: "NewDatabase",
       required: true,
-      isEmpty: (dbName: string): boolean => {
-        return isEmpty(dbName);
+      resolved: (ctx: TaskContext): boolean => {
+        const databaseName = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+        return !isEmpty(databaseName);
       },
       placeholder: "New database name",
     },
     {
       category: "OUTPUT",
-      id: CUSTOM_FIELD_ID_BEGIN + 1,
+      id: OUTPUT_DATABASE_FIELD_ID,
       slug: "database",
       name: "Created database",
       type: "Database",
       required: true,
-      isEmpty: (databaseId: string): boolean => {
-        return isEmpty(databaseId) || databaseId == UNKNOWN_ID;
+      resolved: (ctx: TaskContext): boolean => {
+        const databaseId = ctx.task.payload[OUTPUT_DATABASE_FIELD_ID];
+        return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
       },
     },
   ],

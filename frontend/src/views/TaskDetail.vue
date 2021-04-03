@@ -208,6 +208,7 @@ import {
   templateForType,
   TaskField,
   TaskTemplate,
+  TaskContext,
 } from "../plugins";
 
 // The first transition in the list is the primary action and the rests are
@@ -295,6 +296,17 @@ export default {
     const isNew = computed(() => {
       return props.taskSlug.toLowerCase() == "new";
     });
+
+    const taskContext = computed(
+      (): TaskContext => {
+        return {
+          store,
+          currentUser: currentUser.value,
+          new: isNew.value,
+          task: state.task,
+        };
+      }
+    );
 
     let newTaskTemplate = ref<TaskTemplate>(defaulTemplate());
 
@@ -629,7 +641,7 @@ export default {
           if (
             field.type != "Boolean" && // Switch is boolean value which always is present
             field.required &&
-            field.isEmpty(state.task.payload[field.id])
+            !field.resolved(taskContext.value)
           ) {
             return false;
           }
@@ -641,7 +653,7 @@ export default {
     const allowResolve = computed(() => {
       for (let i = 0; i < outputFieldList.value.length; i++) {
         const field = outputFieldList.value[i];
-        if (field.required && field.isEmpty(state.task.payload[field.id])) {
+        if (field.required && !field.resolved(taskContext.value)) {
           return false;
         }
       }

@@ -4,8 +4,12 @@ import {
   TemplateContext,
   TaskBuiltinFieldId,
   CUSTOM_FIELD_ID_BEGIN,
+  TaskContext,
 } from "../types";
-import { TaskNew, EnvironmentId, UNKNOWN_ID } from "../../types";
+import { TaskNew, EnvironmentId, UNKNOWN_ID, Task } from "../../types";
+import { allowDatabaseAccess } from "../../utils";
+
+const INPUT_READ_ONLY_FIELD_ID = CUSTOM_FIELD_ID_BEGIN;
 
 const template: TaskTemplate = {
   type: "bytebase.database.grant",
@@ -37,8 +41,9 @@ const template: TaskTemplate = {
       name: "Environment",
       type: "Environment",
       required: true,
-      isEmpty: (value: EnvironmentId): boolean => {
-        return isEmpty(value);
+      resolved: (ctx: TaskContext): boolean => {
+        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+        return !isEmpty(environmentId);
       },
     },
     {
@@ -48,18 +53,19 @@ const template: TaskTemplate = {
       name: "Database",
       type: "Database",
       required: true,
-      isEmpty: (databaseId: string): boolean => {
-        return isEmpty(databaseId) || databaseId == UNKNOWN_ID;
+      resolved: (ctx: TaskContext): boolean => {
+        const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+        return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
       },
     },
     {
       category: "INPUT",
-      id: CUSTOM_FIELD_ID_BEGIN,
+      id: INPUT_READ_ONLY_FIELD_ID,
       slug: "readonly",
       name: "Read Only",
       type: "Boolean",
       required: true,
-      isEmpty: (readOnly: boolean): boolean => {
+      resolved: (ctx: TaskContext): boolean => {
         return true;
       },
     },
@@ -72,8 +78,12 @@ const template: TaskTemplate = {
       name: "Granted database",
       type: "Database",
       required: true,
-      isEmpty: (databaseId: string): boolean => {
-        return isEmpty(databaseId) || databaseId == UNKNOWN_ID;
+      resolved: (ctx: TaskContext): boolean => {
+        const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+        const database = ctx.store.getters["database/databaseById"](databaseId);
+        const creator = (ctx.task as Task).creator;
+        const type = ctx.task.payload[CUSTOM_FIELD_ID_BEGIN] ? "RO" : "RW";
+        return allowDatabaseAccess(database, creator, type);
       },
     },
   ],

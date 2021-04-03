@@ -1,3 +1,4 @@
+import { Store } from "vuex";
 import {
   Environment,
   Principal,
@@ -44,6 +45,13 @@ export type TaskFieldReferenceProviderContext = {
   field: TaskField;
 };
 
+export type TaskContext = {
+  store: Store<any>;
+  currentUser: Principal;
+  new: boolean;
+  task: Task | TaskNew;
+};
+
 export type TaskField = {
   category: "INPUT" | "OUTPUT";
   // Used as the key to store the data. This must NOT be changed after
@@ -63,9 +71,10 @@ export type TaskField = {
   type: TaskFieldType;
   // Whether the field is required.
   required: boolean;
-  // Whether the value is empty, one use case is together with "required" field to validate
-  // whether it's ready to submit the data.
-  isEmpty: (value: any) => boolean;
+  // Whether the field is resolved.
+  // For INPUT, one use case is together with "required" field to validate whether it's ready to submit the data.
+  // For OUTPUT, one use case is to validate whether the field is filled properly according to the task.
+  resolved: (ctx: TaskContext) => boolean;
   // Placeholder displayed on UI.
   placeholder?: string;
 };
@@ -77,7 +86,7 @@ export const UNKNOWN_FIELD: TaskField = {
   name: "<<Unknown field>>",
   type: "String",
   required: false,
-  isEmpty: () => true,
+  resolved: () => false,
 };
 
 // Field payload for "Database" and "NewDatabase" field
