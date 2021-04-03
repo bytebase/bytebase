@@ -41,7 +41,7 @@ export default {
           createdTs: Date.now() - (i + 1) * 1800 * 1000,
         });
       }
-      if (i % 4 == 0) {
+      if (i % 3 == 0 || i % 4 == 0) {
         list.push({
           principalId: "3",
           taskId: (i + 1).toString(),
