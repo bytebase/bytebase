@@ -185,7 +185,10 @@ export default {
     const database = computed(() => {
       return store.getters["database/databaseById"](
         props.dataSource.database.id,
-        { instanceId: props.dataSource.instance.id }
+        {
+          instanceId: props.dataSource.instance.id,
+          environmentId: props.dataSource.instance.environment.id,
+        }
       );
     });
 

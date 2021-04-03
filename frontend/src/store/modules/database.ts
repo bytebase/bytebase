@@ -77,6 +77,10 @@ const getters = {
     return state.databaseListByEnvironmentId.get(environmentId) || [];
   },
 
+  // If caller provides scoped search in any of accepted idParams, we search that first.
+  // If none is found, we then do an exhaustive search.
+  // We have to do this because we store the fetched database info differently based on
+  // how is requested.
   databaseById: (state: DatabaseState) => (
     databaseId: DatabaseId,
     idParams?: IDParams
@@ -89,39 +93,42 @@ const getters = {
       if (database) {
         return database;
       }
-    } else if (idParams?.userId) {
+    }
+    if (idParams?.userId) {
       const list = state.databaseListByUserId.get(idParams?.userId) || [];
       database = list.find((item) => item.id == databaseId);
       if (database) {
         return database;
       }
-    } else if (idParams?.environmentId) {
+    }
+
+    if (idParams?.environmentId) {
       const list =
         state.databaseListByEnvironmentId.get(idParams?.environmentId) || [];
       database = list.find((item) => item.id == databaseId);
       if (database) {
         return database;
       }
-    } else {
-      for (let [_, list] of state.databaseListByInstanceId) {
-        database = list.find((item) => item.id == databaseId);
-        if (database) {
-          return database;
-        }
-      }
+    }
 
-      for (let [_, list] of state.databaseListByUserId) {
-        database = list.find((item) => item.id == databaseId);
-        if (database) {
-          return database;
-        }
+    for (let [_, list] of state.databaseListByInstanceId) {
+      database = list.find((item) => item.id == databaseId);
+      if (database) {
+        return database;
       }
+    }
 
-      for (let [_, list] of state.databaseListByEnvironmentId) {
-        database = list.find((item) => item.id == databaseId);
-        if (database) {
-          return database;
-        }
+    for (let [_, list] of state.databaseListByUserId) {
+      database = list.find((item) => item.id == databaseId);
+      if (database) {
+        return database;
+      }
+    }
+
+    for (let [_, list] of state.databaseListByEnvironmentId) {
+      database = list.find((item) => item.id == databaseId);
+      if (database) {
+        return database;
       }
     }
 
