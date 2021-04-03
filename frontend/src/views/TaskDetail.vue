@@ -365,9 +365,14 @@ export default {
       for (const field of newTaskTemplate.value.fieldList.filter(
         (item) => item.category == "INPUT"
       )) {
-        const value = router.currentRoute.value.query[field.slug];
+        const value = router.currentRoute.value.query[field.slug] as string;
         if (value) {
-          newTask.payload[field.id] = value;
+          if (field.type == "Boolean") {
+            newTask.payload[field.id] =
+              value != "0" && value.toLowerCase() != "false";
+          } else {
+            newTask.payload[field.id] = value;
+          }
         }
       }
 
