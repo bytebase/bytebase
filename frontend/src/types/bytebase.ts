@@ -287,6 +287,7 @@ type TaskTypeGeneral = "bytebase.general";
 
 type TaskTypeDatabase =
   | "bytebase.database.create"
+  | "bytebase.database.grant"
   | "bytebase.database.schema.update";
 
 type TaskTypeDataSource = "bytebase.datasource.request";

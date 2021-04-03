@@ -14,10 +14,12 @@
           <span v-if="field.required" class="text-red-600">*</span>
           <template v-if="allowEditDatabase">
             <router-link
-              :to="databaseCreationLink(field)"
+              :to="databaseActionLink(field)"
               class="ml-2 normal-link"
             >
-              + Create
+              {{
+                task.type == "bytebase.database.create" ? "+ Create" : "+ Grant"
+              }}
             </router-link>
           </template>
         </div>
@@ -168,24 +170,29 @@ export default {
       if (!allowEdit.value) {
         return false;
       }
-      return props.task.type == "bytebase.database.create";
+      return (
+        props.task.type == "bytebase.database.create" ||
+        props.task.type == "bytebase.database.grant"
+      );
     });
 
     const isValidLink = (link: string): boolean => {
       return link?.trim().length > 0;
     };
 
-    const databaseCreationLink = (field: TaskField): string => {
+    const databaseActionLink = (field: TaskField): string => {
       const queryParamList: string[] = [];
 
       if (environmentId.value) {
         queryParamList.push(`environment=${environmentId.value}`);
       }
 
-      // The created database info is stored in the predefined field with id TaskBuiltinFieldId.DATABASE
-      const databaseName = props.task.payload[TaskBuiltinFieldId.DATABASE];
-      if (databaseName) {
-        queryParamList.push(`name=${databaseName}`);
+      // The created database name or to be granted database id is stored in the predefined field with id TaskBuiltinFieldId.DATABASE
+      const databaseNameOrId = props.task.payload[TaskBuiltinFieldId.DATABASE];
+      if (props.task.type == "bytebase.database.create") {
+        if (databaseNameOrId) {
+          queryParamList.push(`name=${databaseNameOrId}`);
+        }
       }
 
       queryParamList.push(`owner=${props.task.creator.id}`);
@@ -194,7 +201,9 @@ export default {
 
       queryParamList.push(`from=${props.task.type}`);
 
-      return "/db/new?" + queryParamList.join("&");
+      return props.task.type == "bytebase.database.create"
+        ? "/db/new?" + queryParamList.join("&")
+        : `/db/${databaseNameOrId}`;
     };
 
     const databaseViewLink = (field: TaskField): string => {
@@ -250,7 +259,7 @@ export default {
       allowEdit,
       allowEditDatabase,
       isValidLink,
-      databaseCreationLink,
+      databaseActionLink,
       databaseViewLink,
       copyText,
       goToLink,

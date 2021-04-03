@@ -2,11 +2,13 @@ import { TaskField, TaskFieldId, TaskTemplate, UNKNOWN_FIELD } from "../types";
 import { TaskType } from "../../types";
 import DefaultTemplate from "./DefaultTemplate";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
+import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
 
 const allTaskTemplateList: TaskTemplate[] = [
   DefaultTemplate,
   DatabaseCreateTemplate,
+  DatabaseGrantTemplate,
   DatabaseSchemaUpdateTemplate,
 ];
 
