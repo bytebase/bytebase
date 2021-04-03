@@ -80,7 +80,7 @@
           </div>
         </template>
         <div
-          v-if="field.type == 'Database' || field.type == 'NewDatabase'"
+          v-if="field.type == 'Database'"
           class="flex flex-row items-center space-x-2"
         >
           <DatabaseSelect
@@ -103,6 +103,24 @@
               View
             </router-link>
           </template>
+          <template v-if="task.type == 'bytebase.database.create'">
+            <div
+              v-if="field.resolved(taskContext)"
+              class="text-sm text-success"
+            >
+              (Created)
+            </div>
+            <div v-else class="text-sm text-error">(To be created)</div>
+          </template>
+          <template v-else-if="task.type == 'bytebase.database.grant'">
+            <div
+              v-if="field.resolved(taskContext)"
+              class="text-sm text-success"
+            >
+              (Granted)
+            </div>
+            <div v-else class="text-sm text-error">(To be granted)</div>
+          </template>
         </div>
       </div>
     </template>
@@ -117,12 +135,7 @@ import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { fullDatabaseUrl } from "../utils";
-import {
-  TaskField,
-  TaskFieldReferenceProvider,
-  TaskBuiltinFieldId,
-  DatabaseFieldPayload,
-} from "../plugins";
+import { TaskField, TaskBuiltinFieldId, TaskContext } from "../plugins";
 import { DatabaseId, EnvironmentId, Task } from "../types";
 
 interface LocalState {}
@@ -158,6 +171,17 @@ export default {
     const fieldValue = (field: TaskField): string => {
       return props.task.payload[field.id];
     };
+
+    const taskContext = computed(
+      (): TaskContext => {
+        return {
+          store,
+          currentUser: currentUser.value,
+          new: false,
+          task: props.task,
+        };
+      }
+    );
 
     const allowEdit = computed(() => {
       return (
@@ -207,13 +231,15 @@ export default {
     };
 
     const databaseViewLink = (field: TaskField): string => {
-      const databaseId = fieldValue(field);
-      if (databaseId) {
-        const database = store.getters["database/databaseById"](databaseId, {
-          environmentId: environmentId.value,
-        });
-        if (database) {
-          return fullDatabaseUrl(database);
+      if (field.type == "Database") {
+        const databaseId = fieldValue(field);
+        if (databaseId) {
+          const database = store.getters["database/databaseById"](databaseId, {
+            environmentId: environmentId.value,
+          });
+          if (database) {
+            return fullDatabaseUrl(database);
+          }
         }
       }
       return "";
@@ -256,6 +282,7 @@ export default {
       state,
       environmentId,
       fieldValue,
+      taskContext,
       allowEdit,
       allowEditDatabase,
       isValidLink,
