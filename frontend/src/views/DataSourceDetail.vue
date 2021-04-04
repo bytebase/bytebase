@@ -139,7 +139,8 @@
             :dataSource="dataSource"
           />
 
-          <div class="pt-4 flex justify-start">
+          <!-- Hide deleting data source list for now, as we don't allow deleting data source after creating the database. -->
+          <div v-if="false" class="pt-4 flex justify-start">
             <BBButtonTrash
               v-if="allowEdit"
               :buttonText="'Delete this entire data source'"

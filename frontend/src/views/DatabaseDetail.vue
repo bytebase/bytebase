@@ -91,7 +91,8 @@
             </div>
           </dl>
 
-          <div v-if="isDBAorAbove" class="pt-6">
+          <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
+          <div v-if="false" class="pt-6">
             <DataSourceTable
               :instance="database.instance"
               :database="database"
@@ -108,11 +109,12 @@
             <div v-if="item.list.length" class="pt-6">
               <div class="text-lg leading-6 font-medium text-main mb-4">
                 <span v-data-source-type>{{ item.type }}</span>
-                {{ isDBAorAbove ? "data source" : "connection" }}
               </div>
               <div class="space-y-4">
                 <div v-for="(ds, index) of item.list" :key="index">
-                  <div class="relative mb-2">
+                  <!-- Only displays the data source link for DBA and above. Since for now
+                  we don't need to expose the data source concept to the end user -->
+                  <div v-if="isDBAorAbove" class="relative mb-2">
                     <div
                       class="absolute inset-0 flex items-center"
                       aria-hidden="true"
@@ -120,10 +122,7 @@
                       <div class="w-full border-t border-gray-300"></div>
                     </div>
                     <div class="relative flex justify-start">
-                      <!-- Only displays the data source link for DBA and above. Since for now
-                           we don't need to expose the data source concept to the end user -->
                       <router-link
-                        v-if="isDBAorAbove"
                         :to="`/db/${databaseSlug}/datasource/${dataSourceSlug(
                           ds
                         )}`"
@@ -131,9 +130,6 @@
                       >
                         {{ ds.name }}
                       </router-link>
-                      <div v-else class="pr-3 bg-white font-medium text-main">
-                        {{ "Connection " + (index + 1) }}
-                      </div>
                     </div>
                   </div>
                   <DataSourceConnectionPanel :dataSource="ds" />
@@ -184,7 +180,6 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const database = computed(() => {
-      console.log(props.databaseSlug);
       return store.getters["database/databaseById"](
         idFromSlug(props.databaseSlug)
       );

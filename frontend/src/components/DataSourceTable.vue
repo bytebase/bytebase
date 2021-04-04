@@ -5,7 +5,8 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900">
           {{ database ? "Data source list" : "All data source" }}
         </h3>
-        <BBButtonAdd @add="state.showCreateModal = true" />
+        <!-- Hide add button for now, as we don't allow adding new data source after creating the database. -->
+        <BBButtonAdd v-if="false" @add="state.showCreateModal = true" />
       </div>
       <div class="flex flex-row items-center space-x-2">
         <button
