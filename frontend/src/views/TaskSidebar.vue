@@ -224,9 +224,10 @@ export default {
       // being assigned to the task.
       return (
         props.new ||
-        currentUser.value.id == props.task.assignee?.id ||
-        currentUser.value.role == "DBA" ||
-        currentUser.value.role == "OWNER"
+        (props.task.status == "OPEN" &&
+          (currentUser.value.id == props.task.assignee?.id ||
+            currentUser.value.role == "DBA" ||
+            currentUser.value.role == "OWNER"))
       );
     });
 
