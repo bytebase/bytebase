@@ -142,8 +142,6 @@ export default {
       showCreateModal: false,
     });
 
-    console.log(props.dataSource.memberList);
-
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const deleteMember = (member: DataSourceMember) => {
