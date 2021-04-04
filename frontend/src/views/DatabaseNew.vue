@@ -250,7 +250,6 @@ interface LocalState {
 
 export default {
   name: "DatabaseNew",
-  emits: ["create", "cancel"],
   props: {},
   components: { InstanceSelect, EnvironmentSelect, PrincipalSelect },
   setup(props, ctx) {
