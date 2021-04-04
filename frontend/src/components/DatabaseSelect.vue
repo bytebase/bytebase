@@ -67,11 +67,11 @@ export default {
       selectedId: props.selectedId,
     });
 
-    const prepareDatabaseListByEnvironment = () => {
-      if (props.environmentId) {
-        // TODO: need to revisit this, instead of fetching each time,
-        // we maybe able to let the outside context to provide the database list
-        // and we just do a get here.
+    const prepareDatabaseList = () => {
+      // TODO: need to revisit this, instead of fetching each time,
+      // we maybe able to let the outside context to provide the database list
+      // and we just do a get here.
+      if (props.mode == "ENVIRONMENT" && props.environmentId) {
         store
           .dispatch(
             "database/fetchDatabaseListByEnvironmentId",
@@ -80,10 +80,16 @@ export default {
           .catch((error) => {
             console.log(error);
           });
+      } else if (props.mode == "INSTANCE" && props.instanceId) {
+        store
+          .dispatch("database/fetchDatabaseListByInstanceId", props.instanceId)
+          .catch((error) => {
+            console.log(error);
+          });
       }
     };
 
-    watchEffect(prepareDatabaseListByEnvironment);
+    watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
       if (props.mode == "ENVIRONMENT" && props.environmentId) {
