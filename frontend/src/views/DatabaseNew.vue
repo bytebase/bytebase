@@ -419,8 +419,8 @@ export default {
         taskId: linkedTask?.id,
       });
 
-      // Create the default RW data source
-      const newDataSource: DataSourceNew = {
+      // Create the default RW and RO data source
+      const newRwDataSource: DataSourceNew = {
         name: "Default RW",
         type: "RW",
         databaseId: createdDatabase.id,
@@ -434,11 +434,25 @@ export default {
           },
         ],
       };
-      const createdDataSource = await store.dispatch(
-        "dataSource/createDataSource",
-        newDataSource
-      );
+      await store.dispatch("dataSource/createDataSource", newRwDataSource);
 
+      const newRoDataSource: DataSourceNew = {
+        name: "Default RO",
+        type: "RO",
+        databaseId: createdDatabase.id,
+        instanceId: state.instanceId!,
+        username: isEmpty(state.username) ? undefined : state.username,
+        password: isEmpty(state.passsword) ? undefined : state.passsword,
+        memberList: [
+          {
+            principalId: state.ownerId,
+            taskId: linkedTask?.id,
+          },
+        ],
+      };
+      await store.dispatch("dataSource/createDataSource", newRoDataSource);
+
+      // Redirect to the created database.
       router.push(`/db/${databaseSlug(createdDatabase)}`);
 
       // If a valid task id is provided, we will set the database output field
@@ -485,7 +499,7 @@ export default {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "SUCCESS",
-        title: `Succesfully created database '${createdDatabase.name}' and its default Read & Write data source.`,
+        title: `Succesfully created database '${createdDatabase.name}' and its Read & Write and Read Only data sources.`,
         description: linkedTask
           ? `We also linked the created database to the requested task '${linkedTask.name}'.`
           : "",
