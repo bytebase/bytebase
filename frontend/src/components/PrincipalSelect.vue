@@ -35,10 +35,10 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watch } from "vue";
+import { reactive, computed, watch, PropType } from "vue";
 import { useStore } from "vuex";
-import { RoleMapping, Principal, PrincipalId } from "../types";
-import { feature } from "../utils";
+import { RoleMapping, Principal, PrincipalId, RoleType } from "../types";
+import { feature, isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   selectedId?: PrincipalId;
@@ -56,9 +56,9 @@ export default {
       default: false,
       type: Boolean,
     },
-    allowAllRoles: {
-      default: true,
-      type: Boolean,
+    allowedRoleList: {
+      default: ["OWNER", "DBA", "DEVELOPER"],
+      type: Object as PropType<RoleType[]>,
     },
   },
   setup(props, { emit }) {
@@ -68,21 +68,23 @@ export default {
     });
     const store = useStore();
 
-    const principalList = computed(() => {
-      const list: RoleMapping[] = store.getters[
-        "roleMapping/roleMappingList"
-      ]().filter((item: RoleMapping) => {
+    const principalList = computed((): Principal[] => {
+      const list = store.getters["roleMapping/roleMappingList"]().map(
+        (roleMapping: RoleMapping) => {
+          return store.getters["principal/principalById"](
+            roleMapping.principalId
+          );
+        }
+      );
+      return list.filter((item: Principal) => {
         return (
-          props.allowAllRoles ||
-          !feature("bytebase.admin") ||
-          item.role == "DBA" ||
-          item.role == "OWNER"
-        );
-      });
-
-      return list.map((roleMapping: RoleMapping) => {
-        return store.getters["principal/principalById"](
-          roleMapping.principalId
+          item.status == "ACTIVE" &&
+          // We write this way instead of props.allowedRoleList.includes(item.role)
+          // is becaues isOwner/isDBA/isDeveloper has feature gate logic.
+          ((props.allowedRoleList.includes("OWNER") && isOwner(item.role)) ||
+            (props.allowedRoleList.includes("DBA") && isDBA(item.role)) ||
+            (props.allowedRoleList.includes("DEVELOPER") &&
+              isDeveloper(item.role)))
         );
       });
     });

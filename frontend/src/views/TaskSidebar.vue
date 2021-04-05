@@ -19,11 +19,12 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Assignee<span v-if="$props.new" class="text-red-600">*</span>
       </h2>
+      <!-- Only DBA can be assigned to the task -->
       <div class="col-span-2">
         <PrincipalSelect
           :disabled="!allowEditAssignee"
           :selectedId="$props.new ? task.assigneeId : task.assignee?.id"
-          :allowAllRoles="false"
+          :allowedRoleList="['DBA']"
           @select-principal-id="
             (principalId) => {
               $emit('update-assignee-id', principalId);

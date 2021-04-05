@@ -99,10 +99,12 @@ input[type="number"] {
               {{ state.granteeError }}
             </span>
           </label>
+          <!-- DBA and Owner always have all access, so we only need to grant to developer -->
           <PrincipalSelect
             class="mt-1"
             id="user"
             name="user"
+            :allowedRoleList="['DEVELOPER']"
             :disabled="!allowUpdateDataSourceMember"
             :selectedId="state.granteeId"
             @select-principal-id="
