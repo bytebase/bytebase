@@ -35,7 +35,33 @@
       </div>
     </div>
     <div>
-      <div class="flex items-center">
+      <div class="flex items-center space-x-2">
+        <div
+          v-if="isDev"
+          class="hidden md:flex sm:flex-row items-center space-x-2"
+        >
+          <div
+            v-if="currentPlan != 0"
+            class="text-sm normal-link"
+            @click.prevent="switchToFree"
+          >
+            Free
+          </div>
+          <div
+            v-if="currentPlan != 1"
+            class="text-sm normal-link"
+            @click.prevent="switchToTeam"
+          >
+            Team
+          </div>
+          <div
+            v-if="currentPlan != 2"
+            class="text-sm normal-link"
+            @click.prevent="switchToEnterprise"
+          >
+            Enterprise
+          </div>
+        </div>
         <div
           v-if="isDevOrDemo"
           class="hidden md:flex sm:flex-row items-center space-x-2"
@@ -157,6 +183,7 @@
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
+import { PlanType } from "../types";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -173,6 +200,8 @@ export default {
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const currentPlan = computed(() => store.getters["plan/currentPlan"]());
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
@@ -195,12 +224,28 @@ export default {
       });
     };
 
+    const switchToFree = () => {
+      store.dispatch("plan/changePlan", PlanType.FREE);
+    };
+
+    const switchToTeam = () => {
+      store.dispatch("plan/changePlan", PlanType.TEAM);
+    };
+
+    const switchToEnterprise = () => {
+      store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
+    };
+
     return {
       state,
       currentUser,
+      currentPlan,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,
+      switchToFree,
+      switchToTeam,
+      switchToEnterprise,
     };
   },
 };

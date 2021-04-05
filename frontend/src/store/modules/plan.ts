@@ -5,11 +5,13 @@ const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bytebase.admin", [false, true, true]],
 ]);
 
-const state: () => PlanState = () => ({});
+const state: () => PlanState = () => ({
+  plan: PlanType.TEAM,
+});
 
 const getters = {
   currentPlan: (state: PlanState) => (): PlanType => {
-    return PlanType.FREE;
+    return state.plan;
   },
 
   feature: (state: PlanState, getters: any) => (type: FeatureType): boolean => {
@@ -17,9 +19,18 @@ const getters = {
   },
 };
 
-const actions = {};
+const actions = {
+  async changePlan({ commit }: any, newPlan: PlanType) {
+    commit("setCurrentPlan", newPlan);
+    return newPlan;
+  },
+};
 
-const mutations = {};
+const mutations = {
+  setCurrentPlan(state: PlanState, newPlan: PlanType) {
+    state.plan = newPlan;
+  },
+};
 
 export default {
   namespaced: true,

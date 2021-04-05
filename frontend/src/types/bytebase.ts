@@ -593,8 +593,8 @@ export type FeatureType =
 
 export enum PlanType {
   FREE = 0,
-  STANDARD = 1,
-  PREMIUM = 2,
+  TEAM = 1,
+  ENTERPRISE = 2,
 }
 
 // UI State Models
@@ -657,7 +657,9 @@ export interface AuthState {
   currentUser: Principal;
 }
 
-export interface PlanState {}
+export interface PlanState {
+  plan: PlanType;
+}
 
 export interface RoleMappingState {
   roleMappingList: RoleMapping[];

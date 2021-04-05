@@ -33,6 +33,7 @@ import dataSourceType from "./directives/data-source-type";
 import highlight from "./directives/highlight";
 import role from "./directives/role";
 import {
+  isDev,
   isDemo,
   isDevOrDemo,
   humanizeTs,
@@ -55,6 +56,7 @@ app.config.globalProperties.window = window;
 app.config.globalProperties.console = console;
 app.config.globalProperties.moment = moment;
 app.config.globalProperties.humanizeTs = humanizeTs;
+app.config.globalProperties.isDev = isDev();
 app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
