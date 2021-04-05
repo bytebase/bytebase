@@ -31,6 +31,7 @@ import {
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
 import highlight from "./directives/highlight";
+import role from "./directives/role";
 import {
   isDemo,
   isDevOrDemo,
@@ -67,6 +68,7 @@ app
   // to re-render the page and remove the event listener required for
   .directive("highlight", highlight)
   .directive("data-source-type", dataSourceType)
+  .directive("role", role)
   .use(store)
   .use(router)
   .use(VueClipboard)

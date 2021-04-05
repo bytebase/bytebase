@@ -110,8 +110,8 @@
           <div class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">Role</dt>
             <dd class="mt-1 text-sm text-main">
-              <router-link :to="'/setting/member'" class="normal-link">
-                {{ role }}
+              <router-link :to="'/setting/member'" class="normal-link" v-role>
+                {{ principal.role }}
               </router-link>
             </dd>
           </div>
@@ -186,13 +186,6 @@ export default {
       return store.getters["auth/currentUser"]();
     });
 
-    const role = computed(() => {
-      const role = principal.value.role;
-      return role == "DBA"
-        ? role
-        : role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
-    });
-
     const isCurrentUser = computed(() => {
       return currentUser.value.id == principal.value.id;
     });
@@ -239,7 +232,6 @@ export default {
       state,
       isCurrentUser,
       principal,
-      role,
       valueChanged,
       updatePrincipal,
       editUser,
