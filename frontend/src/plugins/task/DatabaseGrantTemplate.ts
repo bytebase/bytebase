@@ -3,13 +3,13 @@ import {
   TaskTemplate,
   TemplateContext,
   TaskBuiltinFieldId,
-  CUSTOM_FIELD_ID_BEGIN,
+  INPUT_CUSTOM_FIELD_ID_BEGIN,
   TaskContext,
 } from "../types";
 import { TaskNew, EnvironmentId, UNKNOWN_ID, Task } from "../../types";
 import { allowDatabaseAccess } from "../../utils";
 
-const INPUT_READ_ONLY_FIELD_ID = CUSTOM_FIELD_ID_BEGIN;
+const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: TaskTemplate = {
   type: "bytebase.database.grant",
@@ -88,7 +88,7 @@ const template: TaskTemplate = {
           { environmentId }
         );
         const creator = (ctx.task as Task).creator;
-        const type = ctx.task.payload[CUSTOM_FIELD_ID_BEGIN] ? "RO" : "RW";
+        const type = ctx.task.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";
         return allowDatabaseAccess(database, creator, type);
       },
     },

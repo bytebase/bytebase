@@ -26,7 +26,8 @@ export enum TaskBuiltinFieldId {
   ROLLBACK_SQL = "11",
 }
 
-export const CUSTOM_FIELD_ID_BEGIN = "100";
+export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
+export const OUTPUT_CUSTOM_FIELD_ID_BEGIN = "200";
 
 export type TaskFieldType =
   | "Boolean"

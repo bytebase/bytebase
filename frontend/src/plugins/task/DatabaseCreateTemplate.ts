@@ -1,17 +1,15 @@
 import isEmpty from "lodash-es/isEmpty";
 import {
-  TaskField,
   TaskTemplate,
   TemplateContext,
   TaskBuiltinFieldId,
-  DatabaseFieldPayload,
-  CUSTOM_FIELD_ID_BEGIN,
+  OUTPUT_CUSTOM_FIELD_ID_BEGIN,
   TaskContext,
 } from "../types";
 import { linkfy } from "../../utils";
 import { Task, TaskNew, EnvironmentId, UNKNOWN_ID } from "../../types";
 
-const OUTPUT_DATABASE_FIELD_ID = CUSTOM_FIELD_ID_BEGIN;
+const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: TaskTemplate = {
   type: "bytebase.database.create",
