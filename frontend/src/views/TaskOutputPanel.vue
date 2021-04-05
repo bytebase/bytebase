@@ -152,6 +152,10 @@ export default {
       required: true,
       type: Object as PropType<TaskField[]>,
     },
+    allowEdit: {
+      required: true,
+      type: Boolean,
+    },
   },
   components: { DatabaseSelect },
   setup(props, { emit }) {
@@ -183,15 +187,8 @@ export default {
       }
     );
 
-    const allowEdit = computed(() => {
-      return (
-        currentUser.value.id === props.task.assignee?.id &&
-        props.task.status == "OPEN"
-      );
-    });
-
     const allowEditDatabase = computed((): boolean => {
-      if (!allowEdit.value) {
+      if (!props.allowEdit) {
         return false;
       }
       return (
@@ -316,7 +313,6 @@ export default {
       environmentId,
       fieldValue,
       taskContext,
-      allowEdit,
       allowEditDatabase,
       isValidLink,
       databaseActionLink,

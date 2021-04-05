@@ -9,7 +9,7 @@
       <TaskHighlightPanel
         :task="state.task"
         :new="state.new"
-        :allowEdit="allowEditFields"
+        :allowEdit="allowEditNameAndDescription"
         @update-name="updateName"
       >
         <template v-if="state.new">
@@ -69,6 +69,7 @@
       <TaskOutputPanel
         :task="state.task"
         :fieldList="outputFieldList"
+        :allowEdit="allowEditOutput"
         @update-custom-field="updateCustomField"
       />
     </div>
@@ -92,7 +93,7 @@
               :task="state.task"
               :new="state.new"
               :fieldList="inputFieldList"
-              :allowEdit="allowEditFields"
+              :allowEdit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
               @update-custom-field="updateCustomField"
             />
@@ -104,7 +105,7 @@
                 :task="state.task"
                 :new="state.new"
                 :rollback="false"
-                :allowEdit="allowEditFields"
+                :allowEdit="allowEditSql"
                 @update-sql="updateSql"
               />
             </section>
@@ -113,14 +114,14 @@
                 :task="state.task"
                 :new="state.new"
                 :rollback="true"
-                :allowEdit="allowEditFields"
+                :allowEdit="allowEditSql"
                 @update-sql="updateRollbackSql"
               />
             </section>
             <TaskDescriptionPanel
               :task="state.task"
               :new="state.new"
-              :allowEdit="allowEditFields"
+              :allowEdit="allowEditNameAndDescription"
               @update-description="updateDescription"
             />
             <section
@@ -660,27 +661,39 @@ export default {
       return true;
     });
 
-    // We may consider consolidating all the editing logic in one place. But for now
-    // this controls editing "name, description and all custom fields".
-    // On the other hand:
-    // - Who can change task status is defined in a separate logic in this component
-    // - Who can change stage status is defined in TaskStageFlow
-    // - Who can reassign task is defined in TaskSidebar
-    // - Who can change output field value is defined in TaskSidebar
-    // - Anyone can comment
-    // - Anyone can subscribe / unsubscribe
-    const allowEditFields = computed(() => {
-      // For now, we allow creator and assignee to update the field any time
-      // when the task is OPEN. This may cause potential issue that the creator
-      // might change some of the fields after the assignee follows the previous info
-      // to deal the task. In the future, we could provide options to enforce more strict rules
-      // e.g. disallow changing a particular field at a particular stage by a particular role.
+    const allowEditSidebar = computed(() => {
+      // For now, we only allow assignee to update the field when the task
+      // is 'OPEN'. This reduces flexibility as creator must ask assignee to
+      // change any fields if there is typo. On the other hand, this avoids
+      // the trouble that the creator changes field value when the creator
+      // is performing the task based on the old value.
+      // For now, we choose to be on the safe side at the cost of flexibility.
+      return (
+        state.new ||
+        ((state.task as Task).status == "OPEN" &&
+          currentUser.value.id == (state.task as Task).assignee?.id)
+      );
+    });
+
+    const allowEditOutput = computed(() => {
+      return (
+        state.new ||
+        ((state.task as Task).status == "OPEN" &&
+          currentUser.value.id == (state.task as Task).assignee?.id)
+      );
+    });
+
+    const allowEditNameAndDescription = computed(() => {
       return (
         state.new ||
         ((state.task as Task).status == "OPEN" &&
           (currentUser.value.id == (state.task as Task).assignee?.id ||
             currentUser.value.id == (state.task as Task).creator.id))
       );
+    });
+
+    const allowEditSql = computed(() => {
+      return state.new;
     });
 
     const showTaskStageFlowBar = computed(() => {
@@ -745,7 +758,10 @@ export default {
       taskTemplate,
       outputFieldList,
       inputFieldList,
-      allowEditFields,
+      allowEditSidebar,
+      allowEditOutput,
+      allowEditNameAndDescription,
+      allowEditSql,
       showTaskStageFlowBar,
       showTaskOutputPanel,
       showTaskSqlPanel,
