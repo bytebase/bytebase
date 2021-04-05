@@ -18,12 +18,18 @@ export function databaseSlug(database: Database): string {
   return [slug(database.name), database.id].join("-");
 }
 
-export function fullDatabaseUrl(database: Database): string {
+export function fullDatabasePath(database: Database): string {
   return `/db/${databaseSlug(database)}`;
 }
 
 export function dataSourceSlug(dataSource: DataSource): string {
   return [slug(dataSource.name), dataSource.id].join("-");
+}
+
+export function fullDataSourcePath(dataSource: DataSource): string {
+  return `/db/${databaseSlug(dataSource.database)}/datasource/${dataSourceSlug(
+    dataSource
+  )}`;
 }
 
 export function idFromSlug(slug: string) {

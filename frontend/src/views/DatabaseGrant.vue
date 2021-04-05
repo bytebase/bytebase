@@ -17,7 +17,8 @@ input[type="number"] {
     :dataSource="state.dataSource"
     :principalId="state.granteeId"
     :taskId="state.taskId"
-    @dismiss="cancel"
+    @submit="submit"
+    @cancel="cancel"
   />
 </template>
 
@@ -27,6 +28,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import { TaskId, PrincipalId, DataSource } from "../types";
+import { fullDataSourcePath } from "../utils";
 
 interface LocalState {
   dataSource?: DataSource;
@@ -72,12 +74,21 @@ export default {
     });
 
     const cancel = () => {
-      router.go(-1);
+      if (window.history.state?.back) {
+        router.go(-1);
+      } else {
+        router.push("/");
+      }
+    };
+
+    const submit = (createdDataSource: DataSource) => {
+      router.push(fullDataSourcePath(createdDataSource));
     };
 
     return {
       state,
       cancel,
+      submit,
     };
   },
 };

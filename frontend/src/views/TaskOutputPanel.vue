@@ -134,7 +134,7 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { fullDatabaseUrl } from "../utils";
+import { fullDatabasePath } from "../utils";
 import { TaskField, TaskBuiltinFieldId, TaskContext } from "../plugins";
 import { DatabaseId, DataSource, EnvironmentId, Task } from "../types";
 
@@ -271,7 +271,7 @@ export default {
             environmentId: environmentId.value,
           });
           if (database) {
-            return fullDatabaseUrl(database);
+            return fullDatabasePath(database);
           }
         }
       }

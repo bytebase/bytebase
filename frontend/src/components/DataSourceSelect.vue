@@ -9,27 +9,31 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Select data source
+      <template v-if="!database"> Select database first </template>
+      <template v-else> Select data source </template>
     </option>
-    <option
-      v-for="(dataSource, index) in dataSourceList"
-      :key="index"
-      :value="dataSource.id"
-      :selected="dataSource.id == state.selectedId"
-    >
-      <template v-if="dataSource.type == 'RO'">
-        {{ dataSource.name }} (readonly)
-      </template>
-      <template v-else>
-        {{ dataSource.name }}
-      </template>
-    </option>
+    <template v-if="database">
+      <option
+        v-for="(dataSource, index) in database.dataSourceList"
+        :key="index"
+        :value="dataSource.id"
+        :selected="dataSource.id == state.selectedId"
+      >
+        <template v-if="dataSource.type == 'RO'">
+          {{ dataSource.name }} (readonly)
+        </template>
+        <template v-else>
+          {{ dataSource.name }}
+        </template>
+      </option>
+    </template>
   </select>
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
+import { Database } from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -43,9 +47,8 @@ export default {
     selectedId: {
       type: String,
     },
-    databaseId: {
-      required: true,
-      type: String,
+    database: {
+      type: Object as PropType<Database>,
     },
     disabled: {
       default: false,
@@ -53,20 +56,12 @@ export default {
     },
   },
   setup(props, { emit }) {
-    const store = useStore();
     const state = reactive<LocalState>({
       selectedId: props.selectedId,
     });
 
-    const dataSourceList = computed(() => {
-      return store.getters["dataSource/dataSourceListByDatabaseId"](
-        props.databaseId
-      );
-    });
-
     return {
       state,
-      dataSourceList,
     };
   },
 };

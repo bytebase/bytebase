@@ -91,7 +91,8 @@
     >
       <DataSourceMemberForm
         :dataSource="dataSource"
-        @dismiss="state.showCreateModal = false"
+        @submit="state.showCreateModal = false"
+        @cancel="state.showCreateModal = false"
       />
     </BBModal>
   </div>

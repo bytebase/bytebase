@@ -25,8 +25,13 @@ input[type="number"] {
             class="mt-1 w-full"
             id="environment"
             name="environment"
-            :disabled="true"
+            :disabled="!allowConfigure"
             :selectedId="state.environmentId"
+            @select-environment-id="
+              (environmentId) => {
+                updateState('environmentId', environmentId);
+              }
+            "
           />
         </div>
 
@@ -38,8 +43,13 @@ input[type="number"] {
             class="mt-1 w-full"
             id="instance"
             name="instance"
-            :disabled="true"
-            :selectedId="dataSource.instance.id"
+            :disabled="!allowConfigure"
+            :selectedId="state.instanceId"
+            @select-instance-id="
+              (instanceId) => {
+                updateState('instanceId', instanceId);
+              }
+            "
           />
         </div>
 
@@ -51,10 +61,15 @@ input[type="number"] {
             class="mt-1 w-full"
             id="database"
             name="database"
-            :disabled="true"
+            :disabled="!allowConfigure"
             :mode="'INSTANCE'"
-            :instanceId="dataSource.instance.id"
-            :selectedId="dataSource.database.id"
+            :instanceId="state.instanceId"
+            :selectedId="state.databaseId"
+            @select-database-id="
+              (databaseId) => {
+                updateState('databaseId', databaseId);
+              }
+            "
           />
         </div>
 
@@ -66,9 +81,14 @@ input[type="number"] {
             class="mt-1 w-full"
             id="datasource"
             name="datasource"
-            :disabled="true"
-            :databaseId="dataSource.database.id"
-            :selectedId="dataSource.id"
+            :disabled="!allowConfigure"
+            :database="database"
+            :selectedId="state.dataSourceId"
+            @select-data-source-id="
+              (dataSourceId) => {
+                updateState('dataSourceId', dataSourceId);
+              }
+            "
           />
         </div>
 
@@ -76,17 +96,18 @@ input[type="number"] {
           <label for="user" class="textlabel">
             User <span class="text-red-600">*</span>
             <span class="ml-2 text-error text-xs">
-              {{ state.principalError }}
+              {{ state.granteeError }}
             </span>
           </label>
           <PrincipalSelect
             class="mt-1"
             id="user"
             name="user"
-            :selectedId="principalId"
+            :disabled="!allowUpdateDataSourceMember"
+            :selectedId="state.granteeId"
             @select-principal-id="
               (principalId) => {
-                updateDataSourceMember('principalId', principalId);
+                updateState('granteeId', principalId);
               }
             "
           />
@@ -106,8 +127,9 @@ input[type="number"] {
               name="task"
               type="number"
               placeholder="Your task id (e.g. 1234)"
+              :disabled="!allowUpdateTaskId"
               :value="state.taskId"
-              @input="updateDataSourceMember('taskId', $event.target.value)"
+              @input="updateState('taskId', $event.target.value)"
             />
           </div>
         </div>
@@ -143,26 +165,34 @@ import DataSourceSelect from "../components/DataSourceSelect.vue";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import {
+  DatabaseId,
   DataSource,
+  DataSourceId,
   DataSourceMember,
   EnvironmentId,
+  InstanceId,
   PrincipalId,
+  Task,
   TaskId,
+  UNKNOWN_ID,
 } from "../types";
+import { taskSlug } from "../utils";
 
 interface LocalState {
   environmentId?: EnvironmentId;
-  principalId?: PrincipalId;
-  principalError: string;
+  instanceId?: InstanceId;
+  databaseId?: DatabaseId;
+  dataSourceId?: DataSourceId;
+  granteeId?: PrincipalId;
+  granteeError: string;
   taskId?: TaskId;
 }
 
 export default {
   name: "DataSourceMemberNewForm",
-  emits: ["dismiss"],
+  emits: ["submit", "cancel"],
   props: {
     dataSource: {
-      required: true,
       type: Object as PropType<DataSource>,
     },
     principalId: {
@@ -182,67 +212,141 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
 
-    const instance = computed(() => {
-      return store.getters["instance/instanceById"](
-        props.dataSource.instance.id
-      );
-    });
-
     const state = reactive<LocalState>({
-      environmentId: instance.value.environmentId,
-      principalId: props.principalId,
-      principalError: "",
+      environmentId: props.dataSource
+        ? props.dataSource.instance.environment.id
+        : undefined,
+      instanceId: props.dataSource ? props.dataSource.instance.id : undefined,
+      databaseId: props.dataSource ? props.dataSource.database.id : undefined,
+      dataSourceId: props.dataSource ? props.dataSource.id : undefined,
+      granteeId: props.principalId,
+      granteeError: "",
       taskId: props.taskId,
     });
 
-    const allowCreate = computed(() => {
-      return state.principalId && !state.principalError;
+    const database = computed(() => {
+      return state.databaseId
+        ? store.getters["database/databaseById"](state.databaseId)
+        : undefined;
     });
 
-    const updateDataSourceMember = (field: string, value: string) => {
-      if (field == "principalId") {
-        state.principalId = value;
-        const member = props.dataSource.memberList.find(
-          (item: DataSourceMember) => item.principal.id == value
+    const dataSource = computed(() => {
+      if (props.dataSource) {
+        return props.dataSource;
+      }
+
+      if (state.dataSourceId) {
+        if (state.databaseId) {
+          const database = store.getters["database/databaseById"](
+            state.databaseId,
+            {
+              environmentId: state.environmentId,
+            }
+          );
+          if (database) {
+            return database.dataSourceList.find(
+              (item: DataSource) => item.id == state.dataSourceId
+            );
+          }
+        }
+      }
+
+      return undefined;
+    });
+
+    // We only configure if data source is not specified.
+    const allowConfigure = computed(() => {
+      return !props.dataSource;
+    });
+
+    const allowUpdateDataSourceMember = computed(() => {
+      return !props.principalId && state.dataSourceId;
+    });
+
+    const allowUpdateTaskId = computed(() => {
+      return !props.taskId;
+    });
+
+    const allowCreate = computed(() => {
+      return state.dataSourceId && state.granteeId && !state.granteeError;
+    });
+
+    const validateGrantee = () => {
+      if (state.granteeId) {
+        const member = dataSource.value.memberList.find(
+          (item: DataSourceMember) => item.principal.id == state.granteeId
         );
         if (member) {
-          state.principalError = `${member.principal.name} already exists`;
+          state.granteeError = `${member.principal.name} already exists`;
         } else {
-          state.principalError = "";
+          state.granteeError = "";
         }
+      }
+    };
+
+    const updateState = (field: string, value: string) => {
+      if (field == "environmentId") {
+        state.environmentId = value;
+      } else if (field == "instanceId") {
+        state.instanceId = value;
+      } else if (field == "databaseId") {
+        state.databaseId = value;
+      } else if (field == "dataSourceId") {
+        state.dataSourceId = value;
+      } else if (field == "granteeId") {
+        state.granteeId = value;
+        validateGrantee();
       } else if (field == "taskId") {
         state.taskId = value;
       }
     };
 
     const cancel = () => {
-      emit("dismiss");
+      emit("cancel");
     };
 
-    const doGrant = () => {
+    const doGrant = async () => {
+      // If taskId id provided, we check its existence first.
+      // We only set the taskId if it's valid.
+      let linkedTask: Task | undefined = undefined;
+      if (state.taskId) {
+        try {
+          linkedTask = await store.dispatch("task/fetchTaskById", state.taskId);
+        } catch (err) {
+          console.warn(`Unable to fetch linked task id ${state.taskId}`, err);
+        }
+      }
+
       store
         .dispatch("dataSource/createDataSourceMember", {
-          dataSourceId: props.dataSource.id,
-          databaseId: props.dataSource.database.id,
+          dataSourceId: state.dataSourceId,
+          databaseId: state.databaseId,
           newDataSourceMember: {
-            principalId: state.principalId,
-            taskId: state.taskId,
+            principalId: state.granteeId,
+            taskId: linkedTask?.id,
           },
         })
         .then((dataSource: DataSource) => {
-          emit("dismiss");
+          emit("submit", dataSource);
 
           const addedMember = dataSource.memberList.find(
             (item: DataSourceMember) => {
-              return item.principal.id == state.principalId;
+              return item.principal.id == state.granteeId;
             }
           );
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
             title: `Successfully granted '${dataSource.name}' to '${
-              addedMember!.principal.id
+              addedMember!.principal.name
             }'.`,
+            description: linkedTask
+              ? `We also linked the granted database to the requested task '${linkedTask.name}'.`
+              : "",
+            link: linkedTask
+              ? `/task/${taskSlug(linkedTask.name, linkedTask.id)}`
+              : undefined,
+            manualHide: linkedTask != undefined,
           });
         })
         .catch((error) => {
@@ -250,11 +354,16 @@ export default {
         });
     };
 
+    validateGrantee();
+
     return {
       state,
+      database,
+      allowConfigure,
+      allowUpdateDataSourceMember,
+      allowUpdateTaskId,
       allowCreate,
-      instance,
-      updateDataSourceMember,
+      updateState,
       cancel,
       doGrant,
     };
