@@ -16,24 +16,55 @@ export default function configureDatabase(route) {
 
   route.get("/database", function (schema, request) {
     const {
-      queryParams: { environment: environmentId, instance: instanceId },
+      queryParams: {
+        environment: environmentId,
+        instance: instanceId,
+        user: userId,
+      },
     } = request;
+    if (!environmentId && !instanceId && !userId) {
+      return schema.databases.all();
+    }
     const instanceIdList = instanceId
       ? [instanceId]
-      : schema.instances
+      : environmentId
+      ? schema.instances
           .where({ workspaceId: WORKSPACE_ID, environmentId })
-          .models.map((instance) => instance.id);
-    if (instanceIdList.length == 0) {
+          .models.map((instance) => instance.id)
+      : undefined;
+    if (instanceIdList && instanceIdList.length == 0) {
       return [];
     }
+
     return schema.databases
       .where((database) => {
-        // If environment is specified, then we don't include the database representing all databases,
-        // since the all databases is per instance.
-        if (environmentId && database.name == ALL_DATABASE_NAME) {
+        if (instanceIdList && !instanceIdList.includes(database.instanceId)) {
           return false;
         }
-        return instanceIdList.includes(database.instanceId);
+
+        if (userId) {
+          const dataSourceList = schema.dataSources.where({
+            workspaceId: WORKSPACE_ID,
+            databaseId: database.id,
+          });
+
+          let matchFound = false;
+          for (const dataSource of dataSourceList.models) {
+            if (
+              dataSource.memberList.find((item) => {
+                return item.principalId == userId;
+              })
+            ) {
+              matchFound = true;
+              break;
+            }
+          }
+          if (!matchFound) {
+            return false;
+          }
+        }
+
+        return true;
       })
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" })

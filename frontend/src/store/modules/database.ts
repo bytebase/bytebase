@@ -193,7 +193,7 @@ const actions = {
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
-        `/api/user/${userId}/database?include=instance,dataSource`
+        `/api/database?user=${userId}&include=instance,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
