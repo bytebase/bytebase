@@ -178,7 +178,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/instance/${instanceId}/database?include=instance,dataSource`
+        `/api/database?instance=${instanceId}&include=instance,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {

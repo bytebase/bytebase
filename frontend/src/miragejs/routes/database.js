@@ -16,11 +16,13 @@ export default function configureDatabase(route) {
 
   route.get("/database", function (schema, request) {
     const {
-      queryParams: { environment: environmentId },
+      queryParams: { environment: environmentId, instance: instanceId },
     } = request;
-    const instanceIdList = schema.instances
-      .where({ workspaceId: WORKSPACE_ID, environmentId })
-      .models.map((instance) => instance.id);
+    const instanceIdList = instanceId
+      ? [instanceId]
+      : schema.instances
+          .where({ workspaceId: WORKSPACE_ID, environmentId })
+          .models.map((instance) => instance.id);
     if (instanceIdList.length == 0) {
       return [];
     }
@@ -77,24 +79,6 @@ export default function configureDatabase(route) {
       404,
       {},
       { errors: "Database " + request.params.databaseId + " not found" }
-    );
-  });
-
-  route.get("/instance/:instanceId/database", function (schema, request) {
-    const instance = schema.instances.find(request.params.instanceId);
-    if (instance) {
-      return schema.databases
-        .where((database) => {
-          return database.instanceId == instance.id;
-        })
-        .sort((a, b) =>
-          a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-        );
-    }
-    return new Response(
-      404,
-      {},
-      { errors: "Instance " + request.params.instanceId + " not found" }
     );
   });
 }
