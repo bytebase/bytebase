@@ -164,7 +164,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isDBA } from "../utils";
 import { DataSource, Principal } from "../types";
 
 interface LocalState {
@@ -206,9 +206,7 @@ export default {
     );
 
     const allowEdit = computed(() => {
-      return (
-        currentUser.value.role == "OWNER" || currentUser.value.role == "DBA"
-      );
+      return isDBA(currentUser.value.role);
     });
 
     const allowSave = computed(() => {

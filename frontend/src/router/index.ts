@@ -17,7 +17,7 @@ import Signup from "../views/auth/Signup.vue";
 import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
-import { isDev, idFromSlug } from "../utils";
+import { isDev, idFromSlug, isDBA } from "../utils";
 import { Principal } from "../types";
 
 const HOME_MODULE = "workspace.home";
@@ -475,7 +475,6 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const loginUser: Principal = store.getters["auth/currentUser"]();
-  const isDBAorAbove = loginUser.role == "OWNER" || loginUser.role == "DBA";
   const isGuest = loginUser.id == "0";
 
   const fromModule = from.name
@@ -537,7 +536,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name?.toString().startsWith("workspace.instance")) {
-    if (isDBAorAbove) {
+    if (isDBA(loginUser.role)) {
       next();
     } else {
       next({

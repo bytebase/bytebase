@@ -153,6 +153,7 @@ import {
   DatabaseFieldPayload,
 } from "../plugins";
 import { DatabaseId, EnvironmentId, Task } from "../types";
+import { isDBA } from "../utils";
 
 interface LocalState {}
 
@@ -198,16 +199,15 @@ export default {
     });
 
     const allowEditAssignee = computed(() => {
-      // We allow the current assignee or DBA/Owner to re-assign the task.
-      // Though only DBA/Owner can be assigned to the task, the current
-      // assignee might not have DBA/Owner role in case its role is revoked after
+      // We allow the current assignee or DBA to re-assign the task.
+      // Though only DBA can be assigned to the task, the current
+      // assignee might not have DBA role in case its role is revoked after
       // being assigned to the task.
       return (
         props.new ||
         (props.task.status == "OPEN" &&
           (currentUser.value.id == props.task.assignee?.id ||
-            currentUser.value.role == "DBA" ||
-            currentUser.value.role == "OWNER"))
+            isDBA(currentUser.value.role)))
       );
     });
 

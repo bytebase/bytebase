@@ -174,13 +174,6 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const role = computed(() => {
-      const role = currentUser.value.role;
-      return role == "DBA"
-        ? role
-        : role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
-    });
-
     const switchToOwner = () => {
       store.dispatch("auth/login", {
         email: "demo@example.com",
@@ -205,7 +198,6 @@ export default {
     return {
       state,
       currentUser,
-      role,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,

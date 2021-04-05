@@ -74,6 +74,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import isEmpty from "lodash-es/isEmpty";
 import { Environment, EnvironmentNew } from "../types";
+import { isDBA } from "../utils";
 
 interface LocalState {
   environment?: Environment | EnvironmentNew;
@@ -115,9 +116,7 @@ export default {
     }
 
     const allowEdit = computed(() => {
-      return (
-        currentUser.value.role == "DBA" || currentUser.value.role == "OWNER"
-      );
+      return isDBA(currentUser.value.role);
     });
 
     const valueChanged = computed(() => {

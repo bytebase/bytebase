@@ -143,18 +143,6 @@ export default {
       });
     };
 
-    const isOwner = computed(() => {
-      return currentUser.value.role == "OWNER";
-    });
-
-    const isDBA = computed(() => {
-      return currentUser.value.role == "DBA";
-    });
-
-    const isDeveloper = computed(() => {
-      return currentUser.value.role == "DEVELOPER";
-    });
-
     const switchToOwner = () => {
       store.dispatch("auth/login", {
         email: "demo@example.com",
@@ -180,9 +168,6 @@ export default {
       currentUser,
       resetQuickstart,
       logout,
-      isOwner,
-      isDBA,
-      isDeveloper,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,

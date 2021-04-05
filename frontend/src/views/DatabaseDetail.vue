@@ -112,9 +112,9 @@
               </div>
               <div class="space-y-4">
                 <div v-for="(ds, index) of item.list" :key="index">
-                  <!-- Only displays the data source link for DBA and above. Since for now
+                  <!-- Only displays the data source link for DBA. Since for now
                   we don't need to expose the data source concept to the end user -->
-                  <div v-if="isDBAorAbove" class="relative mb-2">
+                  <div v-if="isCurrentUserDBA" class="relative mb-2">
                     <div
                       class="absolute inset-0 flex items-center"
                       aria-hidden="true"
@@ -150,7 +150,7 @@ import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isDBA } from "../utils";
 import { PrincipalId, DataSource } from "../types";
 
 interface LocalState {
@@ -198,15 +198,13 @@ export default {
 
     watchEffect(prepareDataSourceList);
 
-    const isDBAorAbove = computed(() => {
-      return (
-        currentUser.value.role == "DBA" || currentUser.value.role == "OWNER"
-      );
+    const isCurrentUserDBA = computed((): boolean => {
+      return isDBA(currentUser.value.role);
     });
 
     const allowChangeOwner = computed(() => {
       return (
-        currentUser.value.id == database.value.ownerId || isDBAorAbove.value
+        currentUser.value.id == database.value.ownerId || isCurrentUserDBA.value
       );
     });
 
@@ -215,8 +213,8 @@ export default {
         database.value.id
       ).filter((dataSource: DataSource) => {
         return (
-          isDBAorAbove.value ||
-          // If the current user is not DBAorAbove, we will only show the granted data source.
+          isCurrentUserDBA.value ||
+          // If the current user is not DBA, we will only show the granted data source.
           dataSource.memberList.find((item) => {
             return item.principal.id == currentUser.value.id;
           })
@@ -252,7 +250,7 @@ export default {
     return {
       state,
       database,
-      isDBAorAbove,
+      isCurrentUserDBA,
       allowChangeOwner,
       readWriteDataSourceList,
       readOnlyDataSourceList,
