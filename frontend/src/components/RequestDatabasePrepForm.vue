@@ -189,6 +189,10 @@ export default {
 
     const request = () => {
       emit("dismiss");
+
+      const environment = store.getters["environment/environmentById"](
+        state.environmentId
+      );
       if (state.create == "ON") {
         router.push({
           name: "workspace.task.detail",
@@ -197,11 +201,18 @@ export default {
           },
           query: {
             template: "bytebase.database.create",
+            name: `[${environment.name}] Request new database '${state.databaseName}'`,
             environment: state.environmentId,
             database: state.databaseName,
           },
         });
       } else {
+        const database = store.getters["database/databaseById"](
+          state.databaseId,
+          {
+            environmentId: state.environmentId,
+          }
+        );
         router.push({
           name: "workspace.task.detail",
           params: {
@@ -209,6 +220,9 @@ export default {
           },
           query: {
             template: "bytebase.database.grant",
+            name: `[${environment.name}] Request database '${database.name}' ${
+              state.readOnly ? "Read Only access" : "Read & Write access"
+            }`,
             environment: state.environmentId,
             database: state.databaseId,
             readonly: state.readOnly ? "true" : "false",
