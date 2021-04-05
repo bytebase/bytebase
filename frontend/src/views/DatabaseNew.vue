@@ -42,7 +42,7 @@ input[type="number"] {
             "
             class="ml-2 text-sm normal-link"
           >
-            View list
+            List
           </router-link>
         </div>
         <div class="flex flex-row space-x-2 items-center">
@@ -179,15 +179,26 @@ input[type="number"] {
             >
               <span class="text-accent font-semibold sm:text-sm">task/</span>
             </div>
-            <input
-              class="textfield w-full pl-12"
-              id="task"
-              name="task"
-              type="number"
-              placeholder="Your task id (e.g. 1234)"
-              :disabled="!allowEditTask"
-              v-model="state.taskId"
-            />
+            <div class="flex flex-row space-x-2 items-center">
+              <input
+                class="textfield w-full pl-12"
+                id="task"
+                name="task"
+                type="number"
+                placeholder="Your task id (e.g. 1234)"
+                :disabled="!allowEditTask"
+                v-model="state.taskId"
+              />
+              <template v-if="taskLink">
+                <router-link
+                  :to="taskLink"
+                  target="_blank"
+                  class="ml-2 normal-link text-sm"
+                >
+                  View
+                </router-link>
+              </template>
+            </div>
           </template>
         </div>
       </div>
@@ -226,10 +237,8 @@ import {
   Task,
   TaskId,
   TaskType,
-  Database,
   DataSourceNew,
   EnvironmentId,
-  Environment,
   InstanceId,
   PrincipalId,
 } from "../types";
@@ -331,6 +340,15 @@ export default {
           state.instanceId
         );
         return `/instance/${instanceSlug(instance)}`;
+      }
+      return "";
+    });
+
+    const taskLink = computed((): string => {
+      if (state.taskId) {
+        // We intentionally not to validate whether the taskId is legit, we will do the validation
+        // when actually trying to create the database.
+        return `/task/${state.taskId}`;
       }
       return "";
     });
@@ -518,6 +536,7 @@ export default {
       allowEditOwner,
       allowEditTask,
       instanceLink,
+      taskLink,
       selectEnvironment,
       selectInstance,
       changeDatabaseName,

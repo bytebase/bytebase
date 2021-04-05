@@ -121,16 +121,27 @@ input[type="number"] {
             >
               <span class="text-accent font-semibold sm:text-sm">task/</span>
             </div>
-            <input
-              class="textfield w-full pl-12"
-              id="task"
-              name="task"
-              type="number"
-              placeholder="Your task id (e.g. 1234)"
-              :disabled="!allowUpdateTaskId"
-              :value="state.taskId"
-              @input="updateState('taskId', $event.target.value)"
-            />
+            <div class="flex flex-row space-x-2 items-center">
+              <input
+                class="textfield w-full pl-12"
+                id="task"
+                name="task"
+                type="number"
+                placeholder="Your task id (e.g. 1234)"
+                :disabled="!allowUpdateTaskId"
+                :value="state.taskId"
+                @input="updateState('taskId', $event.target.value)"
+              />
+              <template v-if="taskLink">
+                <router-link
+                  :to="taskLink"
+                  target="_blank"
+                  class="ml-2 normal-link text-sm"
+                >
+                  View
+                </router-link>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -271,6 +282,15 @@ export default {
       return state.dataSourceId && state.granteeId && !state.granteeError;
     });
 
+    const taskLink = computed((): string => {
+      if (state.taskId) {
+        // We intentionally not to validate whether the taskId is legit, we will do the validation
+        // when actually trying to create the database.
+        return `/task/${state.taskId}`;
+      }
+      return "";
+    });
+
     const validateGrantee = () => {
       if (state.granteeId) {
         const member = dataSource.value.memberList.find(
@@ -363,6 +383,7 @@ export default {
       allowUpdateDataSourceMember,
       allowUpdateTaskId,
       allowCreate,
+      taskLink,
       updateState,
       cancel,
       doGrant,
