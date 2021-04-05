@@ -13,11 +13,11 @@ input[type="number"] {
 </style>
 
 <template>
-  <form class="space-y-6 divide-y divide-block-border">
+  <form class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="">
       <!-- Instance Name -->
-      <div class="grid gap-y-6 gap-x-4 grid-cols-1">
-        <div class="col-span-1 col-start-1">
+      <div class="grid gap-y-6 gap-x-4 grid-cols-4">
+        <div class="col-span-2 col-start-2 w-64">
           <label for="environment" class="textlabel">
             Environment <span style="color: red">*</span>
           </label>
@@ -30,7 +30,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="col-span-1 col-start-1">
+        <div class="col-span-2 col-start-2 w-64">
           <label for="instance" class="textlabel">
             Instance <span class="text-red-600">*</span>
           </label>
@@ -43,7 +43,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="col-span-1 col-start-1">
+        <div class="col-span-2 col-start-2 w-64">
           <label for="database" class="textlabel">
             Database <span class="text-red-600">*</span>
           </label>
@@ -58,7 +58,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="col-span-1 col-start-1">
+        <div class="col-span-2 col-start-2 w-64">
           <label for="datasource" class="textlabel">
             Data Source <span class="text-red-600">*</span>
           </label>
@@ -72,7 +72,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="col-span-1 col-start-1">
+        <div class="col-span-2 col-start-2 w-64">
           <label for="user" class="textlabel">
             User <span class="text-red-600">*</span>
             <span class="ml-2 text-error text-xs">
@@ -92,7 +92,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="col-span-1 col-start-1">
+        <div class="col-span-2 col-start-2 w-64">
           <label for="task" class="textlabel"> Task </label>
           <div class="mt-1 relative rounded-md shadow-sm">
             <div
@@ -114,25 +114,22 @@ input[type="number"] {
       </div>
     </div>
     <!-- Action Button Group -->
-    <div class="pt-4">
-      <!-- Create button group -->
-      <div class="flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!allowCreate"
-          @click.prevent="doGrant"
-        >
-          Grant
-        </button>
-      </div>
+    <div class="pt-4 flex justify-end">
+      <button
+        type="button"
+        class="btn-normal py-2 px-4"
+        @click.prevent="cancel"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        :disabled="!allowCreate"
+        @click.prevent="doGrant"
+      >
+        Grant
+      </button>
     </div>
   </form>
 </template>
@@ -140,19 +137,14 @@ input[type="number"] {
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import DataSourceSelect from "../components/DataSourceSelect.vue";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
-import { instanceSlug } from "../utils";
 import {
   DataSource,
   DataSourceMember,
-  DataSourceMemberNew,
   EnvironmentId,
   PrincipalId,
   TaskId,
@@ -189,18 +181,6 @@ export default {
   },
   setup(props, { emit }) {
     const store = useStore();
-    const router = useRouter();
-
-    const databaseName = computed(() => {
-      const database = store.getters["database/databaseById"](
-        props.dataSource.database.id,
-        {
-          instanceId: props.dataSource.instance.id,
-          environmentId: props.dataSource.instance.environment.id,
-        }
-      );
-      return database.name;
-    });
 
     const instance = computed(() => {
       return store.getters["instance/instanceById"](
@@ -273,7 +253,6 @@ export default {
     return {
       state,
       allowCreate,
-      databaseName,
       instance,
       updateDataSourceMember,
       cancel,

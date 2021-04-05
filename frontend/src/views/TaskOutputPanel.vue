@@ -136,7 +136,7 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { fullDatabaseUrl } from "../utils";
 import { TaskField, TaskBuiltinFieldId, TaskContext } from "../plugins";
-import { DatabaseId, EnvironmentId, Task } from "../types";
+import { DatabaseId, DataSource, EnvironmentId, Task } from "../types";
 
 interface LocalState {}
 
@@ -207,27 +207,60 @@ export default {
     const databaseActionLink = (field: TaskField): string => {
       const queryParamList: string[] = [];
 
-      if (environmentId.value) {
-        queryParamList.push(`environment=${environmentId.value}`);
+      if (props.task.type == "bytebase.database.create") {
+        if (environmentId.value) {
+          queryParamList.push(`environment=${environmentId.value}`);
+        }
+
+        const databaseName = props.task.payload[TaskBuiltinFieldId.DATABASE];
+        queryParamList.push(`name=${databaseName}`);
+
+        queryParamList.push(`owner=${props.task.creator.id}`);
+
+        queryParamList.push(`task=${props.task.id}`);
+
+        queryParamList.push(`from=${props.task.type}`);
+
+        return "/db/new?" + queryParamList.join("&");
       }
 
-      // The created database name or to be granted database id is stored in the predefined field with id TaskBuiltinFieldId.DATABASE
-      const databaseNameOrId = props.task.payload[TaskBuiltinFieldId.DATABASE];
-      if (props.task.type == "bytebase.database.create") {
-        if (databaseNameOrId) {
-          queryParamList.push(`name=${databaseNameOrId}`);
+      if (props.task.type == "bytebase.database.grant") {
+        const databaseId = props.task.payload[TaskBuiltinFieldId.DATABASE];
+        if (databaseId) {
+          const database = store.getters["database/databaseById"](databaseId, {
+            environmentId: environmentId.value,
+          });
+          if (database) {
+            // TODO: Hard-code from DatabaseGrantTemplate
+            const READ_ONLY_ID = 100;
+            const readOnly = props.task.payload[READ_ONLY_ID];
+            let dataSourceId;
+            for (const dataSource of database.dataSourceList) {
+              if (readOnly && dataSource.type == "RO") {
+                dataSourceId = dataSource.id;
+                break;
+              } else if (!readOnly && dataSource.type == "RW") {
+                dataSourceId = dataSource.id;
+                break;
+              }
+            }
+
+            if (dataSourceId) {
+              queryParamList.push(`database=${databaseId}`);
+
+              queryParamList.push(`datasource=${dataSourceId}`);
+
+              queryParamList.push(`grantee=${props.task.creator.id}`);
+
+              queryParamList.push(`task=${props.task.id}`);
+
+              return "/db/grant?" + queryParamList.join("&");
+            }
+          }
         }
       }
 
-      queryParamList.push(`owner=${props.task.creator.id}`);
-
-      queryParamList.push(`task=${props.task.id}`);
-
-      queryParamList.push(`from=${props.task.type}`);
-
-      return props.task.type == "bytebase.database.create"
-        ? "/db/new?" + queryParamList.join("&")
-        : `/db/${databaseNameOrId}`;
+      return "";
     };
 
     const databaseViewLink = (field: TaskField): string => {
