@@ -38,7 +38,7 @@
 import { reactive, computed, watch, PropType } from "vue";
 import { useStore } from "vuex";
 import { RoleMapping, Principal, PrincipalId, RoleType } from "../types";
-import { feature, isDBA, isDeveloper, isOwner } from "../utils";
+import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   selectedId?: PrincipalId;

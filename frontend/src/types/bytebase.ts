@@ -586,6 +586,17 @@ export type ActivateInfo = {
   token: string;
 };
 
+// Plan
+export type FeatureType =
+  // - Task can only be assigned to DBA and Owner
+  "bytebase.admin";
+
+export enum PlanType {
+  FREE = 0,
+  STANDARD = 1,
+  PREMIUM = 2,
+}
+
 // UI State Models
 export type RouterSlug = {
   taskSlug?: string;
@@ -645,6 +656,8 @@ export type QuickActionType =
 export interface AuthState {
   currentUser: Principal;
 }
+
+export interface PlanState {}
 
 export interface RoleMappingState {
   roleMappingList: RoleMapping[];

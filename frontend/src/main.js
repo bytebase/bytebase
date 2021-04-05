@@ -41,6 +41,7 @@ import {
   instanceSlug,
   databaseSlug,
   dataSourceSlug,
+  registerStoreWithRoleUtil,
 } from "./utils";
 
 if (isDevOrDemo()) {
@@ -61,6 +62,8 @@ app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;
 app.config.globalProperties.dataSourceSlug = dataSourceSlug;
+
+registerStoreWithRoleUtil(store);
 
 app
   // Need to use a directive on the element.

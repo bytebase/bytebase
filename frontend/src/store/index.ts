@@ -9,6 +9,7 @@ import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
 import database from "./modules/database";
 import principal from "./modules/principal";
+import plan from "./modules/plan";
 import auth from "./modules/auth";
 import task from "./modules/task";
 
@@ -32,6 +33,7 @@ export const store: Store<any> = createStore({
     dataSource,
     database,
     principal,
+    plan,
     auth,
     task,
     uistate,
