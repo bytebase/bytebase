@@ -30,7 +30,7 @@
               {{ state.errorList[index] }}
             </p>
           </div>
-          <div class="sm:hidden w-36">
+          <div v-if="hasAdminFeature" class="sm:hidden w-36">
             <RoleSelect
               :selectedRole="invite.role"
               @change-role="
@@ -40,7 +40,10 @@
               "
             />
           </div>
-          <div class="hidden sm:flex sm:flex-row radio-set">
+          <div
+            v-if="hasAdminFeature"
+            class="hidden sm:flex sm:flex-row radio-set"
+          >
             <div class="radio">
               <input
                 :name="`invite_role${index}`"
@@ -133,6 +136,10 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const hasAdminFeature = computed(() =>
+      store.getters["plan/feature"]("bytebase.admin")
+    );
+
     const state = reactive<LocalState>({
       inviteList: [],
       errorList: [],
@@ -201,6 +208,10 @@ export default {
     const sendInvite = () => {
       for (const invite of state.inviteList) {
         if (isValidEmail(invite.email)) {
+          // If admin feature is NOT enabled, then we set every intite to OWNER role.
+          if (!hasAdminFeature.value) {
+            invite.role = "OWNER";
+          }
           // We created a new principal for that email if not exists.
           // Note "principal/createPrincipal" would return the existing principal.
           // This could happen if another client has just created the principal
@@ -245,6 +256,7 @@ export default {
 
     return {
       state,
+      hasAdminFeature,
       validateInvite,
       clearValidationError,
       addInvite,

@@ -4,6 +4,7 @@
     class="mt-2"
     :columnList="columnList"
     :sectionDataSource="dataSource"
+    :compactSection="true"
     :showHeader="true"
     :rowClickable="false"
   >
@@ -13,12 +14,30 @@
         class="w-auto table-cell"
         :title="columnList[0].title"
       />
-      <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
-      <BBTableHeaderCell class="w-72 table-cell" :title="columnList[2].title" />
-      <BBTableHeaderCell
-        class="w-auto table-cell"
-        :title="columnList[3].title"
-      />
+      <template v-if="hasAdminFeature">
+        <BBTableHeaderCell
+          class="w-8 table-cell"
+          :title="columnList[1].title"
+        />
+        <BBTableHeaderCell
+          class="w-72 table-cell"
+          :title="columnList[2].title"
+        />
+        <BBTableHeaderCell
+          class="w-auto table-cell"
+          :title="columnList[3].title"
+        />
+      </template>
+      <template v-else>
+        <BBTableHeaderCell
+          class="w-72 table-cell"
+          :title="columnList[1].title"
+        />
+        <BBTableHeaderCell
+          class="w-auto table-cell"
+          :title="columnList[2].title"
+        />
+      </template>
     </template>
     <template v-slot:body="{ rowData: roleMappingUI }">
       <BBTableCell :leftPadding="4" class="table-cell">
@@ -56,7 +75,7 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell class="">
+      <BBTableCell v-if="hasAdminFeature" class="">
         <RoleSelect
           :selectedRole="roleMappingUI.role"
           :disabled="!allowEdit"
@@ -91,6 +110,26 @@
       </BBTableCell>
     </template>
   </BBTable>
+  <div v-if="!hasAdminFeature" class="mt-6 border-t pt-4 border-block-border">
+    <div class="flex flex-row items-center space-x-1">
+      <svg
+        class="w-6 h-6 text-accent"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"
+          clip-rule="evenodd"
+        ></path>
+      </svg>
+      <router-link to="/setting/plan" class="text-lg accent-link"
+        >Upgrade to unlock Owner and DBA roles</router-link
+      >
+    </div>
+    <img class="w-full" src="../assets/role_management_screenshot.png" />
+  </div>
 </template>
 
 <script lang="ts">
@@ -105,21 +144,6 @@ type RoleMappingUI = RoleMapping & {
   updater: Principal;
 };
 
-const columnList: BBTableColumn[] = [
-  {
-    title: "Account",
-  },
-  {
-    title: "Role",
-  },
-  {
-    title: "Granted Time",
-  },
-  {
-    title: "",
-  },
-];
-
 interface LocalState {}
 
 export default {
@@ -130,6 +154,10 @@ export default {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const hasAdminFeature = computed(() =>
+      store.getters["plan/feature"]("bytebase.admin")
+    );
 
     const state = reactive<LocalState>({});
 
@@ -157,28 +185,64 @@ export default {
             roleMapping.updaterId
           ),
         };
-        if (roleMappingUI.role === "OWNER") {
+        if (!hasAdminFeature.value || roleMappingUI.role === "DEVELOPER") {
+          developerList.push(roleMappingUI);
+        } else if (roleMappingUI.role === "OWNER") {
           ownerList.push(roleMappingUI);
         } else if (roleMappingUI.role === "DBA") {
           dbaList.push(roleMappingUI);
-        } else if (roleMappingUI.role === "DEVELOPER") {
-          developerList.push(roleMappingUI);
         }
       }
       const dataSource = [];
-      dataSource.push({
-        title: "Owner",
-        list: ownerList,
-      });
-      dataSource.push({
-        title: "DBA",
-        list: dbaList,
-      });
-      dataSource.push({
-        title: "Developer",
-        list: developerList,
-      });
+      if (hasAdminFeature.value) {
+        dataSource.push({
+          title: "Owner",
+          list: ownerList,
+        });
+        dataSource.push({
+          title: "DBA",
+          list: dbaList,
+        });
+        dataSource.push({
+          title: "Developer",
+          list: developerList,
+        });
+      } else {
+        dataSource.push({
+          title: "Member",
+          list: developerList,
+        });
+      }
       return dataSource;
+    });
+
+    const columnList = computed((): BBTableColumn[] => {
+      return hasAdminFeature.value
+        ? [
+            {
+              title: "Account",
+            },
+            {
+              title: "Role",
+            },
+            {
+              title: "Granted Time",
+            },
+            {
+              title: "",
+            },
+          ]
+        : [
+            {
+              title: "Account",
+            },
+            {
+              title: "Granted Time",
+            },
+            {
+              title: "",
+            },
+          ];
     });
 
     const allowEdit = computed(() => {
@@ -206,6 +270,7 @@ export default {
     return {
       state,
       currentUser,
+      hasAdminFeature,
       columnList,
       dataSource,
       allowEdit,
