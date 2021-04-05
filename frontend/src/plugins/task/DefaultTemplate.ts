@@ -1,6 +1,11 @@
 import isEmpty from "lodash-es/isEmpty";
-import { DatabaseId, EnvironmentId, TaskNew, UNKNOWN_ID } from "../../types";
-import { TaskBuiltinFieldId, TaskTemplate, TemplateContext } from "../types";
+import { TaskNew, UNKNOWN_ID } from "../../types";
+import {
+  TaskBuiltinFieldId,
+  TaskContext,
+  TaskTemplate,
+  TemplateContext,
+} from "../types";
 
 const template: TaskTemplate = {
   type: "bytebase.general",
@@ -30,8 +35,9 @@ const template: TaskTemplate = {
       name: "Environment",
       type: "Environment",
       required: true,
-      isEmpty: (value: EnvironmentId): boolean => {
-        return isEmpty(value);
+      resolved: (ctx: TaskContext): boolean => {
+        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+        return !isEmpty(environmentId);
       },
     },
     {
@@ -41,8 +47,9 @@ const template: TaskTemplate = {
       name: "Database",
       type: "Database",
       required: true,
-      isEmpty: (value: DatabaseId): boolean => {
-        return value == undefined || value == UNKNOWN_ID;
+      resolved: (ctx: TaskContext): boolean => {
+        const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+        return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
       },
     },
   ],
