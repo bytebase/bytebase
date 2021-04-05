@@ -51,11 +51,16 @@ export default {
       for (const database of databaseList) {
         if (database.name != ALL_DATABASE_NAME) {
           const dbList = envToDbMap.get(database.instance.environment.id)!;
+          let databaseName = database.name;
+          if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
+            databaseName += " (read)";
+          }
+          if (database.ownerId == currentUser.value.id) {
+            databaseName += " (owner)";
+          }
           dbList.push({
             id: database.id,
-            name: allowDatabaseAccess(database, currentUser.value, "RW")
-              ? database.name
-              : database.name + " (read)",
+            name: databaseName,
             link: `/db/${databaseSlug(database)}`,
           });
         }

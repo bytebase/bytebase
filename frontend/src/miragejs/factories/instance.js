@@ -71,7 +71,7 @@ export default {
           workspaceId: instance.workspaceId,
           instance,
           // Demo Owner
-          ownerId: "1",
+          ownerId: Math.ceil(Math.random() * 3).toString(),
         });
 
         server.create("dataSource", {
