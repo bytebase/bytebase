@@ -11,6 +11,7 @@ module.exports = {
     extend: {
       colors: {
         accent: "var(--color-accent)",
+        "accent-disabled": "var(--color-accent-disabled)",
         "accent-hover": "var(--color-accent-hover)",
         "accent-text": "var(--color-accent-text)",
 
