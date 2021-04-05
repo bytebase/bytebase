@@ -65,6 +65,7 @@ input[type="number"] {
             :mode="'INSTANCE'"
             :instanceId="state.instanceId"
             :selectedId="state.databaseId"
+            :showAllDatabase="true"
             @select-database-id="
               (databaseId) => {
                 updateState('databaseId', databaseId);

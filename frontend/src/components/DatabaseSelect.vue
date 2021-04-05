@@ -32,7 +32,7 @@
 <script lang="ts">
 import { computed, reactive, watch, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
-import { Database } from "../types";
+import { ALL_DATABASE_NAME, Database } from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -57,6 +57,10 @@ export default {
       type: String,
     },
     disabled: {
+      default: false,
+      type: Boolean,
+    },
+    showAllDatabase: {
       default: false,
       type: Boolean,
     },
@@ -92,15 +96,21 @@ export default {
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
+      let list: Database[] = [];
       if (props.mode == "ENVIRONMENT" && props.environmentId) {
-        return store.getters["database/databaseListByEnvironmentId"](
+        list = store.getters["database/databaseListByEnvironmentId"](
           props.environmentId
         );
       } else if (props.mode == "INSTANCE" && props.instanceId) {
-        return store.getters["database/databaseListByInstanceId"](
+        list = store.getters["database/databaseListByInstanceId"](
           props.instanceId
         );
       }
+      return props.showAllDatabase
+        ? list
+        : list.filter((database: Database) => {
+            return database.name != ALL_DATABASE_NAME;
+          });
     });
 
     const invalidateSelectionIfNeeded = () => {
