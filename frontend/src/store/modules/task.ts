@@ -8,6 +8,7 @@ import {
   TaskState,
   ResourceObject,
   Principal,
+  unknown,
 } from "../../types";
 import principal from "./principal";
 
@@ -46,11 +47,11 @@ const state: () => TaskState = () => ({
 
 const getters = {
   taskListByUser: (state: TaskState) => (userId: UserId) => {
-    return state.taskListByUser.get(userId);
+    return state.taskListByUser.get(userId) || [];
   },
 
-  taskById: (state: TaskState) => (taskId: TaskId) => {
-    return state.taskById.get(taskId);
+  taskById: (state: TaskState) => (taskId: TaskId): Task => {
+    return state.taskById.get(taskId) || (unknown("TASK") as Task);
   },
 };
 
