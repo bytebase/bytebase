@@ -26,11 +26,15 @@ const state: () => ActivityState = () => ({
 });
 
 const getters = {
-  activityListByUser: (state: ActivityState) => (userId: UserId) => {
-    return state.activityListByUser.get(userId);
+  activityListByUser: (state: ActivityState) => (
+    userId: UserId
+  ): Activity[] => {
+    return state.activityListByUser.get(userId) || [];
   },
-  activityListByTask: (state: ActivityState) => (taskId: TaskId) => {
-    return state.activityListByTask.get(taskId);
+  activityListByTask: (state: ActivityState) => (
+    taskId: TaskId
+  ): Activity[] => {
+    return state.activityListByTask.get(taskId) || [];
   },
 };
 
