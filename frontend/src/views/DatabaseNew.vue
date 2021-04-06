@@ -285,7 +285,7 @@ export default {
       environmentId: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
-          )?.id
+          ).id
         : undefined,
       instanceId: router.currentRoute.value.query.instance
         ? store.getters["instance/instanceById"](

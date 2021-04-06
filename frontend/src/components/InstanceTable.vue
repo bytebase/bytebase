@@ -108,7 +108,7 @@ export default {
     };
 
     const environmentName = function (id: EnvironmentId) {
-      return store.getters["environment/environmentById"](id)?.name;
+      return store.getters["environment/environmentById"](id).name;
     };
 
     return {

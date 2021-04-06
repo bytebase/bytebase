@@ -5,6 +5,7 @@ import {
   EnvironmentNew,
   EnvironmentState,
   ResourceObject,
+  unknown,
 } from "../../types";
 
 function convert(environment: ResourceObject): Environment {
@@ -19,19 +20,19 @@ const state: () => EnvironmentState = () => ({
 });
 
 const getters = {
-  environmentList: (state: EnvironmentState) => () => {
+  environmentList: (state: EnvironmentState) => (): Environment[] => {
     return state.environmentList;
   },
 
   environmentById: (state: EnvironmentState) => (
     environmentId: EnvironmentId
-  ): Environment | undefined => {
+  ): Environment => {
     for (const environment of state.environmentList) {
       if (environment.id == environmentId) {
         return environment;
       }
     }
-    return undefined;
+    return unknown("ENVIRONMENT") as Environment;
   },
 };
 

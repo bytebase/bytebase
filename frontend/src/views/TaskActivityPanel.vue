@@ -515,21 +515,13 @@ export default {
                   const environment: Environment = store.getters[
                     "environment/environmentById"
                   ](update.oldValue);
-                  if (environment) {
-                    oldValue = environment.name;
-                  } else {
-                    oldValue = "Unknown Environment";
-                  }
+                  oldValue = environment.name;
                 }
                 if (update.newValue) {
                   const environment: Environment = store.getters[
                     "environment/environmentById"
                   ](update.newValue);
-                  if (environment) {
-                    newValue = environment.name;
-                  } else {
-                    newValue = "Unknown Environment";
-                  }
+                  newValue = environment.name;
                 }
               }
             }

@@ -151,7 +151,7 @@ export default {
     const activeEnvironmentName = function (task: Task) {
       const id = activeEnvironmentId(task);
       if (id) {
-        return store.getters["environment/environmentById"](id)?.name;
+        return store.getters["environment/environmentById"](id).name;
       }
       return "";
     };
