@@ -8,6 +8,7 @@ import {
   PrincipalState,
   PrincipalStatus,
   ResourceObject,
+  unknown,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
 
@@ -34,57 +35,19 @@ const getters = {
   },
 
   principalByEmail: (state: PrincipalState) => (email: string): Principal => {
-    if (!email) {
-      return {
-        id: UNKNOWN_ID,
-        status: "UNKNOWN",
-        name: "<<Email Missing>>",
-        email: "",
-        role: "GUEST",
-      };
-    }
-
-    const principal = state.principalList.find((item) => item.email == email);
-    if (principal) {
-      return principal;
-    }
-
-    return {
-      id: UNKNOWN_ID,
-      status: "UNKNOWN",
-      name: `<<Email ${email} not found>>`,
-      email: "",
-      role: "GUEST",
-    };
+    return (
+      state.principalList.find((item) => item.email == email) ||
+      (unknown("PRINCIPAL") as Principal)
+    );
   },
 
   principalById: (state: PrincipalState) => (
     principalId: PrincipalId
   ): Principal => {
-    if (!principalId) {
-      return {
-        id: UNKNOWN_ID,
-        status: "UNKNOWN",
-        name: "<<ID Missing>>",
-        email: "",
-        role: "GUEST",
-      };
-    }
-
-    const principal = state.principalList.find(
-      (item) => item.id == principalId
+    return (
+      state.principalList.find((item) => item.id == principalId) ||
+      (unknown("PRINCIPAL") as Principal)
     );
-    if (principal) {
-      return principal;
-    }
-
-    return {
-      id: principalId,
-      status: "UNKNOWN",
-      name: `<<ID ${principalId} not found>>`,
-      email: "",
-      role: "GUEST",
-    };
   },
 };
 
