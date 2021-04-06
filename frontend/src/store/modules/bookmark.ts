@@ -5,6 +5,7 @@ import {
   BookmarkNew,
   BookmarkState,
   ResourceObject,
+  unknown,
 } from "../../types";
 
 function convert(bookmark: ResourceObject): Bookmark {
@@ -24,15 +25,15 @@ const getters = {
   ): Bookmark[] => {
     return state.bookmarkListByUser.get(userId) || [];
   },
-  bookmarkByUserAndLink: (state: BookmarkState) => (
+  bookmarkByUserAndLink: (state: BookmarkState, getters: any) => (
     userId: UserId,
     link: string
-  ): Bookmark | undefined => {
-    const list = state.bookmarkListByUser.get(userId);
-    if (list) {
-      return list.find((item: Bookmark) => item.link == link);
-    }
-    return undefined;
+  ): Bookmark => {
+    const list = getters["bookmarkListByUser"](userId);
+    return (
+      list.find((item: Bookmark) => item.link == link) ||
+      (unknown("BOOKMARK") as Bookmark)
+    );
   },
 };
 

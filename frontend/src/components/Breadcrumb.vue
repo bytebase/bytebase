@@ -54,7 +54,7 @@
           @click.prevent="toggleBookmark"
         >
           <svg
-            v-if="bookmarked"
+            v-if="isBookmarked"
             class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
             x-description="Heroicon name: star"
             xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +87,7 @@
 import { reactive, computed, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { RouterSlug, User, Bookmark } from "../types";
+import { RouterSlug, User, Bookmark, UNKNOWN_ID } from "../types";
 import { idFromSlug } from "../utils";
 import database from "../store/modules/database";
 
@@ -107,11 +107,15 @@ export default {
       store.getters["auth/currentUser"]()
     );
 
-    const bookmarked: ComputedRef<Bookmark> = computed(() =>
+    const bookmark: ComputedRef<Bookmark> = computed(() =>
       store.getters["bookmark/bookmarkByUserAndLink"](
         currentUser.value.id,
         currentRoute.value.path
       )
+    );
+
+    const isBookmarked: ComputedRef<Boolean> = computed(
+      () => bookmark.value.id != UNKNOWN_ID
     );
 
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
@@ -158,9 +162,9 @@ export default {
     });
 
     const toggleBookmark = () => {
-      if (bookmarked.value) {
+      if (isBookmarked.value) {
         store
-          .dispatch("bookmark/deleteBookmark", bookmarked.value)
+          .dispatch("bookmark/deleteBookmark", bookmark.value)
           .catch((error) => {
             console.log(error);
           });
@@ -185,7 +189,8 @@ export default {
 
     return {
       allowBookmark,
-      bookmarked,
+      bookmark,
+      isBookmarked,
       breadcrumbList,
       toggleBookmark,
     };
