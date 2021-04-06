@@ -29,7 +29,9 @@ export default {
       // database hasn't been fetched yet, that solution is more complex and might not bring better
       // performance because it requires to do more round-trips because of the N+1 nature. Thus,
       // we choose to do a full fetch when initializing the context here.
-      // [TODO] The backend needs to redact the password info for database which the user is not granted.
+      // [NOTE] This only fetches the database info itself, won't fetch the instance and especially
+      // the data source info which contains connection credentials might not be granted to the current
+      // user.
       store.dispatch("database/fetchDatabaseList"),
       store.dispatch("uistate/restoreState"),
     ]);
