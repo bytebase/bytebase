@@ -691,6 +691,9 @@ export interface ActivityState {
 }
 
 export interface TaskState {
+  // [NOTE] This is only used by the task list view. We don't
+  // update the entry here if any task is changed (the updated task only gets updated in taskById).
+  // Instead, we always fetch the list every time we display the task list view.
   taskListByUser: Map<UserId, Task[]>;
   taskById: Map<TaskId, Task>;
 }
