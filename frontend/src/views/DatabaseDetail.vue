@@ -185,19 +185,6 @@ export default {
       );
     });
 
-    const prepareDataSourceList = () => {
-      store
-        .dispatch(
-          "dataSource/fetchDataSourceListByDatabaseId",
-          database.value.id
-        )
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    watchEffect(prepareDataSourceList);
-
     const isCurrentUserDBA = computed((): boolean => {
       return isDBA(currentUser.value.role);
     });
@@ -209,9 +196,7 @@ export default {
     });
 
     const dataSourceList = computed(() => {
-      return store.getters["dataSource/dataSourceListByDatabaseId"](
-        database.value.id
-      ).filter((dataSource: DataSource) => {
+      return database.value.dataSourceList.filter((dataSource: DataSource) => {
         return (
           isCurrentUserDBA.value ||
           // If the current user is not DBA, we will only show the granted data source.

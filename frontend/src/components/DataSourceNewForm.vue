@@ -44,6 +44,7 @@
               :selectedId="state.dataSource.databaseId"
               :mode="'INSTANCE'"
               :instanceId="instanceId"
+              :showAllDatabase="true"
               @select-database-id="
                 (databaseId) => {
                   updateDataSource('databaseId', databaseId);

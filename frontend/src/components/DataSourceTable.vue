@@ -177,25 +177,15 @@ export default {
       const databaseList = props.database
         ? [props.database]
         : store.getters["database/databaseListByInstanceId"](props.instance.id);
-      const dataSourceList = props.database
-        ? store.getters["dataSource/dataSourceListByDatabaseId"](
-            props.database.id
-          )
-        : store.getters["dataSource/dataSourceListByInstanceId"](
-            props.instance.id
-          );
       const dataSourceListByDatabase: Map<string, DataSource[]> = new Map();
       databaseList.forEach((database: Database) => {
-        for (const dataSource of dataSourceList) {
+        for (const dataSource of database.dataSourceList) {
           if (
-            dataSource.database.id == database.id &&
-            (!state.searchText ||
-              dataSource.name
-                .toLowerCase()
-                .includes(state.searchText.toLowerCase()) ||
-              database.name
-                .toLowerCase()
-                .includes(state.searchText.toLowerCase()))
+            !state.searchText ||
+            dataSource.name
+              .toLowerCase()
+              .includes(state.searchText.toLowerCase()) ||
+            database.name.toLowerCase().includes(state.searchText.toLowerCase())
           ) {
             const list = dataSourceListByDatabase.get(database.name);
             if (list) {

@@ -1,13 +1,4 @@
 export default function configureDataSource(route) {
-  route.get("/datasource", function (schema, request) {
-    const {
-      queryParams: { instance: instanceId },
-    } = request;
-    return schema.dataSources.where((dataSource) => {
-      return !instanceId || dataSource.instanceId == instanceId;
-    });
-  });
-
   route.get("/database/:databaseId/datasource", function (schema, request) {
     const database = schema.databases.find(request.params.databaseId);
     if (database) {

@@ -51,10 +51,7 @@
                 <dt class="sr-only">Database</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
                   <span class="textlabel">Database&nbsp;-&nbsp;</span>
-                  <router-link
-                    :to="`/db/${databaseSlug(dataSource.database)}`"
-                    class="normal-link"
-                  >
+                  <router-link :to="`/db/${databaseSlug}`" class="normal-link">
                     {{ dataSource.database.name }}
                   </router-link>
                 </dd>
@@ -176,6 +173,10 @@ interface LocalState {
 export default {
   name: "DataSourceDetail",
   props: {
+    databaseSlug: {
+      required: true,
+      type: String,
+    },
     dataSourceSlug: {
       required: true,
       type: String,

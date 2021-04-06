@@ -6,7 +6,6 @@ import {
   DataSourceMember,
   DataSourceMemberNew,
   DataSourceState,
-  InstanceId,
   PrincipalId,
   ResourceObject,
   ResourceIdentifier,
@@ -66,8 +65,7 @@ function convert(
 }
 
 const state: () => DataSourceState = () => ({
-  dataSourceListByDatabaseId: new Map(),
-  dataSourceListByInstanceId: new Map(),
+  dataSourceById: new Map(),
 });
 
 const getters = {
@@ -83,78 +81,17 @@ const getters = {
     return convert(dataSource, [], rootGetters);
   },
 
-  dataSourceListByInstanceId: (state: DataSourceState) => (
-    instanceId: InstanceId
-  ): DataSource[] => {
-    return state.dataSourceListByInstanceId.get(instanceId) || [];
-  },
-
-  dataSourceListByDatabaseId: (state: DataSourceState) => (
-    databaseId: DatabaseId
-  ): DataSource[] => {
-    return state.dataSourceListByDatabaseId.get(databaseId) || [];
-  },
-
   dataSourceById: (state: DataSourceState) => (
-    dataSourceId: DataSourceId,
-    databaseId?: DatabaseId
+    dataSourceId: DataSourceId
   ): DataSource => {
-    let dataSource = undefined;
-    if (databaseId) {
-      const list = state.dataSourceListByDatabaseId.get(databaseId) || [];
-      dataSource = list.find((item) => item.id == dataSourceId);
-    } else {
-      for (let [_, list] of state.dataSourceListByDatabaseId) {
-        dataSource = list.find((item) => item.id == dataSourceId);
-        if (dataSource) {
-          break;
-        }
-      }
-    }
-    if (dataSource) {
-      return dataSource;
-    }
-    return unknown("DATA_SOURCE") as DataSource;
+    return (
+      state.dataSourceById.get(dataSourceId) ||
+      (unknown("DATA_SOURCE") as DataSource)
+    );
   },
 };
 
 const actions = {
-  async fetchDataSourceListByInstanceId(
-    { commit, rootGetters }: any,
-    instanceId: InstanceId
-  ) {
-    const data = (
-      await axios.get(
-        `/api/datasource?instance=${instanceId}&include=database,instance`
-      )
-    ).data;
-    const dataSourceList = data.data.map((datasource: ResourceObject) => {
-      return convert(datasource, data.included, rootGetters);
-    });
-
-    commit("setDataSourceListByInstanceId", { instanceId, dataSourceList });
-
-    return dataSourceList;
-  },
-
-  async fetchDataSourceListByDatabaseId(
-    { commit, rootGetters }: any,
-    databaseId: DatabaseId
-  ) {
-    const data = (
-      await axios.get(
-        `/api/database/${databaseId}/datasource?include=database,instance`
-      )
-    ).data;
-    const dataSourceList = data.data.map((datasource: ResourceObject) => {
-      return convert(datasource, data.included, rootGetters);
-    });
-
-    commit("setDataSourceListByDatabaseId", { databaseId, dataSourceList });
-
-    return dataSourceList;
-  },
-
   async fetchDataSourceById(
     { commit, rootGetters }: any,
     {
@@ -169,8 +106,8 @@ const actions = {
     ).data;
     const dataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByDatabaseId", {
-      databaseId,
+    commit("setDataSourceById", {
+      dataSourceId,
       dataSource,
     });
 
@@ -194,8 +131,8 @@ const actions = {
     ).data;
     const createdDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByDatabaseId", {
-      databaseId: newDataSource.databaseId,
+    commit("setDataSourceById", {
+      dataSourceId: createdDataSource.id,
       dataSource: createdDataSource,
     });
 
@@ -227,8 +164,8 @@ const actions = {
     ).data;
     const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByDatabaseId", {
-      databaseId,
+    commit("setDataSourceById", {
+      dataSourceId: updatedDataSource.id,
       dataSource: updatedDataSource,
     });
 
@@ -249,10 +186,7 @@ const actions = {
       `/api/database/${databaseId}/datasource/${dataSourceId}`
     );
 
-    commit("deleteDataSourceInListByDatabaseId", {
-      databaseId,
-      dataSourceId,
-    });
+    commit("deleteDataSourceById", dataSourceId);
 
     // Refresh the corresponding database as it contains data source.
     dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
@@ -284,7 +218,7 @@ const actions = {
     // It's patching the data source and returns the updated data source
     const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByDatabaseId", {
+    commit("setDataSourceById", {
       databaseId,
       dataSource: updatedDataSource,
     });
@@ -315,8 +249,8 @@ const actions = {
     // It's patching the data source and returns the updated data source
     const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("upsertDataSourceInListByDatabaseId", {
-      databaseId,
+    commit("setDataSourceById", {
+      dataSourceId: updatedDataSource.id,
       dataSource: updatedDataSource,
     });
 
@@ -326,69 +260,21 @@ const actions = {
 };
 
 const mutations = {
-  setDataSourceListByInstanceId(
+  setDataSourceById(
     state: DataSourceState,
     {
-      instanceId,
-      dataSourceList,
-    }: {
-      instanceId: InstanceId;
-      dataSourceList: DataSource[];
-    }
-  ) {
-    state.dataSourceListByInstanceId.set(instanceId, dataSourceList);
-  },
-
-  setDataSourceListByDatabaseId(
-    state: DataSourceState,
-    {
-      databaseId,
-      dataSourceList,
-    }: {
-      databaseId: DatabaseId;
-      dataSourceList: DataSource[];
-    }
-  ) {
-    state.dataSourceListByDatabaseId.set(databaseId, dataSourceList);
-  },
-
-  upsertDataSourceInListByDatabaseId(
-    state: DataSourceState,
-    {
-      databaseId,
+      dataSourceId,
       dataSource,
     }: {
-      databaseId: DatabaseId;
+      dataSourceId: DataSourceId;
       dataSource: DataSource;
     }
   ) {
-    const list = state.dataSourceListByDatabaseId.get(databaseId);
-    if (list) {
-      const i = list.findIndex((item: DataSource) => item.id == dataSource.id);
-      if (i != -1) {
-        list[i] = dataSource;
-      } else {
-        list.push(dataSource);
-      }
-    } else {
-      state.dataSourceListByDatabaseId.set(databaseId, [dataSource]);
-    }
+    state.dataSourceById.set(dataSourceId, dataSource);
   },
 
-  deleteDataSourceInListByDatabaseId(
-    state: DataSourceState,
-    {
-      databaseId,
-      dataSourceId,
-    }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
-  ) {
-    const list = state.dataSourceListByDatabaseId.get(databaseId);
-    if (list) {
-      const i = list.findIndex((item: DataSource) => item.id == dataSourceId);
-      if (i != -1) {
-        list.splice(i, 1);
-      }
-    }
+  deleteDataSourceById(state: DataSourceState, dataSourceId: DataSourceId) {
+    state.dataSourceById.delete(dataSourceId);
   },
 };
 

@@ -692,14 +692,13 @@ export interface InstanceState {
 }
 
 export interface DataSourceState {
-  dataSourceListByDatabaseId: Map<DatabaseId, DataSource[]>;
-  dataSourceListByInstanceId: Map<InstanceId, DataSource[]>;
+  dataSourceById: Map<DataSourceId, DataSource>;
 }
 
 export interface DatabaseState {
   databaseListByInstanceId: Map<InstanceId, Database[]>;
   // It would be quite expensive to find user's data source list
-  // if iterating through dataSourceListByInstanceId. so we create
+  // if iterating through databaseListByInstanceId. so we create
   // a separate map for quick access.
   // NOTE: For the same database, we don't reconcile the state between
   // the 2 maps, which means each map may contain a different state for
