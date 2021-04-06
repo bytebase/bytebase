@@ -38,7 +38,7 @@ export function activeStageIsRunning(task: Task): boolean {
   return activeStage(task).status === "RUNNING";
 }
 
-export function activeEnvironmentId(task: Task): EnvironmentId | null {
+export function activeEnvironmentId(task: Task): EnvironmentId | undefined {
   const stage = activeStage(task);
   if (stage.environmentId) {
     return stage.environmentId!;
@@ -53,10 +53,10 @@ export function activeEnvironmentId(task: Task): EnvironmentId | null {
       }
     }
   }
-  return null;
+  return undefined;
 }
 
-export function activeDatabaseId(task: Task): DatabaseId | null {
+export function activeDatabaseId(task: Task): DatabaseId | undefined {
   const stage = activeStage(task);
   if (stage.databaseId) {
     return stage.databaseId!;
@@ -71,5 +71,5 @@ export function activeDatabaseId(task: Task): DatabaseId | null {
       }
     }
   }
-  return null;
+  return undefined;
 }
