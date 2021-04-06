@@ -8,6 +8,7 @@ import {
   Environment,
   EnvironmentId,
   ResourceIdentifier,
+  unknown,
 } from "../../types";
 
 function convert(instance: ResourceObject, rootGetters: any): Instance {
@@ -40,7 +41,7 @@ const getters = {
     return convert(instance, rootGetters);
   },
 
-  instanceList: (state: InstanceState) => () => {
+  instanceList: (state: InstanceState) => (): Instance[] => {
     const list = [];
     for (const [_, instance] of state.instanceById) {
       list.push(instance);
@@ -52,15 +53,19 @@ const getters = {
 
   instanceListByEnvironmentId: (state: InstanceState, getters: any) => (
     environmentId: EnvironmentId
-  ) => {
+  ): Instance[] => {
     const list = getters["instanceList"]();
     return list.filter(
       (item: Instance) => item.environment.id == environmentId
     );
   },
 
-  instanceById: (state: InstanceState) => (instanceId: InstanceId) => {
-    return state.instanceById.get(instanceId);
+  instanceById: (state: InstanceState) => (
+    instanceId: InstanceId
+  ): Instance => {
+    return (
+      state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
+    );
   },
 };
 

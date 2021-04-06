@@ -13,8 +13,11 @@ import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
+import { Instance } from "../types";
 
-interface LocalState {}
+interface LocalState {
+  instance: Instance;
+}
 
 export default {
   name: "InstanceDetail",
