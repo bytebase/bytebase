@@ -144,30 +144,7 @@ const getters = {
       }
     }
 
-    const ts = Date.now();
-    return {
-      id: "-1",
-      name: "<<Unknown database>>",
-      createdTs: 0,
-      lastUpdatedTs: 0,
-      ownerId: "-1",
-      syncStatus: "NOT_FOUND",
-      lastSuccessfulSyncTs: ts,
-      fingerprint: "",
-      instance: {
-        id: "-1",
-        name: "<<Unknown instance>>",
-        environment: {
-          id: "-1",
-          name: "<<Unknown environment>>",
-          order: -1,
-        },
-        host: "",
-        createdTs: ts,
-        lastUpdatedTs: ts,
-      },
-      dataSourceList: [],
-    };
+    return unknown("DATABASE") as Database;
   },
 };
 
