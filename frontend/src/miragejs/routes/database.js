@@ -22,16 +22,15 @@ export default function configureDatabase(route) {
         user: userId,
       },
     } = request;
-    if (!environmentId && !instanceId && !userId) {
-      return schema.databases.all();
-    }
     const instanceIdList = instanceId
       ? [instanceId]
       : environmentId
       ? schema.instances
           .where({ workspaceId: WORKSPACE_ID, environmentId })
           .models.map((instance) => instance.id)
-      : undefined;
+      : schema.instances
+          .where({ workspaceId: WORKSPACE_ID })
+          .models.map((instance) => instance.id);
     if (instanceIdList && instanceIdList.length == 0) {
       return [];
     }

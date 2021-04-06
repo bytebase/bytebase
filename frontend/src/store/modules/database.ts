@@ -137,6 +137,18 @@ const getters = {
 };
 
 const actions = {
+  async fetchDatabaseList({ commit, rootGetters }: any) {
+    const data = (await axios.get(`/api/database?include=instance,dataSource`))
+      .data;
+    const databaseList = data.data.map((database: ResourceObject) => {
+      return convert(database, data.included, rootGetters);
+    });
+
+    commit("upsertDatabaseList", { databaseList });
+
+    return databaseList;
+  },
+
   async fetchDatabaseListByInstanceId(
     { commit, rootGetters }: any,
     instanceId: InstanceId
