@@ -119,11 +119,16 @@
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { UNKNOWN_ID, Principal, RoleMappingNew } from "../types";
+import { Principal, RoleMappingNew, RoleType } from "../types";
 import { isValidEmail } from "../utils";
 
+type Invite = {
+  email: string;
+  role: RoleType;
+};
+
 interface LocalState {
-  inviteList: RoleMappingNew[];
+  inviteList: Invite[];
   errorList: string[];
 }
 
@@ -147,15 +152,13 @@ export default {
 
     for (let i = 0; i < 3; i++) {
       state.inviteList.push({
-        principalId: UNKNOWN_ID,
         email: "",
         role: "DEVELOPER",
-        updaterId: currentUser.value.id,
       });
       state.errorList.push("");
     }
 
-    const validateInviteInternal = (invite: RoleMappingNew): string => {
+    const validateInviteInternal = (invite: Invite): string => {
       if (invite.email) {
         if (!isValidEmail(invite.email)) {
           return "Invalid email address";
@@ -171,7 +174,7 @@ export default {
       return "";
     };
 
-    const validateInvite = (invite: RoleMappingNew, index: number): boolean => {
+    const validateInvite = (invite: Invite, index: number): boolean => {
       state.errorList[index] = validateInviteInternal(invite);
       return state.errorList[index].length == 0;
     };
@@ -182,10 +185,8 @@ export default {
 
     const addInvite = () => {
       state.inviteList.push({
-        principalId: UNKNOWN_ID,
         email: "",
         role: "DEVELOPER",
-        updaterId: currentUser.value.id,
       });
       state.errorList.push("");
     };
@@ -212,30 +213,27 @@ export default {
           if (!hasAdminFeature.value) {
             invite.role = "OWNER";
           }
-          // We created a new principal for that email if not exists.
           // Note "principal/createPrincipal" would return the existing principal.
           // This could happen if another client has just created the principal
           // with this email.
-          if (invite.principalId == UNKNOWN_ID) {
-            invite.principalId = store.getters["principal/principalByEmail"](
-              invite.email
-            ).id;
-          }
-          if (invite.principalId != UNKNOWN_ID) {
-            store.dispatch("roleMapping/createdRoleMapping", invite);
-          } else {
-            store
-              .dispatch("principal/createPrincipal", {
-                email: invite.email,
-              })
-              .then((principal: Principal) => {
-                invite.principalId = principal.id;
-                store.dispatch("roleMapping/createdRoleMapping", invite);
-              })
-              .catch((error) => {
-                console.error(error);
-              });
-          }
+          store
+            .dispatch("principal/createPrincipal", {
+              email: invite.email,
+            })
+            .then((principal: Principal) => {
+              const newRoleMapping: RoleMappingNew = {
+                principalId: principal.id,
+                role: invite.role,
+                updaterId: currentUser.value.id,
+              };
+              // Note "principal/createdRoleMapping" would return the existing role mapping.
+              // This could happen if another client has just created the role mapping with
+              // this principal.
+              store.dispatch("roleMapping/createdRoleMapping", newRoleMapping);
+            })
+            .catch((error) => {
+              console.error(error);
+            });
 
           store.dispatch("uistate/saveIntroStateByKey", {
             key: "member.invite",
@@ -245,10 +243,8 @@ export default {
       }
       state.inviteList = [
         {
-          principalId: UNKNOWN_ID,
           email: "",
           role: "DEVELOPER",
-          updaterId: currentUser.value.id,
         },
       ];
       state.errorList = [""];

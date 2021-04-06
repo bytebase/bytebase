@@ -8,6 +8,7 @@ export type ResourceType =
   | "PRINCIPAL"
   | "EXECUTION"
   | "USER"
+  | "ROLE_MAPPING"
   | "ENVIRONMENT"
   | "INSTANCE"
   | "DATABASE"
@@ -23,6 +24,7 @@ export const unknown = (
   | Execution
   | Principal
   | User
+  | RoleMapping
   | Environment
   | Instance
   | Database
@@ -47,6 +49,15 @@ export const unknown = (
     status: "UNKNOWN",
     name: "<<Unknown user>>",
     email: "unknown@example.com",
+  };
+
+  const UNKNOWN_ROLE_MAPPING: RoleMapping = {
+    id: UNKNOWN_ID,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    role: "GUEST",
+    principalId: UNKNOWN_ID,
+    updaterId: UNKNOWN_ID,
   };
 
   const UNKNOWN_ENVIRONMENT: Environment = {
@@ -126,6 +137,8 @@ export const unknown = (
       return UNKNOWN_PRINCIPAL;
     case "USER":
       return UNKNOWN_USER;
+    case "ROLE_MAPPING":
+      return UNKNOWN_ROLE_MAPPING;
     case "ENVIRONMENT":
       return UNKNOWN_ENVIRONMENT;
     case "INSTANCE":
@@ -202,7 +215,6 @@ export type RoleMapping = {
 
 export type RoleMappingNew = {
   principalId: PrincipalId;
-  email: string;
   role: RoleType;
   updaterId: PrincipalId;
 };

@@ -13,6 +13,13 @@ export default function configureRoleMapping(route) {
       ...this.normalizedRequestAttrs("role-mapping"),
       workspaceId: WORKSPACE_ID,
     };
+    const roleMapping = schema.roleMappings.findBy({
+      principalId: attrs.principalId,
+      workspaceId: WORKSPACE_ID,
+    });
+    if (roleMapping) {
+      return roleMapping;
+    }
     const newRoleMapping = {
       ...attrs,
       createdTs: ts,

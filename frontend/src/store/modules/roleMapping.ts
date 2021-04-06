@@ -7,6 +7,7 @@ import {
   RoleMappingState,
   ResourceObject,
   PrincipalId,
+  unknown,
 } from "../../types";
 
 function convert(roleMapping: ResourceObject): RoleMapping {
@@ -27,16 +28,9 @@ const getters = {
   roleMappingByPrincipalId: (state: RoleMappingState) => (
     id: PrincipalId
   ): RoleMapping => {
-    const ts = Date.now();
     return (
-      state.roleMappingList.find((item) => item.principalId == id) || {
-        id: "-1",
-        createdTs: ts,
-        lastUpdatedTs: ts,
-        role: "GUEST",
-        principalId: "-1",
-        updaterId: "-1",
-      }
+      state.roleMappingList.find((item) => item.principalId == id) ||
+      (unknown("ROLE_MAPPING") as RoleMapping)
     );
   },
 };
@@ -53,6 +47,7 @@ const actions = {
     return roleMappingList;
   },
 
+  // Returns existing roleMapping if the principalId has already been created.
   async createdRoleMapping({ commit }: any, newRoleMapping: RoleMappingNew) {
     const createdRoleMapping = convert(
       (
