@@ -166,9 +166,7 @@ export default {
       }
 
       return allowDatabaseAccess(
-        store.getters["database/databaseById"](state.databaseId, {
-          environmentId: state.environmentId,
-        }),
+        store.getters["database/databaseById"](state.databaseId),
         currentUser.value,
         state.readOnly ? "RO" : "RW"
       );
@@ -208,10 +206,7 @@ export default {
         });
       } else {
         const database = store.getters["database/databaseById"](
-          state.databaseId,
-          {
-            environmentId: state.environmentId,
-          }
+          state.databaseId
         );
         router.push({
           name: "workspace.task.detail",

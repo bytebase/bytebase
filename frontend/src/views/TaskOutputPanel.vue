@@ -224,9 +224,7 @@ export default {
       if (props.task.type == "bytebase.database.grant") {
         const databaseId = props.task.payload[TaskBuiltinFieldId.DATABASE];
         if (databaseId) {
-          const database = store.getters["database/databaseById"](databaseId, {
-            environmentId: environmentId.value,
-          });
+          const database = store.getters["database/databaseById"](databaseId);
           if (database) {
             // TODO: Hard-code from DatabaseGrantTemplate
             const READ_ONLY_ID = 100;
@@ -264,9 +262,7 @@ export default {
       if (field.type == "Database") {
         const databaseId = fieldValue(field);
         if (databaseId) {
-          const database = store.getters["database/databaseById"](databaseId, {
-            environmentId: environmentId.value,
-          });
+          const database = store.getters["database/databaseById"](databaseId);
           if (database) {
             return fullDatabasePath(database);
           }

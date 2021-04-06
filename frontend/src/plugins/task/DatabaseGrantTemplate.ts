@@ -79,14 +79,8 @@ const template: TaskTemplate = {
       type: "Database",
       required: true,
       resolved: (ctx: TaskContext): boolean => {
-        // TODO: This is a hack to get the most-up-to date database, otherwise, it will retrieve
-        // the possible outdated databsae stored by instanceId.
-        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
         const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
-        const database = ctx.store.getters["database/databaseById"](
-          databaseId,
-          { environmentId }
-        );
+        const database = ctx.store.getters["database/databaseById"](databaseId);
         const creator = (ctx.task as Task).creator;
         const type = ctx.task.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";
         return allowDatabaseAccess(database, creator, type);

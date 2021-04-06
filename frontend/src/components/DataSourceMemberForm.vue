@@ -252,10 +252,7 @@ export default {
       if (state.dataSourceId) {
         if (state.databaseId) {
           const database = store.getters["database/databaseById"](
-            state.databaseId,
-            {
-              environmentId: state.environmentId,
-            }
+            state.databaseId
           );
           if (database) {
             return database.dataSourceList.find(

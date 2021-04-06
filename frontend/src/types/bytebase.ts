@@ -711,16 +711,13 @@ export interface DataSourceState {
 }
 
 export interface DatabaseState {
+  // UI may fetch the database list from different dimension (by user, by environment).
+  // In those cases, we will iterate through this map and compute the list on the fly.
+  // By keeping a single map, we avoid caching inconsistency issue.
+  // We save it by instance because database belongs to instance and saving this way
+  // follows that hierarchy.
+  // If this causes performance issue, we will add caching later (and deal with the consistency)
   databaseListByInstanceId: Map<InstanceId, Database[]>;
-  // It would be quite expensive to find user's data source list
-  // if iterating through databaseListByInstanceId. so we create
-  // a separate map for quick access.
-  // NOTE: For the same database, we don't reconcile the state between
-  // the 2 maps, which means each map may contain a different state for
-  // that database.
-  databaseListByUserId: Map<UserId, Database[]>;
-  // Similar to databaseListByUserId
-  databaseListByEnvironmentId: Map<EnvironmentId, Database[]>;
 }
 
 export interface NotificationState {
