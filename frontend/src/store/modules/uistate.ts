@@ -42,11 +42,11 @@ const saveStateByKey = function (
 };
 
 const getters = {
-  collapseStateByKey: (state: UIState) => (key: string) => {
+  collapseStateByKey: (state: UIState) => (key: string): boolean => {
     return stateByKey(state.collapseStateByKey, COLLAPSE_MODULE, key);
   },
 
-  introStateByKey: (state: UIState) => (key: string) => {
+  introStateByKey: (state: UIState) => (key: string): boolean => {
     return stateByKey(state.introStateByKey, INTRO_MODULE, key);
   },
 };
