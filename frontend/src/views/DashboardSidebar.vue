@@ -26,7 +26,10 @@
       <BookmarkListSidePanel />
     </div>
     <div class="mt-4">
-      <DatabaseListSidePanel />
+      <DatabaseListSidePanel :mode="'Owner'" />
+    </div>
+    <div class="mt-4">
+      <DatabaseListSidePanel :mode="'Grant'" />
     </div>
   </nav>
 </template>

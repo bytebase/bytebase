@@ -1,14 +1,14 @@
 <template>
   <BBOutline
-    :id="'database'"
-    :title="'Databases'"
+    :id="mode == 'Owner' ? 'owned-database' : 'granted-database'"
+    :title="mode == 'Owner' ? 'Owned Databases' : 'Granted Databases'"
     :itemList="databaseListByEnvironment"
     :allowCollapse="false"
   />
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, PropType, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
@@ -27,7 +27,12 @@ interface LocalState {
 
 export default {
   name: "DatabaseListSidePanel",
-  props: {},
+  props: {
+    mode: {
+      required: true,
+      type: String as PropType<"Owner" | "Grant">,
+    },
+  },
   setup(props, ctx) {
     const store = useStore();
 
@@ -68,14 +73,18 @@ export default {
           if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
             databaseName += " (read)";
           }
-          if (database.ownerId == currentUser.value.id) {
-            databaseName += " (owner)";
+
+          if (
+            (props.mode == "Owner" &&
+              database.ownerId == currentUser.value.id) ||
+            (props.mode == "Grant" && database.ownerId != currentUser.value.id)
+          ) {
+            dbList.push({
+              id: database.id,
+              name: databaseName,
+              link: `/db/${databaseSlug(database)}`,
+            });
           }
-          dbList.push({
-            id: database.id,
-            name: databaseName,
-            link: `/db/${databaseSlug(database)}`,
-          });
         }
       }
       return environmentList.value.map(
