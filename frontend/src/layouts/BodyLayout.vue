@@ -154,7 +154,7 @@
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
             <Breadcrumb />
           </div>
-          <div v-if="quickActionList" class="mx-4 mt-4">
+          <div v-if="quickActionList.length > 0" class="mx-4 mt-4">
             <QuickActionPanel :quickActionList="quickActionList" />
           </div>
         </div>
@@ -162,7 +162,7 @@
       <!-- This area may scroll -->
       <div
         class="md:min-w-0 md:flex-1 overflow-y-auto"
-        :class="showBreadcrumb || quickActionList ? 'mt-2' : ''"
+        :class="showBreadcrumb || quickActionList.length > 0 ? 'mt-2' : ''"
       >
         <!-- Start main area-->
         <router-view name="content" />
@@ -179,6 +179,8 @@ import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
+import { QuickActionType, RoleType } from "../types";
+import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -199,21 +201,43 @@ export default {
       showMobileOverlay: false,
     });
 
-    const isHome = computed(() => {
-      return router.currentRoute.value.path == "/";
-    });
-
     const quickActionList = computed(() => {
-      const user = store.getters["auth/currentUser"]();
-      const role = user.role;
+      const role = store.getters["auth/currentUser"]().role;
       const listByRole = router.currentRoute.value.meta.quickActionListByRole;
-      if (listByRole) {
-        const list = listByRole.get(role);
-        if (list && list.length > 0) {
-          return list;
+      const list: QuickActionType[] = [];
+
+      // We write this way because for free version, the user wears the three role hat,
+      // and we want to display all quick actions relevant to those three roles without duplication.
+      if (isOwner(role)) {
+        for (const item of listByRole?.get("OWNER") || []) {
+          list.push(item);
         }
       }
-      return undefined;
+
+      if (isDBA(role)) {
+        for (const item of listByRole?.get("DBA") || []) {
+          if (
+            !list.find((myItem: QuickActionType) => {
+              return item == myItem;
+            })
+          ) {
+            list.push(item);
+          }
+        }
+      }
+
+      if (isDeveloper(role)) {
+        for (const item of listByRole?.get("DEVELOPER") || []) {
+          if (
+            !list.find((myItem: QuickActionType) => {
+              return item == myItem;
+            })
+          ) {
+            list.push(item);
+          }
+        }
+      }
+      return list;
     });
 
     const showBreadcrumb = computed(() => {
