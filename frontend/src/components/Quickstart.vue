@@ -72,6 +72,7 @@
 <script lang="ts">
 import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
+import { isDeveloper } from "../utils";
 
 type IntroItem = {
   name: string;
@@ -148,7 +149,7 @@ export default {
     );
 
     const effectiveList = computed(() => {
-      return currentUser.value.role == "DEVELOPER" ? devIntroList : introList;
+      return isDeveloper(currentUser.value.role) ? devIntroList : introList;
     });
 
     const isStepActive = (index: number): boolean => {

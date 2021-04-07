@@ -247,7 +247,7 @@ export default {
     });
 
     const allowEdit = computed(() => {
-      return currentUser.value.role == "OWNER";
+      return isOwner(currentUser.value.role);
     });
 
     const showUpgradeInfo = computed(() => {

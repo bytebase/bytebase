@@ -12,6 +12,7 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 import MemberInvite from "../components/MemberInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
+import { isOwner } from "../utils";
 
 export default {
   name: "SettingWorkspaceMember",
@@ -22,7 +23,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const allowInvite = computed(() => {
-      return currentUser.value.role == "OWNER";
+      return isOwner(currentUser.value.role);
     });
 
     return {
