@@ -110,7 +110,7 @@
       </BBTableCell>
     </template>
   </BBTable>
-  <div v-if="!hasAdminFeature" class="mt-6 border-t pt-4 border-block-border">
+  <div v-if="showUpgradeInfo" class="mt-6 border-t pt-4 border-block-border">
     <div class="flex flex-row items-center space-x-1">
       <svg
         class="w-6 h-6 text-accent"
@@ -138,6 +138,7 @@ import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
 import { Principal, RoleMapping, RoleMappingId, RoleType } from "../types";
 import { BBTableColumn } from "../bbkit/types";
+import { isOwner } from "../utils";
 
 type RoleMappingUI = RoleMapping & {
   principal: Principal;
@@ -249,6 +250,10 @@ export default {
       return currentUser.value.role == "OWNER";
     });
 
+    const showUpgradeInfo = computed(() => {
+      return !hasAdminFeature.value && isOwner(currentUser.value.role);
+    });
+
     const changeRole = (id: RoleMappingId, role: RoleType) => {
       store
         .dispatch("roleMapping/patchRoleMapping", {
@@ -271,6 +276,7 @@ export default {
       state,
       currentUser,
       hasAdminFeature,
+      showUpgradeInfo,
       columnList,
       dataSource,
       allowEdit,
