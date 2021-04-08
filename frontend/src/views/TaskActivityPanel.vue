@@ -411,9 +411,7 @@ export default {
             id: currentUser.value.id,
             name: currentUser.value.name,
           },
-          payload: {
-            comment: newComment.value,
-          },
+          comment: newComment.value,
         })
         .then(() => {
           newComment.value = "";
