@@ -21,11 +21,23 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Database {
+  // We first populate the id for instance and dataSourceList.
+  // And if we also provide the detail info for those objects in the includedList,
+  // then we convert them to the detailed objects.
   const instanceId = (database.relationships!.instance
     .data as ResourceIdentifier).id;
   let instance: Instance = unknown("INSTANCE") as Instance;
+  instance.id = instanceId;
 
+  const dataSourceIdList = database.relationships!.dataSource
+    .data as ResourceIdentifier[];
   const dataSourceList: DataSource[] = [];
+  for (const item of dataSourceIdList) {
+    const dataSource = unknown("DATA_SOURCE") as DataSource;
+    dataSource.id = item.id;
+    dataSourceList.push(dataSource);
+  }
+
   for (const item of includedList) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item);
@@ -35,7 +47,12 @@ function convert(
       (item.relationships!.database.data as ResourceIdentifier).id ==
         database.id
     ) {
-      dataSourceList.push(rootGetters["dataSource/convert"](item));
+      const i = dataSourceList.findIndex(
+        (dataSource: DataSource) => item.id == dataSource.id
+      );
+      if (i != -1) {
+        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+      }
     }
   }
 
