@@ -5,6 +5,7 @@ import configureUser from "./user";
 import configureAuth from "./auth";
 import configureRoleMapping from "./roleMapping";
 import configureActivity from "./activity";
+import configureMessage from "./message";
 import configureBookmark from "./bookmark";
 import configureTask from "./task";
 import configureEnvironment from "./environment";
@@ -32,6 +33,9 @@ export default function routes() {
 
   // Activity
   configureActivity(this);
+
+  // message
+  configureMessage(this);
 
   // Bookmark
   configureBookmark(this);

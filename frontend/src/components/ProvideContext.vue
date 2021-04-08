@@ -4,6 +4,7 @@
 
 <script lang="ts">
 import { useStore } from "vuex";
+import { Principal } from "../types";
 
 export default {
   name: "ProvideContext",
@@ -37,8 +38,11 @@ export default {
     ]);
 
     // Refresh the user after fetchRoleMappingList / fetchPrincipalList.
-    // The user info may change remoted and thus we need to refresh both in-memory and local cache state.
-    store.dispatch("auth/refreshUser");
+    // The user info may change remotely and thus we need to refresh both in-memory and local cache state.
+    store.dispatch("auth/refreshUser").then((currentUser: Principal) => {
+      // In order to display the empty/non-empty inbox icon on the sidebar properly.
+      store.dispatch("message/fetchMessageListByUser", currentUser.id);
+    });
   },
 };
 </script>

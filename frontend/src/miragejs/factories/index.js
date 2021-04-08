@@ -10,6 +10,8 @@ import task from "./task";
 import taskPatch from "./taskPatch";
 import activity from "./activity";
 import activityPatch from "./activityPatch";
+import message from "./message";
+import messagePatch from "./messagePatch";
 import workspace from "./workspace";
 import roleMapping from "./roleMapping";
 
@@ -32,6 +34,8 @@ export default {
   ...dataSourceMember,
   ...database,
   ...databasePatch,
+  ...message,
+  ...messagePatch,
   ...task,
   ...taskPatch,
   ...activity,

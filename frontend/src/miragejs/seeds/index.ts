@@ -142,6 +142,46 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace1,
   });
 
+  for (let i = 0; i < 5; i++) {
+    server.create("message", {
+      type: "bb.msg.task.assign",
+      containerId: task.id,
+      creatorId: ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+      receiverId: ws1Owner.id,
+      workspace: workspace1,
+    });
+  }
+
+  for (let i = 0; i < 5; i++) {
+    server.create("message", {
+      type: "bb.msg.task.assign",
+      containerId: task.id,
+      creatorId: ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+      receiverId: ws1DBA.id,
+      workspace: workspace1,
+    });
+  }
+
+  for (let i = 0; i < 5; i++) {
+    server.create("message", {
+      type: "bb.msg.task.assign",
+      containerId: task.id,
+      creatorId: ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+      receiverId: ws1Dev1.id,
+      workspace: workspace1,
+    });
+  }
+
+  for (let i = 0; i < 5; i++) {
+    server.create("message", {
+      type: "bb.msg.task.assign",
+      containerId: task.id,
+      creatorId: ws2DBA.id,
+      receiverId: ws2Dev.id,
+      workspace: workspace2,
+    });
+  }
+
   for (let i = 0; i < 3; i++) {
     const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {

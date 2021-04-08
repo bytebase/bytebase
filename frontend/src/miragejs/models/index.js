@@ -17,6 +17,7 @@ export default {
   workspace: Model.extend({
     roleMapping: hasMany(),
     activity: hasMany(),
+    message: hasMany(),
     task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),
@@ -35,6 +36,12 @@ export default {
   }),
 
   activityPatch: Model,
+
+  message: Model.extend({
+    workspace: belongsTo(),
+  }),
+
+  messagePatch: Model,
 
   task: Model.extend({
     workspace: belongsTo(),

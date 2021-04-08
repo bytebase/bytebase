@@ -15,6 +15,7 @@ export type ResourceType =
   | "DATA_SOURCE"
   | "TASK"
   | "ACTIVITY"
+  | "MESSAGE"
   | "BOOKMARK";
 
 // Returns as function to avoid caller accidentally mutate it.
@@ -31,6 +32,7 @@ export const unknown = (
   | DataSource
   | Task
   | Activity
+  | Message
   | Bookmark => {
   const UNKNOWN_EXECUTION: Execution = {
     id: UNKNOWN_ID,
@@ -123,6 +125,19 @@ export const unknown = (
     comment: "<<Unknown comment>>",
   };
 
+  const UNKNOWN_MESSAGE: Message = {
+    id: UNKNOWN_ID,
+    containerId: UNKNOWN_ID,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    type: "bb.msg.task.assign",
+    status: "DELIVERED",
+    creator: UNKNOWN_PRINCIPAL,
+    receiver: UNKNOWN_PRINCIPAL,
+    name: "<<Unknown message>>",
+    description: "",
+  };
+
   const UNKNOWN_BOOKMARK: Bookmark = {
     id: UNKNOWN_ID,
     name: "",
@@ -151,6 +166,8 @@ export const unknown = (
       return UNKNOWN_TASK;
     case "ACTIVITY":
       return UNKNOWN_ACTIVITY;
+    case "MESSAGE":
+      return UNKNOWN_MESSAGE;
     case "BOOKMARK":
       return UNKNOWN_BOOKMARK;
   }
@@ -176,6 +193,8 @@ export type TaskId = string;
 
 export type ActivityId = string;
 
+export type MessageId = string;
+
 export type EnvironmentId = string;
 
 export type InstanceId = string;
@@ -190,6 +209,11 @@ export const ALL_DATABASE_NAME: string = "*";
 
 export type CommandId = string;
 export type CommandRegisterId = string;
+
+// This references to the object id, which can be used as a container.
+// Currently, only task can be used a container.
+// The type is used by Activity and Message
+export type ContainerId = TaskId;
 
 // Persistent State Models
 
@@ -464,7 +488,7 @@ export type Activity = {
   id: ActivityId;
   // The object where this activity belongs
   // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
-  containerId: TaskId;
+  containerId: ContainerId;
   createdTs: number;
   lastUpdatedTs: number;
   actionType: ActionType;
@@ -476,6 +500,33 @@ export type ActivityNew = Omit<Activity, "id">;
 
 export type ActivityPatch = {
   payload: any;
+};
+
+// Message
+export type MessageType = "bb.msg.task.assign";
+
+export type MessagePayload = {};
+
+export type MessageStatus = "DELIVERED" | "CONSUMED";
+
+export type Message = {
+  id: MessageId;
+  // The object where this message belongs
+  containerId: ContainerId;
+  createdTs: number;
+  lastUpdatedTs: number;
+  type: MessageType;
+  status: MessageStatus;
+  creator: Principal;
+  receiver: Principal;
+  name: string;
+  description: string;
+  payload?: MessagePayload;
+};
+export type MessageNew = Omit<Message, "id" | "createdTs" | "lastUpdatedTs">;
+
+export type MessagePatch = {
+  status: MessageStatus;
 };
 
 // Environment
@@ -689,6 +740,10 @@ export interface BookmarkState {
 export interface ActivityState {
   activityListByUser: Map<UserId, Activity[]>;
   activityListByTask: Map<TaskId, Activity[]>;
+}
+
+export interface MessageState {
+  messageListByUser: Map<UserId, Message[]>;
 }
 
 export interface TaskState {

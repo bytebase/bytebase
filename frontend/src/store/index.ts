@@ -2,6 +2,7 @@ import { createStore, Store } from "vuex";
 
 // Following states are persisted in database
 import activity from "./modules/activity";
+import message from "./modules/message";
 import bookmark from "./modules/bookmark";
 import roleMapping from "./modules/roleMapping";
 import environment from "./modules/environment";
@@ -26,6 +27,7 @@ const debug = import.meta.env.NODE_ENV !== "production";
 export const store: Store<any> = createStore({
   modules: {
     activity,
+    message,
     bookmark,
     roleMapping,
     environment,
