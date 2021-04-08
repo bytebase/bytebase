@@ -68,17 +68,22 @@ export default {
       }
       for (const database of state.databaseList) {
         if (database.name != ALL_DATABASE_NAME) {
-          const dbList = envToDbMap.get(database.instance.environment.id)!;
-          let databaseName = database.name;
-          if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
-            databaseName += " (read)";
-          }
-
           if (
             (props.mode == "Owner" &&
               database.ownerId == currentUser.value.id) ||
             (props.mode == "Grant" && database.ownerId != currentUser.value.id)
           ) {
+            let databaseName = database.name;
+            if (
+              props.mode == "Grant" &&
+              database.ownerId != currentUser.value.id
+            ) {
+              if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
+                databaseName += " (read)";
+              }
+            }
+
+            const dbList = envToDbMap.get(database.instance.environment.id)!;
             dbList.push({
               id: database.id,
               name: databaseName,
