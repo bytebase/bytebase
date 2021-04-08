@@ -129,7 +129,11 @@
 }
 
 .outline-title {
-  @apply text-control-light w-full group items-center text-xs leading-5 font-semibold focus:outline-none select-none tracking-wider;
+  @apply text-main w-full group items-center text-xs leading-5 font-semibold focus:outline-none select-none tracking-wider;
+}
+
+.outline-title.toplevel {
+  @apply text-control-light text-sm font-normal tracking-tight;
 }
 
 .outline-title.collapsible {

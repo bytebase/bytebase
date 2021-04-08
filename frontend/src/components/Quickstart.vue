@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-2">
     <div class="flex flex-row justify-between">
-      <div class="outline-title flex text-xs">Quickstart</div>
+      <div class="outline-title toplevel flex">Quickstart</div>
       <button class="btn-icon" @click.prevent="hideQuickstart">
         <svg
           class="w-4 h-4"

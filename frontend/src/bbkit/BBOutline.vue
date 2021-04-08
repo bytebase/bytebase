@@ -2,11 +2,11 @@
   <div
     @click.prevent="toggleCollapse"
     class="outline-title flex py-1"
-    :class="allowCollapse ? 'collapsible' : ''"
+    :class="dynamicItemClass()"
     @mouseenter="state.hoverTitle = true"
     @mouseleave="state.hoverTitle = false"
   >
-    <span :class="titleClass()">{{ title }}</span>
+    <span :class="'pl-' + 2 * (level + 1)">{{ title }}</span>
     <template v-if="allowCollapse && state.hoverTitle">
       <svg
         v-if="collapseState"
@@ -149,16 +149,21 @@ export default {
       }
     };
 
-    const titleClass = () => {
-      return (
-        (props.level > 0 ? "text-main" : "") + " pl-" + 2 * (props.level + 1)
-      );
+    const dynamicItemClass = () => {
+      let list = [];
+      if (props.level == 0) {
+        list.push("toplevel");
+      }
+      if (props.allowCollapse) {
+        list.push("collapsible");
+      }
+      return list.join(" ");
     };
 
     return {
       state,
       collapseState,
-      titleClass,
+      dynamicItemClass,
       toggleCollapse,
     };
   },
