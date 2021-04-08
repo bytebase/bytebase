@@ -374,8 +374,24 @@ export default {
 
     watchEffect(prepareActivityList);
 
+    // Filter out the subscriber change
     const activityList = computed(() =>
-      store.getters["activity/activityListByTask"](props.task.id)
+      store.getters["activity/activityListByTask"](props.task.id).filter(
+        (activity: Activity) => {
+          if (activity.actionType == "bytebase.task.field.update") {
+            let containUserVisibleChange = false;
+            for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
+              ?.changeList || []) {
+              if (update.fieldId != TaskBuiltinFieldId.SUBSCRIBER_LIST) {
+                containUserVisibleChange = true;
+                break;
+              }
+            }
+            return containUserVisibleChange;
+          }
+          return true;
+        }
+      )
     );
 
     const cancelEditComment = () => {
@@ -489,6 +505,8 @@ export default {
               name = "Rollback SQL";
               oldValue = update.oldValue;
               newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.SUBSCRIBER_LIST) {
+              continue;
             } else {
               const field = fieldFromId(props.taskTemplate, update.fieldId);
               name = field.name;

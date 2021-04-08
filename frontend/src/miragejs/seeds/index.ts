@@ -116,7 +116,7 @@ const workspacesSeeder = (server: any) => {
       "SELECT 'Welcome'\nFROM engineering\nWHERE role IN ('DBA', 'Developer') AND taste = 'Good';",
     creatorId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
-    subscriberIdList: [ws1DBA.id, ws1Dev2.id],
+    subscriberIdList: [ws1DBA.id, ws1Dev2.id, ws1Dev1.id, ws1Owner.id],
     stageList: [
       {
         id: "1",

@@ -118,6 +118,16 @@ export default function configureTask(route) {
         }
       }
 
+      if (attrs.subscriberIdList !== undefined) {
+        if (task.subscriberIdList != attrs.subscriberIdList) {
+          changeList.push({
+            fieldId: TaskBuiltinFieldId.SUBSCRIBER_LIST,
+            oldValue: task.subscriberIdList,
+            newValue: attrs.subscriberIdList,
+          });
+        }
+      }
+
       if (attrs.sql !== undefined) {
         if (task.sql != attrs.sql) {
           changeList.push({

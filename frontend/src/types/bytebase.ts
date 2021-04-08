@@ -344,6 +344,7 @@ export type TaskPatch = {
   name?: string;
   status?: TaskStatus;
   description?: string;
+  subscriberIdList?: PrincipalId[];
   sql?: string;
   rollbackSql?: string;
   assigneeId?: PrincipalId;

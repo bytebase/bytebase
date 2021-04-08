@@ -95,6 +95,7 @@
               :fieldList="inputFieldList"
               :allowEdit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
+              @update-subscriber-list="updateSubscriberIdList"
               @update-custom-field="updateCustomField"
             />
           </div>
@@ -573,6 +574,12 @@ export default {
       }
     };
 
+    const updateSubscriberIdList = (newSubscriberIdList: PrincipalId[]) => {
+      patchTask({
+        subscriberIdList: newSubscriberIdList,
+      });
+    };
+
     const updateCustomField = (field: TaskField, value: any) => {
       console.log("updateCustomField", field.name, value);
       if (!isEqual(state.task.payload[field.id], value)) {
@@ -750,6 +757,7 @@ export default {
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
       updateAssigneeId,
+      updateSubscriberIdList,
       updateCustomField,
       doCreate,
       changeStageStatus,

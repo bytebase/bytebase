@@ -136,6 +136,53 @@
         {{ moment(task.createdTs).format("LLL") }}</span
       >
     </div>
+    <div
+      v-if="!$props.new"
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-4 gap-x-6 grid-cols-3"
+    >
+      <h2
+        class="textlabel flex items-center col-span-1 col-start-1 whitespace-nowrap"
+      >
+        {{
+          task.subscriberList.length +
+          (task.subscriberList.length > 1 ? " subscribers" : " subscriber")
+        }}
+      </h2>
+      <div v-if="subscriberList.length > 0" class="col-span-3 col-start-1">
+        <div class="flex space-x-1">
+          <template v-for="(subscriber, index) in subscriberList" :key="index">
+            <router-link :to="`/u/${subscriber.id}`" class="hover:opacity-75">
+              <BBAvatar :size="'small'" :username="subscriber.name" />
+            </router-link>
+          </template>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn-normal items-center col-span-3 col-start-1"
+        @click.prevent="toggleSubscription"
+      >
+        <span class="w-full">
+          <svg
+            class="h-5 w-5 text-control inline -mt-0.5 mr-1"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              v-if="isCurrentUserSubscribed"
+              fill-rule="evenodd"
+              d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
+              clip-rule="evenodd"
+            ></path>
+            <path
+              v-else
+              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+            ></path></svg
+          >{{ isCurrentUserSubscribed ? "Unsubscribe" : "Subscribe" }}</span
+        >
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -153,14 +200,24 @@ import {
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
 } from "../plugins";
-import { DatabaseId, EnvironmentId, Task } from "../types";
+import {
+  DatabaseId,
+  EnvironmentId,
+  Principal,
+  PrincipalId,
+  Task,
+} from "../types";
 import { isDBA } from "../utils";
 
 interface LocalState {}
 
 export default {
   name: "TaskSidebar",
-  emits: ["update-assignee-id", "update-custom-field"],
+  emits: [
+    "update-assignee-id",
+    "update-subscriber-list",
+    "update-custom-field",
+  ],
   props: {
     task: {
       required: true,
@@ -197,6 +254,28 @@ export default {
 
     const environmentId = computed(() => {
       return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+    });
+
+    const isCurrentUserSubscribed = computed((): boolean => {
+      for (const principal of props.task.subscriberList) {
+        if (currentUser.value.id == principal.id) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    const subscriberList = computed((): Principal[] => {
+      const list: Principal[] = [];
+      props.task.subscriberList.forEach((principal: Principal) => {
+        // Put the current user at the front if in the list.
+        if (currentUser.value.id == principal.id) {
+          list.unshift(principal);
+        } else {
+          list.push(principal);
+        }
+      });
+      return list;
     });
 
     const allowEditAssignee = computed(() => {
@@ -257,16 +336,39 @@ export default {
       trySaveCustomField(field, payload);
     };
 
+    const toggleSubscription = () => {
+      const list = cloneDeep(props.task.subscriberList);
+      if (isCurrentUserSubscribed.value) {
+        const index = props.task.subscriberList.findIndex((item: Principal) => {
+          return item.id == currentUser.value.id;
+        });
+        if (index >= 0) {
+          list.splice(index, 1);
+        }
+      } else {
+        list.push(currentUser.value);
+      }
+      emit(
+        "update-subscriber-list",
+        list.map((item: Principal) => {
+          return item.id;
+        })
+      );
+    };
+
     return {
       state,
       allowEditAssignee,
       fieldValue,
       environmentId,
+      isCurrentUserSubscribed,
+      subscriberList,
       trySaveCustomField,
       trySaveDatabaseNew,
       trySaveDatabaseName,
       trySaveDatabaseId,
       trySaveDatabaseReadOnly,
+      toggleSubscription,
     };
   },
 };
