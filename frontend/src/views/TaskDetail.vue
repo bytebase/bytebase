@@ -133,6 +133,7 @@
               <TaskActivityPanel
                 :task="state.task"
                 :taskTemplate="taskTemplate"
+                @update-subscriber-list="updateSubscriberIdList"
               />
             </section>
           </div>

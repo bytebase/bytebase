@@ -300,6 +300,7 @@ import {
   Activity,
   ActionTaskFieldUpdatePayload,
   Environment,
+  Principal,
 } from "../types";
 import { sizeToFit, stageName } from "../utils";
 import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
@@ -312,6 +313,7 @@ interface LocalState {
 
 export default {
   name: "TaskActivityPanel",
+  emits: ["update-subscriber-list"],
   props: {
     task: {
       required: true,
@@ -323,7 +325,7 @@ export default {
     },
   },
   components: {},
-  setup(props, ctx) {
+  setup(props, { emit }) {
     const store = useStore();
     const newComment = ref("");
     const newCommentTextArea = ref();
@@ -416,6 +418,23 @@ export default {
         .then(() => {
           newComment.value = "";
           nextTick(() => sizeToFit(newCommentTextArea.value));
+
+          // Because the user just added a comment and we assume she is interested in this
+          // task, and we add her to the subscriber list if she is not there
+          let isSubscribed = false;
+          for (const principal of props.task.subscriberList) {
+            if (principal.id == currentUser.value.id) {
+              isSubscribed = true;
+              break;
+            }
+          }
+          if (!isSubscribed) {
+            const list = props.task.subscriberList.map((item: Principal) => {
+              return item.id;
+            });
+            list.push(currentUser.value.id);
+            emit("update-subscriber-list", list);
+          }
         })
         .catch((error) => {
           console.log(error);
