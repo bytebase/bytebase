@@ -15,6 +15,8 @@ import configureDataSource from "./dataSource";
 
 export const WORKSPACE_ID = 1;
 
+export const OWNER_ID = 1;
+
 export default function routes() {
   // Change this value to simulate response delay.
   // By default development environment has a 400ms delay.

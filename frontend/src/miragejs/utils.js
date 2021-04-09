@@ -1,3 +1,5 @@
+import { WORKSPACE_ID } from "./routes/index";
+
 export const randomNumber = (quantity) =>
   Math.floor(Math.random() * quantity) + 1;
 
@@ -6,6 +8,7 @@ export const postMessageToOwnerAndDBA = function (
   creatorId,
   messageTemplate
 ) {
+  const messageList = [];
   const allOwnerAndDBAs = schema.roleMappings.where((roleMapping) => {
     return (
       roleMapping.workspaceId == WORKSPACE_ID &&

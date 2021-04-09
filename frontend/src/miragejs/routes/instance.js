@@ -1,4 +1,5 @@
-import { WORKSPACE_ID } from "./index";
+import { postMessageToOwnerAndDBA } from "../utils";
+import { WORKSPACE_ID, OWNER_ID } from "./index";
 
 export default function configurInstance(route) {
   route.get("/instance", function (schema, request) {
@@ -37,7 +38,6 @@ export default function configurInstance(route) {
       port: newInstance.port,
     });
 
-    const messageList = [];
     const messageTemplate = {
       containerId: createdInstance.id,
       createdTs: ts,
@@ -50,27 +50,7 @@ export default function configurInstance(route) {
         instanceName: createdInstance.name,
       },
     };
-
-    const allOwnerAndDBAs = schema.roleMappings.where((roleMapping) => {
-      return (
-        roleMapping.workspaceId == WORKSPACE_ID &&
-        (roleMapping.role == "OWNER" || roleMapping.role == "DBA")
-      );
-    }).models;
-
-    allOwnerAndDBAs.forEach((roleMapping) => {
-      messageList.push({
-        ...messageTemplate,
-        receiverId: roleMapping.principalId,
-      });
-    });
-
-    for (const message of messageList) {
-      // We only send out message if it's NOT destined to self.
-      if (newInstance.creatorId != message.receiverId) {
-        schema.messages.create(message);
-      }
-    }
+    postMessageToOwnerAndDBA(schema, newInstance.creatorId, messageTemplate);
 
     return createdInstance;
   });
@@ -81,6 +61,8 @@ export default function configurInstance(route) {
   });
 
   route.delete("/instance/:instanceId", function (schema, request) {
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
     // Delete data source and database before instance itself.
     // Otherwise, the instanceId will be set to null.
     const dataSourceList = schema.dataSources.where({
@@ -93,6 +75,25 @@ export default function configurInstance(route) {
     });
     databaseList.models.forEach((item) => item.destroy());
 
-    return schema.instances.find(request.params.instanceId).destroy();
+    const instance = schema.instances.find(request.params.instanceId);
+
+    if (instance) {
+      instance.destroy();
+
+      const ts = Date.now();
+      const messageTemplate = {
+        containerId: instance.id,
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        type: "bb.msg.instance.delete",
+        status: "DELIVERED",
+        creatorId: callerId,
+        workspaceId: WORKSPACE_ID,
+        payload: {
+          instanceName: instance.name,
+        },
+      };
+      postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    }
   });
 }

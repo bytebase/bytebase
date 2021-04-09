@@ -133,6 +133,12 @@
                     {{ message.payload.instanceName }}
                   </router-link>
                 </template>
+                <template v-else-if="message.type == 'bb.msg.instance.delete'">
+                  <span class="ml-1"> deleted instance</span>
+                  <span class="font-medium text-main ml-1">
+                    {{ message.payload.instanceName }}
+                  </span>
+                </template>
                 <span
                   v-if="message.status == 'DELIVERED'"
                   class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"
