@@ -1,5 +1,5 @@
+import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
-import { ALL_DATABASE_NAME } from "../../types";
 
 export default function configureDatabase(route) {
   route.get("/database/:id", function (schema, request) {

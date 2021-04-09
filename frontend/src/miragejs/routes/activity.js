@@ -1,3 +1,4 @@
+import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
 
 export default function configureActivity(route) {

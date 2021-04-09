@@ -1,3 +1,5 @@
+import { Response } from "miragejs";
+
 export default function configureDataSource(route) {
   route.get("/database/:databaseId/datasource", function (schema, request) {
     const database = schema.databases.find(request.params.databaseId);

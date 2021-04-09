@@ -1,3 +1,4 @@
+import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
 import { WORKSPACE_ID, OWNER_ID } from "./index";
 
