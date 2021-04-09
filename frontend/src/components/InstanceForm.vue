@@ -314,6 +314,7 @@ export default {
       instance: props.instance
         ? cloneDeep(props.instance)
         : {
+            creatorId: currentUser.value.id,
             environmentId: UNKNOWN_ID,
             name: "New Instance",
             host: "127.0.0.1",

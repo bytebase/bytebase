@@ -1,10 +1,17 @@
 import { Factory } from "miragejs";
 import faker from "faker";
+import { UNKNOWN_ID } from "../../types";
 
 export default {
   instance: Factory.extend({
     name(i) {
       return "instance " + (i + i);
+    },
+    creatorId() {
+      return UNKNOWN_ID;
+    },
+    updaterId() {
+      return UNKNOWN_ID;
     },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;

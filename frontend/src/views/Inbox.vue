@@ -124,6 +124,15 @@
                     {{ message.payload.taskName }}
                   </router-link>
                 </template>
+                <template v-else-if="message.type == 'bb.msg.instance.create'">
+                  <span class="ml-1"> created instance</span>
+                  <router-link
+                    :to="`/instance/${message.containerId}`"
+                    class="normal-link ml-1"
+                  >
+                    {{ message.payload.instanceName }}
+                  </router-link>
+                </template>
                 <span
                   v-if="message.status == 'DELIVERED'"
                   class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"

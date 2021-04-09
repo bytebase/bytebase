@@ -13,6 +13,17 @@ const workspacesSeeder = (server: any) => {
   // resources from different workspaces.
   const workspace2 = server.schema.workspaces.find(101);
 
+  // User
+  const ws1Owner = server.schema.users.find(1);
+  const ws1DBA = server.schema.users.find(2);
+  const ws1Dev1 = server.schema.users.find(3);
+  const ws1Dev2 = server.schema.users.find(5);
+
+  const ws1UserList = [ws1Owner, ws1DBA, ws1Dev1, ws1Dev2];
+
+  const ws2DBA = server.schema.users.find(4);
+  const ws2Dev = server.schema.users.find(1);
+
   // Environment
   const environmentList1 = [];
   for (let i = 0; i < 4; i++) {
@@ -55,6 +66,8 @@ const workspacesSeeder = (server: any) => {
           (i + 1),
         // Create an extra instance for prod.
         environmentId: i == 4 ? environmentList1[3].id : environmentList1[i].id,
+        creatorId: ws1DBA.id,
+        updaterId: ws1DBA.id,
       })
     );
   }
@@ -66,6 +79,8 @@ const workspacesSeeder = (server: any) => {
         instanceNamelist[Math.floor(Math.random() * instanceNamelist.length)] +
         (i + 1),
       environmentId: environmentList2[i].id,
+      creatorId: ws2DBA.id,
+      updaterId: ws2DBA.id,
     });
   }
 
@@ -97,16 +112,6 @@ const workspacesSeeder = (server: any) => {
   );
 
   // Task
-  const ws1Owner = server.schema.users.find(1);
-  const ws1DBA = server.schema.users.find(2);
-  const ws1Dev1 = server.schema.users.find(3);
-  const ws1Dev2 = server.schema.users.find(5);
-
-  const ws1UserList = [ws1Owner, ws1DBA, ws1Dev1, ws1Dev2];
-
-  const ws2DBA = server.schema.users.find(4);
-  const ws2Dev = server.schema.users.find(1);
-
   let task = server.create("task", {
     type: "bytebase.general",
     name: "Hello, World!",

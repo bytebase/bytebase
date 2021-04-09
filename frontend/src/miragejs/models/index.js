@@ -61,6 +61,8 @@ export default {
     database: hasMany(),
   }),
 
+  instanceNew: Model,
+
   database: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),

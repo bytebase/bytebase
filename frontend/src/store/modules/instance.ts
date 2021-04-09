@@ -20,9 +20,21 @@ function convert(instance: ResourceObject, rootGetters: any): Instance {
       );
     }
   );
+  const creator = rootGetters["principal/principalById"](
+    instance.attributes.creatorId
+  );
+  const updater = rootGetters["principal/principalById"](
+    instance.attributes.updaterId
+  );
+
   return {
     id: instance.id,
-    ...(instance.attributes as Omit<Instance, "id" | "environment">),
+    creator,
+    updater,
+    ...(instance.attributes as Omit<
+      Instance,
+      "id" | "environment" | "creator" | "updater"
+    >),
     environment,
   };
 }
@@ -103,7 +115,7 @@ const actions = {
       (
         await axios.post(`/api/instance`, {
           data: {
-            type: "instance",
+            type: "instancenew",
             attributes: newInstance,
           },
         })

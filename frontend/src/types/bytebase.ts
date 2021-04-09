@@ -71,6 +71,8 @@ export const unknown = (
   const UNKNOWN_INSTANCE: Instance = {
     id: UNKNOWN_ID,
     environment: UNKNOWN_ENVIRONMENT,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     lastUpdatedTs: 0,
     name: "<<Unknown instance>>",
@@ -515,7 +517,11 @@ export type TaskMessageType =
   | "bb.msg.task.updatestatus"
   | "bb.msg.task.comment";
 
-export type MessageType = TaskMessageType;
+export type InstanceMessageType =
+  | "bb.msg.instance.create"
+  | "bb.msg.instance.delete";
+
+export type MessageType = TaskMessageType | InstanceMessageType;
 
 export type TaskAssignMessagePayload = {
   taskName: string;
@@ -529,14 +535,19 @@ export type TaskUpdateStatusMessagePayload = {
   newStatus: TaskStatus;
 };
 
-export type TaskCommentPayload = {
+export type TaskCommentMessagePayload = {
   taskName: string;
+};
+
+export type InstanceMessagePaylaod = {
+  instanceName: string;
 };
 
 export type MessagePayload =
   | TaskAssignMessagePayload
   | TaskUpdateStatusMessagePayload
-  | TaskCommentPayload;
+  | TaskCommentMessagePayload
+  | InstanceMessagePaylaod;
 
 export type MessageStatus = "DELIVERED" | "CONSUMED";
 
@@ -571,6 +582,8 @@ export type EnvironmentNew = Omit<Environment, "id">;
 export type Instance = {
   id: InstanceId;
   environment: Environment;
+  creator: Principal;
+  updater: Principal;
   createdTs: number;
   lastUpdatedTs: number;
   name: string;
@@ -580,6 +593,7 @@ export type Instance = {
 };
 
 export type InstanceNew = {
+  creatorId: PrincipalId;
   environmentId: EnvironmentId;
   name: string;
   externalLink?: string;

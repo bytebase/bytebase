@@ -21,10 +21,58 @@ export default function configurInstance(route) {
 
   route.post("/instance", function (schema, request) {
     const newInstance = {
-      ...this.normalizedRequestAttrs("instance"),
+      ...this.normalizedRequestAttrs("instance-new"),
       workspaceId: WORKSPACE_ID,
     };
-    return schema.instances.create(newInstance);
+    const ts = Date.now();
+    const createdInstance = schema.instances.create({
+      environmentId: newInstance.environmentId,
+      creatorId: newInstance.creatorId,
+      updaterId: newInstance.creatorId,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      name: newInstance.name,
+      externalLink: newInstance.externalLink,
+      host: newInstance.host,
+      port: newInstance.port,
+    });
+
+    const messageList = [];
+    const messageTemplate = {
+      containerId: createdInstance.id,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.instance.create",
+      status: "DELIVERED",
+      creatorId: newInstance.creatorId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        instanceName: createdInstance.name,
+      },
+    };
+
+    const allOwnerAndDBAs = schema.roleMappings.where((roleMapping) => {
+      return (
+        roleMapping.workspaceId == WORKSPACE_ID &&
+        (roleMapping.role == "OWNER" || roleMapping.role == "DBA")
+      );
+    }).models;
+
+    allOwnerAndDBAs.forEach((roleMapping) => {
+      messageList.push({
+        ...messageTemplate,
+        receiverId: roleMapping.principalId,
+      });
+    });
+
+    for (const message of messageList) {
+      // We only send out message if it's NOT destined to self.
+      if (newInstance.creatorId != message.receiverId) {
+        schema.messages.create(message);
+      }
+    }
+
+    return createdInstance;
   });
 
   route.patch("/instance/:instanceId", function (schema, request) {
