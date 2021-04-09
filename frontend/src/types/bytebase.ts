@@ -552,6 +552,7 @@ export type TaskUpdateStatusMessagePayload = {
 
 export type TaskCommentMessagePayload = {
   taskName: string;
+  commentId: ActivityId;
 };
 
 export type MessagePayload =

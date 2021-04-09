@@ -9,10 +9,10 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in activityList" :key="index">
-            <div :id="'activity' + (index + 1)" class="relative pb-4">
+          <li v-for="(activity, index) in state.activityList" :key="index">
+            <div :id="'activity' + activity.id" class="relative pb-4">
               <span
-                v-if="index != activityList.length - 1"
+                v-if="index != state.activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                 aria-hidden="true"
               ></span>
@@ -77,7 +77,7 @@
                         >{{ activity.creator.name }}</router-link
                       >
                       <a
-                        :href="'#activity' + (index + 1)"
+                        :href="'#activity' + activity.id"
                         class="ml-1 anchor-link whitespace-normal"
                       >
                         {{ actionSentence(activity) }}

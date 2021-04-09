@@ -137,7 +137,7 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace1,
   });
 
-  server.create("activity", {
+  const createdActivity = server.create("activity", {
     actionType: "bytebase.task.create",
     containerId: task.id,
     creator: {
@@ -158,6 +158,7 @@ const workspacesSeeder = (server: any) => {
         workspace: workspace1,
         payload: {
           taskName: faker.fake("{{lorem.sentence}}"),
+          commentId: createdActivity.id,
         },
       });
     } else {
@@ -188,6 +189,7 @@ const workspacesSeeder = (server: any) => {
         workspace: workspace1,
         payload: {
           taskName: faker.fake("{{lorem.sentence}}"),
+          commentId: createdActivity.id,
         },
       });
     } else {
@@ -218,6 +220,7 @@ const workspacesSeeder = (server: any) => {
         workspace: workspace1,
         payload: {
           taskName: faker.fake("{{lorem.sentence}}"),
+          commentId: createdActivity.id,
         },
       });
     } else {
@@ -247,6 +250,7 @@ const workspacesSeeder = (server: any) => {
         workspace: workspace2,
         payload: {
           taskName: faker.fake("{{lorem.sentence}}"),
+          commentId: createdActivity.id,
         },
       });
     } else {

@@ -147,7 +147,7 @@
                 <template v-else-if="message.type == 'bb.msg.task.comment'">
                   <span class="ml-1"> commented task</span>
                   <router-link
-                    :to="`/task/${message.containerId}`"
+                    :to="`/task/${message.containerId}#activity${message.payload.commentId}`"
                     class="normal-link ml-1"
                   >
                     {{ message.payload.taskName }}

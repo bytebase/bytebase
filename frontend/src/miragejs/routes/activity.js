@@ -50,6 +50,7 @@ export default function configureActivity(route) {
         workspaceId: WORKSPACE_ID,
         payload: {
           taskName: task.name,
+          commentId: createdActivity.id,
         },
       };
 
