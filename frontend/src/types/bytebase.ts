@@ -365,6 +365,7 @@ export type TaskNew = {
 };
 
 export type TaskPatch = {
+  updaterId: PrincipalId;
   name?: string;
   status?: TaskStatus;
   description?: string;

@@ -605,7 +605,7 @@ export default {
     };
 
     const patchTask = (
-      taskPatch: TaskPatch,
+      taskPatch: Omit<TaskPatch, "updaterId">,
       postUpdated?: (updatedTask: Task) => void
     ) => {
       store
