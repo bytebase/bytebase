@@ -21,6 +21,8 @@ export default function configurInstance(route) {
   });
 
   route.post("/instance", function (schema, request) {
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
     const newInstance = {
       ...this.normalizedRequestAttrs("instance-new"),
       workspaceId: WORKSPACE_ID,
@@ -28,8 +30,8 @@ export default function configurInstance(route) {
     const ts = Date.now();
     const createdInstance = schema.instances.create({
       environmentId: newInstance.environmentId,
-      creatorId: newInstance.creatorId,
-      updaterId: newInstance.creatorId,
+      creatorId: callerId,
+      updaterId: callerId,
       createdTs: ts,
       lastUpdatedTs: ts,
       name: newInstance.name,
@@ -44,13 +46,13 @@ export default function configurInstance(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.instance.create",
       status: "DELIVERED",
-      creatorId: newInstance.creatorId,
+      creatorId: callerId,
       workspaceId: WORKSPACE_ID,
       payload: {
         instanceName: createdInstance.name,
       },
     };
-    postMessageToOwnerAndDBA(schema, newInstance.creatorId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
 
     return createdInstance;
   });

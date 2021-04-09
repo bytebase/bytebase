@@ -593,7 +593,6 @@ export type Instance = {
 };
 
 export type InstanceNew = {
-  creatorId: PrincipalId;
   environmentId: EnvironmentId;
   name: string;
   externalLink?: string;
