@@ -11,7 +11,7 @@ export default function configureMessage(route) {
           message.workspaceId == WORKSPACE_ID && message.receiverId == userId
         );
       })
-      .sort((a, b) => a.createdTs - b.createdTs);
+      .sort((a, b) => b.createdTs - a.createdTs);
   });
 
   route.patch("/message/:messageId", function (schema, request) {
