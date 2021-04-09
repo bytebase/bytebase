@@ -1,6 +1,8 @@
+import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
 import { WORKSPACE_ID } from "./index";
 import { TaskBuiltinFieldId } from "../../plugins";
+import { UNKNOWN_ID } from "../../types";
 
 export default function configureTask(route) {
   route.get("/task", function (schema, request) {
@@ -62,7 +64,17 @@ export default function configureTask(route) {
     const attrs = this.normalizedRequestAttrs("task-patch");
     const task = schema.tasks.find(request.params.taskId);
     if (task) {
+      const ts = Date.now();
       const changeList = [];
+      const messageList = [];
+      const messageTemplate = {
+        containerId: task.id,
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        status: "DELIVERED",
+        creatorId: attrs.updaterId,
+        workspaceId: WORKSPACE_ID,
+      };
 
       if (attrs.name) {
         if (task.name != attrs.name) {
@@ -81,6 +93,41 @@ export default function configureTask(route) {
             oldValue: task.status,
             newValue: attrs.status,
           });
+
+          messageList.push({
+            ...messageTemplate,
+            type: "bb.msg.task.updatestatus",
+            receiverId: task.creatorId,
+            payload: {
+              taskName: task.name,
+              oldStatus: task.status,
+              newStatus: attrs.status,
+            },
+          });
+
+          if (task.assigneeId) {
+            messageList.push({
+              ...messageTemplate,
+              type: "bb.msg.task.updatestatus",
+              receiverId: task.assigneeId,
+            });
+          }
+
+          for (let subscriberId of task.subscriberIdList) {
+            if (
+              subscriberId != task.creatorId &&
+              subscriberId != task.assigneeId
+            ) {
+              messageList.push({
+                ...messageTemplate,
+                type: "bb.msg.task.updatestatus",
+                receiverId: subscriberId,
+                payload: {
+                  taskName: task.name,
+                },
+              });
+            }
+          }
         }
       }
 
@@ -91,6 +138,49 @@ export default function configureTask(route) {
             oldValue: task.assigneeId,
             newValue: attrs.assigneeId,
           });
+
+          // Send a message to the new assignee
+          messageList.push({
+            ...messageTemplate,
+            type: "bb.msg.task.assign",
+            receiverId: attrs.assigneeId,
+            payload: {
+              taskName: task.name,
+              oldAssigneeId: task.assigneeId,
+              newAssigneeId: attrs.assigneeId,
+            },
+          });
+
+          // Send a message to the old assignee
+          if (
+            task.assigneeId != UNKNOWN_ID &&
+            task.creatorId != task.assigneeId
+          ) {
+            messageList.push({
+              ...messageTemplate,
+              type: "bb.msg.task.assign",
+              receiverId: task.assigneeId,
+              payload: {
+                taskName: task.name,
+                oldAssigneeId: task.assigneeId,
+                newAssigneeId: attrs.assigneeId,
+              },
+            });
+          }
+
+          // Send a message to the creator
+          if (task.creatorId != attrs.assigneeId) {
+            messageList.push({
+              ...messageTemplate,
+              type: "bb.msg.task.assign",
+              receiverId: task.creatorId,
+              payload: {
+                taskName: task.name,
+                oldAssigneeId: task.assigneeId,
+                newAssigneeId: attrs.assigneeId,
+              },
+            });
+          }
         }
       }
 
@@ -161,7 +251,6 @@ export default function configureTask(route) {
       }
 
       if (changeList.length) {
-        const ts = Date.now();
         const updatedTask = task.update({ ...attrs, lastUpdatedTs: ts });
 
         const payload = {
@@ -178,8 +267,19 @@ export default function configureTask(route) {
           payload,
           workspaceId: WORKSPACE_ID,
         });
+
+        if (messageList.length > 0) {
+          for (const message of messageList) {
+            // We only send out message if it's NOT destined to self.
+            if (attrs.updaterId != message.receiverId) {
+              schema.messages.create(message);
+            }
+          }
+        }
+
         return updatedTask;
       }
+
       return task;
     }
     return new Response(

@@ -132,10 +132,9 @@ export const unknown = (
     lastUpdatedTs: 0,
     type: "bb.msg.task.assign",
     status: "DELIVERED",
+    description: "",
     creator: UNKNOWN_PRINCIPAL,
     receiver: UNKNOWN_PRINCIPAL,
-    name: "<<Unknown message>>",
-    description: "",
   };
 
   const UNKNOWN_BOOKMARK: Bookmark = {
@@ -511,24 +510,47 @@ export type ActivityPatch = {
 };
 
 // Message
-export type MessageType = "bb.msg.task.assign";
+export type TaskMessageType =
+  | "bb.msg.task.assign"
+  | "bb.msg.task.updatestatus"
+  | "bb.msg.task.comment";
 
-export type MessagePayload = {};
+export type MessageType = TaskMessageType;
+
+export type TaskAssignMessagePayload = {
+  taskName: string;
+  oldAssigneeId: PrincipalId;
+  newAssigneeId: PrincipalId;
+};
+
+export type TaskUpdateStatusMessagePayload = {
+  taskName: string;
+  oldStatus: TaskStatus;
+  newStatus: TaskStatus;
+};
+
+export type TaskCommentPayload = {
+  taskName: string;
+};
+
+export type MessagePayload =
+  | TaskAssignMessagePayload
+  | TaskUpdateStatusMessagePayload
+  | TaskCommentPayload;
 
 export type MessageStatus = "DELIVERED" | "CONSUMED";
 
 export type Message = {
   id: MessageId;
-  // The object where this message belongs
+  // The object where this message originates
   containerId: ContainerId;
   createdTs: number;
   lastUpdatedTs: number;
   type: MessageType;
   status: MessageStatus;
+  description: string;
   creator: Principal;
   receiver: Principal;
-  name: string;
-  description: string;
   payload?: MessagePayload;
 };
 export type MessageNew = Omit<Message, "id" | "createdTs" | "lastUpdatedTs">;

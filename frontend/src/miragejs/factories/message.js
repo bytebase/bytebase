@@ -13,7 +13,7 @@ export default {
       return "bb.msg.task.assign";
     },
     status(i) {
-      return i % 2 == 0 ? "DELIVERED" : "CONSUMED";
+      return Math.floor(Math.random() * 2) % 2 == 0 ? "DELIVERED" : "CONSUMED";
     },
     containerId() {
       return "0";
@@ -24,14 +24,15 @@ export default {
     receiverId() {
       return "200";
     },
-    name() {
-      return faker.fake("{{lorem.sentence}}");
-    },
     description(i) {
-      return i % 3 == 0 ? "" : faker.fake("{{lorem.sentences}}");
+      return Math.floor(Math.random() * 3) % 3 == 0
+        ? ""
+        : faker.fake("{{lorem.sentences}}");
     },
     payload() {
-      return {};
+      return {
+        taskName: faker.fake("{{lorem.sentence}}"),
+      };
     },
   }),
 };

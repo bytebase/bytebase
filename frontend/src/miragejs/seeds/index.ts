@@ -143,43 +143,122 @@ const workspacesSeeder = (server: any) => {
   });
 
   for (let i = 0; i < 5; i++) {
-    server.create("message", {
-      type: "bb.msg.task.assign",
-      containerId: task.id,
-      creatorId: ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
-      receiverId: ws1Owner.id,
-      workspace: workspace1,
-    });
+    if (i % 2 == 0) {
+      server.create("message", {
+        type: "bb.msg.task.comment",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws1Owner.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+        },
+      });
+    } else {
+      server.create("message", {
+        type: "bb.msg.task.updatestatus",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws1Owner.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+          oldStatus: "OPEN",
+          newStatus: "DONE",
+        },
+      });
+    }
   }
 
   for (let i = 0; i < 5; i++) {
-    server.create("message", {
-      type: "bb.msg.task.assign",
-      containerId: task.id,
-      creatorId: ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
-      receiverId: ws1DBA.id,
-      workspace: workspace1,
-    });
+    if (i % 2 == 0) {
+      server.create("message", {
+        type: "bb.msg.task.comment",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws1DBA.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+        },
+      });
+    } else {
+      server.create("message", {
+        type: "bb.msg.task.updatestatus",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws1DBA.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+          oldStatus: "OPEN",
+          newStatus: "CANCELED",
+        },
+      });
+    }
   }
 
   for (let i = 0; i < 5; i++) {
-    server.create("message", {
-      type: "bb.msg.task.assign",
-      containerId: task.id,
-      creatorId: ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
-      receiverId: ws1Dev1.id,
-      workspace: workspace1,
-    });
+    if (i % 2 == 0) {
+      server.create("message", {
+        type: "bb.msg.task.comment",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws1Dev1.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+        },
+      });
+    } else {
+      server.create("message", {
+        type: "bb.msg.task.updatestatus",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws1Dev1.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+          oldStatus: "OPEN",
+          newStatus: "DONE",
+        },
+      });
+    }
   }
 
   for (let i = 0; i < 5; i++) {
-    server.create("message", {
-      type: "bb.msg.task.assign",
-      containerId: task.id,
-      creatorId: ws2DBA.id,
-      receiverId: ws2Dev.id,
-      workspace: workspace2,
-    });
+    if (i % 2 == 0) {
+      server.create("message", {
+        type: "bb.msg.task.comment",
+        containerId: task.id,
+        creatorId: ws2DBA.id,
+        receiverId: ws2Dev.id,
+        workspace: workspace2,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+        },
+      });
+    } else {
+      server.create("message", {
+        type: "bb.msg.task.updatestatus",
+        containerId: task.id,
+        creatorId:
+          ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
+        receiverId: ws2Dev.id,
+        workspace: workspace1,
+        payload: {
+          taskName: faker.fake("{{lorem.sentence}}"),
+          oldStatus: "OPEN",
+          newStatus: "DONE",
+        },
+      });
+    }
   }
 
   for (let i = 0; i < 3; i++) {

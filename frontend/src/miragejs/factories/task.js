@@ -1,5 +1,6 @@
 import { Factory } from "miragejs";
 import faker from "faker";
+import { UNKNOWN_ID } from "../../types";
 
 export default {
   task: Factory.extend({
@@ -37,10 +38,10 @@ export default {
       ];
     },
     creatorId() {
-      return "100";
+      return UNKNOWN_ID;
     },
     assigneeId() {
-      return "200";
+      return UNKNOWN_ID;
     },
     subscriberIdList() {
       return [];

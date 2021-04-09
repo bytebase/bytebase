@@ -30,18 +30,100 @@
       <li
         v-for="(message, index) in effectiveMessageList"
         :key="index"
-        class="p-4 hover:bg-control-bg-hover cursor-pointer"
-        @click.prevent="clickItem(message)"
+        class="p-3 hover:bg-control-bg-hover cursor-default"
+        @click.prevent="clickMessage(message)"
       >
-        <div class="flex items-top space-x-3">
-          <BBAvatar :username="message.creator.name" />
+        <div class="flex space-x-3">
+          <BBAvatar :size="'small'" :username="message.creator.name" />
           <div class="flex-1 space-y-1">
-            <div class="flex items-center justify-between">
-              <h3 class="text-sm text-control flex flex-row">
-                {{ message.creator.name }}
-                <span class="text-sm font-medium text-main ml-1">{{
-                  message.name
+            <div class="flex w-full items-center justify-between space-x-2">
+              <h3
+                class="text-sm font-base text-control-light flex flex-row whitespace-nowrap"
+              >
+                <span class="font-medium text-main">{{
+                  message.creator.name
                 }}</span>
+                <template v-if="message.type == 'bb.msg.task.assign'">
+                  <span class="text-sm ml-1">
+                    <template
+                      v-if="
+                        message.payload.oldAssigneeId == '-1' &&
+                        message.payload.newAssigneeId != '-1'
+                      "
+                    >
+                      assigned
+                      {{
+                        currentUser.id == message.payload.newAssigneeId
+                          ? "you"
+                          : principalFromId(message.payload.newAssigneeId).name
+                      }}
+                      task
+                    </template>
+                    <template
+                      v-else-if="
+                        message.payload.oldAssigneeId != '-1' &&
+                        message.payload.newAssigneeId != '-1'
+                      "
+                    >
+                      re-assigned from
+                      {{
+                        currentUser.id == message.payload.oldAssigneeId
+                          ? "you"
+                          : principalFromId(message.payload.oldAssigneeId).name
+                      }}
+                      to
+                      {{
+                        currentUser.id == message.payload.newAssigneeId
+                          ? "you"
+                          : principalFromId(message.payload.newAssigneeId).name
+                      }}
+                      task
+                    </template>
+                    <template
+                      v-else-if="
+                        message.payload.oldAssigneeId != '-1' &&
+                        message.payload.newAssigneeId == '-1'
+                      "
+                    >
+                      un-assigned
+                      {{
+                        currentUser.id == message.payload.oldAssigneeId
+                          ? "you"
+                          : principalFromId(message.payload.oldAssigneeId).name
+                      }}
+                      task
+                    </template>
+                  </span>
+                  <router-link
+                    :to="`/task/${message.containerId}`"
+                    class="normal-link ml-1"
+                  >
+                    {{ message.payload.taskName }}
+                  </router-link>
+                </template>
+                <template
+                  v-else-if="message.type == 'bb.msg.task.updatestatus'"
+                >
+                  <span class="ml-1">
+                    changed task status from {{ message.payload.oldStatus }} to
+                    {{ message.payload.newStatus }}</span
+                  >
+                  <router-link
+                    :to="`/task/${message.containerId}`"
+                    class="normal-link ml-1"
+                  >
+                    {{ message.payload.taskName }}
+                  </router-link>
+                </template>
+                <template v-else-if="message.type == 'bb.msg.task.comment'">
+                  <span class="ml-1"> commented task</span>
+                  <router-link
+                    :to="`/task/${message.containerId}`"
+                    class="normal-link ml-1"
+                  >
+                    {{ message.payload.taskName }}
+                  </router-link>
+                </template>
                 <span
                   v-if="message.status == 'DELIVERED'"
                   class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"
@@ -51,7 +133,7 @@
                 {{ humanizeTs(message.createdTs) }}
               </p>
             </div>
-            <div class="text-sm text-control">
+            <div v-if="message.description" class="text-sm text-control">
               {{ message.description }}
             </div>
           </div>
@@ -65,7 +147,13 @@
 <script lang="ts">
 import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Message } from "../types";
+import {
+  Message,
+  Principal,
+  PrincipalId,
+  TaskAssignMessagePayload,
+  TaskUpdateStatusMessagePayload,
+} from "../types";
 
 interface LocalState {
   showAll: boolean;
@@ -121,11 +209,15 @@ export default {
           });
     });
 
-    const clickItem = (item: Message) => {
-      if (item.status == "DELIVERED") {
-        state.whitelist.push(item);
+    const principalFromId = (principalId: PrincipalId): Principal => {
+      return store.getters["principal/principalById"](principalId);
+    };
+
+    const clickMessage = (message: Message) => {
+      if (message.status == "DELIVERED") {
+        state.whitelist.push(message);
         store.dispatch("message/updateStatus", {
-          messageId: item.id,
+          messageId: message.id,
           updatedStatus: "CONSUMED",
         });
       }
@@ -150,8 +242,10 @@ export default {
 
     return {
       state,
+      currentUser,
+      principalFromId,
       effectiveMessageList,
-      clickItem,
+      clickMessage,
       showAll,
       markAllAsRead,
     };

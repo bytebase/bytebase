@@ -7,6 +7,7 @@ import {
   MessageState,
   ResourceObject,
   MessageStatus,
+  MessagePayload,
 } from "../../types";
 
 function convert(message: ResourceObject, rootGetters: any): Message {
@@ -16,6 +17,7 @@ function convert(message: ResourceObject, rootGetters: any): Message {
   const receiver = rootGetters["principal/principalById"](
     message.attributes.receiverId
   );
+
   return {
     id: message.id,
     creator,
