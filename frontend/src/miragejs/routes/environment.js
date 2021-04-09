@@ -1,3 +1,4 @@
+import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
 import { WORKSPACE_ID, OWNER_ID } from "./index";
 
@@ -72,25 +73,47 @@ export default function configureEnvironment(route) {
   route.delete("/environment/:environmentId", function (schema, request) {
     const environment = schema.environments.find(request.params.environmentId);
 
-    if (environment) {
-      environment.destroy();
-
-      // NOTE, in actual implementation, we need to fetch the user from the auth context.
-      const callerId = OWNER_ID;
-      const ts = Date.now();
-      const messageTemplate = {
-        containerId: environment.id,
-        createdTs: ts,
-        lastUpdatedTs: ts,
-        type: "bb.msg.environment.delete",
-        status: "DELIVERED",
-        creatorId: callerId,
-        workspaceId: WORKSPACE_ID,
-        payload: {
-          environmentName: environment.name,
-        },
-      };
-      postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    if (!environment) {
+      return new Response(
+        404,
+        {},
+        {
+          errors:
+            "Environment id " + request.params.environmentId + " not found",
+        }
+      );
     }
+
+    const instanceCount = schema.instances.where({
+      environmentId: request.params.environmentId,
+    }).models.length;
+    if (instanceCount > 0) {
+      return new Response(
+        400,
+        {},
+        {
+          errors: `Found ${instanceCount} instance(s) in environment ${environment.name}. Environment can only be deleted if no instance resides under it.`,
+        }
+      );
+    }
+
+    environment.destroy();
+
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: environment.id,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.environment.delete",
+      status: "DELIVERED",
+      creatorId: callerId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        environmentName: environment.name,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
   });
 }
