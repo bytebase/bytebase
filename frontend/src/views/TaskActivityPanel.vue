@@ -407,10 +407,7 @@ export default {
         .dispatch("activity/createActivity", {
           actionType: "bytebase.task.comment.create",
           containerId: props.task.id,
-          creator: {
-            id: currentUser.value.id,
-            name: currentUser.value.name,
-          },
+          creatorId: currentUser.value.id,
           comment: newComment.value,
         })
         .then(() => {

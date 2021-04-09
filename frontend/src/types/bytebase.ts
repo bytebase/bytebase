@@ -497,7 +497,14 @@ export type Activity = {
   comment: string;
   payload?: ActionPayloadType;
 };
-export type ActivityNew = Omit<Activity, "id">;
+
+export type ActivityNew = {
+  containerId: ContainerId;
+  actionType: ActionType;
+  creatorId: PrincipalId;
+  comment: string;
+  payload?: ActionPayloadType;
+};
 
 export type ActivityPatch = {
   payload: any;
