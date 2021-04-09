@@ -1,4 +1,5 @@
-import { WORKSPACE_ID } from "./index";
+import { postMessageToOwnerAndDBA } from "../utils";
+import { WORKSPACE_ID, OWNER_ID } from "./index";
 
 export default function configureEnvironment(route) {
   route.get("/environment", function (schema, request) {
@@ -22,7 +23,26 @@ export default function configureEnvironment(route) {
       workspaceId: WORKSPACE_ID,
       order,
     };
-    return schema.environments.create(newEnvironment);
+    const createdEnvironment = schema.environments.create(newEnvironment);
+
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: createdEnvironment.id,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.environment.create",
+      status: "DELIVERED",
+      creatorId: callerId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        environmentName: createdEnvironment.name,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+
+    return createdEnvironment;
   });
 
   route.patch("/environment/batch", function (schema, request) {
@@ -50,6 +70,27 @@ export default function configureEnvironment(route) {
   });
 
   route.delete("/environment/:environmentId", function (schema, request) {
-    return schema.environments.find(request.params.environmentId).destroy();
+    const environment = schema.environments.find(request.params.environmentId);
+
+    if (environment) {
+      environment.destroy();
+
+      // NOTE, in actual implementation, we need to fetch the user from the auth context.
+      const callerId = OWNER_ID;
+      const ts = Date.now();
+      const messageTemplate = {
+        containerId: environment.id,
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        type: "bb.msg.environment.delete",
+        status: "DELIVERED",
+        creatorId: callerId,
+        workspaceId: WORKSPACE_ID,
+        payload: {
+          environmentName: environment.name,
+        },
+      };
+      postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    }
   });
 }

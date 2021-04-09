@@ -512,16 +512,31 @@ export type ActivityPatch = {
 };
 
 // Message
-export type TaskMessageType =
-  | "bb.msg.task.assign"
-  | "bb.msg.task.updatestatus"
-  | "bb.msg.task.comment";
+export type EnvironmentMessageType =
+  | "bb.msg.environment.create"
+  | "bb.msg.environment.delete";
 
 export type InstanceMessageType =
   | "bb.msg.instance.create"
   | "bb.msg.instance.delete";
 
-export type MessageType = TaskMessageType | InstanceMessageType;
+export type TaskMessageType =
+  | "bb.msg.task.assign"
+  | "bb.msg.task.updatestatus"
+  | "bb.msg.task.comment";
+
+export type MessageType =
+  | EnvironmentMessageType
+  | InstanceMessageType
+  | TaskMessageType;
+
+export type EnvironmentMessagePayload = {
+  environmentName: string;
+};
+
+export type InstanceMessagePaylaod = {
+  instanceName: string;
+};
 
 export type TaskAssignMessagePayload = {
   taskName: string;
@@ -539,15 +554,12 @@ export type TaskCommentMessagePayload = {
   taskName: string;
 };
 
-export type InstanceMessagePaylaod = {
-  instanceName: string;
-};
-
 export type MessagePayload =
+  | EnvironmentMessagePayload
+  | InstanceMessagePaylaod
   | TaskAssignMessagePayload
   | TaskUpdateStatusMessagePayload
-  | TaskCommentMessagePayload
-  | InstanceMessagePaylaod;
+  | TaskCommentMessagePayload;
 
 export type MessageStatus = "DELIVERED" | "CONSUMED";
 

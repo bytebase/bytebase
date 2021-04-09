@@ -43,7 +43,36 @@
                 <span class="font-medium text-main">{{
                   message.creator.name
                 }}</span>
-                <template v-if="message.type == 'bb.msg.task.assign'">
+                <template v-if="message.type == 'bb.msg.environment.create'">
+                  <span class="ml-1"> created environment</span>
+                  <router-link :to="`/environment`" class="normal-link ml-1">
+                    {{ message.payload.environmentName }}
+                  </router-link>
+                </template>
+                <template
+                  v-else-if="message.type == 'bb.msg.environment.delete'"
+                >
+                  <span class="ml-1"> deleted environment</span>
+                  <span class="font-medium text-main ml-1">
+                    {{ message.payload.environmentName }}
+                  </span>
+                </template>
+                <template v-else-if="message.type == 'bb.msg.instance.create'">
+                  <span class="ml-1"> created instance</span>
+                  <router-link
+                    :to="`/instance/${message.containerId}`"
+                    class="normal-link ml-1"
+                  >
+                    {{ message.payload.instanceName }}
+                  </router-link>
+                </template>
+                <template v-else-if="message.type == 'bb.msg.instance.delete'">
+                  <span class="ml-1"> deleted instance</span>
+                  <span class="font-medium text-main ml-1">
+                    {{ message.payload.instanceName }}
+                  </span>
+                </template>
+                <template v-else-if="message.type == 'bb.msg.task.assign'">
                   <span class="text-sm ml-1">
                     <template
                       v-if="
@@ -123,21 +152,6 @@
                   >
                     {{ message.payload.taskName }}
                   </router-link>
-                </template>
-                <template v-else-if="message.type == 'bb.msg.instance.create'">
-                  <span class="ml-1"> created instance</span>
-                  <router-link
-                    :to="`/instance/${message.containerId}`"
-                    class="normal-link ml-1"
-                  >
-                    {{ message.payload.instanceName }}
-                  </router-link>
-                </template>
-                <template v-else-if="message.type == 'bb.msg.instance.delete'">
-                  <span class="ml-1"> deleted instance</span>
-                  <span class="font-medium text-main ml-1">
-                    {{ message.payload.instanceName }}
-                  </span>
                 </template>
                 <span
                   v-if="message.status == 'DELIVERED'"
