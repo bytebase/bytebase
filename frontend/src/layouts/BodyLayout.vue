@@ -39,6 +39,25 @@
           <div class="flex-1 h-0 py-4 overflow-y-auto">
             <router-view name="leftSidebar" />
           </div>
+          <router-link
+            to="/archive"
+            class="outline-item group flex items-center px-4 py-2"
+          >
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"></path>
+              <path
+                fill-rule="evenodd"
+                d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+            Archive
+          </router-link>
           <div
             class="flex-shrink-0 flex border-t border-block-border px-4 py-2"
           >
@@ -79,6 +98,25 @@
         <div class="flex-1 flex flex-col py-2 overflow-y-auto">
           <router-view name="leftSidebar" />
         </div>
+        <router-link
+          to="/archive"
+          class="outline-item group flex items-center px-4 py-2"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"></path>
+            <path
+              fill-rule="evenodd"
+              d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+              clip-rule="evenodd"
+            ></path>
+          </svg>
+          Archive
+        </router-link>
         <div
           v-if="showIntro"
           class="flex-shrink-0 flex justify-center border-t border-block-border py-2"

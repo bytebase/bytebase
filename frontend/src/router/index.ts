@@ -165,6 +165,19 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "archive",
+            name: "workspace.archive",
+            meta: { title: () => "Archive" },
+            components: {
+              content: () => import("../views/Archive.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             // "u" stands for user. Strictly speaking, it's not accurate because we
             // may refer to other principal type in the future. But from the endusers'
             // perspective, they are more familiar with the "user" concept.
@@ -526,6 +539,7 @@ router.beforeEach((to, from, next) => {
     to.name === "error.500" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
+    to.name === "workspace.archive" ||
     to.name === "workspace.environment" ||
     to.name === "workspace.database" ||
     to.name === "workspace.database.create" ||
