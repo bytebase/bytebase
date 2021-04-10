@@ -149,11 +149,11 @@
 }
 
 .bar-link {
-  @apply text-main hover:bg-link-hover focus:outline-none;
+  @apply cursor-pointer text-main hover:bg-link-hover focus:outline-none;
 }
 
 .accent-link {
-  @apply text-accent font-medium hover:underline focus:outline-none;
+  @apply cursor-pointer text-accent font-medium hover:underline focus:outline-none;
 }
 
 .normal-link {
@@ -161,9 +161,9 @@
 }
 
 .icon-link {
-  @apply text-control hover:bg-link-hover focus:outline-none;
+  @apply cursor-pointer text-control hover:bg-link-hover focus:outline-none;
 }
 
 .anchor-link {
-  @apply hover:underline focus:outline-none;
+  @apply cursor-pointer hover:underline focus:outline-none;
 }
