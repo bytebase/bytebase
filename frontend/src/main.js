@@ -11,7 +11,7 @@ import {
   BBAlert,
   BBAvatar,
   BBButtonAdd,
-  BBButtonTrash,
+  BBButtonConfirm,
   BBCheckbox,
   BBContextMenu,
   BBModal,
@@ -84,7 +84,7 @@ app
   .component("BBAlert", BBAlert)
   .component("BBAvatar", BBAvatar)
   .component("BBButtonAdd", BBButtonAdd)
-  .component("BBButtonTrash", BBButtonTrash)
+  .component("BBButtonConfirm", BBButtonConfirm)
   .component("BBCheckbox", BBCheckbox)
   .component("BBContextMenu", BBContextMenu)
   .component("BBModal", BBModal)

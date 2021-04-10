@@ -74,7 +74,7 @@
           {{ humanizeTs(member.createdTs) }}
         </BBTableCell>
         <BBTableCell>
-          <BBButtonTrash
+          <BBButtonConfirm
             v-if="allowEdit"
             :requireConfirm="true"
             :okText="'Revoke'"

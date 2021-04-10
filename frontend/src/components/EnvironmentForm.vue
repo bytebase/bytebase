@@ -35,8 +35,9 @@
     <!-- Update button group -->
     <div v-else class="flex justify-between items-center pt-5">
       <div v-if="state.environment.rowStatus == 'NORMAL'">
-        <BBButtonTrash
+        <BBButtonConfirm
           v-if="allowArchive"
+          :style="'ARCHIVE'"
           :buttonText="'Archive this environment'"
           :okText="'Archive'"
           :confirmTitle="
@@ -48,7 +49,8 @@
         />
       </div>
       <div v-else-if="state.environment.rowStatus == 'ARCHIVED'">
-        <BBButtonTrash
+        <BBButtonConfirm
+          :style="'RESTORE'"
           :buttonText="'Restore this environment'"
           :okText="'Restore'"
           :confirmTitle="

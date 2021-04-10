@@ -240,7 +240,7 @@ input[type="number"] {
       </div>
       <!-- Update button group -->
       <div v-else class="flex justify-between">
-        <BBButtonTrash
+        <BBButtonConfirm
           :buttonText="'Delete this entire instance'"
           :requireConfirm="true"
           :confirmTitle="`Are you sure to delete '${state.instance.name}'?`"
