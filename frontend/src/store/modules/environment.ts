@@ -6,6 +6,7 @@ import {
   EnvironmentState,
   ResourceObject,
   unknown,
+  EnvironmentPatch,
 } from "../../types";
 
 function convert(environment: ResourceObject): Environment {
@@ -90,14 +91,22 @@ const actions = {
     return environmentList;
   },
 
-  async patchEnvironment({ commit }: any, environment: Environment) {
-    const { id, ...attrs } = environment;
+  async patchEnvironment(
+    { commit }: any,
+    {
+      environmentId,
+      environmentPatch,
+    }: {
+      environmentId: EnvironmentId;
+      environmentPatch: EnvironmentPatch;
+    }
+  ) {
     const updatedEnvironment = convert(
       (
-        await axios.patch(`/api/environment/${environment.id}`, {
+        await axios.patch(`/api/environment/${environmentId}`, {
           data: {
-            type: "environment",
-            attributes: attrs,
+            type: "environmentpatch",
+            attributes: environmentPatch,
           },
         })
       ).data.data

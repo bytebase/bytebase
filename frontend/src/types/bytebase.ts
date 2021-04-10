@@ -594,6 +594,10 @@ export type EnvironmentNew = {
   name: string;
 };
 
+export type EnvironmentPatch = {
+  name?: string;
+};
+
 // Instance
 export type Instance = {
   id: InstanceId;

@@ -45,7 +45,7 @@
   >
     <EnvironmentForm
       :create="true"
-      @submit="doCreate"
+      @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
   </BBModal>

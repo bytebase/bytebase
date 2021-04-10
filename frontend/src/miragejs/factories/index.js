@@ -2,6 +2,7 @@ import user from "./user";
 import bookmark from "./bookmark";
 import environment from "./environment";
 import environmentNew from "./environmentNew";
+import environmentPatch from "./environmentPatch";
 import instance from "./instance";
 import instanceNew from "./instanceNew";
 import dataSource from "./dataSource";
@@ -32,6 +33,7 @@ export default {
   ...bookmark,
   ...environment,
   ...environmentNew,
+  ...environmentPatch,
   ...instance,
   ...instanceNew,
   ...dataSource,

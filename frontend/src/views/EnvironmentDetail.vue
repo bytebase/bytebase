@@ -3,7 +3,7 @@
     v-if="state.environment"
     :allowDelete="allowDelete"
     :environment="state.environment"
-    @submit="doUpdate"
+    @update="doUpdate"
     @delete="state.showDeleteModal = true"
   />
   <BBAlert
@@ -28,7 +28,7 @@ import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment } from "../types";
+import { Environment, EnvironmentPatch } from "../types";
 
 export default {
   name: "EnvironmentDetail",
@@ -60,9 +60,12 @@ export default {
       state.environment = environment;
     };
 
-    const doUpdate = (updatedEnvironment: Environment) => {
+    const doUpdate = (environmentPatch: EnvironmentPatch) => {
       store
-        .dispatch("environment/patchEnvironment", updatedEnvironment)
+        .dispatch("environment/patchEnvironment", {
+          environmentId: props.environment.id,
+          environmentPatch,
+        })
         .then((environment) => {
           assignEnvironment(environment);
         })

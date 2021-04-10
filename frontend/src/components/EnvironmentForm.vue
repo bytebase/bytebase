@@ -1,8 +1,5 @@
 <template>
-  <form
-    class="px-4 space-y-6 divide-y divide-gray-200"
-    @submit.prevent="$emit('submit', state.environment)"
-  >
+  <div class="px-4 space-y-6 divide-y divide-gray-200">
     <div class="pt-6 grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="text-lg leading-6 font-medium text-control">
@@ -31,6 +28,7 @@
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           :disabled="!allowCreate"
+          @click.prevent="createEnvironment"
         >
           Create
         </button>
@@ -58,13 +56,14 @@
             type="submit"
             class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
             :disabled="!valueChanged"
+            @click.prevent="updateEnvironment"
           >
             Update
           </button>
         </div>
       </div>
     </template>
-  </form>
+  </div>
 </template>
 
 <script lang="ts">
@@ -73,16 +72,16 @@ import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import isEmpty from "lodash-es/isEmpty";
-import { Environment, EnvironmentNew } from "../types";
+import { Environment, EnvironmentNew, EnvironmentPatch } from "../types";
 import { isDBA } from "../utils";
 
 interface LocalState {
-  environment?: Environment | EnvironmentNew;
+  environment: Environment | EnvironmentNew;
 }
 
 export default {
   name: "EnvironmentForm",
-  emits: ["submit", "cancel", "delete"],
+  emits: ["create", "update", "cancel", "delete"],
   props: {
     create: {
       type: Boolean,
@@ -98,21 +97,17 @@ export default {
       type: Object as PropType<Environment>,
     },
   },
-  setup(props, ctx) {
+  setup(props, { emit }) {
     const store = useStore();
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      environment: props.environment
+        ? cloneDeep(props.environment)
+        : {
+            name: "New Env",
+          },
+    });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    // [NOTE] Ternary operator doesn't trigger VS type checking, so we use a separate
-    // IF block.
-    if (props.environment) {
-      state.environment = cloneDeep(props.environment);
-    } else {
-      state.environment = {
-        name: "New Env",
-      };
-    }
 
     const allowEdit = computed(() => {
       return isDBA(currentUser.value.role);
@@ -127,7 +122,20 @@ export default {
     });
 
     const revertEnvironment = () => {
-      state.environment = cloneDeep(props.environment);
+      state.environment = cloneDeep(props.environment!);
+    };
+
+    const createEnvironment = () => {
+      emit("create", state.environment);
+    };
+
+    const updateEnvironment = () => {
+      const patchedEnvironment: EnvironmentPatch = {};
+
+      if (state.environment.name != props.environment!.name) {
+        patchedEnvironment.name = state.environment.name;
+      }
+      emit("update", patchedEnvironment);
     };
 
     return {
@@ -136,6 +144,8 @@ export default {
       valueChanged,
       allowCreate,
       revertEnvironment,
+      createEnvironment,
+      updateEnvironment,
     };
   },
 };

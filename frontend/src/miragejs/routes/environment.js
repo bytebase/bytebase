@@ -67,7 +67,7 @@ export default function configureEnvironment(route) {
   });
 
   route.patch("/environment/:environmentId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("environment");
+    const attrs = this.normalizedRequestAttrs("environment-patch");
     return schema.environments.find(request.params.environmentId).update(attrs);
   });
 
