@@ -124,12 +124,18 @@ export default {
       const routeSlug: RouterSlug = store.getters["router/routeSlug"](
         currentRoute.value
       );
+      const environmentSlug = routeSlug.environmentSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
       const dataSourceSlug = routeSlug.dataSourceSlug;
 
       const list: Array<BreadcrumbItem> = [];
-      if (instanceSlug) {
+      if (environmentSlug) {
+        list.push({
+          name: "Environment",
+          path: "/environment",
+        });
+      } else if (instanceSlug) {
         list.push({
           name: "Instance",
           path: "/instance",

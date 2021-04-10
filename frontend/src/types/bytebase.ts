@@ -64,6 +64,7 @@ export const unknown = (
 
   const UNKNOWN_ENVIRONMENT: Environment = {
     id: UNKNOWN_ID,
+    rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
   };
@@ -218,6 +219,10 @@ export type ContainerId = TaskId;
 
 // Persistent State Models
 
+// RowStatus
+export type RowStatus = "NORMAL" | "ARCHIVED" | "PENDING_DELETE";
+
+// Execution
 export type ExecutionStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED";
 
 export type Execution = {
@@ -586,6 +591,7 @@ export type MessagePatch = {
 // Environment
 export type Environment = {
   id: EnvironmentId;
+  rowStatus: RowStatus;
   name: string;
   order: number;
 };
@@ -595,6 +601,7 @@ export type EnvironmentNew = {
 };
 
 export type EnvironmentPatch = {
+  rowStatus?: RowStatus;
   name?: string;
 };
 
@@ -726,6 +733,7 @@ export enum PlanType {
 
 // UI State Models
 export type RouterSlug = {
+  environmentSlug?: string;
   taskSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;

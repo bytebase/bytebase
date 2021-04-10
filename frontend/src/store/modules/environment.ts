@@ -6,6 +6,7 @@ import {
   EnvironmentState,
   ResourceObject,
   unknown,
+  RowStatus,
   EnvironmentPatch,
 } from "../../types";
 
@@ -21,7 +22,14 @@ const state: () => EnvironmentState = () => ({
 });
 
 const getters = {
-  environmentList: (state: EnvironmentState) => (): Environment[] => {
+  environmentList: (state: EnvironmentState) => (
+    rowStatus?: RowStatus
+  ): Environment[] => {
+    if (rowStatus) {
+      return state.environmentList.filter((environment: Environment) => {
+        return environment.rowStatus == rowStatus;
+      });
+    }
     return state.environmentList;
   },
 
@@ -38,14 +46,17 @@ const getters = {
 };
 
 const actions = {
-  async fetchEnvironmentList({ commit }: any) {
-    const environmentList = (await axios.get(`/api/environment`)).data.data.map(
+  async fetchEnvironmentList({ commit }: any, rowStatus?: RowStatus) {
+    const path =
+      "/api/environment" +
+      (rowStatus ? "?rowstatus=" + rowStatus.toLowerCase() : "");
+    const environmentList = (await axios.get(path)).data.data.map(
       (env: ResourceObject) => {
         return convert(env);
       }
     );
 
-    commit("setEnvironmentList", environmentList);
+    commit("upsertEnvironmentList", environmentList);
 
     return environmentList;
   },
@@ -62,7 +73,7 @@ const actions = {
       ).data.data
     );
 
-    commit("appendEnvironment", createdEnvironment);
+    commit("upsertEnvironmentList", [createdEnvironment]);
 
     return createdEnvironment;
   },
@@ -86,7 +97,7 @@ const actions = {
       return convert(env);
     });
 
-    commit("setEnvironmentList", environmentList);
+    commit("upsertEnvironmentList", environmentList);
 
     return environmentList;
   },
@@ -112,7 +123,7 @@ const actions = {
       ).data.data
     );
 
-    commit("replaceEnvironmentInList", updatedEnvironment);
+    commit("upsertEnvironmentList", [updatedEnvironment]);
 
     return updatedEnvironment;
   },
@@ -127,28 +138,36 @@ const actions = {
       return item.id != id;
     });
 
-    commit("setEnvironmentList", newList);
+    commit("deleteEnvironmentById", id);
   },
 };
 
 const mutations = {
-  setEnvironmentList(state: EnvironmentState, environmentList: Environment[]) {
-    state.environmentList = environmentList;
-  },
-
-  appendEnvironment(state: EnvironmentState, newEnvironment: Environment) {
-    state.environmentList.push(newEnvironment);
-  },
-
-  replaceEnvironmentInList(
+  upsertEnvironmentList(
     state: EnvironmentState,
-    updatedEnvironment: Environment
+    environmentList: Environment[]
   ) {
+    for (const environment of environmentList) {
+      const i = state.environmentList.findIndex(
+        (item: Environment) => item.id == environment.id
+      );
+      if (i != -1) {
+        state.environmentList[i] = environment;
+      } else {
+        state.environmentList.push(environment);
+      }
+
+      state.environmentList.sort((a, b) => a.order - b.order);
+    }
+  },
+
+  deleteEnvironmentById(state: EnvironmentState, environmentId: EnvironmentId) {
     const i = state.environmentList.findIndex(
-      (item: Environment) => item.id == updatedEnvironment.id
+      (item: Environment) => item.id == environmentId
     );
-    if (i != -1) {
-      state.environmentList[i] = updatedEnvironment;
+
+    if (i >= 0) {
+      state.environmentList.splice(i, 1);
     }
   },
 };

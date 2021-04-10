@@ -4,11 +4,26 @@ import { WORKSPACE_ID, OWNER_ID } from "./index";
 
 export default function configureEnvironment(route) {
   route.get("/environment", function (schema, request) {
-    return schema.environments
-      .where((environment) => {
-        return environment.workspaceId == WORKSPACE_ID;
-      })
-      .sort((a, b) => a.order - b.order);
+    const {
+      queryParams: { rowstatus: rowStatus },
+    } = request;
+    return schema.environments.where((environment) => {
+      if (environment.workspaceId != WORKSPACE_ID) {
+        return false;
+      }
+
+      if (!rowStatus) {
+        if (environment.rowStatus != "NORMAL") {
+          return false;
+        }
+      } else if (
+        environment.rowStatus.toLowerCase() != rowStatus.toLowerCase()
+      ) {
+        return false;
+      }
+
+      return true;
+    });
   });
 
   route.post("/environment", function (schema, request) {
@@ -59,11 +74,9 @@ export default function configureEnvironment(route) {
         env.update(batch);
       }
     }
-    return schema.environments
-      .where((environment) => {
-        return environment.workspaceId == WORKSPACE_ID;
-      })
-      .sort((a, b) => a.order - b.order);
+    return schema.environments.where((environment) => {
+      return environment.workspaceId == WORKSPACE_ID;
+    });
   });
 
   route.patch("/environment/:environmentId", function (schema, request) {

@@ -294,6 +294,24 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
+            path: "environment/:environmentSlug",
+            name: "workspace.environment.detail",
+            meta: {
+              title: (route: RouteLocationNormalized) => {
+                const slug = route.params.environmentSlug as string;
+                return store.getters["environment/environmentById"](
+                  idFromSlug(slug)
+                ).name;
+              },
+              allowBookmark: true,
+            },
+            components: {
+              content: () => import("../views/EnvironmentDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
+          },
+          {
             path: "instance",
             name: "workspace.instance",
             meta: {
@@ -562,6 +580,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = store.getters["router/routeSlug"](to);
+  const environmentSlug = routerSlug.environmentSlug;
   const taskSlug = routerSlug.taskSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
@@ -569,6 +588,19 @@ router.beforeEach((to, from, next) => {
   const principalId = routerSlug.principalId;
 
   console.log("RouterSlug:", routerSlug);
+
+  if (environmentSlug) {
+    if (
+      store.getters["environment/environmentById"](idFromSlug(environmentSlug))
+    ) {
+      next();
+      return;
+    }
+    next({
+      name: "error.404",
+      replace: false,
+    });
+  }
 
   if (taskSlug) {
     if (taskSlug.toLowerCase() == "new") {

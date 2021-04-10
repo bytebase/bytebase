@@ -26,7 +26,7 @@ const workspacesSeeder = (server: any) => {
 
   // Environment
   const environmentList1 = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     environmentList1.push(
       server.create("environment", {
         workspace: workspace1,
@@ -36,7 +36,7 @@ const workspacesSeeder = (server: any) => {
   workspace1.update({ environment: environmentList1 });
 
   const environmentList2 = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     environmentList2.push(
       server.create("environment", {
         workspace: workspace2,

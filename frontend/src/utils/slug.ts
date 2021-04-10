@@ -1,4 +1,4 @@
-import { Database, DataSource, Instance, TaskId } from "../types";
+import { Database, DataSource, Environment, Instance, TaskId } from "../types";
 import slug from "slug";
 
 export function taskSlug(taskName: string, taskId: TaskId) {
@@ -6,6 +6,10 @@ export function taskSlug(taskName: string, taskId: TaskId) {
 }
 
 // On the other hand, it's not possible to de-slug due to slug's one-way algorithm
+export function environmentSlug(environment: Environment): string {
+  return [slug(environment.name), environment.id].join("-");
+}
+
 export function instanceSlug(instance: Instance): string {
   return [
     slug(instance.environment.name),

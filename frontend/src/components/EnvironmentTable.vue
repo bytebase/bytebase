@@ -28,6 +28,7 @@
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { Environment } from "../types";
+import { environmentSlug } from "../utils";
 
 const COLUMN_LIST = [
   {
@@ -58,7 +59,7 @@ export default {
 
     const clickEnvironment = function (section: number, row: number) {
       const environment = props.environmentList[row];
-      router.push(`/environment#${environment.id}`);
+      router.push(`/environment/${environmentSlug(environment)}`);
     };
 
     return {

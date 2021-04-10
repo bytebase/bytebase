@@ -1,60 +1,47 @@
 <template>
+  <div
+    v-if="state.environment.rowStatus == 'ARCHIVED'"
+    class="h-10 w-full text-2xl font-bold bg-gray-700 text-white flex justify-center items-center"
+  >
+    Archived
+  </div>
   <EnvironmentForm
     v-if="state.environment"
-    :allowDelete="allowDelete"
     :environment="state.environment"
     @update="doUpdate"
-    @delete="state.showDeleteModal = true"
+    @archive="doArchive"
+    @restore="doRestore"
   />
-  <BBAlert
-    v-if="state.showDeleteModal"
-    :style="'CRITICAL'"
-    :okText="'Delete'"
-    :title="'Delete environment \'' + state.environment.name + '\' ?'"
-    :description="'You cannot undo this action.'"
-    @ok="
-      () => {
-        state.showDeleteModal = false;
-        doDelete();
-      }
-    "
-    @cancel="state.showDeleteModal = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
+import { reactive } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { Environment, EnvironmentPatch } from "../types";
+import { idFromSlug } from "../utils";
 
 export default {
   name: "EnvironmentDetail",
-  emits: ["delete"],
+  emits: ["archive"],
   components: {
     EnvironmentForm,
   },
   props: {
-    environment: {
+    environmentSlug: {
       required: true,
-      type: Object as PropType<Environment>,
-    },
-    allowDelete: {
-      type: Boolean,
-      default: true,
+      type: String,
     },
   },
   setup(props, { emit }) {
     const store = useStore();
 
     const state = reactive({
-      environment: props.environment,
-      showDeleteModal: false,
+      environment: store.getters["environment/environmentById"](
+        idFromSlug(props.environmentSlug)
+      ),
+      showArchiveModal: false,
     });
-
-    const router = useRouter();
 
     const assignEnvironment = (environment: Environment) => {
       state.environment = environment;
@@ -63,7 +50,7 @@ export default {
     const doUpdate = (environmentPatch: EnvironmentPatch) => {
       store
         .dispatch("environment/patchEnvironment", {
-          environmentId: props.environment.id,
+          environmentId: idFromSlug(props.environmentSlug),
           environmentPatch,
         })
         .then((environment) => {
@@ -74,14 +61,44 @@ export default {
         });
     };
 
-    const doDelete = () => {
-      emit("delete", props.environment);
+    const doArchive = (environment: Environment) => {
+      store
+        .dispatch("environment/patchEnvironment", {
+          environmentId: environment.id,
+          environmentPatch: {
+            rowStatus: "ARCHIVED",
+          },
+        })
+        .then((environment) => {
+          emit("archive", environment);
+          assignEnvironment(environment);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    const doRestore = (environment: Environment) => {
+      store
+        .dispatch("environment/patchEnvironment", {
+          environmentId: environment.id,
+          environmentPatch: {
+            rowStatus: "NORMAL",
+          },
+        })
+        .then((environment) => {
+          assignEnvironment(environment);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     return {
       state,
       doUpdate,
-      doDelete,
+      doArchive,
+      doRestore,
     };
   },
 };

@@ -2,6 +2,9 @@ import { Factory } from "miragejs";
 
 export default {
   environment: Factory.extend({
+    rowStatus(i) {
+      return i > 3 ? "ARCHIVED" : "NORMAL";
+    },
     name(i) {
       if (i == 0) {
         return "Sandbox A";
@@ -9,11 +12,10 @@ export default {
         return "Integration";
       } else if (i == 2) {
         return "Staging";
+      } else if (i == 3) {
+        return "Prod";
       } else {
-        if (i == 3) {
-          return "Prod";
-        }
-        return "Prod " + (i - 2);
+        return "Archived Env " + (i - 3);
       }
     },
     order(i) {

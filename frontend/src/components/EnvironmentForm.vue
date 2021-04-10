@@ -14,60 +14,78 @@
         />
       </div>
     </div>
-    <template v-if="allowEdit">
-      <!-- Create button group -->
-      <div v-if="create" class="flex justify-end pt-5">
+    <!-- Create button group -->
+    <div v-if="create" class="flex justify-end pt-5">
+      <button
+        type="button"
+        class="btn-normal py-2 px-4"
+        @click.prevent="$emit('cancel')"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        :disabled="!allowCreate"
+        @click.prevent="createEnvironment"
+      >
+        Create
+      </button>
+    </div>
+    <!-- Update button group -->
+    <div v-else class="flex justify-between items-center pt-5">
+      <div v-if="state.environment.rowStatus == 'NORMAL'">
+        <BBButtonTrash
+          v-if="allowArchive"
+          :buttonText="'Archive this environment'"
+          :okText="'Archive'"
+          :confirmTitle="
+            'Archive environment \'' + state.environment.name + '\' ?'
+          "
+          :confirmDescription="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :requireConfirm="true"
+          @confirm="archiveEnvironment"
+        />
+      </div>
+      <div v-else-if="state.environment.rowStatus == 'ARCHIVED'">
+        <BBButtonTrash
+          :buttonText="'Restore this environment'"
+          :okText="'Restore'"
+          :confirmTitle="
+            'Restore environment \'' +
+            state.environment.name +
+            '\' to normal state?'
+          "
+          :confirmDescription="''"
+          :requireConfirm="true"
+          @confirm="restoreEnvironment"
+        />
+      </div>
+      <div v-else></div>
+      <div v-if="allowEdit">
         <button
           type="button"
           class="btn-normal py-2 px-4"
-          @click.prevent="$emit('cancel')"
+          :disabled="!valueChanged"
+          @click.prevent="revertEnvironment"
         >
-          Cancel
+          Revert
         </button>
         <button
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!allowCreate"
-          @click.prevent="createEnvironment"
+          :disabled="!valueChanged"
+          @click.prevent="updateEnvironment"
         >
-          Create
+          Update
         </button>
       </div>
-      <!-- Update button group -->
-      <div v-else class="flex justify-between items-center pt-5">
-        <div>
-          <BBButtonTrash
-            v-if="allowDelete"
-            :buttonText="'Delete this environment'"
-            :requireConfirm="false"
-            @confirm="$emit('delete')"
-          />
-        </div>
-        <div>
-          <button
-            type="button"
-            class="btn-normal py-2 px-4"
-            :disabled="!valueChanged"
-            @click.prevent="revertEnvironment"
-          >
-            Revert
-          </button>
-          <button
-            type="submit"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-            :disabled="!valueChanged"
-            @click.prevent="updateEnvironment"
-          >
-            Update
-          </button>
-        </div>
-      </div>
-    </template>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive, PropType, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -81,36 +99,45 @@ interface LocalState {
 
 export default {
   name: "EnvironmentForm",
-  emits: ["create", "update", "cancel", "delete"],
+  emits: ["create", "update", "cancel", "archive", "restore"],
   props: {
     create: {
       type: Boolean,
       default: false,
     },
-    allowDelete: {
-      type: Boolean,
-      default: true,
-    },
     environment: {
-      // Can be false when create is true
-      required: false,
-      type: Object as PropType<Environment>,
+      required: true,
+      type: Object as PropType<Environment | EnvironmentNew>,
     },
   },
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
-      environment: props.environment
-        ? cloneDeep(props.environment)
-        : {
-            name: "New Env",
-          },
+      environment: cloneDeep(props.environment),
     });
+
+    watch(
+      () => props.environment,
+      (cur: Environment | EnvironmentNew) => {
+        state.environment = cloneDeep(cur);
+      }
+    );
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"]("NORMAL");
+    });
+
+    const allowArchive = computed(() => {
+      return environmentList.value.length > 1;
+    });
+
     const allowEdit = computed(() => {
-      return isDBA(currentUser.value.role);
+      return (
+        (state.environment as Environment).rowStatus == "NORMAL" &&
+        isDBA(currentUser.value.role)
+      );
     });
 
     const valueChanged = computed(() => {
@@ -135,17 +162,32 @@ export default {
       if (state.environment.name != props.environment!.name) {
         patchedEnvironment.name = state.environment.name;
       }
-      emit("update", patchedEnvironment);
+      emit(
+        "update",
+        (props.environment as Environment)!.id,
+        patchedEnvironment
+      );
+    };
+
+    const archiveEnvironment = () => {
+      emit("archive", state.environment);
+    };
+
+    const restoreEnvironment = () => {
+      emit("restore", state.environment);
     };
 
     return {
       state,
+      allowArchive,
       allowEdit,
       valueChanged,
       allowCreate,
       revertEnvironment,
       createEnvironment,
       updateEnvironment,
+      archiveEnvironment,
+      restoreEnvironment,
     };
   },
 };

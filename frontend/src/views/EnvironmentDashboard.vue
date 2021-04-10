@@ -31,9 +31,8 @@
         </div>
         <EnvironmentDetail
           v-else
-          :allowDelete="environmentList.length > 1"
-          :environment="item"
-          @delete="doDelete"
+          :environmentSlug="environmentSlug(item)"
+          @archive="doArchive"
         />
       </BBTabPanel>
     </BBTab>
@@ -45,6 +44,9 @@
   >
     <EnvironmentForm
       :create="true"
+      :environment="{
+        name: 'New Env',
+      }"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -72,8 +74,8 @@ import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
-import EnvironmentForm from "../components/EnvironmentForm.vue";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
+import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { Environment, EnvironmentNew } from "../types";
 import { BBTabItem } from "../bbkit/types";
 
@@ -158,7 +160,7 @@ export default {
     );
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
+      return store.getters["environment/environmentList"]("NORMAL");
     });
 
     const tabItemList = computed((): BBTabItem[] => {
@@ -250,17 +252,10 @@ export default {
         });
     };
 
-    const doDelete = (environment: Environment) => {
-      store
-        .dispatch("environment/deleteEnvironmentById", environment.id)
-        .then(() => {
-          if (environmentList.value.length > 0) {
-            selectEnvironment(0);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+    const doArchive = (environment: Environment) => {
+      if (environmentList.value.length > 0) {
+        selectEnvironment(0);
+      }
     };
 
     const selectEnvironment = (index: number) => {
@@ -279,12 +274,12 @@ export default {
       tabItemList,
       createEnvironment,
       doCreate,
+      doArchive,
       doDismissGuide,
       reorderEnvironment,
       orderChanged,
       discardReorder,
       doReorder,
-      doDelete,
       selectEnvironment,
       tabClass,
     };

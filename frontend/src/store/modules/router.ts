@@ -12,6 +12,19 @@ const getters = {
     currentRoute: RouteLocationNormalized
   ): RouterSlug => {
     {
+      // /environment/:environmentSlug
+      // Total 2 elements, 2nd element is the task slug
+      const environmentComponents = currentRoute.path.match(
+        "/environment/([0-9a-zA-Z_-]+)"
+      ) || ["/", undefined];
+      if (environmentComponents[1]) {
+        return {
+          environmentSlug: environmentComponents[1],
+        };
+      }
+    }
+
+    {
       // /task/:taskSlug
       // Total 2 elements, 2nd element is the task slug
       const taskComponents = currentRoute.path.match(

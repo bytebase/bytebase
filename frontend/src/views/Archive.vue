@@ -59,6 +59,12 @@ export default {
       store.dispatch("instance/fetchInstanceList").catch((error) => {
         console.error(error);
       });
+
+      store
+        .dispatch("environment/fetchEnvironmentList", "ARCHIVED")
+        .catch((error) => {
+          console.error(error);
+        });
     };
 
     watchEffect(prepareInstanceList);
@@ -68,7 +74,7 @@ export default {
     });
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
+      return store.getters["environment/environmentList"]("ARCHIVED");
     });
 
     const filteredInstanceList = (list: Instance[]) => {
