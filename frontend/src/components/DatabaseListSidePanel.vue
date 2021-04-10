@@ -18,7 +18,7 @@ import {
   Environment,
   EnvironmentId,
 } from "../types";
-import { databaseSlug, allowDatabaseAccess } from "../utils";
+import { databaseSlug, allowDatabaseAccess, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
 interface LocalState {
@@ -44,7 +44,7 @@ export default {
 
     const environmentList = computed(() => {
       return cloneDeep(
-        store.getters["environment/environmentList"]()
+        store.getters["environment/environmentList"]("NORMAL")
       ).reverse();
     });
 
@@ -84,11 +84,14 @@ export default {
             }
 
             const dbList = envToDbMap.get(database.instance.environment.id)!;
-            dbList.push({
-              id: database.id,
-              name: databaseName,
-              link: `/db/${databaseSlug(database)}`,
-            });
+            // dbList may be undefined if the environment is archived
+            if (dbList) {
+              dbList.push({
+                id: database.id,
+                name: databaseName,
+                link: `/db/${databaseSlug(database)}`,
+              });
+            }
           }
         }
       }
@@ -96,7 +99,7 @@ export default {
         (environment: Environment): BBOutlineItem => {
           return {
             id: "env." + environment.id,
-            name: environment.name,
+            name: environmentName(environment),
             childList: envToDbMap.get(environment.id),
             childCollapse: true,
           };

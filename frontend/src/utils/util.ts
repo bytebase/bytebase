@@ -1,5 +1,17 @@
 import moment from "moment";
 
+export function isDev() {
+  return import.meta.env.DEV;
+}
+
+export function isDemo() {
+  return import.meta.env.MODE === "demo";
+}
+
+export function isDevOrDemo() {
+  return isDev() || isDemo();
+}
+
 export function humanizeTs(ts: number) {
   const time = moment.utc(ts);
   if (moment().year() == time.year()) {

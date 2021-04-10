@@ -41,7 +41,7 @@ export default {
       // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
       // thus we rervese the order to put more important ones first.
       return cloneDeep(
-        store.getters["environment/environmentList"]()
+        store.getters["environment/environmentList"]("NORMAL")
       ).reverse();
     });
 

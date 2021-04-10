@@ -39,6 +39,7 @@ import {
   humanizeTs,
   sizeToFit,
   urlfy,
+  environmentName,
   environmentSlug,
   instanceSlug,
   databaseSlug,
@@ -62,6 +63,7 @@ app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isDevOrDemo = isDevOrDemo();
 app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
+app.config.globalProperties.environmentName = environmentName;
 app.config.globalProperties.environmentSlug = environmentSlug;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;

@@ -9,7 +9,7 @@
   >
     <template v-slot:body="{ rowData: database }">
       <BBTableCell :leftPadding="4" class="w-12">
-        {{ database.instance.environment.name }}
+        {{ environmentName(database.instance.environment) }}
       </BBTableCell>
       <BBTableCell class="w-16">
         {{ database.name }}

@@ -24,8 +24,13 @@
             <dt class="sr-only">Environment</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Environment&nbsp;-&nbsp;</span>
-              <router-link to="/environment" class="normal-link">
-                {{ database.instance.environment.name }}
+              <router-link
+                :to="`/environment/${environmentSlug(
+                  database.instance.environment
+                )}`"
+                class="normal-link"
+              >
+                {{ environmentName(database.instance.environment) }}
               </router-link>
             </dd>
             <dt class="sr-only">Instance</dt>
