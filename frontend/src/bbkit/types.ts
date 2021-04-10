@@ -44,3 +44,5 @@ export type BBNotificationPlacement =
   | "TOP_RIGHT"
   | "BOTTOM_LEFT"
   | "BOTTOM_RIGHT";
+
+export type BBAlertStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";

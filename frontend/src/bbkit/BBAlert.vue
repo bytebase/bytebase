@@ -167,13 +167,14 @@
 
 <script lang="ts">
 import { onMounted, onUnmounted, PropType } from "vue";
+import { BBAlertStyle } from "./types";
 
 export default {
   name: "BBAlert",
   emits: ["ok", "cancel"],
   props: {
     style: {
-      type: String as PropType<"INFO" | "SUCCESS" | "WARN" | "CRITICAL">,
+      type: String as PropType<BBAlertStyle>,
       default: "INFO",
     },
     title: {
