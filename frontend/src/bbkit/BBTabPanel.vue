@@ -1,5 +1,5 @@
 <template>
-  <section v-if="active" :aria-hiddem="!active" :id="$props.id">
+  <section v-if="active" :aria-hiddem="!active">
     <slot />
   </section>
 </template>
@@ -11,10 +11,6 @@ export default {
     active: {
       required: true,
       type: Boolean,
-    },
-    id: {
-      required: true,
-      type: String,
     },
   },
   setup(props, ctx) {},

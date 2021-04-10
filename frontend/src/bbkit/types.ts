@@ -8,6 +8,12 @@ export type BBTableSectionDataSource<T> = {
   list: T[];
 };
 
+export type BBTabItem = {
+  title: string;
+  // Used as the anchor
+  id: string;
+};
+
 export type BBStepStatus =
   | "PENDING"
   | "PENDING_ACTIVE"

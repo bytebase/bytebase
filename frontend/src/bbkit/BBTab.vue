@@ -1,12 +1,14 @@
 <template>
   <div class="border-b border-block-border">
     <nav class="-mb-px flex" aria-label="Tabs">
-      <div
-        v-for="(title, index) in tabTitleList"
+      <a
+        v-for="(item, index) in tabItemList"
         :key="index"
+        :id="item.id"
+        :href="`#${item.id}`"
         class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent"
         v-bind:class="tabClass(index == selectedIndex)"
-        @click.self="$emit('select-index', index)"
+        @click.self="selectTabIndex(index)"
         @mouseenter="state.hoverIndex = index"
         @mouseleave="state.hoverIndex = -1"
       >
@@ -18,7 +20,7 @@
           "
           @click.prevent="
             () => {
-              $emit('select-index', index);
+              selectTabIndex(index);
               $emit('reorder-index', index, index - 1);
             }
           "
@@ -39,16 +41,16 @@
           </svg>
         </button>
         <div v-else class="pl-6"></div>
-        {{ title }}
+        {{ item.title }}
         <button
           v-if="
-            index != tabTitleList.length - 1 &&
+            index != tabItemList.length - 1 &&
             (reorderModel == 'ALWAYS' ||
               (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
           @click.prevent="
             () => {
-              $emit('select-index', index);
+              selectTabIndex(index);
               $emit('reorder-index', index, index + 1);
             }
           "
@@ -69,7 +71,7 @@
           </svg>
         </button>
         <div v-else class="pr-6"></div>
-      </div>
+      </a>
       <button
         v-if="allowCreate"
         @click.prevent="$emit('create')"
@@ -99,14 +101,15 @@
 
 <script lang="ts">
 import { reactive, PropType } from "vue";
+import { BBTabItem } from "./types";
 
 export default {
   name: "BBTab",
   emits: ["create", "reorder-index", "select-index"],
   props: {
-    tabTitleList: {
+    tabItemList: {
       required: true,
-      type: Object as PropType<String[]>,
+      type: Object as PropType<BBTabItem[]>,
     },
     selectedIndex: {
       required: true,
@@ -124,14 +127,14 @@ export default {
   data: function () {
     return {};
   },
-  setup(props, ctx) {
+  setup(props, { emit }) {
     const state = reactive({
       hoverIndex: -1,
     });
 
     const tabClass = (selected: boolean) => {
       const width =
-        "w-1/" + (props.tabTitleList.length + (props.allowCreate ? 1 : 0));
+        "w-1/" + (props.tabItemList.length + (props.allowCreate ? 1 : 0));
       if (selected) {
         return width + " text-control-hover border-accent";
       }
@@ -142,15 +145,20 @@ export default {
     };
 
     const addTabClass = () => {
-      if (props.tabTitleList.length == 0) {
+      if (props.tabItemList.length == 0) {
         return "w-1/6 ";
       }
       return "w-1/12";
     };
 
+    const selectTabIndex = (index: number) => {
+      emit("select-index", index);
+    };
+
     return {
       tabClass,
       addTabClass,
+      selectTabIndex,
       state,
     };
   },

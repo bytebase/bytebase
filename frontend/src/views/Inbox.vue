@@ -47,7 +47,10 @@
                 >
                 <template v-if="message.type == 'bb.msg.environment.create'">
                   <span class="ml-1"> created environment</span>
-                  <router-link :to="`/environment`" class="normal-link ml-1">
+                  <router-link
+                    :to="`/environment#${message.containerId}`"
+                    class="normal-link ml-1"
+                  >
                     {{ message.payload.environmentName }}
                   </router-link>
                 </template>

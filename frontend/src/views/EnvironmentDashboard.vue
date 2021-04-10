@@ -1,7 +1,7 @@
 <template>
   <div>
     <BBTab
-      :tabTitleList="tabTitleList"
+      :tabItemList="tabItemList"
       :selectedIndex="state.selectedIndex"
       :reorderModel="state.reorder ? 'ALWAYS' : 'NEVER'"
       @reorder-index="reorderEnvironment"
@@ -10,7 +10,6 @@
       <BBTabPanel
         v-for="(item, index) in environmentList"
         :key="item.id"
-        :id="item.id"
         :active="index == state.selectedIndex"
       >
         <div v-if="state.reorder" class="flex justify-center pt-5">
@@ -69,12 +68,14 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted, computed, reactive } from "vue";
+import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import { Environment, EnvironmentNew } from "../types";
+import { BBTabItem } from "../bbkit/types";
 
 interface LocalState {
   reorderedEnvironmentList: Environment[];
@@ -93,6 +94,7 @@ export default {
   props: {},
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -140,22 +142,36 @@ export default {
       });
     });
 
+    watch(
+      () => router.currentRoute.value.hash,
+      () => {
+        for (let i = 0; i < environmentList.value.length; i++) {
+          if (
+            environmentList.value[i].id ==
+            router.currentRoute.value.hash.slice(1)
+          ) {
+            selectEnvironment(i);
+            break;
+          }
+        }
+      }
+    );
+
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
     });
 
-    const tabTitleList = computed(() => {
+    const tabItemList = computed((): BBTabItem[] => {
       if (environmentList) {
-        if (state.reorder) {
-          return state.reorderedEnvironmentList.map(
-            (item: Environment, index: number) =>
-              (index + 1).toString() + ". " + item.name
-          );
-        }
-        return environmentList.value.map(
-          (item: Environment, index: number) =>
-            (index + 1).toString() + ". " + item.name
-        );
+        const list = state.reorder
+          ? state.reorderedEnvironmentList
+          : environmentList.value;
+        return list.map((item: Environment, index: number) => {
+          return {
+            title: (index + 1).toString() + ". " + item.name,
+            id: item.id,
+          };
+        });
       }
       return [];
     });
@@ -249,6 +265,10 @@ export default {
 
     const selectEnvironment = (index: number) => {
       state.selectedIndex = index;
+      router.replace({
+        name: "workspace.environment",
+        hash: "#" + environmentList.value[index].id,
+      });
     };
 
     const tabClass = computed(() => "w-1/" + environmentList.value.length);
@@ -256,7 +276,7 @@ export default {
     return {
       state,
       environmentList,
-      tabTitleList,
+      tabItemList,
       createEnvironment,
       doCreate,
       doDismissGuide,
