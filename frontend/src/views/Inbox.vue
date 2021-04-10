@@ -40,9 +40,11 @@
               <h3
                 class="text-sm font-base text-control-light flex flex-row whitespace-nowrap"
               >
-                <span class="font-medium text-main">{{
-                  message.creator.name
-                }}</span>
+                <router-link
+                  :to="`/u/${message.creator.id}`"
+                  class="font-medium text-main hover:underline"
+                  >{{ message.creator.name }}</router-link
+                >
                 <template v-if="message.type == 'bb.msg.environment.create'">
                   <span class="ml-1"> created environment</span>
                   <router-link :to="`/environment`" class="normal-link ml-1">
