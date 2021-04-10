@@ -501,17 +501,31 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace2,
   });
 
-  // Workspace 2
-  // Task 3
-  const task3 = server.schema.tasks.findBy({
-    workspaceId: workspace2.id,
-  });
-  server.create("bookmark", {
-    workspace: workspace2,
-    name: task3.name,
-    link: `/task/${taskSlug(task3.name, task3.id)}`,
-    creatorId: ws1Owner.id,
-  });
+  // Bookmark
+  {
+    // Workspace 1
+    // db
+    server.create("bookmark", {
+      workspace: workspace1,
+      name: databaseList1[0].name,
+      link: `/db/${databaseSlug(databaseList1[0])}`,
+      creatorId: ws1Owner.id,
+    });
+  }
+
+  {
+    // Workspace 2
+    // Task
+    const task = server.schema.tasks.findBy({
+      workspaceId: workspace2.id,
+    });
+    server.create("bookmark", {
+      workspace: workspace2,
+      name: task.name,
+      link: `/task/${taskSlug(task.name, task.id)}`,
+      creatorId: ws1Owner.id,
+    });
+  }
 };
 
 const fillTaskAndStageStatus = (
