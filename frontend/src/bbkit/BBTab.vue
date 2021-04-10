@@ -6,7 +6,7 @@
         :key="index"
         :id="item.id"
         :href="`#${item.id}`"
-        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent"
+        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent whitespace-nowrap"
         v-bind:class="tabClass(index == selectedIndex)"
         @click.self="selectTabIndex(index)"
         @mouseenter="state.hoverIndex = index"
