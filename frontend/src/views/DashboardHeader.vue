@@ -35,61 +35,66 @@
       </div>
     </div>
     <div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-3">
         <div
           v-if="isDev"
-          class="hidden md:flex sm:flex-row items-center space-x-2"
+          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm"
         >
+          <span class="hidden lg:block textlabel">Plan:</span>
           <div
             v-if="currentPlan != 0"
-            class="text-sm normal-link"
+            class="bar-link"
             @click.prevent="switchToFree"
           >
             Free
           </div>
+          <div v-else class="underline">Free</div>
           <div
             v-if="currentPlan != 1"
-            class="text-sm normal-link"
+            class="bar-link"
             @click.prevent="switchToTeam"
           >
             Team
           </div>
+          <div v-else class="underline">Team</div>
           <div
             v-if="currentPlan != 2"
-            class="text-sm normal-link"
+            class="bar-link"
             @click.prevent="switchToEnterprise"
           >
             Enterprise
           </div>
+          <div v-else class="underline">Enterprise</div>
         </div>
         <div
           v-if="isDevOrDemo"
-          class="hidden md:flex sm:flex-row items-center space-x-2"
+          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm"
         >
-          <span class="hidden lg:block textlabel"
-            >{{ currentUser.name }}, switch to:</span
-          >
+          <span class="hidden lg:block textlabel">Role:</span>
           <div
             v-if="currentUser.role != 'OWNER'"
-            class="text-sm normal-link"
+            class="bar-link"
             @click.prevent="switchToOwner"
           >
             Owner
           </div>
+          <div v-else class="underline">Owner</div>
           <div
             v-if="currentUser.role != 'DBA'"
-            class="text-sm normal-link"
+            class="bar-link"
             @click.prevent="switchToDBA"
           >
             DBA
           </div>
+          <div v-else class="underline">DBA</div>
           <div
             v-if="currentUser.role != 'DEVELOPER'"
-            class="text-sm normal-link"
+            class="bar-link"
             @click.prevent="switchToDeveloper"
           >
             Developer
           </div>
+          <div v-else class="underline">Developer</div>
         </div>
         <div class="ml-2">
           <ProfileDropdown />
