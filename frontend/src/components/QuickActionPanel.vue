@@ -1,5 +1,7 @@
 <template>
-  <div class="pt-1 overflow-hidden grid grid-cols-3 sm:inline-flex">
+  <div
+    class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0"
+  >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
         v-if="quickAction == 'quickaction.bytebase.instance.create'"
