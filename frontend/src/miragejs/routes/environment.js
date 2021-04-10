@@ -20,8 +20,9 @@ export default function configureEnvironment(route) {
       order = list.sort((a, b) => b.order - a.order).models[0].order + 1;
     }
     const newEnvironment = {
-      ...this.normalizedRequestAttrs("environment"),
+      ...this.normalizedRequestAttrs("environment-new"),
       workspaceId: WORKSPACE_ID,
+      rowStatus: "NORMAL",
       order,
     };
     const createdEnvironment = schema.environments.create(newEnvironment);

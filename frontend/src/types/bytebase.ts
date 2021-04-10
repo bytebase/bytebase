@@ -589,7 +589,10 @@ export type Environment = {
   name: string;
   order: number;
 };
-export type EnvironmentNew = Omit<Environment, "id">;
+
+export type EnvironmentNew = {
+  name: string;
+};
 
 // Instance
 export type Instance = {

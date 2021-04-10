@@ -184,7 +184,7 @@ export default {
     const doCreate = (newEnvironment: EnvironmentNew) => {
       store
         .dispatch("environment/createEnvironment", newEnvironment)
-        .then((createdEnvironment) => {
+        .then(() => {
           state.showCreateModal = false;
           selectEnvironment(environmentList.value.length - 1);
 

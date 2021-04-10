@@ -111,7 +111,6 @@ export default {
     } else {
       state.environment = {
         name: "New Env",
-        order: -1,
       };
     }
 
