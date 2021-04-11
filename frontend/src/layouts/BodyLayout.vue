@@ -40,6 +40,7 @@
             <router-view name="leftSidebar" />
           </div>
           <router-link
+            v-if="isCurrentUserDBA"
             to="/archive"
             class="outline-item group flex items-center px-4 py-2"
           >
@@ -99,6 +100,7 @@
           <router-view name="leftSidebar" />
         </div>
         <router-link
+          v-if="isCurrentUserDBA"
           to="/archive"
           class="outline-item group flex items-center px-4 py-2"
         >
@@ -239,8 +241,10 @@ export default {
       showMobileOverlay: false,
     });
 
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
     const quickActionList = computed(() => {
-      const role = store.getters["auth/currentUser"]().role;
+      const role = currentUser.value.role;
       const listByRole = router.currentRoute.value.meta.quickActionListByRole;
       const list: QuickActionType[] = [];
 
@@ -278,6 +282,10 @@ export default {
       return list;
     });
 
+    const isCurrentUserDBA = computed((): boolean => {
+      return isDBA(currentUser.value.role);
+    });
+
     const showBreadcrumb = computed(() => {
       const name = router.currentRoute.value.name;
       return !(name === "workspace.home" || name === "workspace.profile");
@@ -290,6 +298,7 @@ export default {
     return {
       state,
       quickActionList,
+      isCurrentUserDBA,
       showBreadcrumb,
       showIntro,
     };

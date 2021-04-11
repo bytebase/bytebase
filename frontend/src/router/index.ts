@@ -557,7 +557,6 @@ router.beforeEach((to, from, next) => {
     to.name === "error.500" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
-    to.name === "workspace.archive" ||
     to.name === "workspace.environment" ||
     to.name === "workspace.database" ||
     to.name === "workspace.database.create" ||
@@ -567,7 +566,10 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (to.name?.toString().startsWith("workspace.instance")) {
+  if (
+    to.name === "workspace.archive" ||
+    to.name?.toString().startsWith("workspace.instance")
+  ) {
     if (isDBA(loginUser.role)) {
       next();
     } else {
