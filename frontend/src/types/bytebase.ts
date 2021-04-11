@@ -276,6 +276,7 @@ export type Principal = {
 };
 
 export type PrincipalNew = {
+  name: string;
   email: string;
 };
 
@@ -290,7 +291,13 @@ export type User = {
   name: string;
   email: string;
 };
-export type NewUser = Omit<User, "id">;
+
+export type NewUser = {
+  status: PrincipalStatus;
+  name: string;
+  email: string;
+  password: string;
+};
 
 // Bookmark
 export type Bookmark = {

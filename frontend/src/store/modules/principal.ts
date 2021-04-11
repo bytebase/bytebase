@@ -86,9 +86,10 @@ const actions = {
       (
         await axios.post(`/api/user`, {
           data: {
-            type: "user",
+            type: "usernew",
             attributes: {
               status: "INVITED",
+              name: newPrincipal.name,
               email: newPrincipal.email,
               password: isDevOrDemo() ? "aaa" : randomString(),
             },

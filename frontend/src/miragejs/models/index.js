@@ -14,6 +14,8 @@ import { Model, hasMany, belongsTo } from "miragejs";
 export default {
   user: Model.extend({}),
 
+  userNew: Model,
+
   workspace: Model.extend({
     roleMapping: hasMany(),
     activity: hasMany(),
