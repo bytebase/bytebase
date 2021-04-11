@@ -524,6 +524,13 @@ export type ActivityPatch = {
 };
 
 // Message
+export type MemberMessageType =
+  | "bb.msg.member.create"
+  | "bb.msg.member.invite"
+  | "bb.msg.member.join"
+  | "bb.msg.member.revoke"
+  | "bb.msg.member.updaterole";
+
 export type EnvironmentMessageType =
   | "bb.msg.environment.create"
   | "bb.msg.environment.update"
@@ -544,9 +551,16 @@ export type TaskMessageType =
   | "bb.msg.task.comment";
 
 export type MessageType =
+  | MemberMessageType
   | EnvironmentMessageType
   | InstanceMessageType
   | TaskMessageType;
+
+export type MemberMessagePayload = {
+  principalId: PrincipalId;
+  oldRole?: RoleType;
+  newRole?: RoleType;
+};
 
 export type EnvironmentUpdateMessagePayload = {
   environmentName: string;
@@ -597,6 +611,7 @@ export type TaskCommentMessagePayload = {
 };
 
 export type MessagePayload =
+  | MemberMessagePayload
   | EnvironmentMessagePayload
   | EnvironmentUpdateMessagePayload
   | InstanceMessagePaylaod

@@ -1,136 +1,161 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
-  <div class="mx-4">
-    <div class="px-4 py-2 flex justify-between">
-      <BBSwitch
-        :label="'Display all messages'"
-        :value="state.showAll"
-        @toggle="
-          (on) => {
-            showAll(on);
-          }
-        "
-      />
-      <button type="button" class="btn-normal" @click.prevent="markAllAsRead">
-        <!-- Heroicon name: solid/pencil -->
-        <svg
-          class="-ml-1 mr-2 h-5 w-5 text-control-light"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
+  <div class="my-2 space-y-2 divide-y divide-block-border">
+    <BBTableTabFilter
+      v-if="isCurrentUserDBA"
+      class="mx-2"
+      :tabList="['General', 'Membership']"
+      :selectedIndex="state.selectedIndex"
+      @select-index="
+        (index) => {
+          state.selectedIndex = index;
+        }
+      "
+    />
+    <div>
+      <div class="px-4 py-2 flex justify-between">
+        <BBSwitch
+          :label="'Display all messages'"
+          :value="state.showAll"
+          @toggle="
+            (on) => {
+              showAll(on);
+            }
+          "
+        />
+        <button type="button" class="btn-normal" @click.prevent="markAllAsRead">
+          <!-- Heroicon name: solid/pencil -->
+          <svg
+            class="-ml-1 mr-2 h-5 w-5 text-control-light"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+            ></path>
+          </svg>
+          <span>Mark all as read</span>
+        </button>
+      </div>
+      <ul class="divide-y divide-block-border">
+        <li
+          v-for="(message, index) in effectiveMessageList"
+          :key="index"
+          class="p-3 hover:bg-control-bg-hover cursor-default"
+          @click.prevent="clickMessage(message)"
         >
-          <path
-            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-          ></path>
-        </svg>
-        <span>Mark all as read</span>
-      </button>
-    </div>
-    <ul class="divide-y divide-block-border">
-      <li
-        v-for="(message, index) in effectiveMessageList"
-        :key="index"
-        class="p-3 hover:bg-control-bg-hover cursor-default"
-        @click.prevent="clickMessage(message)"
-      >
-        <div class="flex space-x-3">
-          <BBAvatar :size="'small'" :username="message.creator.name" />
-          <div class="flex-1 space-y-1">
-            <div class="flex w-full items-center justify-between space-x-2">
-              <h3
-                class="text-sm font-base text-control-light flex flex-row whitespace-nowrap"
-              >
-                <router-link
-                  :to="`/u/${message.creator.id}`"
-                  class="font-medium text-main hover:underline"
-                  >{{ message.creator.name }}</router-link
-                >
-                <span class="ml-1"> {{ actionSentence(message) }}</span>
-                <template
-                  v-if="
-                    message.type == 'bb.msg.environment.create' ||
-                    message.type == 'bb.msg.environment.update' ||
-                    message.type == 'bb.msg.environment.archive' ||
-                    message.type == 'bb.msg.environment.restore'
-                  "
+          <div class="flex space-x-3">
+            <BBAvatar :size="'small'" :username="message.creator.name" />
+            <div class="flex-1 space-y-1">
+              <div class="flex w-full items-center justify-between space-x-2">
+                <h3
+                  class="text-sm font-base text-control-light flex flex-row whitespace-nowrap"
                 >
                   <router-link
-                    :to="`/environment#${message.containerId}`"
-                    class="normal-link ml-1"
+                    :to="`/u/${message.creator.id}`"
+                    class="font-medium text-main hover:underline"
+                    >{{ message.creator.name }}</router-link
                   >
-                    {{ message.payload.environmentName }}
-                  </router-link>
-                </template>
-                <template
-                  v-else-if="message.type == 'bb.msg.environment.delete'"
-                >
-                  <span class="font-medium text-main ml-1">
-                    {{ message.payload.environmentName }}
-                  </span>
-                </template>
-                <template
-                  v-else-if="
-                    message.type == 'bb.msg.instance.create' ||
-                    message.type == 'bb.msg.instance.update' ||
-                    message.type == 'bb.msg.instance.archive' ||
-                    message.type == 'bb.msg.instance.restore'
-                  "
-                >
-                  <router-link
-                    :to="`/instance/${message.containerId}`"
-                    class="normal-link ml-1"
+                  <span class="ml-1"> {{ actionSentence(message) }}</span>
+                  <template
+                    v-if="
+                      message.type == 'bb.msg.member.create' ||
+                      message.type == 'bb.msg.member.invite' ||
+                      message.type == 'bb.msg.member.join' ||
+                      message.type == 'bb.msg.member.revoke' ||
+                      message.type == 'bb.msg.member.updaterole'
+                    "
                   >
-                    {{ message.payload.instanceName }}
-                  </router-link>
-                </template>
-                <template v-else-if="message.type == 'bb.msg.instance.delete'">
-                  <span class="font-medium text-main ml-1">
-                    {{ message.payload.instanceName }}
-                  </span>
-                </template>
-                <template v-else-if="message.type == 'bb.msg.task.assign'">
-                  <router-link
-                    :to="`/task/${message.containerId}`"
-                    class="normal-link ml-1"
+                  </template>
+                  <template
+                    v-else-if="
+                      message.type == 'bb.msg.environment.create' ||
+                      message.type == 'bb.msg.environment.update' ||
+                      message.type == 'bb.msg.environment.archive' ||
+                      message.type == 'bb.msg.environment.restore'
+                    "
                   >
-                    {{ message.payload.taskName }}
-                  </router-link>
-                </template>
-                <template
-                  v-else-if="message.type == 'bb.msg.task.updatestatus'"
-                >
-                  <router-link
-                    :to="`/task/${message.containerId}`"
-                    class="normal-link ml-1"
+                    <router-link
+                      :to="`/environment#${message.containerId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ message.payload.environmentName }}
+                    </router-link>
+                  </template>
+                  <template
+                    v-else-if="message.type == 'bb.msg.environment.delete'"
                   >
-                    {{ message.payload.taskName }}
-                  </router-link>
-                </template>
-                <template v-else-if="message.type == 'bb.msg.task.comment'">
-                  <router-link
-                    :to="`/task/${message.containerId}#activity${message.payload.commentId}`"
-                    class="normal-link ml-1"
+                    <span class="font-medium text-main ml-1">
+                      {{ message.payload.environmentName }}
+                    </span>
+                  </template>
+                  <template
+                    v-else-if="
+                      message.type == 'bb.msg.instance.create' ||
+                      message.type == 'bb.msg.instance.update' ||
+                      message.type == 'bb.msg.instance.archive' ||
+                      message.type == 'bb.msg.instance.restore'
+                    "
                   >
-                    {{ message.payload.taskName }}
-                  </router-link>
-                </template>
-                <span
-                  v-if="message.status == 'DELIVERED'"
-                  class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"
-                ></span>
-              </h3>
-              <p class="text-sm text-control">
-                {{ humanizeTs(message.createdTs) }}
-              </p>
-            </div>
-            <div v-if="message.description" class="text-sm text-control">
-              {{ message.description }}
+                    <router-link
+                      :to="`/instance/${message.containerId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ message.payload.instanceName }}
+                    </router-link>
+                  </template>
+                  <template
+                    v-else-if="message.type == 'bb.msg.instance.delete'"
+                  >
+                    <span class="font-medium text-main ml-1">
+                      {{ message.payload.instanceName }}
+                    </span>
+                  </template>
+                  <template v-else-if="message.type == 'bb.msg.task.assign'">
+                    <router-link
+                      :to="`/task/${message.containerId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ message.payload.taskName }}
+                    </router-link>
+                  </template>
+                  <template
+                    v-else-if="message.type == 'bb.msg.task.updatestatus'"
+                  >
+                    <router-link
+                      :to="`/task/${message.containerId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ message.payload.taskName }}
+                    </router-link>
+                  </template>
+                  <template v-else-if="message.type == 'bb.msg.task.comment'">
+                    <router-link
+                      :to="`/task/${message.containerId}#activity${message.payload.commentId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ message.payload.taskName }}
+                    </router-link>
+                  </template>
+                  <span
+                    v-if="message.status == 'DELIVERED'"
+                    class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"
+                  ></span>
+                </h3>
+                <p class="text-sm text-control">
+                  {{ humanizeTs(message.createdTs) }}
+                </p>
+              </div>
+              <div v-if="message.description" class="text-sm text-control">
+                {{ message.description }}
+              </div>
             </div>
           </div>
-        </div>
-      </li>
-      <!-- More items... -->
-    </ul>
+        </li>
+        <!-- More items... -->
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -138,17 +163,21 @@
 import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import {
+  MemberMessagePayload,
   Message,
-  MessagePayload,
   Principal,
   PrincipalId,
   TaskAssignMessagePayload,
   TaskUpdateStatusMessagePayload,
   UNKNOWN_ID,
 } from "../types";
-import { assign } from "lodash";
+import { isDBA, roleName } from "../utils";
+
+const GENERAL_TAB = 0;
+const MEMBERSHIP_TAB = 1;
 
 interface LocalState {
+  selectedIndex: number;
   showAll: boolean;
   messageList: Message[];
   // To maintain a stable view when user clicks an item.
@@ -165,6 +194,7 @@ export default {
     const store = useStore();
 
     const state = reactive<LocalState>({
+      selectedIndex: 0,
       showAll: false,
       messageList: [],
       whitelist: [],
@@ -189,17 +219,29 @@ export default {
       state.whitelist = [];
     });
 
+    const isCurrentUserDBA = computed((): boolean => {
+      return isDBA(currentUser.value.role);
+    });
+
     const effectiveMessageList = computed(() => {
-      return state.showAll
-        ? state.messageList
-        : state.messageList.filter((message: Message) => {
-            return (
-              message.status == "DELIVERED" ||
-              state.whitelist.find((item: Message) => {
-                return item.id == message.id;
-              })
-            );
-          });
+      return state.messageList.filter((message: Message) => {
+        if (
+          (state.selectedIndex == GENERAL_TAB &&
+            message.type.startsWith("bb.msg.member.")) ||
+          (state.selectedIndex == MEMBERSHIP_TAB &&
+            !message.type.startsWith("bb.msg.member."))
+        ) {
+          return false;
+        }
+
+        return (
+          state.showAll ||
+          message.status == "DELIVERED" ||
+          state.whitelist.find((item: Message) => {
+            return item.id == message.id;
+          })
+        );
+      });
     });
 
     const principalFromId = (principalId: PrincipalId): Principal => {
@@ -208,6 +250,35 @@ export default {
 
     const actionSentence = (message: Message): string => {
       switch (message.type) {
+        case "bb.msg.member.create": {
+          const payload = message.payload as MemberMessagePayload;
+          return `added ${
+            principalFromId(payload.principalId).email
+          } as ${roleName(payload.newRole!)}`;
+        }
+        case "bb.msg.member.invite": {
+          const payload = message.payload as MemberMessagePayload;
+          return `invited ${
+            principalFromId(payload.principalId).email
+          } as ${roleName(payload.newRole!)}`;
+        }
+        case "bb.msg.member.join": {
+          const payload = message.payload as MemberMessagePayload;
+          return `joined as ${roleName(payload.newRole!)}`;
+        }
+        case "bb.msg.member.revoke": {
+          const payload = message.payload as MemberMessagePayload;
+          return `revoked ${roleName(payload.oldRole!)} from ${
+            principalFromId(payload.principalId).name
+          }`;
+        }
+        case "bb.msg.member.updaterole":
+          const payload = message.payload as MemberMessagePayload;
+          return `changed ${
+            principalFromId(payload.principalId).name
+          } role from ${roleName(payload.oldRole!)} to ${roleName(
+            payload.newRole!
+          )}`;
         case "bb.msg.environment.create":
           return "created environment";
         case "bb.msg.environment.update":
@@ -306,6 +377,7 @@ export default {
       state,
       currentUser,
       principalFromId,
+      isCurrentUserDBA,
       effectiveMessageList,
       actionSentence,
       clickMessage,

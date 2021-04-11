@@ -1,5 +1,6 @@
 import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
+import { postMessageToOwnerAndDBA } from "../utils";
 
 export default function configureAuth(route) {
   route.post("/auth/login", function (schema, request) {
@@ -47,6 +48,21 @@ export default function configureAuth(route) {
     };
     schema.roleMappings.create(newRoleMapping);
 
+    const messageTemplate = {
+      containerId: WORKSPACE_ID,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.member.join",
+      status: "DELIVERED",
+      creatorId: createdUser.id,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        principalId: createdUser.id,
+        newRole: "DEVELOPER",
+      },
+    };
+    postMessageToOwnerAndDBA(schema, createdUser.id, messageTemplate);
+
     return createdUser;
   });
 
@@ -65,6 +81,27 @@ export default function configureAuth(route) {
         lastUpdatedTs: ts,
         passwordHash: activateInfo.password,
       });
+
+      const roleMapping = schema.roleMappings.findBy({
+        principalId: user.id,
+        workspaceId: WORKSPACE_ID,
+      });
+
+      const messageTemplate = {
+        containerId: WORKSPACE_ID,
+        createdTs: ts,
+        lastUpdatedTs: ts,
+        type: "bb.msg.member.join",
+        status: "DELIVERED",
+        creatorId: user.id,
+        workspaceId: WORKSPACE_ID,
+        payload: {
+          principalId: user.id,
+          newRole: roleMapping.role,
+        },
+      };
+      postMessageToOwnerAndDBA(schema, user.id, messageTemplate);
+
       return user;
     }
 

@@ -1,4 +1,6 @@
-import { WORKSPACE_ID } from "./index";
+import { Response } from "miragejs";
+import { WORKSPACE_ID, OWNER_ID } from "./index";
+import { postMessageToOwnerAndDBA } from "../utils";
 
 export default function configureRoleMapping(route) {
   route.get("/rolemapping", function (schema, request) {
@@ -28,15 +30,104 @@ export default function configureRoleMapping(route) {
       updaterId: attrs.updaterId,
       workspaceId: WORKSPACE_ID,
     };
-    return schema.roleMappings.create(newRoleMapping);
+
+    const createdRoleMapping = schema.roleMappings.create(newRoleMapping);
+
+    const user = schema.users.find(attrs.principalId);
+    const type =
+      user.status == "INVITED"
+        ? "bb.msg.member.invite"
+        : "bb.msg.member.create";
+
+    const messageTemplate = {
+      containerId: WORKSPACE_ID,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type,
+      status: "DELIVERED",
+      creatorId: attrs.updaterId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        principalId: attrs.principalId,
+        newRole: attrs.role,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
+
+    return createdRoleMapping;
   });
 
   route.patch("/rolemapping/:roleMappingId", function (schema, request) {
+    const roleMapping = schema.roleMappings.find(request.params.roleMappingId);
+    const oldRole = roleMapping.role;
+
+    if (!roleMapping) {
+      return new Response(
+        404,
+        {},
+        {
+          errors:
+            "Role mapping id " + request.params.roleMappingId + " not found",
+        }
+      );
+    }
+
     const attrs = this.normalizedRequestAttrs("role-mapping");
-    return schema.roleMappings.find(request.params.roleMappingId).update(attrs);
+    const updatedRoleMapping = roleMapping.update(attrs);
+
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: WORKSPACE_ID,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.member.updaterole",
+      status: "DELIVERED",
+      creatorId: attrs.updaterId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        principalId: roleMapping.principalId,
+        oldRole,
+        newRole: updatedRoleMapping.role,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
+
+    return updatedRoleMapping;
   });
 
   route.delete("/rolemapping/:roleMappingId", function (schema, request) {
-    return schema.roleMappings.find(request.params.roleMappingId).destroy();
+    const roleMapping = schema.roleMappings.find(request.params.roleMappingId);
+    const oldRole = roleMapping.role;
+
+    if (!roleMapping) {
+      return new Response(
+        404,
+        {},
+        {
+          errors:
+            "Role mapping id " + request.params.roleMappingId + " not found",
+        }
+      );
+    }
+
+    roleMapping.destroy();
+
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: WORKSPACE_ID,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.member.revoke",
+      status: "DELIVERED",
+      creatorId: callerId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        principalId: roleMapping.principalId,
+        oldRole,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
   });
 }

@@ -1,37 +1,39 @@
 <template>
-  <div class="sm:hidden">
-    <label for="tabs" class="sr-only">Select a tab</label>
-    <select
-      id="tabs"
-      name="tabs"
-      class="control block w-full"
-      @change="
-        (e) => {
-          $emit('select-index', parseInt(e.target.value));
-        }
-      "
-    >
-      <option
-        v-for="(item, index) in tabList"
-        :key="index"
-        :value="index"
-        :selected="index == selectedIndex"
+  <div>
+    <div class="sm:hidden">
+      <label for="tabs" class="sr-only">Select a tab</label>
+      <select
+        id="tabs"
+        name="tabs"
+        class="control block w-full"
+        @change="
+          (e) => {
+            $emit('select-index', parseInt(e.target.value));
+          }
+        "
       >
-        {{ item }}
-      </option>
-    </select>
-  </div>
-  <div class="hidden sm:block">
-    <div class="flex space-x-4" aria-label="Tabs">
-      <button
-        v-for="(item, index) in tabList"
-        :key="index"
-        class="tab px-3 py-1"
-        :class="buttonClass(index == selectedIndex)"
-        @click.prevent="$emit('select-index', index)"
-      >
-        {{ item }}
-      </button>
+        <option
+          v-for="(item, index) in tabList"
+          :key="index"
+          :value="index"
+          :selected="index == selectedIndex"
+        >
+          {{ item }}
+        </option>
+      </select>
+    </div>
+    <div class="hidden sm:block">
+      <div class="flex space-x-4" aria-label="Tabs">
+        <button
+          v-for="(item, index) in tabList"
+          :key="index"
+          class="tab px-3 py-1"
+          :class="buttonClass(index == selectedIndex)"
+          @click.prevent="$emit('select-index', index)"
+        >
+          {{ item }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

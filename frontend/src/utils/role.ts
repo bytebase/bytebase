@@ -27,3 +27,16 @@ export function isDeveloper(role: RoleType): boolean {
     !store.getters["plan/feature"]("bytebase.admin") || role == "DEVELOPER"
   );
 }
+
+export function roleName(role: RoleType): string {
+  switch (role) {
+    case "OWNER":
+      return "Owner";
+    case "DBA":
+      return "DBA";
+    case "DEVELOPER":
+      return "Developer";
+    case "GUEST":
+      return "Guest";
+  }
+}
