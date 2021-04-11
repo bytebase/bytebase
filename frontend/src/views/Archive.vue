@@ -70,7 +70,7 @@ export default {
     watchEffect(prepareInstanceList);
 
     const instanceList = computed((): Instance[] => {
-      return store.getters["instance/instanceList"]();
+      return store.getters["instance/instanceList"]("ARCHIVED");
     });
 
     const environmentList = computed(() => {

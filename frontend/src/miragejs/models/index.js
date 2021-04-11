@@ -67,6 +67,8 @@ export default {
 
   instanceNew: Model,
 
+  instancePatch: Model,
+
   database: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),

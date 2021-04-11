@@ -68,7 +68,14 @@
                     {{ message.payload.environmentName }}
                   </span>
                 </template>
-                <template v-else-if="message.type == 'bb.msg.instance.create'">
+                <template
+                  v-else-if="
+                    message.type == 'bb.msg.instance.create' ||
+                    message.type == 'bb.msg.instance.update' ||
+                    message.type == 'bb.msg.instance.archive' ||
+                    message.type == 'bb.msg.instance.restore'
+                  "
+                >
                   <router-link
                     :to="`/instance/${message.containerId}`"
                     class="normal-link ml-1"
@@ -213,8 +220,14 @@ export default {
           return "restored environment";
         case "bb.msg.instance.create":
           return "created instance";
+        case "bb.msg.instance.update":
+          return "updated instance";
         case "bb.msg.instance.delete":
           return "deleted instance";
+        case "bb.msg.instance.archive":
+          return "archived instance";
+        case "bb.msg.instance.restore":
+          return "restored instance";
         case "bb.msg.task.assign": {
           const payload = message.payload as TaskAssignMessagePayload;
           if (

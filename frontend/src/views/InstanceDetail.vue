@@ -1,23 +1,24 @@
 <template>
+  <div
+    v-if="instance.rowStatus == 'ARCHIVED'"
+    class="h-10 w-full text-2xl font-bold bg-gray-700 text-white flex justify-center items-center"
+  >
+    Archived
+  </div>
   <div class="px-6 space-y-6">
-    <InstanceForm :create="false" :instance="state.instance" />
+    <InstanceForm :create="false" :instance="instance" />
     <div class="py-6 space-y-4 border-t divide-control-border">
-      <DataSourceTable :instance="state.instance" />
+      <DataSourceTable :instance="instance" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
-import { Instance } from "../types";
-
-interface LocalState {
-  instance: Instance;
-}
 
 export default {
   name: "InstanceDetail",
@@ -34,16 +35,14 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
 
-    const state = reactive<LocalState>({
-      // Instance is already fetched remotely during routing, so we can just
-      // use store.getters here.
-      instance: store.getters["instance/instanceById"](
+    const instance = computed(() => {
+      return store.getters["instance/instanceById"](
         idFromSlug(props.instanceSlug)
-      ),
+      );
     });
 
     return {
-      state,
+      instance,
     };
   },
 };

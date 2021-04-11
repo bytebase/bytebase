@@ -121,9 +121,7 @@ export default function configureEnvironment(route) {
       });
     }
 
-    const updatedEnvironment = schema.environments
-      .find(request.params.environmentId)
-      .update(attrs);
+    const updatedEnvironment = environment.update(attrs);
 
     // NOTE, in actual implementation, we need to fetch the user from the auth context.
     const callerId = OWNER_ID;
@@ -137,7 +135,7 @@ export default function configureEnvironment(route) {
       creatorId: callerId,
       workspaceId: WORKSPACE_ID,
       payload: {
-        environmentName: environment.name,
+        environmentName: updatedEnvironment.name,
         changeList,
       },
     };

@@ -40,7 +40,7 @@
                 :to="`/instance/${instanceSlug(database.instance)}`"
                 class="normal-link"
               >
-                {{ database.instance.name }}
+                {{ instanceName(database.instance) }}
               </router-link>
             </dd>
             <dt class="sr-only">Sync Status</dt>

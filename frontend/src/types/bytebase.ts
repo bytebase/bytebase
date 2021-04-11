@@ -71,6 +71,7 @@ export const unknown = (
 
   const UNKNOWN_INSTANCE: Instance = {
     id: UNKNOWN_ID,
+    rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
@@ -526,7 +527,10 @@ export type EnvironmentMessageType =
 
 export type InstanceMessageType =
   | "bb.msg.instance.create"
-  | "bb.msg.instance.delete";
+  | "bb.msg.instance.update"
+  | "bb.msg.instance.delete"
+  | "bb.msg.instance.archive"
+  | "bb.msg.instance.restore";
 
 export type TaskMessageType =
   | "bb.msg.task.assign"
@@ -555,6 +559,15 @@ export type EnvironmentMessagePayload = {
     newValue?: any;
   }[];
 };
+
+export enum InstanceBuiltinFieldId {
+  ROW_STATUS = "1",
+  NAME = "2",
+  ENVIRONMENT = "3",
+  EXTERNAL_LINK = "4",
+  HOST = "5",
+  PORT = "6",
+}
 
 export type InstanceMessagePaylaod = {
   instanceName: string;
@@ -626,6 +639,7 @@ export type EnvironmentPatch = {
 // Instance
 export type Instance = {
   id: InstanceId;
+  rowStatus: RowStatus;
   environment: Environment;
   creator: Principal;
   updater: Principal;
@@ -642,6 +656,15 @@ export type InstanceNew = {
   name: string;
   externalLink?: string;
   host: string;
+  port?: string;
+};
+
+export type InstancePatch = {
+  rowStatus?: RowStatus;
+  environmentId?: EnvironmentId;
+  name?: string;
+  externalLink?: string;
+  host?: string;
   port?: string;
 };
 

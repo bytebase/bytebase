@@ -56,10 +56,11 @@ export default {
     const instanceList = computed(() => {
       if (props.environmentId) {
         return store.getters["instance/instanceListByEnvironmentId"](
-          props.environmentId
+          props.environmentId,
+          "NORMAL"
         );
       }
-      return store.getters["instance/instanceList"]();
+      return store.getters["instance/instanceList"]("NORMAL");
     });
 
     watch(

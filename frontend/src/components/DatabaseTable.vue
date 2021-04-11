@@ -15,7 +15,7 @@
         {{ database.name }}
       </BBTableCell>
       <BBTableCell class="w-24">
-        {{ database.instance.name }}
+        {{ instanceName(database.instance) }}
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ database.syncStatus }}

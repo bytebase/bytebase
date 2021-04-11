@@ -9,6 +9,8 @@ import {
   EnvironmentId,
   ResourceIdentifier,
   unknown,
+  InstancePatch,
+  RowStatus,
 } from "../../types";
 
 function convert(instance: ResourceObject, rootGetters: any): Instance {
@@ -53,10 +55,14 @@ const getters = {
     return convert(instance, rootGetters);
   },
 
-  instanceList: (state: InstanceState) => (): Instance[] => {
+  instanceList: (state: InstanceState) => (
+    rowStatus?: RowStatus
+  ): Instance[] => {
     const list = [];
     for (const [_, instance] of state.instanceById) {
-      list.push(instance);
+      if (!rowStatus || rowStatus == instance.rowStatus) {
+        list.push(instance);
+      }
     }
     return list.sort((a: Instance, b: Instance) => {
       return b.createdTs - a.createdTs;
@@ -64,12 +70,13 @@ const getters = {
   },
 
   instanceListByEnvironmentId: (state: InstanceState, getters: any) => (
-    environmentId: EnvironmentId
+    environmentId: EnvironmentId,
+    rowStatus?: RowStatus
   ): Instance[] => {
-    const list = getters["instanceList"]();
-    return list.filter(
-      (item: Instance) => item.environment.id == environmentId
-    );
+    const list = getters["instanceList"](rowStatus);
+    return list.filter((item: Instance) => {
+      return item.environment.id == environmentId;
+    });
   },
 
   instanceById: (state: InstanceState) => (
@@ -131,14 +138,22 @@ const actions = {
     return createdInstance;
   },
 
-  async patchInstance({ commit, rootGetters }: any, instance: Instance) {
-    const { id, ...attrs } = instance;
+  async patchInstance(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      instancePatch,
+    }: {
+      instanceId: InstanceId;
+      instancePatch: InstancePatch;
+    }
+  ) {
     const updatedInstance = convert(
       (
-        await axios.patch(`/api/instance/${instance.id}`, {
+        await axios.patch(`/api/instance/${instanceId}`, {
           data: {
-            type: "instance",
-            attributes: attrs,
+            type: "instancepatch",
+            attributes: instancePatch,
           },
         })
       ).data.data,

@@ -1,6 +1,7 @@
 import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
 import { WORKSPACE_ID, OWNER_ID } from "./index";
+import { InstanceBuiltinFieldId } from "../../types";
 
 export default function configurInstance(route) {
   route.get("/instance", function (schema, request) {
@@ -59,11 +60,113 @@ export default function configurInstance(route) {
   });
 
   route.patch("/instance/:instanceId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("instance");
-    return schema.instances.find(request.params.instanceId).update(attrs);
+    const attrs = this.normalizedRequestAttrs("instance-patch");
+    const instance = schema.instances.find(request.params.instanceId);
+
+    if (!instance) {
+      return new Response(
+        404,
+        {},
+        {
+          errors: "Instance id " + request.params.instanceId + " not found",
+        }
+      );
+    }
+
+    const changeList = [];
+    let type = "bb.msg.instance.update";
+
+    if (attrs.rowStatus && attrs.rowStatus != instance.rowStatus) {
+      if (attrs.rowStatus == "ARCHIVED") {
+        type = "bb.msg.instance.archive";
+      } else if (attrs.rowStatus == "NORMAL") {
+        type = "bb.msg.instance.restore";
+      } else if (attrs.rowStatus == "PENDING_DELETE") {
+        type = "bb.msg.instance.delete";
+      }
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.ROW_STATUS,
+        oldValue: instance.rowStatus,
+        newValue: attrs.rowStatus,
+      });
+    }
+
+    if (attrs.name && attrs.name != instance.name) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.NAME,
+        oldValue: instance.name,
+        newValue: attrs.name,
+      });
+    }
+
+    if (attrs.environmentId && attrs.environmentId != instance.environmentId) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.ENVIRONMENT,
+        oldValue: instance.environmentId,
+        newValue: attrs.environmentId,
+      });
+    }
+
+    if (attrs.externalLink && attrs.externalLink != instance.externalLink) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.EXTERNAL_LINK,
+        oldValue: instance.externalLink,
+        newValue: attrs.externalLink,
+      });
+    }
+
+    if (attrs.host && attrs.host != instance.host) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.HOST,
+        oldValue: instance.host,
+        newValue: attrs.host,
+      });
+    }
+
+    if (attrs.port && attrs.port != instance.port) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.PORT,
+        oldValue: instance.port,
+        newValue: attrs.port,
+      });
+    }
+
+    const updatedInstance = instance.update(attrs);
+
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: updatedInstance.id,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type,
+      status: "DELIVERED",
+      creatorId: callerId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        instanceName: updatedInstance.name,
+        changeList,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+
+    return updatedInstance;
   });
 
   route.delete("/instance/:instanceId", function (schema, request) {
+    const instance = schema.instances.find(request.params.instanceId);
+
+    if (!instance) {
+      return new Response(
+        404,
+        {},
+        {
+          errors: "Instance id " + request.params.instanceId + " not found",
+        }
+      );
+    }
+
     // NOTE, in actual implementation, we need to fetch the user from the auth context.
     const callerId = OWNER_ID;
     // Delete data source and database before instance itself.
@@ -78,25 +181,21 @@ export default function configurInstance(route) {
     });
     databaseList.models.forEach((item) => item.destroy());
 
-    const instance = schema.instances.find(request.params.instanceId);
+    instance.destroy();
 
-    if (instance) {
-      instance.destroy();
-
-      const ts = Date.now();
-      const messageTemplate = {
-        containerId: instance.id,
-        createdTs: ts,
-        lastUpdatedTs: ts,
-        type: "bb.msg.instance.delete",
-        status: "DELIVERED",
-        creatorId: callerId,
-        workspaceId: WORKSPACE_ID,
-        payload: {
-          instanceName: instance.name,
-        },
-      };
-      postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
-    }
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: instance.id,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.instance.delete",
+      status: "DELIVERED",
+      creatorId: callerId,
+      workspaceId: WORKSPACE_ID,
+      payload: {
+        instanceName: instance.name,
+      },
+    };
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
   });
 }

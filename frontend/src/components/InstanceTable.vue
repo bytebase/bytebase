@@ -12,10 +12,10 @@
         <img class="h-10 w-auto" src="../assets/db-mysql.svg" />
       </BBTableCell>
       <BBTableCell :leftPadding="4" class="w-16">
-        {{ environmentName(instance.environment.id) }}
+        {{ environmentNameFromId(instance.environment.id) }}
       </BBTableCell>
       <BBTableCell class="w-32">
-        {{ instance.name }}
+        {{ instanceName(instance) }}
       </BBTableCell>
       <BBTableCell class="w-48">
         <template v-if="instance.port"
@@ -56,7 +56,7 @@ import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
-import { urlfy, instanceSlug } from "../utils";
+import { urlfy, instanceSlug, environmentName } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 
 interface LocalState {
@@ -107,15 +107,15 @@ export default {
       router.push(`/instance/${instanceSlug(instance)}`);
     };
 
-    const environmentName = function (id: EnvironmentId) {
-      return store.getters["environment/environmentById"](id).name;
+    const environmentNameFromId = function (id: EnvironmentId) {
+      return environmentName(store.getters["environment/environmentById"](id));
     };
 
     return {
       state,
       urlfy,
       clickInstance,
-      environmentName,
+      environmentNameFromId,
     };
   },
 };

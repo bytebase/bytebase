@@ -41,6 +41,7 @@ import {
   urlfy,
   environmentName,
   environmentSlug,
+  instanceName,
   instanceSlug,
   databaseSlug,
   dataSourceSlug,
@@ -65,6 +66,7 @@ app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.environmentName = environmentName;
 app.config.globalProperties.environmentSlug = environmentSlug;
+app.config.globalProperties.instanceName = instanceName;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;
 app.config.globalProperties.dataSourceSlug = dataSourceSlug;

@@ -50,7 +50,7 @@
                     :to="`/instance/${instanceSlug(dataSource.instance)}`"
                     class="normal-link"
                   >
-                    {{ dataSource.instance.name }}
+                    {{ instanceName(dataSource.instance) }}
                   </router-link>
                 </dd>
                 <dt class="sr-only">Database</dt>

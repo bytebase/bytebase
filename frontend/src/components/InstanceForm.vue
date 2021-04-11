@@ -27,6 +27,7 @@ input[type="number"] {
             name="name"
             type="text"
             class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
             :value="state.instance.name"
             @input="updateInstance('name', $event.target.value)"
           />
@@ -40,6 +41,7 @@ input[type="number"] {
             class="mt-1"
             id="environment"
             name="environment"
+            :disabled="!allowEdit"
             :selectedId="
               create
                 ? state.instance.environmentId
@@ -68,6 +70,7 @@ input[type="number"] {
             name="host"
             placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
             class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
             :value="state.instance.host"
             @input="updateInstance('host', $event.target.value)"
           />
@@ -81,6 +84,7 @@ input[type="number"] {
             name="port"
             placeholder="3306"
             class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
             :value="state.instance.port"
             @input="updateInstance('port', $event.target.value)"
           />
@@ -118,6 +122,7 @@ input[type="number"] {
             name="externallink"
             type="text"
             class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
             :value="state.instance.externalLink"
             @input="updateInstance('externalLink', $event.target.value)"
           />
@@ -240,18 +245,34 @@ input[type="number"] {
       </div>
       <!-- Update button group -->
       <div v-else class="flex justify-between">
-        <BBButtonConfirm
-          :buttonText="'Delete this entire instance'"
-          :requireConfirm="true"
-          :confirmTitle="`Are you sure to delete '${state.instance.name}'?`"
-          :confirmDescription="'All associated data sources will also be deleted. You cannot undo this action.'"
-          @confirm="doDelete"
-        />
+        <template v-if="state.instance.rowStatus == 'NORMAL'">
+          <BBButtonConfirm
+            :style="'ARCHIVE'"
+            :buttonText="'Archive this instance'"
+            :okText="'Archive'"
+            :requireConfirm="true"
+            :confirmTitle="`Archive instance '${state.instance.name}'?`"
+            :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            @confirm="doArchive"
+          />
+        </template>
+        <template v-else-if="state.instance.rowStatus == 'ARCHIVED'">
+          <BBButtonConfirm
+            :style="'RESTORE'"
+            :buttonText="'Restore this instance'"
+            :okText="'Restore'"
+            :requireConfirm="true"
+            :confirmTitle="`Restore instance '${state.instance.name}' to normal state?`"
+            :confirmDescription="''"
+            @confirm="doRestore"
+          />
+        </template>
         <button
+          v-if="allowEdit"
           type="button"
           class="btn-normal ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!allowUpdate"
-          @click.prevent="doUpdate(state.instance)"
+          :disabled="!valueChanged"
+          @click.prevent="doUpdate"
         >
           Update
         </button>
@@ -275,6 +296,7 @@ import {
   UNKNOWN_ID,
   ALL_DATABASE_NAME,
   User,
+  InstancePatch,
 } from "../types";
 
 interface LocalState {
@@ -326,11 +348,20 @@ export default {
       return state.instance.name && state.instance.host;
     });
 
-    const allowUpdate = computed(() => {
+    const allowEdit = computed(() => {
+      return props.create || (state.instance as Instance).rowStatus == "NORMAL";
+    });
+
+    const valueChanged = computed(() => {
       return !isEqual(state.instance, state.originalInstance);
     });
 
     const updateInstance = (field: string, value: string) => {
+      if (field == "environmentId") {
+        (state.instance as Instance).environment = store.getters[
+          "environment/environmentById"
+        ](value);
+      }
       (state.instance as any)[field] = value;
     };
 
@@ -395,9 +426,31 @@ export default {
         });
     };
 
-    const doUpdate = (updatedInstance: Instance) => {
+    const doUpdate = () => {
+      const patchedInstance: InstancePatch = {};
+      if (
+        (state.instance as Instance).environment.id !=
+        state.originalInstance!.environment.id
+      ) {
+        patchedInstance.environmentId = (state.instance as Instance).environment.id;
+      }
+      if (state.instance.name != state.originalInstance!.name) {
+        patchedInstance.name = state.instance.name;
+      }
+      if (state.instance.externalLink != state.originalInstance!.externalLink) {
+        patchedInstance.externalLink = state.instance.externalLink;
+      }
+      if (state.instance.host != state.originalInstance!.host) {
+        patchedInstance.host = state.instance.host;
+      }
+      if (state.instance.port != state.originalInstance!.port) {
+        patchedInstance.port = state.instance.port;
+      }
       store
-        .dispatch("instance/patchInstance", updatedInstance)
+        .dispatch("instance/patchInstance", {
+          instanceId: (state.instance as Instance).id,
+          instancePatch: patchedInstance,
+        })
         .then((instance) => {
           state.originalInstance = instance;
           // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
@@ -406,7 +459,7 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully updated instance '${updatedInstance.name}'.`,
+            title: `Successfully updated instance '${instance.name}'.`,
           });
         })
         .catch((error) => {
@@ -414,20 +467,47 @@ export default {
         });
     };
 
-    const doDelete = () => {
+    const doArchive = () => {
       store
-        .dispatch(
-          "instance/deleteInstanceById",
-          (state.instance as Instance).id
-        )
-        .then(() => {
+        .dispatch("instance/patchInstance", {
+          instanceId: (state.instance as Instance).id,
+          instancePatch: {
+            rowStatus: "ARCHIVED",
+          },
+        })
+        .then((instance) => {
+          state.originalInstance = instance;
+          // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
+          state.instance = cloneDeep(state.originalInstance!);
+
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully deleted instance '${state.instance.name}'.`,
+            title: `Successfully archived instance '${instance.name}'.`,
           });
-          router.push({
-            name: "workspace.instance",
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    const doRestore = () => {
+      store
+        .dispatch("instance/patchInstance", {
+          instanceId: (state.instance as Instance).id,
+          instancePatch: {
+            rowStatus: "NORMAL",
+          },
+        })
+        .then((instance) => {
+          state.originalInstance = instance;
+          // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
+          state.instance = cloneDeep(state.originalInstance!);
+
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully restored instance '${instance.name}'.`,
           });
         })
         .catch((error) => {
@@ -438,12 +518,14 @@ export default {
     return {
       state,
       allowCreate,
-      allowUpdate,
+      allowEdit,
+      valueChanged,
       updateInstance,
       cancel,
       doCreate,
       doUpdate,
-      doDelete,
+      doArchive,
+      doRestore,
     };
   },
 };
