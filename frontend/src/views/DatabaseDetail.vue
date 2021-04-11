@@ -33,16 +33,18 @@
                 {{ environmentName(database.instance.environment) }}
               </router-link>
             </dd>
-            <dt class="sr-only">Instance</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Instance&nbsp;-&nbsp;</span>
-              <router-link
-                :to="`/instance/${instanceSlug(database.instance)}`"
-                class="normal-link"
-              >
-                {{ instanceName(database.instance) }}
-              </router-link>
-            </dd>
+            <template v-if="isCurrentUserDBA">
+              <dt class="sr-only">Instance</dt>
+              <dd class="flex items-center text-sm md:mr-4">
+                <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+                <router-link
+                  :to="`/instance/${instanceSlug(database.instance)}`"
+                  class="normal-link"
+                >
+                  {{ instanceName(database.instance) }}
+                </router-link>
+              </dd>
+            </template>
             <dt class="sr-only">Sync Status</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Sync status&nbsp;-&nbsp;</span>
