@@ -1,11 +1,11 @@
 <template>
   <!-- Description list -->
-  <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-    <div class="sm:col-span-2">
-      <div class="flex items-center space-x-1">
-        <dt class="text-sm font-medium text-control-light">
+  <form class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+    <dl class="sm:col-span-2">
+      <dt class="flex items-center space-x-1">
+        <div class="text-sm font-medium text-control-light">
           Connection string
-        </dt>
+        </div>
         <button
           class="btn-icon"
           @click.prevent="state.showPassword = !state.showPassword"
@@ -47,7 +47,7 @@
             ></path>
           </svg>
         </button>
-      </div>
+      </dt>
       <dd class="mt-2 text-sm text-main">
         <div class="space-y-4">
           <div
@@ -87,9 +87,9 @@
           </div>
         </div>
       </dd>
-    </div>
+    </dl>
 
-    <div class="sm:col-span-1">
+    <dl class="sm:col-span-1">
       <dt class="text-sm font-medium text-control-light">Username</dt>
       <dd class="mt-1 text-sm text-main">
         <input
@@ -104,12 +104,10 @@
           {{ dataSource.username }}
         </div>
       </dd>
-    </div>
+    </dl>
 
-    <div class="sm:col-span-1">
-      <div class="flex items-center space-x-1">
-        <dt class="text-sm font-medium text-control-light">Password</dt>
-      </div>
+    <dl class="sm:col-span-1">
+      <dt class="text-sm font-medium text-control-light">Password</dt>
       <dd class="mt-1 text-sm text-main">
         <input
           v-if="editing"
@@ -127,22 +125,22 @@
           <template v-else> ****** </template>
         </div>
       </dd>
-    </div>
+    </dl>
 
-    <div class="sm:col-span-1">
+    <dl class="sm:col-span-1">
       <dt class="text-sm font-medium text-control-light">Updated</dt>
       <dd class="mt-1 text-sm text-main">
         {{ humanizeTs(dataSource.lastUpdatedTs) }}
       </dd>
-    </div>
+    </dl>
 
-    <div class="sm:col-span-1">
+    <dl class="sm:col-span-1">
       <dt class="text-sm font-medium text-control-light">Created</dt>
       <dd class="mt-1 text-sm text-main">
         {{ humanizeTs(dataSource.createdTs) }}
       </dd>
-    </div>
-  </dl>
+    </dl>
+  </form>
 </template>
 
 <script lang="ts">
