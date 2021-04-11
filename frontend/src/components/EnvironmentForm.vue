@@ -34,35 +34,29 @@
     </div>
     <!-- Update button group -->
     <div v-else class="flex justify-between items-center pt-5">
-      <div v-if="state.environment.rowStatus == 'NORMAL'">
+      <template v-if="state.environment.rowStatus == 'NORMAL'">
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
           :buttonText="'Archive this environment'"
           :okText="'Archive'"
-          :confirmTitle="
-            'Archive environment \'' + state.environment.name + '\' ?'
-          "
+          :confirmTitle="`Archive environment '${state.environment.name}'?`"
           :confirmDescription="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
           :requireConfirm="true"
           @confirm="archiveEnvironment"
         />
-      </div>
-      <div v-else-if="state.environment.rowStatus == 'ARCHIVED'">
+      </template>
+      <template v-else-if="state.environment.rowStatus == 'ARCHIVED'">
         <BBButtonConfirm
           :style="'RESTORE'"
           :buttonText="'Restore this environment'"
           :okText="'Restore'"
-          :confirmTitle="
-            'Restore environment \'' +
-            state.environment.name +
-            '\' to normal state?'
-          "
+          :confirmTitle="`Restore environment '${state.environment.name}' to normal state?`"
           :confirmDescription="''"
           :requireConfirm="true"
           @confirm="restoreEnvironment"
         />
-      </div>
+      </template>
       <div v-else></div>
       <div v-if="allowEdit">
         <button
