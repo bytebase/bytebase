@@ -78,7 +78,7 @@
       <BBTableCell v-if="hasAdminFeature" class="">
         <RoleSelect
           :selectedRole="roleMappingUI.role"
-          :disabled="!allowEdit"
+          :disabled="!allowChangeRole(roleMappingUI.role)"
           @change-role="
             (role) => {
               changeRole(roleMappingUI.id, role);
@@ -101,7 +101,7 @@
       </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
-          v-if="allowEdit"
+          v-if="allowChangeRole(roleMappingUI.role)"
           :requireConfirm="true"
           :okText="'Revoke'"
           :confirmTitle="`Are you sure to revoke '${roleMappingUI.role}' from '${roleMappingUI.principal.name}'`"
@@ -137,7 +137,7 @@ import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
 import { Principal, RoleMapping, RoleMappingId, RoleType } from "../types";
-import { BBTableColumn } from "../bbkit/types";
+import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 
 type RoleMappingUI = RoleMapping & {
@@ -170,52 +170,54 @@ export default {
 
     watchEffect(prepareRoleMappingList);
 
-    const dataSource = computed(() => {
-      const ownerList: RoleMappingUI[] = [];
-      const dbaList: RoleMappingUI[] = [];
-      const developerList: RoleMappingUI[] = [];
-      for (const roleMapping of store.getters[
-        "roleMapping/roleMappingList"
-      ]()) {
-        const roleMappingUI = {
-          ...roleMapping,
-          principal: store.getters["principal/principalById"](
-            roleMapping.principalId
-          ),
-          updater: store.getters["principal/principalById"](
-            roleMapping.updaterId
-          ),
-        };
-        if (!hasAdminFeature.value || roleMappingUI.role === "DEVELOPER") {
-          developerList.push(roleMappingUI);
-        } else if (roleMappingUI.role === "OWNER") {
-          ownerList.push(roleMappingUI);
-        } else if (roleMappingUI.role === "DBA") {
-          dbaList.push(roleMappingUI);
+    const dataSource = computed(
+      (): BBTableSectionDataSource<RoleMappingUI>[] => {
+        const ownerList: RoleMappingUI[] = [];
+        const dbaList: RoleMappingUI[] = [];
+        const developerList: RoleMappingUI[] = [];
+        for (const roleMapping of store.getters[
+          "roleMapping/roleMappingList"
+        ]()) {
+          const roleMappingUI = {
+            ...roleMapping,
+            principal: store.getters["principal/principalById"](
+              roleMapping.principalId
+            ),
+            updater: store.getters["principal/principalById"](
+              roleMapping.updaterId
+            ),
+          };
+          if (!hasAdminFeature.value || roleMappingUI.role === "DEVELOPER") {
+            developerList.push(roleMappingUI);
+          } else if (roleMappingUI.role === "OWNER") {
+            ownerList.push(roleMappingUI);
+          } else if (roleMappingUI.role === "DBA") {
+            dbaList.push(roleMappingUI);
+          }
         }
+        const dataSource: BBTableSectionDataSource<RoleMappingUI>[] = [];
+        if (hasAdminFeature.value) {
+          dataSource.push({
+            title: "Owner",
+            list: ownerList,
+          });
+          dataSource.push({
+            title: "DBA",
+            list: dbaList,
+          });
+          dataSource.push({
+            title: "Developer",
+            list: developerList,
+          });
+        } else {
+          dataSource.push({
+            title: "Member",
+            list: developerList,
+          });
+        }
+        return dataSource;
       }
-      const dataSource = [];
-      if (hasAdminFeature.value) {
-        dataSource.push({
-          title: "Owner",
-          list: ownerList,
-        });
-        dataSource.push({
-          title: "DBA",
-          list: dbaList,
-        });
-        dataSource.push({
-          title: "Developer",
-          list: developerList,
-        });
-      } else {
-        dataSource.push({
-          title: "Member",
-          list: developerList,
-        });
-      }
-      return dataSource;
-    });
+    );
 
     const columnList = computed((): BBTableColumn[] => {
       return hasAdminFeature.value
@@ -250,6 +252,13 @@ export default {
       return isOwner(currentUser.value.role);
     });
 
+    const allowChangeRole = (role: RoleType) => {
+      return (
+        allowEdit.value &&
+        (role != "OWNER" || dataSource.value[0].list.length > 1)
+      );
+    };
+
     const showUpgradeInfo = computed(() => {
       return !hasAdminFeature.value && isOwner(currentUser.value.role);
     });
@@ -280,6 +289,7 @@ export default {
       columnList,
       dataSource,
       allowEdit,
+      allowChangeRole,
       changeRole,
       deleteRole,
     };
