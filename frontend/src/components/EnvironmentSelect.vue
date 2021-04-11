@@ -11,14 +11,22 @@
     <option disabled :selected="undefined === state.selectedId">
       Select environment
     </option>
-    <option
-      v-for="(environment, index) in environmentList"
-      :key="index"
-      :value="environment.id"
-      :selected="environment.id == state.selectedId"
-    >
-      {{ environment.name }}
-    </option>
+    <template v-for="(environment, index) in environmentList" :key="index">
+      <option
+        v-if="environment.rowStatus == 'NORMAL'"
+        :value="environment.id"
+        :selected="environment.id == state.selectedId"
+      >
+        {{ environment.name }}
+      </option>
+      <option
+        v-else-if="environment.id == state.selectedId"
+        :value="environment.id"
+        :selected="true"
+      >
+        {{ environmentName(environment) }}
+      </option>
+    </template>
   </select>
 </template>
 
@@ -57,7 +65,7 @@ export default {
 
     const environmentList = computed(() => {
       return cloneDeep(
-        store.getters["environment/environmentList"]("NORMAL")
+        store.getters["environment/environmentList"]()
       ).reverse();
     });
 
