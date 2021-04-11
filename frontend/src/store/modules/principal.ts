@@ -8,6 +8,7 @@ import {
   PrincipalState,
   PrincipalStatus,
   ResourceObject,
+  UserPatch,
   unknown,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
@@ -106,15 +107,23 @@ const actions = {
 
   async patchPrincipal(
     { commit, rootGetters }: any,
-    principal: PrincipalPatch
+    {
+      principalId,
+      principalPatch,
+    }: {
+      principalId: PrincipalId;
+      principalPatch: PrincipalPatch;
+    }
   ) {
-    const { id, ...attrs } = principal;
+    const userPatch: UserPatch = {
+      name: principalPatch.name,
+    };
     const updatedPrincipal = convert(
       (
-        await axios.patch(`/api/user/${principal.id}`, {
+        await axios.patch(`/api/user/${principalId}`, {
           data: {
-            type: "user",
-            attributes: attrs,
+            type: "userpatch",
+            attributes: userPatch,
           },
         })
       ).data.data,

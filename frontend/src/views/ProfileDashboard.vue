@@ -201,7 +201,6 @@ export default {
     const editUser = () => {
       const clone = cloneDeep(principal.value);
       state.editingPrincipal = {
-        id: clone.id,
         name: clone.name,
       };
       state.editing = true;
@@ -216,7 +215,10 @@ export default {
 
     const saveEdit = () => {
       store
-        .dispatch("principal/patchPrincipal", state.editingPrincipal)
+        .dispatch("principal/patchPrincipal", {
+          principalId: principal.value.id,
+          principalPatch: state.editingPrincipal,
+        })
         .then(() => {
           state.editingPrincipal = undefined;
           state.editing = false;

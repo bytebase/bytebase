@@ -281,7 +281,6 @@ export type PrincipalNew = {
 };
 
 export type PrincipalPatch = {
-  id: PrincipalId;
   name?: string;
 };
 
@@ -292,11 +291,8 @@ export type User = {
   email: string;
 };
 
-export type NewUser = {
-  status: PrincipalStatus;
-  name: string;
-  email: string;
-  password: string;
+export type UserPatch = {
+  name?: string;
 };
 
 // Bookmark

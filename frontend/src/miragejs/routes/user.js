@@ -6,7 +6,7 @@ export default function configureUser(route) {
   route.get("/user");
 
   route.post("/user", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("user");
+    const attrs = this.normalizedRequestAttrs("user-new");
     const user = schema.users.findBy({ email: attrs.email });
     if (user) {
       return user;
@@ -15,11 +15,35 @@ export default function configureUser(route) {
   });
 
   route.patch("/user/:userId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("user");
-    return schema.users.find(request.params.userId).update(attrs);
+    const attrs = this.normalizedRequestAttrs("user-patch");
+    const user = schema.users.find(request.params.userId);
+
+    if (!user) {
+      return new Response(
+        404,
+        {},
+        {
+          errors: "User id " + request.params.userId + " not found",
+        }
+      );
+    }
+
+    return user.update(attrs);
   });
 
   route.get("/user/:userId/database", function (schema, request) {
+    const user = schema.users.find(request.params.userId);
+
+    if (!user) {
+      return new Response(
+        404,
+        {},
+        {
+          errors: "User id " + request.params.userId + " not found",
+        }
+      );
+    }
+
     return schema.databases.where((database) => {
       const dataSourceList = schema.dataSources.where({
         workspaceId: WORKSPACE_ID,

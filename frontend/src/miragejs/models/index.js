@@ -16,6 +16,8 @@ export default {
 
   userNew: Model,
 
+  userPatch: Model,
+
   workspace: Model.extend({
     roleMapping: hasMany(),
     activity: hasMany(),
