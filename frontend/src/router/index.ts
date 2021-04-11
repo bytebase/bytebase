@@ -579,6 +579,16 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (to.name?.toString().startsWith("workspace.database.datasource")) {
+    if (!isDBA(loginUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
   const routerSlug = store.getters["router/routeSlug"](to);
   const environmentSlug = routerSlug.environmentSlug;
   const taskSlug = routerSlug.taskSlug;

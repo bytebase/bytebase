@@ -43,16 +43,18 @@
                     {{ environmentName(dataSource.instance.environment) }}
                   </router-link>
                 </dd>
-                <dt class="sr-only">Instance</dt>
-                <dd class="flex items-center text-sm sm:mr-4">
-                  <span class="textlabel">Instance&nbsp;-&nbsp;</span>
-                  <router-link
-                    :to="`/instance/${instanceSlug(dataSource.instance)}`"
-                    class="normal-link"
-                  >
-                    {{ instanceName(dataSource.instance) }}
-                  </router-link>
-                </dd>
+                <template v-if="isCurrentUserDBA">
+                  <dt class="sr-only">Instance</dt>
+                  <dd class="flex items-center text-sm sm:mr-4">
+                    <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+                    <router-link
+                      :to="`/instance/${instanceSlug(dataSource.instance)}`"
+                      class="normal-link"
+                    >
+                      {{ instanceName(dataSource.instance) }}
+                    </router-link>
+                  </dd>
+                </template>
                 <dt class="sr-only">Database</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
                   <span class="textlabel">Database&nbsp;-&nbsp;</span>
@@ -71,7 +73,7 @@
             </div>
           </div>
         </div>
-        <div class="mt-6 flex space-x-3 md:mt-0 md:ml-4">
+        <div v-if="allowEdit" class="mt-6 flex space-x-3 md:mt-0 md:ml-4">
           <template v-if="state.editing">
             <button
               type="button"
@@ -211,6 +213,10 @@ export default {
       }
     );
 
+    const isCurrentUserDBA = computed((): boolean => {
+      return isDBA(currentUser.value.role);
+    });
+
     const allowEdit = computed(() => {
       return isDBA(currentUser.value.role);
     });
@@ -273,6 +279,7 @@ export default {
       editNameTextField,
       state,
       dataSource,
+      isCurrentUserDBA,
       allowEdit,
       allowSave,
       editDataSource,

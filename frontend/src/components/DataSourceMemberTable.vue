@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center">
       <div class="inline-flex items-center space-x-2">
         <h2 class="text-lg leading-7 font-medium text-main">User list</h2>
-        <BBButtonAdd @add="state.showCreateModal = true" />
+        <BBButtonAdd v-if="allowEdit" @add="state.showCreateModal = true" />
       </div>
       <BBTableSearch
         ref="searchField"
@@ -99,7 +99,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect, PropType } from "vue";
+import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import { DataSource, DataSourceMember } from "../types";
