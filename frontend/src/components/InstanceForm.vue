@@ -18,30 +18,15 @@ input[type="number"] {
       <!-- Instance Name -->
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2 sm:col-start-1">
-          <label for="name" class="textlabel">
-            Instance Name <span style="color: red">*</span>
-          </label>
-          <input
-            required
-            id="name"
-            name="name"
-            type="text"
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :value="state.instance.name"
-            @input="updateInstance('name', $event.target.value)"
-          />
-        </div>
-
-        <div class="sm:col-span-2 sm:col-start-1">
           <label for="environment" class="textlabel">
-            Environment <span style="color: red">*</span>
+            Environment <span v-if="create" style="color: red">*</span>
           </label>
+          <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
           <EnvironmentSelect
             class="mt-1"
             id="environment"
             name="environment"
-            :disabled="!allowEdit"
+            :disabled="!create"
             :selectedId="
               create
                 ? state.instance.environmentId
@@ -56,6 +41,22 @@ input[type="number"] {
                 }
               }
             "
+          />
+        </div>
+
+        <div class="sm:col-span-2 sm:col-start-1">
+          <label for="name" class="textlabel">
+            Instance Name <span style="color: red">*</span>
+          </label>
+          <input
+            required
+            id="name"
+            name="name"
+            type="text"
+            class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
+            :value="state.instance.name"
+            @input="updateInstance('name', $event.target.value)"
           />
         </div>
 
@@ -357,11 +358,6 @@ export default {
     });
 
     const updateInstance = (field: string, value: string) => {
-      if (field == "environmentId") {
-        (state.instance as Instance).environment = store.getters[
-          "environment/environmentById"
-        ](value);
-      }
       (state.instance as any)[field] = value;
     };
 
@@ -428,12 +424,6 @@ export default {
 
     const doUpdate = () => {
       const patchedInstance: InstancePatch = {};
-      if (
-        (state.instance as Instance).environment.id !=
-        state.originalInstance!.environment.id
-      ) {
-        patchedInstance.environmentId = (state.instance as Instance).environment.id;
-      }
       if (state.instance.name != state.originalInstance!.name) {
         patchedInstance.name = state.instance.name;
       }

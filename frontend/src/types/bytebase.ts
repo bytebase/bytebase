@@ -661,7 +661,6 @@ export type InstanceNew = {
 
 export type InstancePatch = {
   rowStatus?: RowStatus;
-  environmentId?: EnvironmentId;
   name?: string;
   externalLink?: string;
   host?: string;

@@ -99,14 +99,6 @@ export default function configurInstance(route) {
       });
     }
 
-    if (attrs.environmentId && attrs.environmentId != instance.environmentId) {
-      changeList.push({
-        fieldId: InstanceBuiltinFieldId.ENVIRONMENT,
-        oldValue: instance.environmentId,
-        newValue: attrs.environmentId,
-      });
-    }
-
     if (attrs.externalLink && attrs.externalLink != instance.externalLink) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.EXTERNAL_LINK,
