@@ -47,34 +47,45 @@ const actions = {
     return loggedInUser;
   },
 
-  async signup({ commit, rootGetters }: any, signupInfo: SignupInfo) {
-    const newUser = convert(
-      (
-        await axios.post("/api/auth/signup", {
-          data: { type: "signupInfo", attributes: signupInfo },
-        })
-      ).data.data,
-      rootGetters
-    );
+  async signup({ commit, dispatch, rootGetters }: any, signupInfo: SignupInfo) {
+    const newUser = (
+      await axios.post("/api/auth/signup", {
+        data: { type: "signupInfo", attributes: signupInfo },
+      })
+    ).data.data;
 
-    localStorage.setItem("bb.auth.user", JSON.stringify(newUser));
-    commit("setCurrentUser", newUser);
-    return newUser;
+    // Refresh the corresponding principal
+    await dispatch("principal/fetchPrincipalById", newUser.id, { root: true });
+
+    // The conversion relies on the above step.
+    const convertedUser = convert(newUser, rootGetters);
+
+    localStorage.setItem("bb.auth.user", JSON.stringify(convertedUser));
+    commit("setCurrentUser", convertedUser);
+
+    return convertedUser;
   },
 
-  async activate({ commit, rootGetters }: any, activateInfo: ActivateInfo) {
-    const activatedUser = convert(
-      (
-        await axios.post("/api/auth/activate", {
-          data: { type: "activateInfo", attributes: activateInfo },
-        })
-      ).data.data,
-      rootGetters
-    );
+  async activate(
+    { commit, dispatch, rootGetters }: any,
+    activateInfo: ActivateInfo
+  ) {
+    const activatedUser = (
+      await axios.post("/api/auth/activate", {
+        data: { type: "activateInfo", attributes: activateInfo },
+      })
+    ).data.data;
 
-    localStorage.setItem("bb.auth.user", JSON.stringify(activatedUser));
-    commit("setCurrentUser", activatedUser);
-    return activatedUser;
+    // Refresh the corresponding principal
+    dispatch("principal/fetchPrincipalById", activatedUser.id, { root: true });
+
+    // The conversion relies on the above step to get the lastest data
+    const convertedUser = convert(activatedUser, rootGetters);
+
+    localStorage.setItem("bb.auth.user", JSON.stringify(convertedUser));
+    commit("setCurrentUser", convertedUser);
+
+    return convertedUser;
   },
 
   async restoreUser({ commit }: any) {

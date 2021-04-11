@@ -72,7 +72,7 @@ const actions = {
       rootGetters
     );
 
-    commit("replacePrincipalInList", principal);
+    commit("upsertPrincipalInList", principal);
 
     return principal;
   },
@@ -120,7 +120,7 @@ const actions = {
       rootGetters
     );
 
-    commit("replacePrincipalInList", updatedPrincipal);
+    commit("upsertPrincipalInList", updatedPrincipal);
 
     return updatedPrincipal;
   },
@@ -135,11 +135,13 @@ const mutations = {
     state.principalList.push(newPrincipal);
   },
 
-  replacePrincipalInList(state: PrincipalState, updatedPrincipal: Principal) {
+  upsertPrincipalInList(state: PrincipalState, updatedPrincipal: Principal) {
     const i = state.principalList.findIndex(
       (item: Principal) => item.id == updatedPrincipal.id
     );
-    if (i != -1) {
+    if (i == -1) {
+      state.principalList.push(updatedPrincipal);
+    } else {
       state.principalList[i] = updatedPrincipal;
     }
   },
