@@ -8,6 +8,7 @@ import {
   unknown,
   RowStatus,
   EnvironmentPatch,
+  BatchUpdate,
 } from "../../types";
 
 function convert(environment: ResourceObject): Environment {
@@ -82,14 +83,15 @@ const actions = {
     { commit }: any,
     orderedEnvironmentList: Environment[]
   ) {
+    const batchUpdate: BatchUpdate = {
+      idList: orderedEnvironmentList.map((item) => item.id),
+      fieldMaskList: ["order"],
+      rowValueList: orderedEnvironmentList.map((_, index) => [index]),
+    };
     const environmentList = (
       await axios.patch(`/api/environment/batch`, {
         data: {
-          attributes: {
-            idList: orderedEnvironmentList.map((item) => item.id),
-            fieldMaskList: ["order"],
-            rowValueList: orderedEnvironmentList.map((_, index) => [index]),
-          },
+          attributes: batchUpdate,
           type: "batchupdate",
         },
       })

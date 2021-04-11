@@ -218,6 +218,12 @@ export type CommandRegisterId = string;
 // The type is used by Activity and Message
 export type ContainerId = TaskId;
 
+export type BatchUpdate = {
+  idList: string[];
+  fieldMaskList: string[];
+  rowValueList: any[][];
+};
+
 // Persistent State Models
 
 // RowStatus

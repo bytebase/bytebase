@@ -1,24 +1,16 @@
 import user from "./user";
 import bookmark from "./bookmark";
 import environment from "./environment";
-import environmentNew from "./environmentNew";
-import environmentPatch from "./environmentPatch";
 import instance from "./instance";
-import instanceNew from "./instanceNew";
 import dataSource from "./dataSource";
 import dataSourceMember from "./dataSourceMember";
 import database from "./database";
-import databasePatch from "./databasePatch";
 import task from "./task";
-import taskPatch from "./taskPatch";
 import activity from "./activity";
-import activityPatch from "./activityPatch";
 import message from "./message";
-import messagePatch from "./messagePatch";
 import workspace from "./workspace";
 import roleMapping from "./roleMapping";
 
-import batchUpdate from "./batchUpdate";
 import loginInfo from "./loginInfo";
 import signupInfo from "./signupInfo";
 import activateInfo from "./activateInfo";
@@ -32,24 +24,16 @@ export default {
   ...user,
   ...bookmark,
   ...environment,
-  ...environmentNew,
-  ...environmentPatch,
   ...instance,
-  ...instanceNew,
   ...dataSource,
   ...dataSourceMember,
   ...database,
-  ...databasePatch,
   ...message,
-  ...messagePatch,
   ...task,
-  ...taskPatch,
   ...activity,
-  ...activityPatch,
 
   ...workspace,
   ...roleMapping,
-  ...batchUpdate,
   ...loginInfo,
   ...signupInfo,
   ...activateInfo,
