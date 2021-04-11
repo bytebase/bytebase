@@ -10,7 +10,7 @@ import {
 
 // Task
 // It has to be string type because the id for stage field contain multiple parts.
-export type TaskFieldId = string;
+export type FieldId = string;
 
 export enum TaskBuiltinFieldId {
   NAME = "1",
@@ -59,7 +59,7 @@ export type TaskField = {
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
   // is very similar to the message field id in Protocol Buffers.
-  id: TaskFieldId;
+  id: FieldId;
   // Used as the key to generate UI artifacts (e.g. query parameter).
   // Though changing it won't have catastrophic consequence like changing
   // id, we strongly recommend NOT to change it as well, otherwise, previous

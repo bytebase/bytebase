@@ -1,4 +1,4 @@
-import { TaskField, TaskFieldId, TaskTemplate, UNKNOWN_FIELD } from "../types";
+import { TaskField, FieldId, TaskTemplate, UNKNOWN_FIELD } from "../types";
 import { TaskType } from "../../types";
 import DefaultTemplate from "./DefaultTemplate";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
@@ -22,7 +22,7 @@ export function templateForType(type: TaskType): TaskTemplate | undefined {
 
 export function fieldFromId(
   template: TaskTemplate,
-  fieldId: TaskFieldId
+  fieldId: FieldId
 ): TaskField {
   if (template.fieldList) {
     return (

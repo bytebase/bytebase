@@ -45,8 +45,15 @@
                   class="font-medium text-main hover:underline"
                   >{{ message.creator.name }}</router-link
                 >
-                <template v-if="message.type == 'bb.msg.environment.create'">
-                  <span class="ml-1"> created environment</span>
+                <span class="ml-1"> {{ actionSentence(message) }}</span>
+                <template
+                  v-if="
+                    message.type == 'bb.msg.environment.create' ||
+                    message.type == 'bb.msg.environment.update' ||
+                    message.type == 'bb.msg.environment.archive' ||
+                    message.type == 'bb.msg.environment.restore'
+                  "
+                >
                   <router-link
                     :to="`/environment#${message.containerId}`"
                     class="normal-link ml-1"
@@ -57,13 +64,11 @@
                 <template
                   v-else-if="message.type == 'bb.msg.environment.delete'"
                 >
-                  <span class="ml-1"> deleted environment</span>
                   <span class="font-medium text-main ml-1">
                     {{ message.payload.environmentName }}
                   </span>
                 </template>
                 <template v-else-if="message.type == 'bb.msg.instance.create'">
-                  <span class="ml-1"> created instance</span>
                   <router-link
                     :to="`/instance/${message.containerId}`"
                     class="normal-link ml-1"
@@ -72,62 +77,11 @@
                   </router-link>
                 </template>
                 <template v-else-if="message.type == 'bb.msg.instance.delete'">
-                  <span class="ml-1"> deleted instance</span>
                   <span class="font-medium text-main ml-1">
                     {{ message.payload.instanceName }}
                   </span>
                 </template>
                 <template v-else-if="message.type == 'bb.msg.task.assign'">
-                  <span class="text-sm ml-1">
-                    <template
-                      v-if="
-                        message.payload.oldAssigneeId == '-1' &&
-                        message.payload.newAssigneeId != '-1'
-                      "
-                    >
-                      assigned
-                      {{
-                        currentUser.id == message.payload.newAssigneeId
-                          ? "you"
-                          : principalFromId(message.payload.newAssigneeId).name
-                      }}
-                      task
-                    </template>
-                    <template
-                      v-else-if="
-                        message.payload.oldAssigneeId != '-1' &&
-                        message.payload.newAssigneeId != '-1'
-                      "
-                    >
-                      re-assigned from
-                      {{
-                        currentUser.id == message.payload.oldAssigneeId
-                          ? "you"
-                          : principalFromId(message.payload.oldAssigneeId).name
-                      }}
-                      to
-                      {{
-                        currentUser.id == message.payload.newAssigneeId
-                          ? "you"
-                          : principalFromId(message.payload.newAssigneeId).name
-                      }}
-                      task
-                    </template>
-                    <template
-                      v-else-if="
-                        message.payload.oldAssigneeId != '-1' &&
-                        message.payload.newAssigneeId == '-1'
-                      "
-                    >
-                      un-assigned
-                      {{
-                        currentUser.id == message.payload.oldAssigneeId
-                          ? "you"
-                          : principalFromId(message.payload.oldAssigneeId).name
-                      }}
-                      task
-                    </template>
-                  </span>
                   <router-link
                     :to="`/task/${message.containerId}`"
                     class="normal-link ml-1"
@@ -138,10 +92,6 @@
                 <template
                   v-else-if="message.type == 'bb.msg.task.updatestatus'"
                 >
-                  <span class="ml-1">
-                    changed task status from {{ message.payload.oldStatus }} to
-                    {{ message.payload.newStatus }}</span
-                  >
                   <router-link
                     :to="`/task/${message.containerId}`"
                     class="normal-link ml-1"
@@ -150,7 +100,6 @@
                   </router-link>
                 </template>
                 <template v-else-if="message.type == 'bb.msg.task.comment'">
-                  <span class="ml-1"> commented task</span>
                   <router-link
                     :to="`/task/${message.containerId}#activity${message.payload.commentId}`"
                     class="normal-link ml-1"
@@ -183,11 +132,14 @@ import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import {
   Message,
+  MessagePayload,
   Principal,
   PrincipalId,
   TaskAssignMessagePayload,
   TaskUpdateStatusMessagePayload,
+  UNKNOWN_ID,
 } from "../types";
+import { assign } from "lodash";
 
 interface LocalState {
   showAll: boolean;
@@ -247,6 +199,69 @@ export default {
       return store.getters["principal/principalById"](principalId);
     };
 
+    const actionSentence = (message: Message): string => {
+      switch (message.type) {
+        case "bb.msg.environment.create":
+          return "created environment";
+        case "bb.msg.environment.update":
+          return "updated environment";
+        case "bb.msg.environment.delete":
+          return "deleted environment";
+        case "bb.msg.environment.archive":
+          return "archived environment";
+        case "bb.msg.environment.restore":
+          return "restored environment";
+        case "bb.msg.instance.create":
+          return "created instance";
+        case "bb.msg.instance.delete":
+          return "deleted instance";
+        case "bb.msg.task.assign": {
+          const payload = message.payload as TaskAssignMessagePayload;
+          if (
+            payload.oldAssigneeId == UNKNOWN_ID &&
+            payload.newAssigneeId != UNKNOWN_ID
+          ) {
+            return "assigned " + currentUser.value.id == payload.newAssigneeId
+              ? "you"
+              : principalFromId(payload.newAssigneeId).name + " task";
+          } else if (
+            payload.oldAssigneeId != UNKNOWN_ID &&
+            payload.newAssigneeId == UNKNOWN_ID
+          ) {
+            return "un-assigned " + currentUser.value.id ==
+              payload.oldAssigneeId
+              ? "you"
+              : principalFromId(payload.oldAssigneeId).name + " task";
+          } else if (
+            payload.oldAssigneeId != UNKNOWN_ID &&
+            payload.newAssigneeId != UNKNOWN_ID
+          ) {
+            return "re-assigned from " + currentUser.value.id ==
+              payload.oldAssigneeId
+              ? "you"
+              : principalFromId(payload.oldAssigneeId).name +
+                  " to " +
+                  currentUser.value.id ==
+                payload.newAssigneeId
+              ? "you"
+              : principalFromId(payload.newAssigneeId).name + " task";
+          }
+          return "assigned task";
+        }
+        case "bb.msg.task.updatestatus": {
+          const payload = message.payload as TaskUpdateStatusMessagePayload;
+          return (
+            "changed task status from " +
+            payload.oldStatus +
+            " to " +
+            payload.newStatus
+          );
+        }
+        case "bb.msg.task.comment":
+          return "commented task";
+      }
+    };
+
     const clickMessage = (message: Message) => {
       if (message.status == "DELIVERED") {
         state.whitelist.push(message);
@@ -279,6 +294,7 @@ export default {
       currentUser,
       principalFromId,
       effectiveMessageList,
+      actionSentence,
       clickMessage,
       showAll,
       markAllAsRead,

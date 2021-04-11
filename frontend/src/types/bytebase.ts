@@ -1,6 +1,6 @@
 import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
-import { TaskFieldId } from "../plugins";
+import { FieldId } from "../plugins";
 
 export const UNKNOWN_ID = "-1";
 
@@ -483,7 +483,7 @@ export type ActionType = TaskActionType;
 
 export type ActionTaskFieldUpdatePayload = {
   changeList: {
-    fieldId: TaskFieldId;
+    fieldId: FieldId;
     oldValue?: string;
     newValue?: string;
   }[];
@@ -519,7 +519,10 @@ export type ActivityPatch = {
 // Message
 export type EnvironmentMessageType =
   | "bb.msg.environment.create"
-  | "bb.msg.environment.delete";
+  | "bb.msg.environment.update"
+  | "bb.msg.environment.delete"
+  | "bb.msg.environment.archive"
+  | "bb.msg.environment.restore";
 
 export type InstanceMessageType =
   | "bb.msg.instance.create"
@@ -535,8 +538,22 @@ export type MessageType =
   | InstanceMessageType
   | TaskMessageType;
 
+export type EnvironmentUpdateMessagePayload = {
+  environmentName: string;
+};
+
+export enum EnvironmentBuiltinFieldId {
+  ROW_STATUS = "1",
+  NAME = "2",
+}
+
 export type EnvironmentMessagePayload = {
   environmentName: string;
+  changeList: {
+    fieldId: EnvironmentBuiltinFieldId;
+    oldValue?: any;
+    newValue?: any;
+  }[];
 };
 
 export type InstanceMessagePaylaod = {
@@ -562,6 +579,7 @@ export type TaskCommentMessagePayload = {
 
 export type MessagePayload =
   | EnvironmentMessagePayload
+  | EnvironmentUpdateMessagePayload
   | InstanceMessagePaylaod
   | TaskAssignMessagePayload
   | TaskUpdateStatusMessagePayload
