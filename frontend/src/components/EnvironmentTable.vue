@@ -12,7 +12,7 @@
         <span class="">#{{ environment.id }}</span>
       </BBTableCell>
       <BBTableCell class="w-48 table-cell">
-        {{ environment.name }}
+        {{ environmentName(environment) }}
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">
         {{ humanizeTs(environment.createdTs) }}
