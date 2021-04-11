@@ -1,9 +1,6 @@
 <template>
-  <div
-    v-if="state.environment.rowStatus == 'ARCHIVED'"
-    class="h-10 w-full text-2xl font-bold bg-gray-700 text-white flex justify-center items-center"
-  >
-    Archived
+  <div class="py-2">
+    <ArchiveBanner v-if="state.environment.rowStatus == 'ARCHIVED'" />
   </div>
   <EnvironmentForm
     v-if="state.environment"
@@ -17,6 +14,7 @@
 <script lang="ts">
 import { reactive } from "vue";
 import { useStore } from "vuex";
+import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { Environment, EnvironmentPatch } from "../types";
 import { idFromSlug } from "../utils";
@@ -25,6 +23,7 @@ export default {
   name: "EnvironmentDetail",
   emits: ["archive"],
   components: {
+    ArchiveBanner,
     EnvironmentForm,
   },
   props: {

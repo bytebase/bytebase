@@ -1,9 +1,6 @@
 <template>
-  <div
-    v-if="instance.rowStatus == 'ARCHIVED'"
-    class="h-10 w-full text-2xl font-bold bg-gray-700 text-white flex justify-center items-center"
-  >
-    Archived
+  <div class="py-2">
+    <ArchiveBanner v-if="instance.rowStatus == 'ARCHIVED'" />
   </div>
   <div class="px-6 space-y-6">
     <InstanceForm :create="false" :instance="instance" />
@@ -17,12 +14,14 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
+import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 
 export default {
   name: "InstanceDetail",
   components: {
+    ArchiveBanner,
     DataSourceTable,
     InstanceForm,
   },
