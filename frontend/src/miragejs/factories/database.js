@@ -21,7 +21,7 @@ export default {
         return "OK";
       }
       if (i % 3 == 1) {
-        return "MISMATCH";
+        return "DRIFTED";
       }
       if (i % 3 == 2) {
         return "NOT_FOUND";

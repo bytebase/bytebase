@@ -17,7 +17,7 @@
       <BBTableCell class="w-24">
         {{ instanceName(database.instance) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-8" v-database-sync-status>
         {{ database.syncStatus }}
       </BBTableCell>
       <BBTableCell class="w-16">

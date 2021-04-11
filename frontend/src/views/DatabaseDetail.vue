@@ -48,7 +48,7 @@
             <dt class="sr-only">Sync Status</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Sync status&nbsp;-&nbsp;</span>
-              {{ database.syncStatus }}
+              <span v-database-sync-status>{{ database.syncStatus }}</span>
             </dd>
             <dt class="sr-only">Last successful sync</dt>
             <dd class="flex items-center text-sm">
