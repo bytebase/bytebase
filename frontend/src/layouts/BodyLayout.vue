@@ -40,7 +40,7 @@
             <router-view name="leftSidebar" />
           </div>
           <router-link
-            v-if="isCurrentUserDBA"
+            v-if="isCurrentUserDBAOrOwner"
             to="/archive"
             class="outline-item group flex items-center px-4 py-2"
           >
@@ -100,7 +100,7 @@
           <router-view name="leftSidebar" />
         </div>
         <router-link
-          v-if="isCurrentUserDBA"
+          v-if="isCurrentUserDBAOrOwner"
           to="/archive"
           class="outline-item group flex items-center px-4 py-2"
         >
@@ -220,7 +220,7 @@ import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType, RoleType } from "../types";
-import { isDBA, isDeveloper, isOwner } from "../utils";
+import { isDBA, isDBAOrOwner, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -282,8 +282,8 @@ export default {
       return list;
     });
 
-    const isCurrentUserDBA = computed((): boolean => {
-      return isDBA(currentUser.value.role);
+    const isCurrentUserDBAOrOwner = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const showBreadcrumb = computed(() => {
@@ -298,7 +298,7 @@ export default {
     return {
       state,
       quickActionList,
-      isCurrentUserDBA,
+      isCurrentUserDBAOrOwner,
       showBreadcrumb,
       showIntro,
     };

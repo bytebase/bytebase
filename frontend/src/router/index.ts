@@ -17,7 +17,7 @@ import Signup from "../views/auth/Signup.vue";
 import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
-import { isDev, idFromSlug, isDBA } from "../utils";
+import { isDev, idFromSlug, isDBAOrOwner } from "../utils";
 import { Principal } from "../types";
 
 const HOME_MODULE = "workspace.home";
@@ -99,10 +99,10 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "DEVELOPER",
                   [
-                    "quickaction.bytebase.database.troubleshoot",
                     "quickaction.bytebase.database.schema.update",
                     "quickaction.bytebase.database.request",
                     "quickaction.bytebase.project.create",
+                    "quickaction.bytebase.database.troubleshoot",
                   ],
                 ],
               ]),
@@ -595,10 +595,24 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.environment" ||
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
-    to.name === "workspace.database.create" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();
+    return;
+  }
+
+  if (to.name === "workspace.database.create") {
+    if (
+      !store.getters["plan/feature"]("bytebase.dbaworkflow") ||
+      isDBAOrOwner(loginUser.role)
+    ) {
+      next();
+    } else {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+    }
     return;
   }
 
@@ -606,7 +620,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.archive" ||
     to.name?.toString().startsWith("workspace.instance")
   ) {
-    if (isDBA(loginUser.role)) {
+    if (isDBAOrOwner(loginUser.role)) {
       next();
     } else {
       next({
@@ -618,7 +632,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
-    if (!isDBA(loginUser.role)) {
+    if (!isDBAOrOwner(loginUser.role)) {
       next({
         name: "error.403",
         replace: false,

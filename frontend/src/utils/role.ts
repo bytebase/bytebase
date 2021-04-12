@@ -12,13 +12,13 @@ export function isOwner(role: RoleType): boolean {
   return !store.getters["plan/feature"]("bytebase.admin") || role == "OWNER";
 }
 
-// Returns true if admin feature is NOT supported or the principal DBA or OWNER
+// Returns true if admin feature is NOT supported or the principal is DBA
 export function isDBA(role: RoleType): boolean {
-  return (
-    !store.getters["plan/feature"]("bytebase.admin") ||
-    role == "DBA" ||
-    role == "OWNER"
-  );
+  return !store.getters["plan/feature"]("bytebase.admin") || role == "DBA";
+}
+
+export function isDBAOrOwner(role: RoleType): boolean {
+  return isDBA(role) || isOwner(role);
 }
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
@@ -26,6 +26,11 @@ export function isDeveloper(role: RoleType): boolean {
   return (
     !store.getters["plan/feature"]("bytebase.admin") || role == "DEVELOPER"
   );
+}
+
+// Returns true if admin feature is NOT supported or the principal is GUEST
+export function isGuest(role: RoleType): boolean {
+  return !store.getters["plan/feature"]("bytebase.admin") || role == "GUEST";
 }
 
 export function roleName(role: RoleType): string {

@@ -5,14 +5,14 @@ import {
   DataSourceType,
   Principal,
 } from "../types";
-import { isDBA } from "./role";
+import { isDBAOrOwner } from "./role";
 
 export function allowDatabaseAccess(
   database: Database,
   principal: Principal,
   type: DataSourceType
 ): boolean {
-  if (isDBA(principal.role)) {
+  if (isDBAOrOwner(principal.role)) {
     return true;
   }
 

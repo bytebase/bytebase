@@ -827,8 +827,12 @@ export type ActivateInfo = {
 
 // Plan
 export type FeatureType =
-  // - Task can only be assigned to DBA and Owner
-  "bytebase.admin";
+  // Support Owner and DBA role at the workspace level
+  | "bytebase.admin"
+  // Support DBA workflow, including
+  // 1. Developers can't create database directly, they need to do this via a request db task.
+  // 2. Allow developers to submit troubleshooting ticket.
+  | "bytebase.dbaworkflow";
 
 export enum PlanType {
   FREE = 0,

@@ -43,7 +43,7 @@
                     {{ environmentName(dataSource.instance.environment) }}
                   </router-link>
                 </dd>
-                <template v-if="isCurrentUserDBA">
+                <template v-if="isCurrentUserDBAOrOwner">
                   <dt class="sr-only">Instance</dt>
                   <dd class="flex items-center text-sm sm:mr-4">
                     <span class="textlabel">Instance&nbsp;-&nbsp;</span>
@@ -168,7 +168,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
-import { idFromSlug, isDBA } from "../utils";
+import { idFromSlug, isDBAOrOwner } from "../utils";
 import { DataSource, Principal } from "../types";
 
 interface LocalState {
@@ -213,12 +213,12 @@ export default {
       }
     );
 
-    const isCurrentUserDBA = computed((): boolean => {
-      return isDBA(currentUser.value.role);
+    const isCurrentUserDBAOrOwner = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const allowEdit = computed(() => {
-      return isDBA(currentUser.value.role);
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const allowSave = computed(() => {
@@ -279,7 +279,7 @@ export default {
       editNameTextField,
       state,
       dataSource,
-      isCurrentUserDBA,
+      isCurrentUserDBAOrOwner,
       allowEdit,
       allowSave,
       editDataSource,

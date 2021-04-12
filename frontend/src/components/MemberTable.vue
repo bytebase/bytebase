@@ -187,32 +187,43 @@ export default {
               roleMapping.updaterId
             ),
           };
-          if (!hasAdminFeature.value || roleMappingUI.role === "DEVELOPER") {
-            developerList.push(roleMappingUI);
-          } else if (roleMappingUI.role === "OWNER") {
+
+          if (roleMappingUI.role == "OWNER") {
             ownerList.push(roleMappingUI);
-          } else if (roleMappingUI.role === "DBA") {
+          }
+
+          if (roleMappingUI.role == "DBA") {
             dbaList.push(roleMappingUI);
           }
+
+          if (roleMappingUI.role == "DEVELOPER") {
+            developerList.push(roleMappingUI);
+          }
         }
+
         const dataSource: BBTableSectionDataSource<RoleMappingUI>[] = [];
         if (hasAdminFeature.value) {
           dataSource.push({
             title: "Owner",
             list: ownerList,
           });
+
           dataSource.push({
             title: "DBA",
             list: dbaList,
           });
+
           dataSource.push({
             title: "Developer",
             list: developerList,
           });
         } else {
+          ownerList.push(...dbaList);
+          ownerList.push(...developerList);
+
           dataSource.push({
             title: "Member",
-            list: developerList,
+            list: ownerList,
           });
         }
         return dataSource;

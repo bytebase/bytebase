@@ -2,7 +2,7 @@
   <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="my-2 space-y-2 divide-y divide-block-border">
     <BBTableTabFilter
-      v-if="isCurrentUserDBA"
+      v-if="isCurrentUserDBAOrOwner"
       class="mx-2"
       :tabList="['General', 'Membership']"
       :selectedIndex="state.selectedIndex"
@@ -171,7 +171,7 @@ import {
   TaskUpdateStatusMessagePayload,
   UNKNOWN_ID,
 } from "../types";
-import { isDBA, roleName } from "../utils";
+import { isDBAOrOwner, roleName } from "../utils";
 
 const GENERAL_TAB = 0;
 const MEMBERSHIP_TAB = 1;
@@ -219,8 +219,8 @@ export default {
       state.whitelist = [];
     });
 
-    const isCurrentUserDBA = computed((): boolean => {
-      return isDBA(currentUser.value.role);
+    const isCurrentUserDBAOrOwner = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const effectiveMessageList = computed(() => {
@@ -377,7 +377,7 @@ export default {
       state,
       currentUser,
       principalFromId,
-      isCurrentUserDBA,
+      isCurrentUserDBAOrOwner,
       effectiveMessageList,
       actionSentence,
       clickMessage,

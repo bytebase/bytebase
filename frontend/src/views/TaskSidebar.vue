@@ -215,7 +215,7 @@ import {
   DatabaseFieldPayload,
 } from "../plugins";
 import { DatabaseId, EnvironmentId, Principal, Task } from "../types";
-import { isDBA } from "../utils";
+import { isDBAOrOwner } from "../utils";
 
 interface LocalState {}
 
@@ -296,7 +296,7 @@ export default {
         props.new ||
         (props.task.status == "OPEN" &&
           (currentUser.value.id == props.task.assignee?.id ||
-            isDBA(currentUser.value.role)))
+            isDBAOrOwner(currentUser.value.role)))
       );
     });
 

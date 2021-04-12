@@ -33,7 +33,7 @@
                 {{ environmentName(database.instance.environment) }}
               </router-link>
             </dd>
-            <template v-if="isCurrentUserDBA">
+            <template v-if="isCurrentUserDBAOrOwner">
               <dt class="sr-only">Instance</dt>
               <dd class="flex items-center text-sm md:mr-4">
                 <span class="textlabel">Instance&nbsp;-&nbsp;</span>
@@ -135,7 +135,7 @@
                 <div v-for="(ds, index) of item.list" :key="index">
                   <!-- Only displays the data source link for DBA. Since for now
                   we don't need to expose the data source concept to the end user -->
-                  <div v-if="isCurrentUserDBA" class="relative mb-2">
+                  <div v-if="isCurrentUserDBAOrOwner" class="relative mb-2">
                     <div
                       class="absolute inset-0 flex items-center"
                       aria-hidden="true"
@@ -172,7 +172,7 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
-import { idFromSlug, isDBA } from "../utils";
+import { idFromSlug, isDBAOrOwner } from "../utils";
 import { PrincipalId, DataSource, ProjectId } from "../types";
 
 interface LocalState {
@@ -212,26 +212,28 @@ export default {
       );
     });
 
-    const isCurrentUserDBA = computed((): boolean => {
-      return isDBA(currentUser.value.role);
+    const isCurrentUserDBAOrOwner = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const allowChangeProject = computed(() => {
       return (
-        currentUser.value.id == database.value.ownerId || isCurrentUserDBA.value
+        currentUser.value.id == database.value.ownerId ||
+        isCurrentUserDBAOrOwner.value
       );
     });
 
     const allowChangeOwner = computed(() => {
       return (
-        currentUser.value.id == database.value.ownerId || isCurrentUserDBA.value
+        currentUser.value.id == database.value.ownerId ||
+        isCurrentUserDBAOrOwner.value
       );
     });
 
     const dataSourceList = computed(() => {
       return database.value.dataSourceList.filter((dataSource: DataSource) => {
         return (
-          isCurrentUserDBA.value ||
+          isCurrentUserDBAOrOwner.value ||
           // If the current user is not DBA, we will only show the granted data source.
           dataSource.memberList.find((item) => {
             return item.principal.id == currentUser.value.id;
@@ -281,7 +283,7 @@ export default {
     return {
       state,
       database,
-      isCurrentUserDBA,
+      isCurrentUserDBAOrOwner,
       allowChangeProject,
       allowChangeOwner,
       readWriteDataSourceList,

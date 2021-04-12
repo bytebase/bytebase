@@ -2,7 +2,10 @@
   <div
     class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0"
   >
-    <template v-for="(quickAction, index) in quickActionList" :key="index">
+    <template
+      v-for="(quickAction, index) in effectiveQuickActionList"
+      :key="index"
+    >
       <div
         v-if="quickAction == 'quickaction.bytebase.instance.create'"
         class="flex flex-col items-center w-28"
@@ -323,12 +326,19 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
+import { reactive, PropType, computed } from "vue";
+import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import ProjectNew from "../components/ProjectNew.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import { QuickActionType } from "../types";
+
+// Quick action only applicable when DBA workflow feature is enabled.
+const DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST: QuickActionType[] = [
+  "quickaction.bytebase.database.request",
+  "quickaction.bytebase.database.troubleshoot",
+];
 
 interface LocalState {
   showModal: Boolean;
@@ -346,16 +356,27 @@ export default {
   props: {
     quickActionList: {
       required: true,
-      type: Object as PropType<String[]>,
+      type: Object as PropType<QuickActionType[]>,
     },
   },
-  setup() {
+  setup(props) {
+    const router = useRouter();
     const store = useStore();
 
     const state = reactive<LocalState>({
       showModal: false,
       modalTitle: "",
       quickActionType: "quickaction.bytebase.instance.create",
+    });
+
+    const effectiveQuickActionList = computed((): QuickActionType[] => {
+      if (store.getters["plan/feature"]("bytebase.dbaworkflow")) {
+        return props.quickActionList;
+      }
+
+      return props.quickActionList.filter((item: QuickActionType) => {
+        return !DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST.includes(item);
+      });
     });
 
     const createProject = () => {
@@ -367,12 +388,6 @@ export default {
     const createInstance = () => {
       state.modalTitle = "Create instance";
       state.quickActionType = "quickaction.bytebase.instance.create";
-      state.showModal = true;
-    };
-
-    const createDatabase = () => {
-      state.modalTitle = "Create database";
-      state.quickActionType = "quickaction.bytebase.database.request";
       state.showModal = true;
     };
 
@@ -392,9 +407,9 @@ export default {
 
     return {
       state,
+      effectiveQuickActionList,
       createProject,
       createInstance,
-      createDatabase,
       requestDatabase,
       createEnvironment,
       reorderEnvironment,
