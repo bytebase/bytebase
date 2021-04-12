@@ -52,6 +52,22 @@ function convert(
     if (item.type == "project" && item.id == projectId) {
       project = rootGetters["project/convert"](item);
     }
+  }
+
+  // Only able to assign an empty data source list, otherwise would cause circular dependency.
+  // This should be fine as we shouldn't access data source via dataSource.database.dataSourceList
+  const databaseWithoutDataSourceList = {
+    id: database.id,
+    instance,
+    project,
+    dataSourceList: [],
+    ...(database.attributes as Omit<
+      Database,
+      "id" | "instance" | "project" | "dataSourceList"
+    >),
+  };
+
+  for (const item of includedList) {
     if (
       item.type == "data-source" &&
       (item.relationships!.database.data as ResourceIdentifier).id ==
@@ -62,6 +78,8 @@ function convert(
       );
       if (i != -1) {
         dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i].instance = instance;
+        dataSourceList[i].database = databaseWithoutDataSourceList;
       }
     }
   }
