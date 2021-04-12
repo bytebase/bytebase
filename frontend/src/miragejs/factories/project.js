@@ -19,7 +19,7 @@ export default {
       return Date.now() - i * 3600 * 1000;
     },
     name(i) {
-      return "project " + i;
+      return "project " + (i + 1);
     },
   }),
 };

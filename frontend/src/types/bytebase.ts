@@ -171,6 +171,8 @@ export const unknown = (
       return UNKNOWN_ROLE_MAPPING;
     case "ENVIRONMENT":
       return UNKNOWN_ENVIRONMENT;
+    case "PROJECT":
+      return UNKNOWN_PROJECT;
     case "INSTANCE":
       return UNKNOWN_INSTANCE;
     case "DATABASE":
@@ -872,6 +874,7 @@ export type NotificationFilter = {
 export type EnvironmentQuickActionType =
   | "quickaction.bytebase.environment.create"
   | "quickaction.bytebase.environment.reorder";
+export type ProjectQuickActionType = "quickaction.bytebase.project.create";
 export type InstanceQuickActionType = "quickaction.bytebase.instance.create";
 export type UserQuickActionType = "quickaction.bytebase.user.manage";
 export type DatabaseQuickActionType =
@@ -882,6 +885,7 @@ export type DatabaseQuickActionType =
 
 export type QuickActionType =
   | EnvironmentQuickActionType
+  | ProjectQuickActionType
   | InstanceQuickActionType
   | UserQuickActionType
   | DatabaseQuickActionType;

@@ -61,7 +61,6 @@ const actions = {
       projectId,
       project,
     });
-    console.log(project);
     return project;
   },
 

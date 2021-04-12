@@ -102,6 +102,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bytebase.database.troubleshoot",
                     "quickaction.bytebase.database.schema.update",
                     "quickaction.bytebase.database.request",
+                    "quickaction.bytebase.project.create",
                   ],
                 ],
               ]),
@@ -316,6 +317,11 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.project",
             meta: {
               title: () => "Project",
+              quickActionListByRole: new Map([
+                ["OWNER", ["quickaction.bytebase.project.create"]],
+                ["DBA", ["quickaction.bytebase.project.create"]],
+                ["DEVELOPER", ["quickaction.bytebase.project.create"]],
+              ]),
             },
             components: {
               content: () => import("../views/ProjectDashboard.vue"),

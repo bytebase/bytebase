@@ -268,6 +268,31 @@
           Reorder
         </h3>
       </div>
+
+      <div
+        v-if="quickAction == 'quickaction.bytebase.project.create'"
+        class="flex flex-col items-center w-28"
+      >
+        <button class="btn-icon-primary p-3" @click.prevent="createProject">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+            ></path>
+          </svg>
+        </button>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          Create Project
+        </h3>
+      </div>
     </template>
   </div>
   <BBModal
@@ -276,7 +301,14 @@
     @close="state.showModal = false"
   >
     <template
-      v-if="state.quickActionType == 'quickaction.bytebase.instance.create'"
+      v-if="state.quickActionType == 'quickaction.bytebase.project.create'"
+    >
+      <ProjectNew @dismiss="state.showModal = false" />
+    </template>
+    <template
+      v-else-if="
+        state.quickActionType == 'quickaction.bytebase.instance.create'
+      "
     >
       <InstanceForm :create="true" @dismiss="state.showModal = false" />
     </template>
@@ -293,6 +325,7 @@
 <script lang="ts">
 import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
+import ProjectNew from "../components/ProjectNew.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import { QuickActionType } from "../types";
@@ -306,6 +339,7 @@ interface LocalState {
 export default {
   name: "QuickActionPanel",
   components: {
+    ProjectNew,
     InstanceForm,
     RequestDatabasePrepForm,
   },
@@ -323,6 +357,12 @@ export default {
       modalTitle: "",
       quickActionType: "quickaction.bytebase.instance.create",
     });
+
+    const createProject = () => {
+      state.modalTitle = "Create project";
+      state.quickActionType = "quickaction.bytebase.project.create";
+      state.showModal = true;
+    };
 
     const createInstance = () => {
       state.modalTitle = "Create instance";
@@ -352,6 +392,7 @@ export default {
 
     return {
       state,
+      createProject,
       createInstance,
       createDatabase,
       requestDatabase,
