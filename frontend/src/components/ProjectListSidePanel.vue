@@ -15,35 +15,29 @@ import { Project } from "../types";
 import { projectSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
-interface LocalState {
-  projectList: Project[];
-}
-
 export default {
   name: "ProjectListSidePanel",
   props: {},
   setup(props, ctx) {
     const store = useStore();
 
-    const state = reactive<LocalState>({
-      projectList: [],
-    });
-
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareProjectList = () => {
       store
         .dispatch("project/fetchProjectListByUser", currentUser.value.id)
-        .then((projectList: Project[]) => {
-          state.projectList = projectList;
-        })
         .catch((error) => {
           console.log(error);
         });
     };
 
+    watchEffect(prepareProjectList);
+
     const outlineItemList = computed((): BBOutlineItem[] => {
-      return state.projectList.map(
+      const projectList = store.getters["project/projectListByUser"](
+        currentUser.value.id
+      );
+      return projectList.map(
         (item: Project): BBOutlineItem => {
           return {
             id: item.id,
@@ -53,8 +47,6 @@ export default {
         }
       );
     });
-
-    watchEffect(prepareProjectList);
 
     return {
       outlineItemList,
