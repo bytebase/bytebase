@@ -39,6 +39,9 @@ import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
 
+const INSTANCE_TAB = 0;
+const ENVIRONMENT_TAB = 1;
+
 interface LocalState {
   selectedIndex: number;
   searchText: string;
@@ -49,7 +52,7 @@ export default {
   components: { EnvironmentTable, InstanceTable },
   setup(props, ctx) {
     const state = reactive<LocalState>({
-      selectedIndex: 0,
+      selectedIndex: INSTANCE_TAB,
       searchText: "",
     });
 
