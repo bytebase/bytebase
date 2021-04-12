@@ -42,7 +42,7 @@ const getters = {
 };
 
 const actions = {
-  async fetchProjectListForUser({ commit, rootGetters }: any, userId: UserId) {
+  async fetchProjectListByUser({ commit, rootGetters }: any, userId: UserId) {
     const projectList = (
       await axios.get(`/api/project?userid=${userId}`)
     ).data.data.map((project: ResourceObject) => {

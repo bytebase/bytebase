@@ -47,7 +47,7 @@ export default {
 
     const prepareProjectList = () => {
       store
-        .dispatch("project/fetchProjectListForUser", currentUser.value.id)
+        .dispatch("project/fetchProjectListByUser", currentUser.value.id)
         .then((projectList: Project[]) => {
           state.projectList = projectList;
         })
