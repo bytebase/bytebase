@@ -32,6 +32,15 @@ const state: () => ProjectState = () => ({
 });
 
 const getters = {
+  convert: (
+    state: ProjectState,
+    getters: any,
+    rootState: any,
+    rootGetters: any
+  ) => (instance: ResourceObject): Project => {
+    return convert(instance, rootGetters);
+  },
+
   projectListByUser: (state: ProjectState) => (userId: UserId) => {
     return state.projectListByUser.get(userId) || [];
   },

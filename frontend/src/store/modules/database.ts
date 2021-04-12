@@ -14,6 +14,8 @@ import {
   unknown,
   DataSource,
   DataSourceMember,
+  Project,
+  ProjectId,
 } from "../../types";
 
 function convert(
@@ -21,13 +23,18 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Database {
-  // We first populate the id for instance and dataSourceList.
+  // We first populate the id for instance, project and dataSourceList.
   // And if we also provide the detail info for those objects in the includedList,
   // then we convert them to the detailed objects.
   const instanceId = (database.relationships!.instance
     .data as ResourceIdentifier).id;
   let instance: Instance = unknown("INSTANCE") as Instance;
   instance.id = instanceId;
+
+  const projectId = (database.relationships!.project.data as ResourceIdentifier)
+    .id;
+  let project: Project = unknown("PROJECT") as Project;
+  project.id = projectId;
 
   const dataSourceIdList = database.relationships!.dataSource
     .data as ResourceIdentifier[];
@@ -41,6 +48,9 @@ function convert(
   for (const item of includedList) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item);
+    }
+    if (item.type == "project" && item.id == projectId) {
+      project = rootGetters["project/convert"](item);
     }
     if (
       item.type == "data-source" &&
@@ -59,10 +69,11 @@ function convert(
   return {
     id: database.id,
     instance,
+    project,
     dataSourceList,
     ...(database.attributes as Omit<
       Database,
-      "id" | "instance" | "dataSourceList"
+      "id" | "instance" | "project" | "dataSourceList"
     >),
   };
 }
@@ -157,11 +168,11 @@ const actions = {
   async fetchDatabaseList({ commit, rootGetters }: any) {
     // Unlike other list fetch, we don't fetch the instance and data source here.
     // As the sole purpose for the fetch here is to prepare the database info
-    // itself (in particular the database name) to be displayed in the task list
+    // itself (in particular the database name and project name) to be displayed in the task list
     // on the home page.
     // The data source contains sensitive connection credentials so we shouldn't
     // return it unconditionally.
-    const data = (await axios.get(`/api/database`)).data;
+    const data = (await axios.get(`/api/database?include=project`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, [], rootGetters);
     });
@@ -177,7 +188,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/database?instance=${instanceId}&include=instance,dataSource`
+        `/api/database?instance=${instanceId}&include=instance,project,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -192,7 +203,7 @@ const actions = {
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
-        `/api/database?user=${userId}&include=instance,dataSource`
+        `/api/database?user=${userId}&include=instance,project,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -249,7 +260,7 @@ const actions = {
 
   async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
     const data = (
-      await axios.post(`/api/database?include=instance,dataSource`, {
+      await axios.post(`/api/database?include=instance,project,dataSource`, {
         data: {
           type: "database",
           attributes: newDatabase,
@@ -270,6 +281,41 @@ const actions = {
     return createdDatabase;
   },
 
+  async transferProject(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      databaseId,
+      projectId,
+    }: {
+      instanceId: InstanceId;
+      databaseId: DatabaseId;
+      projectId: ProjectId;
+    }
+  ) {
+    const data = (
+      await axios.patch(
+        `/api/database/${databaseId}?include=instance,project,dataSource`,
+        {
+          data: {
+            type: "databasepatch",
+            attributes: {
+              projectId,
+            },
+          },
+        }
+      )
+    ).data;
+    const updatedDatabase = convert(data.data, data.included, rootGetters);
+
+    commit("upsertDatabaseList", {
+      databaseList: [updatedDatabase],
+      instanceId: updatedDatabase.instance.id,
+    });
+
+    return updatedDatabase;
+  },
+
   async updateOwner(
     { commit, rootGetters }: any,
     {
@@ -284,7 +330,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${databaseId}?include=instance,dataSource`,
+        `/api/database/${databaseId}?include=instance,project,dataSource`,
         {
           data: {
             type: "databasepatch",

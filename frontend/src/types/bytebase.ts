@@ -768,6 +768,7 @@ export type DataSourceMemberNew = {
 
 // We periodically sync the underlying db schema and stores those info
 // in the "database" object.
+// Physically, a database belongs to an instance. Logically, it belongs to a project.
 
 // "OK" means find the exact match
 // "DRIFTED" means we find the database with the same name, but the fingerprint is different,
@@ -779,6 +780,7 @@ export type DatabaseSyncStatus = "OK" | "DRIFTED" | "NOT_FOUND";
 export type Database = {
   id: DatabaseId;
   instance: Instance;
+  project: Project;
   dataSourceList: DataSource[];
   createdTs: number;
   lastUpdatedTs: number;
@@ -792,12 +794,14 @@ export type Database = {
 export type DatabaseNew = {
   name: string;
   instanceId: InstanceId;
+  projectId: ProjectId;
   ownerId: PrincipalId;
   creatorId: PrincipalId;
   taskId?: TaskId;
 };
 
 export type DatabasePatch = {
+  projectId: ProjectId;
   ownerId: PrincipalId;
 };
 

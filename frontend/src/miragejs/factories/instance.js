@@ -1,5 +1,4 @@
 import { Factory } from "miragejs";
-import faker from "faker";
 import { UNKNOWN_ID } from "../../types";
 
 export default {
@@ -45,64 +44,6 @@ export default {
         return "15202";
       } else {
         return "5432";
-      }
-    },
-    afterCreate(instance, server) {
-      const allDatabase = server.create("database", {
-        workspaceId: instance.workspaceId,
-        instance,
-        name: "*",
-        // Demo Owner
-        ownerId: "1",
-      });
-
-      server.create("dataSource", {
-        workspaceId: instance.workspaceId,
-        instance,
-        database: allDatabase,
-        name: instance.name + " admin RW",
-        type: "RW",
-        username: "adminRW",
-        password: "pwdadminRW",
-      });
-
-      server.create("dataSource", {
-        workspaceId: instance.workspaceId,
-        instance,
-        database: allDatabase,
-        name: instance.name + " admin RO",
-        type: "RO",
-        username: "adminRO",
-        password: "pwdadminRO",
-      });
-
-      for (let i = 0; i < 2; i++) {
-        const database = server.create("database", {
-          workspaceId: instance.workspaceId,
-          instance,
-          // Demo Owner
-          ownerId: Math.ceil(Math.random() * 3).toString(),
-        });
-
-        server.create("dataSource", {
-          workspaceId: instance.workspaceId,
-          instance,
-          database,
-          name: database.name + " RW",
-          type: "RW",
-          username: "rootRW",
-          password: "pwdRW",
-        });
-
-        server.create("dataSource", {
-          workspaceId: instance.workspaceId,
-          instance,
-          database,
-          name: database.name + " RO",
-          type: "RO",
-          username: "rootRO",
-          password: "pwdRO",
-        });
       }
     },
   }),

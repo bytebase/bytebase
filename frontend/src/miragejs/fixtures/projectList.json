@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "workspaceId": "1",
+    "creatorId": "1",
+    "updaterId": "1",
+    "createdTs": 1614528000000,
+    "lastUpdatedTs": 1614571200000,
+    "name": "DBA Project"
+  },
+  {
+    "id": "2",
+    "workspaceId": "2",
+    "creatorId": "1",
+    "updaterId": "1",
+    "createdTs": 1614528000000,
+    "lastUpdatedTs": 1614571200000,
+    "name": "DBA Project2"
+  }
+]

@@ -50,6 +50,7 @@ export default {
 
   project: Model.extend({
     workspace: belongsTo(),
+    database: hasMany(),
   }),
 
   projectNew: Model,
@@ -85,6 +86,7 @@ export default {
   database: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),
+    project: belongsTo(),
     dataSource: hasMany(),
   }),
 

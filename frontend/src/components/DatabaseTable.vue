@@ -12,6 +12,9 @@
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
       <BBTableCell class="w-16">
+        {{ projectName(database.project) }}
+      </BBTableCell>
+      <BBTableCell class="w-16">
         {{ database.name }}
       </BBTableCell>
       <BBTableCell class="w-24">
@@ -23,24 +26,23 @@
       <BBTableCell class="w-16">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16">
-        {{ humanizeTs(database.createdTs) }}
-      </BBTableCell>
     </template>
   </BBTable>
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
+import { PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { BBTableColumn } from "../bbkit/types";
-import { databaseSlug, instanceSlug } from "../utils";
-import { EnvironmentId, Database } from "../types";
+import { databaseSlug } from "../utils";
+import { Database } from "../types";
 
 const COLUMN_LIST = [
   {
     title: "Environment",
+  },
+  {
+    title: "Project",
   },
   {
     title: "Name",
@@ -53,9 +55,6 @@ const COLUMN_LIST = [
   },
   {
     title: "Last successful sync",
-  },
-  {
-    title: "Created",
   },
 ];
 

@@ -1,6 +1,13 @@
 import faker from "faker";
-import { Database, Environment, Stage, StageType, Task } from "../../types";
-import { instanceSlug, databaseSlug, taskSlug } from "../../utils";
+import {
+  Database,
+  Environment,
+  Instance,
+  Principal,
+  StageType,
+  Task,
+} from "../../types";
+import { databaseSlug, taskSlug } from "../../utils";
 
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
@@ -23,6 +30,7 @@ const workspacesSeeder = (server: any) => {
 
   const ws2DBA = server.schema.users.find(4);
   const ws2Dev = server.schema.users.find(1);
+  const ws2UserList = [ws2DBA, ws2Dev];
 
   // Environment
   const environmentList1 = [];
@@ -71,43 +79,25 @@ const workspacesSeeder = (server: any) => {
   workspace2.update({ project: projectList2 });
 
   // Instance
-  const instanceNamelist = [
-    "On-premise instance",
-    "AWS instance",
-    "GCP instance",
-    "Azure instance",
-    "Ali Cloud instance",
-  ];
+  const instanceList1 = createInstanceList(
+    server,
+    workspace1.id,
+    ws1UserList,
+    environmentList1,
+    projectList1,
+    ws1DBA,
+    "1"
+  );
 
-  const instanceList1 = [];
-  for (let i = 0; i < 5; i++) {
-    instanceList1.push(
-      server.create("instance", {
-        workspace: workspace1,
-        name:
-          instanceNamelist[
-            Math.floor(Math.random() * instanceNamelist.length)
-          ] +
-          (i + 1),
-        // Create an extra instance for prod.
-        environmentId: i == 4 ? environmentList1[3].id : environmentList1[i].id,
-        creatorId: ws1DBA.id,
-        updaterId: ws1DBA.id,
-      })
-    );
-  }
-
-  for (let i = 0; i < 4; i++) {
-    server.create("instance", {
-      workspace: workspace2,
-      name:
-        instanceNamelist[Math.floor(Math.random() * instanceNamelist.length)] +
-        (i + 1),
-      environmentId: environmentList2[i].id,
-      creatorId: ws2DBA.id,
-      updaterId: ws2DBA.id,
-    });
-  }
+  const instanceList2 = createInstanceList(
+    server,
+    workspace2.id,
+    ws2UserList,
+    environmentList2,
+    projectList2,
+    ws2DBA,
+    "2"
+  );
 
   // Database
   const databaseList1 = [];
@@ -551,6 +541,99 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Owner.id,
     });
   }
+};
+
+const createInstanceList = (
+  server: any,
+  workspaceId: string,
+  userList: { id: string }[],
+  enviromentList: { id: string }[],
+  projectList: { id: string }[],
+  dba: { id: string },
+  dbaProjectId: string
+): Instance[] => {
+  const instanceNamelist = [
+    "On-premise instance",
+    "AWS instance",
+    "GCP instance",
+    "Azure instance",
+    "Ali Cloud instance",
+  ];
+
+  const instanceList = [];
+  for (let i = 0; i < 5; i++) {
+    const instance = server.create("instance", {
+      workspaceId: workspaceId,
+      name:
+        instanceNamelist[Math.floor(Math.random() * instanceNamelist.length)] +
+        (i + 1),
+      // Create an extra instance for prod.
+      environmentId: i == 4 ? enviromentList[3].id : enviromentList[i].id,
+      creatorId: dba.id,
+      updaterId: dba.id,
+    });
+    instanceList.push(instance);
+
+    const allDatabase = server.create("database", {
+      workspaceId: instance.workspaceId,
+      projectId: dbaProjectId,
+      instance,
+      name: "*",
+      ownerId: dba.id,
+    });
+
+    server.create("dataSource", {
+      workspaceId: instance.workspaceId,
+      instance,
+      database: allDatabase,
+      name: instance.name + " admin RW",
+      type: "RW",
+      username: "adminRW",
+      password: "pwdadminRW",
+    });
+
+    server.create("dataSource", {
+      workspaceId: instance.workspaceId,
+      instance,
+      database: allDatabase,
+      name: instance.name + " admin RO",
+      type: "RO",
+      username: "adminRO",
+      password: "pwdadminRO",
+    });
+
+    for (let i = 0; i < 2; i++) {
+      const database = server.create("database", {
+        workspaceId: instance.workspaceId,
+        projectId:
+          projectList[Math.floor(Math.random() * projectList.length)].id,
+        instance,
+        ownerId: userList[Math.floor(Math.random() * userList.length)].id,
+      });
+
+      server.create("dataSource", {
+        workspaceId: instance.workspaceId,
+        instance,
+        database,
+        name: database.name + " RW",
+        type: "RW",
+        username: "rootRW",
+        password: "pwdRW",
+      });
+
+      server.create("dataSource", {
+        workspaceId: instance.workspaceId,
+        instance,
+        database,
+        name: database.name + " RO",
+        type: "RO",
+        username: "rootRO",
+        password: "pwdRO",
+      });
+    }
+  }
+
+  return instanceList;
 };
 
 const fillTaskAndStageStatus = (

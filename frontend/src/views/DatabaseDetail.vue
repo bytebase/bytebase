@@ -65,10 +65,24 @@
         >
           <!-- Description list -->
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+            <div class="col-span-1 w-64">
+              <label for="user" class="textlabel"> Project </label>
+              <ProjectSelect
+                class="mt-1"
+                id="owner"
+                name="owner"
+                :disabled="!allowChangeProject"
+                :selectedId="database.project.id"
+                @select-project-id="
+                  (projectId) => {
+                    updateProject(projectId);
+                  }
+                "
+              />
+            </div>
+
             <div class="col-span-1">
-              <label for="user" class="textlabel">
-                Owner <span class="text-red-600">*</span>
-              </label>
+              <label for="user" class="textlabel"> Owner </label>
               <PrincipalSelect
                 class="mt-1 w-64"
                 id="owner"
@@ -157,8 +171,9 @@ import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
+import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBA } from "../utils";
-import { PrincipalId, DataSource } from "../types";
+import { PrincipalId, DataSource, ProjectId } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -174,7 +189,12 @@ export default {
       type: String,
     },
   },
-  components: { DataSourceConnectionPanel, DataSourceTable, PrincipalSelect },
+  components: {
+    DataSourceConnectionPanel,
+    DataSourceTable,
+    PrincipalSelect,
+    ProjectSelect,
+  },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
@@ -194,6 +214,12 @@ export default {
 
     const isCurrentUserDBA = computed((): boolean => {
       return isDBA(currentUser.value.role);
+    });
+
+    const allowChangeProject = computed(() => {
+      return (
+        currentUser.value.id == database.value.ownerId || isCurrentUserDBA.value
+      );
     });
 
     const allowChangeOwner = computed(() => {
@@ -226,6 +252,19 @@ export default {
       });
     });
 
+    const updateProject = (newProjectId: ProjectId) => {
+      store
+        .dispatch("database/transferProject", {
+          instanceId: database.value.instance.id,
+          databaseId: database.value.id,
+          projectId: newProjectId,
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.error(error);
+        });
+    };
+
     const updateDatabaseOwner = (newOwnerId: PrincipalId) => {
       store
         .dispatch("database/updateOwner", {
@@ -243,9 +282,11 @@ export default {
       state,
       database,
       isCurrentUserDBA,
+      allowChangeProject,
       allowChangeOwner,
       readWriteDataSourceList,
       readOnlyDataSourceList,
+      updateProject,
       updateDatabaseOwner,
     };
   },

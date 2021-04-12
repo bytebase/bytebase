@@ -16,6 +16,20 @@ input[type="number"] {
   <form class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-4">
       <div class="col-span-2 col-start-2 w-64">
+        <label for="project" class="textlabel">
+          Project <span style="color: red">*</span>
+        </label>
+        <ProjectSelect
+          class="mt-1"
+          id="project"
+          name="project"
+          :disabled="!allowEditProject"
+          :selectedId="state.projectId"
+          @select-project-id="selectProject"
+        />
+      </div>
+
+      <div class="col-span-2 col-start-2 w-64">
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
@@ -231,6 +245,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
+import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import { instanceSlug, databaseSlug, taskSlug } from "../utils";
 import {
@@ -241,11 +256,13 @@ import {
   EnvironmentId,
   InstanceId,
   PrincipalId,
+  ProjectId,
 } from "../types";
 import { TaskField, templateForType } from "../plugins";
 import { isEqual } from "lodash";
 
 interface LocalState {
+  projectId?: ProjectId;
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
   databaseName?: string;
@@ -260,7 +277,12 @@ interface LocalState {
 export default {
   name: "DatabaseNew",
   props: {},
-  components: { InstanceSelect, EnvironmentSelect, PrincipalSelect },
+  components: {
+    InstanceSelect,
+    EnvironmentSelect,
+    ProjectSelect,
+    PrincipalSelect,
+  },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
@@ -282,15 +304,14 @@ export default {
     });
 
     const state = reactive<LocalState>({
+      projectId: router.currentRoute.value.query.project
+        ? (router.currentRoute.value.query.project as ProjectId)
+        : undefined,
       environmentId: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
-          ).id
+        ? (router.currentRoute.value.query.environment as EnvironmentId)
         : undefined,
       instanceId: router.currentRoute.value.query.instance
-        ? store.getters["instance/instanceById"](
-            router.currentRoute.value.query.instance
-          )?.id
+        ? (router.currentRoute.value.query.instance as InstanceId)
         : undefined,
       databaseName: router.currentRoute.value.query.name as string,
       ownerId:
@@ -306,6 +327,7 @@ export default {
     const allowCreate = computed(() => {
       return (
         !isEmpty(state.databaseName) &&
+        state.projectId &&
         state.environmentId &&
         state.instanceId &&
         state.ownerId
@@ -314,6 +336,12 @@ export default {
 
     // If it's from database request task, we disallow changing the preset field.
     // This is to prevent accidentally changing the requested field.
+    const allowEditProject = computed(() => {
+      return (
+        state.fromTaskType != "bytebase.database.create" || !state.projectId
+      );
+    });
+
     const allowEditEnvironment = computed(() => {
       return (
         state.fromTaskType != "bytebase.database.create" || !state.environmentId
@@ -352,6 +380,23 @@ export default {
       }
       return "";
     });
+
+    const selectProject = (projectId: ProjectId) => {
+      state.projectId = projectId;
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (projectId) {
+        query.projectId = projectId;
+      } else {
+        delete query["project"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query: {
+          ...router.currentRoute.value.query,
+          project: projectId,
+        },
+      });
+    };
 
     const selectEnvironment = (environmentId: EnvironmentId) => {
       state.environmentId = environmentId;
@@ -430,6 +475,7 @@ export default {
       // Create database
       const createdDatabase = await store.dispatch("database/createDatabase", {
         name: state.databaseName,
+        projectId: state.projectId,
         instanceId: state.instanceId,
         ownerId: state.ownerId,
         creatorId: currentUser.value.id,
@@ -531,12 +577,14 @@ export default {
     return {
       state,
       allowCreate,
+      allowEditProject,
       allowEditEnvironment,
       allowEditDatabaseName,
       allowEditOwner,
       allowEditTask,
       instanceLink,
       taskLink,
+      selectProject,
       selectEnvironment,
       selectInstance,
       changeDatabaseName,
