@@ -38,7 +38,7 @@ export function fullDatabasePath(database: Database): string {
 }
 
 export function dataSourceSlug(dataSource: DataSource): string {
-  return [slug(dataSource.name), dataSource.id].join("-");
+  return [dataSource.id, slug(dataSource.name)].join("-");
 }
 
 export function fullDataSourcePath(dataSource: DataSource): string {
