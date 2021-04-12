@@ -17,14 +17,15 @@ export enum TaskBuiltinFieldId {
   STATUS = "2",
   ASSIGNEE = "3",
   DESCRIPTION = "4",
-  ENVIRONMENT = "5",
-  INSTANCE = "6",
-  DATABASE = "7",
-  DATA_SOURCE = "8",
-  STAGE = "9", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
-  SQL = "10",
-  ROLLBACK_SQL = "11",
-  SUBSCRIBER_LIST = "12",
+  PROJECT = "5",
+  ENVIRONMENT = "6",
+  INSTANCE = "7",
+  DATABASE = "8",
+  DATA_SOURCE = "9",
+  STAGE = "10", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
+  SQL = "11",
+  ROLLBACK_SQL = "12",
+  SUBSCRIBER_LIST = "13",
 }
 
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
@@ -34,6 +35,7 @@ export type TaskFieldType =
   | "Boolean"
   | "String"
   | "Environment"
+  | "Project"
   | "Database"
   | "NewDatabase";
 

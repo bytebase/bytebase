@@ -146,8 +146,9 @@ const workspacesSeeder = (server: any) => {
       },
     ],
     payload: {
-      5: environmentList1[0].id,
-      7: databaseList1[0].id,
+      5: projectList1[0].id,
+      6: environmentList1[0].id,
+      8: databaseList1[0].id,
     },
     workspace: workspace1,
   });
@@ -323,8 +324,9 @@ const workspacesSeeder = (server: any) => {
       },
     ],
     payload: {
-      5: environmentList1[1].id,
-      7: databaseList1[1].name,
+      5: projectList1[1].id,
+      6: environmentList1[1].id,
+      8: databaseList1[1].name,
     },
     workspace: workspace1,
   });

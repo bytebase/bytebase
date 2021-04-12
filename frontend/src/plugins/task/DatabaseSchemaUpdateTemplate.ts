@@ -39,6 +39,18 @@ const template: TaskTemplate = {
   fieldList: [
     {
       category: "INPUT",
+      id: TaskBuiltinFieldId.PROJECT,
+      slug: "project",
+      name: "Project",
+      type: "Project",
+      required: true,
+      resolved: (ctx: TaskContext): boolean => {
+        const projectId = ctx.task.payload[TaskBuiltinFieldId.PROJECT];
+        return !isEmpty(projectId);
+      },
+    },
+    {
+      category: "INPUT",
       id: TaskBuiltinFieldId.ENVIRONMENT,
       slug: "env",
       name: "Environment",

@@ -62,6 +62,19 @@
               "
             />
           </template>
+          <template v-else-if="field.type == 'Project'">
+            <ProjectSelect
+              :disabled="!allowEdit"
+              :name="field.id"
+              :selectedId="fieldValue(field)"
+              :selectDefault="false"
+              @select-project-id="
+                (projectId) => {
+                  trySaveCustomField(field, projectId);
+                }
+              "
+            />
+          </template>
           <template v-else-if="field.type == 'Database'">
             <DatabaseSelect
               class="w-full"
@@ -193,6 +206,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
+import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
 import {
@@ -200,13 +214,7 @@ import {
   TaskBuiltinFieldId,
   DatabaseFieldPayload,
 } from "../plugins";
-import {
-  DatabaseId,
-  EnvironmentId,
-  Principal,
-  PrincipalId,
-  Task,
-} from "../types";
+import { DatabaseId, EnvironmentId, Principal, Task } from "../types";
 import { isDBA } from "../utils";
 
 interface LocalState {}
@@ -238,6 +246,7 @@ export default {
   },
   components: {
     DatabaseSelect,
+    ProjectSelect,
     EnvironmentSelect,
     PrincipalSelect,
     TaskStatusIcon,

@@ -96,6 +96,7 @@ export const unknown = (
   const UNKNOWN_DATABASE: Database = {
     id: UNKNOWN_ID,
     instance: UNKNOWN_INSTANCE,
+    project: UNKNOWN_PROJECT,
     dataSourceList: [],
     createdTs: 0,
     lastUpdatedTs: 0,

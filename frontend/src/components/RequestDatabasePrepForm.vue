@@ -2,6 +2,23 @@
   <form class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-2">
       <div class="col-span-2 col-start-1 w-64">
+        <label for="project" class="textlabel">
+          Project <span style="color: red">*</span>
+        </label>
+        <ProjectSelect
+          class="mt-1"
+          id="project"
+          name="project"
+          :selectedId="state.projectId"
+          @select-project-id="
+            (projectId) => {
+              state.projectId = projectId;
+            }
+          "
+        />
+      </div>
+
+      <div class="col-span-2 col-start-1 w-64">
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
@@ -112,13 +129,15 @@ import { computed, reactive, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
+import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { EnvironmentId } from "../types";
+import { EnvironmentId, ProjectId } from "../types";
 import { allowDatabaseAccess } from "../utils";
 
 interface LocalState {
   environmentId?: EnvironmentId;
+  projectId?: ProjectId;
   // Radio button only accept string value
   create: "ON" | "OFF";
   databaseName?: string;
@@ -130,7 +149,7 @@ export default {
   name: "RequestDatabasePrepForm",
   emits: ["dismiss"],
   props: {},
-  components: { DatabaseSelect, EnvironmentSelect },
+  components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -175,6 +194,7 @@ export default {
     const allowRequest = computed(() => {
       return (
         state.environmentId &&
+        state.projectId &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
           (state.create == "OFF" && state.databaseId)) &&
         !alreadyGranted.value
@@ -219,6 +239,7 @@ export default {
               state.readOnly ? "Read Only access" : "Read & Write access"
             }`,
             environment: state.environmentId,
+            project: state.projectId,
             database: state.databaseId,
             readonly: state.readOnly ? "true" : "false",
           },
