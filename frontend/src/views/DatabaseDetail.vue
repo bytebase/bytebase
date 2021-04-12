@@ -261,7 +261,13 @@ export default {
           databaseId: database.value.id,
           projectId: newProjectId,
         })
-        .then(() => {})
+        .then((updatedDatabase) => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully transferred '${updatedDatabase.name}' to project '${updatedDatabase.project.name}'.`,
+          });
+        })
         .catch((error) => {
           console.error(error);
         });
