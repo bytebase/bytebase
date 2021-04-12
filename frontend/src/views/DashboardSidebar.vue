@@ -45,6 +45,9 @@
       <BookmarkListSidePanel />
     </div>
     <div class="mt-1">
+      <ProjectListSidePanel />
+    </div>
+    <div class="mt-1">
       <DatabaseListSidePanel :mode="'Owner'" />
     </div>
     <div class="mt-1">
@@ -57,6 +60,7 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
+import ProjectListSidePanel from "../components/ProjectListSidePanel.vue";
 import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
 import { Message } from "../types";
 
@@ -69,6 +73,7 @@ export default {
   props: {},
   components: {
     BookmarkListSidePanel,
+    ProjectListSidePanel,
     DatabaseListSidePanel,
   },
   setup(props, ctx) {
