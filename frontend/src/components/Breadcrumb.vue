@@ -125,6 +125,7 @@ export default {
         currentRoute.value
       );
       const environmentSlug = routeSlug.environmentSlug;
+      const projectSlug = routeSlug.projectSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
       const dataSourceSlug = routeSlug.dataSourceSlug;
@@ -134,6 +135,11 @@ export default {
         list.push({
           name: "Environment",
           path: "/environment",
+        });
+      } else if (projectSlug) {
+        list.push({
+          name: "Project",
+          path: "/project",
         });
       } else if (instanceSlug) {
         list.push({
