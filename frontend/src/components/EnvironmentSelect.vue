@@ -77,8 +77,13 @@ export default {
         )
       ) {
         if (props.selectDefault) {
-          state.selectedId = environmentList.value[0].id;
-          emit("select-environment-id", state.selectedId);
+          for (const environment of environmentList.value) {
+            if (environment.rowStatus == "NORMAL") {
+              state.selectedId = environment.id;
+              emit("select-environment-id", state.selectedId);
+              break;
+            }
+          }
         }
       }
     }
