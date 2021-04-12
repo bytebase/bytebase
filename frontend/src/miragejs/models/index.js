@@ -22,6 +22,7 @@ export default {
     roleMapping: hasMany(),
     activity: hasMany(),
     message: hasMany(),
+    project: hasMany(),
     task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),
@@ -46,6 +47,14 @@ export default {
   }),
 
   messagePatch: Model,
+
+  project: Model.extend({
+    workspace: belongsTo(),
+  }),
+
+  projectNew: Model,
+
+  projectPatch: Model,
 
   task: Model.extend({
     workspace: belongsTo(),

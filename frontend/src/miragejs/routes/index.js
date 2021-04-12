@@ -8,6 +8,7 @@ import configureActivity from "./activity";
 import configureMessage from "./message";
 import configureBookmark from "./bookmark";
 import configureTask from "./task";
+import configureProject from "./project";
 import configureEnvironment from "./environment";
 import configureInstance from "./instance";
 import configureDatabase from "./database";
@@ -41,6 +42,9 @@ export default function routes() {
 
   // Bookmark
   configureBookmark(this);
+
+  // Project
+  configureProject(this);
 
   // Task
   configureTask(this);

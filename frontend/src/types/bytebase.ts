@@ -10,6 +10,7 @@ export type ResourceType =
   | "USER"
   | "ROLE_MAPPING"
   | "ENVIRONMENT"
+  | "PROJECT"
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
@@ -27,6 +28,7 @@ export const unknown = (
   | User
   | RoleMapping
   | Environment
+  | Project
   | Instance
   | Database
   | DataSource
@@ -67,6 +69,16 @@ export const unknown = (
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
+  };
+
+  const UNKNOWN_PROJECT: Project = {
+    id: UNKNOWN_ID,
+    rowStatus: "NORMAL",
+    name: "<<Unknown project>>",
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    lastUpdatedTs: 0,
   };
 
   const UNKNOWN_INSTANCE: Instance = {
@@ -190,6 +202,8 @@ export type RoleMappingId = string;
 
 export type BookmarkId = string;
 
+export type ProjectId = string;
+
 export type StageId = string;
 
 export type TaskId = string;
@@ -303,6 +317,26 @@ export type Bookmark = {
   creatorId: UserId;
 };
 export type BookmarkNew = Omit<Bookmark, "id">;
+
+// Project
+export type Project = {
+  id: ProjectId;
+  rowStatus: RowStatus;
+  name: string;
+  creator: Principal;
+  updater: Principal;
+  createdTs: number;
+  lastUpdatedTs: number;
+};
+
+export type ProjectNew = {
+  name: string;
+  creatorId: PrincipalId;
+};
+
+export type ProjectPatch = {
+  name?: string;
+};
 
 // Stage
 export type StageType =
@@ -798,6 +832,7 @@ export enum PlanType {
 // UI State Models
 export type RouterSlug = {
   environmentSlug?: string;
+  projectSlug?: string;
   taskSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
@@ -887,6 +922,14 @@ export interface TaskState {
   // Instead, we always fetch the list every time we display the task list view.
   taskListByUser: Map<UserId, Task[]>;
   taskById: Map<TaskId, Task>;
+}
+
+export interface ProjectState {
+  // [NOTE] This is only used by the project list view. We don't
+  // update the entry here if any project is changed (the updated project only gets updated in projectById).
+  // Instead, we always fetch the list every time we display the project list view.
+  projectListByUser: Map<UserId, Project[]>;
+  projectById: Map<ProjectId, Project>;
 }
 
 export interface EnvironmentState {

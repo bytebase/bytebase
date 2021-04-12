@@ -45,6 +45,32 @@ const workspacesSeeder = (server: any) => {
   }
   workspace2.update({ environment: environmentList2 });
 
+  // Project
+  const projectList1 = [];
+  for (let i = 0; i < 4; i++) {
+    projectList1.push(
+      server.create("project", {
+        workspace: workspace1,
+        creatorId: ws1Dev1.id,
+        updaterId: ws1Dev1.id,
+      })
+    );
+  }
+  workspace1.update({ project: projectList1 });
+
+  const projectList2 = [];
+  for (let i = 0; i < 1; i++) {
+    projectList2.push(
+      server.create("project", {
+        workspace: workspace2,
+        creatorId: ws2Dev.id,
+        updaterId: ws2Dev.id,
+      })
+    );
+  }
+  workspace2.update({ project: projectList2 });
+
+  // Instance
   const instanceNamelist = [
     "On-premise instance",
     "AWS instance",
@@ -53,7 +79,6 @@ const workspacesSeeder = (server: any) => {
     "Ali Cloud instance",
   ];
 
-  // Instance
   const instanceList1 = [];
   for (let i = 0; i < 5; i++) {
     instanceList1.push(

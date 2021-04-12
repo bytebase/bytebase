@@ -6,6 +6,7 @@ import message from "./modules/message";
 import bookmark from "./modules/bookmark";
 import roleMapping from "./modules/roleMapping";
 import environment from "./modules/environment";
+import project from "./modules/project";
 import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
 import database from "./modules/database";
@@ -31,6 +32,7 @@ export const store: Store<any> = createStore({
     bookmark,
     roleMapping,
     environment,
+    project,
     instance,
     dataSource,
     database,

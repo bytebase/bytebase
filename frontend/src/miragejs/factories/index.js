@@ -1,6 +1,7 @@
 import user from "./user";
 import bookmark from "./bookmark";
 import environment from "./environment";
+import project from "./project";
 import instance from "./instance";
 import dataSource from "./dataSource";
 import dataSourceMember from "./dataSourceMember";
@@ -24,6 +25,7 @@ export default {
   ...user,
   ...bookmark,
   ...environment,
+  ...project,
   ...instance,
   ...dataSource,
   ...dataSourceMember,

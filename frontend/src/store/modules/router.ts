@@ -25,6 +25,19 @@ const getters = {
     }
 
     {
+      // /project/:projectSlug
+      // Total 2 elements, 2nd element is the project slug
+      const projectComponents = currentRoute.path.match(
+        "/project/([0-9a-zA-Z_-]+)"
+      ) || ["/", undefined];
+      if (projectComponents[1]) {
+        return {
+          projectSlug: projectComponents[1],
+        };
+      }
+    }
+
+    {
       // /task/:taskSlug
       // Total 2 elements, 2nd element is the task slug
       const taskComponents = currentRoute.path.match(

@@ -1,4 +1,5 @@
 export * from "./environment";
+export * from "./project";
 export * from "./instance";
 export * from "./database";
 export * from "./link";

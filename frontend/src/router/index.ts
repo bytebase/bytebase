@@ -312,6 +312,35 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true },
           },
           {
+            path: "project",
+            name: "workspace.project",
+            meta: {
+              title: () => "Project",
+            },
+            components: {
+              content: () => import("../views/ProjectDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
+            path: "project/:projectSlug",
+            name: "workspace.project.detail",
+            meta: {
+              title: (route: RouteLocationNormalized) => {
+                const slug = route.params.projectSlug as string;
+                return store.getters["project/projectById"](idFromSlug(slug))
+                  .name;
+              },
+              allowBookmark: true,
+            },
+            components: {
+              content: () => import("../views/ProjectDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
+          },
+          {
             path: "instance",
             name: "workspace.instance",
             meta: {
@@ -558,6 +587,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.environment" ||
+    to.name === "workspace.project" ||
     to.name === "workspace.database" ||
     to.name === "workspace.database.create" ||
     to.name?.toString().startsWith("setting")
@@ -593,6 +623,7 @@ router.beforeEach((to, from, next) => {
 
   const routerSlug = store.getters["router/routeSlug"](to);
   const environmentSlug = routerSlug.environmentSlug;
+  const projectSlug = routerSlug.projectSlug;
   const taskSlug = routerSlug.taskSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
@@ -612,6 +643,22 @@ router.beforeEach((to, from, next) => {
       name: "error.404",
       replace: false,
     });
+  }
+
+  if (projectSlug) {
+    store
+      .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
+      .then((project) => {
+        console.log(project);
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+      });
+    return;
   }
 
   if (taskSlug) {
