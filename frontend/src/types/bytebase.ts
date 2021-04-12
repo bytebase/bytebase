@@ -938,11 +938,7 @@ export interface TaskState {
 }
 
 export interface ProjectState {
-  // [NOTE] This is only used by the project list view. We don't
-  // update the entry here if any project is changed (the updated project only gets updated in projectById).
-  // Instead, we always fetch the list every time we display the project list view.
   projectListByUser: Map<UserId, Project[]>;
-  projectById: Map<ProjectId, Project>;
 }
 
 export interface EnvironmentState {

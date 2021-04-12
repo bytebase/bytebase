@@ -28,7 +28,6 @@ function convert(project: ResourceObject, rootGetters: any): Project {
 
 const state: () => ProjectState = () => ({
   projectListByUser: new Map(),
-  projectById: new Map(),
 });
 
 const getters = {
@@ -46,7 +45,13 @@ const getters = {
   },
 
   projectById: (state: ProjectState) => (projectId: ProjectId): Project => {
-    return state.projectById.get(projectId) || (unknown("PROJECT") as Project);
+    for (let [_, projectList] of state.projectListByUser) {
+      const project = projectList.find((item: Project) => item.id == projectId);
+      if (project) {
+        return project;
+      }
+    }
+    return unknown("PROJECT") as Project;
   },
 };
 
@@ -57,7 +62,7 @@ const actions = {
     ).data.data.map((project: ResourceObject) => {
       return convert(project, rootGetters);
     });
-    commit("setProjectListForUser", { userId, projectList });
+    commit("upsertProjectList", { projectList, userId });
     return projectList;
   },
 
@@ -66,9 +71,8 @@ const actions = {
       (await axios.get(`/api/project/${projectId}`)).data.data,
       rootGetters
     );
-    commit("setProjectById", {
-      projectId,
-      project,
+    commit("upsertProjectList", {
+      projectList: [project],
     });
     return project;
   },
@@ -86,9 +90,8 @@ const actions = {
       rootGetters
     );
 
-    commit("setProjectById", {
-      taskId: createdProject.id,
-      project: createdProject,
+    commit("upsertProjectList", {
+      projectList: [createdProject],
     });
 
     return createdProject;
@@ -116,9 +119,8 @@ const actions = {
       rootGetters
     );
 
-    commit("setProjectById", {
-      taskId: projectId,
-      task: updatedProject,
+    commit("upsertProjectList", {
+      projectList: [updatedProject],
     });
 
     return updatedProject;
@@ -126,30 +128,32 @@ const actions = {
 };
 
 const mutations = {
-  setProjectListForUser(
+  upsertProjectList(
     state: ProjectState,
     {
-      userId,
       projectList,
+      userId,
     }: {
-      userId: UserId;
       projectList: Project[];
+      userId?: UserId;
     }
   ) {
-    state.projectListByUser.set(userId, projectList);
-  },
-
-  setProjectById(
-    state: ProjectState,
-    {
-      projectId,
-      project,
-    }: {
-      projectId: ProjectId;
-      project: Project;
+    if (userId) {
+      state.projectListByUser.set(userId, projectList);
+    } else {
+      for (const project of projectList) {
+        for (let [_, projectList] of state.projectListByUser) {
+          const i = projectList.findIndex(
+            (item: Project) => item.id == project.id
+          );
+          if (i != -1) {
+            projectList[i] = project;
+          } else {
+            projectList.push(project);
+          }
+        }
+      }
     }
-  ) {
-    state.projectById.set(projectId, project);
   },
 };
 
