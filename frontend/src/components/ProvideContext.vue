@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { useStore } from "vuex";
-import { Principal } from "../types";
+import { Principal, DEFAULT_PROJECT_ID } from "../types";
 
 export default {
   name: "ProvideContext",
@@ -20,6 +20,8 @@ export default {
       store.dispatch("roleMapping/fetchRoleMappingList"),
       // fetchPrincipalList relies on fetchRoleMappingList to find the role of the principal.
       store.dispatch("principal/fetchPrincipalList"),
+      // The default project hosts databases not explicitly assigned to other users project.
+      store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
       store.dispatch("instance/fetchInstanceList"),
       // [TODO] Fetches all databases. This may cause performance issue if the entire fleet
       // has a lot of databases.

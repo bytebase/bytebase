@@ -4,6 +4,8 @@ import { FieldId } from "../plugins";
 
 export const UNKNOWN_ID = "-1";
 
+export const DEFAULT_PROJECT_ID = "1";
+
 export type ResourceType =
   | "PRINCIPAL"
   | "EXECUTION"

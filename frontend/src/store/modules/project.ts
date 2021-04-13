@@ -13,7 +13,6 @@ import {
   ProjectRoleMappingPatch,
   RoleMappingId,
   PrincipalId,
-  UNKNOWN_ID,
   ResourceIdentifier,
 } from "../../types";
 

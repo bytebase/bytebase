@@ -44,7 +44,7 @@
 <script lang="ts">
 import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Principal, Project, UNKNOWN_ID } from "../types";
+import { DEFAULT_PROJECT_ID, Principal, Project, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
@@ -93,9 +93,10 @@ export default {
     watchEffect(prepareProjectList);
 
     const projectList = computed((): Project[] => {
-      return isDBAOrOwner(currentUser.value.role)
+      const list = isDBAOrOwner(currentUser.value.role)
         ? store.getters["project/projectList"]()
         : store.getters["project/projectListByUser"](currentUser.value.id);
+      return list;
     });
 
     const selectedIdNotInList = computed((): boolean => {

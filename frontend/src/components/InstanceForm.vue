@@ -298,6 +298,7 @@ import {
   ALL_DATABASE_NAME,
   Principal,
   InstancePatch,
+  DEFAULT_PROJECT_ID,
 } from "../types";
 
 interface LocalState {
@@ -385,6 +386,7 @@ export default {
       const createdDatabase = await store.dispatch("database/createDatabase", {
         name: ALL_DATABASE_NAME,
         instanceId: createdInstance.id,
+        projectId: DEFAULT_PROJECT_ID,
         creatorId: currentUser.value.id,
       });
 
