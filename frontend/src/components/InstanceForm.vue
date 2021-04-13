@@ -129,16 +129,16 @@ input[type="number"] {
           />
         </div>
       </div>
-      <!-- Read/Write Datasource Info -->
+      <!-- Read/Write Connection Info -->
       <div v-if="create" class="pt-4">
         <div class="flex justify-between">
           <div>
             <h3 class="text-lg leading-6 font-medium text-gray-900">
-              Read/Write Data Source Info
+              Read/Write connection info
             </h3>
             <p class="mt-1 text-sm text-gray-500 max-w-xl">
-              This is the data source used by bytebase to perform DDL and DML
-              operations. Note, bytebase does NOT need admin/SUPER privilege.
+              This is the connection used by Bytebase to perform DDL and DML
+              operations. Note, Bytebase does NOT need admin/SUPER privilege.
               TODO: Add grant statement.
             </p>
           </div>

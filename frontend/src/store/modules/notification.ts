@@ -36,13 +36,11 @@ const actions = {
     commit("appendNotification", notification);
   },
 
-  peekNotification({ state }: any, filter: NotificationFilter) {
-    return findNotification(state, filter);
-  },
-
-  removeNotification({ state, commit }: any, filter: NotificationFilter) {
+  tryPopNotification({ state, commit }: any, filter: NotificationFilter) {
     const notification = findNotification(state, filter);
-    commit("removeNotification", notification);
+    if (notification) {
+      commit("removeNotification", notification);
+    }
     return notification;
   },
 };

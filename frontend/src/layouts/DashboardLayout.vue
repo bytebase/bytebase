@@ -8,17 +8,13 @@
     </nav>
     <router-view name="body" />
   </div>
-  <BBNotification
-    :placement="'BOTTOM_RIGHT'"
-    :showing="state.notification != null"
-    :style="state.notification?.style || 'INFO'"
-    :title="state.notification?.title || ''"
-    :description="state.notification?.description || ''"
-    :payload="state.notification?.id"
-    :link="state.notification?.link"
-    :linkTitle="state.notification?.linkTitle"
-    @close="removeNotification"
-  />
+  <template v-if="state.notificationList.length > 0">
+    <BBNotification
+      :placement="'BOTTOM_RIGHT'"
+      :notificationList="state.notificationList"
+      @close="removeNotification"
+    />
+  </template>
 </template>
 
 <script lang="ts">
@@ -28,11 +24,12 @@ import ProvideContext from "../components/ProvideContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import { Notification } from "../types";
+import { BBNotificationItem } from "../bbkit/types";
 
 const NOTIFICAITON_DURATION = 8000;
 
 interface LocalState {
-  notification?: Notification | undefined;
+  notificationList: BBNotificationItem[];
 }
 
 export default {
@@ -42,37 +39,35 @@ export default {
     const store = useStore();
 
     const state = reactive<LocalState>({
-      notification: undefined,
+      notificationList: [],
     });
 
     const removeNotification = (id: string) => {
-      store
-        .dispatch("notification/removeNotification", {
-          module: "bytebase",
-          id,
-        })
-        .then(() => {
-          state.notification = undefined;
-        });
+      state.notificationList.shift();
     };
 
     const watchNotification = () => {
       store
-        .dispatch("notification/peekNotification", {
+        .dispatch("notification/tryPopNotification", {
           module: "bytebase",
         })
-        .then((notification: Notification) => {
-          state.notification = notification;
-          // We don't want user to miss "CRITICAL" notification and
-          // thus don't automatically dismiss it.
-          if (
-            notification &&
-            notification.style != "CRITICAL" &&
-            !notification.manualHide
-          ) {
-            setTimeout(() => {
-              removeNotification(notification.id);
-            }, NOTIFICAITON_DURATION);
+        .then((notification: Notification | undefined) => {
+          if (notification) {
+            state.notificationList.push({
+              style: notification.style,
+              title: notification.title,
+              description: notification.description || "",
+              link: notification.link || "",
+              linkTitle: notification.linkTitle || "",
+            });
+            // state.notification = notification;
+            // We don't want user to miss "CRITICAL" notification and
+            // thus don't automatically dismiss it.
+            if (notification.style != "CRITICAL" && !notification.manualHide) {
+              setTimeout(() => {
+                removeNotification(notification.id);
+              }, NOTIFICAITON_DURATION);
+            }
           }
         });
     };
