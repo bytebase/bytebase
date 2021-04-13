@@ -2,7 +2,7 @@
   <BBSelect
     :selectedItem="selectedPrincipal"
     :itemList="principalList"
-    :placeholder="'Not assigned'"
+    :placeholder="placeholder"
     :disabled="disabled"
     @select-item="
       (principal) => {
@@ -28,7 +28,9 @@
           -->
       <!-- Add my-0.5 padding to avoid flickering when switching to assignee -->
       <span class="flex my-0.5 lg:40 xl:w-44">
-        <span class="truncate text-error">{{ placeholder }}</span>
+        <span class="truncate" :class="required ? 'text-error' : ''">{{
+          placeholder
+        }}</span>
       </span>
     </template>
   </BBSelect>
@@ -59,6 +61,14 @@ export default {
     allowedRoleList: {
       default: ["OWNER", "DBA", "DEVELOPER"],
       type: Object as PropType<RoleType[]>,
+    },
+    placeholder: {
+      default: "Not assigned",
+      type: String,
+    },
+    required: {
+      default: true,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {
