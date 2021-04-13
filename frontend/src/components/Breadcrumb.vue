@@ -84,10 +84,10 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, ComputedRef } from "vue";
+import { computed, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { RouterSlug, User, Bookmark, UNKNOWN_ID } from "../types";
+import { RouterSlug, Bookmark, UNKNOWN_ID, Principal } from "../types";
 import { idFromSlug } from "../utils";
 import database from "../store/modules/database";
 
@@ -103,7 +103,7 @@ export default {
     const store = useStore();
     const currentRoute = useRouter().currentRoute;
 
-    const currentUser: ComputedRef<User> = computed(() =>
+    const currentUser: ComputedRef<Principal> = computed(() =>
       store.getters["auth/currentUser"]()
     );
 

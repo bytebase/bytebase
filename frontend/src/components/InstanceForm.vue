@@ -296,7 +296,7 @@ import {
   DataSourceNew,
   UNKNOWN_ID,
   ALL_DATABASE_NAME,
-  User,
+  Principal,
   InstancePatch,
 } from "../types";
 
@@ -327,7 +327,7 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser: ComputedRef<User> = computed(() =>
+    const currentUser: ComputedRef<Principal> = computed(() =>
       store.getters["auth/currentUser"]()
     );
 
