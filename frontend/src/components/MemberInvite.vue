@@ -42,7 +42,8 @@
           </div>
           <div
             v-if="hasAdminFeature"
-            class="hidden sm:flex sm:flex-row radio-set"
+            class="hidden sm:flex sm:flex-row space-x-4"
+            :class="state.errorList[index] ? '-mt-7' : ''"
           >
             <div class="radio">
               <input
