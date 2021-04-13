@@ -122,18 +122,14 @@ const getters = {
     const list: Database[] = [];
     for (let [_, databaseList] of state.databaseListByInstanceId) {
       databaseList.forEach((item: Database) => {
-        if (item.ownerId == userId) {
-          list.push(item);
-        } else {
-          for (const dataSource of item.dataSourceList) {
-            if (
-              dataSource.memberList.find(
-                (member: DataSourceMember) => member.principal.id == userId
-              )
-            ) {
-              list.push(item);
-              break;
-            }
+        for (const dataSource of item.dataSourceList) {
+          if (
+            dataSource.memberList.find(
+              (member: DataSourceMember) => member.principal.id == userId
+            )
+          ) {
+            list.push(item);
+            break;
           }
         }
       });
@@ -319,41 +315,6 @@ const actions = {
             type: "databasepatch",
             attributes: {
               projectId,
-            },
-          },
-        }
-      )
-    ).data;
-    const updatedDatabase = convert(data.data, data.included, rootGetters);
-
-    commit("upsertDatabaseList", {
-      databaseList: [updatedDatabase],
-      instanceId: updatedDatabase.instance.id,
-    });
-
-    return updatedDatabase;
-  },
-
-  async updateOwner(
-    { commit, rootGetters }: any,
-    {
-      instanceId,
-      databaseId,
-      ownerId,
-    }: {
-      instanceId: InstanceId;
-      databaseId: DatabaseId;
-      ownerId: PrincipalId;
-    }
-  ) {
-    const data = (
-      await axios.patch(
-        `/api/database/${databaseId}?include=instance,project,dataSource`,
-        {
-          data: {
-            type: "databasepatch",
-            attributes: {
-              ownerId,
             },
           },
         }

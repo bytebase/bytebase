@@ -48,10 +48,7 @@
       <ProjectListSidePanel />
     </div>
     <div class="mt-1">
-      <DatabaseListSidePanel :mode="'Owner'" />
-    </div>
-    <div class="mt-1">
-      <DatabaseListSidePanel :mode="'Grant'" />
+      <DatabaseListSidePanel />
     </div>
   </nav>
 </template>

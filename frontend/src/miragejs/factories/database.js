@@ -13,9 +13,6 @@ export default {
     lastUpdatedTs(i) {
       return Date.now() - i * 3600 * 1000;
     },
-    ownerId() {
-      return "100";
-    },
     syncStatus(i) {
       if (i % 3 == 0) {
         return "OK";

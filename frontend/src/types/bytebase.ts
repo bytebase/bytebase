@@ -114,7 +114,6 @@ export const unknown = (
     createdTs: 0,
     lastUpdatedTs: 0,
     name: "<<Unknown database>>",
-    ownerId: UNKNOWN_ID,
     syncStatus: "NOT_FOUND",
     lastSuccessfulSyncTs: 0,
     fingerprint: "",
@@ -836,7 +835,6 @@ export type Database = {
   createdTs: number;
   lastUpdatedTs: number;
   name: string;
-  ownerId: PrincipalId;
   syncStatus: DatabaseSyncStatus;
   lastSuccessfulSyncTs: number;
   fingerprint: string;
@@ -846,14 +844,12 @@ export type DatabaseNew = {
   name: string;
   instanceId: InstanceId;
   projectId: ProjectId;
-  ownerId: PrincipalId;
   creatorId: PrincipalId;
   taskId?: TaskId;
 };
 
 export type DatabasePatch = {
   projectId: ProjectId;
-  ownerId: PrincipalId;
 };
 
 // Auth

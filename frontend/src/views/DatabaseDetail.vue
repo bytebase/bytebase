@@ -69,29 +69,13 @@
               <label for="user" class="textlabel"> Project </label>
               <ProjectSelect
                 class="mt-1"
-                id="owner"
-                name="owner"
+                id="project"
+                name="project"
                 :disabled="!allowChangeProject"
                 :selectedId="database.project.id"
                 @select-project-id="
                   (projectId) => {
                     updateProject(projectId);
-                  }
-                "
-              />
-            </div>
-
-            <div class="col-span-1">
-              <label for="user" class="textlabel"> Owner </label>
-              <PrincipalSelect
-                class="mt-1 w-64"
-                id="owner"
-                name="owner"
-                :disabled="!allowChangeOwner"
-                :selectedId="database.ownerId"
-                @select-principal-id="
-                  (principalId) => {
-                    updateDatabaseOwner(principalId);
                   }
                 "
               />
@@ -217,17 +201,7 @@ export default {
     });
 
     const allowChangeProject = computed(() => {
-      return (
-        currentUser.value.id == database.value.ownerId ||
-        isCurrentUserDBAOrOwner.value
-      );
-    });
-
-    const allowChangeOwner = computed(() => {
-      return (
-        currentUser.value.id == database.value.ownerId ||
-        isCurrentUserDBAOrOwner.value
-      );
+      return isCurrentUserDBAOrOwner.value;
     });
 
     const dataSourceList = computed(() => {
@@ -273,29 +247,14 @@ export default {
         });
     };
 
-    const updateDatabaseOwner = (newOwnerId: PrincipalId) => {
-      store
-        .dispatch("database/updateOwner", {
-          instanceId: database.value.instance.id,
-          databaseId: database.value.id,
-          ownerId: newOwnerId,
-        })
-        .then(() => {})
-        .catch((error) => {
-          console.error(error);
-        });
-    };
-
     return {
       state,
       database,
       isCurrentUserDBAOrOwner,
       allowChangeProject,
-      allowChangeOwner,
       readWriteDataSourceList,
       readOnlyDataSourceList,
       updateProject,
-      updateDatabaseOwner,
     };
   },
 };

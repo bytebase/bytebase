@@ -609,7 +609,6 @@ const createInstanceList = (
       projectId: dbaProjectId,
       instance,
       name: "*",
-      ownerId: dba.id,
     });
 
     server.create("dataSource", {
@@ -638,7 +637,6 @@ const createInstanceList = (
         projectId:
           projectList[Math.floor(Math.random() * projectList.length)].id,
         instance,
-        ownerId: userList[Math.floor(Math.random() * userList.length)].id,
       });
 
       server.create("dataSource", {

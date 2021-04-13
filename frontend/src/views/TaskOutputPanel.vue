@@ -212,8 +212,6 @@ export default {
         const databaseName = props.task.payload[TaskBuiltinFieldId.DATABASE];
         queryParamList.push(`name=${databaseName}`);
 
-        queryParamList.push(`owner=${props.task.creator.id}`);
-
         queryParamList.push(`task=${props.task.id}`);
 
         queryParamList.push(`from=${props.task.type}`);

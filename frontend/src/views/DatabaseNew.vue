@@ -93,20 +93,6 @@ input[type="number"] {
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="user" class="textlabel">
-          Owner <span class="text-red-600">*</span>
-        </label>
-        <PrincipalSelect
-          class="mt-1"
-          id="owner"
-          name="owner"
-          :disabled="!allowEditOwner"
-          :selectedId="state.ownerId"
-          @select-principal-id="selectOwner"
-        />
-      </div>
-
-      <div class="col-span-2 col-start-2 w-64">
         <label for="username" class="textlabel block"> Username </label>
         <!-- For mysql, username can be empty indicating anonymous user. 
             But it's a very bad practice to use anonymous user for admin operation,
@@ -266,7 +252,6 @@ interface LocalState {
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
   databaseName?: string;
-  ownerId: PrincipalId;
   username: string;
   passsword: string;
   taskId?: TaskId;
@@ -314,9 +299,6 @@ export default {
         ? (router.currentRoute.value.query.instance as InstanceId)
         : undefined,
       databaseName: router.currentRoute.value.query.name as string,
-      ownerId:
-        (router.currentRoute.value.query.owner as PrincipalId) ||
-        currentUser.value.id,
       username: "",
       passsword: "",
       taskId: router.currentRoute.value.query.task as TaskId,
@@ -329,8 +311,7 @@ export default {
         !isEmpty(state.databaseName) &&
         state.projectId &&
         state.environmentId &&
-        state.instanceId &&
-        state.ownerId
+        state.instanceId
       );
     });
 
@@ -352,10 +333,6 @@ export default {
       return (
         state.fromTaskType != "bytebase.database.create" || !state.databaseName
       );
-    });
-
-    const allowEditOwner = computed(() => {
-      return state.fromTaskType != "bytebase.database.create" || !state.ownerId;
     });
 
     const allowEditTask = computed(() => {
@@ -442,20 +419,6 @@ export default {
       });
     };
 
-    const selectOwner = (ownerId: PrincipalId) => {
-      state.ownerId = ownerId;
-      const query = cloneDeep(router.currentRoute.value.query);
-      if (ownerId) {
-        query.owner = ownerId;
-      } else {
-        delete query["owner"];
-      }
-      router.replace({
-        name: "workspace.database.create",
-        query,
-      });
-    };
-
     const cancel = () => {
       router.go(-1);
     };
@@ -477,7 +440,6 @@ export default {
         name: state.databaseName,
         projectId: state.projectId,
         instanceId: state.instanceId,
-        ownerId: state.ownerId,
         creatorId: currentUser.value.id,
         taskId: linkedTask?.id,
       });
@@ -492,7 +454,7 @@ export default {
         password: isEmpty(state.passsword) ? undefined : state.passsword,
         memberList: [
           {
-            principalId: state.ownerId,
+            principalId: currentUser.value.id,
             taskId: linkedTask?.id,
           },
         ],
@@ -508,7 +470,7 @@ export default {
         password: isEmpty(state.passsword) ? undefined : state.passsword,
         memberList: [
           {
-            principalId: state.ownerId,
+            principalId: currentUser.value.id,
             taskId: linkedTask?.id,
           },
         ],
@@ -580,7 +542,6 @@ export default {
       allowEditProject,
       allowEditEnvironment,
       allowEditDatabaseName,
-      allowEditOwner,
       allowEditTask,
       instanceLink,
       taskLink,
@@ -588,7 +549,6 @@ export default {
       selectEnvironment,
       selectInstance,
       changeDatabaseName,
-      selectOwner,
       cancel,
       create,
     };

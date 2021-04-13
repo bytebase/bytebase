@@ -385,7 +385,6 @@ export default {
       const createdDatabase = await store.dispatch("database/createDatabase", {
         name: ALL_DATABASE_NAME,
         instanceId: createdInstance.id,
-        ownerId: currentUser.value.id,
         creatorId: currentUser.value.id,
       });
 
