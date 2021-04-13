@@ -1,7 +1,7 @@
 <template>
   <BBOutline
-    :id="mode == 'Owner' ? 'owned-database' : 'granted-database'"
-    :title="mode == 'Owner' ? 'Owned Databases' : 'Granted Databases'"
+    :id="'database'"
+    :title="'Databases'"
     :itemList="databaseListByEnvironment"
     :allowCollapse="false"
   />
@@ -27,12 +27,7 @@ interface LocalState {
 
 export default {
   name: "DatabaseListSidePanel",
-  props: {
-    mode: {
-      required: true,
-      type: String as PropType<"Owner" | "Grant">,
-    },
-  },
+  props: {},
   setup(props, ctx) {
     const store = useStore();
 
@@ -68,30 +63,19 @@ export default {
       }
       for (const database of state.databaseList) {
         if (database.name != ALL_DATABASE_NAME) {
-          if (
-            (props.mode == "Owner" &&
-              database.ownerId == currentUser.value.id) ||
-            (props.mode == "Grant" && database.ownerId != currentUser.value.id)
-          ) {
-            let databaseName = database.name;
-            if (
-              props.mode == "Grant" &&
-              database.ownerId != currentUser.value.id
-            ) {
-              if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
-                databaseName += " (read)";
-              }
-            }
+          let databaseName = database.name;
+          if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
+            databaseName += " (read)";
+          }
 
-            const dbList = envToDbMap.get(database.instance.environment.id)!;
-            // dbList may be undefined if the environment is archived
-            if (dbList) {
-              dbList.push({
-                id: database.id,
-                name: databaseName,
-                link: `/db/${databaseSlug(database)}`,
-              });
-            }
+          const dbList = envToDbMap.get(database.instance.environment.id)!;
+          // dbList may be undefined if the environment is archived
+          if (dbList) {
+            dbList.push({
+              id: database.id,
+              name: databaseName,
+              link: `/db/${databaseSlug(database)}`,
+            });
           }
         }
       }
