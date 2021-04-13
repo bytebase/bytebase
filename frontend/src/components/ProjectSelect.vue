@@ -8,8 +8,19 @@
       }
     "
   >
-    <option disabled :selected="undefined === state.selectedId">
+    <option disabled :selected="UNKNOWN_ID == state.selectedId">
       Select project
+    </option>
+    <!-- It may happen the selected id might not be in the project list.
+         e.g. the selected project is deleted after the selection and we
+         are unable to cleanup properly. In such case, the seleted project id
+         is orphaned and we just display the id.  -->
+    <option
+      v-if="selectedIdNotInList"
+      :value="state.selectedId"
+      :selected="true"
+    >
+      {{ state.selectedId }}
     </option>
     <template v-for="(project, index) in projectList" :key="index">
       <option
@@ -33,10 +44,10 @@
 <script lang="ts">
 import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Project, User } from "../types";
+import { Project, UNKNOWN_ID, User } from "../types";
 
 interface LocalState {
-  selectedId?: string;
+  selectedId: string;
 }
 
 export default {
@@ -45,6 +56,7 @@ export default {
   components: {},
   props: {
     selectedId: {
+      default: UNKNOWN_ID,
       type: String,
     },
     disabled: {
@@ -72,26 +84,25 @@ export default {
 
     watchEffect(prepareProjectList);
 
-    const projectList = computed(() => {
+    const projectList = computed((): Project[] => {
+      console.log(props.selectedId);
+      console.log(
+        store.getters["project/projectListByUser"](currentUser.value.id)
+      );
       return store.getters["project/projectListByUser"](currentUser.value.id);
     });
 
-    const invalidateSelectionIfNeeded = () => {
-      if (
-        state.selectedId &&
-        !projectList.value.find((item: Project) => item.id == state.selectedId)
-      ) {
-        state.selectedId = undefined;
-        emit("select-project-id", state.selectedId);
+    const selectedIdNotInList = computed((): boolean => {
+      if (props.selectedId == UNKNOWN_ID) {
+        return false;
       }
-    };
 
-    watch(
-      () => projectList.value,
-      () => {
-        invalidateSelectionIfNeeded();
-      }
-    );
+      return (
+        projectList.value.find((item) => {
+          return item.id == props.selectedId;
+        }) == null
+      );
+    });
 
     watch(
       () => props.selectedId,
@@ -101,8 +112,10 @@ export default {
     );
 
     return {
+      UNKNOWN_ID,
       state,
       projectList,
+      selectedIdNotInList,
     };
   },
 };
