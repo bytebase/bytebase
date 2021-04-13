@@ -113,7 +113,7 @@
 }
 
 .radio-set {
-  @apply h-9 items-center space-x-4;
+  @apply items-center space-x-4;
 }
 
 .radio {
