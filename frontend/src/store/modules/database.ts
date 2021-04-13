@@ -259,8 +259,8 @@ const actions = {
     }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
     const url = instanceId
-      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,dataSource`
-      : `/api/database/${databaseId}?include=instance,dataSource`;
+      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,project,dataSource`
+      : `/api/database/${databaseId}?include=instance,project,dataSource`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
