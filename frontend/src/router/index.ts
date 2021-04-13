@@ -548,10 +548,6 @@ router.beforeEach((to, from, next) => {
     : HOME_MODULE;
   const toModule = to.name ? to.name.toString().split(".")[0] : HOME_MODULE;
 
-  if (isDev()) {
-    console.log("Route module:", fromModule, "->", toModule);
-  }
-
   if (toModule != fromModule) {
     store.dispatch("router/setBackPath", from.fullPath);
   }
