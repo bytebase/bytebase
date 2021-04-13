@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="sm:hidden">
+    <div :class="responsive ? 'sm:hidden' : 'hidden'">
       <label for="tabs" class="sr-only">Select a tab</label>
       <select
         id="tabs"
@@ -22,7 +22,7 @@
         </option>
       </select>
     </div>
-    <div class="hidden sm:block">
+    <div :class="responsive ? 'hidden sm:block' : 'block'">
       <div class="flex space-x-4" aria-label="Tabs">
         <button
           v-for="(item, index) in tabList"
@@ -52,6 +52,10 @@ export default {
     selectedIndex: {
       required: true,
       type: Number,
+    },
+    responsive: {
+      default: true,
+      type: Boolean,
     },
   },
   setup(props, ctx) {

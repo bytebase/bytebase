@@ -74,6 +74,7 @@
   </div>
   <BBTableTabFilter
     class="px-1 pb-2 border-b border-block-border"
+    :responsive="false"
     :tabList="['Overview', 'Repository', 'Members']"
     :selectedIndex="state.selectedIndex"
     @select-index="
