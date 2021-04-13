@@ -59,8 +59,6 @@ export default function configureRoleMapping(route) {
 
   route.patch("/rolemapping/:roleMappingId", function (schema, request) {
     const roleMapping = schema.roleMappings.find(request.params.roleMappingId);
-    const oldRole = roleMapping.role;
-
     if (!roleMapping) {
       return new Response(
         404,
@@ -71,6 +69,8 @@ export default function configureRoleMapping(route) {
         }
       );
     }
+
+    const oldRole = roleMapping.role;
 
     const attrs = this.normalizedRequestAttrs("role-mapping");
     const updatedRoleMapping = roleMapping.update(attrs);
@@ -97,7 +97,6 @@ export default function configureRoleMapping(route) {
 
   route.delete("/rolemapping/:roleMappingId", function (schema, request) {
     const roleMapping = schema.roleMappings.find(request.params.roleMappingId);
-    const oldRole = roleMapping.role;
 
     if (!roleMapping) {
       return new Response(
@@ -110,6 +109,7 @@ export default function configureRoleMapping(route) {
       );
     }
 
+    const oldRole = roleMapping.role;
     roleMapping.destroy();
 
     // NOTE, in actual implementation, we need to fetch the user from the auth context.
