@@ -80,6 +80,14 @@ const getters = {
     return convert(instance, rootGetters);
   },
 
+  projectList: (state: ProjectState) => (): Project[] => {
+    const result: Project[] = [];
+    for (const [_, project] of state.projectById) {
+      result.push(project);
+    }
+    return result;
+  },
+
   projectListByUser: (state: ProjectState) => (userId: UserId): Project[] => {
     const result: Project[] = [];
     const list = state.projectIdListByUser.get(userId) || [];
@@ -122,6 +130,17 @@ const getters = {
 };
 
 const actions = {
+  async fetchProjectList({ commit, rootGetters }: any, userId: UserId) {
+    const projectList = (await axios.get(`/api/project`)).data.data.map(
+      (project: ResourceObject) => {
+        return convert(project, rootGetters);
+      }
+    );
+
+    commit("upsertProjectList", projectList);
+    return projectList;
+  },
+
   async fetchProjectListByUser({ commit, rootGetters }: any, userId: UserId) {
     const projectList = (
       await axios.get(`/api/project?userid=${userId}`)
@@ -302,6 +321,14 @@ const mutations = {
     }
   ) {
     state.projectById.set(projectId, project);
+  },
+
+  upsertProjectList(state: ProjectState, projectList: Project[]) {
+    const idList = [];
+    for (const project of projectList) {
+      state.projectById.set(project.id, project);
+      idList.push(project.id);
+    }
   },
 
   upsertProjectListByUser(

@@ -44,7 +44,8 @@
 <script lang="ts">
 import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Project, UNKNOWN_ID, User } from "../types";
+import { Principal, Project, UNKNOWN_ID } from "../types";
+import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
   selectedId: string;
@@ -70,26 +71,31 @@ export default {
       selectedId: props.selectedId,
     });
 
-    const currentUser: ComputedRef<User> = computed(() =>
+    const currentUser: ComputedRef<Principal> = computed(() =>
       store.getters["auth/currentUser"]()
     );
 
     const prepareProjectList = () => {
-      store
-        .dispatch("project/fetchProjectListByUser", currentUser.value.id)
-        .catch((error) => {
+      // Fetches the entire project list if DBA or above.
+      if (isDBAOrOwner(currentUser.value.role)) {
+        store.dispatch("project/fetchProjectList").catch((error) => {
           console.log(error);
         });
+      } else {
+        store
+          .dispatch("project/fetchProjectListByUser", currentUser.value.id)
+          .catch((error) => {
+            console.log(error);
+          });
+      }
     };
 
     watchEffect(prepareProjectList);
 
     const projectList = computed((): Project[] => {
-      console.log(props.selectedId);
-      console.log(
-        store.getters["project/projectListByUser"](currentUser.value.id)
-      );
-      return store.getters["project/projectListByUser"](currentUser.value.id);
+      return isDBAOrOwner(currentUser.value.role)
+        ? store.getters["project/projectList"]()
+        : store.getters["project/projectListByUser"](currentUser.value.id);
     });
 
     const selectedIdNotInList = computed((): boolean => {
