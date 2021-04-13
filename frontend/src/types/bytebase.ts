@@ -11,6 +11,7 @@ export type ResourceType =
   | "ROLE_MAPPING"
   | "ENVIRONMENT"
   | "PROJECT"
+  | "PROJECT_ROLE_MAPPING"
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
@@ -29,6 +30,7 @@ export const unknown = (
   | RoleMapping
   | Environment
   | Project
+  | ProjectRoleMapping
   | Instance
   | Database
   | DataSource
@@ -79,6 +81,17 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     lastUpdatedTs: 0,
+  };
+
+  const UNKNOWN_PROJECT_ROLE_MAPPING: ProjectRoleMapping = {
+    id: UNKNOWN_ID,
+    project: UNKNOWN_PROJECT,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    lastUpdatedTs: 0,
+    role: "DEVELOPER",
+    principal: UNKNOWN_PRINCIPAL,
   };
 
   const UNKNOWN_INSTANCE: Instance = {
@@ -174,6 +187,8 @@ export const unknown = (
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
       return UNKNOWN_PROJECT;
+    case "PROJECT_ROLE_MAPPING":
+      return UNKNOWN_PROJECT_ROLE_MAPPING;
     case "INSTANCE":
       return UNKNOWN_INSTANCE;
     case "DATABASE":
@@ -276,6 +291,30 @@ export type RoleMappingNew = {
 export type RoleMappingPatch = {
   id: RoleMappingId;
   role: RoleType;
+};
+
+// ProjectRoleMapping
+export type ProjectRoleType = "OWNER" | "DEVELOPER";
+
+export type ProjectRoleMapping = {
+  id: RoleMappingId;
+  project: Project;
+  creator: Principal;
+  updater: Principal;
+  createdTs: number;
+  lastUpdatedTs: number;
+  role: ProjectRoleType;
+  principal: Principal;
+};
+
+export type ProjectRoleMappingNew = {
+  principalId: PrincipalId;
+  role: ProjectRoleType;
+  creatorId: PrincipalId;
+};
+
+export type ProjectRoleMappingPatch = {
+  role: ProjectRoleType;
 };
 
 // Principal
@@ -571,6 +610,11 @@ export type MemberMessageType =
   | "bb.msg.member.revoke"
   | "bb.msg.member.updaterole";
 
+export type ProjectMemberMessageType =
+  | "bb.msg.project.member.create"
+  | "bb.msg.project.member.revoke"
+  | "bb.msg.project.member.updaterole";
+
 export type EnvironmentMessageType =
   | "bb.msg.environment.create"
   | "bb.msg.environment.update"
@@ -600,6 +644,12 @@ export type MemberMessagePayload = {
   principalId: PrincipalId;
   oldRole?: RoleType;
   newRole?: RoleType;
+};
+
+export type ProjectMemberMessagePayload = {
+  principalId: PrincipalId;
+  oldRole?: ProjectRoleType;
+  newRole?: ProjectRoleType;
 };
 
 export type EnvironmentUpdateMessagePayload = {
@@ -938,7 +988,9 @@ export interface TaskState {
 }
 
 export interface ProjectState {
-  projectListByUser: Map<UserId, Project[]>;
+  projectById: Map<ProjectId, Project>;
+  projectIdListByUser: Map<UserId, ProjectId[]>;
+  roleMappingListByProject: Map<ProjectId, ProjectRoleMapping[]>;
 }
 
 export interface EnvironmentState {

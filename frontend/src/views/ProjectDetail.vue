@@ -82,14 +82,28 @@
       }
     "
   />
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <template v-if="state.selectedIndex == 0"> </template>
+    <template v-else-if="state.selectedIndex == 1"> </template>
+    <template v-else-if="state.selectedIndex == 2">
+      <div v-if="allowAddMember" class="w-full flex justify-center my-6">
+        <ProjectMemberInvite :project="project" />
+      </div>
+      <div class="my-6">
+        <ProjectMemberTable :project="project" />
+      </div>
+    </template>
+  </div>
 </template>
 
 <script lang="ts">
-import { computed, nextTick, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isOwner, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
+import ProjectMemberInvite from "../components/ProjectMemberInvite.vue";
+import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import { Principal, Project, ProjectPatch } from "../types";
 import { cloneDeep, isEqual } from "lodash";
 
@@ -108,6 +122,8 @@ export default {
   components: {
     ArchiveBanner,
     DatabaseTable,
+    ProjectMemberInvite,
+    ProjectMemberTable,
   },
   props: {
     projectSlug: {
@@ -121,7 +137,7 @@ export default {
     const store = useStore();
     const state = reactive<LocalState>({
       editing: false,
-      selectedIndex: OVERVIEW_TAB,
+      selectedIndex: 2,
     });
 
     const currentUser = computed(
@@ -132,6 +148,33 @@ export default {
       return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
       );
+    });
+
+    const prepareProjectRoleMappingList = () => {
+      store
+        .dispatch("project/fetchRoleMappingList", project.value.id)
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    watchEffect(prepareProjectRoleMappingList);
+
+    const allowAddMember = computed(() => {
+      if (isOwner(currentUser.value.role)) {
+        return true;
+      }
+
+      for (const roleMapping of store.getters["project/roleMappingListById"](
+        project.value.id
+      )) {
+        if (roleMapping.principal.id == currentUser.value.id) {
+          if (isProjectOwner(roleMapping.role)) {
+            return true;
+          }
+        }
+      }
+      return false;
     });
 
     const allowEdit = computed(() => {
@@ -178,6 +221,7 @@ export default {
     return {
       state,
       project,
+      allowAddMember,
       allowEdit,
       allowSave,
       editProject,

@@ -1,5 +1,5 @@
 import { Store } from "vuex";
-import { RoleType } from "../types";
+import { ProjectRoleType, RoleType } from "../types";
 
 let store: Store<any>;
 
@@ -43,5 +43,25 @@ export function roleName(role: RoleType): string {
       return "Developer";
     case "GUEST":
       return "Guest";
+  }
+}
+
+// Project Role
+export function isProjectOwner(role: ProjectRoleType): boolean {
+  return !store.getters["plan/feature"]("bytebase.admin") || role == "OWNER";
+}
+
+export function isProjectDeveloper(role: ProjectRoleType): boolean {
+  return (
+    !store.getters["plan/feature"]("bytebase.admin") || role == "DEVELOPER"
+  );
+}
+
+export function projectRoleName(role: ProjectRoleType): string {
+  switch (role) {
+    case "OWNER":
+      return "Owner";
+    case "DEVELOPER":
+      return "Developer";
   }
 }

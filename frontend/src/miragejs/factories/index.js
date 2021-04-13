@@ -11,6 +11,7 @@ import activity from "./activity";
 import message from "./message";
 import workspace from "./workspace";
 import roleMapping from "./roleMapping";
+import projectRoleMapping from "./projectRoleMapping";
 
 import loginInfo from "./loginInfo";
 import signupInfo from "./signupInfo";
@@ -36,6 +37,7 @@ export default {
 
   ...workspace,
   ...roleMapping,
+  ...projectRoleMapping,
   ...loginInfo,
   ...signupInfo,
   ...activateInfo,

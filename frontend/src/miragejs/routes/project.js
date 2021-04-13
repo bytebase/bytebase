@@ -7,8 +7,21 @@ export default function configureProject(route) {
       queryParams: { userid: userId },
     } = request;
 
-    return schema.projects.where({
-      workspaceId: WORKSPACE_ID,
+    return schema.projects.where((project) => {
+      if (project.workspaceId != WORKSPACE_ID) {
+        return false;
+      }
+
+      if (userId) {
+        return (
+          schema.projectRoleMappings.findBy({
+            projectId: project.id,
+            principalId: userId,
+          }) != undefined
+        );
+      }
+
+      return true;
     });
   });
 

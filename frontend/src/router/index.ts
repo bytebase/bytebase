@@ -669,7 +669,6 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
       .then((project) => {
-        console.log(project);
         next();
       })
       .catch((error) => {

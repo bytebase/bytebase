@@ -63,6 +63,25 @@ const workspacesSeeder = (server: any) => {
         updaterId: ws1Dev1.id,
       })
     );
+
+    server.create("projectRoleMapping", {
+      workspace: workspace1,
+      project: projectList1[i],
+      creatorId: ws1DBA.id,
+      updaterId: ws1DBA.id,
+      role: "OWNER",
+      principalId: ws1DBA.id,
+    });
+
+    const userId = i % 2 == 0 ? ws1Owner.id : ws1Dev1.id;
+    server.create("projectRoleMapping", {
+      workspace: workspace1,
+      project: projectList1[i],
+      creatorId: ws1Owner.id,
+      updaterId: ws1Owner.id,
+      role: "DEVELOPER",
+      principalId: userId,
+    });
   }
   workspace1.update({ project: projectList1 });
 
@@ -75,6 +94,15 @@ const workspacesSeeder = (server: any) => {
         updaterId: ws2Dev.id,
       })
     );
+
+    server.create("projectRoleMapping", {
+      workspace: workspace2,
+      project: projectList2[i],
+      creatorId: ws2DBA.id,
+      updaterId: ws2DBA.id,
+      role: "OWNER",
+      principalId: ws2DBA.id,
+    });
   }
   workspace2.update({ project: projectList2 });
 

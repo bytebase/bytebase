@@ -9,6 +9,7 @@ import configureMessage from "./message";
 import configureBookmark from "./bookmark";
 import configureTask from "./task";
 import configureProject from "./project";
+import configureProjectRoleMapping from "./projectRoleMapping";
 import configureEnvironment from "./environment";
 import configureInstance from "./instance";
 import configureDatabase from "./database";
@@ -45,6 +46,9 @@ export default function routes() {
 
   // Project
   configureProject(this);
+
+  // ProjectRoleMapping
+  configureProjectRoleMapping(this);
 
   // Task
   configureTask(this);
