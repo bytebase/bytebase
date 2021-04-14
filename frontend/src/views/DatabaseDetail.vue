@@ -45,18 +45,41 @@
                 </router-link>
               </dd>
             </template>
-            <dt class="sr-only">Sync Status</dt>
+            <dt class="sr-only">Project</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Sync status&nbsp;-&nbsp;</span>
-              <span v-database-sync-status>{{ database.syncStatus }}</span>
-            </dd>
-            <dt class="sr-only">Last successful sync</dt>
-            <dd class="flex items-center text-sm">
-              <span class="textlabel">Last successful sync&nbsp;-&nbsp;</span>
-              {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+              <span class="textlabel">Project&nbsp;-&nbsp;</span>
+              <router-link
+                :to="`/project/${projectSlug(database.project)}`"
+                class="normal-link"
+              >
+                {{ projectName(database.project) }}
+              </router-link>
             </dd>
           </dl>
         </div>
+        <button
+          v-if="allowChangeProject"
+          type="button"
+          class="btn-normal"
+          @click.prevent="tryTransferProject"
+        >
+          <!-- Heroicon name: solid/pencil -->
+          <svg
+            class="-ml-1 mr-2 h-5 w-5 text-control-light"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+            ></path>
+          </svg>
+          <span>Transfer Project</span>
+        </button>
       </div>
 
       <div class="mt-6">
@@ -65,20 +88,22 @@
         >
           <!-- Description list -->
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-            <div class="col-span-1 w-64">
-              <label for="user" class="textlabel"> Project </label>
-              <ProjectSelect
-                class="mt-1"
-                id="project"
-                name="project"
-                :disabled="!allowChangeProject"
-                :selectedId="database.project.id"
-                @select-project-id="
-                  (projectId) => {
-                    updateProject(projectId);
-                  }
-                "
-              />
+            <div class="col-span-1 col-start-1">
+              <dt class="text-sm font-medium text-control-light">
+                Sync status
+              </dt>
+              <dd class="mt-1 text-sm text-main">
+                <span v-database-sync-status>{{ database.syncStatus }}</span>
+              </dd>
+            </div>
+
+            <div class="col-span-1">
+              <dt class="text-sm font-medium text-control-light">
+                Last successful sync
+              </dt>
+              <dd class="mt-1 text-sm text-main">
+                {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+              </dd>
             </div>
 
             <div class="col-span-1 col-start-1">
@@ -207,6 +232,46 @@
       </div>
     </main>
   </div>
+  <BBModal
+    v-if="state.showModal"
+    :title="'Transfer project'"
+    @close="state.showModal = false"
+  >
+    <div class="col-span-1 w-64">
+      <label for="user" class="textlabel"> Project </label>
+      <ProjectSelect
+        class="mt-1"
+        id="project"
+        name="project"
+        :selectedId="state.editingProjectId"
+        @select-project-id="
+          (projectId) => {
+            state.editingProjectId = projectId;
+          }
+        "
+      />
+    </div>
+    <div class="pt-6 flex justify-end">
+      <button
+        type="button"
+        class="btn-normal py-2 px-4"
+        @click.prevent="state.showModal = false"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        :disabled="state.editingProjectId == database.project.id"
+        @click.prevent="
+          updateProject(state.editingProjectId);
+          state.showModal = false;
+        "
+      >
+        Transfer
+      </button>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -218,11 +283,13 @@ import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.v
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
-import { DataSource, ProjectId, DataSourcePatch } from "../types";
+import { DataSource, ProjectId, DataSourcePatch, UNKNOWN_ID } from "../types";
 import { cloneDeep, isEqual } from "lodash";
 
 interface LocalState {
   editingDataSource?: DataSource;
+  showModal: boolean;
+  editingProjectId: ProjectId;
 }
 
 export default {
@@ -243,7 +310,10 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      showModal: false,
+      editingProjectId: UNKNOWN_ID,
+    });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -298,6 +368,11 @@ export default {
         return dataSource.type == "RO";
       });
     });
+
+    const tryTransferProject = () => {
+      state.editingProjectId = database.value.project.id;
+      state.showModal = true;
+    };
 
     const updateProject = (newProjectId: ProjectId) => {
       store
@@ -370,6 +445,7 @@ export default {
       allowChangeDataSource,
       readWriteDataSourceList,
       readOnlyDataSourceList,
+      tryTransferProject,
       updateProject,
       isEditingDataSource,
       allowSaveDataSource,
