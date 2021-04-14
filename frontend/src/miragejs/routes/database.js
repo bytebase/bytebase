@@ -42,25 +42,19 @@ export default function configureDatabase(route) {
         }
 
         if (userId) {
-          const dataSourceList = schema.dataSources.where({
-            workspaceId: WORKSPACE_ID,
-            databaseId: database.id,
-          });
+          const project = schema.projects.find(database.projectId);
 
-          let matchFound = false;
-          for (const dataSource of dataSourceList.models) {
-            if (
-              dataSource.memberList.find((item) => {
-                return item.principalId == userId;
-              })
-            ) {
-              matchFound = true;
-              break;
-            }
-          }
-          if (!matchFound) {
+          if (!project) {
             return false;
           }
+
+          return (
+            schema.projectRoleMappings.findBy({
+              principalId: userId,
+              projectId: project.id,
+              workspaceId: WORKSPACE_ID,
+            }) != undefined
+          );
         }
 
         return true;
