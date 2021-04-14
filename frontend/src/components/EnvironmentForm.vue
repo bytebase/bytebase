@@ -48,6 +48,7 @@
       </template>
       <template v-else-if="state.environment.rowStatus == 'ARCHIVED'">
         <BBButtonConfirm
+          v-if="allowRestore"
           :style="'RESTORE'"
           :buttonText="'Restore this environment'"
           :okText="'Restore'"
@@ -126,7 +127,11 @@ export default {
     });
 
     const allowArchive = computed(() => {
-      return environmentList.value.length > 1;
+      return allowEdit.value && environmentList.value.length > 1;
+    });
+
+    const allowRestore = computed(() => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const allowEdit = computed(() => {
@@ -176,6 +181,7 @@ export default {
     return {
       state,
       allowArchive,
+      allowRestore,
       allowEdit,
       valueChanged,
       allowCreate,
