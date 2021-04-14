@@ -121,10 +121,6 @@ export default {
       error: "",
     });
 
-    const existingMemberList = computed(() => {
-      return store.getters["project/roleMappingListById"](props.project.id);
-    });
-
     const hasValidMember = computed(() => {
       return (
         state.principalId != UNKNOWN_ID && validateInviteInternal().length == 0
@@ -134,7 +130,7 @@ export default {
     const validateInviteInternal = (): string => {
       if (state.principalId != UNKNOWN_ID) {
         if (
-          existingMemberList.value.find((item: ProjectRoleMapping) => {
+          props.project.memberList.find((item: ProjectRoleMapping) => {
             return item.principal.id == state.principalId;
           })
         ) {

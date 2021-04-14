@@ -83,6 +83,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     lastUpdatedTs: 0,
+    memberList: [],
   };
 
   const UNKNOWN_PROJECT_ROLE_MAPPING: ProjectRoleMapping = {
@@ -370,6 +371,9 @@ export type Project = {
   updater: Principal;
   createdTs: number;
   lastUpdatedTs: number;
+  // Returns the member list directly because we need it quite frequently in order
+  // to do various access check.
+  memberList: ProjectRoleMapping[];
 };
 
 export type ProjectNew = {
@@ -987,8 +991,6 @@ export interface TaskState {
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
-  projectIdListByUser: Map<UserId, ProjectId[]>;
-  roleMappingListByProject: Map<ProjectId, ProjectRoleMapping[]>;
 }
 
 export interface EnvironmentState {

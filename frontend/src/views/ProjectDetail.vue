@@ -151,24 +151,12 @@ export default {
       );
     });
 
-    const prepareProjectRoleMappingList = () => {
-      store
-        .dispatch("project/fetchRoleMappingList", project.value.id)
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    watchEffect(prepareProjectRoleMappingList);
-
     const allowAddMember = computed(() => {
       if (isOwner(currentUser.value.role)) {
         return true;
       }
 
-      for (const roleMapping of store.getters["project/roleMappingListById"](
-        project.value.id
-      )) {
+      for (const roleMapping of project.value.memberList) {
         if (roleMapping.principal.id == currentUser.value.id) {
           if (isProjectOwner(roleMapping.role)) {
             return true;

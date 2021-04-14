@@ -150,9 +150,7 @@ export default {
       (): BBTableSectionDataSource<ProjectRoleMapping>[] => {
         const ownerList: ProjectRoleMapping[] = [];
         const developerList: ProjectRoleMapping[] = [];
-        for (const roleMapping of store.getters["project/roleMappingListById"](
-          props.project.id
-        )) {
+        for (const roleMapping of props.project.memberList) {
           if (roleMapping.role == "OWNER") {
             ownerList.push(roleMapping);
           }
@@ -223,9 +221,7 @@ export default {
         return true;
       }
 
-      for (const roleMapping of store.getters["project/roleMappingListById"](
-        props.project.id
-      )) {
+      for (const roleMapping of props.project.memberList) {
         if (roleMapping.principal.id == currentUser.value.id) {
           if (isProjectOwner(roleMapping.role)) {
             return true;
