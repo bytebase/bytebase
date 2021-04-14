@@ -1,4 +1,5 @@
 import { Response } from "miragejs";
+import { ALL_DATABASE_NAME } from "../../types";
 import { WORKSPACE_ID } from "./index";
 
 export default function configureDatabase(route) {
@@ -37,6 +38,10 @@ export default function configureDatabase(route) {
 
     return schema.databases
       .where((database) => {
+        if (database.name == ALL_DATABASE_NAME) {
+          return false;
+        }
+
         if (instanceIdList && !instanceIdList.includes(database.instanceId)) {
           return false;
         }
@@ -69,6 +74,17 @@ export default function configureDatabase(route) {
     const { taskId, creatorId, ...attrs } = this.normalizedRequestAttrs(
       "database"
     );
+
+    if (attrs.name == ALL_DATABASE_NAME) {
+      return new Response(
+        400,
+        {},
+        {
+          errors: `Cannot specify * as the database name`,
+        }
+      );
+    }
+
     const newDatabase = {
       ...attrs,
       createdTs: ts,
@@ -96,13 +112,24 @@ export default function configureDatabase(route) {
   route.patch("/database/:databaseId", function (schema, request) {
     const attrs = this.normalizedRequestAttrs("database-patch");
     const database = schema.databases.find(request.params.databaseId);
-    if (database) {
-      return database.update({ ...attrs, lastUpdatedTs: Date.now() });
+    if (!database) {
+      return new Response(
+        404,
+        {},
+        { errors: "Database " + request.params.databaseId + " not found" }
+      );
     }
-    return new Response(
-      404,
-      {},
-      { errors: "Database " + request.params.databaseId + " not found" }
-    );
+
+    if (attrs.name == ALL_DATABASE_NAME) {
+      return new Response(
+        400,
+        {},
+        {
+          errors: `Cannot specify * as the database name`,
+        }
+      );
+    }
+
+    return database.update({ ...attrs, lastUpdatedTs: Date.now() });
   });
 }
