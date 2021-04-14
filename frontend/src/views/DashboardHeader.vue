@@ -11,7 +11,7 @@
         /></router-link>
       </div>
       <div class="hidden sm:block">
-        <div class="ml-6 flex items-baseline space-x-4">
+        <div class="ml-6 flex items-baseline space-x-2">
           <router-link to="/project" class="bar-link px-2 py-2 rounded-md"
             >Projects</router-link
           >
