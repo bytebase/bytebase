@@ -10,20 +10,9 @@
           ><img class="h-12 w-auto" src="../assets/logo.svg" alt="Bytebase"
         /></router-link>
       </div>
-      <div class="hidden sm:block">
+      <div v-if="showDBAItem" class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-2">
-          <router-link to="/project" class="bar-link px-2 py-2 rounded-md"
-            >Projects</router-link
-          >
-
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md"
-            >Databases</router-link
-          >
-
-          <router-link
-            v-if="showInstanceLink"
-            to="/instance"
-            class="bar-link px-2 py-2 rounded-md"
+          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md"
             >Instances</router-link
           >
 
@@ -170,20 +159,8 @@
       Open: "block", closed: "hidden"
     -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-      <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-      <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
-        >Projects</router-link
-      >
-
-      <router-link to="/database" class="bar-link rounded-md block px-3 py-2"
-        >Databases</router-link
-      >
-
-      <router-link
-        v-if="showInstanceLink"
-        to="/instance"
-        class="bar-link rounded-md block px-3 py-2"
+    <div v-if="showDBAItem" class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+      <router-link to="/instance" class="bar-link rounded-md block px-3 py-2"
         >Instance</router-link
       >
 
@@ -225,7 +202,7 @@ export default {
 
     const currentPlan = computed(() => store.getters["plan/currentPlan"]());
 
-    const showInstanceLink = computed((): boolean => {
+    const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
     });
 
@@ -266,7 +243,7 @@ export default {
       state,
       currentUser,
       currentPlan,
-      showInstanceLink,
+      showDBAItem,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,

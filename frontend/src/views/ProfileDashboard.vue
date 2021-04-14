@@ -110,8 +110,16 @@
           <div class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">Role</dt>
             <dd class="mt-1 text-sm text-main">
-              <router-link :to="'/setting/member'" class="normal-link" v-role>
+              <router-link
+                v-if="hasAdminFeature"
+                :to="'/setting/member'"
+                class="normal-link"
+                v-role
+              >
                 {{ principal.role }}
+              </router-link>
+              <router-link v-else :to="'/setting/plan'" class="normal-link">
+                Upgrade to Team plan to enable admin management
               </router-link>
             </dd>
           </div>
@@ -133,7 +141,7 @@ import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
-import { Principal, PrincipalPatch } from "../types";
+import { PrincipalPatch } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -178,6 +186,10 @@ export default {
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const hasAdminFeature = computed(() =>
+      store.getters["plan/feature"]("bytebase.admin")
+    );
 
     const principal = computed(() => {
       if (props.principalId) {
@@ -232,6 +244,7 @@ export default {
     return {
       editNameTextField,
       state,
+      hasAdminFeature,
       isCurrentUser,
       principal,
       valueChanged,

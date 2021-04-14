@@ -110,9 +110,10 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
   collapseState: boolean;
@@ -129,6 +130,8 @@ export default {
     const state = reactive<LocalState>({
       collapseState: true,
     });
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const goBack = () => {
       router.push(store.getters["router/backPath"]());

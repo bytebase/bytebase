@@ -582,21 +582,6 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (
-    to.name === "error.403" ||
-    to.name === "error.404" ||
-    to.name === "error.500" ||
-    to.name === "workspace.home" ||
-    to.name === "workspace.inbox" ||
-    to.name === "workspace.environment" ||
-    to.name === "workspace.project" ||
-    to.name === "workspace.database" ||
-    to.name?.toString().startsWith("setting")
-  ) {
-    next();
-    return;
-  }
-
   if (to.name === "workspace.database.create") {
     if (
       !store.getters["plan/feature"]("bytebase.dba-workflow") ||
@@ -614,6 +599,7 @@ router.beforeEach((to, from, next) => {
 
   if (
     to.name === "workspace.archive" ||
+    to.name === "workspace.environment" ||
     to.name?.toString().startsWith("workspace.instance")
   ) {
     if (isDBAOrOwner(loginUser.role)) {
@@ -638,6 +624,20 @@ router.beforeEach((to, from, next) => {
       });
       return;
     }
+  }
+
+  if (
+    to.name === "error.403" ||
+    to.name === "error.404" ||
+    to.name === "error.500" ||
+    to.name === "workspace.home" ||
+    to.name === "workspace.inbox" ||
+    to.name === "workspace.project" ||
+    to.name === "workspace.database" ||
+    to.name?.toString().startsWith("setting")
+  ) {
+    next();
+    return;
   }
 
   const routerSlug = store.getters["router/routeSlug"](to);
