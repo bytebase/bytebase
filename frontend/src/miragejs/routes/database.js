@@ -11,7 +11,7 @@ export default function configureDatabase(route) {
     return new Response(
       404,
       {},
-      { errors: "Database " + request.params.id + " not found" }
+      { errors: "Database " + request.params.id + " not found." }
     );
   });
 
@@ -38,10 +38,6 @@ export default function configureDatabase(route) {
 
     return schema.databases
       .where((database) => {
-        if (database.name == ALL_DATABASE_NAME) {
-          return false;
-        }
-
         if (instanceIdList && !instanceIdList.includes(database.instanceId)) {
           return false;
         }
@@ -75,12 +71,18 @@ export default function configureDatabase(route) {
       "database"
     );
 
-    if (attrs.name == ALL_DATABASE_NAME) {
+    if (
+      schema.databases.findBy({
+        name: attrs.name,
+        instanceId: attrs.instanceId,
+        workspaceId: WORKSPACE_ID,
+      })
+    ) {
       return new Response(
-        400,
+        409,
         {},
         {
-          errors: `Cannot specify * as the database name`,
+          errors: `Database name ${attrs.name} already exists.`,
         }
       );
     }
@@ -116,7 +118,7 @@ export default function configureDatabase(route) {
       return new Response(
         404,
         {},
-        { errors: "Database " + request.params.databaseId + " not found" }
+        { errors: "Database " + request.params.databaseId + " not found." }
       );
     }
 
@@ -125,7 +127,7 @@ export default function configureDatabase(route) {
         400,
         {},
         {
-          errors: `Cannot specify * as the database name`,
+          errors: `Cannot specify * as the database name.`,
         }
       );
     }
