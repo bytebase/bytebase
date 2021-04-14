@@ -11,7 +11,7 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <DatabaseTable :databaseList="filteredList(databaseList)" />
+    <DatabaseTable :databaseList="filteredList" />
   </div>
 </template>
 
@@ -26,6 +26,7 @@ import { Environment, Database } from "../types";
 
 interface LocalState {
   searchText: string;
+  databaseList: Database[];
   selectedEnvironment?: Environment;
 }
 
@@ -43,6 +44,7 @@ export default {
 
     const state = reactive<LocalState>({
       searchText: "",
+      databaseList: [],
       selectedEnvironment: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
@@ -60,6 +62,9 @@ export default {
     const prepareDatabaseList = () => {
       store
         .dispatch("database/fetchDatabaseListByUser", currentUser.value.id)
+        .then((list) => {
+          state.databaseList = list;
+        })
         .catch((error) => {
           console.error(error);
         });
@@ -83,20 +88,12 @@ export default {
       state.searchText = searchText;
     };
 
-    const databaseList = computed(() => {
-      // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
-      // thus we rervese the order to put more important ones first.
-      return cloneDeep(
-        store.getters["database/databaseListByUserId"](currentUser.value.id)
-      ).reverse();
-    });
-
-    const filteredList = (list: Database[]) => {
+    const filteredList = computed(() => {
       if (!state.selectedEnvironment && !state.searchText) {
         // Select "All"
-        return list;
+        return state.databaseList;
       }
-      return list.filter((database) => {
+      return state.databaseList.filter((database) => {
         return (
           (!state.selectedEnvironment ||
             database.instance.environment.id == state.selectedEnvironment.id) &&
@@ -106,12 +103,11 @@ export default {
               .includes(state.searchText.toLowerCase()))
         );
       });
-    };
+    });
 
     return {
       searchField,
       state,
-      databaseList,
       filteredList,
       selectEnvironment,
       changeSearchText,

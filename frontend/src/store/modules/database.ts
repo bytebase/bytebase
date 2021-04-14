@@ -116,27 +116,6 @@ const getters = {
     return state.databaseListByInstanceId.get(instanceId) || [];
   },
 
-  databaseListByUserId: (state: DatabaseState) => (
-    userId: UserId
-  ): Database[] => {
-    const list: Database[] = [];
-    for (let [_, databaseList] of state.databaseListByInstanceId) {
-      databaseList.forEach((item: Database) => {
-        for (const dataSource of item.dataSourceList) {
-          if (
-            dataSource.memberList.find(
-              (member: DataSourceMember) => member.principal.id == userId
-            )
-          ) {
-            list.push(item);
-            break;
-          }
-        }
-      });
-    }
-    return list;
-  },
-
   databaseListByEnvironmentId: (state: DatabaseState) => (
     environmentId: EnvironmentId
   ): Database[] => {
