@@ -4,8 +4,7 @@ import faker from "faker";
 export default {
   database: Factory.extend({
     name(i) {
-      // i + 1 to accout for the "*" creation in the instance
-      return "shop" + (i + 1);
+      return "shop" + i;
     },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;

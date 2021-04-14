@@ -131,26 +131,27 @@ const workspacesSeeder = (server: any) => {
   const databaseList1 = [];
   databaseList1.push(
     server.schema.databases.findBy({
-      instanceId: instanceList1[0].id,
+      name: "shop1",
+    })
+  );
+  databaseList1.push(
+    server.schema.databases.findBy({
       name: "shop3",
     })
   );
   databaseList1.push(
     server.schema.databases.findBy({
-      instanceId: instanceList1[1].id,
-      name: "shop6",
+      name: "shop5",
     })
   );
   databaseList1.push(
     server.schema.databases.findBy({
-      instanceId: instanceList1[2].id,
+      name: "shop7",
+    })
+  );
+  databaseList1.push(
+    server.schema.databases.findBy({
       name: "shop9",
-    })
-  );
-  databaseList1.push(
-    server.schema.databases.findBy({
-      instanceId: instanceList1[3].id,
-      name: "shop12",
     })
   );
 
@@ -583,11 +584,11 @@ const createInstanceList = (
   dbaProjectId: string
 ): Instance[] => {
   const instanceNamelist = [
-    "On-premise instance",
-    "AWS instance",
-    "GCP instance",
-    "Azure instance",
-    "Ali Cloud instance",
+    "On-premise MySQL instance",
+    "AWS RDS instance",
+    "GCP Cloud SQL instance",
+    "Azure SQL instance",
+    "AliCloud RDS instance",
   ];
 
   const instanceList = [];
@@ -601,25 +602,10 @@ const createInstanceList = (
       environmentId: i == 4 ? enviromentList[3].id : enviromentList[i].id,
       creatorId: dba.id,
       updaterId: dba.id,
+      username: "root" + i,
+      password: "pwd" + i,
     });
     instanceList.push(instance);
-
-    const allDatabase = server.create("database", {
-      workspaceId: instance.workspaceId,
-      projectId: dbaProjectId,
-      instance,
-      name: "*",
-    });
-
-    server.create("dataSource", {
-      workspaceId: instance.workspaceId,
-      instance,
-      database: allDatabase,
-      name: instance.name + " admin RW",
-      type: "RW",
-      username: "adminRW",
-      password: "pwdadminRW",
-    });
 
     for (let i = 0; i < 2; i++) {
       const database = server.create("database", {
@@ -627,16 +613,6 @@ const createInstanceList = (
         projectId:
           projectList[Math.floor(Math.random() * projectList.length)].id,
         instance,
-      });
-
-      server.create("dataSource", {
-        workspaceId: instance.workspaceId,
-        instance,
-        database,
-        name: database.name + " default RW",
-        type: "RW",
-        username: "rootRW",
-        password: "pwdRW",
       });
     }
   }

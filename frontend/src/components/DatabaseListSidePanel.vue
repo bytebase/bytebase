@@ -12,12 +12,7 @@ import { computed, PropType, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
-import {
-  ALL_DATABASE_NAME,
-  Database,
-  Environment,
-  EnvironmentId,
-} from "../types";
+import { Database, Environment, EnvironmentId } from "../types";
 import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
@@ -62,16 +57,14 @@ export default {
         envToDbMap.set(environment.id, []);
       }
       for (const database of state.databaseList) {
-        if (database.name != ALL_DATABASE_NAME) {
-          const dbList = envToDbMap.get(database.instance.environment.id)!;
-          // dbList may be undefined if the environment is archived
-          if (dbList) {
-            dbList.push({
-              id: database.id,
-              name: database.name,
-              link: `/db/${databaseSlug(database)}`,
-            });
-          }
+        const dbList = envToDbMap.get(database.instance.environment.id)!;
+        // dbList may be undefined if the environment is archived
+        if (dbList) {
+          dbList.push({
+            id: database.id,
+            name: database.name,
+            link: `/db/${databaseSlug(database)}`,
+          });
         }
       }
       return environmentList.value.map(

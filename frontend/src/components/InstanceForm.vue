@@ -14,7 +14,7 @@ input[type="number"] {
 
 <template>
   <form class="space-y-6 divide-y divide-block-border">
-    <div class="">
+    <div class="space-y-6 divide-y divide-block-border">
       <!-- Instance Name -->
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2 sm:col-start-1">
@@ -130,13 +130,16 @@ input[type="number"] {
         </div>
       </div>
       <!-- Read/Write Connection Info -->
-      <div v-if="create" class="pt-4">
+      <div class="pt-4">
         <div class="flex justify-between">
           <div>
             <h3 class="text-lg leading-6 font-medium text-gray-900">
-              Read/Write connection info
+              Connection info
             </h3>
-            <p class="mt-1 text-sm text-gray-500 max-w-xl">
+            <p
+              class="mt-1 text-sm text-gray-500"
+              :class="create ? 'max-w-xl' : ''"
+            >
               This is the connection used by Bytebase to perform DDL and DML
               operations. Note, Bytebase does NOT need admin/SUPER privilege.
               TODO: Add grant statement.
@@ -157,8 +160,8 @@ input[type="number"] {
               name="username"
               type="text"
               class="textfield mt-1 w-full"
-              :value="state.username"
-              @input="state.username = $event.target.value"
+              :value="state.instance.username"
+              @input="state.instance.username = $event.target.value"
             />
           </div>
 
@@ -215,8 +218,8 @@ input[type="number"] {
               autocomplete="off"
               :type="state.showPassword ? 'text' : 'password'"
               class="textfield mt-1 w-full"
-              :value="state.password"
-              @input="state.password = $event.target.value"
+              :value="state.instance.password"
+              @input="state.instance.password = $event.target.value"
             />
           </div>
         </div>
@@ -237,9 +240,7 @@ input[type="number"] {
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           :disabled="!allowCreate"
-          @click.prevent="
-            doCreate(state.instance, state.username, state.password)
-          "
+          @click.prevent="doCreate(state.instance)"
         >
           Create
         </button>
@@ -273,7 +274,6 @@ import {
   InstanceNew,
   DataSourceNew,
   UNKNOWN_ID,
-  ALL_DATABASE_NAME,
   Principal,
   InstancePatch,
   DEFAULT_PROJECT_ID,
@@ -282,8 +282,6 @@ import {
 interface LocalState {
   originalInstance?: Instance;
   instance: Instance | InstanceNew;
-  username?: string;
-  password?: string;
   showPassword: Boolean;
 }
 
@@ -319,8 +317,8 @@ export default {
             environmentId: UNKNOWN_ID,
             name: "New Instance",
             host: "127.0.0.1",
+            username: "root",
           },
-      username: "root",
       showPassword: false,
     });
 
@@ -348,43 +346,10 @@ export default {
       emit("dismiss");
     };
 
-    // doCreate make instance, database and data source creation in seperate API.
-    // In the unlikely event, instance operation may succeed while the corresponding
-    // database/datasource operation failed. We consiciously make this trade-off to make
-    // instance create API clean without coupling database, data source logic.
-    // The logic here to group instance, database and data source operation together is
-    // for providing better UX, which shouldn't affect underlying modeling anyway.
-    const doCreate = async (
-      newInstance: InstanceNew,
-      username?: string,
-      password?: string
-    ) => {
-      const createdInstance = await store.dispatch(
-        "instance/createInstance",
-        newInstance
-      );
-
-      // Create the database representing all databases(*)
-      const createdDatabase = await store.dispatch("database/createDatabase", {
-        name: ALL_DATABASE_NAME,
-        instanceId: createdInstance.id,
-        projectId: DEFAULT_PROJECT_ID,
-        creatorId: currentUser.value.id,
-      });
-
-      const adminDataSource: DataSourceNew = {
-        name: "Admin data source",
-        databaseId: createdDatabase.id,
-        instanceId: createdInstance.id,
-        memberList: [],
-        type: "RW",
-        username,
-        password,
-      };
-
+    const doCreate = async (newInstance: InstanceNew) => {
       store
-        .dispatch("dataSource/createDataSource", adminDataSource)
-        .then(() => {
+        .dispatch("instance/createInstance", newInstance)
+        .then((createdInstance) => {
           emit("dismiss");
 
           router.push(`/instance/${instanceSlug(createdInstance)}`);
@@ -419,6 +384,13 @@ export default {
       if (state.instance.port != state.originalInstance!.port) {
         patchedInstance.port = state.instance.port;
       }
+      if (state.instance.username != state.originalInstance!.username) {
+        patchedInstance.username = state.instance.username;
+      }
+      if (state.instance.password != state.originalInstance!.password) {
+        patchedInstance.password = state.instance.password;
+      }
+
       store
         .dispatch("instance/patchInstance", {
           instanceId: (state.instance as Instance).id,

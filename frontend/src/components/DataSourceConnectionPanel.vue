@@ -148,7 +148,7 @@ import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { DataSource, ALL_DATABASE_NAME } from "../types";
+import { DataSource } from "../types";
 
 type Connection = {
   name: string;
@@ -196,7 +196,7 @@ export default {
       if (database.value.instance.port) {
         cliOptionList.push(`-P ${database.value.instance.port}`);
       }
-      if (database.value.name != ALL_DATABASE_NAME) {
+      if (database.value.name) {
         cliOptionList.push(`-D ${database.value.name}`);
       }
       if (props.dataSource.username) {
@@ -216,7 +216,7 @@ export default {
         if (database.value.instance.port) {
           jdbcString += `:${database.value.instance.port}`;
         }
-        if (database.value.name != ALL_DATABASE_NAME) {
+        if (database.value.name) {
           jdbcString += `/${database.value.name}`;
         }
         const optionList = [];

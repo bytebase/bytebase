@@ -239,10 +239,6 @@ export type InstanceId = string;
 export type DataSourceId = string;
 
 export type DatabaseId = string;
-// This is a placeholder database id which will later be converted to
-// the actual database id referencing all databases.
-export const ALL_DATABASE_PLACEHOLDER_ID = "0";
-export const ALL_DATABASE_NAME: string = "*";
 
 export type CommandId = string;
 export type CommandRegisterId = string;
@@ -765,6 +761,9 @@ export type Instance = {
   externalLink?: string;
   host: string;
   port?: string;
+  // In mysql, username can be empty which means anonymous user
+  username?: string;
+  password?: string;
 };
 
 export type InstanceNew = {
@@ -773,6 +772,9 @@ export type InstanceNew = {
   externalLink?: string;
   host: string;
   port?: string;
+  // In mysql, username can be empty which means anonymous user
+  username?: string;
+  password?: string;
 };
 
 export type InstancePatch = {
@@ -781,6 +783,8 @@ export type InstancePatch = {
   externalLink?: string;
   host?: string;
   port?: string;
+  username?: string;
+  password?: string;
 };
 
 export type DataSourceType = "RW" | "RO";

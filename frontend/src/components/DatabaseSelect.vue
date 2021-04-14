@@ -32,7 +32,7 @@
 <script lang="ts">
 import { computed, reactive, watch, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
-import { ALL_DATABASE_NAME, Database } from "../types";
+import { Database } from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -57,10 +57,6 @@ export default {
       type: String,
     },
     disabled: {
-      default: false,
-      type: Boolean,
-    },
-    showAllDatabase: {
       default: false,
       type: Boolean,
     },
@@ -106,11 +102,7 @@ export default {
           props.instanceId
         );
       }
-      return props.showAllDatabase
-        ? list
-        : list.filter((database: Database) => {
-            return database.name != ALL_DATABASE_NAME;
-          });
+      return list;
     });
 
     const invalidateSelectionIfNeeded = () => {

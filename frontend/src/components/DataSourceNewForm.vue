@@ -44,7 +44,6 @@
               :selectedId="state.dataSource.databaseId"
               :mode="'INSTANCE'"
               :instanceId="instanceId"
-              :showAllDatabase="true"
               @select-database-id="
                 (databaseId) => {
                   updateDataSource('databaseId', databaseId);
@@ -159,7 +158,7 @@
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { DataSourceNew, ALL_DATABASE_PLACEHOLDER_ID, Database } from "../types";
+import { DataSourceNew, Database, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   dataSource: DataSourceNew;
@@ -185,9 +184,7 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
-        databaseId: props.database
-          ? props.database.id
-          : ALL_DATABASE_PLACEHOLDER_ID,
+        databaseId: props.database ? props.database.id : UNKNOWN_ID,
         instanceId: props.instanceId,
         memberList: [],
       },

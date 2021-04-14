@@ -1,5 +1,4 @@
 import { Response } from "miragejs";
-import { ALL_DATABASE_NAME } from "../../types";
 import { WORKSPACE_ID } from "./index";
 
 export default function configureDatabase(route) {
@@ -119,16 +118,6 @@ export default function configureDatabase(route) {
         404,
         {},
         { errors: "Database " + request.params.databaseId + " not found." }
-      );
-    }
-
-    if (attrs.name == ALL_DATABASE_NAME) {
-      return new Response(
-        400,
-        {},
-        {
-          errors: `Cannot specify * as the database name.`,
-        }
       );
     }
 
