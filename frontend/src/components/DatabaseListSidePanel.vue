@@ -18,7 +18,7 @@ import {
   Environment,
   EnvironmentId,
 } from "../types";
-import { databaseSlug, allowDatabaseAccess, environmentName } from "../utils";
+import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
 interface LocalState {
@@ -63,17 +63,12 @@ export default {
       }
       for (const database of state.databaseList) {
         if (database.name != ALL_DATABASE_NAME) {
-          let databaseName = database.name;
-          if (!allowDatabaseAccess(database, currentUser.value, "RW")) {
-            databaseName += " (read)";
-          }
-
           const dbList = envToDbMap.get(database.instance.environment.id)!;
           // dbList may be undefined if the environment is archived
           if (dbList) {
             dbList.push({
               id: database.id,
-              name: databaseName,
+              name: database.name,
               link: `/db/${databaseSlug(database)}`,
             });
           }

@@ -13,6 +13,7 @@ import {
   unknown,
   Database,
   Instance,
+  DataSourcePatch,
 } from "../../types";
 
 function convert(
@@ -150,16 +151,23 @@ const actions = {
     { commit, dispatch, rootGetters }: any,
     {
       databaseId,
+      dataSourceId,
       dataSource,
     }: {
       databaseId: DatabaseId;
-      dataSource: DataSource;
+      dataSourceId: DataSourceId;
+      dataSource: DataSourcePatch;
     }
   ) {
-    const { id, ...attrs } = dataSource;
     const data = (
-      await axios.post(
-        `/api/database/${databaseId}/datasource/${dataSource.id}?include=database,instance`
+      await axios.patch(
+        `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`,
+        {
+          data: {
+            type: "data-source-patch",
+            attributes: dataSource,
+          },
+        }
       )
     ).data;
     const updatedDataSource = convert(data.data, data.included, rootGetters);

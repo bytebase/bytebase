@@ -115,6 +115,8 @@ export default {
 
   dataSourceMember: Model,
 
+  dataSourcePatch: Model,
+
   batchUpdate: Model,
 
   signupInfo: Model,

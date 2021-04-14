@@ -811,6 +811,12 @@ export type DataSourceNew = {
   password?: string;
 };
 
+export type DataSourcePatch = {
+  name?: string;
+  username?: string;
+  password?: string;
+};
+
 export type DataSourceMember = {
   principal: Principal;
   taskId?: TaskId;

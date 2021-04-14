@@ -135,10 +135,11 @@
             :dataSource="state.editing ? state.editingDataSource : dataSource"
           />
 
+          <!-- Hide member table for now as we currently don't support fine granualar access -->
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
             class="pt-6"
-            v-if="dataSource.id != '-1'"
+            v-if="false && dataSource.id != '-1'"
             :allowEdit="allowEdit"
             :dataSource="dataSource"
           />
@@ -169,7 +170,7 @@ import isEqual from "lodash-es/isEqual";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
-import { DataSource, Principal } from "../types";
+import { DataSource, DataSourcePatch, Principal } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -241,10 +242,16 @@ export default {
     };
 
     const saveEdit = () => {
+      const dataSourcePatch: DataSourcePatch = {
+        name: state.editingDataSource?.name,
+        username: state.editingDataSource?.username,
+        password: state.editingDataSource?.password,
+      };
       store
         .dispatch("dataSource/patchDataSource", {
           databaseId: dataSource.value.database.id,
-          dataSource: state.editingDataSource,
+          dataSourceid: dataSource.value.id,
+          dataSource: dataSourcePatch,
         })
         .then(() => {
           state.editingDataSource = undefined;

@@ -66,7 +66,31 @@ export default function configureDataSource(route) {
           );
         }
         const attrs = this.normalizedRequestAttrs("data-source");
-        return dataSource.update(attrs);
+
+        let hasChange = false;
+
+        if (attrs.name) {
+          if (attrs.name != dataSource.name) {
+            hasChange = true;
+          }
+        }
+
+        if (attrs.username) {
+          if (attrs.username != dataSource.username) {
+            hasChange = true;
+          }
+        }
+
+        if (attrs.password) {
+          if (attrs.password != dataSource.password) {
+            hasChange = true;
+          }
+        }
+
+        if (hasChange) {
+          return dataSource.update(attrs);
+        }
+        return dataSource;
       }
       return new Response(
         404,

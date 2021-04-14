@@ -117,9 +117,8 @@
               </div>
               <div class="space-y-4">
                 <div v-for="(ds, index) of item.list" :key="index">
-                  <!-- Only displays the data source link for DBA. Since for now
-                  we don't need to expose the data source concept to the end user -->
-                  <div v-if="isCurrentUserDBAOrOwner" class="relative mb-2">
+                  <!-- Hide the data source detail link for now -->
+                  <div v-if="false" class="relative mb-2">
                     <div
                       class="absolute inset-0 flex items-center"
                       aria-hidden="true"
@@ -137,7 +136,65 @@
                       </router-link>
                     </div>
                   </div>
-                  <DataSourceConnectionPanel :dataSource="ds" />
+                  <div
+                    v-if="allowChangeDataSource"
+                    class="flex justify-end space-x-3"
+                  >
+                    <template v-if="isEditingDataSource(ds)">
+                      <button
+                        type="button"
+                        class="btn-normal"
+                        @click.prevent="cancelEditDataSource"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-normal"
+                        :disabled="!allowSaveDataSource"
+                        @click.prevent="saveEditDataSource"
+                      >
+                        <!-- Heroicon name: solid/save -->
+                        <svg
+                          class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"
+                          ></path>
+                        </svg>
+                        <span>Save</span>
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button
+                        type="button"
+                        class="btn-normal"
+                        @click.prevent="editDataSource(ds)"
+                      >
+                        <!-- Heroicon name: solid/pencil -->
+                        <svg
+                          class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                          ></path>
+                        </svg>
+                        <span>Edit</span>
+                      </button>
+                    </template>
+                  </div>
+                  <DataSourceConnectionPanel
+                    :editing="isEditingDataSource(ds)"
+                    :dataSource="
+                      isEditingDataSource(ds) ? state.editingDataSource : ds
+                    "
+                  />
                 </div>
               </div>
             </div>
@@ -157,11 +214,10 @@ import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.v
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
-import { PrincipalId, DataSource, ProjectId } from "../types";
+import { PrincipalId, DataSource, ProjectId, DataSourcePatch } from "../types";
+import { cloneDeep, isEqual } from "lodash";
 
 interface LocalState {
-  editing: boolean;
-  showPassword: boolean;
   editingDataSource?: DataSource;
 }
 
@@ -183,10 +239,7 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const state = reactive<LocalState>({
-      editing: false,
-      showPassword: false,
-    });
+    const state = reactive<LocalState>({});
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -201,6 +254,10 @@ export default {
     });
 
     const allowChangeProject = computed(() => {
+      return isCurrentUserDBAOrOwner.value;
+    });
+
+    const allowChangeDataSource = computed(() => {
       return isCurrentUserDBAOrOwner.value;
     });
 
@@ -247,14 +304,62 @@ export default {
         });
     };
 
+    const isEditingDataSource = (dataSource: DataSource) => {
+      return (
+        state.editingDataSource && state.editingDataSource.id == dataSource.id
+      );
+    };
+
+    const allowSaveDataSource = computed(() => {
+      for (const dataSource of dataSourceList.value) {
+        if (dataSource.id == state.editingDataSource!.id) {
+          return !isEqual(dataSource, state.editingDataSource);
+        }
+      }
+      return false;
+    });
+
+    const editDataSource = (dataSource: DataSource) => {
+      state.editingDataSource = cloneDeep(dataSource);
+    };
+
+    const cancelEditDataSource = () => {
+      state.editingDataSource = undefined;
+    };
+
+    const saveEditDataSource = () => {
+      const dataSourcePatch: DataSourcePatch = {
+        username: state.editingDataSource?.username,
+        password: state.editingDataSource?.password,
+      };
+      store
+        .dispatch("dataSource/patchDataSource", {
+          databaseId: state.editingDataSource!.database.id,
+          dataSourceId: state.editingDataSource!.id,
+          dataSource: dataSourcePatch,
+        })
+        .then(() => {
+          state.editingDataSource = undefined;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
     return {
       state,
       database,
       isCurrentUserDBAOrOwner,
       allowChangeProject,
+      allowChangeDataSource,
       readWriteDataSourceList,
       readOnlyDataSourceList,
       updateProject,
+      isEditingDataSource,
+      allowSaveDataSource,
+      editDataSource,
+      cancelEditDataSource,
+      saveEditDataSource,
     };
   },
 };

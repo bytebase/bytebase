@@ -621,16 +621,6 @@ const createInstanceList = (
       password: "pwdadminRW",
     });
 
-    server.create("dataSource", {
-      workspaceId: instance.workspaceId,
-      instance,
-      database: allDatabase,
-      name: instance.name + " admin RO",
-      type: "RO",
-      username: "adminRO",
-      password: "pwdadminRO",
-    });
-
     for (let i = 0; i < 2; i++) {
       const database = server.create("database", {
         workspaceId: instance.workspaceId,
@@ -643,20 +633,10 @@ const createInstanceList = (
         workspaceId: instance.workspaceId,
         instance,
         database,
-        name: database.name + " RW",
+        name: database.name + " default RW",
         type: "RW",
         username: "rootRW",
         password: "pwdRW",
-      });
-
-      server.create("dataSource", {
-        workspaceId: instance.workspaceId,
-        instance,
-        database,
-        name: database.name + " RO",
-        type: "RO",
-        username: "rootRO",
-        password: "pwdRO",
       });
     }
   }

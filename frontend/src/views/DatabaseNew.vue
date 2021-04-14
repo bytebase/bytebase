@@ -452,30 +452,9 @@ export default {
         instanceId: state.instanceId!,
         username: isEmpty(state.username) ? undefined : state.username,
         password: isEmpty(state.passsword) ? undefined : state.passsword,
-        memberList: [
-          {
-            principalId: currentUser.value.id,
-            taskId: linkedTask?.id,
-          },
-        ],
+        memberList: [],
       };
       await store.dispatch("dataSource/createDataSource", newRwDataSource);
-
-      const newRoDataSource: DataSourceNew = {
-        name: "Default RO",
-        type: "RO",
-        databaseId: createdDatabase.id,
-        instanceId: state.instanceId!,
-        username: isEmpty(state.username) ? undefined : state.username,
-        password: isEmpty(state.passsword) ? undefined : state.passsword,
-        memberList: [
-          {
-            principalId: currentUser.value.id,
-            taskId: linkedTask?.id,
-          },
-        ],
-      };
-      await store.dispatch("dataSource/createDataSource", newRoDataSource);
 
       // Redirect to the created database.
       router.push(`/db/${databaseSlug(createdDatabase)}`);
@@ -524,7 +503,7 @@ export default {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "SUCCESS",
-        title: `Succesfully created database '${createdDatabase.name}' and its Read & Write and Read Only data sources.`,
+        title: `Succesfully created database '${createdDatabase.name}'.`,
         description: linkedTask
           ? `We also linked the created database to the requested task '${linkedTask.name}'.`
           : "",

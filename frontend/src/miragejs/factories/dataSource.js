@@ -25,30 +25,8 @@ export default {
     password(i) {
       return "pwd" + i;
     },
-    afterCreate(dataSource, server) {},
-    memberList(i) {
-      const list = [
-        {
-          principalId: "1",
-          taskId: (i + 1).toString(),
-          createdTs: Date.now() - (i + 1) * 1800 * 1000,
-        },
-      ];
-      if (i % 2 == 0) {
-        list.push({
-          principalId: "2",
-          taskId: (i + 1).toString(),
-          createdTs: Date.now() - (i + 1) * 1800 * 1000,
-        });
-      }
-      if (i % 3 == 0 || i % 4 == 0) {
-        list.push({
-          principalId: "3",
-          taskId: (i + 1).toString(),
-          createdTs: Date.now() - (i + 1) * 1800 * 1000,
-        });
-      }
-      return list;
+    memberList() {
+      return [];
     },
   }),
 };
