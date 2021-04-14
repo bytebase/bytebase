@@ -17,7 +17,7 @@
         :title="state.columnList[1].title"
       />
       <BBTableHeaderCell
-        class="w-12 table-cell"
+        class="w-48 table-cell"
         :title="state.columnList[2].title"
       />
       <BBTableHeaderCell
@@ -25,7 +25,7 @@
         :title="state.columnList[3].title"
       />
       <BBTableHeaderCell
-        class="w-48 table-cell"
+        class="w-12 table-cell"
         :title="state.columnList[4].title"
       />
       <BBTableHeaderCell
@@ -48,18 +48,17 @@
           :stageStatus="activeStage(task).status"
         />
       </BBTableCell>
-
       <BBTableCell class="table-cell text-gray-500">
         <span class="">#{{ task.id }}</span>
+      </BBTableCell>
+      <BBTableCell class="truncate">
+        {{ task.name }}
       </BBTableCell>
       <BBTableCell class="table-cell">
         {{ activeEnvironmentName(task) }}
       </BBTableCell>
       <BBTableCell class="table-cell">
         {{ activeDatabaseName(task) }}
-      </BBTableCell>
-      <BBTableCell class="truncate">
-        {{ task.name }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
         <BBStepBar :stepList="stageList(task)" />
@@ -127,13 +126,13 @@ export default {
           title: "ID",
         },
         {
+          title: "Name",
+        },
+        {
           title: "Environment",
         },
         {
           title: "Database",
-        },
-        {
-          title: "Name",
         },
         {
           title: "Progress",
