@@ -289,7 +289,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { instanceSlug } from "../utils";
+import { instanceSlug, isDBAOrOwner } from "../utils";
 import {
   Instance,
   InstanceNew,
@@ -351,7 +351,11 @@ export default {
     });
 
     const allowEdit = computed(() => {
-      return props.create || (state.instance as Instance).rowStatus == "NORMAL";
+      return (
+        props.create ||
+        ((state.instance as Instance).rowStatus == "NORMAL" &&
+          isDBAOrOwner(currentUser.value.role))
+      );
     });
 
     const valueChanged = computed(() => {
