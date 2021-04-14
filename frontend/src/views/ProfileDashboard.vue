@@ -113,10 +113,13 @@
               <router-link
                 v-if="hasAdminFeature"
                 :to="'/setting/member'"
-                class="normal-link"
-                v-role
+                class="normal-link capitalize"
               >
-                {{ principal.role }}
+                {{
+                  principal.role == "DBA"
+                    ? principal.role
+                    : principal.role.toLowerCase()
+                }}
               </router-link>
               <router-link v-else :to="'/setting/plan'" class="normal-link">
                 Upgrade to Team plan to enable admin management
@@ -141,7 +144,7 @@ import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
-import { PrincipalPatch } from "../types";
+import { Principal, PrincipalPatch } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -185,7 +188,9 @@ export default {
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = computed(
+      (): Principal => store.getters["auth/currentUser"]()
+    );
 
     const hasAdminFeature = computed(() =>
       store.getters["plan/feature"]("bytebase.admin")
@@ -195,7 +200,7 @@ export default {
       if (props.principalId) {
         return store.getters["principal/principalById"](props.principalId);
       }
-      return store.getters["auth/currentUser"]();
+      return currentUser.value;
     });
 
     const isCurrentUser = computed(() => {

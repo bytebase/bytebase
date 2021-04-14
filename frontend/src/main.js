@@ -33,7 +33,6 @@ import {
 import databaseSyncStatus from "./directives/database-sync-status";
 import dataSourceType from "./directives/data-source-type";
 import highlight from "./directives/highlight";
-import role from "./directives/role";
 import {
   isDev,
   isDemo,
@@ -102,7 +101,6 @@ app
   .directive("highlight", highlight)
   .directive("database-sync-status", databaseSyncStatus)
   .directive("data-source-type", dataSourceType)
-  .directive("role", role)
   .use(store)
   .use(router)
   .use(VueClipboard)
