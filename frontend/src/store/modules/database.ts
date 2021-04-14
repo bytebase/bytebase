@@ -45,7 +45,7 @@ function convert(
     dataSourceList.push(dataSource);
   }
 
-  for (const item of includedList) {
+  for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item);
     }
@@ -67,7 +67,7 @@ function convert(
     >),
   };
 
-  for (const item of includedList) {
+  for (const item of includedList || []) {
     if (
       item.type == "data-source" &&
       (item.relationships!.database.data as ResourceIdentifier).id ==

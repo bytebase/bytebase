@@ -35,7 +35,7 @@ function convert(
   );
 
   let instance: Instance = unknown("INSTANCE") as Instance;
-  for (const item of includedList) {
+  for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item);
       break;
@@ -43,7 +43,7 @@ function convert(
   }
 
   let database: Database = unknown("DATABASE") as Database;
-  for (const item of includedList) {
+  for (const item of includedList || []) {
     if (item.type == "database" && item.id == databaseId) {
       database = rootGetters["database/convert"](item);
       break;
