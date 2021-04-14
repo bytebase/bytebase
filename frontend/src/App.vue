@@ -16,6 +16,7 @@
 import { onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import ProvideContext from "./components/ProvideContext.vue";
+import { isDev } from "./utils";
 
 export default {
   name: "App",
@@ -29,12 +30,16 @@ export default {
     });
 
     onErrorCaptured((e: any, _, info) => {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: `Internal error occured in '${info}'.`,
-        description: e.stack,
-      });
+      // If e has response, then we assume it's an http error and has already been
+      // handled by the axios global handler.
+      if (!e.response) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: `Internal error occured`,
+          description: isDev() ? e.stack : undefined,
+        });
+      }
       return true;
     });
   },

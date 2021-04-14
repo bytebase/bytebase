@@ -1,4 +1,5 @@
 import { createApp } from "vue";
+import axios from "axios";
 import moment from "moment";
 import VueClipboard from "vue3-clipboard";
 import App from "./App.vue";
@@ -75,6 +76,24 @@ app.config.globalProperties.databaseSlug = databaseSlug;
 app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 
 registerStoreWithRoleUtil(store);
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: error.response.data.errors,
+      });
+      throw error;
+    }
+  }
+);
+
+// TODO: A global hook to collect errors to a central service
+// app.config.errorHandler = function (err, vm, info) {
+// };
 
 app
   // Need to use a directive on the element.
