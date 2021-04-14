@@ -113,8 +113,8 @@ const getters = {
     getters: any,
     rootState: any,
     rootGetters: any
-  ) => (instance: ResourceObject): Project => {
-    return convert(instance, [], rootGetters);
+  ) => (instance: ResourceObject, includedList: ResourceObject[]): Project => {
+    return convert(instance, includedList, rootGetters);
   },
 
   projectList: (state: ProjectState) => (): Project[] => {
