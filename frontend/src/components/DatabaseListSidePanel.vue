@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
@@ -16,19 +16,11 @@ import { Database, Environment, EnvironmentId } from "../types";
 import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
-interface LocalState {
-  databaseList: Database[];
-}
-
 export default {
   name: "DatabaseListSidePanel",
   props: {},
   setup(props, ctx) {
     const store = useStore();
-
-    const state = reactive<LocalState>({
-      databaseList: [],
-    });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -41,9 +33,6 @@ export default {
     const prepareDatabaseList = () => {
       store
         .dispatch("database/fetchDatabaseListByUser", currentUser.value.id)
-        .then((databaseList) => {
-          state.databaseList = databaseList;
-        })
         .catch((error) => {
           console.log(error);
         });
@@ -51,12 +40,19 @@ export default {
 
     watchEffect(prepareDatabaseList);
 
+    // Use this to make the list reactive when project is transferred.
+    const databaseList = computed((): Database[] => {
+      return store.getters["database/databaseListByUserId"](
+        currentUser.value.id
+      );
+    });
+
     const databaseListByEnvironment = computed(() => {
       const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
       for (const environment of environmentList.value) {
         envToDbMap.set(environment.id, []);
       }
-      for (const database of state.databaseList) {
+      for (const database of databaseList.value) {
         const dbList = envToDbMap.get(database.instance.environment.id)!;
         // dbList may be undefined if the environment is archived
         if (dbList) {
@@ -81,6 +77,7 @@ export default {
 
     return {
       environmentList,
+      databaseList,
       databaseListByEnvironment,
     };
   },
