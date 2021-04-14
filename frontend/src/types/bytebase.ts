@@ -423,7 +423,7 @@ type TaskTypeDatabase =
   | "bytebase.database.grant"
   | "bytebase.database.schema.update";
 
-type TaskTypeDataSource = "bytebase.datasource.request";
+type TaskTypeDataSource = "bytebase.data-source.request";
 
 export type TaskType = TaskTypeGeneral | TaskTypeDatabase | TaskTypeDataSource;
 
@@ -890,7 +890,9 @@ export type FeatureType =
   // Support DBA workflow, including
   // 1. Developers can't create database directly, they need to do this via a request db task.
   // 2. Allow developers to submit troubleshooting ticket.
-  | "bytebase.dbaworkflow";
+  | "bytebase.dba-workflow"
+  // Support defining extra data source for a database and exposing the related data source UI.
+  | "bytebase.data-source";
 
 export enum PlanType {
   FREE = 0,

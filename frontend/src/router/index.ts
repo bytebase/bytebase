@@ -599,7 +599,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.database.create") {
     if (
-      !store.getters["plan/feature"]("bytebase.dbaworkflow") ||
+      !store.getters["plan/feature"]("bytebase.dba-workflow") ||
       isDBAOrOwner(loginUser.role)
     ) {
       next();
@@ -628,7 +628,10 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
-    if (!isDBAOrOwner(loginUser.role)) {
+    if (
+      !store.getters["plan/feature"]("bytebase.data-source") ||
+      !isDBAOrOwner(loginUser.role)
+    ) {
       next({
         name: "error.403",
         replace: false,

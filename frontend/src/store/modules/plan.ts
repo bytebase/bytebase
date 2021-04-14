@@ -3,7 +3,8 @@ import { FeatureType, PlanState, PlanType } from "../../types";
 // A map from the a particular feature to the respective enablement of a particular plan
 const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bytebase.admin", [false, true, true]],
-  ["bytebase.dbaworkflow", [false, false, true]],
+  ["bytebase.dba-workflow", [false, false, true]],
+  ["bytebase.data-source", [false, false, false]],
 ]);
 
 const state: () => PlanState = () => ({

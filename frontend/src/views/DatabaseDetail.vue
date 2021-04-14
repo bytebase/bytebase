@@ -113,13 +113,15 @@
               :key="index"
             >
               <div v-if="item.list.length" class="pt-6">
-                <div class="text-lg leading-6 font-medium text-main mb-4">
+                <div
+                  v-if="hasDataSourceFeature"
+                  class="text-lg leading-6 font-medium text-main mb-4"
+                >
                   <span v-data-source-type>{{ item.type }}</span>
                 </div>
                 <div class="space-y-4">
                   <div v-for="(ds, index) of item.list" :key="index">
-                    <!-- Hide the data source detail link for now -->
-                    <div v-if="false" class="relative mb-2">
+                    <div v-if="hasDataSourceFeature" class="relative mb-2">
                       <div
                         class="absolute inset-0 flex items-center"
                         aria-hidden="true"
@@ -245,6 +247,10 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const hasDataSourceFeature = computed(() =>
+      store.getters["plan/feature"]("bytebase.data-source")
+    );
+
     const database = computed(() => {
       return store.getters["database/databaseById"](
         idFromSlug(props.databaseSlug)
@@ -357,6 +363,7 @@ export default {
     return {
       state,
       database,
+      hasDataSourceFeature,
       isCurrentUserDBAOrOwner,
       allowChangeProject,
       allowViewDataSource,

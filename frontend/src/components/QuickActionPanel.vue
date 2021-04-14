@@ -370,7 +370,7 @@ export default {
     });
 
     const effectiveQuickActionList = computed((): QuickActionType[] => {
-      if (store.getters["plan/feature"]("bytebase.dbaworkflow")) {
+      if (store.getters["plan/feature"]("bytebase.dba-workflow")) {
         return props.quickActionList;
       }
 

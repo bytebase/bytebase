@@ -135,11 +135,10 @@
             :dataSource="state.editing ? state.editingDataSource : dataSource"
           />
 
-          <!-- Hide member table for now as we currently don't support fine granualar access -->
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
             class="pt-6"
-            v-if="false && dataSource.id != '-1'"
+            v-if="dataSource.id != '-1'"
             :allowEdit="allowEdit"
             :dataSource="dataSource"
           />
