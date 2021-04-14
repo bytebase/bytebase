@@ -7,7 +7,11 @@
     @select-item="(role) => $emit('change-role', role)"
   >
     <template v-slot:menuItem="{ item }">
-      {{ item }}
+      {{
+        item == "DBA"
+          ? item
+          : item.charAt(0).toUpperCase() + item.toLowerCase().slice(1)
+      }}
     </template>
   </BBSelect>
 </template>
