@@ -14,6 +14,28 @@
       <div class="text-lg leading-6 font-medium text-main mb-4">Databases</div>
       <DatabaseTable :singleInstance="true" :databaseList="databaseList" />
     </div>
+    <template v-if="instance.rowStatus == 'NORMAL'">
+      <BBButtonConfirm
+        :style="'ARCHIVE'"
+        :buttonText="'Archive this instance'"
+        :okText="'Archive'"
+        :requireConfirm="true"
+        :confirmTitle="`Archive instance '${instance.name}'?`"
+        :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
+        @confirm="doArchive"
+      />
+    </template>
+    <template v-else-if="instance.rowStatus == 'ARCHIVED'">
+      <BBButtonConfirm
+        :style="'RESTORE'"
+        :buttonText="'Restore this instance'"
+        :okText="'Restore'"
+        :requireConfirm="true"
+        :confirmTitle="`Restore instance '${instance.name}' to normal state?`"
+        :confirmDescription="''"
+        @confirm="doRestore"
+      />
+    </template>
   </div>
 </template>
 
@@ -62,10 +84,52 @@ export default {
       );
     });
 
+    const doArchive = () => {
+      store
+        .dispatch("instance/patchInstance", {
+          instanceId: instance.value.id,
+          instancePatch: {
+            rowStatus: "ARCHIVED",
+          },
+        })
+        .then((updatedInstance) => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully archived instance '${updatedInstance.name}'.`,
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
+    const doRestore = () => {
+      store
+        .dispatch("instance/patchInstance", {
+          instanceId: instance.value.id,
+          instancePatch: {
+            rowStatus: "NORMAL",
+          },
+        })
+        .then((updatedInstance) => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully restored instance '${updatedInstance.name}'.`,
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
     return {
       hasDataSourceFeature,
       instance,
       databaseList,
+      doArchive,
+      doRestore,
     };
   },
 };

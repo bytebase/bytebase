@@ -245,29 +245,7 @@ input[type="number"] {
         </button>
       </div>
       <!-- Update button group -->
-      <div v-else class="flex justify-between">
-        <template v-if="state.instance.rowStatus == 'NORMAL'">
-          <BBButtonConfirm
-            :style="'ARCHIVE'"
-            :buttonText="'Archive this instance'"
-            :okText="'Archive'"
-            :requireConfirm="true"
-            :confirmTitle="`Archive instance '${state.instance.name}'?`"
-            :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
-            @confirm="doArchive"
-          />
-        </template>
-        <template v-else-if="state.instance.rowStatus == 'ARCHIVED'">
-          <BBButtonConfirm
-            :style="'RESTORE'"
-            :buttonText="'Restore this instance'"
-            :okText="'Restore'"
-            :requireConfirm="true"
-            :confirmTitle="`Restore instance '${state.instance.name}' to normal state?`"
-            :confirmDescription="''"
-            @confirm="doRestore"
-          />
-        </template>
+      <div v-else class="flex justify-end">
         <button
           v-if="allowEdit"
           type="button"
@@ -462,54 +440,6 @@ export default {
         });
     };
 
-    const doArchive = () => {
-      store
-        .dispatch("instance/patchInstance", {
-          instanceId: (state.instance as Instance).id,
-          instancePatch: {
-            rowStatus: "ARCHIVED",
-          },
-        })
-        .then((instance) => {
-          state.originalInstance = instance;
-          // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
-          state.instance = cloneDeep(state.originalInstance!);
-
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: `Successfully archived instance '${instance.name}'.`,
-          });
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
-    const doRestore = () => {
-      store
-        .dispatch("instance/patchInstance", {
-          instanceId: (state.instance as Instance).id,
-          instancePatch: {
-            rowStatus: "NORMAL",
-          },
-        })
-        .then((instance) => {
-          state.originalInstance = instance;
-          // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
-          state.instance = cloneDeep(state.originalInstance!);
-
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: `Successfully restored instance '${instance.name}'.`,
-          });
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
     return {
       state,
       allowCreate,
@@ -519,8 +449,6 @@ export default {
       cancel,
       doCreate,
       doUpdate,
-      doArchive,
-      doRestore,
     };
   },
 };
