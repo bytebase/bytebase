@@ -21,7 +21,7 @@
           >
 
           <router-link
-            v-if="currentUser.role == 'OWNER' || currentUser.role == 'DBA'"
+            v-if="showInstanceLink"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
             >Instances</router-link
@@ -180,7 +180,10 @@
         >Databases</router-link
       >
 
-      <router-link to="/instance" class="bar-link rounded-md block px-3 py-2"
+      <router-link
+        v-if="showInstanceLink"
+        to="/instance"
+        class="bar-link rounded-md block px-3 py-2"
         >Instance</router-link
       >
 
@@ -202,6 +205,7 @@ import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { PlanType } from "../types";
+import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -220,6 +224,10 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const currentPlan = computed(() => store.getters["plan/currentPlan"]());
+
+    const showInstanceLink = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
+    });
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
@@ -258,6 +266,7 @@ export default {
       state,
       currentUser,
       currentPlan,
+      showInstanceLink,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,
