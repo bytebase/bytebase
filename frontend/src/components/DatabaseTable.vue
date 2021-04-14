@@ -10,6 +10,7 @@
     <template v-slot:body="{ rowData: database }">
       <BBTableCell :leftPadding="4" class="w-16">
         {{ database.name }}
+      </BBTableCell>
       <BBTableCell class="w-16">
         {{ projectName(database.project) }}
       </BBTableCell>
@@ -40,7 +41,7 @@ const COLUMN_LIST = [
   {
     title: "Name",
   },
-    {
+  {
     title: "Project",
   },
   {
@@ -63,9 +64,6 @@ const COLUMN_LIST_SINGLE_INSTANCE = [
   },
   {
     title: "Project",
-  },
-  {
-    title: "Environment",
   },
   {
     title: "Sync status",

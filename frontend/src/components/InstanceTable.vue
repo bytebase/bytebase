@@ -11,11 +11,11 @@
       <BBTableCell :leftPadding="4" class="w-8">
         <img class="h-10 w-auto" src="../assets/db-mysql.svg" />
       </BBTableCell>
-      <BBTableCell :leftPadding="4" class="w-16">
-        {{ environmentNameFromId(instance.environment.id) }}
-      </BBTableCell>
       <BBTableCell class="w-32">
         {{ instanceName(instance) }}
+      </BBTableCell>
+      <BBTableCell class="w-16">
+        {{ environmentNameFromId(instance.environment.id) }}
       </BBTableCell>
       <BBTableCell class="w-48">
         <template v-if="instance.port"
@@ -82,10 +82,10 @@ export default {
           title: "",
         },
         {
-          title: "Environment",
+          title: "Name",
         },
         {
-          title: "Name",
+          title: "Environment",
         },
         {
           title: "Host:Port",
