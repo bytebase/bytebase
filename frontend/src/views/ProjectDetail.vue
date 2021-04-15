@@ -18,8 +18,10 @@
   />
   <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
     <template v-if="state.selectedIndex == OVERVIEW_TAB">
-      <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList"
-    /></template>
+      <div class="space-y-2">
+        <p class="text-lg font-medium leading-7 text-main">Databases</p>
+        <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" /></div
+    ></template>
     <template v-else-if="state.selectedIndex == REPO_TAB"> </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">

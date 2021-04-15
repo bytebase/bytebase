@@ -85,14 +85,8 @@ function convert(
   }
 
   return {
-    id: database.id,
-    instance,
-    project,
+    ...(databaseWithoutDataSourceList as Omit<Database, "dataSourceList">),
     dataSourceList,
-    ...(database.attributes as Omit<
-      Database,
-      "id" | "instance" | "project" | "dataSourceList"
-    >),
   };
 }
 
