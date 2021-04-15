@@ -6,6 +6,7 @@ import {
   Principal,
   StageType,
   Task,
+  DEFAULT_PROJECT_ID,
 } from "../../types";
 import { databaseSlug, taskSlug } from "../../utils";
 
@@ -604,12 +605,19 @@ const createInstanceList = (
 
     for (let j = 0; j < 2; j++) {
       server.create("database", {
-        workspaceId: instance.workspaceId,
+        workspaceId: workspaceId,
         projectId: projectList[i % projectList.length].id,
         instance,
       });
     }
   }
+
+  server.create("database", {
+    workspaceId: workspaceId,
+    projectId: DEFAULT_PROJECT_ID,
+    name: "syncdb",
+    instance: instanceList[0],
+  });
 
   return instanceList;
 };

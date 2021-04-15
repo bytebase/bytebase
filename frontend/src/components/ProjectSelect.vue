@@ -11,12 +11,15 @@
     <option disabled :selected="UNKNOWN_ID == state.selectedId">
       Select project
     </option>
+    <option v-if="state.selectedId == DEFAULT_PROJECT_ID" :selected="true">
+      Default
+    </option>
     <!-- It may happen the selected id might not be in the project list.
          e.g. the selected project is deleted after the selection and we
          are unable to cleanup properly. In such case, the seleted project id
          is orphaned and we just display the id.  -->
     <option
-      v-if="selectedIdNotInList"
+      v-else-if="selectedIdNotInList"
       :value="state.selectedId"
       :selected="true"
     >
@@ -44,8 +47,7 @@
 <script lang="ts">
 import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { DEFAULT_PROJECT_ID, Principal, Project, UNKNOWN_ID } from "../types";
-import { isDBAOrOwner } from "../utils";
+import { Principal, Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 
 interface LocalState {
   selectedId: string;
@@ -76,29 +78,19 @@ export default {
     );
 
     const prepareProjectList = () => {
-      // Fetches the entire project list if DBA or above.
-      if (isDBAOrOwner(currentUser.value.role)) {
-        store.dispatch("project/fetchProjectList").catch((error) => {
+      store
+        .dispatch("project/fetchProjectListByUser", {
+          userId: currentUser.value.id,
+        })
+        .catch((error) => {
           console.log(error);
         });
-      } else {
-        store
-          .dispatch("project/fetchProjectListByUser", {
-            userId: currentUser.value.id,
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-      }
     };
 
     watchEffect(prepareProjectList);
 
     const projectList = computed((): Project[] => {
-      const list = isDBAOrOwner(currentUser.value.role)
-        ? store.getters["project/projectList"]()
-        : store.getters["project/projectListByUser"](currentUser.value.id);
-      return list;
+      return store.getters["project/projectListByUser"](currentUser.value.id);
     });
 
     const selectedIdNotInList = computed((): boolean => {
@@ -122,6 +114,7 @@ export default {
 
     return {
       UNKNOWN_ID,
+      DEFAULT_PROJECT_ID,
       state,
       projectList,
       selectedIdNotInList,

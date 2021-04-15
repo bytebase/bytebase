@@ -276,7 +276,6 @@ import {
   UNKNOWN_ID,
   Principal,
   InstancePatch,
-  DEFAULT_PROJECT_ID,
 } from "../types";
 
 interface LocalState {

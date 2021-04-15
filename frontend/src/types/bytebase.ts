@@ -4,6 +4,8 @@ import { FieldId } from "../plugins";
 
 export const UNKNOWN_ID = "-1";
 
+// The project to hold those databases synced from the instance but haven't been assigned an application
+// project yet. We can't use UNKNOWN_ID because of referential integrity.
 export const DEFAULT_PROJECT_ID = "1";
 
 export type ResourceType =
