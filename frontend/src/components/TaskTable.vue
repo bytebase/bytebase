@@ -146,7 +146,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Environment",
       },
       {
-        title: "Database",
+        title: "DB",
       },
       {
         title: "Progress",
@@ -172,7 +172,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Environment",
       },
       {
-        title: "Database",
+        title: "DB",
       },
       {
         title: "Progress",
