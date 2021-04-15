@@ -17,11 +17,28 @@
     "
   />
   <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    <template v-if="state.selectedIndex == OVERVIEW_TAB">
+    <div v-if="state.selectedIndex == OVERVIEW_TAB" class="space-y-6">
       <div class="space-y-2">
         <p class="text-lg font-medium leading-7 text-main">Databases</p>
-        <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" /></div
-    ></template>
+        <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" />
+      </div>
+      <div class="space-y-2">
+        <p class="text-lg font-medium leading-7 text-main">Tasks</p>
+        <TaskTable
+          :mode="'PROJECT'"
+          :taskSectionList="[
+            {
+              title: 'In progress',
+              list: state.progressTaskList,
+            },
+            {
+              title: 'Recently Closed',
+              list: state.closedTaskList,
+            },
+          ]"
+        />
+      </div>
+    </div>
     <template v-else-if="state.selectedIndex == REPO_TAB"> </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">
@@ -59,13 +76,15 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
+import TaskTable from "../components/TaskTable.vue";
+import { Task } from "../types";
 
 const OVERVIEW_TAB = 0;
 const REPO_TAB = 1;
@@ -73,6 +92,8 @@ const SETTING_TAB = 2;
 
 interface LocalState {
   selectedIndex: number;
+  progressTaskList: Task[];
+  closedTaskList: Task[];
 }
 
 export default {
@@ -82,6 +103,7 @@ export default {
     DatabaseTable,
     ProjectGeneralSettingPanel,
     ProjectMemberPanel,
+    TaskTable,
   },
   props: {
     projectSlug: {
@@ -93,6 +115,8 @@ export default {
     const store = useStore();
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
+      progressTaskList: [],
+      closedTaskList: [],
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -108,6 +132,27 @@ export default {
         project.value.id
       );
     });
+
+    const prepareTaskList = () => {
+      store
+        .dispatch("task/fetchTaskListForProject", idFromSlug(props.projectSlug))
+        .then((taskList: Task[]) => {
+          state.progressTaskList = [];
+          state.closedTaskList = [];
+          for (const task of taskList) {
+            // "OPEN"
+            if (task.status === "OPEN") {
+              state.progressTaskList.push(task);
+            }
+            // "DONE" or "CANCELED"
+            else if (task.status === "DONE" || task.status === "CANCELED") {
+              state.closedTaskList.push(task);
+            }
+          }
+        });
+    };
+
+    watchEffect(prepareTaskList);
 
     // Only the project owner can archive/restore the project info.
     // This means even the workspace owner won't be able to edit it.

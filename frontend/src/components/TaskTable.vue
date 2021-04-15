@@ -1,45 +1,72 @@
 <template>
   <BBTable
-    :columnList="state.columnList"
+    :columnList="columnList"
     :sectionDataSource="taskSectionList"
     :showHeader="true"
-    :leftBordered="false"
-    :rightBordered="false"
+    :leftBordered="leftBordered"
+    :rightBordered="rightBordered"
+    :topBordered="topBordered"
+    :bottomBordered="bottomBordered"
     @click-row="clickTask"
   >
     <template v-slot:header>
-      <BBTableHeaderCell
-        class="w-4 table-cell"
-        :title="state.columnList[0].title"
-      />
-      <BBTableHeaderCell
-        class="w-4 table-cell"
-        :title="state.columnList[1].title"
-      />
-      <BBTableHeaderCell
-        class="w-48 table-cell"
-        :title="state.columnList[2].title"
-      />
-      <BBTableHeaderCell
-        class="w-12 table-cell"
-        :title="state.columnList[3].title"
-      />
-      <BBTableHeaderCell
-        class="w-12 table-cell"
-        :title="state.columnList[4].title"
-      />
-      <BBTableHeaderCell
-        class="w-24 hidden sm:table-cell"
-        :title="state.columnList[5].title"
-      />
-      <BBTableHeaderCell
-        class="w-24 hidden md:table-cell"
-        :title="state.columnList[6].title"
-      />
-      <BBTableHeaderCell
-        class="w-36 hidden sm:table-cell"
-        :title="state.columnList[7].title"
-      />
+      <BBTableHeaderCell class="w-4 table-cell" :title="columnList[0].title" />
+      <template v-if="mode == 'ALL'">
+        <BBTableHeaderCell
+          class="w-12 table-cell"
+          :title="columnList[1].title"
+        />
+        <BBTableHeaderCell
+          class="w-48 table-cell"
+          :title="columnList[2].title"
+        />
+        <BBTableHeaderCell
+          class="w-12 table-cell"
+          :title="columnList[3].title"
+        />
+        <BBTableHeaderCell
+          class="w-12 table-cell"
+          :title="columnList[4].title"
+        />
+        <BBTableHeaderCell
+          class="w-24 hidden sm:table-cell"
+          :title="columnList[5].title"
+        />
+        <BBTableHeaderCell
+          class="w-24 hidden md:table-cell"
+          :title="columnList[6].title"
+        />
+        <BBTableHeaderCell
+          class="w-36 hidden sm:table-cell"
+          :title="columnList[7].title"
+        />
+      </template>
+      <template v-else-if="mode == 'PROJECT'">
+        <BBTableHeaderCell
+          class="w-48 table-cell"
+          :title="columnList[1].title"
+        />
+        <BBTableHeaderCell
+          class="w-12 table-cell"
+          :title="columnList[2].title"
+        />
+        <BBTableHeaderCell
+          class="w-12 table-cell"
+          :title="columnList[3].title"
+        />
+        <BBTableHeaderCell
+          class="w-24 hidden sm:table-cell"
+          :title="columnList[4].title"
+        />
+        <BBTableHeaderCell
+          class="w-24 hidden md:table-cell"
+          :title="columnList[5].title"
+        />
+        <BBTableHeaderCell
+          class="w-36 hidden sm:table-cell"
+          :title="columnList[6].title"
+        />
+      </template>
     </template>
     <template v-slot:body="{ rowData: task }">
       <BBTableCell :leftPadding="4" class="table-cell">
@@ -48,8 +75,8 @@
           :stageStatus="activeStage(task).status"
         />
       </BBTableCell>
-      <BBTableCell class="table-cell text-gray-500">
-        <span class="">#{{ task.id }}</span>
+      <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
+        <span class="">{{ task.project.key }}</span>
       </BBTableCell>
       <BBTableCell class="truncate">
         {{ task.name }}
@@ -100,8 +127,67 @@ import {
 } from "../utils";
 import { Task } from "../types";
 
+type Mode = "ALL" | "PROJECT";
+
+const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
+  [
+    "ALL",
+    [
+      {
+        title: "Status",
+      },
+      {
+        title: "Project",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Database",
+      },
+      {
+        title: "Progress",
+      },
+      {
+        title: "Updated",
+      },
+      {
+        title: "Assignee",
+      },
+    ],
+  ],
+  [
+    "PROJECT",
+    [
+      {
+        title: "Status",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Database",
+      },
+      {
+        title: "Progress",
+      },
+      {
+        title: "Updated",
+      },
+      {
+        title: "Assignee",
+      },
+    ],
+  ],
+]);
+
 interface LocalState {
-  columnList: BBTableColumn[];
   dataSource: Object[];
 }
 
@@ -113,37 +199,31 @@ export default {
       required: true,
       type: Object as PropType<BBTableSectionDataSource<Task>[]>,
     },
+    mode: {
+      default: "ALL",
+      type: String as PropType<Mode>,
+    },
+    leftBordered: {
+      default: true,
+      type: Boolean,
+    },
+    rightBordered: {
+      default: true,
+      type: Boolean,
+    },
+    topBordered: {
+      default: true,
+      type: Boolean,
+    },
+    bottomBordered: {
+      default: true,
+      type: Boolean,
+    },
   },
   setup(props, ctx) {
     const store = useStore();
 
     const state = reactive<LocalState>({
-      columnList: [
-        {
-          title: "Status",
-        },
-        {
-          title: "ID",
-        },
-        {
-          title: "Name",
-        },
-        {
-          title: "Environment",
-        },
-        {
-          title: "Database",
-        },
-        {
-          title: "Progress",
-        },
-        {
-          title: "Updated",
-        },
-        {
-          title: "Assignee",
-        },
-      ],
       dataSource: [],
     });
 
@@ -206,6 +286,7 @@ export default {
 
     return {
       state,
+      columnList: columnListMap.get(props.mode),
       activeEnvironmentName,
       activeDatabaseName,
       stageList,

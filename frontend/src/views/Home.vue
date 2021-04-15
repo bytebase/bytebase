@@ -12,6 +12,10 @@
       />
     </div>
     <TaskTable
+      :leftBordered="false"
+      :rightBordered="false"
+      :topBordered="true"
+      :bottomBordered="true"
       :taskSectionList="[
         {
           title: 'Assigned',
