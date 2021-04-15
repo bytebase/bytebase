@@ -278,7 +278,6 @@ const actions = {
 
     commit("upsertDatabaseList", {
       databaseList: [database],
-      instanceId,
     });
 
     return database;
@@ -304,7 +303,6 @@ const actions = {
 
     commit("upsertDatabaseList", {
       databaseList: [createdDatabase],
-      instanceId: createdDatabase.instance.id,
     });
 
     return createdDatabase;
@@ -339,7 +337,6 @@ const actions = {
 
     commit("upsertDatabaseList", {
       databaseList: [updatedDatabase],
-      instanceId: updatedDatabase.instance.id,
     });
 
     return updatedDatabase;
