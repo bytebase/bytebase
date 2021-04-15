@@ -246,9 +246,18 @@ export default {
     };
 
     const deleteRole = (member: ProjectMember) => {
-      store.dispatch("project/deleteMember", member).catch((error) => {
-        console.log(error);
-      });
+      store
+        .dispatch("project/deleteMember", member)
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "INFO",
+            title: `Successfully revoked ${member.principal.name} access from the project.`,
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     return {

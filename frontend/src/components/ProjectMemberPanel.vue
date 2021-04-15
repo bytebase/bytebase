@@ -178,10 +178,20 @@ export default {
         role: hasAdminFeature.value ? state.role : "OWNER",
         creatorId: currentUser.value.id,
       };
+      const principal = store.getters["principal/principalById"](
+        state.principalId
+      );
       store
         .dispatch("project/createdMember", {
           projectId: props.project.id,
           projectMember,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully added ${principal.name} to the project.`,
+          });
         })
         .catch((err) => {
           console.error(err);
