@@ -79,6 +79,7 @@ export const unknown = (
     id: UNKNOWN_ID,
     rowStatus: "NORMAL",
     name: "<<Unknown project>>",
+    key: "UNK",
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -363,6 +364,7 @@ export type Project = {
   id: ProjectId;
   rowStatus: RowStatus;
   name: string;
+  key: string;
   creator: Principal;
   updater: Principal;
   createdTs: number;
@@ -374,11 +376,13 @@ export type Project = {
 
 export type ProjectNew = {
   name: string;
+  key: string;
   creatorId: PrincipalId;
 };
 
 export type ProjectPatch = {
   name?: string;
+  key?: string;
 };
 
 // Stage

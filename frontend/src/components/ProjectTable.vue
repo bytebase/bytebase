@@ -23,7 +23,7 @@
     </template>
     <template v-slot:body="{ rowData: project }">
       <BBTableCell :leftPadding="4" class="table-cell text-gray-500">
-        <span class="">#{{ project.id }}</span>
+        <span class="">{{ project.key }}</span>
       </BBTableCell>
       <BBTableCell class="truncate">
         {{ projectName(project) }}
@@ -43,7 +43,7 @@ import { Project } from "../types";
 
 const COLUMN_LIST = [
   {
-    title: "ID",
+    title: "Key",
   },
   {
     title: "Name",

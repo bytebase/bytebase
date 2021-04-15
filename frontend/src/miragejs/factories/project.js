@@ -21,5 +21,8 @@ export default {
     name(i) {
       return "project " + (i + 3);
     },
+    key(i) {
+      return "PRJ" + (i + 3);
+    },
   }),
 };

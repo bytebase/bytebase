@@ -38,6 +38,7 @@ function convert(
     id: project.id,
     rowStatus: attrs.rowStatus,
     name: attrs.name,
+    key: attrs.key,
     creator,
     updater,
     createdTs: attrs.createdTs,
@@ -58,13 +59,7 @@ function convert(
   }
 
   return {
-    id: project.id,
-    rowStatus: attrs.rowStatus,
-    name: attrs.name,
-    creator,
-    updater,
-    createdTs: attrs.createdTs,
-    lastUpdatedTs: attrs.lastUpdatedTs,
+    ...(projectWithoutMemberList as Omit<Project, "memberList">),
     memberList,
   };
 }

@@ -60,6 +60,18 @@ export default function configureProject(route) {
     }
 
     const attrs = this.normalizedRequestAttrs("project-patch");
+    if (attrs.key) {
+      if (schema.projects.findBy({ key: attrs.key })) {
+        return new Response(
+          409,
+          {},
+          {
+            errors: `Project key ${attrs.key} already exists, please choose a different key.`,
+          }
+        );
+      }
+    }
+
     return schema.projects.find(request.params.projectId).update(attrs);
   });
 }

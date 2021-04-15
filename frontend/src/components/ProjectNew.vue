@@ -8,8 +8,24 @@
         <BBTextField
           class="mt-4 w-full"
           :required="true"
+          :placeholder="'Project name'"
           :value="state.project.name"
           @input="state.project.name = $event.target.value"
+        />
+      </div>
+      <div class="col-span-1">
+        <label for="name" class="text-lg leading-6 font-medium text-control">
+          Key <span class="text-red-600">*</span>
+          <span class="text-sm font-normal">
+            (Uppercase letters identifying your project)</span
+          >
+        </label>
+        <BBTextField
+          class="mt-4 w-full uppercase"
+          :required="true"
+          :placeholder="'JFK'"
+          :value="state.project.key"
+          @input="state.project.key = $event.target.value"
         />
       </div>
     </div>
@@ -39,7 +55,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { Project, ProjectNew } from "../types";
-import { projectSlug } from "../utils";
+import { projectSlug, randomString } from "../utils";
 
 interface LocalState {
   project: ProjectNew;
@@ -58,6 +74,7 @@ export default {
     const state = reactive<LocalState>({
       project: {
         name: "New Project",
+        key: randomString(3).toUpperCase(),
         creatorId: currentUser.value.id,
       },
     });
