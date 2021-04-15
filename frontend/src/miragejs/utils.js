@@ -9,17 +9,17 @@ export const postMessageToOwnerAndDBA = function (
   messageTemplate
 ) {
   const messageList = [];
-  const allOwnerAndDBAs = schema.roleMappings.where((roleMapping) => {
+  const allOwnerAndDBAs = schema.members.where((member) => {
     return (
-      roleMapping.workspaceId == WORKSPACE_ID &&
-      (roleMapping.role == "OWNER" || roleMapping.role == "DBA")
+      member.workspaceId == WORKSPACE_ID &&
+      (member.role == "OWNER" || member.role == "DBA")
     );
   }).models;
 
-  allOwnerAndDBAs.forEach((roleMapping) => {
+  allOwnerAndDBAs.forEach((member) => {
     messageList.push({
       ...messageTemplate,
-      receiverId: roleMapping.principalId,
+      receiverId: member.principalId,
     });
   });
 

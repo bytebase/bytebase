@@ -14,7 +14,7 @@ export default function configureProject(route) {
 
       if (userId) {
         return (
-          schema.projectRoleMappings.findBy({
+          schema.projectMembers.findBy({
             projectId: project.id,
             principalId: userId,
           }) != undefined

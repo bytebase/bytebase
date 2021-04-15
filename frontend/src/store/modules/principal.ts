@@ -14,15 +14,13 @@ import {
 import { isDevOrDemo, randomString } from "../../utils";
 
 function convert(user: ResourceObject, rootGetters: any): Principal {
-  const roleMapping = rootGetters["roleMapping/roleMappingByPrincipalId"](
-    user.id
-  );
+  const member = rootGetters["member/memberByPrincipalId"](user.id);
   return {
     id: user.id,
     status: user.attributes.status as PrincipalStatus,
     name: user.attributes.name as string,
     email: user.attributes.email as string,
-    role: roleMapping.role,
+    role: member.role,
   };
 }
 

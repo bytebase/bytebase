@@ -1,13 +1,7 @@
 import { Factory } from "miragejs";
 
 export default {
-  projectRoleMapping: Factory.extend({
-    creatorId() {
-      return "100";
-    },
-    updaterId() {
-      return "200";
-    },
+  member: Factory.extend({
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
     },
@@ -16,14 +10,19 @@ export default {
     },
     role() {
       let dice = Math.random();
-      if (dice < 0.5) {
+      if (dice < 0.33) {
         return "OWNER";
+      } else if (dice < 0.66) {
+        return "DBA";
       } else {
         return "DEVELOPER";
       }
     },
     principalId() {
       return "100";
+    },
+    updaterId() {
+      return "200";
     },
   }),
 };

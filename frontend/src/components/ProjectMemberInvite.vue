@@ -85,8 +85,8 @@ import PrincipalSelect from "../components/PrincipalSelect.vue";
 import {
   PrincipalId,
   Project,
-  ProjectRoleMapping,
-  ProjectRoleMappingNew,
+  ProjectMember,
+  ProjectMemberNew,
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
@@ -130,7 +130,7 @@ export default {
     const validateInviteInternal = (): string => {
       if (state.principalId != UNKNOWN_ID) {
         if (
-          props.project.memberList.find((item: ProjectRoleMapping) => {
+          props.project.memberList.find((item: ProjectMember) => {
             return item.principal.id == state.principalId;
           })
         ) {
@@ -150,15 +150,15 @@ export default {
 
     const addMember = () => {
       // If admin feature is NOT enabled, then we set every member to OWNER role.
-      const projectRoleMapping: ProjectRoleMappingNew = {
+      const projectMember: ProjectMemberNew = {
         principalId: state.principalId,
         role: hasAdminFeature.value ? state.role : "OWNER",
         creatorId: currentUser.value.id,
       };
       store
-        .dispatch("project/createdRoleMapping", {
+        .dispatch("project/createdMember", {
           projectId: props.project.id,
-          projectRoleMapping,
+          projectMember,
         })
         .catch((err) => {
           console.error(err);

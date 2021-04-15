@@ -3,13 +3,13 @@
  */
 
 import workspaces from "./workspaceList.json";
-import roleMappings from "./roleMappingList.json";
+import members from "./memberList.json";
 import users from "./userList.json";
 import projects from "./projectList.json";
 
 export default {
   workspaces,
-  roleMappings,
+  members,
   users,
   projects,
 };

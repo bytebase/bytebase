@@ -64,7 +64,7 @@ const workspacesSeeder = (server: any) => {
       })
     );
 
-    server.create("projectRoleMapping", {
+    server.create("projectMember", {
       workspace: workspace1,
       project: projectList1[i],
       creatorId: ws1DBA.id,
@@ -74,7 +74,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     const userId = i % 2 == 0 ? ws1Owner.id : ws1Dev1.id;
-    server.create("projectRoleMapping", {
+    server.create("projectMember", {
       workspace: workspace1,
       project: projectList1[i],
       creatorId: ws1Owner.id,
@@ -95,7 +95,7 @@ const workspacesSeeder = (server: any) => {
       })
     );
 
-    server.create("projectRoleMapping", {
+    server.create("projectMember", {
       workspace: workspace2,
       project: projectList2[i],
       creatorId: ws2DBA.id,

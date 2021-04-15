@@ -120,7 +120,7 @@
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { Principal, PrincipalNew, RoleMappingNew, RoleType } from "../types";
+import { Principal, PrincipalNew, MemberNew, RoleType } from "../types";
 import { isValidEmail } from "../utils";
 
 type Invite = {
@@ -224,15 +224,15 @@ export default {
           store
             .dispatch("principal/createPrincipal", newPrincipal)
             .then((principal: Principal) => {
-              const newRoleMapping: RoleMappingNew = {
+              const newMember: MemberNew = {
                 principalId: principal.id,
                 role: invite.role,
                 updaterId: currentUser.value.id,
               };
-              // Note "principal/createdRoleMapping" would return the existing role mapping.
+              // Note "principal/createdMember" would return the existing role mapping.
               // This could happen if another client has just created the role mapping with
               // this principal.
-              store.dispatch("roleMapping/createdRoleMapping", newRoleMapping);
+              store.dispatch("member/createdMember", newMember);
             })
             .catch((error) => {
               console.error(error);

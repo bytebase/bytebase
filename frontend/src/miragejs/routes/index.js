@@ -3,13 +3,13 @@
  */
 import configureUser from "./user";
 import configureAuth from "./auth";
-import configureRoleMapping from "./roleMapping";
+import configureMember from "./member";
 import configureActivity from "./activity";
 import configureMessage from "./message";
 import configureBookmark from "./bookmark";
 import configureTask from "./task";
 import configureProject from "./project";
-import configureProjectRoleMapping from "./projectRoleMapping";
+import configureProjectMember from "./projectMember";
 import configureEnvironment from "./environment";
 import configureInstance from "./instance";
 import configureDatabase from "./database";
@@ -32,8 +32,8 @@ export default function routes() {
   // Auth
   configureAuth(this);
 
-  // RoleMapping
-  configureRoleMapping(this);
+  // Member
+  configureMember(this);
 
   // Activity
   configureActivity(this);
@@ -47,8 +47,8 @@ export default function routes() {
   // Project
   configureProject(this);
 
-  // ProjectRoleMapping
-  configureProjectRoleMapping(this);
+  // ProjectMember
+  configureProjectMember(this);
 
   // Task
   configureTask(this);

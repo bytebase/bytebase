@@ -37,7 +37,7 @@ export default function configureAuth(route) {
       ...signupInfo,
     });
 
-    const newRoleMapping = {
+    const newMember = {
       principalId: createdUser.id,
       email: createdUser.email,
       createdTs: ts,
@@ -46,7 +46,7 @@ export default function configureAuth(route) {
       updaterId: createdUser.id,
       workspaceId: WORKSPACE_ID,
     };
-    schema.roleMappings.create(newRoleMapping);
+    schema.members.create(newMember);
 
     const messageTemplate = {
       containerId: WORKSPACE_ID,
@@ -82,7 +82,7 @@ export default function configureAuth(route) {
         passwordHash: activateInfo.password,
       });
 
-      const roleMapping = schema.roleMappings.findBy({
+      const member = schema.members.findBy({
         principalId: user.id,
         workspaceId: WORKSPACE_ID,
       });
@@ -97,7 +97,7 @@ export default function configureAuth(route) {
         workspaceId: WORKSPACE_ID,
         payload: {
           principalId: user.id,
-          newRole: roleMapping.role,
+          newRole: member.role,
         },
       };
       postMessageToOwnerAndDBA(schema, user.id, messageTemplate);

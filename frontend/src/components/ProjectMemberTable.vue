@@ -39,37 +39,37 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: roleMapping }">
+    <template v-slot:body="{ rowData: member }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
-          <template v-if="'INVITED' == roleMapping.principal.status">
+          <template v-if="'INVITED' == member.principal.status">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
             >
               Invited
             </span>
             <span class="textlabel">
-              {{ roleMapping.principal.email }}
+              {{ member.principal.email }}
             </span>
           </template>
           <template v-else>
-            <BBAvatar :username="roleMapping.principal.name" />
+            <BBAvatar :username="member.principal.name" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
-                  :to="`/u/${roleMapping.principal.id}`"
+                  :to="`/u/${member.principal.id}`"
                   class="normal-link"
-                  >{{ roleMapping.principal.name }}
+                  >{{ member.principal.name }}
                 </router-link>
                 <span
-                  v-if="currentUser.id == roleMapping.principal.id"
+                  v-if="currentUser.id == member.principal.id"
                   class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
                 >
                   You
                 </span>
               </div>
               <span class="textlabel">
-                {{ roleMapping.principal.email }}
+                {{ member.principal.email }}
               </span>
             </div>
           </template>
@@ -77,11 +77,11 @@
       </BBTableCell>
       <BBTableCell v-if="hasAdminFeature" class="">
         <ProjectRoleSelect
-          :selectedRole="roleMapping.role"
-          :disabled="!allowChangeRole(roleMapping.role)"
+          :selectedRole="member.role"
+          :disabled="!allowChangeRole(member.role)"
           @change-role="
             (role) => {
-              changeRole(roleMapping.id, role);
+              changeRole(member.id, role);
             }
           "
         />
@@ -89,21 +89,21 @@
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
           <span>
-            {{ humanizeTs(roleMapping.lastUpdatedTs) }}
+            {{ humanizeTs(member.lastUpdatedTs) }}
           </span>
           <span>by</span>
-          <router-link :to="`/u/${roleMapping.updater.id}`" class="normal-link"
-            >{{ roleMapping.updater.name }}
+          <router-link :to="`/u/${member.updater.id}`" class="normal-link"
+            >{{ member.updater.name }}
           </router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
-          v-if="allowChangeRole(roleMapping.role)"
+          v-if="allowChangeRole(member.role)"
           :requireConfirm="true"
           :okText="'Revoke'"
-          :confirmTitle="`Are you sure to revoke '${roleMapping.role}' from '${roleMapping.principal.name}'`"
-          @confirm="deleteRole(roleMapping)"
+          :confirmTitle="`Are you sure to revoke '${member.role}' from '${member.principal.name}'`"
+          @confirm="deleteRole(member)"
         />
       </BBTableCell>
     </template>
@@ -116,9 +116,9 @@ import { useStore } from "vuex";
 import ProjectRoleSelect from "../components/ProjectRoleSelect.vue";
 import {
   Project,
-  ProjectRoleMapping,
+  ProjectMember,
   ProjectRoleType,
-  RoleMappingId,
+  MemberId,
   RoleType,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
@@ -147,20 +147,20 @@ export default {
     const state = reactive<LocalState>({});
 
     const dataSource = computed(
-      (): BBTableSectionDataSource<ProjectRoleMapping>[] => {
-        const ownerList: ProjectRoleMapping[] = [];
-        const developerList: ProjectRoleMapping[] = [];
-        for (const roleMapping of props.project.memberList) {
-          if (roleMapping.role == "OWNER") {
-            ownerList.push(roleMapping);
+      (): BBTableSectionDataSource<ProjectMember>[] => {
+        const ownerList: ProjectMember[] = [];
+        const developerList: ProjectMember[] = [];
+        for (const member of props.project.memberList) {
+          if (member.role == "OWNER") {
+            ownerList.push(member);
           }
 
-          if (roleMapping.role == "DEVELOPER") {
-            developerList.push(roleMapping);
+          if (member.role == "DEVELOPER") {
+            developerList.push(member);
           }
         }
 
-        const dataSource: BBTableSectionDataSource<ProjectRoleMapping>[] = [];
+        const dataSource: BBTableSectionDataSource<ProjectMember>[] = [];
         if (hasAdminFeature.value) {
           dataSource.push({
             title: "Owner",
@@ -221,9 +221,9 @@ export default {
         return true;
       }
 
-      for (const roleMapping of props.project.memberList) {
-        if (roleMapping.principal.id == currentUser.value.id) {
-          if (isProjectOwner(roleMapping.role)) {
+      for (const member of props.project.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          if (isProjectOwner(member.role)) {
             return true;
           }
         }
@@ -232,12 +232,12 @@ export default {
       return false;
     };
 
-    const changeRole = (id: RoleMappingId, role: RoleType) => {
+    const changeRole = (id: MemberId, role: RoleType) => {
       store
-        .dispatch("project/patchRoleMapping", {
+        .dispatch("project/patchMember", {
           projectId: props.project.id,
-          roleMappingId: id,
-          projectRoleMappingPatch: {
+          memberId: id,
+          projectMemberPatch: {
             role,
           },
         })
@@ -246,12 +246,10 @@ export default {
         });
     };
 
-    const deleteRole = (roleMapping: ProjectRoleMapping) => {
-      store
-        .dispatch("project/deleteRoleMapping", roleMapping)
-        .catch((error) => {
-          console.log(error);
-        });
+    const deleteRole = (member: ProjectMember) => {
+      store.dispatch("project/deleteMember", member).catch((error) => {
+        console.log(error);
+      });
     };
 
     return {

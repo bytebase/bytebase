@@ -49,7 +49,7 @@ export default function configureDatabase(route) {
           }
 
           return (
-            schema.projectRoleMappings.findBy({
+            schema.projectMembers.findBy({
               principalId: userId,
               projectId: project.id,
               workspaceId: WORKSPACE_ID,

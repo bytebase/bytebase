@@ -10,8 +10,8 @@ import task from "./task";
 import activity from "./activity";
 import message from "./message";
 import workspace from "./workspace";
-import roleMapping from "./roleMapping";
-import projectRoleMapping from "./projectRoleMapping";
+import member from "./member";
+import projectMember from "./projectMember";
 
 import loginInfo from "./loginInfo";
 import signupInfo from "./signupInfo";
@@ -36,8 +36,8 @@ export default {
   ...activity,
 
   ...workspace,
-  ...roleMapping,
-  ...projectRoleMapping,
+  ...member,
+  ...projectMember,
   ...loginInfo,
   ...signupInfo,
   ...activateInfo,

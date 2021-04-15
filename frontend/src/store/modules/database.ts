@@ -183,9 +183,7 @@ const actions = {
     // The data source contains sensitive connection credentials so we shouldn't
     // return it unconditionally.
     const data = (
-      await axios.get(
-        `/api/database?include=project,project.projectRoleMapping`
-      )
+      await axios.get(`/api/database?include=project,project.projectMember`)
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, [], rootGetters);
@@ -202,7 +200,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/database?instance=${instanceId}&include=instance,project,project.projectRoleMapping,dataSource`
+        `/api/database?instance=${instanceId}&include=instance,project,project.projectMember,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -217,7 +215,7 @@ const actions = {
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
-        `/api/database?user=${userId}&include=instance,project,project.projectRoleMapping,dataSource`
+        `/api/database?user=${userId}&include=instance,project,project.projectMember,dataSource`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -259,8 +257,8 @@ const actions = {
     }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
     const url = instanceId
-      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,project,project.projectRoleMapping,dataSource`
-      : `/api/database/${databaseId}?include=instance,project,project.projectRoleMapping,dataSource`;
+      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,project,project.projectMember,dataSource`
+      : `/api/database/${databaseId}?include=instance,project,project.projectMember,dataSource`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
@@ -275,7 +273,7 @@ const actions = {
   async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
     const data = (
       await axios.post(
-        `/api/database?include=instance,project,project.projectRoleMapping,dataSource`,
+        `/api/database?include=instance,project,project.projectMember,dataSource`,
         {
           data: {
             type: "database",
@@ -312,7 +310,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${databaseId}?include=instance,project,project.projectRoleMapping,dataSource`,
+        `/api/database/${databaseId}?include=instance,project,project.projectMember,dataSource`,
         {
           data: {
             type: "databasepatch",

@@ -156,9 +156,9 @@ export default {
         return true;
       }
 
-      for (const roleMapping of project.value.memberList) {
-        if (roleMapping.principal.id == currentUser.value.id) {
-          if (isProjectOwner(roleMapping.role)) {
+      for (const member of project.value.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          if (isProjectOwner(member.role)) {
             return true;
           }
         }

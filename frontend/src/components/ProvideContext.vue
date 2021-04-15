@@ -17,8 +17,8 @@ export default {
     // context here.
     await Promise.all([
       store.dispatch("environment/fetchEnvironmentList"),
-      store.dispatch("roleMapping/fetchRoleMappingList"),
-      // fetchPrincipalList relies on fetchRoleMappingList to find the role of the principal.
+      store.dispatch("member/fetchMemberList"),
+      // fetchPrincipalList relies on fetchMemberList to find the role of the principal.
       store.dispatch("principal/fetchPrincipalList"),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
@@ -39,7 +39,7 @@ export default {
       store.dispatch("uistate/restoreState"),
     ]);
 
-    // Refresh the user after fetchRoleMappingList / fetchPrincipalList.
+    // Refresh the user after fetchMemberList / fetchPrincipalList.
     // The user info may change remotely and thus we need to refresh both in-memory and local cache state.
     store.dispatch("auth/refreshUser").then((currentUser: Principal) => {
       // In order to display the empty/non-empty inbox icon on the sidebar properly.

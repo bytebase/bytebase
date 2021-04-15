@@ -2,27 +2,27 @@ import { Response } from "miragejs";
 import { WORKSPACE_ID, OWNER_ID } from "./index";
 import { postMessageToOwnerAndDBA } from "../utils";
 
-export default function configureRoleMapping(route) {
-  route.get("/rolemapping", function (schema, request) {
-    return schema.roleMappings.where((roleMapping) => {
-      return roleMapping.workspaceId == WORKSPACE_ID;
+export default function configureMember(route) {
+  route.get("/Member", function (schema, request) {
+    return schema.members.where((member) => {
+      return member.workspaceId == WORKSPACE_ID;
     });
   });
 
-  route.post("/rolemapping", function (schema, request) {
+  route.post("/Member", function (schema, request) {
     const ts = Date.now();
     const attrs = {
-      ...this.normalizedRequestAttrs("role-mapping"),
+      ...this.normalizedRequestAttrs("member"),
       workspaceId: WORKSPACE_ID,
     };
-    const roleMapping = schema.roleMappings.findBy({
+    const member = schema.members.findBy({
       principalId: attrs.principalId,
       workspaceId: WORKSPACE_ID,
     });
-    if (roleMapping) {
-      return roleMapping;
+    if (member) {
+      return member;
     }
-    const newRoleMapping = {
+    const newMember = {
       ...attrs,
       createdTs: ts,
       lastUpdatedTs: ts,
@@ -31,7 +31,7 @@ export default function configureRoleMapping(route) {
       workspaceId: WORKSPACE_ID,
     };
 
-    const createdRoleMapping = schema.roleMappings.create(newRoleMapping);
+    const createdMember = schema.members.create(newMember);
 
     const user = schema.users.find(attrs.principalId);
     const type =
@@ -54,26 +54,25 @@ export default function configureRoleMapping(route) {
     };
     postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
-    return createdRoleMapping;
+    return createdMember;
   });
 
-  route.patch("/rolemapping/:roleMappingId", function (schema, request) {
-    const roleMapping = schema.roleMappings.find(request.params.roleMappingId);
-    if (!roleMapping) {
+  route.patch("/Member/:memberId", function (schema, request) {
+    const member = schema.members.find(request.params.memberId);
+    if (!member) {
       return new Response(
         404,
         {},
         {
-          errors:
-            "Role mapping id " + request.params.roleMappingId + " not found",
+          errors: "Role mapping id " + request.params.memberId + " not found",
         }
       );
     }
 
-    const oldRole = roleMapping.role;
+    const oldRole = member.role;
 
-    const attrs = this.normalizedRequestAttrs("role-mapping");
-    const updatedRoleMapping = roleMapping.update(attrs);
+    const attrs = this.normalizedRequestAttrs("member");
+    const updatedMember = member.update(attrs);
 
     const ts = Date.now();
     const messageTemplate = {
@@ -85,32 +84,31 @@ export default function configureRoleMapping(route) {
       creatorId: attrs.updaterId,
       workspaceId: WORKSPACE_ID,
       payload: {
-        principalId: roleMapping.principalId,
+        principalId: member.principalId,
         oldRole,
-        newRole: updatedRoleMapping.role,
+        newRole: updatedMember.role,
       },
     };
     postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
-    return updatedRoleMapping;
+    return updatedMember;
   });
 
-  route.delete("/rolemapping/:roleMappingId", function (schema, request) {
-    const roleMapping = schema.roleMappings.find(request.params.roleMappingId);
+  route.delete("/Member/:memberId", function (schema, request) {
+    const member = schema.members.find(request.params.memberId);
 
-    if (!roleMapping) {
+    if (!member) {
       return new Response(
         404,
         {},
         {
-          errors:
-            "Role mapping id " + request.params.roleMappingId + " not found",
+          errors: "Role mapping id " + request.params.memberId + " not found",
         }
       );
     }
 
-    const oldRole = roleMapping.role;
-    roleMapping.destroy();
+    const oldRole = member.role;
+    member.destroy();
 
     // NOTE, in actual implementation, we need to fetch the user from the auth context.
     const callerId = OWNER_ID;
@@ -124,7 +122,7 @@ export default function configureRoleMapping(route) {
       creatorId: callerId,
       workspaceId: WORKSPACE_ID,
       payload: {
-        principalId: roleMapping.principalId,
+        principalId: member.principalId,
         oldRole,
       },
     };

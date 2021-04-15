@@ -29,10 +29,10 @@ export const unknown = (
   | Execution
   | Principal
   | User
-  | RoleMapping
+  | Member
   | Environment
   | Project
-  | ProjectRoleMapping
+  | ProjectMember
   | Instance
   | Database
   | DataSource
@@ -59,7 +59,7 @@ export const unknown = (
     email: "unknown@example.com",
   };
 
-  const UNKNOWN_ROLE_MAPPING: RoleMapping = {
+  const UNKNOWN_ROLE_MAPPING: Member = {
     id: UNKNOWN_ID,
     createdTs: 0,
     lastUpdatedTs: 0,
@@ -86,7 +86,7 @@ export const unknown = (
     memberList: [],
   };
 
-  const UNKNOWN_PROJECT_ROLE_MAPPING: ProjectRoleMapping = {
+  const UNKNOWN_PROJECT_ROLE_MAPPING: ProjectMember = {
     id: UNKNOWN_ID,
     project: UNKNOWN_PROJECT,
     creator: UNKNOWN_PRINCIPAL,
@@ -218,7 +218,7 @@ export type UserId = string;
 // For now, Principal is equal to UserId, in the future it may contain other id such as application, bot etc.
 export type PrincipalId = UserId;
 
-export type RoleMappingId = string;
+export type MemberId = string;
 
 export type BookmarkId = string;
 
@@ -268,11 +268,11 @@ export type Execution = {
   link?: string;
 };
 
-// RoleMapping
+// Member
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
 
-export type RoleMapping = {
-  id: RoleMappingId;
+export type Member = {
+  id: MemberId;
   createdTs: number;
   lastUpdatedTs: number;
   role: RoleType;
@@ -280,22 +280,22 @@ export type RoleMapping = {
   updaterId: PrincipalId;
 };
 
-export type RoleMappingNew = {
+export type MemberNew = {
   principalId: PrincipalId;
   role: RoleType;
   updaterId: PrincipalId;
 };
 
-export type RoleMappingPatch = {
-  id: RoleMappingId;
+export type MemberPatch = {
+  id: MemberId;
   role: RoleType;
 };
 
-// ProjectRoleMapping
+// ProjectMember
 export type ProjectRoleType = "OWNER" | "DEVELOPER";
 
-export type ProjectRoleMapping = {
-  id: RoleMappingId;
+export type ProjectMember = {
+  id: MemberId;
   project: Project;
   creator: Principal;
   updater: Principal;
@@ -305,13 +305,13 @@ export type ProjectRoleMapping = {
   principal: Principal;
 };
 
-export type ProjectRoleMappingNew = {
+export type ProjectMemberNew = {
   principalId: PrincipalId;
   role: ProjectRoleType;
   creatorId: PrincipalId;
 };
 
-export type ProjectRoleMappingPatch = {
+export type ProjectMemberPatch = {
   role: ProjectRoleType;
 };
 
@@ -369,7 +369,7 @@ export type Project = {
   lastUpdatedTs: number;
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
-  memberList: ProjectRoleMapping[];
+  memberList: ProjectMember[];
 };
 
 export type ProjectNew = {
@@ -972,8 +972,8 @@ export interface PlanState {
   plan: PlanType;
 }
 
-export interface RoleMappingState {
-  roleMappingList: RoleMapping[];
+export interface MemberState {
+  memberList: Member[];
 }
 
 export interface PrincipalState {

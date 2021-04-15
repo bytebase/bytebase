@@ -2,8 +2,8 @@ import { Response } from "miragejs";
 import { WORKSPACE_ID, OWNER_ID } from "./index";
 import { postMessageToOwnerAndDBA } from "../utils";
 
-export default function configureProrjectRoleMapping(route) {
-  route.get("/project/:projectId/rolemapping", function (schema, request) {
+export default function configureProrjectMember(route) {
+  route.get("/project/:projectId/Member", function (schema, request) {
     const project = schema.projects.find(request.params.projectId);
 
     if (!project) {
@@ -16,15 +16,15 @@ export default function configureProrjectRoleMapping(route) {
       );
     }
 
-    return schema.projectRoleMappings.where((roleMapping) => {
+    return schema.projectMembers.where((member) => {
       return (
-        roleMapping.workspaceId == WORKSPACE_ID &&
-        roleMapping.projectId == request.params.projectId
+        member.workspaceId == WORKSPACE_ID &&
+        member.projectId == request.params.projectId
       );
     });
   });
 
-  route.post("/project/:projectId/rolemapping", function (schema, request) {
+  route.post("/project/:projectId/Member", function (schema, request) {
     const project = schema.projects.find(request.params.projectId);
 
     if (!project) {
@@ -38,17 +38,17 @@ export default function configureProrjectRoleMapping(route) {
     }
 
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("project-role-mapping");
+    const attrs = this.normalizedRequestAttrs("project-member");
 
-    const roleMapping = schema.projectRoleMappings.findBy({
+    const member = schema.projectMembers.findBy({
       principalId: attrs.principalId,
       projectId: request.params.projectId,
       workspaceId: WORKSPACE_ID,
     });
-    if (roleMapping) {
-      return roleMapping;
+    if (member) {
+      return member;
     }
-    const newRoleMapping = {
+    const newMember = {
       ...attrs,
       creatorId: attrs.creatorId,
       updaterId: attrs.creatorId,
@@ -60,9 +60,7 @@ export default function configureProrjectRoleMapping(route) {
       workspaceId: WORKSPACE_ID,
     };
 
-    const createdRoleMapping = schema.projectRoleMappings.create(
-      newRoleMapping
-    );
+    const createdMember = schema.projectMembers.create(newMember);
 
     const messageTemplate = {
       containerId: request.params.projectId,
@@ -79,11 +77,11 @@ export default function configureProrjectRoleMapping(route) {
     };
     postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
-    return createdRoleMapping;
+    return createdMember;
   });
 
   route.patch(
-    "/project/:projectId/rolemapping/:roleMappingId",
+    "/project/:projectId/Member/:memberId",
     function (schema, request) {
       const project = schema.projects.find(request.params.projectId);
 
@@ -97,23 +95,20 @@ export default function configureProrjectRoleMapping(route) {
         );
       }
 
-      const roleMapping = schema.projectRoleMappings.find(
-        request.params.roleMappingId
-      );
-      if (!roleMapping) {
+      const member = schema.projectMembers.find(request.params.memberId);
+      if (!member) {
         return new Response(
           404,
           {},
           {
-            errors:
-              "Role mapping id " + request.params.roleMappingId + " not found",
+            errors: "Role mapping id " + request.params.memberId + " not found",
           }
         );
       }
-      const oldRole = roleMapping.role;
+      const oldRole = member.role;
 
-      const attrs = this.normalizedRequestAttrs("project-role-mapping");
-      const updatedRoleMapping = roleMapping.update(attrs);
+      const attrs = this.normalizedRequestAttrs("project-member");
+      const updatedMember = member.update(attrs);
 
       const ts = Date.now();
       const messageTemplate = {
@@ -125,19 +120,19 @@ export default function configureProrjectRoleMapping(route) {
         creatorId: attrs.updaterId,
         workspaceId: WORKSPACE_ID,
         payload: {
-          principalId: roleMapping.principalId,
+          principalId: member.principalId,
           oldRole,
-          newRole: updatedRoleMapping.role,
+          newRole: updatedMember.role,
         },
       };
       postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
-      return updatedRoleMapping;
+      return updatedMember;
     }
   );
 
   route.delete(
-    "/project/:projectId/rolemapping/:roleMappingId",
+    "/project/:projectId/Member/:memberId",
     function (schema, request) {
       const project = schema.projects.find(request.params.projectId);
 
@@ -151,24 +146,22 @@ export default function configureProrjectRoleMapping(route) {
         );
       }
 
-      const roleMapping = schema.projectRoleMappings.find(
-        request.params.roleMappingId
-      );
-      if (!roleMapping) {
+      const member = schema.projectMembers.find(request.params.memberId);
+      if (!member) {
         return new Response(
           404,
           {},
           {
             errors:
               "Project role mapping id " +
-              request.params.roleMappingId +
+              request.params.memberId +
               " not found",
           }
         );
       }
 
-      const oldRole = roleMapping.role;
-      roleMapping.destroy();
+      const oldRole = member.role;
+      member.destroy();
 
       // NOTE, in actual implementation, we need to fetch the user from the auth context.
       const callerId = OWNER_ID;
@@ -182,7 +175,7 @@ export default function configureProrjectRoleMapping(route) {
         creatorId: callerId,
         workspaceId: WORKSPACE_ID,
         payload: {
-          principalId: roleMapping.principalId,
+          principalId: member.principalId,
           oldRole,
         },
       };

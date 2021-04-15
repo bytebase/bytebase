@@ -8,10 +8,10 @@ import {
   ProjectState,
   ResourceObject,
   unknown,
-  ProjectRoleMapping,
-  ProjectRoleMappingNew,
-  ProjectRoleMappingPatch,
-  RoleMappingId,
+  ProjectMember,
+  ProjectMemberNew,
+  ProjectMemberPatch,
+  MemberId,
   PrincipalId,
   ResourceIdentifier,
 } from "../../types";
@@ -45,15 +45,15 @@ function convert(
     memberList: [],
   };
 
-  const memberList: ProjectRoleMapping[] = [];
+  const memberList: ProjectMember[] = [];
   for (const item of includedList || []) {
     if (
-      item.type == "project-role-mapping" &&
+      item.type == "project-member" &&
       (item.relationships!.project.data as ResourceIdentifier).id == project.id
     ) {
-      const roleMapping = convertRoleMapping(item, rootGetters);
-      roleMapping.project = projectWithoutMemberList;
-      memberList.push(roleMapping);
+      const member = convertMember(item, rootGetters);
+      member.project = projectWithoutMemberList;
+      memberList.push(member);
     }
   }
 
@@ -72,27 +72,27 @@ function convert(
 // For now, this is exclusively used as part of converting the Project.
 // Upon calling, the project itself is not constructed yet, so we return
 // an unknown project first.
-function convertRoleMapping(
-  projectRoleMapping: ResourceObject,
+function convertMember(
+  projectMember: ResourceObject,
   rootGetters: any
-): ProjectRoleMapping {
+): ProjectMember {
   const creator = rootGetters["principal/principalById"](
-    projectRoleMapping.attributes.creatorId
+    projectMember.attributes.creatorId
   );
   const updater = rootGetters["principal/principalById"](
-    projectRoleMapping.attributes.updaterId
+    projectMember.attributes.updaterId
   );
   const principal = rootGetters["principal/principalById"](
-    projectRoleMapping.attributes.principalId
+    projectMember.attributes.principalId
   );
 
-  const attrs = projectRoleMapping.attributes as Omit<
-    ProjectRoleMapping,
+  const attrs = projectMember.attributes as Omit<
+    ProjectMember,
     "id" | "project" | "creator" | "updater" | "principal"
   >;
 
   return {
-    id: projectRoleMapping.id,
+    id: projectMember.id,
     project: unknown("PROJECT") as Project,
     creator,
     updater,
@@ -146,8 +146,7 @@ const getters = {
 
 const actions = {
   async fetchProjectList({ commit, rootGetters }: any, userId: UserId) {
-    const data = (await axios.get(`/api/project?include=projectRoleMapping`))
-      .data;
+    const data = (await axios.get(`/api/project?include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
     });
@@ -158,9 +157,7 @@ const actions = {
 
   async fetchProjectListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
-      await axios.get(
-        `/api/project?userid=${userId}&include=projectRoleMapping`
-      )
+      await axios.get(`/api/project?userid=${userId}&include=projectMember`)
     ).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
@@ -172,7 +169,7 @@ const actions = {
 
   async fetchProjectById({ commit, rootGetters }: any, projectId: ProjectId) {
     const data = (
-      await axios.get(`/api/project/${projectId}?include=projectRoleMapping`)
+      await axios.get(`/api/project/${projectId}?include=projectMember`)
     ).data;
     const project = convert(data.data, data.included, rootGetters);
 
@@ -185,7 +182,7 @@ const actions = {
 
   async createProject({ commit, rootGetters }: any, newProject: ProjectNew) {
     const data = (
-      await axios.post(`/api/project?include=projectRoleMapping`, {
+      await axios.post(`/api/project?include=projectMember`, {
         data: {
           type: "projectnew",
           attributes: newProject,
@@ -213,15 +210,12 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(
-        `/api/project/${projectId}?include=projectRoleMapping`,
-        {
-          data: {
-            type: "projectpatch",
-            attributes: projectPatch,
-          },
-        }
-      )
+      await axios.patch(`/api/project/${projectId}?include=projectMember`, {
+        data: {
+          type: "projectpatch",
+          attributes: projectPatch,
+        },
+      })
     ).data;
     const updatedProject = convert(data.data, data.included, rootGetters);
 
@@ -234,21 +228,21 @@ const actions = {
   },
 
   // Project Role Mapping
-  // Returns existing roleMapping if the principalId has already been created.
-  async createdRoleMapping(
+  // Returns existing member if the principalId has already been created.
+  async createdMember(
     { dispatch }: any,
     {
       projectId,
-      projectRoleMapping,
+      projectMember,
     }: {
       projectId: ProjectId;
-      projectRoleMapping: ProjectRoleMappingNew;
+      projectMember: ProjectMemberNew;
     }
   ) {
-    await axios.post(`/api/project/${projectId}/rolemapping`, {
+    await axios.post(`/api/project/${projectId}/Member`, {
       data: {
-        type: "projectRoleMappingNew",
-        attributes: projectRoleMapping,
+        type: "projectMemberNew",
+        attributes: projectMember,
       },
     });
 
@@ -257,41 +251,36 @@ const actions = {
     return updatedProject;
   },
 
-  async patchRoleMapping(
+  async patchMember(
     { dispatch }: any,
     {
       projectId,
-      roleMappingId,
-      projectRoleMappingPatch,
+      memberId,
+      projectMemberPatch,
     }: {
       projectId: ProjectId;
-      roleMappingId: RoleMappingId;
-      projectRoleMappingPatch: ProjectRoleMappingPatch;
+      memberId: MemberId;
+      projectMemberPatch: ProjectMemberPatch;
     }
   ) {
-    await axios.patch(
-      `/api/project/${projectId}/rolemapping/${roleMappingId}`,
-      {
-        data: {
-          type: "projectRoleMappingPatch",
-          attributes: projectRoleMappingPatch,
-        },
-      }
-    );
+    await axios.patch(`/api/project/${projectId}/Member/${memberId}`, {
+      data: {
+        type: "projectMemberPatch",
+        attributes: projectMemberPatch,
+      },
+    });
 
     const updatedProject = await dispatch("fetchProjectById", projectId);
 
     return updatedProject;
   },
 
-  async deleteRoleMapping({ dispatch }: any, roleMapping: ProjectRoleMapping) {
-    await axios.delete(
-      `/api/project/${roleMapping.project.id}/rolemapping/${roleMapping.id}`
-    );
+  async deleteMember({ dispatch }: any, member: ProjectMember) {
+    await axios.delete(`/api/project/${member.project.id}/Member/${member.id}`);
 
     const updatedProject = await dispatch(
       "fetchProjectById",
-      roleMapping.project.id
+      member.project.id
     );
 
     return updatedProject;

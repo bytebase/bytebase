@@ -19,12 +19,12 @@ export default {
   userPatch: Model,
 
   workspace: Model.extend({
-    roleMapping: hasMany(),
+    member: hasMany(),
     bookmark: hasMany(),
     activity: hasMany(),
     message: hasMany(),
     project: hasMany(),
-    projectRoleMapping: hasMany(),
+    projectMember: hasMany(),
     task: hasMany(),
     environment: hasMany(),
     instance: hasMany(),
@@ -32,18 +32,18 @@ export default {
     dataSource: hasMany(),
   }),
 
-  roleMapping: Model.extend({
+  member: Model.extend({
     workspace: belongsTo(),
   }),
 
-  projectRoleMapping: Model.extend({
+  projectMember: Model.extend({
     workspace: belongsTo(),
     project: belongsTo(),
   }),
 
-  projectRoleMappingNew: Model,
+  projectMemberNew: Model,
 
-  projectRoleMappingPatch: Model,
+  projectMemberPatch: Model,
 
   bookmark: Model.extend({
     workspace: belongsTo(),
@@ -64,7 +64,7 @@ export default {
   project: Model.extend({
     workspace: belongsTo(),
     database: hasMany(),
-    projectRoleMapping: hasMany(),
+    projectMember: hasMany(),
   }),
 
   projectNew: Model,

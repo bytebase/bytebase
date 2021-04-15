@@ -4,7 +4,7 @@ import { createStore, Store } from "vuex";
 import activity from "./modules/activity";
 import message from "./modules/message";
 import bookmark from "./modules/bookmark";
-import roleMapping from "./modules/roleMapping";
+import member from "./modules/member";
 import environment from "./modules/environment";
 import project from "./modules/project";
 import instance from "./modules/instance";
@@ -30,7 +30,7 @@ export const store: Store<any> = createStore({
     activity,
     message,
     bookmark,
-    roleMapping,
+    member,
     environment,
     project,
     instance,

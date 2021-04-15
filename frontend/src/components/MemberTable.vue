@@ -39,37 +39,37 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: roleMappingUI }">
+    <template v-slot:body="{ rowData: memberUI }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
-          <template v-if="'INVITED' == roleMappingUI.principal.status">
+          <template v-if="'INVITED' == memberUI.principal.status">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
             >
               Invited
             </span>
             <span class="textlabel">
-              {{ roleMappingUI.principal.email }}
+              {{ memberUI.principal.email }}
             </span>
           </template>
           <template v-else>
-            <BBAvatar :username="roleMappingUI.principal.name" />
+            <BBAvatar :username="memberUI.principal.name" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
-                  :to="`/u/${roleMappingUI.principal.id}`"
+                  :to="`/u/${memberUI.principal.id}`"
                   class="normal-link"
-                  >{{ roleMappingUI.principal.name }}
+                  >{{ memberUI.principal.name }}
                 </router-link>
                 <span
-                  v-if="currentUser.id == roleMappingUI.principal.id"
+                  v-if="currentUser.id == memberUI.principal.id"
                   class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
                 >
                   You
                 </span>
               </div>
               <span class="textlabel">
-                {{ roleMappingUI.principal.email }}
+                {{ memberUI.principal.email }}
               </span>
             </div>
           </template>
@@ -77,11 +77,11 @@
       </BBTableCell>
       <BBTableCell v-if="hasAdminFeature" class="">
         <RoleSelect
-          :selectedRole="roleMappingUI.role"
-          :disabled="!allowChangeRole(roleMappingUI.role)"
+          :selectedRole="memberUI.role"
+          :disabled="!allowChangeRole(memberUI.role)"
           @change-role="
             (role) => {
-              changeRole(roleMappingUI.id, role);
+              changeRole(memberUI.id, role);
             }
           "
         />
@@ -89,23 +89,21 @@
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
           <span>
-            {{ humanizeTs(roleMappingUI.lastUpdatedTs) }}
+            {{ humanizeTs(memberUI.lastUpdatedTs) }}
           </span>
           <span>by</span>
-          <router-link
-            :to="`/u/${roleMappingUI.updater.id}`"
-            class="normal-link"
-            >{{ roleMappingUI.updater.name }}
+          <router-link :to="`/u/${memberUI.updater.id}`" class="normal-link"
+            >{{ memberUI.updater.name }}
           </router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
-          v-if="allowChangeRole(roleMappingUI.role)"
+          v-if="allowChangeRole(memberUI.role)"
           :requireConfirm="true"
           :okText="'Revoke'"
-          :confirmTitle="`Are you sure to revoke '${roleMappingUI.role}' from '${roleMappingUI.principal.name}'`"
-          @confirm="deleteRole(roleMappingUI.id)"
+          :confirmTitle="`Are you sure to revoke '${memberUI.role}' from '${memberUI.principal.name}'`"
+          @confirm="deleteRole(memberUI.id)"
         />
       </BBTableCell>
     </template>
@@ -136,11 +134,11 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { Principal, RoleMapping, RoleMappingId, RoleType } from "../types";
+import { Principal, Member, MemberId, RoleType } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 
-type RoleMappingUI = RoleMapping & {
+type MemberUI = Member & {
   principal: Principal;
   updater: Principal;
 };
@@ -162,73 +160,67 @@ export default {
 
     const state = reactive<LocalState>({});
 
-    const prepareRoleMappingList = () => {
-      store.dispatch("roleMapping/fetchRoleMappingList").catch((error) => {
+    const prepareMemberList = () => {
+      store.dispatch("member/fetchMemberList").catch((error) => {
         console.log(error);
       });
     };
 
-    watchEffect(prepareRoleMappingList);
+    watchEffect(prepareMemberList);
 
-    const dataSource = computed(
-      (): BBTableSectionDataSource<RoleMappingUI>[] => {
-        const ownerList: RoleMappingUI[] = [];
-        const dbaList: RoleMappingUI[] = [];
-        const developerList: RoleMappingUI[] = [];
-        for (const roleMapping of store.getters[
-          "roleMapping/roleMappingList"
-        ]()) {
-          const roleMappingUI = {
-            ...roleMapping,
-            principal: store.getters["principal/principalById"](
-              roleMapping.principalId
-            ),
-            updater: store.getters["principal/principalById"](
-              roleMapping.updaterId
-            ),
-          };
+    const dataSource = computed((): BBTableSectionDataSource<MemberUI>[] => {
+      const ownerList: MemberUI[] = [];
+      const dbaList: MemberUI[] = [];
+      const developerList: MemberUI[] = [];
+      for (const member of store.getters["member/memberList"]()) {
+        const memberUI = {
+          ...member,
+          principal: store.getters["principal/principalById"](
+            member.principalId
+          ),
+          updater: store.getters["principal/principalById"](member.updaterId),
+        };
 
-          if (roleMappingUI.role == "OWNER") {
-            ownerList.push(roleMappingUI);
-          }
-
-          if (roleMappingUI.role == "DBA") {
-            dbaList.push(roleMappingUI);
-          }
-
-          if (roleMappingUI.role == "DEVELOPER") {
-            developerList.push(roleMappingUI);
-          }
+        if (memberUI.role == "OWNER") {
+          ownerList.push(memberUI);
         }
 
-        const dataSource: BBTableSectionDataSource<RoleMappingUI>[] = [];
-        if (hasAdminFeature.value) {
-          dataSource.push({
-            title: "Owner",
-            list: ownerList,
-          });
-
-          dataSource.push({
-            title: "DBA",
-            list: dbaList,
-          });
-
-          dataSource.push({
-            title: "Developer",
-            list: developerList,
-          });
-        } else {
-          ownerList.push(...dbaList);
-          ownerList.push(...developerList);
-
-          dataSource.push({
-            title: "Member",
-            list: ownerList,
-          });
+        if (memberUI.role == "DBA") {
+          dbaList.push(memberUI);
         }
-        return dataSource;
+
+        if (memberUI.role == "DEVELOPER") {
+          developerList.push(memberUI);
+        }
       }
-    );
+
+      const dataSource: BBTableSectionDataSource<MemberUI>[] = [];
+      if (hasAdminFeature.value) {
+        dataSource.push({
+          title: "Owner",
+          list: ownerList,
+        });
+
+        dataSource.push({
+          title: "DBA",
+          list: dbaList,
+        });
+
+        dataSource.push({
+          title: "Developer",
+          list: developerList,
+        });
+      } else {
+        ownerList.push(...dbaList);
+        ownerList.push(...developerList);
+
+        dataSource.push({
+          title: "Member",
+          list: ownerList,
+        });
+      }
+      return dataSource;
+    });
 
     const columnList = computed((): BBTableColumn[] => {
       return hasAdminFeature.value
@@ -274,9 +266,9 @@ export default {
       return !hasAdminFeature.value && isOwner(currentUser.value.role);
     });
 
-    const changeRole = (id: RoleMappingId, role: RoleType) => {
+    const changeRole = (id: MemberId, role: RoleType) => {
       store
-        .dispatch("roleMapping/patchRoleMapping", {
+        .dispatch("member/patchMember", {
           id,
           role,
           updaterId: currentUser.value.id,
@@ -286,8 +278,8 @@ export default {
         });
     };
 
-    const deleteRole = (id: RoleMappingId) => {
-      store.dispatch("roleMapping/deleteRoleMappingById", id).catch((error) => {
+    const deleteRole = (id: MemberId) => {
+      store.dispatch("member/deleteMemberById", id).catch((error) => {
         console.log(error);
       });
     };

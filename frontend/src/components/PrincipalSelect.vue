@@ -39,7 +39,7 @@
 <script lang="ts">
 import { reactive, computed, watch, PropType } from "vue";
 import { useStore } from "vuex";
-import { RoleMapping, Principal, PrincipalId, RoleType } from "../types";
+import { Member, Principal, PrincipalId, RoleType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
@@ -79,11 +79,9 @@ export default {
     const store = useStore();
 
     const principalList = computed((): Principal[] => {
-      const list = store.getters["roleMapping/roleMappingList"]().map(
-        (roleMapping: RoleMapping) => {
-          return store.getters["principal/principalById"](
-            roleMapping.principalId
-          );
+      const list = store.getters["member/memberList"]().map(
+        (member: Member) => {
+          return store.getters["principal/principalById"](member.principalId);
         }
       );
       return list.filter((item: Principal) => {
