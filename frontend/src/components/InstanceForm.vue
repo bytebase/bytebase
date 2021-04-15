@@ -147,7 +147,9 @@ input[type="number"] {
           </div>
         </div>
         <div class="pt-4">
-          <button type="button" class="btn-normal">Test Connection</button>
+          <button :disabled="!allowEdit" type="button" class="btn-normal">
+            Test Connection
+          </button>
         </div>
         <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
           <div class="sm:col-span-1 sm:col-start-1">
@@ -160,6 +162,7 @@ input[type="number"] {
               name="username"
               type="text"
               class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
               :value="state.instance.username"
               @input="state.instance.username = $event.target.value"
             />
@@ -218,6 +221,7 @@ input[type="number"] {
               autocomplete="off"
               :type="state.showPassword ? 'text' : 'password'"
               class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
               :value="state.instance.password"
               @input="state.instance.password = $event.target.value"
             />
