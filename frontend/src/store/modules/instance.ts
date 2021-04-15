@@ -61,7 +61,10 @@ const getters = {
   ): Instance[] => {
     const list = [];
     for (const [_, instance] of state.instanceById) {
-      if (!rowStatusList || rowStatusList.includes(instance.rowStatus)) {
+      if (
+        (!rowStatusList && instance.rowStatus == "NORMAL") ||
+        (rowStatusList && rowStatusList.includes(instance.rowStatus))
+      ) {
         list.push(instance);
       }
     }

@@ -27,7 +27,10 @@ const getters = {
     rowStatusList?: RowStatus[]
   ): Environment[] => {
     return state.environmentList.filter((environment: Environment) => {
-      return !rowStatusList || rowStatusList.includes(environment.rowStatus);
+      return (
+        (!rowStatusList && environment.rowStatus == "NORMAL") ||
+        (rowStatusList && rowStatusList.includes(environment.rowStatus))
+      );
     });
   },
 

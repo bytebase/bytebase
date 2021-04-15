@@ -113,23 +113,16 @@ const getters = {
     return convert(instance, includedList, rootGetters);
   },
 
-  projectList: (state: ProjectState) => (rowStatus?: RowStatus): Project[] => {
-    const result: Project[] = [];
-    for (const [_, project] of state.projectById) {
-      if (!rowStatus || rowStatus == project.rowStatus) {
-        result.push(project);
-      }
-    }
-    return result;
-  },
-
   projectListByUser: (state: ProjectState) => (
     userId: UserId,
     rowStatusList?: RowStatus[]
   ): Project[] => {
     const result: Project[] = [];
     for (const [_, project] of state.projectById) {
-      if (!rowStatusList || rowStatusList.includes(project.rowStatus)) {
+      if (
+        (!rowStatusList && project.rowStatus == "NORMAL") ||
+        (rowStatusList && rowStatusList.includes(project.rowStatus))
+      ) {
         for (const member of project.memberList) {
           if (member.principal.id == userId) {
             result.push(project);
