@@ -5,8 +5,23 @@ import { InstanceBuiltinFieldId } from "../../types";
 
 export default function configurInstance(route) {
   route.get("/instance", function (schema, request) {
+    const {
+      queryParams: { rowstatus: rowStatus },
+    } = request;
     return schema.instances.where((instance) => {
-      return instance.workspaceId == WORKSPACE_ID;
+      if (instance.workspaceId != WORKSPACE_ID) {
+        return false;
+      }
+
+      if (!rowStatus) {
+        if (instance.rowStatus != "NORMAL") {
+          return false;
+        }
+      } else if (instance.rowStatus.toLowerCase() != rowStatus.toLowerCase()) {
+        return false;
+      }
+
+      return true;
     });
   });
 

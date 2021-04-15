@@ -82,9 +82,11 @@ export default {
         });
 
       if (isDBAOrOwner(currentUser.value.role)) {
-        store.dispatch("instance/fetchInstanceList").catch((error) => {
-          console.error(error);
-        });
+        store
+          .dispatch("instance/fetchInstanceList", "ARCHIVED")
+          .catch((error) => {
+            console.error(error);
+          });
 
         store
           .dispatch("environment/fetchEnvironmentList", "ARCHIVED")

@@ -89,8 +89,11 @@ const getters = {
 };
 
 const actions = {
-  async fetchInstanceList({ commit, rootGetters }: any) {
-    const instanceList = (await axios.get(`/api/instance`)).data.data.map(
+  async fetchInstanceList({ commit, rootGetters }: any, rowStatus?: RowStatus) {
+    const path =
+      "/api/instance" +
+      (rowStatus ? "?rowstatus=" + rowStatus.toLowerCase() : "");
+    const instanceList = (await axios.get(path)).data.data.map(
       (instance: ResourceObject) => {
         return convert(instance, rootGetters);
       }
