@@ -87,25 +87,19 @@
     <template v-if="state.selectedIndex == 0"> </template>
     <template v-else-if="state.selectedIndex == 1"> </template>
     <template v-else-if="state.selectedIndex == 2">
-      <div v-if="allowAddMember" class="w-full flex justify-center my-6">
-        <ProjectMemberInvite :project="project" />
-      </div>
-      <div class="my-6">
-        <ProjectMemberTable :project="project" />
-      </div>
+      <ProjectMemberPanel :project="project" />
     </template>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, nextTick, reactive, ref, watchEffect } from "vue";
+import { computed, nextTick, reactive, ref } from "vue";
 import { useStore } from "vuex";
-import { idFromSlug, isOwner, isProjectOwner } from "../utils";
+import { idFromSlug } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import ProjectMemberInvite from "../components/ProjectMemberInvite.vue";
-import ProjectMemberTable from "../components/ProjectMemberTable.vue";
-import { Principal, Project, ProjectPatch } from "../types";
+import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
+import { Project, ProjectPatch } from "../types";
 import { cloneDeep, isEqual } from "lodash";
 
 const OVERVIEW_TAB = 0;
@@ -123,8 +117,7 @@ export default {
   components: {
     ArchiveBanner,
     DatabaseTable,
-    ProjectMemberInvite,
-    ProjectMemberTable,
+    ProjectMemberPanel,
   },
   props: {
     projectSlug: {
@@ -141,29 +134,10 @@ export default {
       selectedIndex: 2,
     });
 
-    const currentUser = computed(
-      (): Principal => store.getters["auth/currentUser"]()
-    );
-
     const project = computed(() => {
       return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
       );
-    });
-
-    const allowAddMember = computed(() => {
-      if (isOwner(currentUser.value.role)) {
-        return true;
-      }
-
-      for (const member of project.value.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
-            return true;
-          }
-        }
-      }
-      return false;
     });
 
     const allowEdit = computed(() => {
@@ -210,7 +184,6 @@ export default {
     return {
       state,
       project,
-      allowAddMember,
       allowEdit,
       allowSave,
       editProject,
