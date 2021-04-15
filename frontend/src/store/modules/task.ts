@@ -9,10 +9,17 @@ import {
   ResourceObject,
   Principal,
   unknown,
+  Project,
+  ResourceIdentifier,
+  ProjectId,
 } from "../../types";
 import principal from "./principal";
 
-function convert(task: ResourceObject, rootGetters: any): Task {
+function convert(
+  task: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Task {
   const creator = rootGetters["principal/principalById"](
     task.attributes.creatorId
   );
@@ -28,14 +35,25 @@ function convert(task: ResourceObject, rootGetters: any): Task {
     }
   );
 
+  const projectId = (task.relationships!.project.data as ResourceIdentifier).id;
+  let project: Project = unknown("PROJECT") as Project;
+  project.id = projectId;
+
+  for (const item of includedList || []) {
+    if (item.type == "project" && item.id == projectId) {
+      project = rootGetters["project/convert"](item);
+    }
+  }
+
   return {
     id: task.id,
+    project,
     creator,
     assignee,
     subscriberList,
     ...(task.attributes as Omit<
       Task,
-      "id" | "creator" | "assignee" | "subscriberList"
+      "id" | "project" | "creator" | "assignee" | "subscriberList"
     >),
   };
 }
@@ -57,20 +75,30 @@ const getters = {
 
 const actions = {
   async fetchTaskListForUser({ commit, rootGetters }: any, userId: UserId) {
-    const taskList = (
-      await axios.get(`/api/task?userid=${userId}`)
-    ).data.data.map((task: ResourceObject) => {
-      return convert(task, rootGetters);
+    const data = (await axios.get(`/api/task?userid=${userId}&include=project`))
+      .data;
+    const taskList = data.data.map((task: ResourceObject) => {
+      return convert(task, data.included, rootGetters);
     });
     commit("setTaskListForUser", { userId, taskList });
     return taskList;
   },
 
+  async fetchTaskListForProject({ rootGetters }: any, projectId: ProjectId) {
+    const data = (
+      await axios.get(`/api/task?project=${projectId}&include=project`)
+    ).data;
+    const taskList = data.data.map((task: ResourceObject) => {
+      return convert(task, data.included, rootGetters);
+    });
+
+    // The caller consumes directly, so we don't store it.
+    return taskList;
+  },
+
   async fetchTaskById({ commit, rootGetters }: any, taskId: TaskId) {
-    const task = convert(
-      (await axios.get(`/api/task/${taskId}`)).data.data,
-      rootGetters
-    );
+    const data = (await axios.get(`/api/task/${taskId}?include=project`)).data;
+    const task = convert(data.data, data.included, rootGetters);
     commit("setTaskById", {
       taskId,
       task,
@@ -79,17 +107,15 @@ const actions = {
   },
 
   async createTask({ commit, rootGetters }: any, newTask: TaskNew) {
-    const createdTask = convert(
-      (
-        await axios.post(`/api/task`, {
-          data: {
-            type: "task",
-            attributes: newTask,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.post(`/api/task?include=project`, {
+        data: {
+          type: "task",
+          attributes: newTask,
+        },
+      })
+    ).data;
+    const createdTask = convert(data.data, data.included, rootGetters);
 
     commit("setTaskById", {
       taskId: createdTask.id,
@@ -109,17 +135,15 @@ const actions = {
       taskPatch: TaskPatch;
     }
   ) {
-    const updatedTask = convert(
-      (
-        await axios.patch(`/api/task/${taskId}`, {
-          data: {
-            type: "taskpatch",
-            attributes: taskPatch,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.patch(`/api/task/${taskId}?include=project`, {
+        data: {
+          type: "taskpatch",
+          attributes: taskPatch,
+        },
+      })
+    ).data;
+    const updatedTask = convert(data.data, data.included, rootGetters);
 
     commit("setTaskById", {
       taskId: taskId,

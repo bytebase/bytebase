@@ -22,6 +22,7 @@ const template: TaskTemplate = {
     }
     payload[TaskBuiltinFieldId.DATABASE] = "";
     return {
+      projectId: UNKNOWN_ID,
       name: "Request new db",
       type: "bytebase.database.create",
       description: "",

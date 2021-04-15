@@ -11,6 +11,7 @@ const template: TaskTemplate = {
   type: "bytebase.general",
   buildTask: (ctx: TemplateContext): TaskNew => {
     return {
+      projectId: UNKNOWN_ID,
       name: "",
       type: "bytebase.general",
       description: "",

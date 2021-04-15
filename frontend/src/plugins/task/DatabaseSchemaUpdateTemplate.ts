@@ -20,6 +20,7 @@ const template: TaskTemplate = {
         ctx.environmentList[ctx.environmentList.length - 1].id;
     }
     return {
+      projectId: UNKNOWN_ID,
       name: "Change db",
       type: "bytebase.database.schema.update",
       description: "",

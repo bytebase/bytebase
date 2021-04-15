@@ -65,6 +65,7 @@ export default {
     workspace: belongsTo(),
     database: hasMany(),
     projectMember: hasMany(),
+    task: hasMany(),
   }),
 
   projectNew: Model,
@@ -73,6 +74,7 @@ export default {
 
   task: Model.extend({
     workspace: belongsTo(),
+    project: belongsTo(),
   }),
 
   taskPatch: Model,

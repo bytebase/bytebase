@@ -7,20 +7,22 @@ import { UNKNOWN_ID } from "../../types";
 export default function configureTask(route) {
   route.get("/task", function (schema, request) {
     const {
-      queryParams: { userid: userId },
+      queryParams: { userid: userId, project: projectId },
     } = request;
 
-    if (userId) {
+    if (userId || projectId) {
       return schema.tasks.where((task) => {
         return (
           task.workspaceId == WORKSPACE_ID &&
-          (task.creatorId == userId ||
+          (!userId ||
+            task.creatorId == userId ||
             task.assigneeId == userId ||
-            task.subscriberIdList.includes(userId))
+            task.subscriberIdList.includes(userId)) &&
+          (!projectId || task.projectId == projectId)
         );
       });
     }
-    return schema.tasks.none();
+    return schema.tasks.all();
   });
 
   route.get("/task/:id", function (schema, request) {

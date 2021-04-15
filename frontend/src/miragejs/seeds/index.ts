@@ -177,6 +177,7 @@ const workspacesSeeder = (server: any) => {
       6: environmentList1[0].id,
       8: databaseList1[0].id,
     },
+    project: projectList1[0],
     workspace: workspace1,
   });
 
@@ -355,6 +356,7 @@ const workspacesSeeder = (server: any) => {
       6: environmentList1[1].id,
       8: databaseList1[1].name,
     },
+    project: projectList1[1],
     workspace: workspace1,
   });
 
@@ -438,6 +440,7 @@ const workspacesSeeder = (server: any) => {
       sql: data.sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1, databaseList1),
+      project: projectList1[i],
       workspace: workspace1,
     });
 
@@ -470,6 +473,7 @@ const workspacesSeeder = (server: any) => {
       sql: data.sql,
       subscriberIdList: [ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1, databaseList1),
+      project: projectList1[i],
       workspace: workspace1,
     });
 
@@ -505,6 +509,7 @@ const workspacesSeeder = (server: any) => {
       sql: data.sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       ...fillTaskAndStageStatus(environmentList1, databaseList1),
+      project: projectList1[i],
       workspace: workspace1,
     });
 
@@ -535,6 +540,7 @@ const workspacesSeeder = (server: any) => {
     assigneeId: ws2DBA.id,
     sql: data.sql,
     ...fillTaskAndStageStatus(environmentList2, databaseList1),
+    project: projectList2[0],
     workspace: workspace2,
   });
 

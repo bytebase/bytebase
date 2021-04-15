@@ -140,6 +140,7 @@ export const unknown = (
     id: UNKNOWN_ID,
     createdTs: 0,
     lastUpdatedTs: 0,
+    project: UNKNOWN_PROJECT,
     name: "<<Unknown task>>",
     status: "OPEN",
     type: "bytebase.general",
@@ -438,6 +439,7 @@ export type Task = {
   id: TaskId;
   createdTs: number;
   lastUpdatedTs: number;
+  project: Project;
   name: string;
   status: TaskStatus;
   type: TaskType;
@@ -452,6 +454,7 @@ export type Task = {
 };
 
 export type TaskNew = {
+  projectId: ProjectId;
   name: string;
   type: TaskType;
   description: string;
@@ -466,6 +469,7 @@ export type TaskNew = {
 
 export type TaskPatch = {
   updaterId: PrincipalId;
+  projectId?: ProjectId;
   name?: string;
   status?: TaskStatus;
   description?: string;
