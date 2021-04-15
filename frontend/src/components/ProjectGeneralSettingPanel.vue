@@ -87,6 +87,10 @@ export default {
     // This means even the workspace owner won't be able to edit it.
     // There seems to be no good reason that workspace owner needs to mess up with the project name or key.
     const allowEdit = computed(() => {
+      if (props.project.rowStatus == "ARCHIVED") {
+        return false;
+      }
+
       for (const member of props.project.memberList) {
         if (member.principal.id == currentUser.value.id) {
           if (isProjectOwner(member.role)) {

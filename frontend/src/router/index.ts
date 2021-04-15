@@ -598,7 +598,6 @@ router.beforeEach((to, from, next) => {
   }
 
   if (
-    to.name === "workspace.archive" ||
     to.name === "workspace.environment" ||
     to.name?.toString().startsWith("workspace.instance")
   ) {
@@ -634,6 +633,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
+    to.name === "workspace.archive" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();

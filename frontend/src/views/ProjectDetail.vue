@@ -16,14 +16,38 @@
       }
     "
   />
-  <div
-    class="max-w-4xl mx-auto py-6 px-4 divide-y divide-block-border space-y-6 sm:px-6 lg:px-8"
-  >
+  <div class="max-w-4xl mx-auto py-6 px-4 space-y-4 sm:px-6 lg:px-8">
     <template v-if="state.selectedIndex == OVERVIEW_TAB"> </template>
     <template v-else-if="state.selectedIndex == REPO_TAB"> </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
-      <ProjectGeneralSettingPanel :project="project" />
-      <ProjectMemberPanel class="pt-4" :project="project" />
+      <div class="divide-y divide-block-border space-y-6">
+        <ProjectGeneralSettingPanel :project="project" />
+        <ProjectMemberPanel class="pt-4" :project="project" />
+      </div>
+      <template v-if="allowArchiveOrRestore">
+        <template v-if="project.rowStatus == 'NORMAL'">
+          <BBButtonConfirm
+            :style="'ARCHIVE'"
+            :buttonText="'Archive this project'"
+            :okText="'Archive'"
+            :confirmTitle="`Archive project '${project.name}'?`"
+            :confirmDescription="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            :requireConfirm="true"
+            @confirm="archiveOrRestoreProject(true)"
+          />
+        </template>
+        <template v-else-if="project.rowStatus == 'ARCHIVED'">
+          <BBButtonConfirm
+            :style="'RESTORE'"
+            :buttonText="'Restore this project'"
+            :okText="'Restore'"
+            :confirmTitle="`Restore project '${project.name}' to normal state?`"
+            :confirmDescription="''"
+            :requireConfirm="true"
+            @confirm="archiveOrRestoreProject(false)"
+          />
+        </template>
+      </template>
     </template>
   </div>
 </template>
@@ -31,7 +55,7 @@
 <script lang="ts">
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
@@ -73,12 +97,41 @@ export default {
       );
     });
 
+    // Only the project owner can archive/restore the project info.
+    // This means even the workspace owner won't be able to edit it.
+    // There seems to be no good reason that workspace owner needs to archive/restore the project.
+    const allowArchiveOrRestore = computed(() => {
+      for (const member of project.value.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          if (isProjectOwner(member.role)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    const archiveOrRestoreProject = (archive: boolean) => {
+      store
+        .dispatch("project/patchProject", {
+          projectId: project.value.id,
+          projectPatch: {
+            rowStatus: archive ? "ARCHIVED" : "NORMAL",
+          },
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+
     return {
       OVERVIEW_TAB,
       REPO_TAB,
       SETTING_TAB,
       state,
       project,
+      allowArchiveOrRestore,
+      archiveOrRestoreProject,
     };
   },
 };

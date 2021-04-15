@@ -212,6 +212,10 @@ export default {
     });
 
     const allowChangeRole = (role: ProjectRoleType) => {
+      if (props.project.rowStatus == "ARCHIVED") {
+        return false;
+      }
+
       if (role == "OWNER" && dataSource.value[0].list.length <= 1) {
         return false;
       }

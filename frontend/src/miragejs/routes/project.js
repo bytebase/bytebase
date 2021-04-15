@@ -4,11 +4,19 @@ import { WORKSPACE_ID } from "./index";
 export default function configureProject(route) {
   route.get("/project", function (schema, request) {
     const {
-      queryParams: { userid: userId },
+      queryParams: { userid: userId, rowstatus: rowStatus },
     } = request;
 
     return schema.projects.where((project) => {
       if (project.workspaceId != WORKSPACE_ID) {
+        return false;
+      }
+
+      if (!rowStatus) {
+        if (project.rowStatus != "NORMAL") {
+          return false;
+        }
+      } else if (project.rowStatus.toLowerCase() != rowStatus.toLowerCase()) {
         return false;
       }
 

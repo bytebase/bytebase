@@ -14,6 +14,7 @@ import {
   MemberId,
   PrincipalId,
   ResourceIdentifier,
+  RowStatus,
 } from "../../types";
 
 function convert(
@@ -112,19 +113,27 @@ const getters = {
     return convert(instance, includedList, rootGetters);
   },
 
-  projectList: (state: ProjectState) => (): Project[] => {
+  projectList: (state: ProjectState) => (rowStatus?: RowStatus): Project[] => {
     const result: Project[] = [];
     for (const [_, project] of state.projectById) {
-      result.push(project);
+      if (!rowStatus || rowStatus == project.rowStatus) {
+        result.push(project);
+      }
     }
     return result;
   },
 
-  projectListByUser: (state: ProjectState) => (userId: UserId): Project[] => {
+  projectListByUser: (state: ProjectState) => (
+    userId: UserId,
+    rowStatus?: RowStatus
+  ): Project[] => {
     const result: Project[] = [];
     for (const [_, project] of state.projectById) {
       for (const member of project.memberList) {
-        if (member.principal.id == userId) {
+        if (
+          member.principal.id == userId &&
+          (!rowStatus || rowStatus == project.rowStatus)
+        ) {
           result.push(project);
           break;
         }
@@ -140,7 +149,7 @@ const getters = {
 };
 
 const actions = {
-  async fetchProjectList({ commit, rootGetters }: any, userId: UserId) {
+  async fetchProjectList({ commit, rootGetters }: any) {
     const data = (await axios.get(`/api/project?include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
@@ -150,10 +159,20 @@ const actions = {
     return projectList;
   },
 
-  async fetchProjectListByUser({ commit, rootGetters }: any, userId: UserId) {
-    const data = (
-      await axios.get(`/api/project?userid=${userId}&include=projectMember`)
-    ).data;
+  async fetchProjectListByUser(
+    { commit, rootGetters }: any,
+    {
+      userId,
+      rowStatus,
+    }: {
+      userId: UserId;
+      rowStatus?: RowStatus;
+    }
+  ) {
+    const path =
+      `/api/project?userid=${userId}` +
+      (rowStatus ? "&rowstatus=" + rowStatus.toLowerCase() : "");
+    const data = (await axios.get(`${path}&include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
     });

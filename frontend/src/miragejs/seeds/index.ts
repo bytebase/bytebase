@@ -55,10 +55,11 @@ const workspacesSeeder = (server: any) => {
 
   // Project
   const projectList1 = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     projectList1.push(
       server.create("project", {
         workspace: workspace1,
+        rowStatus: i < 4 ? "NORMAL" : "ARCHIVED",
         creatorId: ws1Dev1.id,
         updaterId: ws1Dev1.id,
       })

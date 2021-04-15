@@ -130,6 +130,11 @@ export default {
     );
 
     const allowAddMember = computed(() => {
+      if (props.project.rowStatus == "ARCHIVED") {
+        return false;
+      }
+
+      // Allow workspace owner here in case project owners are not available.
       if (isOwner(currentUser.value.role)) {
         return true;
       }

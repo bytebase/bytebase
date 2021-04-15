@@ -83,7 +83,9 @@ export default {
         });
       } else {
         store
-          .dispatch("project/fetchProjectListByUser", currentUser.value.id)
+          .dispatch("project/fetchProjectListByUser", {
+            userId: currentUser.value.id,
+          })
           .catch((error) => {
             console.log(error);
           });

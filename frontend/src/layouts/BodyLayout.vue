@@ -40,7 +40,6 @@
             <router-view name="leftSidebar" />
           </div>
           <router-link
-            v-if="isCurrentUserDBAOrOwner"
             to="/archive"
             class="outline-item group flex items-center px-4 py-2"
           >
@@ -100,7 +99,6 @@
           <router-view name="leftSidebar" />
         </div>
         <router-link
-          v-if="isCurrentUserDBAOrOwner"
           to="/archive"
           class="outline-item group flex items-center px-4 py-2"
         >
@@ -282,10 +280,6 @@ export default {
       return list;
     });
 
-    const isCurrentUserDBAOrOwner = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
     const showBreadcrumb = computed(() => {
       const name = router.currentRoute.value.name;
       return !(name === "workspace.home" || name === "workspace.profile");
@@ -298,7 +292,6 @@ export default {
     return {
       state,
       quickActionList,
-      isCurrentUserDBAOrOwner,
       showBreadcrumb,
       showIntro,
     };

@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
       <BBTableTabFilter
-        :tabList="['Instance', 'Environment']"
+        :tabList="tabList"
         :selectedIndex="state.selectedIndex"
         @select-index="
           (index) => {
@@ -14,33 +14,42 @@
         class="w-56"
         ref="searchField"
         :placeholder="
-          state.selectedIndex == 0
+          state.selectedIndex == PROJECT_TAB
+            ? 'Search project name'
+            : state.selectedIndex == INSTANCE_TAB
             ? 'Search instance name'
             : 'Search environment name'
         "
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
+    <ProjectTable
+      v-if="state.selectedIndex == PROJECT_TAB"
+      :projectList="filteredProjectList(projectList)"
+    />
     <InstanceTable
-      v-if="state.selectedIndex == 0"
+      v-else-if="state.selectedIndex == INSTANCE_TAB"
       :instanceList="filteredInstanceList(instanceList)"
     />
     <EnvironmentTable
-      v-else
+      v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
       :environmentList="filteredEnvironmentList(environmentList)"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, ComputedRef, reactive, watchEffect } from "vue";
+import { useStore } from "vuex";
 import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { useStore } from "vuex";
-import { Environment, Instance } from "../types";
+import ProjectTable from "../components/ProjectTable.vue";
+import { Environment, Instance, Principal, Project } from "../types";
+import { isDBAOrOwner } from "../utils";
 
-const INSTANCE_TAB = 0;
-const ENVIRONMENT_TAB = 1;
+const PROJECT_TAB = 0;
+const INSTANCE_TAB = 1;
+const ENVIRONMENT_TAB = 2;
 
 interface LocalState {
   selectedIndex: number;
@@ -49,28 +58,50 @@ interface LocalState {
 
 export default {
   name: "Archive",
-  components: { EnvironmentTable, InstanceTable },
+  components: { EnvironmentTable, InstanceTable, ProjectTable },
   setup(props, ctx) {
     const state = reactive<LocalState>({
-      selectedIndex: INSTANCE_TAB,
+      selectedIndex: PROJECT_TAB,
       searchText: "",
     });
 
+    const currentUser: ComputedRef<Principal> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
+
     const store = useStore();
 
-    const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList").catch((error) => {
-        console.error(error);
-      });
-
+    const prepareList = () => {
       store
-        .dispatch("environment/fetchEnvironmentList", "ARCHIVED")
+        .dispatch("project/fetchProjectListByUser", {
+          userId: currentUser.value.id,
+          rowStatus: "ARCHIVED",
+        })
         .catch((error) => {
           console.error(error);
         });
+
+      if (isDBAOrOwner(currentUser.value.role)) {
+        store.dispatch("instance/fetchInstanceList").catch((error) => {
+          console.error(error);
+        });
+
+        store
+          .dispatch("environment/fetchEnvironmentList", "ARCHIVED")
+          .catch((error) => {
+            console.error(error);
+          });
+      }
     };
 
-    watchEffect(prepareInstanceList);
+    watchEffect(prepareList);
+
+    const projectList = computed((): Project[] => {
+      return store.getters["project/projectListByUser"](
+        currentUser.value.id,
+        "ARCHIVED"
+      );
+    });
 
     const instanceList = computed((): Instance[] => {
       return store.getters["instance/instanceList"]("ARCHIVED");
@@ -79,6 +110,23 @@ export default {
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]("ARCHIVED");
     });
+
+    const tabList = computed((): string[] => {
+      return isDBAOrOwner(currentUser.value.role)
+        ? ["Project", "Instance", "Environment"]
+        : ["Project"];
+    });
+
+    const filteredProjectList = (list: Project[]) => {
+      if (!state.searchText) {
+        return list;
+      }
+      return list.filter((project) => {
+        return project.name
+          .toLowerCase()
+          .includes(state.searchText.toLowerCase());
+      });
+    };
 
     const filteredInstanceList = (list: Instance[]) => {
       if (!state.searchText) {
@@ -107,9 +155,15 @@ export default {
     };
 
     return {
+      PROJECT_TAB,
+      INSTANCE_TAB,
+      ENVIRONMENT_TAB,
       state,
+      projectList,
       instanceList,
       environmentList,
+      tabList,
+      filteredProjectList,
       filteredInstanceList,
       filteredEnvironmentList,
       changeSearchText,

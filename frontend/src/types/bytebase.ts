@@ -336,6 +336,7 @@ export type PrincipalNew = {
 };
 
 export type PrincipalPatch = {
+  rowStatus?: RowStatus;
   name?: string;
 };
 
