@@ -17,7 +17,7 @@
         :value="environment.id"
         :selected="environment.id == state.selectedId"
       >
-        {{ environment.name }}
+        {{ environmentName(environment) }}
       </option>
       <option
         v-else-if="environment.id == state.selectedId"
@@ -65,7 +65,7 @@ export default {
 
     const environmentList = computed(() => {
       return cloneDeep(
-        store.getters["environment/environmentList"]()
+        store.getters["environment/environmentList"](["NORMAL", "ARCHIVED"])
       ).reverse();
     });
 

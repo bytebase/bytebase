@@ -31,7 +31,7 @@
         :value="project.id"
         :selected="project.id == state.selectedId"
       >
-        {{ project.name }}
+        {{ projectName(project) }}
       </option>
       <option
         v-else-if="project.id == state.selectedId"
@@ -81,6 +81,7 @@ export default {
       store
         .dispatch("project/fetchProjectListByUser", {
           userId: currentUser.value.id,
+          rowStatusList: ["NORMAL", "ARCHIVED"],
         })
         .catch((error) => {
           console.log(error);
@@ -90,7 +91,10 @@ export default {
     watchEffect(prepareProjectList);
 
     const projectList = computed((): Project[] => {
-      return store.getters["project/projectListByUser"](currentUser.value.id);
+      return store.getters["project/projectListByUser"](currentUser.value.id, [
+        "NORMAL",
+        "ARCHIVED",
+      ]);
     });
 
     const selectedIdNotInList = computed((): boolean => {

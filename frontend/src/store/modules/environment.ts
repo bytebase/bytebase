@@ -24,14 +24,11 @@ const state: () => EnvironmentState = () => ({
 
 const getters = {
   environmentList: (state: EnvironmentState) => (
-    rowStatus?: RowStatus
+    rowStatusList?: RowStatus[]
   ): Environment[] => {
-    if (rowStatus) {
-      return state.environmentList.filter((environment: Environment) => {
-        return environment.rowStatus == rowStatus;
-      });
-    }
-    return state.environmentList;
+    return state.environmentList.filter((environment: Environment) => {
+      return !rowStatusList || rowStatusList.includes(environment.rowStatus);
+    });
   },
 
   environmentById: (state: EnvironmentState) => (
@@ -47,10 +44,10 @@ const getters = {
 };
 
 const actions = {
-  async fetchEnvironmentList({ commit }: any, rowStatus?: RowStatus) {
+  async fetchEnvironmentList({ commit }: any, rowStatusList?: RowStatus[]) {
     const path =
       "/api/environment" +
-      (rowStatus ? "?rowstatus=" + rowStatus.toLowerCase() : "");
+      (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
     const environmentList = (await axios.get(path)).data.data.map(
       (env: ResourceObject) => {
         return convert(env);

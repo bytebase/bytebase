@@ -14,14 +14,15 @@ import {
 } from "../../types";
 
 function convert(instance: ResourceObject, rootGetters: any): Instance {
-  const environment = rootGetters["environment/environmentList"]().find(
-    (env: Environment) => {
-      return (
-        env.id ==
-        (instance.relationships!.environment.data as ResourceIdentifier).id
-      );
-    }
-  );
+  const environment = rootGetters["environment/environmentList"]([
+    "NORMAL",
+    "ARCHIVED",
+  ]).find((env: Environment) => {
+    return (
+      env.id ==
+      (instance.relationships!.environment.data as ResourceIdentifier).id
+    );
+  });
   const creator = rootGetters["principal/principalById"](
     instance.attributes.creatorId
   );
@@ -56,11 +57,11 @@ const getters = {
   },
 
   instanceList: (state: InstanceState) => (
-    rowStatus?: RowStatus
+    rowStatusList?: RowStatus[]
   ): Instance[] => {
     const list = [];
     for (const [_, instance] of state.instanceById) {
-      if (!rowStatus || rowStatus == instance.rowStatus) {
+      if (!rowStatusList || rowStatusList.includes(instance.rowStatus)) {
         list.push(instance);
       }
     }
@@ -71,9 +72,9 @@ const getters = {
 
   instanceListByEnvironmentId: (state: InstanceState, getters: any) => (
     environmentId: EnvironmentId,
-    rowStatus?: RowStatus
+    rowStatusList?: RowStatus[]
   ): Instance[] => {
-    const list = getters["instanceList"](rowStatus);
+    const list = getters["instanceList"](rowStatusList);
     return list.filter((item: Instance) => {
       return item.environment.id == environmentId;
     });
@@ -89,10 +90,13 @@ const getters = {
 };
 
 const actions = {
-  async fetchInstanceList({ commit, rootGetters }: any, rowStatus?: RowStatus) {
+  async fetchInstanceList(
+    { commit, rootGetters }: any,
+    rowStatusList?: RowStatus[]
+  ) {
     const path =
       "/api/instance" +
-      (rowStatus ? "?rowstatus=" + rowStatus.toLowerCase() : "");
+      (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
     const instanceList = (await axios.get(path)).data.data.map(
       (instance: ResourceObject) => {
         return convert(instance, rootGetters);

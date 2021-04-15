@@ -75,7 +75,7 @@ export default {
       store
         .dispatch("project/fetchProjectListByUser", {
           userId: currentUser.value.id,
-          rowStatus: "ARCHIVED",
+          rowStatusList: ["ARCHIVED"],
         })
         .catch((error) => {
           console.error(error);
@@ -83,13 +83,13 @@ export default {
 
       if (isDBAOrOwner(currentUser.value.role)) {
         store
-          .dispatch("instance/fetchInstanceList", "ARCHIVED")
+          .dispatch("instance/fetchInstanceList", ["ARCHIVED"])
           .catch((error) => {
             console.error(error);
           });
 
         store
-          .dispatch("environment/fetchEnvironmentList", "ARCHIVED")
+          .dispatch("environment/fetchEnvironmentList", ["ARCHIVED"])
           .catch((error) => {
             console.error(error);
           });
@@ -99,18 +99,17 @@ export default {
     watchEffect(prepareList);
 
     const projectList = computed((): Project[] => {
-      return store.getters["project/projectListByUser"](
-        currentUser.value.id,
-        "ARCHIVED"
-      );
+      return store.getters["project/projectListByUser"](currentUser.value.id, [
+        "ARCHIVED",
+      ]);
     });
 
     const instanceList = computed((): Instance[] => {
-      return store.getters["instance/instanceList"]("ARCHIVED");
+      return store.getters["instance/instanceList"](["ARCHIVED"]);
     });
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]("ARCHIVED");
+      return store.getters["environment/environmentList"](["ARCHIVED"]);
     });
 
     const tabList = computed((): string[] => {

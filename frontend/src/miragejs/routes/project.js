@@ -16,8 +16,15 @@ export default function configureProject(route) {
         if (project.rowStatus != "NORMAL") {
           return false;
         }
-      } else if (project.rowStatus.toLowerCase() != rowStatus.toLowerCase()) {
-        return false;
+      } else {
+        const rowStatusList = rowStatus.split(",");
+        if (
+          !rowStatusList.find((item) => {
+            return item.toLowerCase() == project.rowStatus.toLowerCase();
+          })
+        ) {
+          return false;
+        }
       }
 
       if (userId) {

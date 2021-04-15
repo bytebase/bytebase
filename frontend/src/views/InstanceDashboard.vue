@@ -111,7 +111,7 @@ export default {
     };
 
     const instanceList = computed(() => {
-      return store.getters["instance/instanceList"]("NORMAL");
+      return store.getters["instance/instanceList"]();
     });
 
     const filteredList = (list: Instance[]) => {

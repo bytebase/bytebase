@@ -17,10 +17,15 @@ export default function configureEnvironment(route) {
         if (environment.rowStatus != "NORMAL") {
           return false;
         }
-      } else if (
-        environment.rowStatus.toLowerCase() != rowStatus.toLowerCase()
-      ) {
-        return false;
+      } else {
+        const rowStatusList = rowStatus.split(",");
+        if (
+          !rowStatusList.find((item) => {
+            return item.toLowerCase() == environment.rowStatus.toLowerCase();
+          })
+        ) {
+          return false;
+        }
       }
 
       return true;

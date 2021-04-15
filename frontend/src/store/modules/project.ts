@@ -125,17 +125,16 @@ const getters = {
 
   projectListByUser: (state: ProjectState) => (
     userId: UserId,
-    rowStatus?: RowStatus
+    rowStatusList?: RowStatus[]
   ): Project[] => {
     const result: Project[] = [];
     for (const [_, project] of state.projectById) {
-      for (const member of project.memberList) {
-        if (
-          member.principal.id == userId &&
-          (!rowStatus || rowStatus == project.rowStatus)
-        ) {
-          result.push(project);
-          break;
+      if (!rowStatusList || rowStatusList.includes(project.rowStatus)) {
+        for (const member of project.memberList) {
+          if (member.principal.id == userId) {
+            result.push(project);
+            break;
+          }
         }
       }
     }
@@ -163,15 +162,15 @@ const actions = {
     { commit, rootGetters }: any,
     {
       userId,
-      rowStatus,
+      rowStatusList,
     }: {
       userId: UserId;
-      rowStatus?: RowStatus;
+      rowStatusList?: RowStatus[];
     }
   ) {
     const path =
       `/api/project?userid=${userId}` +
-      (rowStatus ? "&rowstatus=" + rowStatus.toLowerCase() : "");
+      (rowStatusList ? "&rowstatus=" + rowStatusList.join(",") : "");
     const data = (await axios.get(`${path}&include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
@@ -316,10 +315,8 @@ const mutations = {
   },
 
   upsertProjectList(state: ProjectState, projectList: Project[]) {
-    const idList = [];
     for (const project of projectList) {
       state.projectById.set(project.id, project);
-      idList.push(project.id);
     }
   },
 };

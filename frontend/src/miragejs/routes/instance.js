@@ -17,8 +17,15 @@ export default function configurInstance(route) {
         if (instance.rowStatus != "NORMAL") {
           return false;
         }
-      } else if (instance.rowStatus.toLowerCase() != rowStatus.toLowerCase()) {
-        return false;
+      } else {
+        const rowStatusList = rowStatus.split(",");
+        if (
+          !rowStatusList.find((item) => {
+            return item.toLowerCase() == instance.rowStatus.toLowerCase();
+          })
+        ) {
+          return false;
+        }
       }
 
       return true;

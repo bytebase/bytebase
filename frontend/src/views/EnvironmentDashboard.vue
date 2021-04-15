@@ -160,7 +160,7 @@ export default {
     );
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]("NORMAL");
+      return store.getters["environment/environmentList"]();
     });
 
     const tabItemList = computed((): BBTabItem[] => {

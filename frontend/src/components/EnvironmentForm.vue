@@ -123,7 +123,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]("NORMAL");
+      return store.getters["environment/environmentList"]();
     });
 
     const allowArchive = computed(() => {

@@ -26,7 +26,7 @@ export default {
 
     const environmentList = computed(() => {
       return cloneDeep(
-        store.getters["environment/environmentList"]("NORMAL")
+        store.getters["environment/environmentList"]()
       ).reverse();
     });
 

@@ -11,14 +11,23 @@
     <option disabled :selected="undefined === state.selectedId">
       Select instance
     </option>
-    <option
-      v-for="(instance, index) in instanceList"
-      :key="index"
-      :value="instance.id"
-      :selected="instance.id == state.selectedId"
-    >
-      {{ instance.name }}
-    </option>
+    <template v-for="(instance, index) in instanceList" :key="index">
+      <option
+        v-if="instance.rowStatus == 'NORMAL'"
+        :key="index"
+        :value="instance.id"
+        :selected="instance.id == state.selectedId"
+      >
+        {{ instanceName(instance) }}
+      </option>
+      <option
+        v-else-if="instance.id == state.selectedId"
+        :value="instance.id"
+        :selected="true"
+      >
+        {{ instanceName(instance) }}
+      </option>
+    </template>
   </select>
 </template>
 
@@ -55,12 +64,11 @@ export default {
 
     const instanceList = computed(() => {
       if (props.environmentId) {
-        return store.getters["instance/instanceListByEnvironmentId"](
-          props.environmentId,
-          "NORMAL"
-        );
+        return store.getters[
+          "instance/instanceListByEnvironmentId"
+        ](props.environmentId, ["NORMAL", "ARCHIVED"]);
       }
-      return store.getters["instance/instanceList"]("NORMAL");
+      return store.getters["instance/instanceList"](["NORMAL", "ARCHIVED"]);
     });
 
     watch(
