@@ -236,16 +236,14 @@ const actions = {
   },
 
   async fetchDatabaseListByEnvironmentId(
-    { commit, rootGetters }: any,
+    { state, commit, rootGetters }: any,
     environmentId: EnvironmentId
   ) {
     // Don't fetch the data source info as the current user may not have access to the
     // database of this particular environment.
-    // We need to fetch the instance info because we need it to populate the instance
-    // environment field and that's how the client code gets environment from the database object
     const data = (
       await axios.get(
-        `/api/database?environment=${environmentId}&include=instance`
+        `/api/database?environment=${environmentId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
