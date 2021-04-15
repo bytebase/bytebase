@@ -111,21 +111,17 @@ const workspacesSeeder = (server: any) => {
   const instanceList1 = createInstanceList(
     server,
     workspace1.id,
-    ws1UserList,
     environmentList1,
     projectList1,
-    ws1DBA,
-    "1"
+    ws1DBA
   );
 
   const instanceList2 = createInstanceList(
     server,
     workspace2.id,
-    ws2UserList,
     environmentList2,
     projectList2,
-    ws2DBA,
-    "2"
+    ws2DBA
   );
 
   // Database
@@ -578,11 +574,9 @@ const workspacesSeeder = (server: any) => {
 const createInstanceList = (
   server: any,
   workspaceId: string,
-  userList: { id: string }[],
   enviromentList: { id: string }[],
   projectList: { id: string }[],
-  dba: { id: string },
-  dbaProjectId: string
+  dba: { id: string }
 ): Instance[] => {
   const instanceNamelist = [
     "On-premise MySQL instance",
