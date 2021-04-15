@@ -608,11 +608,10 @@ const createInstanceList = (
     });
     instanceList.push(instance);
 
-    for (let i = 0; i < 2; i++) {
-      const database = server.create("database", {
+    for (let j = 0; j < 2; j++) {
+      server.create("database", {
         workspaceId: instance.workspaceId,
-        projectId:
-          projectList[Math.floor(Math.random() * projectList.length)].id,
+        projectId: projectList[i % projectList.length].id,
         instance,
       });
     }
