@@ -17,7 +17,7 @@
             @add="tryAddDatabase"
           />
         </div>
-        <DatabaseTable :singleInstance="true" :databaseList="databaseList" />
+        <DatabaseTable :mode="'INSTANCE'" :databaseList="databaseList" />
       </div>
       <template v-if="instance.rowStatus == 'NORMAL'">
         <BBButtonConfirm

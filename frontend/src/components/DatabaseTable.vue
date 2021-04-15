@@ -11,13 +11,13 @@
       <BBTableCell :leftPadding="4" class="w-16">
         {{ database.name }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell v-if="mode != 'PROJECT'" class="w-16">
         {{ projectName(database.project) }}
       </BBTableCell>
-      <BBTableCell v-if="!singleInstance" class="w-12">
+      <BBTableCell v-if="mode != 'INSTANCE'" class="w-12">
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
-      <BBTableCell v-if="!singleInstance" class="w-24">
+      <BBTableCell v-if="mode == 'ALL'" class="w-24">
         {{ instanceName(database.instance) }}
       </BBTableCell>
       <BBTableCell class="w-8" v-database-sync-status>
@@ -36,42 +36,69 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { databaseSlug } from "../utils";
 import { Database } from "../types";
+import { BBTableColumn } from "../bbkit/types";
 
-const COLUMN_LIST = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Project",
-  },
-  {
-    title: "Environment",
-  },
-  {
-    title: "Instance",
-  },
-  {
-    title: "Sync status",
-  },
-  {
-    title: "Last successful sync",
-  },
-];
+type Mode = "ALL" | "INSTANCE" | "PROJECT";
 
-const COLUMN_LIST_SINGLE_INSTANCE = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Project",
-  },
-  {
-    title: "Sync status",
-  },
-  {
-    title: "Last successful sync",
-  },
-];
+const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
+  [
+    "ALL",
+    [
+      {
+        title: "Name",
+      },
+      {
+        title: "Project",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Instance",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
+    ],
+  ],
+  [
+    "INSTANCE",
+    [
+      {
+        title: "Name",
+      },
+      {
+        title: "Project",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
+    ],
+  ],
+  [
+    "PROJECT",
+    [
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
+    ],
+  ],
+]);
 
 export default {
   name: "DatabaseTable",
@@ -80,6 +107,10 @@ export default {
     bordered: {
       default: true,
       type: Boolean,
+    },
+    mode: {
+      default: "ALL",
+      type: String as PropType<Mode>,
     },
     singleInstance: {
       default: true,
@@ -100,9 +131,7 @@ export default {
     };
 
     return {
-      columnList: props.singleInstance
-        ? COLUMN_LIST_SINGLE_INSTANCE
-        : COLUMN_LIST,
+      columnList: columnListMap.get(props.mode),
       clickDatabase,
     };
   },

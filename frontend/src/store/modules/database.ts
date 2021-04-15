@@ -147,6 +147,20 @@ const getters = {
     return list;
   },
 
+  databaseListByProjectId: (state: DatabaseState) => (
+    projectId: ProjectId
+  ): Database[] => {
+    const list: Database[] = [];
+    for (let [_, databaseList] of state.databaseListByInstanceId) {
+      databaseList.forEach((item: Database) => {
+        if (item.project.id == projectId) {
+          list.push(item);
+        }
+      });
+    }
+    return list;
+  },
+
   // If caller provides scoped search in any of accepted idParams, we search that first.
   // If none is found, we then do an exhaustive search.
   // We have to do this because we store the fetched database info differently based on

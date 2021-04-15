@@ -16,38 +16,42 @@
       }
     "
   />
-  <div class="max-w-4xl mx-auto py-6 px-4 space-y-4 sm:px-6 lg:px-8">
-    <template v-if="state.selectedIndex == OVERVIEW_TAB"> </template>
+  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <template v-if="state.selectedIndex == OVERVIEW_TAB">
+      <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList"
+    /></template>
     <template v-else-if="state.selectedIndex == REPO_TAB"> </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
-      <div class="divide-y divide-block-border space-y-6">
-        <ProjectGeneralSettingPanel :project="project" />
-        <ProjectMemberPanel class="pt-4" :project="project" />
+      <div class="max-w-3xl mx-auto space-y-4">
+        <div class="divide-y divide-block-border space-y-6">
+          <ProjectGeneralSettingPanel :project="project" />
+          <ProjectMemberPanel class="pt-4" :project="project" />
+        </div>
+        <template v-if="allowArchiveOrRestore">
+          <template v-if="project.rowStatus == 'NORMAL'">
+            <BBButtonConfirm
+              :style="'ARCHIVE'"
+              :buttonText="'Archive this project'"
+              :okText="'Archive'"
+              :confirmTitle="`Archive project '${project.name}'?`"
+              :confirmDescription="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
+              :requireConfirm="true"
+              @confirm="archiveOrRestoreProject(true)"
+            />
+          </template>
+          <template v-else-if="project.rowStatus == 'ARCHIVED'">
+            <BBButtonConfirm
+              :style="'RESTORE'"
+              :buttonText="'Restore this project'"
+              :okText="'Restore'"
+              :confirmTitle="`Restore project '${project.name}' to normal state?`"
+              :confirmDescription="''"
+              :requireConfirm="true"
+              @confirm="archiveOrRestoreProject(false)"
+            />
+          </template>
+        </template>
       </div>
-      <template v-if="allowArchiveOrRestore">
-        <template v-if="project.rowStatus == 'NORMAL'">
-          <BBButtonConfirm
-            :style="'ARCHIVE'"
-            :buttonText="'Archive this project'"
-            :okText="'Archive'"
-            :confirmTitle="`Archive project '${project.name}'?`"
-            :confirmDescription="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
-            :requireConfirm="true"
-            @confirm="archiveOrRestoreProject(true)"
-          />
-        </template>
-        <template v-else-if="project.rowStatus == 'ARCHIVED'">
-          <BBButtonConfirm
-            :style="'RESTORE'"
-            :buttonText="'Restore this project'"
-            :okText="'Restore'"
-            :confirmTitle="`Restore project '${project.name}' to normal state?`"
-            :confirmDescription="''"
-            :requireConfirm="true"
-            @confirm="archiveOrRestoreProject(false)"
-          />
-        </template>
-      </template>
     </template>
   </div>
 </template>
@@ -86,7 +90,7 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
-      selectedIndex: SETTING_TAB,
+      selectedIndex: OVERVIEW_TAB,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -94,6 +98,12 @@ export default {
     const project = computed(() => {
       return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
+      );
+    });
+
+    const databaseList = computed(() => {
+      return store.getters["database/databaseListByInstanceId"](
+        project.value.id
       );
     });
 
@@ -130,6 +140,7 @@ export default {
       SETTING_TAB,
       state,
       project,
+      databaseList,
       allowArchiveOrRestore,
       archiveOrRestoreProject,
     };

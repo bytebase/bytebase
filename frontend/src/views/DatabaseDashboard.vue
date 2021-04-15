@@ -11,11 +11,7 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <DatabaseTable
-      :singleInstance="false"
-      :bordered="false"
-      :databaseList="filteredList"
-    />
+    <DatabaseTable :bordered="false" :databaseList="filteredList" />
   </div>
 </template>
 
