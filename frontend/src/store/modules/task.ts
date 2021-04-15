@@ -75,7 +75,7 @@ const getters = {
 
 const actions = {
   async fetchTaskListForUser({ commit, rootGetters }: any, userId: UserId) {
-    const data = (await axios.get(`/api/task?userid=${userId}&include=project`))
+    const data = (await axios.get(`/api/task?user=${userId}&include=project`))
       .data;
     const taskList = data.data.map((task: ResourceObject) => {
       return convert(task, data.included, rootGetters);

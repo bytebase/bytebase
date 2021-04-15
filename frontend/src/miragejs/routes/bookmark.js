@@ -3,7 +3,7 @@ import { WORKSPACE_ID } from "./index";
 export default function configureBookmark(route) {
   route.get("/bookmark", function (schema, request) {
     const {
-      queryParams: { userid: userId },
+      queryParams: { user: userId },
     } = request;
 
     return schema.bookmarks.where({

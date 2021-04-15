@@ -52,7 +52,7 @@ const actions = {
 
   async fetchActivityListForTask({ commit, rootGetters }: any, taskId: TaskId) {
     const activityList = (
-      await axios.get(`/api/activity?containerid=${taskId}&type=bytebase.task.`)
+      await axios.get(`/api/activity?container=${taskId}&type=bytebase.task.`)
     ).data.data.map((activity: ResourceObject) => {
       return convert(activity, rootGetters);
     });

@@ -4,7 +4,7 @@ import { WORKSPACE_ID } from "./index";
 export default function configureActivity(route) {
   route.get("/activity", function (schema, request) {
     const {
-      queryParams: { containerid: containerId, type },
+      queryParams: { container: containerId, type },
     } = request;
     return schema.activities.where((activity) => {
       if (activity.workspaceId != WORKSPACE_ID) {

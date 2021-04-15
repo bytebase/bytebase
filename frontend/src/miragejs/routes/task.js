@@ -7,7 +7,7 @@ import { UNKNOWN_ID } from "../../types";
 export default function configureTask(route) {
   route.get("/task", function (schema, request) {
     const {
-      queryParams: { userid: userId, project: projectId },
+      queryParams: { user: userId, project: projectId },
     } = request;
 
     if (userId || projectId) {

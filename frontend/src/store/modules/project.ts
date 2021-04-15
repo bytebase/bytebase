@@ -169,7 +169,7 @@ const actions = {
     }
   ) {
     const path =
-      `/api/project?userid=${userId}` +
+      `/api/project?user=${userId}` +
       (rowStatusList ? "&rowstatus=" + rowStatusList.join(",") : "");
     const data = (await axios.get(`${path}&include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {

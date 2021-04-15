@@ -4,7 +4,7 @@ import { WORKSPACE_ID } from "./index";
 export default function configureProject(route) {
   route.get("/project", function (schema, request) {
     const {
-      queryParams: { userid: userId, rowstatus: rowStatus },
+      queryParams: { user: userId, rowstatus: rowStatus },
     } = request;
 
     return schema.projects.where((project) => {

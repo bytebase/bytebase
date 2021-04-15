@@ -40,7 +40,7 @@ const getters = {
 const actions = {
   async fetchBookmarkListByUser({ commit }: any, userId: UserId) {
     const bookmarkList = (
-      await axios.get(`/api/bookmark?userid=${userId}`)
+      await axios.get(`/api/bookmark?user=${userId}`)
     ).data.data.map((bookmark: ResourceObject) => {
       return convert(bookmark);
     });
