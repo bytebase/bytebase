@@ -63,16 +63,21 @@ export default {
           });
         }
       }
-      return environmentList.value.map(
-        (environment: Environment): BBOutlineItem => {
-          return {
-            id: "env." + environment.id,
-            name: environmentName(environment),
-            childList: envToDbMap.get(environment.id),
-            childCollapse: true,
-          };
-        }
-      );
+
+      return environmentList.value
+        .filter((environment: Environment) => {
+          return envToDbMap.get(environment.id)!.length > 0;
+        })
+        .map(
+          (environment: Environment): BBOutlineItem => {
+            return {
+              id: "env." + environment.id,
+              name: environmentName(environment),
+              childList: envToDbMap.get(environment.id),
+              childCollapse: true,
+            };
+          }
+        );
     });
 
     return {
