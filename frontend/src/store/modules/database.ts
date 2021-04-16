@@ -180,17 +180,19 @@ const getters = {
 
 const actions = {
   async fetchDatabaseList({ commit, rootGetters }: any) {
-    // Unlike other list fetch, we don't fetch the instance and data source here.
+    // Unlike other list fetch, we don't fetch the data source here.
     // As the sole purpose for the fetch here is to prepare the database info
-    // itself (in particular the database name and project name) to be displayed in the task list
-    // on the home page.
+    // itself (in particular the environment name, database name and project name)
+    // to be displayed in the task list on the home page.
     // The data source contains sensitive connection credentials so we shouldn't
     // return it unconditionally.
     const data = (
-      await axios.get(`/api/database?include=project,project.projectMember`)
+      await axios.get(
+        `/api/database?include=instance,project,project.projectMember`
+      )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
-      return convert(database, [], rootGetters);
+      return convert(database, data.included, rootGetters);
     });
 
     commit("upsertDatabaseList", { databaseList });
