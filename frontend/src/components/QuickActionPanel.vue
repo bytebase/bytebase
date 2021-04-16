@@ -170,10 +170,7 @@
         v-if="quickAction == 'quickaction.bytebase.database.schema.update'"
         class="flex flex-col items-center w-28"
       >
-        <router-link
-          to="/task/new?template=bytebase.database.schema.update"
-          class="btn-icon-primary p-3"
-        >
+        <button class="btn-icon-primary p-3" @click.prevent="alterSchema">
           <svg
             class="w-6 h-6"
             fill="none"
@@ -188,7 +185,7 @@
               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
             ></path>
           </svg>
-        </router-link>
+        </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
           Alter Schema
         </h3>
@@ -317,6 +314,16 @@
     </template>
     <template
       v-else-if="
+        state.quickActionType == 'quickaction.bytebase.database.schema.update'
+      "
+    >
+      <AlterSchemaPrepForm
+        :projectId="projectId"
+        @dismiss="state.showModal = false"
+      />
+    </template>
+    <template
+      v-else-if="
         state.quickActionType == 'quickaction.bytebase.database.request'
       "
     >
@@ -331,8 +338,10 @@ import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import ProjectNew from "../components/ProjectNew.vue";
 import InstanceForm from "../components/InstanceForm.vue";
+import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
-import { QuickActionType } from "../types";
+import { ProjectId, QuickActionType } from "../types";
+import { idFromSlug } from "../utils";
 
 // Quick action only applicable when DBA workflow feature is enabled.
 const DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST: QuickActionType[] = [
@@ -351,6 +360,7 @@ export default {
   components: {
     ProjectNew,
     InstanceForm,
+    AlterSchemaPrepForm,
     RequestDatabasePrepForm,
   },
   props: {
@@ -379,6 +389,14 @@ export default {
       });
     });
 
+    const projectId = computed((): ProjectId | undefined => {
+      if (router.currentRoute.value.name == "workspace.project.detail") {
+        const parts = router.currentRoute.value.path.split("/");
+        return idFromSlug(parts[parts.length - 1]);
+      }
+      return undefined;
+    });
+
     const createProject = () => {
       state.modalTitle = "Create project";
       state.quickActionType = "quickaction.bytebase.project.create";
@@ -388,6 +406,12 @@ export default {
     const createInstance = () => {
       state.modalTitle = "Create instance";
       state.quickActionType = "quickaction.bytebase.instance.create";
+      state.showModal = true;
+    };
+
+    const alterSchema = () => {
+      state.modalTitle = "Alter schema";
+      state.quickActionType = "quickaction.bytebase.database.schema.update";
       state.showModal = true;
     };
 
@@ -408,8 +432,10 @@ export default {
     return {
       state,
       effectiveQuickActionList,
+      projectId,
       createProject,
       createInstance,
+      alterSchema,
       requestDatabase,
       createEnvironment,
       reorderEnvironment,

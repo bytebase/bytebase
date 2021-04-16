@@ -2,7 +2,7 @@ import { Response } from "miragejs";
 import isEqual from "lodash-es/isEqual";
 import { WORKSPACE_ID } from "./index";
 import { TaskBuiltinFieldId } from "../../plugins";
-import { UNKNOWN_ID } from "../../types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../../types";
 
 export default function configureTask(route) {
   route.get("/task", function (schema, request) {
@@ -39,12 +39,14 @@ export default function configureTask(route) {
 
   route.post("/task", function (schema, request) {
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("task");
+    const attrs = this.normalizedRequestAttrs("task-new");
+    const database = schema.databases.find(attrs.stageList[0].databaseId);
     const newTask = {
       ...attrs,
       createdTs: ts,
       lastUpdatedTs: ts,
       status: "OPEN",
+      projectId: database.projectId,
       workspaceId: WORKSPACE_ID,
     };
     const createdTask = schema.tasks.create(newTask);

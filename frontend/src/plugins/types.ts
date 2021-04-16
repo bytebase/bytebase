@@ -6,6 +6,7 @@ import {
   Task,
   DatabaseId,
   UNKNOWN_ID,
+  Database,
 } from "../types";
 
 // Task
@@ -105,7 +106,7 @@ export type DatabaseFieldPayload = {
 
 // Template
 export type TemplateContext = {
-  environmentList: Environment[];
+  databaseList: Database[];
   currentUser: Principal;
 };
 

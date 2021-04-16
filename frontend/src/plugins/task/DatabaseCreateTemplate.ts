@@ -14,15 +14,8 @@ const template: TaskTemplate = {
   type: "bytebase.database.create",
   buildTask: (ctx: TemplateContext): TaskNew => {
     const payload: any = {};
-    if (ctx.environmentList.length > 0) {
-      // Set the last element as the default value.
-      // Normally the last environment is the prod env and is most commonly used.
-      payload[TaskBuiltinFieldId.ENVIRONMENT] =
-        ctx.environmentList[ctx.environmentList.length - 1].id;
-    }
     payload[TaskBuiltinFieldId.DATABASE] = "";
     return {
-      projectId: UNKNOWN_ID,
       name: "Request new db",
       type: "bytebase.database.create",
       description: "",
@@ -32,6 +25,8 @@ const template: TaskTemplate = {
           name: "Create database",
           type: "bytebase.stage.database.create",
           status: "PENDING",
+          databaseId:
+            ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
         },
       ],
       creatorId: ctx.currentUser.id,

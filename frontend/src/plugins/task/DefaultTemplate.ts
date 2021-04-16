@@ -11,7 +11,6 @@ const template: TaskTemplate = {
   type: "bytebase.general",
   buildTask: (ctx: TemplateContext): TaskNew => {
     return {
-      projectId: UNKNOWN_ID,
       name: "",
       type: "bytebase.general",
       description: "",
@@ -21,6 +20,7 @@ const template: TaskTemplate = {
           name: "Request",
           type: "bytebase.stage.general",
           status: "PENDING",
+          databaseId: UNKNOWN_ID,
         },
       ],
       creatorId: ctx.currentUser.id,

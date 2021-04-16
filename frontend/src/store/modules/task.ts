@@ -110,7 +110,7 @@ const actions = {
     const data = (
       await axios.post(`/api/task?include=project`, {
         data: {
-          type: "task",
+          type: "tasknew",
           attributes: newTask,
         },
       })

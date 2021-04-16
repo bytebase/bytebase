@@ -17,7 +17,6 @@ const template: TaskTemplate = {
     const payload: any = {};
 
     return {
-      projectId: UNKNOWN_ID,
       name: "Request database access",
       type: "bytebase.database.grant",
       description: "",
@@ -27,6 +26,8 @@ const template: TaskTemplate = {
           name: "Request database access",
           type: "bytebase.stage.database.grant",
           status: "PENDING",
+          databaseId:
+            ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
         },
       ],
       creatorId: ctx.currentUser.id,

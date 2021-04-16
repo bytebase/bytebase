@@ -673,6 +673,7 @@ const fillTaskAndStageStatus = (
           name: environmentList[0].name,
           type,
           environmentId: environmentList[0].id,
+          databaseId: databaseList[0].id,
           runnable: {
             auto: true,
             run: () => {},

@@ -80,11 +80,10 @@
               class="w-full"
               :disabled="!allowEdit"
               :selectedId="fieldValue(field)"
-              :mode="'ENVIRONMENT'"
-              :environmentId="environmentId"
+              :mode="'USER'"
               @select-database-id="
                 (databaseId) => {
-                  trySaveCustomField(field, databaseId);
+                  trySaveDatabaseId(field, databaseId);
                 }
               "
             />
@@ -115,39 +114,71 @@
       </template>
     </div>
     <div
-      v-if="!$props.new"
       class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
     >
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Creator
-      </h2>
-      <ul class="col-span-2">
-        <li class="flex justify-start items-center space-x-2">
-          <div class="flex-shrink-0">
-            <BBAvatar :size="'small'" :username="task.creator.name" />
-          </div>
-          <router-link
-            :to="`/u/${task.creator.id}`"
-            class="text-sm font-medium text-main hover:underline"
-          >
-            {{ task.creator.name }}
-          </router-link>
-        </li>
-      </ul>
+      <template v-if="database.id != UNKNOWN_ID">
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Database<span v-if="$props.new" class="text-red-600">*</span>
+        </h2>
+        <router-link
+          :to="`/db/${databaseSlug(database)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ database.name }}
+        </router-link>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Updated
-      </h2>
-      <span class="textfield col-span-2">
-        {{ moment(task.lastUpdatedTs).format("LLL") }}</span
-      >
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Environment
+        </h2>
+        <router-link
+          :to="`/environment/${environmentSlug(environment)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ environmentName(environment) }}
+        </router-link>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Created
-      </h2>
-      <span class="textfield col-span-2">
-        {{ moment(task.createdTs).format("LLL") }}</span
-      >
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Project
+        </h2>
+        <router-link
+          :to="`/project/${projectSlug(project)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ projectName(project) }}
+        </router-link>
+      </template>
+
+      <template v-if="!$props.new">
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Updated
+        </h2>
+        <span class="textfield col-span-2">
+          {{ moment(task.lastUpdatedTs).format("LLL") }}</span
+        >
+
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Created
+        </h2>
+        <span class="textfield col-span-2">
+          {{ moment(task.createdTs).format("LLL") }}</span
+        >
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Creator
+        </h2>
+        <ul class="col-span-2">
+          <li class="flex justify-start items-center space-x-2">
+            <div class="flex-shrink-0">
+              <BBAvatar :size="'small'" :username="task.creator.name" />
+            </div>
+            <router-link
+              :to="`/u/${task.creator.id}`"
+              class="text-sm font-medium text-main hover:underline"
+            >
+              {{ task.creator.name }}
+            </router-link>
+          </li>
+        </ul>
+      </template>
     </div>
     <div
       v-if="!$props.new"
@@ -209,13 +240,19 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import TaskStatusIcon from "../components/TaskStatusIcon.vue";
+import { TaskField, DatabaseFieldPayload } from "../plugins";
 import {
-  TaskField,
-  TaskBuiltinFieldId,
-  DatabaseFieldPayload,
-} from "../plugins";
-import { DatabaseId, EnvironmentId, Principal, Task } from "../types";
-import { isDBAOrOwner } from "../utils";
+  Database,
+  DatabaseId,
+  Environment,
+  EnvironmentId,
+  Principal,
+  Project,
+  Task,
+  TaskNew,
+  UNKNOWN_ID,
+} from "../types";
+import { activeDatabaseId, isDBAOrOwner } from "../utils";
 
 interface LocalState {}
 
@@ -229,7 +266,7 @@ export default {
   props: {
     task: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Task | TaskNew>,
     },
     new: {
       required: true,
@@ -261,12 +298,34 @@ export default {
       return props.task.payload[field.id];
     };
 
-    const environmentId = computed(() => {
-      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
-    });
+    const database = computed(
+      (): Database => {
+        const databaseId = props.new
+          ? props.task.stageList[0].databaseId
+          : activeDatabaseId(props.task as Task);
+        return store.getters["database/databaseById"](databaseId);
+      }
+    );
+
+    const project = computed(
+      (): Project => {
+        // For new task, we derive the project from the 1st stage's database.
+        // For existing task, we use task's project. We can't derive from the stage's database because
+        // database may be transferred to a different project after creating the task.
+        return props.new
+          ? database.value.project
+          : (props.task as Task).project;
+      }
+    );
+
+    const environment = computed(
+      (): Environment => {
+        return database.value.instance.environment;
+      }
+    );
 
     const isCurrentUserSubscribed = computed((): boolean => {
-      for (const principal of props.task.subscriberList) {
+      for (const principal of (props.task as Task).subscriberList) {
         if (currentUser.value.id == principal.id) {
           return true;
         }
@@ -276,7 +335,7 @@ export default {
 
     const subscriberList = computed((): Principal[] => {
       const list: Principal[] = [];
-      props.task.subscriberList.forEach((principal: Principal) => {
+      (props.task as Task).subscriberList.forEach((principal: Principal) => {
         // Put the current user at the front if in the list.
         if (currentUser.value.id == principal.id) {
           list.unshift(principal);
@@ -294,8 +353,8 @@ export default {
       // being assigned to the task.
       return (
         props.new ||
-        (props.task.status == "OPEN" &&
-          (currentUser.value.id == props.task.assignee?.id ||
+        ((props.task as Task).status == "OPEN" &&
+          (currentUser.value.id == (props.task as Task).assignee?.id ||
             isDBAOrOwner(currentUser.value.role)))
       );
     });
@@ -346,11 +405,13 @@ export default {
     };
 
     const toggleSubscription = () => {
-      const list = cloneDeep(props.task.subscriberList);
+      const list = cloneDeep((props.task as Task).subscriberList);
       if (isCurrentUserSubscribed.value) {
-        const index = props.task.subscriberList.findIndex((item: Principal) => {
-          return item.id == currentUser.value.id;
-        });
+        const index = (props.task as Task).subscriberList.findIndex(
+          (item: Principal) => {
+            return item.id == currentUser.value.id;
+          }
+        );
         if (index >= 0) {
           list.splice(index, 1);
         }
@@ -366,10 +427,13 @@ export default {
     };
 
     return {
+      UNKNOWN_ID,
       state,
       allowEditAssignee,
       fieldValue,
-      environmentId,
+      environment,
+      database,
+      project,
       isCurrentUserSubscribed,
       subscriberList,
       trySaveCustomField,

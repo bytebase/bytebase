@@ -155,10 +155,6 @@ const getters = {
     return list;
   },
 
-  // If caller provides scoped search in any of accepted idParams, we search that first.
-  // If none is found, we then do an exhaustive search.
-  // We have to do this because we store the fetched database info differently based on
-  // how is requested.
   databaseById: (state: DatabaseState) => (
     databaseId: DatabaseId,
     instanceId?: InstanceId

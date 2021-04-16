@@ -205,6 +205,7 @@ import {
   StageProgressPatch,
   PrincipalId,
   TASK_STATUS_TRANSITION_LIST,
+  Database,
 } from "../types";
 import {
   defaulTemplate,
@@ -346,8 +347,16 @@ export default {
     watchEffect(refreshTemplate);
 
     const refreshState = () => {
+      const databaseList: Database[] = [];
+
+      if (router.currentRoute.value.query.databaseList) {
+        for (const databaseId of (router.currentRoute.value.query
+          .databaseList as string).split(","))
+          databaseList.push(store.getters["database/databaseById"](databaseId));
+      }
+
       const newTask: TaskNew = newTaskTemplate.value.buildTask({
-        environmentList: environmentList.value,
+        databaseList,
         currentUser: currentUser.value,
       });
 

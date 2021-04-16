@@ -410,7 +410,7 @@ export type Stage = {
   type: StageType;
   status: StageStatus;
   environmentId?: EnvironmentId;
-  databaseId?: DatabaseId;
+  databaseId: DatabaseId;
   runnable?: StageRunnable;
 };
 
@@ -454,7 +454,6 @@ export type Task = {
 };
 
 export type TaskNew = {
-  projectId: ProjectId;
   name: string;
   type: TaskType;
   description: string;

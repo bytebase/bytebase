@@ -338,6 +338,11 @@ const routes: Array<RouteRecordRaw> = [
                 return store.getters["project/projectById"](idFromSlug(slug))
                   .name;
               },
+              quickActionListByRole: new Map([
+                ["OWNER", ["quickaction.bytebase.database.schema.update"]],
+                ["DBA", ["quickaction.bytebase.database.schema.update"]],
+                ["DEVELOPER", ["quickaction.bytebase.database.schema.update"]],
+              ]),
               allowBookmark: true,
             },
             components: {

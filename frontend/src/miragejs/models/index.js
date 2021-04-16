@@ -77,6 +77,8 @@ export default {
     project: belongsTo(),
   }),
 
+  taskNew: Model,
+
   taskPatch: Model,
 
   environment: Model.extend({
