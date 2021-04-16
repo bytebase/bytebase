@@ -38,38 +38,12 @@ export function activeStageIsRunning(task: Task): boolean {
   return activeStage(task).status === "RUNNING";
 }
 
-export function activeEnvironmentId(task: Task): EnvironmentId | undefined {
-  const stage = activeStage(task);
-  if (stage.environmentId) {
-    return stage.environmentId!;
-  }
-  const taskTemplate = templateForType(task.type);
-  if (taskTemplate) {
-    const inputFieldList =
-      taskTemplate.fieldList?.filter((item) => item.category === "INPUT") || [];
-    for (const field of inputFieldList) {
-      if (field.type === "Environment") {
-        return task.payload[field.id];
-      }
-    }
-  }
-  return undefined;
+export function activeEnvironmentId(task: Task): EnvironmentId {
+  const stage: Stage = activeStage(task);
+  return stage.database.instance.environment.id;
 }
 
-export function activeDatabaseId(task: Task): DatabaseId | undefined {
+export function activeDatabaseId(task: Task): DatabaseId {
   const stage = activeStage(task);
-  if (stage.databaseId) {
-    return stage.databaseId!;
-  }
-  const taskTemplate = templateForType(task.type);
-  if (taskTemplate) {
-    const inputFieldList =
-      taskTemplate.fieldList?.filter((item) => item.category === "INPUT") || [];
-    for (const field of inputFieldList) {
-      if (field.type === "Database") {
-        return task.payload[field.id];
-      }
-    }
-  }
-  return undefined;
+  return stage.database.id;
 }

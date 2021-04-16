@@ -24,7 +24,6 @@ const template: TaskTemplate = {
           id: "1",
           name: "Create database",
           type: "bytebase.stage.database.create",
-          status: "PENDING",
           databaseId:
             ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
         },

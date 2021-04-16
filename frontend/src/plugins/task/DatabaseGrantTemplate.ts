@@ -25,7 +25,6 @@ const template: TaskTemplate = {
           id: "1",
           name: "Request database access",
           type: "bytebase.stage.database.grant",
-          status: "PENDING",
           databaseId:
             ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
         },

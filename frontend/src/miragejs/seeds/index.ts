@@ -7,6 +7,12 @@ import {
   StageType,
   Task,
   DEFAULT_PROJECT_ID,
+  TaskNew,
+  TaskStatus,
+  StageNew,
+  StageStatus,
+  StageId,
+  DatabaseId,
 } from "../../types";
 import { databaseSlug, taskSlug } from "../../utils";
 
@@ -170,6 +176,7 @@ const workspacesSeeder = (server: any) => {
         name: "Request",
         type: "bytebase.stage.general",
         status: "PENDING",
+        databaseId: databaseList1[0].id,
       },
     ],
     payload: {
@@ -349,6 +356,7 @@ const workspacesSeeder = (server: any) => {
         name: "Create database",
         type: "bytebase.stage.database.create",
         status: "PENDING",
+        databaseId: databaseList1[1].id,
       },
     ],
     payload: {
@@ -628,10 +636,21 @@ const createInstanceList = (
   return instanceList;
 };
 
+type TaskPartial = {
+  status: TaskStatus;
+  stageList: {
+    id: StageId;
+    name: string;
+    type: StageType;
+    databaseId: DatabaseId;
+    status: StageStatus;
+  }[];
+};
+
 const fillTaskAndStageStatus = (
   environmentList: Environment[],
   databaseList: Database[]
-): Pick<Task, "status" | "stageList"> => {
+): TaskPartial => {
   const type: StageType = "bytebase.stage.schema.update";
   const i = Math.floor(Math.random() * 5);
   if (i % 5 == 0) {
@@ -642,24 +661,14 @@ const fillTaskAndStageStatus = (
           id: "1",
           name: environmentList[0].name,
           type,
-          environmentId: environmentList[0].id,
           databaseId: databaseList[0].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "PENDING",
         },
         {
           id: "2",
           name: environmentList[1].name,
           type,
-          environmentId: environmentList[1].id,
           databaseId: databaseList[1].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "PENDING",
         },
       ],
@@ -672,48 +681,28 @@ const fillTaskAndStageStatus = (
           id: "1",
           name: environmentList[0].name,
           type,
-          environmentId: environmentList[0].id,
           databaseId: databaseList[0].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "2",
           name: environmentList[1].name,
           type,
-          environmentId: environmentList[1].id,
           databaseId: databaseList[1].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "3",
           name: environmentList[2].name,
           type,
-          environmentId: environmentList[2].id,
           databaseId: databaseList[2].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "RUNNING",
         },
         {
           id: "4",
           name: environmentList[3].name,
           type,
-          environmentId: environmentList[3].id,
           databaseId: databaseList[3].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "PENDING",
         },
       ],
@@ -726,48 +715,28 @@ const fillTaskAndStageStatus = (
           id: "1",
           name: environmentList[0].name,
           type,
-          environmentId: environmentList[0].id,
           databaseId: databaseList[0].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "2",
           name: environmentList[1].name,
           type,
-          environmentId: environmentList[1].id,
           databaseId: databaseList[1].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "SKIPPED",
         },
         {
           id: "3",
           name: environmentList[2].name,
           type,
-          environmentId: environmentList[2].id,
           databaseId: databaseList[2].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "4",
           name: environmentList[3].name,
           type,
-          environmentId: environmentList[3].id,
           databaseId: databaseList[3].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
       ],
@@ -780,48 +749,28 @@ const fillTaskAndStageStatus = (
           id: "1",
           name: environmentList[0].name,
           type,
-          environmentId: environmentList[0].id,
           databaseId: databaseList[0].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "2",
           name: environmentList[1].name,
           type,
-          environmentId: environmentList[1].id,
           databaseId: databaseList[1].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "FAILED",
         },
         {
           id: "3",
           name: environmentList[2].name,
           type,
-          environmentId: environmentList[2].id,
           databaseId: databaseList[2].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "PENDING",
         },
         {
           id: "4",
           name: environmentList[3].name,
           type,
-          environmentId: environmentList[3].id,
           databaseId: databaseList[3].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "PENDING",
         },
       ],
@@ -834,48 +783,28 @@ const fillTaskAndStageStatus = (
           id: "1",
           name: environmentList[0].name,
           type,
-          environmentId: environmentList[0].id,
           databaseId: databaseList[0].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "2",
           name: environmentList[1].name,
           type,
-          environmentId: environmentList[1].id,
           databaseId: databaseList[1].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "SKIPPED",
         },
         {
           id: "3",
           name: environmentList[2].name,
           type,
-          environmentId: environmentList[2].id,
           databaseId: databaseList[2].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "DONE",
         },
         {
           id: "4",
           name: environmentList[3].name,
           type,
-          environmentId: environmentList[3].id,
           databaseId: databaseList[3].id,
-          runnable: {
-            auto: true,
-            run: () => {},
-          },
           status: "PENDING",
         },
       ],

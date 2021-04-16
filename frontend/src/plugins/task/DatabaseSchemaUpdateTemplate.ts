@@ -7,7 +7,7 @@ import {
   TaskContext,
 } from "../types";
 
-import { Database, Stage, TaskNew, UNKNOWN_ID } from "../../types";
+import { Database, Stage, StageNew, TaskNew, UNKNOWN_ID } from "../../types";
 
 const template: TaskTemplate = {
   type: "bytebase.database.schema.update",
@@ -18,12 +18,11 @@ const template: TaskTemplate = {
       type: "bytebase.database.schema.update",
       description: "",
       stageList: ctx.databaseList.map(
-        (database: Database): Stage => {
+        (database: Database): StageNew => {
           return {
             id: "1",
             name: `[${database.instance.environment.name}] ${database.name}`,
             type: "bytebase.stage.schema.update",
-            status: "PENDING",
             databaseId: database.id,
           };
         }

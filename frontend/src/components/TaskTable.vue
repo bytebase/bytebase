@@ -236,11 +236,8 @@ export default {
     };
 
     const activeDatabaseName = function (task: Task) {
-      const id = activeDatabaseId(task);
-      if (id) {
-        return store.getters["database/databaseById"](id).name;
-      }
-      return "";
+      return store.getters["database/databaseById"](activeDatabaseId(task))
+        .name;
     };
 
     const router = useRouter();

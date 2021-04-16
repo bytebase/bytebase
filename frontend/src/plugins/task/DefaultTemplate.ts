@@ -19,7 +19,6 @@ const template: TaskTemplate = {
           id: "1",
           name: "Request",
           type: "bytebase.stage.general",
-          status: "PENDING",
           databaseId: UNKNOWN_ID,
         },
       ],

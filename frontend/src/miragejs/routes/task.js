@@ -41,6 +41,10 @@ export default function configureTask(route) {
     const ts = Date.now();
     const attrs = this.normalizedRequestAttrs("task-new");
     const database = schema.databases.find(attrs.stageList[0].databaseId);
+    attrs.stageList.forEach((stage) => {
+      stage.status = "PENDING";
+    });
+
     const newTask = {
       ...attrs,
       createdTs: ts,

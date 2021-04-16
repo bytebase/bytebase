@@ -409,9 +409,15 @@ export type Stage = {
   name: string;
   type: StageType;
   status: StageStatus;
-  environmentId?: EnvironmentId;
-  databaseId: DatabaseId;
+  database: Database;
   runnable?: StageRunnable;
+};
+
+export type StageNew = {
+  id: StageId;
+  name: string;
+  type: StageType;
+  databaseId: DatabaseId;
 };
 
 export type StageProgressPatch = {
@@ -457,7 +463,7 @@ export type TaskNew = {
   name: string;
   type: TaskType;
   description: string;
-  stageList: Stage[];
+  stageList: StageNew[];
   creatorId: PrincipalId;
   assigneeId?: PrincipalId;
   subscriberIdList: PrincipalId[];

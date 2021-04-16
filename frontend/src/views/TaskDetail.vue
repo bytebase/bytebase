@@ -714,7 +714,7 @@ export default {
     });
 
     const showTaskStageFlowBar = computed(() => {
-      return !state.new && state.task.stageList.length > 1;
+      return !state.new && state.task.stageList.length > 0;
     });
 
     const showTaskOutputPanel = computed(() => {

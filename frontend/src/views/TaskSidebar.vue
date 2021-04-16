@@ -301,7 +301,7 @@ export default {
     const database = computed(
       (): Database => {
         const databaseId = props.new
-          ? props.task.stageList[0].databaseId
+          ? (props.task as TaskNew).stageList[0].databaseId
           : activeDatabaseId(props.task as Task);
         return store.getters["database/databaseById"](databaseId);
       }

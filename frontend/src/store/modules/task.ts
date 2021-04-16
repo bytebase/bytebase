@@ -12,8 +12,8 @@ import {
   Project,
   ResourceIdentifier,
   ProjectId,
+  Stage,
 } from "../../types";
-import principal from "./principal";
 
 function convert(
   task: ResourceObject,
@@ -23,12 +23,23 @@ function convert(
   const creator = rootGetters["principal/principalById"](
     task.attributes.creatorId
   );
+
   let assignee = undefined;
   if (task.attributes.assigneeId) {
     assignee = rootGetters["principal/principalById"](
       task.attributes.assigneeId
     );
   }
+
+  const stageList: Stage[] = (task.attributes.stageList as any[])!.map(
+    (item) => {
+      return {
+        ...item,
+        database: rootGetters["database/databaseById"](item.databaseId),
+      };
+    }
+  );
+
   const subscriberList = (task.attributes.subscriberIdList as Principal[]).map(
     (principalId) => {
       return rootGetters["principal/principalById"](principalId);
@@ -46,15 +57,16 @@ function convert(
   }
 
   return {
+    ...(task.attributes as Omit<
+      Task,
+      "id" | "project" | "creator" | "assignee" | "stageList" | "subscriberList"
+    >),
     id: task.id,
     project,
     creator,
     assignee,
+    stageList,
     subscriberList,
-    ...(task.attributes as Omit<
-      Task,
-      "id" | "project" | "creator" | "assignee" | "subscriberList"
-    >),
   };
 }
 
@@ -80,6 +92,7 @@ const actions = {
     const taskList = data.data.map((task: ResourceObject) => {
       return convert(task, data.included, rootGetters);
     });
+    console.log(taskList);
     commit("setTaskListForUser", { userId, taskList });
     return taskList;
   },
