@@ -23,7 +23,7 @@ export function environmentSlug(environment: Environment): string {
 }
 
 export function projectSlug(project: Project) {
-  return [project.key, slug(project.name), project.id].join("-");
+  return [slug(project.name), project.id].join("-");
 }
 
 export function instanceSlug(instance: Instance): string {
