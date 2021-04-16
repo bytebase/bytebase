@@ -602,10 +602,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (
-    to.name === "workspace.environment" ||
-    to.name?.toString().startsWith("workspace.instance")
-  ) {
+  if (to.name === "workspace.environment" || to.name === "workspace.instance") {
     if (isDBAOrOwner(loginUser.role)) {
       next();
     } else {
