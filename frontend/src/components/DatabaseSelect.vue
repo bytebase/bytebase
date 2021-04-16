@@ -9,11 +9,13 @@
       }
     "
   >
-    <option disabled :selected="undefined === state.selectedId">
-      <template v-if="mode == 'INSTANCE' && !instanceId">
+    <option disabled :selected="UNKNOWN_ID === state.selectedId">
+      <template v-if="mode == 'INSTANCE' && instanceId == UNKNOWN_ID">
         Select instance first
       </template>
-      <template v-else-if="mode == 'ENVIRONMENT' && !environmentId">
+      <template
+        v-else-if="mode == 'ENVIRONMENT' && environmentId == UNKNOWN_ID"
+      >
         Select environment first
       </template>
       <template v-else> Select database </template>
@@ -32,7 +34,14 @@
 <script lang="ts">
 import { computed, reactive, watch, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
-import { Database } from "../types";
+import {
+  UNKNOWN_ID,
+  Database,
+  Principal,
+  ProjectId,
+  InstanceId,
+  EnvironmentId,
+} from "../types";
 
 interface LocalState {
   selectedId?: string;
@@ -44,17 +53,24 @@ export default {
   components: {},
   props: {
     selectedId: {
+      required: true,
       type: String,
     },
     mode: {
       required: true,
-      type: String as PropType<"INSTANCE" | "ENVIRONMENT">,
+      type: String as PropType<"INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
-      type: String,
+      default: UNKNOWN_ID,
+      type: String as PropType<EnvironmentId>,
     },
     instanceId: {
-      type: String,
+      default: UNKNOWN_ID,
+      type: String as PropType<InstanceId>,
+    },
+    projectId: {
+      default: UNKNOWN_ID,
+      type: String as PropType<ProjectId>,
     },
     disabled: {
       default: false,
@@ -67,11 +83,15 @@ export default {
       selectedId: props.selectedId,
     });
 
+    const currentUser = computed(
+      (): Principal => store.getters["auth/currentUser"]()
+    );
+
     const prepareDatabaseList = () => {
       // TODO: need to revisit this, instead of fetching each time,
       // we maybe able to let the outside context to provide the database list
       // and we just do a get here.
-      if (props.mode == "ENVIRONMENT" && props.environmentId) {
+      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
         store
           .dispatch(
             "database/fetchDatabaseListByEnvironmentId",
@@ -80,12 +100,14 @@ export default {
           .catch((error) => {
             console.log(error);
           });
-      } else if (props.mode == "INSTANCE" && props.instanceId) {
+      } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
         store
           .dispatch("database/fetchDatabaseListByInstanceId", props.instanceId)
           .catch((error) => {
             console.log(error);
           });
+      } else if (props.mode == "USER") {
+        // We assume the database list for the current user should have already been fetched, so we won't do a fetch here.
       }
     };
 
@@ -93,26 +115,43 @@ export default {
 
     const databaseList = computed(() => {
       let list: Database[] = [];
-      if (props.mode == "ENVIRONMENT" && props.environmentId) {
+      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
         list = store.getters["database/databaseListByEnvironmentId"](
           props.environmentId
         );
-      } else if (props.mode == "INSTANCE" && props.instanceId) {
+      } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
         list = store.getters["database/databaseListByInstanceId"](
           props.instanceId
         );
+      } else if (props.mode == "USER") {
+        list = store.getters["database/databaseListByUserId"](
+          currentUser.value.id
+        );
+        if (
+          props.environmentId != UNKNOWN_ID ||
+          props.projectId != UNKNOWN_ID
+        ) {
+          list = list.filter((database: Database) => {
+            return (
+              (props.environmentId == UNKNOWN_ID ||
+                database.instance.environment.id == props.environmentId) &&
+              (props.projectId == UNKNOWN_ID ||
+                database.project.id == props.projectId)
+            );
+          });
+        }
       }
       return list;
     });
 
     const invalidateSelectionIfNeeded = () => {
       if (
-        state.selectedId &&
+        state.selectedId != UNKNOWN_ID &&
         !databaseList.value.find(
           (database: Database) => database.id == state.selectedId
         )
       ) {
-        state.selectedId = undefined;
+        state.selectedId = UNKNOWN_ID;
         emit("select-database-id", state.selectedId);
       }
     };
@@ -135,6 +174,7 @@ export default {
     );
 
     return {
+      UNKNOWN_ID,
       state,
       databaseList,
     };
