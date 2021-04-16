@@ -128,7 +128,7 @@ export default {
     });
 
     const databaseList = computed(() => {
-      return store.getters["database/databaseListByInstanceId"](
+      return store.getters["database/databaseListByProjectId"](
         project.value.id
       );
     });
