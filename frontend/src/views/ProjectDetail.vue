@@ -133,6 +133,15 @@ export default {
       );
     });
 
+    const prepareDatabaseList = () => {
+      store.dispatch(
+        "database/fetchDatabaseListByProjectId",
+        idFromSlug(props.projectSlug)
+      );
+    };
+
+    watchEffect(prepareDatabaseList);
+
     const prepareTaskList = () => {
       store
         .dispatch("task/fetchTaskListForProject", idFromSlug(props.projectSlug))

@@ -19,6 +19,7 @@ export default function configureDatabase(route) {
       queryParams: {
         environment: environmentId,
         instance: instanceId,
+        project: projectId,
         user: userId,
       },
     } = request;
@@ -38,6 +39,10 @@ export default function configureDatabase(route) {
     return schema.databases
       .where((database) => {
         if (instanceIdList && !instanceIdList.includes(database.instanceId)) {
+          return false;
+        }
+
+        if (projectId && projectId != database.projectId) {
           return false;
         }
 

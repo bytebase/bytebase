@@ -216,6 +216,24 @@ const actions = {
     return databaseList;
   },
 
+  async fetchDatabaseListByProjectId(
+    { commit, rootGetters }: any,
+    projectId: ProjectId
+  ) {
+    const data = (
+      await axios.get(
+        `/api/database?project=${projectId}&include=instance,project,project.projectMember,dataSource`
+      )
+    ).data;
+    const databaseList = data.data.map((database: ResourceObject) => {
+      return convert(database, data.included, rootGetters);
+    });
+
+    commit("upsertDatabaseList", { databaseList });
+
+    return databaseList;
+  },
+
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
