@@ -10,8 +10,8 @@ import {
 
 function convert(bookmark: ResourceObject): Bookmark {
   return {
-    id: bookmark.id,
     ...(bookmark.attributes as Omit<Bookmark, "id">),
+    id: bookmark.id,
   };
 }
 

@@ -52,8 +52,6 @@ function convert(
   }
 
   return {
-    // Somehow "memberList" doesn't get omitted, but we put the actual memberList last,
-    // which will overwrite whatever exists before.
     ...(dataSource.attributes as Omit<
       DataSource,
       "id" | "instanceId" | "database" | "memberList"

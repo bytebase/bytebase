@@ -13,8 +13,8 @@ import {
 
 function convert(environment: ResourceObject): Environment {
   return {
-    id: environment.id,
     ...(environment.attributes as Omit<Environment, "id">),
+    id: environment.id,
   };
 }
 

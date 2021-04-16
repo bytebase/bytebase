@@ -12,8 +12,8 @@ import {
 
 function convert(member: ResourceObject): Member {
   return {
-    id: member.id,
     ...(member.attributes as Omit<Member, "id">),
+    id: member.id,
   };
 }
 

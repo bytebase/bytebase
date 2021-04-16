@@ -31,13 +31,13 @@ function convert(instance: ResourceObject, rootGetters: any): Instance {
   );
 
   return {
-    id: instance.id,
-    creator,
-    updater,
     ...(instance.attributes as Omit<
       Instance,
       "id" | "environment" | "creator" | "updater"
     >),
+    id: instance.id,
+    creator,
+    updater,
     environment,
   };
 }

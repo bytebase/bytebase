@@ -57,14 +57,14 @@ function convert(
   // Only able to assign an empty data source list, otherwise would cause circular dependency.
   // This should be fine as we shouldn't access data source via dataSource.database.dataSourceList
   const databaseWithoutDataSourceList = {
-    id: database.id,
-    instance,
-    project,
-    dataSourceList: [],
     ...(database.attributes as Omit<
       Database,
       "id" | "instance" | "project" | "dataSourceList"
     >),
+    id: database.id,
+    instance,
+    project,
+    dataSourceList: [],
   };
 
   for (const item of includedList || []) {
@@ -85,8 +85,8 @@ function convert(
   }
 
   return {
-    ...(databaseWithoutDataSourceList as Omit<Database, "dataSourceList">),
     dataSourceList,
+    ...(databaseWithoutDataSourceList as Omit<Database, "dataSourceList">),
   };
 }
 

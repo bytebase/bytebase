@@ -19,10 +19,10 @@ function convert(message: ResourceObject, rootGetters: any): Message {
   );
 
   return {
+    ...(message.attributes as Omit<Message, "id" | "creator" | "receiver">),
     id: message.id,
     creator,
     receiver,
-    ...(message.attributes as Omit<Message, "id" | "creator" | "receiver">),
   };
 }
 

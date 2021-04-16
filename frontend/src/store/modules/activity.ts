@@ -14,9 +14,9 @@ function convert(activity: ResourceObject, rootGetters: any): Activity {
     activity.attributes.creatorId
   );
   return {
+    ...(activity.attributes as Omit<Activity, "id" | "creator">),
     id: activity.id,
     creator,
-    ...(activity.attributes as Omit<Activity, "id" | "creator">),
   };
 }
 
