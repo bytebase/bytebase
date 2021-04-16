@@ -11,7 +11,13 @@
     >
       <div>
         <div class="absolute left-0 top-0 my-4 mx-8 text-xl text-main">
-          {{ $props.title }}
+          {{ title }}
+          <div
+            v-if="subtitle"
+            class="pr-1 bg-white text-sm text-control whitespace-nowrap"
+          >
+            {{ subtitle }}
+          </div>
         </div>
         <button
           v-if="showClose"
@@ -38,7 +44,7 @@
           </svg>
         </button>
       </div>
-      <div class="pt-2 max-h-screen w-full">
+      <div class="pt-4 max-h-screen w-full">
         <slot />
       </div>
     </div>
@@ -54,6 +60,10 @@ export default {
   props: {
     title: {
       required: true,
+      type: String,
+    },
+    subtitle: {
+      default: "",
       type: String,
     },
     showClose: {

@@ -298,6 +298,7 @@
   <BBModal
     v-if="state.showModal"
     :title="state.modalTitle"
+    :subtitle="state.modalSubtitle"
     @close="state.showModal = false"
   >
     <template
@@ -352,6 +353,7 @@ const DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST: QuickActionType[] = [
 interface LocalState {
   showModal: Boolean;
   modalTitle: string;
+  modalSubtitle: string;
   quickActionType: QuickActionType;
 }
 
@@ -376,6 +378,7 @@ export default {
     const state = reactive<LocalState>({
       showModal: false,
       modalTitle: "",
+      modalSubtitle: "",
       quickActionType: "quickaction.bytebase.instance.create",
     });
 
@@ -399,24 +402,28 @@ export default {
 
     const createProject = () => {
       state.modalTitle = "Create project";
+      state.modalSubtitle = "";
       state.quickActionType = "quickaction.bytebase.project.create";
       state.showModal = true;
     };
 
     const createInstance = () => {
       state.modalTitle = "Create instance";
+      state.modalSubtitle = "";
       state.quickActionType = "quickaction.bytebase.instance.create";
       state.showModal = true;
     };
 
     const alterSchema = () => {
       state.modalTitle = "Alter schema";
+      state.modalSubtitle = "Step 1 - choose database";
       state.quickActionType = "quickaction.bytebase.database.schema.update";
       state.showModal = true;
     };
 
     const requestDatabase = () => {
       state.modalTitle = "Request database";
+      state.modalSubtitle = "";
       state.quickActionType = "quickaction.bytebase.database.request";
       state.showModal = true;
     };
