@@ -8,7 +8,7 @@ export default function configurInstance(route) {
     const {
       queryParams: { rowstatus: rowStatus },
     } = request;
-    return schema.instances.where((instance) => {
+    const list = schema.instances.where((instance) => {
       if (instance.workspaceId != WORKSPACE_ID) {
         return false;
       }
@@ -30,6 +30,13 @@ export default function configurInstance(route) {
 
       return true;
     });
+
+    list.models.forEach((instance) => {
+      instance.username = "<<redacted>>";
+      instance.password = "<<redacted>>";
+    });
+
+    return list;
   });
 
   route.get("/instance/:id", function (schema, request) {
