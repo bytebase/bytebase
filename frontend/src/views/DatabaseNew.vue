@@ -34,7 +34,7 @@ input[type="number"] {
           Environment <span style="color: red">*</span>
         </label>
         <EnvironmentSelect
-          class="mt-1"
+          class="mt-1 w-full"
           id="environment"
           name="environment"
           :disabled="!allowEditEnvironment"

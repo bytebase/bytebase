@@ -1,6 +1,6 @@
 <template>
   <select
-    class="btn-select w-full disabled:cursor-not-allowed"
+    class="btn-select disabled:cursor-not-allowed"
     :disabled="disabled"
     @change="
       (e) => {

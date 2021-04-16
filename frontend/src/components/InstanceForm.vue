@@ -23,7 +23,7 @@ input[type="number"] {
           </label>
           <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
           <EnvironmentSelect
-            class="mt-1"
+            class="mt-1 w-full"
             id="environment"
             name="environment"
             :disabled="!create"
