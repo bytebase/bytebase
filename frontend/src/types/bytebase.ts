@@ -410,12 +410,14 @@ export type Project = {
 };
 
 export type ProjectNew = {
+  creatorId: PrincipalId;
   name: string;
   key: string;
-  creatorId: PrincipalId;
 };
 
 export type ProjectPatch = {
+  updaterId: PrincipalId;
+  rowStatus?: RowStatus;
   name?: string;
   key?: string;
 };

@@ -84,7 +84,7 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
 import TaskTable from "../components/TaskTable.vue";
-import { Task } from "../types";
+import { ProjectPatch, Task } from "../types";
 
 const OVERVIEW_TAB = 0;
 const REPO_TAB = 1;
@@ -178,12 +178,14 @@ export default {
     });
 
     const archiveOrRestoreProject = (archive: boolean) => {
+      const projectPatch: ProjectPatch = {
+        updaterId: currentUser.value.id,
+        rowStatus: archive ? "ARCHIVED" : "NORMAL",
+      };
       store
         .dispatch("project/patchProject", {
           projectId: project.value.id,
-          projectPatch: {
-            rowStatus: archive ? "ARCHIVED" : "NORMAL",
-          },
+          projectPatch,
         })
         .catch((error) => {
           console.log(error);

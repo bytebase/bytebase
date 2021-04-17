@@ -1,5 +1,5 @@
 import { Response } from "miragejs";
-import { FAKE_API_CALLER_ID, WORKSPACE_ID } from "./index";
+import { WORKSPACE_ID } from "./index";
 import { DEFAULT_PROJECT_ID } from "../../types";
 
 export default function configureProject(route) {
@@ -116,7 +116,7 @@ export default function configureProject(route) {
 
     return schema.projects.find(request.params.projectId).update({
       ...attrs,
-      updaterId: FAKE_API_CALLER_ID,
+      updaterId: attrs.updaterId,
       lastUpdatedTs: Date.now(),
     });
   });

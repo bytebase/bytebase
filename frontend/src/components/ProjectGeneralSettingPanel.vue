@@ -111,6 +111,7 @@ export default {
 
     const save = () => {
       const projectPatch: ProjectPatch = {
+        updaterId: currentUser.value.id,
         name: state.name != props.project.name ? state.name : undefined,
         key: state.key != props.project.key ? state.key : undefined,
       };
