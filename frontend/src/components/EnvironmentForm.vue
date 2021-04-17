@@ -163,11 +163,7 @@ export default {
       if (state.environment.name != props.environment!.name) {
         patchedEnvironment.name = state.environment.name;
       }
-      emit(
-        "update",
-        (props.environment as Environment)!.id,
-        patchedEnvironment
-      );
+      emit("update", patchedEnvironment);
     };
 
     const archiveEnvironment = () => {
