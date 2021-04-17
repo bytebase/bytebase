@@ -134,7 +134,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { Principal, Member, MemberId, RoleType } from "../types";
+import { Principal, Member, MemberId, RoleType, MemberPatch } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 
@@ -267,12 +267,14 @@ export default {
     });
 
     const changeRole = (id: MemberId, role: RoleType) => {
+      const memberPatch: MemberPatch = {
+        updaterId: currentUser.value.id,
+        role,
+      };
       store
         .dispatch("member/patchMember", {
           id,
-          memberPatch: {
-            role,
-          },
+          memberPatch,
         })
         .catch((error) => {
           console.log(error);

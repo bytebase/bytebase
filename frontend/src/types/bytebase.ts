@@ -308,11 +308,13 @@ export type Member = {
 };
 
 export type MemberNew = {
+  creatorId: PrincipalId;
   principalId: PrincipalId;
   role: RoleType;
 };
 
 export type MemberPatch = {
+  updaterId: PrincipalId;
   role: RoleType;
 };
 

@@ -21,8 +21,8 @@ export default function configureMember(route) {
     }
 
     const newMember = {
-      creatorId: FAKE_API_CALLER_ID,
-      updaterId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
+      updaterId: attrs.creatorId,
       createdTs: ts,
       lastUpdatedTs: ts,
       role: attrs.role,
@@ -44,14 +44,14 @@ export default function configureMember(route) {
       lastUpdatedTs: ts,
       type,
       status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
       payload: {
         principalId: attrs.principalId,
         newRole: attrs.role,
       },
     };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
+    postMessageToOwnerAndDBA(schema, attrs.creatorId, messageTemplate);
 
     return createdMember;
   });
@@ -71,8 +71,6 @@ export default function configureMember(route) {
     const oldRole = member.role;
 
     const attrs = this.normalizedRequestAttrs("member");
-    attrs.updaterId = FAKE_API_CALLER_ID;
-
     const updatedMember = member.update(attrs);
 
     const ts = Date.now();

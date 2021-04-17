@@ -228,6 +228,7 @@ export default {
             .dispatch("principal/createPrincipal", newPrincipal)
             .then((principal: Principal) => {
               const newMember: MemberNew = {
+                creatorId: currentUser.value.id,
                 principalId: principal.id,
                 role: invite.role,
               };
