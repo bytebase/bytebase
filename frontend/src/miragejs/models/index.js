@@ -122,9 +122,13 @@ export default {
     dataSourceMember: hasMany(),
   }),
 
-  dataSourceMember: Model,
+  dataSourceNew: Model,
 
   dataSourcePatch: Model,
+
+  dataSourceMember: Model,
+
+  dataSourceMemberNew: Model,
 
   batchUpdate: Model,
 

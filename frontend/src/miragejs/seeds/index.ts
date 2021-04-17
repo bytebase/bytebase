@@ -636,6 +636,8 @@ const createInstanceList = (
       workspaceId: instance.workspaceId,
       instance,
       database: allDatabase,
+      creatorId: dba.id,
+      updaterId: dba.id,
       name: instance.name + " admin data source",
       type: "ADMIN",
       username: "adminRW",

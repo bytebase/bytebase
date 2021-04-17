@@ -182,6 +182,7 @@ import {
   DataSource,
   DataSourceId,
   DataSourceMember,
+  DataSourceMemberNew,
   EnvironmentId,
   InstanceId,
   PrincipalId,
@@ -336,14 +337,15 @@ export default {
         }
       }
 
+      const newDataSouceMember: DataSourceMemberNew = {
+        principalId: state.granteeId!,
+        taskId: linkedTask?.id,
+      };
       store
         .dispatch("dataSource/createDataSourceMember", {
           dataSourceId: state.dataSourceId,
           databaseId: state.databaseId,
-          newDataSourceMember: {
-            principalId: state.granteeId,
-            taskId: linkedTask?.id,
-          },
+          newDataSouceMember,
         })
         .then((dataSource: DataSource) => {
           emit("submit", dataSource);

@@ -40,8 +40,14 @@ export default function configureDataSource(route) {
   route.post("/database/:databaseId/datasource", function (schema, request) {
     const database = schema.databases.find(request.params.databaseId);
     if (database) {
+      const ts = Date.now();
+      const attrs = this.normalizedRequestAttrs("data-source-new");
       const newDataSource = {
-        ...this.normalizedRequestAttrs("data-source"),
+        ...attrs,
+        creatorId: attrs.creatorId,
+        createdTs: ts,
+        updaterId: attrs.creatorId,
+        lastUpdatedTs: ts,
       };
       return schema.dataSources.create(newDataSource);
     }
@@ -90,7 +96,7 @@ export default function configureDataSource(route) {
         }
 
         if (hasChange) {
-          return dataSource.update(attrs);
+          return dataSource.update({ ...attrs, lastUpdatedTs: Date.now() });
         }
         return dataSource;
       }
@@ -143,18 +149,20 @@ export default function configureDataSource(route) {
       if (database) {
         const dataSource = schema.dataSources.find(request.params.dataSourceId);
         if (dataSource) {
-          const newDataSourceMember = {
-            ...this.normalizedRequestAttrs("data-source-member"),
-            dataSourceId: request.params.dataSourceId,
-          };
+          const attrs = this.normalizedRequestAttrs("data-source-member-new");
           const newList = dataSource.memberList;
           const member = newList.find(
-            (item) => item.principalId == newDataSourceMember.principalId
+            (item) => item.principalId == attrs.principalId
           );
           if (!member) {
-            newList.push(newDataSourceMember);
+            newList.push({
+              principalId: attrs.principalId,
+              taskId: attrs.taskId,
+              createdTs: Date.now(),
+            });
             return dataSource.update({
               memberList: newList,
+              updaterId: attrs.creatorId,
             });
           }
           return dataSource;

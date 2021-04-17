@@ -21,6 +21,12 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): DataSource {
+  const creator = rootGetters["principal/principalById"](
+    dataSource.attributes.creatorId
+  );
+  const updater = rootGetters["principal/principalById"](
+    dataSource.attributes.updaterId
+  );
   const databaseId = (dataSource.relationships!.database
     .data as ResourceIdentifier).id;
   const instanceId = (dataSource.relationships!.instance
@@ -54,11 +60,13 @@ function convert(
   return {
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "instanceId" | "database" | "memberList"
+      "id" | "creator" | "updater" | "instanceId" | "database" | "memberList"
     >),
     id: dataSource.id,
     instance,
     database,
+    creator,
+    updater,
     memberList,
   };
 }
@@ -122,7 +130,7 @@ const actions = {
         `/api/database/${newDataSource.databaseId}/datasource?include=database,instance`,
         {
           data: {
-            type: "dataSource",
+            type: "dataSourcenew",
             attributes: newDataSource,
           },
         }

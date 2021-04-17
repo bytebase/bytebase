@@ -1,12 +1,19 @@
 import { Factory } from "miragejs";
+import { UNKNOWN_ID } from "../../types";
 
 export default {
   dataSource: Factory.extend({
     name(i) {
       return "ds" + i;
     },
+    creatorId(i) {
+      return UNKNOWN_ID;
+    },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
+    },
+    updaterId(i) {
+      return UNKNOWN_ID;
     },
     lastUpdatedTs(i) {
       return Date.now() - i * 3600 * 1000;

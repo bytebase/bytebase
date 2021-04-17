@@ -156,9 +156,10 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, ComputedRef, PropType, reactive } from "vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { DataSourceNew, Database, UNKNOWN_ID } from "../types";
+import { DataSourceNew, Database, UNKNOWN_ID, Principal } from "../types";
+import { useStore } from "vuex";
 
 interface LocalState {
   dataSource: DataSourceNew;
@@ -180,8 +181,15 @@ export default {
   },
   components: { DatabaseSelect },
   setup(props, ctx) {
+    const store = useStore();
+
+    const currentUser: ComputedRef<Principal> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
+
     const state = reactive<LocalState>({
       dataSource: {
+        creatorId: currentUser.value.id,
         name: "New data source",
         type: "RO",
         databaseId: props.database ? props.database.id : UNKNOWN_ID,

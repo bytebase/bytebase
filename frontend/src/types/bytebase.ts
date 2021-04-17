@@ -140,9 +140,11 @@ export const unknown = (
     id: UNKNOWN_ID,
     instance: UNKNOWN_INSTANCE,
     database: UNKNOWN_DATABASE,
-    memberList: [],
+    creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
+    memberList: [],
     name: "<<Unknown data source>>",
     type: "RO",
   };
@@ -854,11 +856,13 @@ export type DataSource = {
   id: DataSourceId;
   database: Database;
   instance: Instance;
+  creator: Principal;
+  updater: Principal;
+  createdTs: number;
+  lastUpdatedTs: number;
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
   memberList: DataSourceMember[];
-  createdTs: number;
-  lastUpdatedTs: number;
   name: string;
   type: DataSourceType;
   // In mysql, username can be empty which means anonymous user
@@ -867,6 +871,7 @@ export type DataSource = {
 };
 
 export type DataSourceNew = {
+  creatorId: PrincipalId;
   name: string;
   databaseId: DatabaseId;
   instanceId: InstanceId;
@@ -877,6 +882,7 @@ export type DataSourceNew = {
 };
 
 export type DataSourcePatch = {
+  updaterId: PrincipalId;
   name?: string;
   username?: string;
   password?: string;
