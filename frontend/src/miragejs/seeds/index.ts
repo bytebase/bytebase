@@ -632,7 +632,7 @@ const createInstanceList = (
       instance,
       database: allDatabase,
       name: instance.name + " admin data source",
-      type: "RW",
+      type: "ADMIN",
       username: "adminRW",
       password: "pwdadminRW",
     });

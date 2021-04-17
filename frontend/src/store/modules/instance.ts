@@ -40,7 +40,7 @@ function convert(
   for (const item of includedList || []) {
     if (
       item.type == "data-source" &&
-      item.attributes.type == "RW" &&
+      item.attributes.type == "ADMIN" &&
       (item.relationships!.instance.data as ResourceIdentifier).id ==
         instance.id
     ) {

@@ -75,7 +75,7 @@ export default function configurInstance(route) {
       instance: createdInstance,
       database: allDatabase,
       name: createdInstance.name + " admin data source",
-      type: "RW",
+      type: "ADMIN",
       username: attrs.username,
       password: attrs.password,
     });
@@ -112,7 +112,7 @@ export default function configurInstance(route) {
 
     const dataSource = schema.dataSources.findBy({
       instanceId: instance.id,
-      type: "RW",
+      type: "ADMIN",
     });
 
     if (!dataSource) {

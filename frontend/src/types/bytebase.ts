@@ -807,7 +807,10 @@ export type InstancePatch = {
   password?: string;
 };
 
-export type DataSourceType = "RW" | "RO";
+// For now the ADMIN requires the same database privilege as RW.
+// The seperation is to make it explicit which one serves as the ADMIN data source,
+// which from the ops perspective, having different meaning from the normal RW data source.
+export type DataSourceType = "ADMIN" | "RW" | "RO";
 // Data Source
 export type DataSource = {
   id: DataSourceId;

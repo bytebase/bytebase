@@ -5,7 +5,9 @@ export default function configureDataSource(route) {
     const database = schema.databases.find(request.params.databaseId);
     if (database) {
       return schema.dataSources.where((dataSource) => {
-        return dataSource.databaseId == database.id;
+        return (
+          dataSource.databaseId == database.id && dataSource.type != "ADMIN"
+        );
       });
     }
     return new Response(
