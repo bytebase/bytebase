@@ -7,10 +7,15 @@ import {
   SignupInfo,
   ActivateInfo,
   ResourceObject,
+  unknown,
 } from "../../types";
 
 const GUEST: Principal = {
   id: "0",
+  creator: unknown("PRINCIPAL") as Principal,
+  updater: unknown("PRINCIPAL") as Principal,
+  createdTs: 0,
+  lastUpdatedTs: 0,
   status: "ACTIVE",
   name: "Guest",
   email: "guest@bytebase.com",

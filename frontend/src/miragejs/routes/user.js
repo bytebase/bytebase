@@ -1,4 +1,4 @@
-import { WORKSPACE_ID } from "./index";
+import { FAKE_API_CALLER_ID, WORKSPACE_ID } from "./index";
 
 export default function configureUser(route) {
   route.get("/user/:id");
@@ -11,7 +11,15 @@ export default function configureUser(route) {
     if (user) {
       return user;
     }
-    return schema.users.create(attrs);
+
+    const ts = Date.now();
+    return schema.users.create({
+      ...attrs,
+      creatorId: FAKE_API_CALLER_ID,
+      updaterId: FAKE_API_CALLER_ID,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+    });
   });
 
   route.patch("/user/:userId", function (schema, request) {
@@ -28,6 +36,11 @@ export default function configureUser(route) {
       );
     }
 
-    return user.update(attrs);
+    const ts = Date.now();
+    return user.update({
+      ...attrs,
+      updaterId: FAKE_API_CALLER_ID,
+      lastUpdatedTs: ts,
+    });
   });
 }

@@ -1,6 +1,10 @@
 [
   {
     "id": "1",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "ACTIVE",
     "name": "Demo Owner",
     "email": "demo@example.com",
@@ -8,6 +12,10 @@
   },
   {
     "id": "2",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "ACTIVE",
     "name": "Jerry DBA",
     "email": "jerry@example.com",
@@ -15,6 +23,10 @@
   },
   {
     "id": "3",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "ACTIVE",
     "name": "Tom Dev",
     "email": "tom@example.com",
@@ -22,6 +34,10 @@
   },
   {
     "id": "4",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "ACTIVE",
     "name": "Alice DBA",
     "email": "alice@example.com",
@@ -29,6 +45,10 @@
   },
   {
     "id": "5",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "ACTIVE",
     "name": "Jane Dev",
     "email": "jane@example.com",
@@ -36,6 +56,10 @@
   },
   {
     "id": "6",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "INVITED",
     "name": "Bob Invited",
     "email": "bob@example.com",
@@ -43,6 +67,10 @@
   },
   {
     "id": "7",
+    "updaterId": "1",
+    "lastUpdatedTs": 1614571200000,
+    "createdTs": 1614528000000,
+    "creatorId": "1",
     "status": "ACTIVE",
     "name": "Fake API caller DBA",
     "email": "apicaller@example.com",

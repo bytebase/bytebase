@@ -14,9 +14,20 @@ import {
 import { isDevOrDemo, randomString } from "../../utils";
 
 function convert(user: ResourceObject, rootGetters: any): Principal {
+  const creator = rootGetters["principal/principalById"](
+    user.attributes.creatorId
+  );
+  const updater = rootGetters["principal/principalById"](
+    user.attributes.updaterId
+  );
+
   const member = rootGetters["member/memberByPrincipalId"](user.id);
   return {
     id: user.id,
+    creator,
+    updater,
+    createdTs: user.attributes.createdTs as number,
+    lastUpdatedTs: user.attributes.lastUpdatedTs as number,
     status: user.attributes.status as PrincipalStatus,
     name: user.attributes.name as string,
     email: user.attributes.email as string,

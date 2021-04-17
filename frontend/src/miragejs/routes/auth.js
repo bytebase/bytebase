@@ -37,10 +37,17 @@ export default function configureAuth(route) {
       ...signupInfo,
     });
 
+    createdUser.update({
+      creatorId: createdUser.id,
+      updaterId: createdUser.id,
+    });
+
     const newMember = {
       principalId: createdUser.id,
       email: createdUser.email,
+      creatorId: createdUser.id,
       createdTs: ts,
+      updaterId: createdUser.id,
       lastUpdatedTs: ts,
       role: "DEVELOPER",
       updaterId: createdUser.id,

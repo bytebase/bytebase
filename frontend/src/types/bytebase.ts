@@ -48,13 +48,17 @@ export const unknown = (
     id: UNKNOWN_ID,
     status: "PENDING",
   };
+
+  // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
+    createdTs: 0,
+    lastUpdatedTs: 0,
     status: "UNKNOWN",
     name: "<<Unknown principal>>",
     email: "",
     role: "GUEST",
-  };
+  } as Principal;
 
   const UNKNOWN_USER: User = {
     id: UNKNOWN_ID,
@@ -331,6 +335,10 @@ export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
 
 export type Principal = {
   id: PrincipalId;
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
   status: PrincipalStatus;
   name: string;
   email: string;
