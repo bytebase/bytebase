@@ -245,7 +245,7 @@ const actions = {
       projectMember: ProjectMemberNew;
     }
   ) {
-    await axios.post(`/api/project/${projectId}/Member`, {
+    await axios.post(`/api/project/${projectId}/member`, {
       data: {
         type: "projectmembernew",
         attributes: projectMember,
@@ -269,7 +269,7 @@ const actions = {
       projectMemberPatch: ProjectMemberPatch;
     }
   ) {
-    await axios.patch(`/api/project/${projectId}/Member/${memberId}`, {
+    await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
       data: {
         type: "projectmemberpatch",
         attributes: projectMemberPatch,
@@ -282,7 +282,7 @@ const actions = {
   },
 
   async deleteMember({ dispatch }: any, member: ProjectMember) {
-    await axios.delete(`/api/project/${member.project.id}/Member/${member.id}`);
+    await axios.delete(`/api/project/${member.project.id}/member/${member.id}`);
 
     const updatedProject = await dispatch(
       "fetchProjectById",

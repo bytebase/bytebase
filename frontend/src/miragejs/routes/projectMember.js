@@ -3,7 +3,7 @@ import { WORKSPACE_ID, FAKE_API_CALLER_ID } from "./index";
 import { postMessageToOwnerAndDBA } from "../utils";
 
 export default function configureProrjectMember(route) {
-  route.get("/project/:projectId/Member", function (schema, request) {
+  route.get("/project/:projectId/member", function (schema, request) {
     const project = schema.projects.find(request.params.projectId);
 
     if (!project) {
@@ -24,7 +24,7 @@ export default function configureProrjectMember(route) {
     });
   });
 
-  route.post("/project/:projectId/Member", function (schema, request) {
+  route.post("/project/:projectId/member", function (schema, request) {
     const project = schema.projects.find(request.params.projectId);
 
     if (!project) {
@@ -82,7 +82,7 @@ export default function configureProrjectMember(route) {
   });
 
   route.patch(
-    "/project/:projectId/Member/:memberId",
+    "/project/:projectId/member/:memberId",
     function (schema, request) {
       const project = schema.projects.find(request.params.projectId);
 
@@ -133,7 +133,7 @@ export default function configureProrjectMember(route) {
   );
 
   route.delete(
-    "/project/:projectId/Member/:memberId",
+    "/project/:projectId/member/:memberId",
     function (schema, request) {
       const project = schema.projects.find(request.params.projectId);
 
