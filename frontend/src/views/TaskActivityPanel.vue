@@ -9,10 +9,10 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in state.activityList" :key="index">
+          <li v-for="(activity, index) in activityList" :key="index">
             <div :id="'activity' + activity.id" class="relative pb-4">
               <span
-                v-if="index != state.activityList.length - 1"
+                v-if="index != activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                 aria-hidden="true"
               ></span>
@@ -309,7 +309,6 @@ import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
 interface LocalState {
   showDeleteCommentModal: boolean;
   editCommentMode: boolean;
-  activityList: Activity[];
   activeActivity?: Activity;
 }
 
@@ -339,7 +338,6 @@ export default {
     const state = reactive<LocalState>({
       showDeleteCommentModal: false,
       editCommentMode: false,
-      activityList: [],
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -372,43 +370,41 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareActivityList = () => {
-      store
-        .dispatch("activity/fetchActivityListForTask", props.task.id)
-        .then((list: Activity[]) => {
-          // Filter out the subscriber change
-          state.activityList = list.filter((activity: Activity) => {
-            if (activity.actionType == "bytebase.task.field.update") {
-              let containUserVisibleChange = false;
-              for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
-                ?.changeList || []) {
-                if (update.fieldId != TaskBuiltinFieldId.SUBSCRIBER_LIST) {
-                  containUserVisibleChange = true;
-                  break;
-                }
-              }
-              return containUserVisibleChange;
-            }
-            return true;
-          });
-
-          // The activity list and its anchor is not immediately available when the task shows up.
-          // Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
-          // So we manually use scrollIntoView after rendering the activity list.
-          nextTick(() => {
-            if (router.currentRoute.value.hash) {
-              const el = document.getElementById(
-                router.currentRoute.value.hash.slice(1)
-              );
-              el?.scrollIntoView();
-            }
-          });
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("activity/fetchActivityListForTask", props.task.id);
     };
 
     watchEffect(prepareActivityList);
+
+    // The activity list and its anchor is not immediately available when the task shows up.
+    // Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
+    // So we manually use scrollIntoView after rendering the activity list.
+    nextTick(() => {
+      if (router.currentRoute.value.hash) {
+        const el = document.getElementById(
+          router.currentRoute.value.hash.slice(1)
+        );
+        el?.scrollIntoView();
+      }
+    });
+
+    // Need to use computed to make list reactive to activity list changes.
+    const activityList = computed((): Activity[] => {
+      const list = store.getters["activity/activityListByTask"](props.task.id);
+      return list.filter((activity: Activity) => {
+        if (activity.actionType == "bytebase.task.field.update") {
+          let containUserVisibleChange = false;
+          for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
+            ?.changeList || []) {
+            if (update.fieldId != TaskBuiltinFieldId.SUBSCRIBER_LIST) {
+              containUserVisibleChange = true;
+              break;
+            }
+          }
+          return containUserVisibleChange;
+        }
+        return true;
+      });
+    });
 
     const cancelEditComment = () => {
       editComment.value = "";
@@ -599,6 +595,7 @@ export default {
 
     return {
       state,
+      activityList,
       newComment,
       newCommentTextArea,
       editComment,
