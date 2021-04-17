@@ -40,5 +40,12 @@
     "name": "Bob Invited",
     "email": "bob@example.com",
     "passwordHash": "aaa"
+  },
+  {
+    "id": "7",
+    "status": "ACTIVE",
+    "name": "Fake API caller DBA",
+    "email": "apicaller@example.com",
+    "passwordHash": "aaa"
   }
 ]

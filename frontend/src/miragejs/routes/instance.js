@@ -1,6 +1,6 @@
 import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
-import { WORKSPACE_ID, OWNER_ID } from "./index";
+import { WORKSPACE_ID, FAKE_API_CALLER_ID } from "./index";
 import { DEFAULT_PROJECT_ID, InstanceBuiltinFieldId } from "../../types";
 
 export default function configurInstance(route) {
@@ -45,8 +45,6 @@ export default function configurInstance(route) {
   });
 
   route.post("/instance", function (schema, request) {
-    // NOTE, in actual implementation, we need to fetch the user from the auth context.
-    const callerId = OWNER_ID;
     const attrs = this.normalizedRequestAttrs("instance-new");
     const ts = Date.now();
     const createdInstance = schema.instances.create({
@@ -56,8 +54,8 @@ export default function configurInstance(route) {
       host: attrs.host,
       port: attrs.port,
       rowStatus: "NORMAL",
-      creatorId: callerId,
-      updaterId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
+      updaterId: FAKE_API_CALLER_ID,
       createdTs: ts,
       lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
@@ -86,13 +84,13 @@ export default function configurInstance(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.instance.create",
       status: "DELIVERED",
-      creatorId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,
       payload: {
         instanceName: createdInstance.name,
       },
     };
-    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
 
     return createdInstance;
   });
@@ -237,8 +235,6 @@ export default function configurInstance(route) {
       dataSource.update(dataSourceAttrs);
     }
 
-    // NOTE, in actual implementation, we need to fetch the user from the auth context.
-    const callerId = OWNER_ID;
     const ts = Date.now();
     const messageTemplate = {
       containerId: updatedInstance.id,
@@ -246,14 +242,14 @@ export default function configurInstance(route) {
       lastUpdatedTs: ts,
       type,
       status: "DELIVERED",
-      creatorId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,
       payload: {
         instanceName: updatedInstance.name,
         changeList,
       },
     };
-    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
 
     return updatedInstance;
   });
@@ -271,8 +267,6 @@ export default function configurInstance(route) {
       );
     }
 
-    // NOTE, in actual implementation, we need to fetch the user from the auth context.
-    const callerId = OWNER_ID;
     // Delete data source and database before instance itself.
     // Otherwise, the instanceId will be set to null.
     const dataSourceList = schema.dataSources.where({
@@ -294,12 +288,12 @@ export default function configurInstance(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.instance.delete",
       status: "DELIVERED",
-      creatorId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,
       payload: {
         instanceName: instance.name,
       },
     };
-    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
   });
 }

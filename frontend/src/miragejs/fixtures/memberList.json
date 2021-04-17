@@ -68,5 +68,15 @@
     "principalId": "6",
     "updaterId": "1",
     "creatorId": "1"
+  },
+  {
+    "id": "8",
+    "workspaceId": "1",
+    "createdTs": 1609603200000,
+    "lastUpdatedTs": 1609646400000,
+    "role": "DBA",
+    "principalId": "7",
+    "updaterId": "1",
+    "creatorId": "1"
   }
 ]

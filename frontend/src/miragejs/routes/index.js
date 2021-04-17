@@ -17,7 +17,8 @@ import configureDataSource from "./dataSource";
 
 export const WORKSPACE_ID = 1;
 
-export const OWNER_ID = 1;
+// NOTE, in actual implementation, we need to fetch the user from the auth context.
+export const FAKE_API_CALLER_ID = 7;
 
 export default function routes() {
   // Change this value to simulate response delay.

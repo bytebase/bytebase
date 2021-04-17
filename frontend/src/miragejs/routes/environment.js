@@ -1,6 +1,6 @@
 import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
-import { WORKSPACE_ID, OWNER_ID } from "./index";
+import { WORKSPACE_ID, FAKE_API_CALLER_ID } from "./index";
 import { EnvironmentBuiltinFieldId } from "../../types";
 
 export default function configureEnvironment(route) {
@@ -48,8 +48,6 @@ export default function configureEnvironment(route) {
     };
     const createdEnvironment = schema.environments.create(newEnvironment);
 
-    // NOTE, in actual implementation, we need to fetch the user from the auth context.
-    const callerId = OWNER_ID;
     const ts = Date.now();
     const messageTemplate = {
       containerId: createdEnvironment.id,
@@ -57,13 +55,13 @@ export default function configureEnvironment(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.environment.create",
       status: "DELIVERED",
-      creatorId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,
       payload: {
         environmentName: createdEnvironment.name,
       },
     };
-    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
 
     return createdEnvironment;
   });
@@ -128,8 +126,6 @@ export default function configureEnvironment(route) {
 
     const updatedEnvironment = environment.update(attrs);
 
-    // NOTE, in actual implementation, we need to fetch the user from the auth context.
-    const callerId = OWNER_ID;
     const ts = Date.now();
     const messageTemplate = {
       containerId: environment.id,
@@ -137,14 +133,14 @@ export default function configureEnvironment(route) {
       lastUpdatedTs: ts,
       type,
       status: "DELIVERED",
-      creatorId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,
       payload: {
         environmentName: updatedEnvironment.name,
         changeList,
       },
     };
-    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
 
     return updatedEnvironment;
   });

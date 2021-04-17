@@ -1,5 +1,5 @@
 import { Response } from "miragejs";
-import { WORKSPACE_ID, OWNER_ID } from "./index";
+import { WORKSPACE_ID, FAKE_API_CALLER_ID } from "./index";
 import { postMessageToOwnerAndDBA } from "../utils";
 
 export default function configureProrjectMember(route) {
@@ -49,12 +49,10 @@ export default function configureProrjectMember(route) {
       return member;
     }
 
-    // NOTE, in actual implementation, we need to fetch the user from the auth context.
-    const callerId = OWNER_ID;
     const newMember = {
       ...attrs,
-      creatorId: callerId,
-      updaterId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
+      updaterId: FAKE_API_CALLER_ID,
       createdTs: ts,
       lastUpdatedTs: ts,
       role: attrs.role,
@@ -71,14 +69,14 @@ export default function configureProrjectMember(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.project.member.create",
       status: "DELIVERED",
-      creatorId: callerId,
+      creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,
       payload: {
         principalId: attrs.principalId,
         newRole: attrs.role,
       },
     };
-    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
 
     return createdMember;
   });
@@ -110,10 +108,8 @@ export default function configureProrjectMember(route) {
       }
       const oldRole = member.role;
 
-      // NOTE, in actual implementation, we need to fetch the user from the auth context.
-      const callerId = OWNER_ID;
       const attrs = this.normalizedRequestAttrs("project-member");
-      attrs.updaterId = callerId;
+      attrs.updaterId = FAKE_API_CALLER_ID;
       const updatedMember = member.update(attrs);
 
       const ts = Date.now();
@@ -169,8 +165,6 @@ export default function configureProrjectMember(route) {
       const oldRole = member.role;
       member.destroy();
 
-      // NOTE, in actual implementation, we need to fetch the user from the auth context.
-      const callerId = OWNER_ID;
       const ts = Date.now();
       const messageTemplate = {
         containerId: request.params.projectId,
@@ -178,14 +172,14 @@ export default function configureProrjectMember(route) {
         lastUpdatedTs: ts,
         type: "bb.msg.project.member.revoke",
         status: "DELIVERED",
-        creatorId: callerId,
+        creatorId: FAKE_API_CALLER_ID,
         workspaceId: WORKSPACE_ID,
         payload: {
           principalId: member.principalId,
           oldRole,
         },
       };
-      postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
+      postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
     }
   );
 }
