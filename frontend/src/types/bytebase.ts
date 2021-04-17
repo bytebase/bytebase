@@ -8,6 +8,8 @@ export const UNKNOWN_ID = "-1";
 // project yet. We can't use UNKNOWN_ID because of referential integrity.
 export const DEFAULT_PROJECT_ID = "1";
 
+export const ALL_DATABASE_NAME = "*";
+
 export type ResourceType =
   | "PRINCIPAL"
   | "EXECUTION"
@@ -694,6 +696,8 @@ export enum InstanceBuiltinFieldId {
   EXTERNAL_LINK = "4",
   HOST = "5",
   PORT = "6",
+  username = "7",
+  password = "8",
 }
 
 export type InstanceMessagePaylaod = {

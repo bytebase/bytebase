@@ -7,12 +7,14 @@ import {
   StageType,
   Task,
   DEFAULT_PROJECT_ID,
+  ALL_DATABASE_NAME,
   TaskNew,
   TaskStatus,
   StageNew,
   StageStatus,
   StageId,
   DatabaseId,
+  ProjectId,
 } from "../../types";
 import { databaseSlug, taskSlug } from "../../utils";
 
@@ -120,7 +122,8 @@ const workspacesSeeder = (server: any) => {
     workspace1.id,
     environmentList1,
     projectList1,
-    ws1DBA
+    ws1DBA,
+    DEFAULT_PROJECT_ID
   );
 
   const instanceList2 = createInstanceList(
@@ -128,35 +131,36 @@ const workspacesSeeder = (server: any) => {
     workspace2.id,
     environmentList2,
     projectList2,
-    ws2DBA
+    ws2DBA,
+    "2"
   );
 
   // Database
   const databaseList1 = [];
   databaseList1.push(
-    server.schema.databases.findBy({
-      name: "shop1",
-    })
+    server.schema.databases.where((item: any) => {
+      return item.name != "*" && item.instanceId == instanceList1[0].id;
+    }).models[0]
   );
   databaseList1.push(
-    server.schema.databases.findBy({
-      name: "shop3",
-    })
+    server.schema.databases.where((item: any) => {
+      return item.name != "*" && item.instanceId == instanceList1[1].id;
+    }).models[0]
   );
   databaseList1.push(
-    server.schema.databases.findBy({
-      name: "shop5",
-    })
+    server.schema.databases.where((item: any) => {
+      return item.name != "*" && item.instanceId == instanceList1[2].id;
+    }).models[0]
   );
   databaseList1.push(
-    server.schema.databases.findBy({
-      name: "shop7",
-    })
+    server.schema.databases.where((item: any) => {
+      return item.name != "*" && item.instanceId == instanceList1[3].id;
+    }).models[0]
   );
   databaseList1.push(
-    server.schema.databases.findBy({
-      name: "shop9",
-    })
+    server.schema.databases.where((item: any) => {
+      return item.name != "*" && item.instanceId == instanceList1[4].id;
+    }).models[0]
   );
 
   // Task
@@ -591,7 +595,8 @@ const createInstanceList = (
   workspaceId: string,
   enviromentList: { id: string }[],
   projectList: { id: string }[],
-  dba: { id: string }
+  dba: { id: string },
+  defaultProjectId: ProjectId
 ): Instance[] => {
   const instanceNamelist = [
     "On-premise MySQL instance",
@@ -612,10 +617,25 @@ const createInstanceList = (
       environmentId: i == 4 ? enviromentList[3].id : enviromentList[i].id,
       creatorId: dba.id,
       updaterId: dba.id,
-      username: "root" + i,
-      password: "pwd" + i,
     });
     instanceList.push(instance);
+
+    const allDatabase = server.create("database", {
+      name: ALL_DATABASE_NAME,
+      workspaceId: workspaceId,
+      projectId: defaultProjectId,
+      instance,
+    });
+
+    server.create("dataSource", {
+      workspaceId: instance.workspaceId,
+      instance,
+      database: allDatabase,
+      name: instance.name + " admin data source",
+      type: "RW",
+      username: "adminRW",
+      password: "pwdadminRW",
+    });
 
     for (let j = 0; j < 2; j++) {
       server.create("database", {

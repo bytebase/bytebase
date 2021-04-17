@@ -63,5 +63,7 @@ export default function routes() {
   configureDatabase(this);
 
   // Data Source
-  configureDataSource(this);
+  // Disable data source related route for now
+  // as we only allow interacting with admin data source via instance API
+  // configureDataSource(this);
 }

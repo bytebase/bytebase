@@ -206,7 +206,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/database?instance=${instanceId}&include=instance,project,project.projectMember,dataSource`
+        `/api/database?instance=${instanceId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -224,7 +224,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/database?project=${projectId}&include=instance,project,project.projectMember,dataSource`
+        `/api/database?project=${projectId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -239,7 +239,7 @@ const actions = {
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
-        `/api/database?user=${userId}&include=instance,project,project.projectMember,dataSource`
+        `/api/database?user=${userId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -294,7 +294,7 @@ const actions = {
   async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
     const data = (
       await axios.post(
-        `/api/database?include=instance,project,project.projectMember,dataSource`,
+        `/api/database?include=instance,project,project.projectMember`,
         {
           data: {
             type: "database",
@@ -330,7 +330,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${databaseId}?include=instance,project,project.projectMember,dataSource`,
+        `/api/database/${databaseId}?include=instance,project,project.projectMember`,
         {
           data: {
             type: "databasepatch",

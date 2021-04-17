@@ -1,5 +1,6 @@
 import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
+import { ALL_DATABASE_NAME } from "../../types";
 
 export default function configureDatabase(route) {
   route.get("/database/:id", function (schema, request) {
@@ -38,6 +39,10 @@ export default function configureDatabase(route) {
 
     return schema.databases
       .where((database) => {
+        if (database.name == ALL_DATABASE_NAME) {
+          return false;
+        }
+
         if (instanceIdList && !instanceIdList.includes(database.instanceId)) {
           return false;
         }
@@ -124,6 +129,10 @@ export default function configureDatabase(route) {
         {},
         { errors: "Database " + request.params.databaseId + " not found." }
       );
+    }
+
+    if (database.name == ALL_DATABASE_NAME) {
+      return new Response(400, {}, { errors: "Can't update database *" });
     }
 
     return database.update({ ...attrs, lastUpdatedTs: Date.now() });

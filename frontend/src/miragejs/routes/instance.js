@@ -1,14 +1,14 @@
 import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
 import { WORKSPACE_ID, OWNER_ID } from "./index";
-import { InstanceBuiltinFieldId } from "../../types";
+import { DEFAULT_PROJECT_ID, InstanceBuiltinFieldId } from "../../types";
 
 export default function configurInstance(route) {
   route.get("/instance", function (schema, request) {
     const {
       queryParams: { rowstatus: rowStatus },
     } = request;
-    const list = schema.instances.where((instance) => {
+    return schema.instances.where((instance) => {
       if (instance.workspaceId != WORKSPACE_ID) {
         return false;
       }
@@ -30,13 +30,6 @@ export default function configurInstance(route) {
 
       return true;
     });
-
-    list.models.forEach((instance) => {
-      instance.username = "<<redacted>>";
-      instance.password = "<<redacted>>";
-    });
-
-    return list;
   });
 
   route.get("/instance/:id", function (schema, request) {
@@ -57,12 +50,34 @@ export default function configurInstance(route) {
     const attrs = this.normalizedRequestAttrs("instance-new");
     const ts = Date.now();
     const createdInstance = schema.instances.create({
-      ...attrs,
+      environmentId: attrs.environmentId,
+      name: attrs.name,
+      externalLink: attrs.externalLink,
+      host: attrs.host,
+      port: attrs.port,
+      rowStatus: "NORMAL",
       creatorId: callerId,
       updaterId: callerId,
       createdTs: ts,
       lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
+    });
+
+    const allDatabase = schema.databases.create({
+      workspaceId: WORKSPACE_ID,
+      projectId: DEFAULT_PROJECT_ID,
+      instance: createdInstance,
+      name: "*",
+    });
+
+    schema.dataSources.create({
+      workspaceId: WORKSPACE_ID,
+      instance: createdInstance,
+      database: allDatabase,
+      name: createdInstance.name + " admin data source",
+      type: "RW",
+      username: attrs.username,
+      password: attrs.password,
     });
 
     const messageTemplate = {
@@ -83,7 +98,6 @@ export default function configurInstance(route) {
   });
 
   route.patch("/instance/:instanceId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("instance-patch");
     const instance = schema.instances.find(request.params.instanceId);
 
     if (!instance) {
@@ -96,57 +110,132 @@ export default function configurInstance(route) {
       );
     }
 
+    const dataSource = schema.dataSources.findBy({
+      instanceId: instance.id,
+      type: "RW",
+    });
+
+    if (!dataSource) {
+      return new Response(
+        404,
+        {},
+        {
+          errors: "Admin connection info for " + instance.name + " not found",
+        }
+      );
+    }
+
+    const attrs = this.normalizedRequestAttrs("instance-patch");
+    const instanceAttrs = {
+      rowStatus: attrs.rowStatus,
+      name: attrs.name,
+      externalLink: attrs.externalLink,
+      host: attrs.host,
+      port: attrs.port,
+    };
+    const dataSourceAttrs = {
+      username: attrs.username,
+      password: attrs.password,
+    };
+
+    let hasInstanceChange = false;
+    let hasDataSourceChange = false;
     const changeList = [];
     let type = "bb.msg.instance.update";
 
-    if (attrs.rowStatus && attrs.rowStatus != instance.rowStatus) {
-      if (attrs.rowStatus == "ARCHIVED") {
+    if (
+      instanceAttrs.rowStatus &&
+      instanceAttrs.rowStatus != instance.rowStatus
+    ) {
+      if (instanceAttrs.rowStatus == "ARCHIVED") {
         type = "bb.msg.instance.archive";
-      } else if (attrs.rowStatus == "NORMAL") {
+      } else if (instanceAttrs.rowStatus == "NORMAL") {
         type = "bb.msg.instance.restore";
-      } else if (attrs.rowStatus == "PENDING_DELETE") {
+      } else if (instanceAttrs.rowStatus == "PENDING_DELETE") {
         type = "bb.msg.instance.delete";
       }
       changeList.push({
         fieldId: InstanceBuiltinFieldId.ROW_STATUS,
         oldValue: instance.rowStatus,
-        newValue: attrs.rowStatus,
+        newValue: instanceAttrs.rowStatus,
       });
+      hasInstanceChange = true;
     }
 
-    if (attrs.name && attrs.name != instance.name) {
+    if (instanceAttrs.name && instanceAttrs.name != instance.name) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.NAME,
         oldValue: instance.name,
-        newValue: attrs.name,
+        newValue: instanceAttrs.name,
       });
+      hasInstanceChange = true;
     }
 
-    if (attrs.externalLink && attrs.externalLink != instance.externalLink) {
+    if (
+      instanceAttrs.externalLink &&
+      instanceAttrs.externalLink != instance.externalLink
+    ) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.EXTERNAL_LINK,
         oldValue: instance.externalLink,
-        newValue: attrs.externalLink,
+        newValue: instanceAttrs.externalLink,
       });
+      hasInstanceChange = true;
     }
 
-    if (attrs.host && attrs.host != instance.host) {
+    if (instanceAttrs.host && instanceAttrs.host != instance.host) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.HOST,
         oldValue: instance.host,
-        newValue: attrs.host,
+        newValue: instanceAttrs.host,
       });
+      hasInstanceChange = true;
     }
 
-    if (attrs.port && attrs.port != instance.port) {
+    if (instanceAttrs.port && instanceAttrs.port != instance.port) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.PORT,
         oldValue: instance.port,
-        newValue: attrs.port,
+        newValue: instanceAttrs.port,
       });
+      hasInstanceChange = true;
     }
 
-    const updatedInstance = instance.update(attrs);
+    if (
+      dataSourceAttrs.username &&
+      dataSourceAttrs.username != dataSource.username
+    ) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.USERNAME,
+        oldValue: dataSource.username,
+        newValue: dataSourceAttrs.username,
+      });
+      hasDataSourceChange = true;
+    }
+
+    if (
+      dataSourceAttrs.password &&
+      dataSourceAttrs.password != dataSource.password
+    ) {
+      changeList.push({
+        fieldId: InstanceBuiltinFieldId.PASSWORD,
+        oldValue: dataSource.password,
+        newValue: dataSourceAttrs.password,
+      });
+      hasDataSourceChange = true;
+    }
+
+    let updatedInstance = instance;
+
+    if (hasInstanceChange) {
+      console.log(instanceAttrs);
+      updatedInstance = instance.update(instanceAttrs);
+    }
+
+    if (hasDataSourceChange) {
+      console.log(dataSourceAttrs);
+      dataSource.update(dataSourceAttrs);
+    }
 
     // NOTE, in actual implementation, we need to fetch the user from the auth context.
     const callerId = OWNER_ID;

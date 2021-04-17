@@ -46,11 +46,5 @@ export default {
         return "5432";
       }
     },
-    username() {
-      return "";
-    },
-    password() {
-      return "";
-    },
   }),
 };

@@ -1,5 +1,6 @@
 import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
+import { DEFAULT_PROJECT_ID } from "../../types";
 
 export default function configureProject(route) {
   route.get("/project", function (schema, request) {
@@ -8,6 +9,10 @@ export default function configureProject(route) {
     } = request;
 
     return schema.projects.where((project) => {
+      if (project.id == DEFAULT_PROJECT_ID) {
+        return false;
+      }
+
       if (project.workspaceId != WORKSPACE_ID) {
         return false;
       }
@@ -72,6 +77,10 @@ export default function configureProject(route) {
           errors: "Project id " + request.params.projectId + " not found",
         }
       );
+    }
+
+    if (project.id == DEFAULT_PROJECT_ID) {
+      return new Response(400, {}, { errors: "Can't update default project" });
     }
 
     const attrs = this.normalizedRequestAttrs("project-patch");

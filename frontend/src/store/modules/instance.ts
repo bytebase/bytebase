@@ -13,7 +13,11 @@ import {
   RowStatus,
 } from "../../types";
 
-function convert(instance: ResourceObject, rootGetters: any): Instance {
+function convert(
+  instance: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Instance {
   const environment = rootGetters["environment/environmentList"]([
     "NORMAL",
     "ARCHIVED",
@@ -30,6 +34,22 @@ function convert(instance: ResourceObject, rootGetters: any): Instance {
     instance.attributes.updaterId
   );
 
+  let username = undefined;
+  let password = undefined;
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "data-source" &&
+      item.attributes.type == "RW" &&
+      (item.relationships!.instance.data as ResourceIdentifier).id ==
+        instance.id
+    ) {
+      username = item.attributes.username as string;
+      password = item.attributes.password as string;
+      break;
+    }
+  }
+
   return {
     ...(instance.attributes as Omit<
       Instance,
@@ -39,6 +59,8 @@ function convert(instance: ResourceObject, rootGetters: any): Instance {
     creator,
     updater,
     environment,
+    username,
+    password,
   };
 }
 
@@ -53,7 +75,7 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (instance: ResourceObject): Instance => {
-    return convert(instance, rootGetters);
+    return convert(instance, [], rootGetters);
   },
 
   instanceList: (state: InstanceState) => (
@@ -100,11 +122,10 @@ const actions = {
     const path =
       "/api/instance" +
       (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
-    const instanceList = (await axios.get(path)).data.data.map(
-      (instance: ResourceObject) => {
-        return convert(instance, rootGetters);
-      }
-    );
+    const data = (await axios.get(path)).data;
+    const instanceList = data.data.map((instance: ResourceObject) => {
+      return convert(instance, data.included, rootGetters);
+    });
 
     commit("setInstanceList", instanceList);
 
@@ -115,10 +136,12 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    const instance = convert(
-      (await axios.get(`/api/instance/${instanceId}`)).data.data,
-      rootGetters
-    );
+    // Data source contains sensitive info such as username, password so
+    // we only fetch if requesting the specific instance id
+    const data = (
+      await axios.get(`/api/instance/${instanceId}?include=dataSource`)
+    ).data;
+    const instance = convert(data.data, data.included, rootGetters);
 
     commit("setInstanceById", {
       instanceId,
@@ -128,17 +151,15 @@ const actions = {
   },
 
   async createInstance({ commit, rootGetters }: any, newInstance: InstanceNew) {
-    const createdInstance = convert(
-      (
-        await axios.post(`/api/instance`, {
-          data: {
-            type: "instancenew",
-            attributes: newInstance,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.post(`/api/instance?include=dataSource`, {
+        data: {
+          type: "instancenew",
+          attributes: newInstance,
+        },
+      })
+    ).data;
+    const createdInstance = convert(data.data, data.included, rootGetters);
 
     commit("setInstanceById", {
       instanceId: createdInstance.id,
@@ -158,17 +179,15 @@ const actions = {
       instancePatch: InstancePatch;
     }
   ) {
-    const updatedInstance = convert(
-      (
-        await axios.patch(`/api/instance/${instanceId}`, {
-          data: {
-            type: "instancepatch",
-            attributes: instancePatch,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.patch(`/api/instance/${instanceId}?include=dataSource`, {
+        data: {
+          type: "instancepatch",
+          attributes: instancePatch,
+        },
+      })
+    ).data;
+    const updatedInstance = convert(data.data, data.included, rootGetters);
 
     commit("setInstanceById", {
       instanceId: updatedInstance.id,
