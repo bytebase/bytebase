@@ -178,9 +178,12 @@ export const unknown = (
 
   const UNKNOWN_BOOKMARK: Bookmark = {
     id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    lastUpdatedTs: 0,
     name: "",
     link: "",
-    creatorId: UNKNOWN_ID,
   };
 
   switch (type) {
@@ -302,11 +305,11 @@ export type ProjectRoleType = "OWNER" | "DEVELOPER";
 
 export type ProjectMember = {
   id: MemberId;
-  project: Project;
   creator: Principal;
   updater: Principal;
   createdTs: number;
   lastUpdatedTs: number;
+  project: Project;
   role: ProjectRoleType;
   principal: Principal;
 };
@@ -358,11 +361,18 @@ export type UserPatch = {
 // Bookmark
 export type Bookmark = {
   id: BookmarkId;
+  creator: Principal;
+  updater: Principal;
+  createdTs: number;
+  lastUpdatedTs: number;
   name: string;
   link: string;
-  creatorId: UserId;
 };
-export type BookmarkNew = Omit<Bookmark, "id">;
+
+export type BookmarkNew = {
+  name: string;
+  link: string;
+};
 
 // Project
 export type Project = {

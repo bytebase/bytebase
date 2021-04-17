@@ -8,10 +8,19 @@ import {
   unknown,
 } from "../../types";
 
-function convert(bookmark: ResourceObject): Bookmark {
+function convert(bookmark: ResourceObject, rootGetters: any): Bookmark {
+  const creator = rootGetters["principal/principalById"](
+    bookmark.attributes.creatorId
+  );
+  const updater = rootGetters["principal/principalById"](
+    bookmark.attributes.updaterId
+  );
+
   return {
-    ...(bookmark.attributes as Omit<Bookmark, "id">),
+    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator">),
     id: bookmark.id,
+    creator,
+    updater,
   };
 }
 
@@ -38,17 +47,17 @@ const getters = {
 };
 
 const actions = {
-  async fetchBookmarkListByUser({ commit }: any, userId: UserId) {
+  async fetchBookmarkListByUser({ commit, rootGetters }: any, userId: UserId) {
     const bookmarkList = (
       await axios.get(`/api/bookmark?user=${userId}`)
     ).data.data.map((bookmark: ResourceObject) => {
-      return convert(bookmark);
+      return convert(bookmark, rootGetters);
     });
     commit("setBookmarkListByUserId", { userId, bookmarkList });
     return bookmarkList;
   },
 
-  async createBookmark({ commit }: any, newBookmark: BookmarkNew) {
+  async createBookmark({ commit, rootGetters }: any, newBookmark: BookmarkNew) {
     const createdBookmark = convert(
       (
         await axios.post(`/api/bookmark`, {
@@ -57,7 +66,8 @@ const actions = {
             attributes: newBookmark,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("appendBookmark", createdBookmark);
@@ -65,7 +75,7 @@ const actions = {
     return createdBookmark;
   },
 
-  async patchBookmark({ commit }: any, bookmark: Bookmark) {
+  async patchBookmark({ commit, rootGetters }: any, bookmark: Bookmark) {
     const { id, ...attrs } = bookmark;
     const updatedBookmark = convert(
       (
@@ -75,7 +85,8 @@ const actions = {
             attributes: attrs,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("replaceBookmark", updatedBookmark);
@@ -105,16 +116,16 @@ const mutations = {
   },
 
   appendBookmark(state: BookmarkState, bookmark: Bookmark) {
-    const list = state.bookmarkListByUser.get(bookmark.creatorId);
+    const list = state.bookmarkListByUser.get(bookmark.creator.id);
     if (list) {
       list.push(bookmark);
     } else {
-      state.bookmarkListByUser.set(bookmark.creatorId, [bookmark]);
+      state.bookmarkListByUser.set(bookmark.creator.id, [bookmark]);
     }
   },
 
   replaceBookmark(state: BookmarkState, updatedBookmark: Bookmark) {
-    const list = state.bookmarkListByUser.get(updatedBookmark.creatorId);
+    const list = state.bookmarkListByUser.get(updatedBookmark.creator.id);
     if (list) {
       const i = list.findIndex(
         (item: Bookmark) => item.id == updatedBookmark.id
@@ -126,7 +137,7 @@ const mutations = {
   },
 
   deleteBookmark(state: BookmarkState, bookmark: Bookmark) {
-    const list = state.bookmarkListByUser.get(bookmark.creatorId);
+    const list = state.bookmarkListByUser.get(bookmark.creator.id);
     if (list) {
       const i = list.findIndex((item: Bookmark) => item.id == bookmark.id);
       if (i != -1) {

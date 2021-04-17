@@ -559,7 +559,7 @@ const workspacesSeeder = (server: any) => {
   server.create("activity", {
     actionType: "bytebase.task.create",
     containerId: task.id,
-    creatorId: ws1Dev1.id,
+    creatorId: ws2Dev.id,
     workspace: workspace2,
   });
 
@@ -585,7 +585,7 @@ const workspacesSeeder = (server: any) => {
       workspace: workspace2,
       name: task.name,
       link: `/task/${taskSlug(task.name, task.id)}`,
-      creatorId: ws1Owner.id,
+      creatorId: ws2DBA.id,
     });
   }
 };
