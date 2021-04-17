@@ -172,6 +172,7 @@ import {
   InstanceId,
   PrincipalId,
   ProjectId,
+  DatabaseNew,
 } from "../types";
 import { TaskField, templateForType } from "../plugins";
 import { isEqual } from "lodash";
@@ -359,13 +360,17 @@ export default {
       }
 
       // Create database
-      const createdDatabase = await store.dispatch("database/createDatabase", {
-        name: state.databaseName,
-        projectId: state.projectId,
-        instanceId: state.instanceId,
+      const newDatabase: DatabaseNew = {
         creatorId: currentUser.value.id,
+        name: state.databaseName!,
+        instanceId: state.instanceId!,
+        projectId: state.projectId!,
         taskId: linkedTask?.id,
-      });
+      };
+      const createdDatabase = await store.dispatch(
+        "database/createDatabase",
+        newDatabase
+      );
 
       // Redirect to the created database.
       router.push(`/db/${databaseSlug(createdDatabase)}`);

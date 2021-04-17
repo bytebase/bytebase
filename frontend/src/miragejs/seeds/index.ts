@@ -630,6 +630,8 @@ const createInstanceList = (
       workspaceId: workspaceId,
       projectId: defaultProjectId,
       instance,
+      creatorId: dba.id,
+      updaterId: dba.id,
     });
 
     server.create("dataSource", {
@@ -649,6 +651,8 @@ const createInstanceList = (
         workspaceId: workspaceId,
         projectId: projectList[i % projectList.length].id,
         instance,
+        creatorId: dba.id,
+        updaterId: dba.id,
       });
     }
   }
@@ -658,6 +662,8 @@ const createInstanceList = (
     projectId: DEFAULT_PROJECT_ID,
     name: "syncdb",
     instance: instanceList[0],
+    creatorId: dba.id,
+    updaterId: dba.id,
   });
 
   return instanceList;

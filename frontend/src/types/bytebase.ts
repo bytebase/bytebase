@@ -128,7 +128,9 @@ export const unknown = (
     instance: UNKNOWN_INSTANCE,
     project: UNKNOWN_PROJECT,
     dataSourceList: [],
+    creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
     name: "<<Unknown database>>",
     syncStatus: "NOT_FOUND",
@@ -915,7 +917,9 @@ export type Database = {
   instance: Instance;
   project: Project;
   dataSourceList: DataSource[];
+  creator: Principal;
   createdTs: number;
+  updater: Principal;
   lastUpdatedTs: number;
   name: string;
   syncStatus: DatabaseSyncStatus;
@@ -924,14 +928,15 @@ export type Database = {
 };
 
 export type DatabaseNew = {
+  creatorId: PrincipalId;
   name: string;
   instanceId: InstanceId;
   projectId: ProjectId;
-  creatorId: PrincipalId;
   taskId?: TaskId;
 };
 
 export type DatabasePatch = {
+  updaterId: PrincipalId;
   projectId: ProjectId;
 };
 

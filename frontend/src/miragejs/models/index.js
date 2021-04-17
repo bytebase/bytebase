@@ -113,6 +113,8 @@ export default {
     dataSource: hasMany(),
   }),
 
+  databaseNew: Model,
+
   databasePatch: Model,
 
   dataSource: Model.extend({

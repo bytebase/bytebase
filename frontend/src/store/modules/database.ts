@@ -297,7 +297,7 @@ const actions = {
         `/api/database?include=instance,project,project.projectMember`,
         {
           data: {
-            type: "database",
+            type: "databasenew",
             attributes: newDatabase,
           },
         }
@@ -322,10 +322,12 @@ const actions = {
       instanceId,
       databaseId,
       projectId,
+      updaterId,
     }: {
       instanceId: InstanceId;
       databaseId: DatabaseId;
       projectId: ProjectId;
+      updaterId: PrincipalId;
     }
   ) {
     const data = (
@@ -335,6 +337,7 @@ const actions = {
           data: {
             type: "databasepatch",
             attributes: {
+              updaterId,
               projectId,
             },
           },

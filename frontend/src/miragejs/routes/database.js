@@ -77,7 +77,7 @@ export default function configureDatabase(route) {
   route.post("/database", function (schema, request) {
     const ts = Date.now();
     const { taskId, creatorId, ...attrs } = this.normalizedRequestAttrs(
-      "database"
+      "database-new"
     );
 
     if (
@@ -98,7 +98,9 @@ export default function configureDatabase(route) {
 
     const newDatabase = {
       ...attrs,
+      creatorId,
       createdTs: ts,
+      updaterId: creatorId,
       lastUpdatedTs: ts,
       syncStatus: "OK",
       lastSuccessfulSyncTs: ts,

@@ -380,6 +380,7 @@ export default {
           instanceId: database.value.instance.id,
           databaseId: database.value.id,
           projectId: newProjectId,
+          updaterId: currentUser.value.id,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {
