@@ -80,10 +80,11 @@ export default function configureTask(route) {
       const messageList = [];
       const messageTemplate = {
         containerId: task.id,
+        creatorId: attrs.updaterId,
         createdTs: ts,
+        updaterId: attrs.updaterId,
         lastUpdatedTs: ts,
         status: "DELIVERED",
-        creatorId: attrs.updaterId,
         workspaceId: WORKSPACE_ID,
       };
 

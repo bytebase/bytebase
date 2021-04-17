@@ -173,12 +173,13 @@ export const unknown = (
   const UNKNOWN_MESSAGE: Message = {
     id: UNKNOWN_ID,
     containerId: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
     type: "bb.msg.task.assign",
     status: "DELIVERED",
     description: "",
-    creator: UNKNOWN_PRINCIPAL,
     receiver: UNKNOWN_PRINCIPAL,
   };
 
@@ -757,18 +758,20 @@ export type Message = {
   id: MessageId;
   // The object where this message originates
   containerId: ContainerId;
+  creator: Principal;
   createdTs: number;
+  updater: Principal;
   lastUpdatedTs: number;
   type: MessageType;
   status: MessageStatus;
   description: string;
-  creator: Principal;
   receiver: Principal;
   payload?: MessagePayload;
 };
 export type MessageNew = Omit<Message, "id" | "createdTs" | "lastUpdatedTs">;
 
 export type MessagePatch = {
+  updaterId: PrincipalId;
   status: MessageStatus;
 };
 

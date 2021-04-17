@@ -349,9 +349,12 @@ export default {
     const clickMessage = (message: Message) => {
       if (message.status == "DELIVERED") {
         state.whitelist.push(message);
-        store.dispatch("message/updateStatus", {
+        store.dispatch("message/patchMessage", {
           messageId: message.id,
-          updatedStatus: "CONSUMED",
+          messagePatch: {
+            updaterId: currentUser.value.id,
+            status: "CONSUMED",
+          },
         });
       }
     };
@@ -365,9 +368,12 @@ export default {
       state.messageList.forEach((item: Message) => {
         if (item.status == "DELIVERED") {
           state.whitelist.push(item);
-          store.dispatch("message/updateStatus", {
+          store.dispatch("message/patchMessage", {
             messageId: item.id,
-            updatedStatus: "CONSUMED",
+            messagePatch: {
+              updaterId: currentUser.value.id,
+              status: "CONSUMED",
+            },
           });
         }
       });

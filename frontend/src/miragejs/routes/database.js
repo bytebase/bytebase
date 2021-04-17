@@ -107,11 +107,12 @@ export default function configureDatabase(route) {
 
     if (taskId) {
       schema.activities.create({
+        creatorId: creatorId,
         createdTs: ts,
+        updaterId: creatorId,
         lastUpdatedTs: ts,
         actionType: "bytebase.task",
         containerId: taskId,
-        creatorId: creatorId,
         comment: `Created database ${newDatabase.name}`,
         workspaceId: WORKSPACE_ID,
       });

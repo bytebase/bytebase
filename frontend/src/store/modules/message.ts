@@ -8,20 +8,28 @@ import {
   ResourceObject,
   MessageStatus,
   MessagePayload,
+  MessagePatch,
 } from "../../types";
 
 function convert(message: ResourceObject, rootGetters: any): Message {
   const creator = rootGetters["principal/principalById"](
     message.attributes.creatorId
   );
+  const updater = rootGetters["principal/principalById"](
+    message.attributes.updaterId
+  );
   const receiver = rootGetters["principal/principalById"](
     message.attributes.receiverId
   );
 
   return {
-    ...(message.attributes as Omit<Message, "id" | "creator" | "receiver">),
+    ...(message.attributes as Omit<
+      Message,
+      "id" | "creator" | "updater" | "receiver"
+    >),
     id: message.id,
     creator,
+    updater,
     receiver,
   };
 }
@@ -48,21 +56,19 @@ const actions = {
     return messageList;
   },
 
-  async updateStatus(
+  async patchMessage(
     { commit, rootGetters }: any,
     {
       messageId,
-      updatedStatus,
-    }: { messageId: MessageId; updatedStatus: MessageStatus }
+      messagePatch,
+    }: { messageId: MessageId; messagePatch: MessagePatch }
   ) {
     const updatedMessage = convert(
       (
         await axios.patch(`/api/message/${messageId}`, {
           data: {
             type: "messagepatch",
-            attributes: {
-              status: updatedStatus,
-            },
+            attributes: messagePatch,
           },
         })
       ).data.data,
