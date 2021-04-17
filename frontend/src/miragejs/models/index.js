@@ -12,12 +12,12 @@ import { Model, hasMany, belongsTo } from "miragejs";
  * Mirage JS guide on Relationships: https://miragejs.com/docs/main-concepts/relationships/
  */
 export default {
+  // User
   user: Model.extend({}),
-
   userNew: Model,
-
   userPatch: Model,
 
+  // Workspace
   workspace: Model.extend({
     member: hasMany(),
     bookmark: hasMany(),
@@ -32,108 +32,101 @@ export default {
     dataSource: hasMany(),
   }),
 
+  // Member
   member: Model.extend({
     workspace: belongsTo(),
   }),
-
   memberNew: Model,
   memberPatch: Model,
 
-  projectMember: Model.extend({
-    workspace: belongsTo(),
-    project: belongsTo(),
-  }),
-
-  projectMemberNew: Model,
-
-  projectMemberPatch: Model,
-
+  // Bookmark
   bookmark: Model.extend({
     workspace: belongsTo(),
   }),
-
   bookmarkNew: Model,
 
+  // Activity
   activity: Model.extend({
     workspace: belongsTo(),
   }),
-
   activityNew: Model,
-
   activityPatch: Model,
 
+  // Message
   message: Model.extend({
     workspace: belongsTo(),
   }),
-
   messagePatch: Model,
 
+  // Project
   project: Model.extend({
     workspace: belongsTo(),
     database: hasMany(),
     projectMember: hasMany(),
     task: hasMany(),
   }),
-
   projectNew: Model,
-
   projectPatch: Model,
 
+  // Project Member
+  projectMember: Model.extend({
+    workspace: belongsTo(),
+    project: belongsTo(),
+  }),
+  projectMemberNew: Model,
+  projectMemberPatch: Model,
+
+  // Task
   task: Model.extend({
     workspace: belongsTo(),
     project: belongsTo(),
   }),
-
   taskNew: Model,
-
   taskPatch: Model,
 
+  // Environment
   environment: Model.extend({
     workspace: belongsTo(),
     instance: hasMany(),
   }),
-
   environmentNew: Model,
-
   environmentPatch: Model,
 
+  // Instance
   instance: Model.extend({
     workspace: belongsTo(),
     environment: belongsTo(),
     dataSource: hasMany(),
     database: hasMany(),
   }),
-
   instanceNew: Model,
-
   instancePatch: Model,
 
+  // Database
   database: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),
     project: belongsTo(),
     dataSource: hasMany(),
   }),
-
   databaseNew: Model,
-
   databasePatch: Model,
 
+  // Data Source
   dataSource: Model.extend({
     workspace: belongsTo(),
     instance: belongsTo(),
     database: belongsTo(),
     dataSourceMember: hasMany(),
   }),
-
   dataSourceNew: Model,
-
   dataSourcePatch: Model,
 
+  // Data Source Member
   dataSourceMember: Model,
-
   dataSourceMemberNew: Model,
 
+  // Misc
   batchUpdate: Model,
 
   signupInfo: Model,

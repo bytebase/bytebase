@@ -62,6 +62,8 @@ export const unknown = (
 
   const UNKNOWN_USER: User = {
     id: UNKNOWN_ID,
+    createdTs: 0,
+    lastUpdatedTs: 0,
     status: "UNKNOWN",
     name: "<<Unknown user>>",
     email: "unknown@example.com",
@@ -299,22 +301,32 @@ export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
 
 export type Member = {
   id: MemberId;
+
+  // Standard fields
   creator: Principal;
-  updater: Principal;
   createdTs: number;
+  updater: Principal;
   lastUpdatedTs: number;
+
+  // Domain specific fields
   role: RoleType;
   principalId: PrincipalId;
 };
 
 export type MemberNew = {
+  // Standard fields
   creatorId: PrincipalId;
+
+  // Domain specific fields
   principalId: PrincipalId;
   role: RoleType;
 };
 
 export type MemberPatch = {
+  // Standard fields
   updaterId: PrincipalId;
+
+  // Domain specific fields
   role: RoleType;
 };
 
@@ -323,23 +335,35 @@ export type ProjectRoleType = "OWNER" | "DEVELOPER";
 
 export type ProjectMember = {
   id: MemberId;
-  creator: Principal;
-  updater: Principal;
-  createdTs: number;
-  lastUpdatedTs: number;
+
+  // Related fields
   project: Project;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
+
+  // Domain specific fields
   role: ProjectRoleType;
   principal: Principal;
 };
 
 export type ProjectMemberNew = {
+  // Standard fields
   creatorId: PrincipalId;
+
+  // Domain specific fields
   principalId: PrincipalId;
   role: ProjectRoleType;
 };
 
 export type ProjectMemberPatch = {
+  // Standard fields
   updaterId: PrincipalId;
+
+  // Domain specific fields
   role: ProjectRoleType;
 };
 
@@ -351,10 +375,14 @@ export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
 
 export type Principal = {
   id: PrincipalId;
+
+  // Standard fields
   creator: Principal;
   createdTs: number;
   updater: Principal;
   lastUpdatedTs: number;
+
+  // Domain specific fields
   status: PrincipalStatus;
   name: string;
   email: string;
@@ -362,42 +390,66 @@ export type Principal = {
 };
 
 export type PrincipalNew = {
+  // Standard fields
   creatorId: PrincipalId;
+
+  // Domain specific fields
   name: string;
   email: string;
 };
 
 export type PrincipalPatch = {
+  // Standard fields
   updaterId: PrincipalId;
   rowStatus?: RowStatus;
+
+  // Domain specific fields
   name?: string;
 };
 
 export type User = {
   id: UserId;
+
+  // Standard fields
+  // [TODO] User doesn't have updater, creator fields because of bootstrap issue.
+  // Who is the updater, creator for the 1st user?
+  createdTs: number;
+  lastUpdatedTs: number;
+
+  // Domain specific fields
   status: PrincipalStatus;
   name: string;
   email: string;
 };
 
 export type UserPatch = {
+  // Standard fields
   updaterId: PrincipalId;
+
+  // Domain specific fields
   name?: string;
 };
 
 // Bookmark
 export type Bookmark = {
   id: BookmarkId;
+
+  // Standard fields
   creator: Principal;
-  updater: Principal;
   createdTs: number;
+  updater: Principal;
   lastUpdatedTs: number;
+
+  // Domain specific fields
   name: string;
   link: string;
 };
 
 export type BookmarkNew = {
+  // Standard fields
   creatorId: PrincipalId;
+
+  // Domain specific fields
   name: string;
   link: string;
 };
@@ -405,27 +457,37 @@ export type BookmarkNew = {
 // Project
 export type Project = {
   id: ProjectId;
-  rowStatus: RowStatus;
-  name: string;
-  key: string;
+
+  // Standard fields
   creator: Principal;
   updater: Principal;
   createdTs: number;
   lastUpdatedTs: number;
+  rowStatus: RowStatus;
+
+  // Domain specific fields
+  name: string;
+  key: string;
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
   memberList: ProjectMember[];
 };
 
 export type ProjectNew = {
+  // Standard fields
   creatorId: PrincipalId;
+
+  // Domain specific fields
   name: string;
   key: string;
 };
 
 export type ProjectPatch = {
+  // Standard fields
   updaterId: PrincipalId;
   rowStatus?: RowStatus;
+
+  // Domain specific fields
   name?: string;
   key?: string;
 };
@@ -484,11 +546,17 @@ export type TaskPayload = { [key: string]: any };
 
 export type Task = {
   id: TaskId;
+
+  // Related fields
+  project: Project;
+
+  // Standard fields
   creator: Principal;
   createdTs: number;
   updater: Principal;
   lastUpdatedTs: number;
-  project: Project;
+
+  // Domain specific fields
   name: string;
   status: TaskStatus;
   type: TaskType;
@@ -502,11 +570,14 @@ export type Task = {
 };
 
 export type TaskNew = {
+  // Standard fields
+  creatorId: PrincipalId;
+
+  // Domain specific fields
   name: string;
   type: TaskType;
   description: string;
   stageList: StageNew[];
-  creatorId: PrincipalId;
   assigneeId?: PrincipalId;
   subscriberIdList: PrincipalId[];
   sql?: string;
@@ -515,8 +586,13 @@ export type TaskNew = {
 };
 
 export type TaskPatch = {
-  updaterId: PrincipalId;
+  // Related fields
   projectId?: ProjectId;
+
+  // Standard fields
+  updaterId: PrincipalId;
+
+  // Domain specific fields
   name?: string;
   status?: TaskStatus;
   description?: string;
@@ -638,28 +714,42 @@ export type ActionPayloadType = ActionTaskFieldUpdatePayload;
 
 export type Activity = {
   id: ActivityId;
+
+  // Related fields
+  // The object where this activity belongs
+  // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
+  containerId: ContainerId;
+
+  // Standard fields
   creator: Principal;
   createdTs: number;
   updater: Principal;
   lastUpdatedTs: number;
-  // The object where this activity belongs
-  // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
-  containerId: ContainerId;
+
+  // Domain specific fields
   actionType: ActionType;
   comment: string;
   payload?: ActionPayloadType;
 };
 
 export type ActivityNew = {
-  creatorId: PrincipalId;
+  // Related fields
   containerId: ContainerId;
+
+  // Standard fields
+  creatorId: PrincipalId;
+
+  // Domain specific fields
   actionType: ActionType;
   comment: string;
   payload?: ActionPayloadType;
 };
 
 export type ActivityPatch = {
+  // Standard fields
   updaterId: PrincipalId;
+
+  // Domain specific fields
   comment: string;
 };
 
@@ -777,12 +867,18 @@ export type MessageStatus = "DELIVERED" | "CONSUMED";
 
 export type Message = {
   id: MessageId;
-  // The object where this message originates
+
+  // Related fields
+  // The object where this message originates, simliar to containerId in Activity
   containerId: ContainerId;
+
+  // Standard fields
   creator: Principal;
   createdTs: number;
   updater: Principal;
   lastUpdatedTs: number;
+
+  // Domain specific fields
   type: MessageType;
   status: MessageStatus;
   description: string;
@@ -799,35 +895,50 @@ export type MessagePatch = {
 // Environment
 export type Environment = {
   id: EnvironmentId;
+
+  // Standard fields
   creator: Principal;
   createdTs: number;
   updater: Principal;
   lastUpdatedTs: number;
   rowStatus: RowStatus;
+
+  // Domain specific fields
   name: string;
   order: number;
 };
 
 export type EnvironmentNew = {
+  // Standard fields
   creatorId: PrincipalId;
+
+  // Domain specific fields
   name: string;
 };
 
 export type EnvironmentPatch = {
   updaterId: PrincipalId;
   rowStatus?: RowStatus;
+
+  // Domain specific fields
   name?: string;
 };
 
 // Instance
 export type Instance = {
   id: InstanceId;
-  rowStatus: RowStatus;
+
+  // Related fields
   environment: Environment;
+
+  // Standard fields
   creator: Principal;
-  updater: Principal;
   createdTs: number;
+  updater: Principal;
   lastUpdatedTs: number;
+  rowStatus: RowStatus;
+
+  // Domain specific fields
   name: string;
   externalLink?: string;
   host: string;
@@ -838,8 +949,13 @@ export type Instance = {
 };
 
 export type InstanceNew = {
-  creatorId: PrincipalId;
+  // Related fields
   environmentId: EnvironmentId;
+
+  // Standard fields
+  creatorId: PrincipalId;
+
+  // Domain specific fields
   name: string;
   externalLink?: string;
   host: string;
@@ -850,8 +966,11 @@ export type InstanceNew = {
 };
 
 export type InstancePatch = {
+  // Standard fields
   updaterId: PrincipalId;
   rowStatus?: RowStatus;
+
+  // Domain specific fields
   name?: string;
   externalLink?: string;
   host?: string;
@@ -875,13 +994,19 @@ export type DatabaseSyncStatus = "OK" | "DRIFTED" | "NOT_FOUND";
 // Database
 export type Database = {
   id: DatabaseId;
+
+  // Related fields
   instance: Instance;
   project: Project;
   dataSourceList: DataSource[];
+
+  // Standard fields
   creator: Principal;
   createdTs: number;
   updater: Principal;
   lastUpdatedTs: number;
+
+  // Domain specific fields
   name: string;
   syncStatus: DatabaseSyncStatus;
   lastSuccessfulSyncTs: number;
@@ -889,16 +1014,24 @@ export type Database = {
 };
 
 export type DatabaseNew = {
-  creatorId: PrincipalId;
-  name: string;
+  // Related fields
   instanceId: InstanceId;
   projectId: ProjectId;
+
+  // Standard fields
+  creatorId: PrincipalId;
+
+  // Domain specific fields
+  name: string;
   taskId?: TaskId;
 };
 
 export type DatabasePatch = {
-  updaterId: PrincipalId;
+  // Related fields
   projectId: ProjectId;
+
+  // Standard fields
+  updaterId: PrincipalId;
 };
 
 // Data Source
@@ -910,15 +1043,21 @@ export type DataSourceType = "ADMIN" | "RW" | "RO";
 
 export type DataSource = {
   id: DataSourceId;
+
+  // Related fields
   database: Database;
   instance: Instance;
-  creator: Principal;
-  updater: Principal;
-  createdTs: number;
-  lastUpdatedTs: number;
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
   memberList: DataSourceMember[];
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
+
+  // Domain specific fields
   name: string;
   type: DataSourceType;
   // In mysql, username can be empty which means anonymous user
@@ -927,30 +1066,42 @@ export type DataSource = {
 };
 
 export type DataSourceNew = {
-  creatorId: PrincipalId;
-  name: string;
+  // Related fields
   databaseId: DatabaseId;
   instanceId: InstanceId;
   memberList: DataSourceMemberNew[];
+
+  // Standard fields
+  creatorId: PrincipalId;
+
+  // Domain specific fields
+  name: string;
   type: DataSourceType;
   username?: string;
   password?: string;
 };
 
 export type DataSourcePatch = {
+  // Standard fields
   updaterId: PrincipalId;
+
+  // Domain specific fields
   name?: string;
   username?: string;
   password?: string;
 };
 
 export type DataSourceMember = {
+  // Standard fields
+  createdTs: number;
+
+  // Domain specific fields
   principal: Principal;
   taskId?: TaskId;
-  createdTs: number;
 };
 
 export type DataSourceMemberNew = {
+  // Domain specific fields
   principalId: PrincipalId;
   taskId?: TaskId;
 };
