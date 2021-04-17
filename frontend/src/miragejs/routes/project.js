@@ -1,5 +1,5 @@
 import { Response } from "miragejs";
-import { WORKSPACE_ID } from "./index";
+import { FAKE_API_CALLER_ID, WORKSPACE_ID } from "./index";
 import { DEFAULT_PROJECT_ID } from "../../types";
 
 export default function configureProject(route) {
@@ -59,8 +59,13 @@ export default function configureProject(route) {
   });
 
   route.post("/project", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("project-new");
     const newProject = {
-      ...this.normalizedRequestAttrs("project-new"),
+      ...attrs,
+      creatorId: attrs.creatorId,
+      createdTs: Date.now(),
+      updaterId: attrs.creatorId,
+      lastUpdatedTs: Date.now(),
       workspaceId: WORKSPACE_ID,
     };
     return schema.projects.create(newProject);
@@ -96,6 +101,10 @@ export default function configureProject(route) {
       }
     }
 
-    return schema.projects.find(request.params.projectId).update(attrs);
+    return schema.projects.find(request.params.projectId).update({
+      ...attrs,
+      updaterId: FAKE_API_CALLER_ID,
+      lastUpdatedTs: Date.now(),
+    });
   });
 }
