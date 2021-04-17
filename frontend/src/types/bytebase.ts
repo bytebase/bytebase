@@ -849,11 +849,54 @@ export type InstancePatch = {
   password?: string;
 };
 
+// Database
+
+// We periodically sync the underlying db schema and stores those info
+// in the "database" object.
+// Physically, a database belongs to an instance. Logically, it belongs to a project.
+
+// "OK" means find the exact match
+// "DRIFTED" means we find the database with the same name, but the fingerprint is different,
+//            this usually indicates the underlying database has been recreated (might for a entirely different purpose)
+// "NOT_FOUND" means no matching database name found, this ususally means someone changes
+//            the underlying db name.
+export type DatabaseSyncStatus = "OK" | "DRIFTED" | "NOT_FOUND";
+// Database
+export type Database = {
+  id: DatabaseId;
+  instance: Instance;
+  project: Project;
+  dataSourceList: DataSource[];
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
+  name: string;
+  syncStatus: DatabaseSyncStatus;
+  lastSuccessfulSyncTs: number;
+  fingerprint: string;
+};
+
+export type DatabaseNew = {
+  creatorId: PrincipalId;
+  name: string;
+  instanceId: InstanceId;
+  projectId: ProjectId;
+  taskId?: TaskId;
+};
+
+export type DatabasePatch = {
+  updaterId: PrincipalId;
+  projectId: ProjectId;
+};
+
+// Data Source
+
 // For now the ADMIN requires the same database privilege as RW.
 // The seperation is to make it explicit which one serves as the ADMIN data source,
 // which from the ops perspective, having different meaning from the normal RW data source.
 export type DataSourceType = "ADMIN" | "RW" | "RO";
-// Data Source
+
 export type DataSource = {
   id: DataSourceId;
   database: Database;
@@ -899,45 +942,6 @@ export type DataSourceMember = {
 export type DataSourceMemberNew = {
   principalId: PrincipalId;
   taskId?: TaskId;
-};
-
-// We periodically sync the underlying db schema and stores those info
-// in the "database" object.
-// Physically, a database belongs to an instance. Logically, it belongs to a project.
-
-// "OK" means find the exact match
-// "DRIFTED" means we find the database with the same name, but the fingerprint is different,
-//            this usually indicates the underlying database has been recreated (might for a entirely different purpose)
-// "NOT_FOUND" means no matching database name found, this ususally means someone changes
-//            the underlying db name.
-export type DatabaseSyncStatus = "OK" | "DRIFTED" | "NOT_FOUND";
-// Database
-export type Database = {
-  id: DatabaseId;
-  instance: Instance;
-  project: Project;
-  dataSourceList: DataSource[];
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  lastUpdatedTs: number;
-  name: string;
-  syncStatus: DatabaseSyncStatus;
-  lastSuccessfulSyncTs: number;
-  fingerprint: string;
-};
-
-export type DatabaseNew = {
-  creatorId: PrincipalId;
-  name: string;
-  instanceId: InstanceId;
-  projectId: ProjectId;
-  taskId?: TaskId;
-};
-
-export type DatabasePatch = {
-  updaterId: PrincipalId;
-  projectId: ProjectId;
 };
 
 // Auth
