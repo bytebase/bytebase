@@ -75,25 +75,6 @@ const actions = {
     return createdBookmark;
   },
 
-  async patchBookmark({ commit, rootGetters }: any, bookmark: Bookmark) {
-    const { id, ...attrs } = bookmark;
-    const updatedBookmark = convert(
-      (
-        await axios.patch(`/api/bookmark/${bookmark.id}`, {
-          data: {
-            type: "bookmark",
-            attributes: attrs,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
-
-    commit("replaceBookmark", updatedBookmark);
-
-    return updatedBookmark;
-  },
-
   async deleteBookmark({ commit }: any, bookmark: Bookmark) {
     await axios.delete(`/api/bookmark/${bookmark.id}`);
 
@@ -121,18 +102,6 @@ const mutations = {
       list.push(bookmark);
     } else {
       state.bookmarkListByUser.set(bookmark.creator.id, [bookmark]);
-    }
-  },
-
-  replaceBookmark(state: BookmarkState, updatedBookmark: Bookmark) {
-    const list = state.bookmarkListByUser.get(updatedBookmark.creator.id);
-    if (list) {
-      const i = list.findIndex(
-        (item: Bookmark) => item.id == updatedBookmark.id
-      );
-      if (i != -1) {
-        list[i] = updatedBookmark;
-      }
     }
   },
 

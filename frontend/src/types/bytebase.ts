@@ -390,6 +390,7 @@ export type Bookmark = {
 };
 
 export type BookmarkNew = {
+  creatorId: PrincipalId;
   name: string;
   link: string;
 };

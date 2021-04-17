@@ -52,6 +52,8 @@ export default {
     workspace: belongsTo(),
   }),
 
+  bookmarkNew: Model,
+
   activity: Model.extend({
     workspace: belongsTo(),
   }),

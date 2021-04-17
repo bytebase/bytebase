@@ -1,4 +1,4 @@
-import { FAKE_API_CALLER_ID, WORKSPACE_ID } from "./index";
+import { WORKSPACE_ID } from "./index";
 
 export default function configureBookmark(route) {
   route.get("/bookmark", function (schema, request) {
@@ -14,20 +14,16 @@ export default function configureBookmark(route) {
 
   route.post("/bookmark", function (schema, request) {
     const ts = Date.now();
+    const attrs = this.normalizedRequestAttrs("bookmark-new");
     const newBookmark = {
-      ...this.normalizedRequestAttrs("bookmark"),
-      creatorId: FAKE_API_CALLER_ID,
-      updaterId: FAKE_API_CALLER_ID,
+      ...attrs,
+      creatorId: attrs.creatorId,
       createdTs: ts,
-      updatedTs: ts,
+      updaterId: attrs.creatorId,
+      lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
     };
     return schema.bookmarks.create(newBookmark);
-  });
-
-  route.patch("/bookmark/:bookmarkId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("bookmark");
-    return schema.bookmarks.find(request.params.bookmarkId).update(attrs);
   });
 
   route.delete("/bookmark/:bookmarkId", function (schema, request) {
