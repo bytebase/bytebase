@@ -107,7 +107,7 @@ export default {
             title: `Successfully created project '${createdProject.name}'.`,
           });
 
-          router.push(`/project/${projectSlug(createdProject)}}`);
+          router.push(`/project/${projectSlug(createdProject)}`);
           emit("dismiss");
         })
         .catch((err) => {
