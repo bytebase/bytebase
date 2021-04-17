@@ -58,11 +58,12 @@ export default function configureTask(route) {
     const createdTask = schema.tasks.create(newTask);
 
     schema.activities.create({
+      creatorId: attrs.creatorId,
       createdTs: ts,
+      updaterId: attrs.updaterId,
       lastUpdatedTs: ts,
       actionType: "bytebase.task.create",
       containerId: createdTask.id,
-      creatorId: attrs.creatorId,
       comment: "",
       workspaceId: WORKSPACE_ID,
     });
@@ -268,11 +269,12 @@ export default function configureTask(route) {
         };
 
         schema.activities.create({
+          creatorId: attrs.updaterId,
           createdTs: ts,
+          updaterId: attrs.updaterId,
           lastUpdatedTs: ts,
           actionType: "bytebase.task.field.update",
           containerId: updatedTask.id,
-          creatorId: attrs.updaterId,
           comment: attrs.comment,
           payload,
           workspaceId: WORKSPACE_ID,

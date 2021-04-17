@@ -29,6 +29,7 @@ export default function configureActivity(route) {
     const newActivity = {
       ...attrs,
       createdTs: ts,
+      updaterId: attrs.creatorId,
       lastUpdatedTs: ts,
       actionType: "bytebase.task.comment.create",
       workspaceId: WORKSPACE_ID,

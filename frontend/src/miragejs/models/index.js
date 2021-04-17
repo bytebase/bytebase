@@ -56,6 +56,8 @@ export default {
     workspace: belongsTo(),
   }),
 
+  activityNew: Model,
+
   activityPatch: Model,
 
   message: Model.extend({

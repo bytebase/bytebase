@@ -166,6 +166,7 @@ export const unknown = (
     lastUpdatedTs: 0,
     actionType: "bytebase.task.create",
     creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
     comment: "<<Unknown comment>>",
   };
 
@@ -617,13 +618,14 @@ export type ActionPayloadType = ActionTaskFieldUpdatePayload;
 
 export type Activity = {
   id: ActivityId;
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
   // The object where this activity belongs
   // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
   containerId: ContainerId;
-  createdTs: number;
-  lastUpdatedTs: number;
   actionType: ActionType;
-  creator: Principal;
   comment: string;
   payload?: ActionPayloadType;
 };

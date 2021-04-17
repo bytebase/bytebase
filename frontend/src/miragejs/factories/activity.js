@@ -1,9 +1,16 @@
 import { Factory } from "miragejs";
+import { UNKNOWN_ID } from "../../types";
 
 export default {
   activity: Factory.extend({
+    creatorId() {
+      return UNKNOWN_ID;
+    },
     createdTs(i) {
       return Date.now() - (10 - i) * 1800 * 1000;
+    },
+    updaterId() {
+      return UNKNOWN_ID;
     },
     lastUpdatedTs(i) {
       return Date.now() - (10 - i) * 1800 * 1000;
@@ -13,9 +20,6 @@ export default {
     },
     containerId() {
       return "0";
-    },
-    creatorId() {
-      return "100";
     },
     comment() {
       return "";

@@ -196,10 +196,8 @@ const workspacesSeeder = (server: any) => {
   const createdActivity = server.create("activity", {
     actionType: "bytebase.task.create",
     containerId: task.id,
-    creator: {
-      id: ws1Dev1.id,
-      name: ws1Dev1.name,
-    },
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
     workspace: workspace1,
   });
 
@@ -331,10 +329,8 @@ const workspacesSeeder = (server: any) => {
     server.create("activity", {
       actionType: "bytebase.task.comment.create",
       containerId: task.id,
-      creator: {
-        id: user.id,
-        name: user.name,
-      },
+      creatorId: user.id,
+      updaterId: user.id,
       comment: faker.fake("{{lorem.paragraph}}"),
       workspace: workspace1,
     });
@@ -377,10 +373,8 @@ const workspacesSeeder = (server: any) => {
   server.create("activity", {
     actionType: "bytebase.task.create",
     containerId: task.id,
-    creator: {
-      id: ws1Dev1.id,
-      name: ws1Dev1.name,
-    },
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
     workspace: workspace1,
   });
 
@@ -390,6 +384,7 @@ const workspacesSeeder = (server: any) => {
       actionType: "bytebase.task.comment.create",
       containerId: task.id,
       creatorId: user.id,
+      updaterId: user.id,
       comment: faker.fake("{{lorem.paragraph}}"),
       workspace: workspace1,
     });
@@ -459,6 +454,7 @@ const workspacesSeeder = (server: any) => {
       actionType: "bytebase.task.create",
       containerId: task.id,
       creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
       workspace: workspace1,
     });
 
@@ -468,6 +464,7 @@ const workspacesSeeder = (server: any) => {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creatorId: user.id,
+        updaterId: user.id,
         comment: faker.fake("{{lorem.paragraph}}"),
         workspace: workspace1,
       });
@@ -492,10 +489,8 @@ const workspacesSeeder = (server: any) => {
     server.create("activity", {
       actionType: "bytebase.task.create",
       containerId: task.id,
-      creator: {
-        id: ws1Owner.id,
-        name: ws1Owner.name,
-      },
+      creatorId: ws1Owner.id,
+      updaterId: ws1Owner.id,
       workspace: workspace1,
     });
 
@@ -505,6 +500,7 @@ const workspacesSeeder = (server: any) => {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creatorId: user.id,
+        updaterId: user.id,
         comment: faker.fake("{{lorem.paragraph}}"),
         workspace: workspace1,
       });
@@ -530,6 +526,7 @@ const workspacesSeeder = (server: any) => {
       actionType: "bytebase.task.create",
       containerId: task.id,
       creatorId: ws1Dev2.id,
+      updaterId: ws1Dev2.id,
       workspace: workspace1,
     });
 
@@ -539,6 +536,7 @@ const workspacesSeeder = (server: any) => {
         actionType: "bytebase.task.comment.create",
         containerId: task.id,
         creatorId: user.id,
+        updaterId: user.id,
         comment: faker.fake("{{lorem.paragraph}}"),
         workspace: workspace1,
       });
@@ -562,6 +560,7 @@ const workspacesSeeder = (server: any) => {
     actionType: "bytebase.task.create",
     containerId: task.id,
     creatorId: ws2Dev.id,
+    updaterId: ws2Dev.id,
     workspace: workspace2,
   });
 

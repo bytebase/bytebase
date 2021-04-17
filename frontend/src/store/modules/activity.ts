@@ -13,10 +13,14 @@ function convert(activity: ResourceObject, rootGetters: any): Activity {
   const creator = rootGetters["principal/principalById"](
     activity.attributes.creatorId
   );
+  const updater = rootGetters["principal/principalById"](
+    activity.attributes.updaterId
+  );
   return {
-    ...(activity.attributes as Omit<Activity, "id" | "creator">),
+    ...(activity.attributes as Omit<Activity, "id" | "creator" | "updater">),
     id: activity.id,
     creator,
+    updater,
   };
 }
 
@@ -69,7 +73,7 @@ const actions = {
       (
         await axios.post(`/api/activity`, {
           data: {
-            type: "activity",
+            type: "activitynew",
             attributes: newActivity,
           },
         })
