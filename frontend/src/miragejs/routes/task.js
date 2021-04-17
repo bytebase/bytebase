@@ -47,7 +47,9 @@ export default function configureTask(route) {
 
     const newTask = {
       ...attrs,
+      creatorId: attrs.creatorId,
       createdTs: ts,
+      updaterId: attrs.creatorId,
       lastUpdatedTs: ts,
       status: "OPEN",
       projectId: database.projectId,

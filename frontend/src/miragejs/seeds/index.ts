@@ -172,6 +172,7 @@ const workspacesSeeder = (server: any) => {
     sql:
       "SELECT 'Welcome'\nFROM engineering\nWHERE role IN ('DBA', 'Developer') AND taste = 'Good';",
     creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id, ws1Dev1.id, ws1Owner.id],
     stageList: [
@@ -352,6 +353,7 @@ const workspacesSeeder = (server: any) => {
     type: "bytebase.database.create",
     name: `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`,
     creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
     stageList: [
@@ -444,11 +446,8 @@ const workspacesSeeder = (server: any) => {
       name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
       assigneeId: ws1Owner.id,
-      creator: {
-        id: ws1Dev1.id,
-        name: ws1Dev1.name,
-      },
       sql: data.sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       ...fillTaskAndStageStatus(environmentList1, databaseList1),
@@ -481,6 +480,7 @@ const workspacesSeeder = (server: any) => {
       name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Owner.id,
+      updaterId: ws1Owner.id,
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Dev2.id],
@@ -517,6 +517,7 @@ const workspacesSeeder = (server: any) => {
       name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev2.id,
+      updaterId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
@@ -549,6 +550,7 @@ const workspacesSeeder = (server: any) => {
     name: data.title,
     type: "bytebase.database.schema.update",
     creatorId: ws2Dev.id,
+    updaterId: ws2Dev.id,
     assigneeId: ws2DBA.id,
     sql: data.sql,
     ...fillTaskAndStageStatus(environmentList2, databaseList1),

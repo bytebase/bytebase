@@ -7,8 +7,14 @@ export default {
     name(i) {
       return faker.fake("{{lorem.sentence}}");
     },
+    creatorId() {
+      return UNKNOWN_ID;
+    },
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
+    },
+    updaterId() {
+      return UNKNOWN_ID;
     },
     lastUpdatedTs(i) {
       return Date.now() - i * 3600 * 1000;
@@ -36,9 +42,6 @@ export default {
           status: "DONE",
         },
       ];
-    },
-    creatorId() {
-      return UNKNOWN_ID;
     },
     assigneeId() {
       return UNKNOWN_ID;

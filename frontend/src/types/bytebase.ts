@@ -145,7 +145,9 @@ export const unknown = (
 
   const UNKNOWN_TASK: Task = {
     id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
     project: UNKNOWN_PROJECT,
     name: "<<Unknown task>>",
@@ -153,7 +155,6 @@ export const unknown = (
     type: "bytebase.general",
     description: "",
     stageList: [],
-    creator: UNKNOWN_PRINCIPAL,
     subscriberList: [],
     payload: {},
   };
@@ -462,7 +463,9 @@ export type TaskPayload = { [key: string]: any };
 
 export type Task = {
   id: TaskId;
+  creator: Principal;
   createdTs: number;
+  updater: Principal;
   lastUpdatedTs: number;
   project: Project;
   name: string;
@@ -470,7 +473,6 @@ export type Task = {
   type: TaskType;
   description: string;
   stageList: Stage[];
-  creator: Principal;
   assignee?: Principal;
   subscriberList: Principal[];
   sql?: string;

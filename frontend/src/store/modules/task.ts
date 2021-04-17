@@ -23,6 +23,9 @@ function convert(
   const creator = rootGetters["principal/principalById"](
     task.attributes.creatorId
   );
+  const updater = rootGetters["principal/principalById"](
+    task.attributes.updaterId
+  );
 
   let assignee = undefined;
   if (task.attributes.assigneeId) {
@@ -59,11 +62,18 @@ function convert(
   return {
     ...(task.attributes as Omit<
       Task,
-      "id" | "project" | "creator" | "assignee" | "stageList" | "subscriberList"
+      | "id"
+      | "project"
+      | "creator"
+      | "updater"
+      | "assignee"
+      | "stageList"
+      | "subscriberList"
     >),
     id: task.id,
     project,
     creator,
+    updater,
     assignee,
     stageList,
     subscriberList,
@@ -92,7 +102,7 @@ const actions = {
     const taskList = data.data.map((task: ResourceObject) => {
       return convert(task, data.included, rootGetters);
     });
-    console.log(taskList);
+
     commit("setTaskListForUser", { userId, taskList });
     return taskList;
   },
