@@ -124,114 +124,98 @@ export default function configurInstance(route) {
     }
 
     const attrs = this.normalizedRequestAttrs("instance-patch");
-    const instanceAttrs = {
-      rowStatus: attrs.rowStatus,
-      name: attrs.name,
-      externalLink: attrs.externalLink,
-      host: attrs.host,
-      port: attrs.port,
-    };
-    const dataSourceAttrs = {
-      username: attrs.username,
-      password: attrs.password,
-    };
+    const instanceAttrs = {};
+    const dataSourceAttrs = {};
 
     let hasInstanceChange = false;
     let hasDataSourceChange = false;
     const changeList = [];
     let type = "bb.msg.instance.update";
 
-    if (
-      instanceAttrs.rowStatus &&
-      instanceAttrs.rowStatus != instance.rowStatus
-    ) {
-      if (instanceAttrs.rowStatus == "ARCHIVED") {
+    if (attrs.rowStatus && attrs.rowStatus != instance.rowStatus) {
+      if (attrs.rowStatus == "ARCHIVED") {
         type = "bb.msg.instance.archive";
-      } else if (instanceAttrs.rowStatus == "NORMAL") {
+      } else if (attrs.rowStatus == "NORMAL") {
         type = "bb.msg.instance.restore";
-      } else if (instanceAttrs.rowStatus == "PENDING_DELETE") {
+      } else if (attrs.rowStatus == "PENDING_DELETE") {
         type = "bb.msg.instance.delete";
       }
       changeList.push({
         fieldId: InstanceBuiltinFieldId.ROW_STATUS,
         oldValue: instance.rowStatus,
-        newValue: instanceAttrs.rowStatus,
+        newValue: attrs.rowStatus,
       });
+      instanceAttrs.rowStatus = attrs.rowStatus;
       hasInstanceChange = true;
     }
 
-    if (instanceAttrs.name && instanceAttrs.name != instance.name) {
+    if (attrs.name && attrs.name != instance.name) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.NAME,
         oldValue: instance.name,
-        newValue: instanceAttrs.name,
+        newValue: attrs.name,
       });
+      instanceAttrs.name = attrs.name;
       hasInstanceChange = true;
     }
 
-    if (
-      instanceAttrs.externalLink &&
-      instanceAttrs.externalLink != instance.externalLink
-    ) {
+    if (attrs.externalLink && attrs.externalLink != instance.externalLink) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.EXTERNAL_LINK,
         oldValue: instance.externalLink,
-        newValue: instanceAttrs.externalLink,
+        newValue: attrs.externalLink,
       });
+      instanceAttrs.externalLink = attrs.externalLink;
       hasInstanceChange = true;
     }
 
-    if (instanceAttrs.host && instanceAttrs.host != instance.host) {
+    if (attrs.host && attrs.host != instance.host) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.HOST,
         oldValue: instance.host,
-        newValue: instanceAttrs.host,
+        newValue: attrs.host,
       });
+      instanceAttrs.host = attrs.host;
       hasInstanceChange = true;
     }
 
-    if (instanceAttrs.port && instanceAttrs.port != instance.port) {
+    if (attrs.port && attrs.port != instance.port) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.PORT,
         oldValue: instance.port,
-        newValue: instanceAttrs.port,
+        newValue: attrs.port,
       });
+      instanceAttrs.port = attrs.port;
       hasInstanceChange = true;
     }
 
-    if (
-      dataSourceAttrs.username &&
-      dataSourceAttrs.username != dataSource.username
-    ) {
+    if (attrs.username && attrs.username != dataSource.username) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.USERNAME,
         oldValue: dataSource.username,
-        newValue: dataSourceAttrs.username,
+        newValue: attrs.username,
       });
+      dataSourceAttrs.username = attrs.username;
       hasDataSourceChange = true;
     }
 
-    if (
-      dataSourceAttrs.password &&
-      dataSourceAttrs.password != dataSource.password
-    ) {
+    if (attrs.password && attrs.password != dataSource.password) {
       changeList.push({
         fieldId: InstanceBuiltinFieldId.PASSWORD,
         oldValue: dataSource.password,
-        newValue: dataSourceAttrs.password,
+        newValue: attrs.password,
       });
+      dataSourceAttrs.password = attrs.password;
       hasDataSourceChange = true;
     }
 
     let updatedInstance = instance;
 
     if (hasInstanceChange) {
-      console.log(instanceAttrs);
       updatedInstance = instance.update(instanceAttrs);
     }
 
     if (hasDataSourceChange) {
-      console.log(dataSourceAttrs);
       dataSource.update(dataSourceAttrs);
     }
 
