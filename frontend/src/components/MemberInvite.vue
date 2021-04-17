@@ -117,7 +117,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, ComputedRef, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
 import { Principal, PrincipalNew, MemberNew, RoleType } from "../types";
@@ -139,6 +139,10 @@ export default {
   props: {},
   setup(props, ctx) {
     const store = useStore();
+
+    const currentUser: ComputedRef<Principal> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
 
     const hasAdminFeature = computed(() =>
       store.getters["plan/feature"]("bytebase.admin")
@@ -216,6 +220,7 @@ export default {
           // This could happen if another client has just created the principal
           // with this email.
           const newPrincipal: PrincipalNew = {
+            creatorId: currentUser.value.id,
             name: invite.email.split("@")[0],
             email: invite.email,
           };

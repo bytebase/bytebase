@@ -125,6 +125,7 @@ const actions = {
     }
   ) {
     const userPatch: UserPatch = {
+      updaterId: principalPatch.updaterId,
       name: principalPatch.name,
     };
     const updatedPrincipal = convert(

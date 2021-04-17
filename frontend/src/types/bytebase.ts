@@ -358,11 +358,13 @@ export type Principal = {
 };
 
 export type PrincipalNew = {
+  creatorId: PrincipalId;
   name: string;
   email: string;
 };
 
 export type PrincipalPatch = {
+  updaterId: PrincipalId;
   rowStatus?: RowStatus;
   name?: string;
 };
@@ -375,6 +377,7 @@ export type User = {
 };
 
 export type UserPatch = {
+  updaterId: PrincipalId;
   name?: string;
 };
 
