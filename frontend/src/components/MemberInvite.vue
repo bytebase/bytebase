@@ -140,8 +140,6 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
     const hasAdminFeature = computed(() =>
       store.getters["plan/feature"]("bytebase.admin")
     );
@@ -227,7 +225,6 @@ export default {
               const newMember: MemberNew = {
                 principalId: principal.id,
                 role: invite.role,
-                updaterId: currentUser.value.id,
               };
               // Note "principal/createdMember" would return the existing role mapping.
               // This could happen if another client has just created the role mapping with

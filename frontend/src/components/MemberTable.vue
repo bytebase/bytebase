@@ -270,8 +270,9 @@ export default {
       store
         .dispatch("member/patchMember", {
           id,
-          role,
-          updaterId: currentUser.value.id,
+          memberPatch: {
+            role,
+          },
         })
         .catch((error) => {
           console.log(error);

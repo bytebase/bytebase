@@ -6,7 +6,8 @@
     "lastUpdatedTs": 1614571200000,
     "role": "OWNER",
     "principalId": "1",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   },
   {
     "id": "2",
@@ -15,7 +16,8 @@
     "lastUpdatedTs": 1614657600000,
     "role": "DEVELOPER",
     "principalId": "1",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   },
   {
     "id": "3",
@@ -24,7 +26,8 @@
     "lastUpdatedTs": 1614744000000,
     "role": "DBA",
     "principalId": "2",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   },
   {
     "id": "4",
@@ -33,7 +36,8 @@
     "lastUpdatedTs": 1609473600000,
     "role": "DEVELOPER",
     "principalId": "3",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   },
   {
     "id": "5",
@@ -42,7 +46,8 @@
     "lastUpdatedTs": 1609560000000,
     "role": "DBA",
     "principalId": "4",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   },
   {
     "id": "6",
@@ -51,7 +56,8 @@
     "lastUpdatedTs": 1609646400000,
     "role": "DEVELOPER",
     "principalId": "5",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   },
   {
     "id": "7",
@@ -60,6 +66,7 @@
     "lastUpdatedTs": 1609646400000,
     "role": "DEVELOPER",
     "principalId": "6",
-    "updaterId": "1"
+    "updaterId": "1",
+    "creatorId": "1"
   }
 ]

@@ -36,6 +36,9 @@ export default {
     workspace: belongsTo(),
   }),
 
+  memberNew: Model,
+  memberPatch: Model,
+
   projectMember: Model.extend({
     workspace: belongsTo(),
     project: belongsTo(),

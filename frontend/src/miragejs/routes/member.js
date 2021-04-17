@@ -3,18 +3,15 @@ import { WORKSPACE_ID, OWNER_ID } from "./index";
 import { postMessageToOwnerAndDBA } from "../utils";
 
 export default function configureMember(route) {
-  route.get("/Member", function (schema, request) {
+  route.get("/member", function (schema, request) {
     return schema.members.where((member) => {
       return member.workspaceId == WORKSPACE_ID;
     });
   });
 
-  route.post("/Member", function (schema, request) {
+  route.post("/member", function (schema, request) {
     const ts = Date.now();
-    const attrs = {
-      ...this.normalizedRequestAttrs("member"),
-      workspaceId: WORKSPACE_ID,
-    };
+    const attrs = this.normalizedRequestAttrs("member-new");
     const member = schema.members.findBy({
       principalId: attrs.principalId,
       workspaceId: WORKSPACE_ID,
@@ -22,12 +19,16 @@ export default function configureMember(route) {
     if (member) {
       return member;
     }
+
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
     const newMember = {
-      ...attrs,
+      creatorId: callerId,
+      updaterId: callerId,
       createdTs: ts,
       lastUpdatedTs: ts,
       role: attrs.role,
-      updaterId: attrs.updaterId,
+      principalId: attrs.principalId,
       workspaceId: WORKSPACE_ID,
     };
 
@@ -45,19 +46,19 @@ export default function configureMember(route) {
       lastUpdatedTs: ts,
       type,
       status: "DELIVERED",
-      creatorId: attrs.updaterId,
+      creatorId: callerId,
       workspaceId: WORKSPACE_ID,
       payload: {
         principalId: attrs.principalId,
         newRole: attrs.role,
       },
     };
-    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
 
     return createdMember;
   });
 
-  route.patch("/Member/:memberId", function (schema, request) {
+  route.patch("/member/:memberId", function (schema, request) {
     const member = schema.members.find(request.params.memberId);
     if (!member) {
       return new Response(
@@ -71,7 +72,11 @@ export default function configureMember(route) {
 
     const oldRole = member.role;
 
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
     const attrs = this.normalizedRequestAttrs("member");
+    attrs.updaterId = callerId;
+
     const updatedMember = member.update(attrs);
 
     const ts = Date.now();
@@ -94,7 +99,7 @@ export default function configureMember(route) {
     return updatedMember;
   });
 
-  route.delete("/Member/:memberId", function (schema, request) {
+  route.delete("/member/:memberId", function (schema, request) {
     const member = schema.members.find(request.params.memberId);
 
     if (!member) {

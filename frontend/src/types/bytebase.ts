@@ -14,10 +14,10 @@ export type ResourceType =
   | "PRINCIPAL"
   | "EXECUTION"
   | "USER"
-  | "ROLE_MAPPING"
+  | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
-  | "PROJECT_ROLE_MAPPING"
+  | "PROJECT_MEMBER"
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
@@ -63,13 +63,14 @@ export const unknown = (
     email: "unknown@example.com",
   };
 
-  const UNKNOWN_ROLE_MAPPING: Member = {
+  const UNKNOWN_MEMBER: Member = {
     id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     lastUpdatedTs: 0,
     role: "GUEST",
     principalId: UNKNOWN_ID,
-    updaterId: UNKNOWN_ID,
   };
 
   const UNKNOWN_ENVIRONMENT: Environment = {
@@ -91,7 +92,7 @@ export const unknown = (
     memberList: [],
   };
 
-  const UNKNOWN_PROJECT_ROLE_MAPPING: ProjectMember = {
+  const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
     id: UNKNOWN_ID,
     project: UNKNOWN_PROJECT,
     creator: UNKNOWN_PRINCIPAL,
@@ -189,14 +190,14 @@ export const unknown = (
       return UNKNOWN_PRINCIPAL;
     case "USER":
       return UNKNOWN_USER;
-    case "ROLE_MAPPING":
-      return UNKNOWN_ROLE_MAPPING;
+    case "MEMBER":
+      return UNKNOWN_MEMBER;
     case "ENVIRONMENT":
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
       return UNKNOWN_PROJECT;
-    case "PROJECT_ROLE_MAPPING":
-      return UNKNOWN_PROJECT_ROLE_MAPPING;
+    case "PROJECT_MEMBER":
+      return UNKNOWN_PROJECT_MEMBER;
     case "INSTANCE":
       return UNKNOWN_INSTANCE;
     case "DATABASE":
@@ -279,21 +280,20 @@ export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
 
 export type Member = {
   id: MemberId;
+  creator: Principal;
+  updater: Principal;
   createdTs: number;
   lastUpdatedTs: number;
   role: RoleType;
   principalId: PrincipalId;
-  updaterId: PrincipalId;
 };
 
 export type MemberNew = {
   principalId: PrincipalId;
   role: RoleType;
-  updaterId: PrincipalId;
 };
 
 export type MemberPatch = {
-  id: MemberId;
   role: RoleType;
 };
 

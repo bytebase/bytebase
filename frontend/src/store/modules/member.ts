@@ -10,10 +10,18 @@ import {
   unknown,
 } from "../../types";
 
-function convert(member: ResourceObject): Member {
+function convert(member: ResourceObject, rootGetters: any): Member {
+  const creator = rootGetters["principal/principalById"](
+    member.attributes.creatorId
+  );
+  const updater = rootGetters["principal/principalById"](
+    member.attributes.updaterId
+  );
   return {
-    ...(member.attributes as Omit<Member, "id">),
+    ...(member.attributes as Omit<Member, "id" | "creator" | "updater">),
     id: member.id,
+    creator,
+    updater,
   };
 }
 
@@ -28,16 +36,16 @@ const getters = {
   memberByPrincipalId: (state: MemberState) => (id: PrincipalId): Member => {
     return (
       state.memberList.find((item) => item.principalId == id) ||
-      (unknown("ROLE_MAPPING") as Member)
+      (unknown("MEMBER") as Member)
     );
   },
 };
 
 const actions = {
-  async fetchMemberList({ commit }: any) {
-    const memberList = (await axios.get(`/api/Member`)).data.data.map(
+  async fetchMemberList({ commit, rootGetters }: any) {
+    const memberList = (await axios.get(`/api/member`)).data.data.map(
       (member: ResourceObject) => {
-        return convert(member);
+        return convert(member, rootGetters);
       }
     );
 
@@ -46,16 +54,17 @@ const actions = {
   },
 
   // Returns existing member if the principalId has already been created.
-  async createdMember({ commit }: any, newMember: MemberNew) {
+  async createdMember({ commit, rootGetters }: any, newMember: MemberNew) {
     const createdMember = convert(
       (
-        await axios.post(`/api/Member`, {
+        await axios.post(`/api/member`, {
           data: {
-            type: "member",
+            type: "membernew",
             attributes: newMember,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("appendMember", createdMember);
@@ -63,17 +72,20 @@ const actions = {
     return createdMember;
   },
 
-  async patchMember({ commit }: any, member: MemberPatch) {
-    const { id, ...attrs } = member;
+  async patchMember(
+    { commit, rootGetters }: any,
+    { id, memberPatch }: { id: MemberId; memberPatch: MemberPatch }
+  ) {
     const updatedMember = convert(
       (
-        await axios.patch(`/api/Member/${member.id}`, {
+        await axios.patch(`/api/member/${id}`, {
           data: {
-            type: "member",
-            attributes: attrs,
+            type: "memberpatch",
+            attributes: memberPatch,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("replaceMemberInList", updatedMember);
@@ -85,7 +97,7 @@ const actions = {
     { state, commit }: { state: MemberState; commit: any },
     id: MemberId
   ) {
-    await axios.delete(`/api/Member/${id}`);
+    await axios.delete(`/api/member/${id}`);
 
     const newList = state.memberList.filter((item: Member) => {
       return item.id != id;
