@@ -59,16 +59,29 @@ export default function configureProject(route) {
   });
 
   route.post("/project", function (schema, request) {
+    const ts = Date.now();
     const attrs = this.normalizedRequestAttrs("project-new");
     const newProject = {
       ...attrs,
       creatorId: attrs.creatorId,
-      createdTs: Date.now(),
+      createdTs: ts,
       updaterId: attrs.creatorId,
-      lastUpdatedTs: Date.now(),
+      lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
     };
-    return schema.projects.create(newProject);
+    const project = schema.projects.create(newProject);
+
+    schema.projectMembers.create({
+      creatorId: attrs.creatorId,
+      updaterId: attrs.creatorId,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      projectId: project.id,
+      role: "OWNER",
+      principalId: attrs.creatorId,
+    });
+
+    return project;
   });
 
   route.patch("/project/:projectId", function (schema, request) {
