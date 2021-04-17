@@ -460,6 +460,7 @@ export default {
         .dispatch("activity/updateComment", {
           activityId: state.activeActivity!.id,
           updatedComment: editComment.value,
+          updaterId: currentUser.value.id,
         })
         .then(() => {
           cancelEditComment();

@@ -7,6 +7,8 @@ import {
   ActivityNew,
   ActivityState,
   ResourceObject,
+  PrincipalId,
+  ActivityPatch,
 } from "../../types";
 
 function convert(activity: ResourceObject, rootGetters: any): Activity {
@@ -94,16 +96,23 @@ const actions = {
     {
       activityId,
       updatedComment,
-    }: { activityId: ActivityId; updatedComment: string }
+      updaterId,
+    }: {
+      activityId: ActivityId;
+      updatedComment: string;
+      updaterId: PrincipalId;
+    }
   ) {
+    const activityPatch: ActivityPatch = {
+      comment: updatedComment,
+      updaterId,
+    };
     const updatedActivity = convert(
       (
         await axios.patch(`/api/activity/${activityId}`, {
           data: {
             type: "activitypatch",
-            attributes: {
-              comment: updatedComment,
-            },
+            attributes: activityPatch,
           },
         })
       ).data.data,

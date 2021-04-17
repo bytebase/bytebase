@@ -641,15 +641,16 @@ export type Activity = {
 };
 
 export type ActivityNew = {
+  creatorId: PrincipalId;
   containerId: ContainerId;
   actionType: ActionType;
-  creatorId: PrincipalId;
   comment: string;
   payload?: ActionPayloadType;
 };
 
 export type ActivityPatch = {
-  payload: any;
+  updaterId: PrincipalId;
+  comment: string;
 };
 
 // Message
