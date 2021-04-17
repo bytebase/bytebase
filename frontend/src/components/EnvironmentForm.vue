@@ -158,7 +158,9 @@ export default {
     };
 
     const updateEnvironment = () => {
-      const patchedEnvironment: EnvironmentPatch = {};
+      const patchedEnvironment: EnvironmentPatch = {
+        updaterId: currentUser.value.id,
+      };
 
       if (state.environment.name != props.environment!.name) {
         patchedEnvironment.name = state.environment.name;

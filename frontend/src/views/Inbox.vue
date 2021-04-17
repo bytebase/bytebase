@@ -289,6 +289,8 @@ export default {
           return "archived environment";
         case "bb.msg.environment.restore":
           return "restored environment";
+        case "bb.msg.environment.reorder":
+          return "reordered environment";
         case "bb.msg.instance.create":
           return "created instance";
         case "bb.msg.instance.update":

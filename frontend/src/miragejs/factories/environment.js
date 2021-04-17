@@ -2,6 +2,18 @@ import { Factory } from "miragejs";
 
 export default {
   environment: Factory.extend({
+    creatorId() {
+      return UNKNOWN_ID;
+    },
+    updaterId() {
+      return UNKNOWN_ID;
+    },
+    createdTs(i) {
+      return Date.now() - (i + 1) * 1800 * 1000;
+    },
+    lastUpdatedTs(i) {
+      return Date.now() - i * 3600 * 1000;
+    },
     rowStatus(i) {
       return i > 3 ? "ARCHIVED" : "NORMAL";
     },

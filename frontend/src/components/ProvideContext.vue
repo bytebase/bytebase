@@ -16,10 +16,11 @@ export default {
     // by router.beforeEach, which will pre-maturely fetches data relying on the
     // context here.
     await Promise.all([
-      store.dispatch("environment/fetchEnvironmentList"),
       store.dispatch("member/fetchMemberList"),
       // fetchPrincipalList relies on fetchMemberList to find the role of the principal.
       store.dispatch("principal/fetchPrincipalList"),
+      // fetchEnvironmentList relies on fetchPrincipalList to convert the creator/updater id to principal.
+      store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
       store.dispatch("instance/fetchInstanceList"),

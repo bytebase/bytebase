@@ -1,6 +1,6 @@
 import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
-import { WORKSPACE_ID, FAKE_API_CALLER_ID } from "./index";
+import { WORKSPACE_ID } from "./index";
 import { EnvironmentBuiltinFieldId } from "../../types";
 
 export default function configureEnvironment(route) {
@@ -40,28 +40,34 @@ export default function configureEnvironment(route) {
     if (list.length > 0) {
       order = list.sort((a, b) => b.order - a.order).models[0].order + 1;
     }
+
+    const attrs = this.normalizedRequestAttrs("environment-new");
+    const ts = Date.now();
     const newEnvironment = {
-      ...this.normalizedRequestAttrs("environment-new"),
+      ...attrs,
+      creatorId: attrs.creatorId,
+      createdTs: ts,
+      updaterId: attrs.creatorId,
+      lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
       rowStatus: "NORMAL",
       order,
     };
     const createdEnvironment = schema.environments.create(newEnvironment);
 
-    const ts = Date.now();
     const messageTemplate = {
       containerId: createdEnvironment.id,
       createdTs: ts,
       lastUpdatedTs: ts,
       type: "bb.msg.environment.create",
       status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
       payload: {
         environmentName: createdEnvironment.name,
       },
     };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
+    postMessageToOwnerAndDBA(schema, attrs.creatorId, messageTemplate);
 
     return createdEnvironment;
   });
@@ -71,13 +77,28 @@ export default function configureEnvironment(route) {
     for (let i = 0; i < attrs.idList.length; i++) {
       const env = schema.environments.find(attrs.idList[i]);
       if (env) {
-        const batch = {};
+        const oneUpdate = {
+          updaterId: attrs.updaterId,
+        };
         for (let j = 0; j < attrs.fieldMaskList.length; j++) {
-          batch[attrs.fieldMaskList[j]] = attrs.rowValueList[i][j];
+          oneUpdate[attrs.fieldMaskList[j]] = attrs.rowValueList[i][j];
         }
-        env.update(batch);
+        env.update(oneUpdate);
       }
     }
+
+    const ts = Date.now();
+    const messageTemplate = {
+      containerId: WORKSPACE_ID,
+      createdTs: ts,
+      lastUpdatedTs: ts,
+      type: "bb.msg.environment.reorder",
+      status: "DELIVERED",
+      creatorId: attrs.updaterId,
+      workspaceId: WORKSPACE_ID,
+    };
+    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
+
     return schema.environments.where((environment) => {
       return environment.workspaceId == WORKSPACE_ID;
     });
@@ -133,14 +154,14 @@ export default function configureEnvironment(route) {
       lastUpdatedTs: ts,
       type,
       status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
+      creatorId: attrs.updaterId,
       workspaceId: WORKSPACE_ID,
       payload: {
         environmentName: updatedEnvironment.name,
         changeList,
       },
     };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
+    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
     return updatedEnvironment;
   });

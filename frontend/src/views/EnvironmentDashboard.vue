@@ -70,13 +70,20 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
+import {
+  onMounted,
+  onUnmounted,
+  computed,
+  reactive,
+  watch,
+  ComputedRef,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentNew } from "../types";
+import { Environment, EnvironmentNew, Principal } from "../types";
 import { BBTabItem } from "../bbkit/types";
 
 interface LocalState {
@@ -97,6 +104,10 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
+
+    const currentUser: ComputedRef<Principal> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -240,10 +251,10 @@ export default {
 
     const doReorder = () => {
       store
-        .dispatch(
-          "environment/reorderEnvironmentList",
-          state.reorderedEnvironmentList
-        )
+        .dispatch("environment/reorderEnvironmentList", {
+          updaterId: currentUser.value.id,
+          orderedEnvironmentList: state.reorderedEnvironmentList,
+        })
         .then(() => {
           stopReorder();
         })

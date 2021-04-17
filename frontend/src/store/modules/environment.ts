@@ -9,12 +9,21 @@ import {
   RowStatus,
   EnvironmentPatch,
   BatchUpdate,
+  PrincipalId,
 } from "../../types";
 
-function convert(environment: ResourceObject): Environment {
+function convert(environment: ResourceObject, rootGetters: any): Environment {
+  const creator = rootGetters["principal/principalById"](
+    environment.attributes.creatorId
+  );
+  const updater = rootGetters["principal/principalById"](
+    environment.attributes.updaterId
+  );
   return {
     ...(environment.attributes as Omit<Environment, "id">),
     id: environment.id,
+    creator,
+    updater,
   };
 }
 
@@ -47,13 +56,16 @@ const getters = {
 };
 
 const actions = {
-  async fetchEnvironmentList({ commit }: any, rowStatusList?: RowStatus[]) {
+  async fetchEnvironmentList(
+    { commit, rootGetters }: any,
+    rowStatusList?: RowStatus[]
+  ) {
     const path =
       "/api/environment" +
       (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
     const environmentList = (await axios.get(path)).data.data.map(
       (env: ResourceObject) => {
-        return convert(env);
+        return convert(env, rootGetters);
       }
     );
 
@@ -62,7 +74,10 @@ const actions = {
     return environmentList;
   },
 
-  async createEnvironment({ commit }: any, newEnvironment: EnvironmentNew) {
+  async createEnvironment(
+    { commit, rootGetters }: any,
+    newEnvironment: EnvironmentNew
+  ) {
     const createdEnvironment = convert(
       (
         await axios.post(`/api/environment`, {
@@ -71,7 +86,8 @@ const actions = {
             attributes: newEnvironment,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("upsertEnvironmentList", [createdEnvironment]);
@@ -80,10 +96,17 @@ const actions = {
   },
 
   async reorderEnvironmentList(
-    { commit }: any,
-    orderedEnvironmentList: Environment[]
+    { commit, rootGetters }: any,
+    {
+      updaterId,
+      orderedEnvironmentList,
+    }: {
+      updaterId: PrincipalId;
+      orderedEnvironmentList: Environment[];
+    }
   ) {
     const batchUpdate: BatchUpdate = {
+      updaterId,
       idList: orderedEnvironmentList.map((item) => item.id),
       fieldMaskList: ["order"],
       rowValueList: orderedEnvironmentList.map((_, index) => [index]),
@@ -96,7 +119,7 @@ const actions = {
         },
       })
     ).data.data.map((env: ResourceObject) => {
-      return convert(env);
+      return convert(env, rootGetters);
     });
 
     commit("upsertEnvironmentList", environmentList);
@@ -105,7 +128,7 @@ const actions = {
   },
 
   async patchEnvironment(
-    { commit }: any,
+    { commit, rootGetters }: any,
     {
       environmentId,
       environmentPatch,
@@ -122,7 +145,8 @@ const actions = {
             attributes: environmentPatch,
           },
         })
-      ).data.data
+      ).data.data,
+      rootGetters
     );
 
     commit("upsertEnvironmentList", [updatedEnvironment]);
@@ -131,14 +155,10 @@ const actions = {
   },
 
   async deleteEnvironmentById(
-    { state, commit }: { state: EnvironmentState; commit: any },
+    { commit }: { state: EnvironmentState; commit: any },
     id: EnvironmentId
   ) {
     await axios.delete(`/api/environment/${id}`);
-
-    const newList = state.environmentList.filter((item: Environment) => {
-      return item.id != id;
-    });
 
     commit("deleteEnvironmentById", id);
   },

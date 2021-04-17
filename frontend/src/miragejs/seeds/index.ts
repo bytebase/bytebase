@@ -47,6 +47,8 @@ const workspacesSeeder = (server: any) => {
     environmentList1.push(
       server.create("environment", {
         workspace: workspace1,
+        creatorId: ws1Owner.id,
+        updaterId: ws1Owner.id,
       })
     );
   }
@@ -57,6 +59,8 @@ const workspacesSeeder = (server: any) => {
     environmentList2.push(
       server.create("environment", {
         workspace: workspace2,
+        creatorId: ws2DBA.id,
+        updaterId: ws2DBA.id,
       })
     );
   }

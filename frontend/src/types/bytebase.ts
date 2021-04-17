@@ -79,6 +79,10 @@ export const unknown = (
 
   const UNKNOWN_ENVIRONMENT: Environment = {
     id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    lastUpdatedTs: 0,
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
@@ -266,6 +270,7 @@ export type CommandRegisterId = string;
 export type ContainerId = TaskId;
 
 export type BatchUpdate = {
+  updaterId: PrincipalId;
   idList: string[];
   fieldMaskList: string[];
   rowValueList: any[][];
@@ -661,7 +666,8 @@ export type EnvironmentMessageType =
   | "bb.msg.environment.update"
   | "bb.msg.environment.delete"
   | "bb.msg.environment.archive"
-  | "bb.msg.environment.restore";
+  | "bb.msg.environment.restore"
+  | "bb.msg.environment.reorder";
 
 export type InstanceMessageType =
   | "bb.msg.instance.create"
@@ -778,16 +784,22 @@ export type MessagePatch = {
 // Environment
 export type Environment = {
   id: EnvironmentId;
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
   rowStatus: RowStatus;
   name: string;
   order: number;
 };
 
 export type EnvironmentNew = {
+  creatorId: PrincipalId;
   name: string;
 };
 
 export type EnvironmentPatch = {
+  updaterId: PrincipalId;
   rowStatus?: RowStatus;
   name?: string;
 };
