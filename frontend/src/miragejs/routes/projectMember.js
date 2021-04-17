@@ -48,10 +48,13 @@ export default function configureProrjectMember(route) {
     if (member) {
       return member;
     }
+
+    // NOTE, in actual implementation, we need to fetch the user from the auth context.
+    const callerId = OWNER_ID;
     const newMember = {
       ...attrs,
-      creatorId: attrs.creatorId,
-      updaterId: attrs.creatorId,
+      creatorId: callerId,
+      updaterId: callerId,
       createdTs: ts,
       lastUpdatedTs: ts,
       role: attrs.role,
@@ -68,14 +71,14 @@ export default function configureProrjectMember(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.project.member.create",
       status: "DELIVERED",
-      creatorId: attrs.creatorId,
+      creatorId: callerId,
       workspaceId: WORKSPACE_ID,
       payload: {
         principalId: attrs.principalId,
         newRole: attrs.role,
       },
     };
-    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
+    postMessageToOwnerAndDBA(schema, callerId, messageTemplate);
 
     return createdMember;
   });
@@ -107,7 +110,10 @@ export default function configureProrjectMember(route) {
       }
       const oldRole = member.role;
 
+      // NOTE, in actual implementation, we need to fetch the user from the auth context.
+      const callerId = OWNER_ID;
       const attrs = this.normalizedRequestAttrs("project-member");
+      attrs.updaterId = callerId;
       const updatedMember = member.update(attrs);
 
       const ts = Date.now();

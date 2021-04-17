@@ -314,7 +314,6 @@ export type ProjectMember = {
 export type ProjectMemberNew = {
   principalId: PrincipalId;
   role: ProjectRoleType;
-  creatorId: PrincipalId;
 };
 
 export type ProjectMemberPatch = {

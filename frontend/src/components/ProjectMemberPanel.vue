@@ -181,7 +181,6 @@ export default {
       const projectMember: ProjectMemberNew = {
         principalId: state.principalId,
         role: hasAdminFeature.value ? state.role : "OWNER",
-        creatorId: currentUser.value.id,
       };
       const principal = store.getters["principal/principalById"](
         state.principalId
