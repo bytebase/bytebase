@@ -587,11 +587,8 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name === "workspace.database.create") {
-    if (
-      !store.getters["plan/feature"]("bytebase.dba-workflow") ||
-      isDBAOrOwner(loginUser.role)
-    ) {
+  if (to.name === "workspace.environment" || to.name === "workspace.instance") {
+    if (isDBAOrOwner(loginUser.role)) {
       next();
     } else {
       next({
@@ -602,8 +599,23 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (to.name === "workspace.environment" || to.name === "workspace.instance") {
-    if (isDBAOrOwner(loginUser.role)) {
+  // Fetching specific instance would try to fetch the sensitive info
+  // so we short circuit here for non-DBA/Owner to avoid there.
+  if (to.name?.toString().startsWith("workspace.instance.")) {
+    if (!isDBAOrOwner(loginUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
+  if (to.name === "workspace.database.create") {
+    if (
+      !store.getters["plan/feature"]("bytebase.dba-workflow") ||
+      isDBAOrOwner(loginUser.role)
+    ) {
       next();
     } else {
       next({
