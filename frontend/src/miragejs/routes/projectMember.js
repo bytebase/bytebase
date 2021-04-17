@@ -38,7 +38,7 @@ export default function configureProrjectMember(route) {
     }
 
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("project-member");
+    const attrs = this.normalizedRequestAttrs("project-member-new");
 
     const member = schema.projectMembers.findBy({
       principalId: attrs.principalId,
@@ -51,8 +51,8 @@ export default function configureProrjectMember(route) {
 
     const newMember = {
       ...attrs,
-      creatorId: FAKE_API_CALLER_ID,
-      updaterId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
+      updaterId: attrs.creatorId,
       createdTs: ts,
       lastUpdatedTs: ts,
       role: attrs.role,
@@ -69,14 +69,14 @@ export default function configureProrjectMember(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.project.member.create",
       status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
       payload: {
         principalId: attrs.principalId,
         newRole: attrs.role,
       },
     };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
+    postMessageToOwnerAndDBA(schema, attrs.creatorId, messageTemplate);
 
     return createdMember;
   });
@@ -108,8 +108,7 @@ export default function configureProrjectMember(route) {
       }
       const oldRole = member.role;
 
-      const attrs = this.normalizedRequestAttrs("project-member");
-      attrs.updaterId = FAKE_API_CALLER_ID;
+      const attrs = this.normalizedRequestAttrs("project-member-patch");
       const updatedMember = member.update(attrs);
 
       const ts = Date.now();

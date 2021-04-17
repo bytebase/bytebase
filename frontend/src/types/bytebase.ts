@@ -331,11 +331,13 @@ export type ProjectMember = {
 };
 
 export type ProjectMemberNew = {
+  creatorId: PrincipalId;
   principalId: PrincipalId;
   role: ProjectRoleType;
 };
 
 export type ProjectMemberPatch = {
+  updaterId: PrincipalId;
   role: ProjectRoleType;
 };
 

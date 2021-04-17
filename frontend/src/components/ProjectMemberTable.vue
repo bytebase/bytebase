@@ -119,6 +119,7 @@ import {
   ProjectRoleType,
   MemberId,
   RoleType,
+  ProjectMemberPatch,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
@@ -235,14 +236,16 @@ export default {
       return false;
     };
 
-    const changeRole = (id: MemberId, role: RoleType) => {
+    const changeRole = (id: MemberId, role: ProjectRoleType) => {
+      const projectMemberPatch: ProjectMemberPatch = {
+        updaterId: currentUser.value.id,
+        role,
+      };
       store
         .dispatch("project/patchMember", {
           projectId: props.project.id,
           memberId: id,
-          projectMemberPatch: {
-            role,
-          },
+          projectMemberPatch,
         })
         .catch((error) => {
           console.log(error);
