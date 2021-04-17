@@ -317,6 +317,7 @@ export default {
       instance: props.instance
         ? cloneDeep(props.instance)
         : {
+            creatorId: currentUser.value.id,
             environmentId: UNKNOWN_ID,
             name: "New Instance",
             host: "127.0.0.1",
@@ -383,7 +384,9 @@ export default {
     };
 
     const doUpdate = () => {
-      const patchedInstance: InstancePatch = {};
+      const patchedInstance: InstancePatch = {
+        updaterId: currentUser.value.id,
+      };
       if (state.instance.name != state.originalInstance!.name) {
         patchedInstance.name = state.instance.name;
       }

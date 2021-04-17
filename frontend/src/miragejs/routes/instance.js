@@ -54,8 +54,8 @@ export default function configurInstance(route) {
       host: attrs.host,
       port: attrs.port,
       rowStatus: "NORMAL",
-      creatorId: FAKE_API_CALLER_ID,
-      updaterId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
+      updaterId: attrs.creatorId,
       createdTs: ts,
       lastUpdatedTs: ts,
       workspaceId: WORKSPACE_ID,
@@ -84,13 +84,13 @@ export default function configurInstance(route) {
       lastUpdatedTs: ts,
       type: "bb.msg.instance.create",
       status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
+      creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
       payload: {
         instanceName: createdInstance.name,
       },
     };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
+    postMessageToOwnerAndDBA(schema, attrs.creatorId, messageTemplate);
 
     return createdInstance;
   });
@@ -226,14 +226,14 @@ export default function configurInstance(route) {
       lastUpdatedTs: ts,
       type,
       status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
+      creatorId: attrs.updaterId,
       workspaceId: WORKSPACE_ID,
       payload: {
         instanceName: updatedInstance.name,
         changeList,
       },
     };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
+    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
     return updatedInstance;
   });

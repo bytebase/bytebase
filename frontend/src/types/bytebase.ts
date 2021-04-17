@@ -811,6 +811,7 @@ export type Instance = {
 };
 
 export type InstanceNew = {
+  creatorId: PrincipalId;
   environmentId: EnvironmentId;
   name: string;
   externalLink?: string;
@@ -822,6 +823,7 @@ export type InstanceNew = {
 };
 
 export type InstancePatch = {
+  updaterId: PrincipalId;
   rowStatus?: RowStatus;
   name?: string;
   externalLink?: string;
