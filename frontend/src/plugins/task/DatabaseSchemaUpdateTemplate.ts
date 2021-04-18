@@ -24,6 +24,16 @@ const template: TaskTemplate = {
             name: `[${database.instance.environment.name}] ${database.name}`,
             type: "bytebase.stage.schema.update",
             databaseId: database.id,
+            stepList: [
+              {
+                name: "Waiting for approval",
+                type: "bytebase.step.approve",
+              },
+              {
+                name: `Update ${database.name} schema`,
+                type: "bytebase.step.database.schema.update",
+              },
+            ],
           };
         }
       ),

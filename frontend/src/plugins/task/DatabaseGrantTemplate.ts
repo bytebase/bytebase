@@ -27,6 +27,12 @@ const template: TaskTemplate = {
           type: "bytebase.stage.database.grant",
           databaseId:
             ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
+          stepList: [
+            {
+              name: "Waiting for approval",
+              type: "bytebase.step.approve",
+            },
+          ],
         },
       ],
       creatorId: ctx.currentUser.id,

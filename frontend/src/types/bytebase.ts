@@ -22,6 +22,8 @@ export type ResourceType =
   | "DATABASE"
   | "DATA_SOURCE"
   | "TASK"
+  | "STAGE"
+  | "STEP"
   | "ACTIVITY"
   | "MESSAGE"
   | "BOOKMARK";
@@ -41,6 +43,8 @@ export const unknown = (
   | Database
   | DataSource
   | Task
+  | Stage
+  | Step
   | Activity
   | Message
   | Bookmark => {
@@ -169,6 +173,27 @@ export const unknown = (
     payload: {},
   };
 
+  const UNKNOWN_STAGE: Stage = {
+    id: UNKNOWN_ID,
+    name: "<<Unknown stage>>",
+    type: "bytebase.stage.general",
+    status: "PENDING",
+    database: UNKNOWN_DATABASE,
+    stepList: [],
+  };
+
+  const UNKNOWN_STEP: Step = {
+    id: UNKNOWN_ID,
+    stage: UNKNOWN_STAGE,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    lastUpdatedTs: 0,
+    name: "<<Unknown step>>",
+    type: "bytebase.step.unknown",
+    status: "PENDING",
+  };
+
   const UNKNOWN_ACTIVITY: Activity = {
     id: UNKNOWN_ID,
     containerId: UNKNOWN_ID,
@@ -226,6 +251,10 @@ export const unknown = (
       return UNKNOWN_DATA_SOURCE;
     case "TASK":
       return UNKNOWN_TASK;
+    case "STAGE":
+      return UNKNOWN_STAGE;
+    case "STEP":
+      return UNKNOWN_STEP;
     case "ACTIVITY":
       return UNKNOWN_ACTIVITY;
     case "MESSAGE":
@@ -251,9 +280,11 @@ export type BookmarkId = string;
 
 export type ProjectId = string;
 
+export type TaskId = string;
+
 export type StageId = string;
 
-export type TaskId = string;
+export type StepId = string;
 
 export type ActivityId = string;
 
@@ -492,41 +523,43 @@ export type ProjectPatch = {
   key?: string;
 };
 
-// Stage
-export type StageType =
-  | "bytebase.stage.general"
-  | "bytebase.stage.transition"
-  | "bytebase.stage.database.create"
-  | "bytebase.stage.database.grant"
-  | "bytebase.stage.schema.update";
+// Task, Stage, Step are the backbones of execution.
+//
+// A TASK consists of multiple STAGES. A STAGE consists of multiple STEPS.
+//
+// Comparison with GitLab:
+// TASK = GitLab Pipeline
+// STAGE = GitLab Stage
+// STEP = GitLab Job
+//
+// Comparison with Octopus:
+// TASK = Octopus Lifecycle
+// STAGE = Octopus Phase
+// STEP = Octopus Step
 
-export type StageStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
+// We require a stage to associate with a database. Since database belongs to an instance, which
+// in turns belongs to an environment, thus the stage is also associated with an instance and environment.
+// The environment has tiers which defines rules like whether requires manual approval.
 
-export type StageRunnable = {
-  auto: boolean;
-  run: () => void;
-};
+/*
+ An example
+ 
+ An alter schema TASK
+  Dev STAGE (db_dev, env_dev)
+    Change dev database schema
+  
+  Testing STAGE (db_test, env_test)
+    Change testing database schema
+    Verify integration test pass
 
-export type Stage = {
-  id: StageId;
-  name: string;
-  type: StageType;
-  status: StageStatus;
-  database: Database;
-  runnable?: StageRunnable;
-};
+  Staging STAGE (db_staging, env_staging)
+    Approve change
+    Change staging database schema
 
-export type StageNew = {
-  id: StageId;
-  name: string;
-  type: StageType;
-  databaseId: DatabaseId;
-};
-
-export type StageProgressPatch = {
-  id: StageId;
-  status: StageStatus;
-};
+  Prod STAGE (db_prod, env_prod)
+    Approve change
+    Change prod database schema
+*/
 
 // Task
 type TaskTypeGeneral = "bytebase.general";
@@ -643,6 +676,46 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
   ],
 ]);
 
+// Stage
+export type StageType =
+  | "bytebase.stage.general"
+  | "bytebase.stage.transition"
+  | "bytebase.stage.database.create"
+  | "bytebase.stage.database.grant"
+  | "bytebase.stage.schema.update";
+
+export type StageStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
+
+export type StageRunnable = {
+  auto: boolean;
+  run: () => void;
+};
+
+// The database belongs to an instance which in turns belongs to an environment.
+// THus stage can access both instance and environment info.
+export type Stage = {
+  id: StageId;
+  name: string;
+  type: StageType;
+  status: StageStatus;
+  database: Database;
+  stepList: Step[];
+  runnable?: StageRunnable;
+};
+
+export type StageNew = {
+  id: StageId;
+  name: string;
+  type: StageType;
+  databaseId: DatabaseId;
+  stepList: StepNew[];
+};
+
+export type StageProgressPatch = {
+  id: StageId;
+  status: StageStatus;
+};
+
 export type StageStatusTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
 
 export interface StageStatusTransition {
@@ -693,6 +766,54 @@ export const STAGE_TRANSITION_LIST: Map<
     },
   ],
 ]);
+
+// Step
+export type StepType =
+  | "bytebase.step.unknown"
+  | "bytebase.step.approve"
+  | "bytebase.step.database.schema.update";
+
+export type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+
+export type DatabaseSchemaUpdateStepPayload = {
+  sql: string;
+  rollbackSql: string;
+};
+
+export type StepPayload = DatabaseSchemaUpdateStepPayload;
+
+export type Step = {
+  id: StepId;
+
+  // Related fields
+  stage: Stage;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
+
+  // Domain specific fields
+  name: string;
+  type: StepType;
+  status: StepStatus;
+  payload?: StepPayload;
+};
+
+export type StepNew = {
+  // Domain specific fields
+  name: string;
+  type: StepType;
+};
+
+export type StepPatch = {
+  // Standard fields
+  updaterId: PrincipalId;
+
+  // Domain specific fields
+  status: StepStatus;
+};
 
 // Activity
 export type TaskActionType =
@@ -893,6 +1014,7 @@ export type MessagePatch = {
 };
 
 // Environment
+// TODO: Introduce an environment tier to explicitly define which environment is prod/staging/test etc
 export type Environment = {
   id: EnvironmentId;
 

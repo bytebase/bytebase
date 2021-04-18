@@ -20,6 +20,7 @@ const template: TaskTemplate = {
           name: "Request",
           type: "bytebase.stage.general",
           databaseId: UNKNOWN_ID,
+          stepList: [],
         },
       ],
       creatorId: ctx.currentUser.id,
