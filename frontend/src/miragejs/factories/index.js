@@ -7,6 +7,8 @@ import dataSource from "./dataSource";
 import dataSourceMember from "./dataSourceMember";
 import database from "./database";
 import task from "./task";
+import stage from "./stage";
+import step from "./step";
 import activity from "./activity";
 import message from "./message";
 import workspace from "./workspace";
@@ -33,6 +35,8 @@ export default {
   ...database,
   ...message,
   ...task,
+  ...stage,
+  ...step,
   ...activity,
 
   ...workspace,

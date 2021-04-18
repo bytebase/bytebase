@@ -34,15 +34,6 @@ function convert(
     );
   }
 
-  const stageList: Stage[] = (task.attributes.stageList as any[])!.map(
-    (item) => {
-      return {
-        ...item,
-        database: rootGetters["database/databaseById"](item.databaseId),
-      };
-    }
-  );
-
   const subscriberList = (task.attributes.subscriberIdList as Principal[]).map(
     (principalId) => {
       return rootGetters["principal/principalById"](principalId);
@@ -53,9 +44,14 @@ function convert(
   let project: Project = unknown("PROJECT") as Project;
   project.id = projectId;
 
+  const stageList: Stage[] = [];
   for (const item of includedList || []) {
-    if (item.type == "project" && item.id == projectId) {
-      project = rootGetters["project/convert"](item);
+    if (
+      item.type == "stage" &&
+      (item.relationships!.task.data as ResourceIdentifier).id == task.id
+    ) {
+      const stage = rootGetters["stage/convertPartial"](item, includedList);
+      stageList.push(stage);
     }
   }
 
@@ -97,19 +93,23 @@ const getters = {
 
 const actions = {
   async fetchTaskListForUser({ commit, rootGetters }: any, userId: UserId) {
-    const data = (await axios.get(`/api/task?user=${userId}&include=project`))
-      .data;
+    const data = (
+      await axios.get(`/api/task?user=${userId}&include=project,stage,step`)
+    ).data;
     const taskList = data.data.map((task: ResourceObject) => {
       return convert(task, data.included, rootGetters);
     });
 
     commit("setTaskListForUser", { userId, taskList });
+    console.log(taskList);
     return taskList;
   },
 
   async fetchTaskListForProject({ rootGetters }: any, projectId: ProjectId) {
     const data = (
-      await axios.get(`/api/task?project=${projectId}&include=project`)
+      await axios.get(
+        `/api/task?project=${projectId}&include=project,stage,step`
+      )
     ).data;
     const taskList = data.data.map((task: ResourceObject) => {
       return convert(task, data.included, rootGetters);
@@ -120,7 +120,9 @@ const actions = {
   },
 
   async fetchTaskById({ commit, rootGetters }: any, taskId: TaskId) {
-    const data = (await axios.get(`/api/task/${taskId}?include=project`)).data;
+    const data = (
+      await axios.get(`/api/task/${taskId}?include=project,stage,step`)
+    ).data;
     const task = convert(data.data, data.included, rootGetters);
     commit("setTaskById", {
       taskId,
@@ -131,7 +133,7 @@ const actions = {
 
   async createTask({ commit, rootGetters }: any, newTask: TaskNew) {
     const data = (
-      await axios.post(`/api/task?include=project`, {
+      await axios.post(`/api/task?include=project,stage,step`, {
         data: {
           type: "tasknew",
           attributes: newTask,
@@ -159,7 +161,7 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/task/${taskId}?include=project`, {
+      await axios.patch(`/api/task/${taskId}?include=project,stage,step`, {
         data: {
           type: "taskpatch",
           attributes: taskPatch,

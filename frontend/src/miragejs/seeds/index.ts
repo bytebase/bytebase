@@ -1,4 +1,5 @@
 import faker from "faker";
+import environment from "../../store/modules/environment";
 import {
   Database,
   Environment,
@@ -15,6 +16,9 @@ import {
   StageId,
   DatabaseId,
   ProjectId,
+  PrincipalId,
+  TaskId,
+  StepStatus,
 } from "../../types";
 import { databaseSlug, taskSlug } from "../../utils";
 
@@ -167,6 +171,13 @@ const workspacesSeeder = (server: any) => {
     }).models[0]
   );
 
+  const databaseList2 = [];
+  databaseList2.push(
+    server.schema.databases.where((item: any) => {
+      return item.name != "*" && item.instanceId == instanceList2[0].id;
+    }).models[0]
+  );
+
   // Task
   let task = server.create("task", {
     type: "bytebase.general",
@@ -179,21 +190,34 @@ const workspacesSeeder = (server: any) => {
     updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id, ws1Dev1.id, ws1Owner.id],
-    stageList: [
-      {
-        id: "1",
-        name: "Request",
-        type: "bytebase.stage.general",
-        status: "PENDING",
-        databaseId: databaseList1[0].id,
-      },
-    ],
     payload: {
       5: projectList1[0].id,
       6: environmentList1[0].id,
       8: databaseList1[0].id,
     },
     project: projectList1[0],
+    workspace: workspace1,
+  });
+
+  let stage = server.create("stage", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Stage 1",
+    type: "bytebase.stage.general",
+    status: "PENDING",
+    databaseId: databaseList1[0].id,
+    task,
+    workspace: workspace1,
+  });
+
+  server.create("step", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Waiting approval",
+    type: "bytebase.step.approve",
+    status: "PENDING",
+    task,
+    stage,
     workspace: workspace1,
   });
 
@@ -356,21 +380,34 @@ const workspacesSeeder = (server: any) => {
     updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-    stageList: [
-      {
-        id: "1",
-        name: "Create database",
-        type: "bytebase.stage.database.create",
-        status: "PENDING",
-        databaseId: databaseList1[1].id,
-      },
-    ],
     payload: {
       5: projectList1[1].id,
       6: environmentList1[1].id,
       8: databaseList1[1].name,
     },
     project: projectList1[1],
+    workspace: workspace1,
+  });
+
+  stage = server.create("stage", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Create database",
+    type: "bytebase.stage.database.create",
+    status: "PENDING",
+    databaseId: databaseList1[1].id,
+    task,
+    workspace: workspace1,
+  });
+
+  server.create("step", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Waiting approval",
+    type: "bytebase.step.approve",
+    status: "PENDING",
+    task,
+    stage,
     workspace: workspace1,
   });
 
@@ -439,8 +476,42 @@ const workspacesSeeder = (server: any) => {
     return list[Math.floor(Math.random() * list.length)];
   };
 
+  const statusSetList: {
+    taskStatus: TaskStatus;
+    stageStatusList: StageStatus[];
+    stepStatusList: StepStatus[];
+  }[] = [
+    {
+      taskStatus: "OPEN",
+      stageStatusList: ["PENDING"],
+      stepStatusList: ["PENDING"],
+    },
+    {
+      taskStatus: "OPEN",
+      stageStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
+      stepStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
+    },
+    {
+      taskStatus: "DONE",
+      stageStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
+      stepStatusList: ["DONE", "CANCELED", "DONE", "DONE"],
+    },
+    {
+      taskStatus: "OPEN",
+      stageStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
+      stepStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
+    },
+    {
+      taskStatus: "CANCELED",
+      stageStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
+      stepStatusList: ["DONE", "CANCELED", "DONE", "PENDING"],
+    },
+  ];
+
   for (let i = 0; i < 3; i++) {
     const data = randomUpdateSchemaTaskName();
+    const statusSet =
+      statusSetList[Math.floor(Math.random() * statusSetList.length)];
     task = server.create("task", {
       name: data.title,
       type: "bytebase.database.schema.update",
@@ -449,10 +520,21 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1Owner.id,
       sql: data.sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-      ...fillTaskAndStageStatus(environmentList1, databaseList1),
+      status: statusSet.taskStatus,
       project: projectList1[i],
       workspace: workspace1,
     });
+
+    createUpdateSchemaStage(
+      server,
+      workspace1.id,
+      task.id,
+      ws1Dev1.id,
+      environmentList1,
+      databaseList1,
+      statusSet.stageStatusList,
+      statusSet.stepStatusList
+    );
 
     server.create("activity", {
       actionType: "bytebase.task.create",
@@ -477,6 +559,8 @@ const workspacesSeeder = (server: any) => {
 
   for (let i = 0; i < 3; i++) {
     const data = randomUpdateSchemaTaskName();
+    const statusSet =
+      statusSetList[Math.floor(Math.random() * statusSetList.length)];
     task = server.create("task", {
       name: data.title,
       type: "bytebase.database.schema.update",
@@ -485,10 +569,21 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Dev2.id],
-      ...fillTaskAndStageStatus(environmentList1, databaseList1),
+      status: statusSet.taskStatus,
       project: projectList1[i],
       workspace: workspace1,
     });
+
+    createUpdateSchemaStage(
+      server,
+      workspace1.id,
+      task.id,
+      ws1Owner.id,
+      environmentList1,
+      databaseList1,
+      statusSet.stageStatusList,
+      statusSet.stepStatusList
+    );
 
     server.create("activity", {
       actionType: "bytebase.task.create",
@@ -513,6 +608,8 @@ const workspacesSeeder = (server: any) => {
 
   for (let i = 0; i < 3; i++) {
     const data = randomUpdateSchemaTaskName();
+    const statusSet =
+      statusSetList[Math.floor(Math.random() * statusSetList.length)];
     task = server.create("task", {
       name: data.title,
       type: "bytebase.database.schema.update",
@@ -521,10 +618,21 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
-      ...fillTaskAndStageStatus(environmentList1, databaseList1),
+      status: statusSet.taskStatus,
       project: projectList1[i],
       workspace: workspace1,
     });
+
+    createUpdateSchemaStage(
+      server,
+      workspace1.id,
+      task.id,
+      ws1Dev2.id,
+      environmentList1,
+      databaseList1,
+      statusSet.stageStatusList,
+      statusSet.stepStatusList
+    );
 
     server.create("activity", {
       actionType: "bytebase.task.create",
@@ -548,6 +656,8 @@ const workspacesSeeder = (server: any) => {
   }
 
   const data = randomUpdateSchemaTaskName();
+  const statusSet =
+    statusSetList[Math.floor(Math.random() * statusSetList.length)];
   task = server.create("task", {
     name: data.title,
     type: "bytebase.database.schema.update",
@@ -555,10 +665,21 @@ const workspacesSeeder = (server: any) => {
     updaterId: ws2Dev.id,
     assigneeId: ws2DBA.id,
     sql: data.sql,
-    ...fillTaskAndStageStatus(environmentList2, databaseList1),
+    status: statusSet.taskStatus,
     project: projectList2[0],
     workspace: workspace2,
   });
+
+  createUpdateSchemaStage(
+    server,
+    workspace2.id,
+    task.id,
+    ws2Dev.id,
+    environmentList2,
+    databaseList2,
+    ["PENDING"],
+    ["PENDING"]
+  );
 
   server.create("activity", {
     actionType: "bytebase.task.create",
@@ -669,179 +790,49 @@ const createInstanceList = (
   return instanceList;
 };
 
-type TaskPartial = {
-  status: TaskStatus;
-  stageList: {
-    id: StageId;
-    name: string;
-    type: StageType;
-    databaseId: DatabaseId;
-    status: StageStatus;
-  }[];
-};
-
-const fillTaskAndStageStatus = (
+const createUpdateSchemaStage = (
+  server: any,
+  workspaceId: string,
+  taskId: TaskId,
+  creatorId: PrincipalId,
   environmentList: Environment[],
-  databaseList: Database[]
-): TaskPartial => {
-  const type: StageType = "bytebase.stage.schema.update";
-  const i = Math.floor(Math.random() * 5);
-  if (i % 5 == 0) {
-    return {
-      status: "OPEN",
-      stageList: [
-        {
-          id: "1",
-          name: environmentList[0].name,
-          type,
-          databaseId: databaseList[0].id,
-          status: "PENDING",
-        },
-        {
-          id: "2",
-          name: environmentList[1].name,
-          type,
-          databaseId: databaseList[1].id,
-          status: "PENDING",
-        },
-      ],
-    };
-  } else if (i % 5 == 1) {
-    return {
-      status: "OPEN",
-      stageList: [
-        {
-          id: "1",
-          name: environmentList[0].name,
-          type,
-          databaseId: databaseList[0].id,
-          status: "DONE",
-        },
-        {
-          id: "2",
-          name: environmentList[1].name,
-          type,
-          databaseId: databaseList[1].id,
-          status: "DONE",
-        },
-        {
-          id: "3",
-          name: environmentList[2].name,
-          type,
-          databaseId: databaseList[2].id,
-          status: "RUNNING",
-        },
-        {
-          id: "4",
-          name: environmentList[3].name,
-          type,
-          databaseId: databaseList[3].id,
-          status: "PENDING",
-        },
-      ],
-    };
-  } else if (i % 5 == 2) {
-    return {
-      status: "DONE",
-      stageList: [
-        {
-          id: "1",
-          name: environmentList[0].name,
-          type,
-          databaseId: databaseList[0].id,
-          status: "DONE",
-        },
-        {
-          id: "2",
-          name: environmentList[1].name,
-          type,
-          databaseId: databaseList[1].id,
-          status: "SKIPPED",
-        },
-        {
-          id: "3",
-          name: environmentList[2].name,
-          type,
-          databaseId: databaseList[2].id,
-          status: "DONE",
-        },
-        {
-          id: "4",
-          name: environmentList[3].name,
-          type,
-          databaseId: databaseList[3].id,
-          status: "DONE",
-        },
-      ],
-    };
-  } else if (i % 5 == 3) {
-    return {
-      status: "OPEN",
-      stageList: [
-        {
-          id: "1",
-          name: environmentList[0].name,
-          type,
-          databaseId: databaseList[0].id,
-          status: "DONE",
-        },
-        {
-          id: "2",
-          name: environmentList[1].name,
-          type,
-          databaseId: databaseList[1].id,
-          status: "FAILED",
-        },
-        {
-          id: "3",
-          name: environmentList[2].name,
-          type,
-          databaseId: databaseList[2].id,
-          status: "PENDING",
-        },
-        {
-          id: "4",
-          name: environmentList[3].name,
-          type,
-          databaseId: databaseList[3].id,
-          status: "PENDING",
-        },
-      ],
-    };
-  } else {
-    return {
-      status: "CANCELED",
-      stageList: [
-        {
-          id: "1",
-          name: environmentList[0].name,
-          type,
-          databaseId: databaseList[0].id,
-          status: "DONE",
-        },
-        {
-          id: "2",
-          name: environmentList[1].name,
-          type,
-          databaseId: databaseList[1].id,
-          status: "SKIPPED",
-        },
-        {
-          id: "3",
-          name: environmentList[2].name,
-          type,
-          databaseId: databaseList[2].id,
-          status: "DONE",
-        },
-        {
-          id: "4",
-          name: environmentList[3].name,
-          type,
-          databaseId: databaseList[3].id,
-          status: "PENDING",
-        },
-      ],
-    };
+  databaseList: Database[],
+  stageStatusList: StageStatus[],
+  stepStatusList: StepStatus[]
+) => {
+  for (let i = 0; i < stageStatusList.length; i++) {
+    const stage = server.create("stage", {
+      creatorId: creatorId,
+      updaterId: creatorId,
+      name: `${environmentList[i].name}`,
+      type: "bytebase.stage.schema.update",
+      status: stageStatusList[i],
+      databaseId: databaseList[i].id,
+      taskId,
+      workspaceId,
+    });
+
+    server.create("step", {
+      creatorId: creatorId,
+      updaterId: creatorId,
+      name: "Waiting approval",
+      type: "bytebase.step.approve",
+      status: stepStatusList[i],
+      taskId,
+      stage,
+      workspaceId,
+    });
+
+    server.create("step", {
+      creatorId: creatorId,
+      updaterId: creatorId,
+      name: `Update ${databaseList[i].name} schema`,
+      type: "bytebase.step.schema.udpate",
+      status: stepStatusList[i],
+      taskId,
+      stage,
+      workspaceId,
+    });
   }
 };
 

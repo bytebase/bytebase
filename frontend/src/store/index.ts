@@ -14,6 +14,8 @@ import principal from "./modules/principal";
 import plan from "./modules/plan";
 import auth from "./modules/auth";
 import task from "./modules/task";
+import stage from "./modules/stage";
+import step from "./modules/step";
 
 // Following states are persisted in local storage
 import uistate from "./modules/uistate";
@@ -40,6 +42,8 @@ export const store: Store<any> = createStore({
     plan,
     auth,
     task,
+    stage,
+    step,
     uistate,
     router,
     command,

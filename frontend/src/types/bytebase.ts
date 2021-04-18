@@ -175,6 +175,10 @@ export const unknown = (
 
   const UNKNOWN_STAGE: Stage = {
     id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    lastUpdatedTs: 0,
     name: "<<Unknown stage>>",
     type: "bytebase.stage.general",
     status: "PENDING",
@@ -184,6 +188,7 @@ export const unknown = (
 
   const UNKNOWN_STEP: Step = {
     id: UNKNOWN_ID,
+    task: UNKNOWN_TASK,
     stage: UNKNOWN_STAGE,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -695,6 +700,14 @@ export type StageRunnable = {
 // THus stage can access both instance and environment info.
 export type Stage = {
   id: StageId;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  lastUpdatedTs: number;
+
+  // Domain specific fields
   name: string;
   type: StageType;
   status: StageStatus;
@@ -786,6 +799,7 @@ export type Step = {
   id: StepId;
 
   // Related fields
+  task: Task;
   stage: Stage;
 
   // Standard fields
@@ -1360,6 +1374,10 @@ export interface TaskState {
   taskListByUser: Map<UserId, Task[]>;
   taskById: Map<TaskId, Task>;
 }
+
+export interface StageState {}
+
+export interface StepState {}
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
