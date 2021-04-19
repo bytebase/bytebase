@@ -20,7 +20,7 @@ export default {
       return faker.fake("{{lorem.sentence}}");
     },
     type() {
-      return "bytebase.step.unknown";
+      return "bytebase.step.general";
     },
     status() {
       return "PENDING";

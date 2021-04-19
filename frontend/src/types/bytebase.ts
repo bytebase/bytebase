@@ -195,7 +195,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
     name: "<<Unknown step>>",
-    type: "bytebase.step.unknown",
+    type: "bytebase.step.general",
     status: "PENDING",
   };
 
@@ -788,7 +788,7 @@ export const STAGE_TRANSITION_LIST: Map<
 
 // Step
 export type StepType =
-  | "bytebase.step.unknown"
+  | "bytebase.step.general"
   | "bytebase.step.approve"
   | "bytebase.step.database.schema.update";
 
