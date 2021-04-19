@@ -53,6 +53,15 @@ function convert(
       const stage = rootGetters["stage/convertPartial"](item, includedList);
       stageList.push(stage);
     }
+
+    if (
+      item.type == "project" &&
+      (item.relationships!.task.data as ResourceIdentifier[]).find(
+        (item) => item.id == projectId
+      )
+    ) {
+      project = rootGetters["project/convert"](item);
+    }
   }
 
   return {

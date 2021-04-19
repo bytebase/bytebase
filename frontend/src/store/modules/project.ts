@@ -110,7 +110,7 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (instance: ResourceObject, includedList: ResourceObject[]): Project => {
-    return convert(instance, includedList, rootGetters);
+    return convert(instance, includedList || [], rootGetters);
   },
 
   projectListByUser: (state: ProjectState) => (
