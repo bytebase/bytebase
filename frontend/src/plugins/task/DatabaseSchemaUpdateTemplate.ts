@@ -20,7 +20,6 @@ const template: TaskTemplate = {
       stageList: ctx.databaseList.map(
         (database: Database): StageNew => {
           return {
-            id: "1",
             name: `[${database.instance.environment.name}] ${database.name}`,
             type: "bytebase.stage.schema.update",
             databaseId: database.id,

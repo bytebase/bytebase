@@ -587,6 +587,7 @@ export type Task = {
 
   // Related fields
   project: Project;
+  stageList: Stage[];
 
   // Standard fields
   creator: Principal;
@@ -599,7 +600,6 @@ export type Task = {
   status: TaskStatus;
   type: TaskType;
   description: string;
-  stageList: Stage[];
   assignee?: Principal;
   subscriberList: Principal[];
   sql?: string;
@@ -608,6 +608,9 @@ export type Task = {
 };
 
 export type TaskNew = {
+  // Related fields
+  stageList: StageNew[];
+
   // Standard fields
   creatorId: PrincipalId;
 
@@ -615,7 +618,6 @@ export type TaskNew = {
   name: string;
   type: TaskType;
   description: string;
-  stageList: StageNew[];
   assigneeId?: PrincipalId;
   subscriberIdList: PrincipalId[];
   sql?: string;
@@ -701,6 +703,10 @@ export type StageRunnable = {
 export type Stage = {
   id: StageId;
 
+  // Related fields
+  stepList: Step[];
+  database: Database;
+
   // Standard fields
   creator: Principal;
   createdTs: number;
@@ -711,17 +717,17 @@ export type Stage = {
   name: string;
   type: StageType;
   status: StageStatus;
-  database: Database;
-  stepList: Step[];
   runnable?: StageRunnable;
 };
 
 export type StageNew = {
-  id: StageId;
+  // Related fields
+  stepList: StepNew[];
+  databaseId: DatabaseId;
+
+  // Domain specific fields
   name: string;
   type: StageType;
-  databaseId: DatabaseId;
-  stepList: StepNew[];
 };
 
 export type StageProgressPatch = {

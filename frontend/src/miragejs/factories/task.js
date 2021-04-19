@@ -34,15 +34,6 @@ export default {
     rollbackSql() {
       return "";
     },
-    stageList() {
-      return [
-        {
-          id: "1",
-          name: "Stage Foo",
-          status: "DONE",
-        },
-      ];
-    },
     assigneeId() {
       return UNKNOWN_ID;
     },

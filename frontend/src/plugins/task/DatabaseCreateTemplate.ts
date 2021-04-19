@@ -15,13 +15,13 @@ const template: TaskTemplate = {
   buildTask: (ctx: TemplateContext): TaskNew => {
     const payload: any = {};
     payload[TaskBuiltinFieldId.DATABASE] = "";
+
     return {
       name: "Request new db",
       type: "bytebase.database.create",
       description: "",
       stageList: [
         {
-          id: "1",
           name: "Create database",
           type: "bytebase.stage.database.create",
           databaseId:

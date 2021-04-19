@@ -16,7 +16,6 @@ const template: TaskTemplate = {
       description: "",
       stageList: [
         {
-          id: "1",
           name: "Request",
           type: "bytebase.stage.general",
           databaseId: UNKNOWN_ID,

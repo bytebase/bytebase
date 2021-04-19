@@ -92,6 +92,7 @@ export default {
   stage: Model.extend({
     workspace: belongsTo(),
     task: belongsTo(),
+    database: belongsTo(),
   }),
   stagePatch: Model,
 
@@ -127,6 +128,7 @@ export default {
     instance: belongsTo(),
     project: belongsTo(),
     dataSource: hasMany(),
+    stage: hasMany(),
   }),
   databaseNew: Model,
   databasePatch: Model,

@@ -22,7 +22,7 @@ function convertPartial(
   );
 
   const database = rootGetters["database/databaseById"](
-    stage.attributes.databaseId
+    (stage.relationships!.database.data as ResourceIdentifier).id
   );
 
   const stepList: Step[] = [];

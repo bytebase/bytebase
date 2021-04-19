@@ -22,7 +22,6 @@ const template: TaskTemplate = {
       description: "",
       stageList: [
         {
-          id: "1",
           name: "Request database access",
           type: "bytebase.stage.database.grant",
           databaseId:

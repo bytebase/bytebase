@@ -39,15 +39,11 @@ export default function configureTask(route) {
 
   route.post("/task", function (schema, request) {
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("task-new");
-    const database = schema.databases.find(attrs.stageList[0].databaseId);
-    attrs.stageList.forEach((stage) => {
-      stage.status = "PENDING";
-    });
+    const { stageList, ...attrs } = this.normalizedRequestAttrs("task-new");
+    const database = schema.databases.find(stageList[0].databaseId);
 
     const newTask = {
       ...attrs,
-      creatorId: attrs.creatorId,
       createdTs: ts,
       updaterId: attrs.creatorId,
       lastUpdatedTs: ts,
@@ -56,6 +52,32 @@ export default function configureTask(route) {
       workspaceId: WORKSPACE_ID,
     };
     const createdTask = schema.tasks.create(newTask);
+
+    for (const stage of stageList) {
+      const { stepList, ...stageAttrs } = stage;
+      const createdStage = schema.stages.create({
+        ...stageAttrs,
+        createdTs: ts,
+        updaterId: attrs.creatorId,
+        lastUpdatedTs: ts,
+        status: "PENDING",
+        task: createdTask,
+        workspaceId: WORKSPACE_ID,
+      });
+
+      for (const step of stepList) {
+        schema.steps.create({
+          ...step,
+          createdTs: ts,
+          updaterId: attrs.creatorId,
+          lastUpdatedTs: ts,
+          status: "PENDING",
+          task: createdTask,
+          stage: createdStage,
+          workspaceId: WORKSPACE_ID,
+        });
+      }
+    }
 
     schema.activities.create({
       creatorId: attrs.creatorId,
