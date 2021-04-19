@@ -1,25 +1,6 @@
 <template>
   <form class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-2">
-      <div class="col-span-2 col-start-1 w-64">
-        <label for="project" class="textlabel">
-          Project <span style="color: red">*</span>
-        </label>
-        <!-- Disable the selection if having preset project -->
-        <ProjectSelect
-          class="mt-1"
-          id="project"
-          name="project"
-          :disabled="projectId != null"
-          :selectedId="state.project.id"
-          @select-project-id="
-            (projectId) => {
-              changeProjectId(projectId);
-            }
-          "
-        />
-      </div>
-
       <template v-if="state.singleEnvironment">
         <div class="col-span-2 col-start-1 w-64">
           <label for="environment" class="textlabel">
@@ -37,6 +18,30 @@
             "
           />
         </div>
+
+        <!-- If project is supplied, we put ProjectSelect before DatabaseSelect,
+             Otherwise, we put it after. This is based on the assumption that
+             it's relatively easy to directly select the database instead of selecting
+             project and then selecting database in that project -->
+        <div v-if="projectId != UNKNOWN_ID" class="col-span-2 col-start-1 w-64">
+          <label for="project" class="textlabel">
+            Project <span style="color: red">*</span>
+          </label>
+          <!-- Disable the selection if having preset project -->
+          <ProjectSelect
+            class="mt-1"
+            id="project"
+            name="project"
+            :disabled="true"
+            :selectedId="state.project.id"
+            @select-project-id="
+              (projectId) => {
+                changeProjectId(projectId);
+              }
+            "
+          />
+        </div>
+
         <div class="col-span-2 col-start-1 w-64">
           <label for="database" class="textlabel">
             Database <span style="color: red">*</span>
@@ -51,7 +56,25 @@
             :mode="'USER'"
             @select-database-id="
               (databaseId) => {
-                state.singleTaskConfig.databaseId = databaseId;
+                changeDatabaseId(databaseId);
+              }
+            "
+          />
+        </div>
+
+        <div v-if="projectId == UNKNOWN_ID" class="col-span-2 col-start-1 w-64">
+          <label for="project" class="textlabel">
+            Project <span style="color: red">*</span>
+          </label>
+          <!-- Disable the selection if having preset project -->
+          <ProjectSelect
+            class="mt-1"
+            id="project"
+            name="project"
+            :selectedId="state.project.id"
+            @select-project-id="
+              (projectId) => {
+                changeProjectId(projectId);
               }
             "
           />
@@ -86,6 +109,7 @@ import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import {
+  Database,
   DatabaseId,
   EnvironmentId,
   Project,
@@ -111,6 +135,7 @@ export default {
   emits: ["dismiss"],
   props: {
     projectId: {
+      required: true,
       type: String as PropType<ProjectId>,
     },
   },
@@ -134,9 +159,7 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      project: props.projectId
-        ? store.getters["project/projectById"](props.projectId)
-        : (unknown("PROJECT") as Project),
+      project: store.getters["project/projectById"](props.projectId),
       singleEnvironment: true,
       singleTaskConfig: {
         environmentId: UNKNOWN_ID,
@@ -161,6 +184,17 @@ export default {
       if (state.singleEnvironment) {
       } else {
         state.taskConfigList = [];
+      }
+    };
+
+    const changeDatabaseId = (databaseId: DatabaseId) => {
+      state.singleTaskConfig.databaseId = databaseId;
+
+      if (databaseId != UNKNOWN_ID) {
+        const database: Database = store.getters["database/databaseById"](
+          state.singleTaskConfig.databaseId
+        );
+        state.project = database.project;
       }
     };
 
@@ -191,9 +225,11 @@ export default {
     };
 
     return {
+      UNKNOWN_ID,
       state,
       allowNext,
       changeProjectId,
+      changeDatabaseId,
       cancel,
       goNext,
     };

@@ -341,7 +341,7 @@ import ProjectNew from "../components/ProjectNew.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
-import { ProjectId, QuickActionType } from "../types";
+import { ProjectId, QuickActionType, UNKNOWN_ID } from "../types";
 import { idFromSlug } from "../utils";
 
 // Quick action only applicable when DBA workflow feature is enabled.
@@ -392,13 +392,15 @@ export default {
       });
     });
 
-    const projectId = computed((): ProjectId | undefined => {
-      if (router.currentRoute.value.name == "workspace.project.detail") {
-        const parts = router.currentRoute.value.path.split("/");
-        return idFromSlug(parts[parts.length - 1]);
+    const projectId = computed(
+      (): ProjectId => {
+        if (router.currentRoute.value.name == "workspace.project.detail") {
+          const parts = router.currentRoute.value.path.split("/");
+          return idFromSlug(parts[parts.length - 1]);
+        }
+        return UNKNOWN_ID;
       }
-      return undefined;
-    });
+    );
 
     const createProject = () => {
       state.modalTitle = "Create project";
