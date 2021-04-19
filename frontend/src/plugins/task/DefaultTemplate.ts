@@ -27,44 +27,7 @@ const template: TaskTemplate = {
       payload: {},
     };
   },
-  fieldList: [
-    {
-      category: "INPUT",
-      id: TaskBuiltinFieldId.PROJECT,
-      slug: "project",
-      name: "Project",
-      type: "Project",
-      required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const projectId = ctx.task.payload[TaskBuiltinFieldId.PROJECT];
-        return !isEmpty(projectId);
-      },
-    },
-    {
-      category: "INPUT",
-      id: TaskBuiltinFieldId.ENVIRONMENT,
-      slug: "environment",
-      name: "Environment",
-      type: "Environment",
-      required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
-        return !isEmpty(environmentId);
-      },
-    },
-    {
-      category: "INPUT",
-      id: TaskBuiltinFieldId.DATABASE,
-      slug: "database",
-      name: "Database",
-      type: "Database",
-      required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
-        return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
-      },
-    },
-  ],
+  fieldList: [],
 };
 
 export default template;

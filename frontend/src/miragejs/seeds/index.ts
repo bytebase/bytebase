@@ -190,11 +190,6 @@ const workspacesSeeder = (server: any) => {
     updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id, ws1Dev1.id, ws1Owner.id],
-    payload: {
-      5: projectList1[0].id,
-      6: environmentList1[0].id,
-      8: databaseList1[0].id,
-    },
     project: projectList1[0],
     workspace: workspace1,
   });
