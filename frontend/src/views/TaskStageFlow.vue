@@ -90,7 +90,7 @@
             <button
               class="btn-icon"
               @click.prevent="
-                tryChangeStageStatus(applicableStageTransitionList[0])
+                tryChangeStageStatus(stage.id, applicableStageTransitionList[0])
               "
             >
               <template v-if="applicableStageTransitionList[0].type == 'RUN'">
@@ -189,7 +189,7 @@
                   :key="index"
                 >
                   <a
-                    @click.prevent="tryChangeStageStatus(transition)"
+                    @click.prevent="tryChangeStageStatus(stage.id, transition)"
                     class="menu-item"
                     role="menuitem"
                   >
@@ -236,7 +236,7 @@
       @submit="
         (transition, comment) => {
           modalState.show = false;
-          doChangeStageStatus(transition, comment);
+          doChangeStageStatus(modalState.stageId, transition, comment);
         }
       "
       @cancel="
@@ -259,6 +259,7 @@ import {
   StageStatusTransitionType,
   StageStatusTransition,
   STAGE_TRANSITION_LIST,
+  UNKNOWN_ID,
 } from "../types";
 import { activeStage } from "../utils";
 
@@ -294,6 +295,7 @@ interface FlowItem {
 }
 
 interface ModalState {
+  stageId: StageId;
   show: boolean;
   okText: string;
   title: string;
@@ -314,6 +316,7 @@ export default {
     const store = useStore();
 
     const modalState = reactive<ModalState>({
+      stageId: UNKNOWN_ID,
       show: false,
       okText: "OK",
       title: "",
@@ -397,7 +400,11 @@ export default {
         .map((type) => STAGE_TRANSITION_LIST.get(type));
     });
 
-    const tryChangeStageStatus = (transition: StageStatusTransition) => {
+    const tryChangeStageStatus = (
+      stageId: StageId,
+      transition: StageStatusTransition
+    ) => {
+      modalState.stageId = stageId;
       modalState.okText = transition.actionName;
       modalState.title =
         transition.actionName +
@@ -409,17 +416,11 @@ export default {
     };
 
     const doChangeStageStatus = (
+      stageId: StageId,
       transition: StageStatusTransition,
       comment?: string
     ) => {
-      emit(
-        "change-stage-status",
-        {
-          id: activeStage(props.task as Task).id,
-          status: transition.to,
-        },
-        comment
-      );
+      emit("change-stage-status", stageId, transition.to, comment);
     };
 
     return {

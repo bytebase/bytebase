@@ -81,7 +81,7 @@
         type="button"
         class="ml-3 px-4 py-2"
         v-bind:class="submitButtonStyle"
-        @click.prevent="$emit('submit', state.outputValueList, state.comment)"
+        @click.prevent="$emit('submit', state.comment)"
       >
         {{ okText }}
       </button>

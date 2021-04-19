@@ -194,28 +194,6 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace1,
   });
 
-  let stage = server.create("stage", {
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    name: "Stage 1",
-    type: "bytebase.stage.general",
-    status: "PENDING",
-    databaseId: databaseList1[0].id,
-    task,
-    workspace: workspace1,
-  });
-
-  server.create("step", {
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    name: "Waiting approval",
-    type: "bytebase.step.approve",
-    status: "PENDING",
-    task,
-    stage,
-    workspace: workspace1,
-  });
-
   const createdActivity = server.create("activity", {
     actionType: "bytebase.task.create",
     containerId: task.id,
@@ -240,7 +218,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.updatestatus",
+        type: "bb.msg.task.status.update",
         containerId: task.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -271,7 +249,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.updatestatus",
+        type: "bb.msg.task.status.update",
         containerId: task.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -302,7 +280,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.updatestatus",
+        type: "bb.msg.task.status.update",
         containerId: task.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -332,7 +310,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.updatestatus",
+        type: "bb.msg.task.status.update",
         containerId: task.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -384,7 +362,7 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace1,
   });
 
-  stage = server.create("stage", {
+  const stage = server.create("stage", {
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     name: "Create database",

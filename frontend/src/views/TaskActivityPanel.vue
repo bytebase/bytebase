@@ -486,7 +486,9 @@ export default {
           return "created task";
         case "bytebase.task.comment.create":
           return "commented";
-        case "bytebase.task.field.update": {
+        case "bytebase.task.field.update":
+        case "bytebase.task.status.update":
+        case "bytebase.task.stage.status.update": {
           const updateInfoList: string[] = [];
           for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
             ?.changeList || []) {
@@ -499,6 +501,10 @@ export default {
               newValue = update.newValue;
             } else if (update.fieldId == TaskBuiltinFieldId.STATUS) {
               name = "status";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
+            } else if (update.fieldId == TaskBuiltinFieldId.STAGE_STATUS) {
+              name = "stage status";
               oldValue = update.oldValue;
               newValue = update.newValue;
             } else if (update.fieldId == TaskBuiltinFieldId.ASSIGNEE) {

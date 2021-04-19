@@ -13,6 +13,7 @@ import {
   ResourceIdentifier,
   ProjectId,
   Stage,
+  TaskStatusPatch,
 } from "../../types";
 
 function convert(
@@ -190,6 +191,39 @@ const actions = {
           attributes: taskPatch,
         },
       })
+    ).data;
+    const updatedTask = convert(data.data, data.included, rootGetters);
+
+    commit("setTaskById", {
+      taskId: taskId,
+      task: updatedTask,
+    });
+
+    dispatch("activity/fetchActivityListForTask", taskId, { root: true });
+
+    return updatedTask;
+  },
+
+  async updateTaskStatus(
+    { commit, dispatch, rootGetters }: any,
+    {
+      taskId,
+      taskStatusPatch,
+    }: {
+      taskId: TaskId;
+      taskStatusPatch: TaskStatusPatch;
+    }
+  ) {
+    const data = (
+      await axios.patch(
+        `/api/task/${taskId}/status?include=project,stage,step`,
+        {
+          data: {
+            type: "taskstatuspatch",
+            attributes: taskStatusPatch,
+          },
+        }
+      )
     ).data;
     const updatedTask = convert(data.data, data.included, rootGetters);
 

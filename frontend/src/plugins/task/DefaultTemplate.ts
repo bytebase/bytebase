@@ -1,11 +1,5 @@
-import isEmpty from "lodash-es/isEmpty";
 import { TaskNew, UNKNOWN_ID } from "../../types";
-import {
-  TaskBuiltinFieldId,
-  TaskContext,
-  TaskTemplate,
-  TemplateContext,
-} from "../types";
+import { TaskTemplate, TemplateContext } from "../types";
 
 const template: TaskTemplate = {
   type: "bytebase.general",
@@ -14,14 +8,7 @@ const template: TaskTemplate = {
       name: "",
       type: "bytebase.general",
       description: "",
-      stageList: [
-        {
-          name: "Request",
-          type: "bytebase.stage.general",
-          databaseId: UNKNOWN_ID,
-          stepList: [],
-        },
-      ],
+      stageList: [],
       creatorId: ctx.currentUser.id,
       subscriberIdList: [],
       payload: {},

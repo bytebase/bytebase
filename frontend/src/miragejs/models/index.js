@@ -87,6 +87,7 @@ export default {
   }),
   taskNew: Model,
   taskPatch: Model,
+  taskStatusPatch: Model,
 
   // Stage
   stage: Model.extend({
@@ -95,6 +96,7 @@ export default {
     database: belongsTo(),
   }),
   stagePatch: Model,
+  stageStatusPatch: Model,
 
   // Step
   step: Model.extend({

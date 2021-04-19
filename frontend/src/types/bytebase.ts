@@ -180,7 +180,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
     name: "<<Unknown stage>>",
-    type: "bytebase.stage.general",
+    type: "bytebase.stage.unknown",
     status: "PENDING",
     task: UNKNOWN_TASK,
     database: UNKNOWN_DATABASE,
@@ -196,7 +196,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     lastUpdatedTs: 0,
     name: "<<Unknown step>>",
-    type: "bytebase.step.general",
+    type: "bytebase.step.unknown",
     status: "PENDING",
   };
 
@@ -268,6 +268,33 @@ export const unknown = (
     case "BOOKMARK":
       return UNKNOWN_BOOKMARK;
   }
+};
+
+export const FINAL_STAGE: Stage = {
+  id: "0",
+  creator: unknown("PRINCIPAL") as Principal,
+  createdTs: 0,
+  updater: unknown("PRINCIPAL") as Principal,
+  lastUpdatedTs: 0,
+  name: "Final stage",
+  type: "bytebase.stage.final",
+  status: "PENDING",
+  task: unknown("TASK") as Task,
+  database: unknown("DATABASE") as Database,
+  stepList: [],
+};
+
+export const FINAL_STEP: Step = {
+  id: "0",
+  task: unknown("TASK") as Task,
+  stage: FINAL_STAGE,
+  creator: unknown("PRINCIPAL") as Principal,
+  createdTs: 0,
+  updater: unknown("PRINCIPAL") as Principal,
+  lastUpdatedTs: 0,
+  name: "Final step",
+  type: "bytebase.step.final",
+  status: "PENDING",
 };
 
 // These ID format may change in the future, so we encapsulate with a type.
@@ -635,18 +662,24 @@ export type TaskPatch = {
 
   // Domain specific fields
   name?: string;
-  status?: TaskStatus;
   description?: string;
   subscriberIdList?: PrincipalId[];
   sql?: string;
   rollbackSql?: string;
   assigneeId?: PrincipalId;
-  stage?: StageProgressPatch;
   payload?: TaskPayload;
+};
+
+export type TaskStatusPatch = {
+  // Standard fields
+  updaterId: PrincipalId;
+
+  // Domain specific fields
+  status: TaskStatus;
   comment?: string;
 };
 
-export type TaskStatusTransitionType = "RESOLVE" | "ABORT" | "REOPEN";
+export type TaskStatusTransitionType = "NEXT" | "RESOLVE" | "ABORT" | "REOPEN";
 
 export interface TaskStatusTransition {
   type: TaskStatusTransitionType;
@@ -658,6 +691,14 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
   TaskStatusTransitionType,
   TaskStatusTransition
 > = new Map([
+  [
+    "NEXT",
+    {
+      type: "NEXT",
+      actionName: "Next",
+      to: "OPEN",
+    },
+  ],
   [
     "RESOLVE",
     {
@@ -684,9 +725,30 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
   ],
 ]);
 
+// The first transition in the list is the primary action and the rests are
+// the normal action. For now there are at most 1 primary 1 normal action.
+export const CREATOR_APPLICABLE_ACTION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
+> = new Map([
+  ["OPEN", ["ABORT"]],
+  ["DONE", ["REOPEN"]],
+  ["CANCELED", ["REOPEN"]],
+]);
+
+export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
+> = new Map([
+  ["OPEN", ["NEXT", "RESOLVE", "ABORT"]],
+  ["DONE", ["REOPEN"]],
+  ["CANCELED", ["REOPEN"]],
+]);
+
 // Stage
 export type StageType =
-  | "bytebase.stage.general"
+  | "bytebase.stage.unknown"
+  | "bytebase.stage.final"
   | "bytebase.stage.transition"
   | "bytebase.stage.database.create"
   | "bytebase.stage.database.grant"
@@ -732,9 +794,10 @@ export type StageNew = {
   type: StageType;
 };
 
-export type StageProgressPatch = {
-  id: StageId;
+export type StageStatusPatch = {
+  updaterId: PrincipalId;
   status: StageStatus;
+  comment?: string;
 };
 
 export type StageStatusTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
@@ -790,7 +853,9 @@ export const STAGE_TRANSITION_LIST: Map<
 
 // Step
 export type StepType =
-  | "bytebase.step.general"
+  | "bytebase.step.unknown"
+  | "bytebase.step.final"
+  | "bytebase.step.resolve"
   | "bytebase.step.approve"
   | "bytebase.step.database.schema.update";
 
@@ -841,7 +906,9 @@ export type StepPatch = {
 export type TaskActionType =
   | "bytebase.task.create"
   | "bytebase.task.comment.create"
-  | "bytebase.task.field.update";
+  | "bytebase.task.field.update"
+  | "bytebase.task.status.update"
+  | "bytebase.task.stage.status.update";
 
 export type ActionType = TaskActionType;
 
@@ -926,7 +993,8 @@ export type InstanceMessageType =
 
 export type TaskMessageType =
   | "bb.msg.task.assign"
-  | "bb.msg.task.updatestatus"
+  | "bb.msg.task.status.update"
+  | "bb.msg.task.stage.status.update"
   | "bb.msg.task.comment";
 
 export type MessageType =

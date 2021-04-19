@@ -1,5 +1,12 @@
-import { Task, StageId, Stage, EnvironmentId, DatabaseId } from "../types";
-import { templateForType } from "../plugins";
+import {
+  Task,
+  StageId,
+  Stage,
+  EnvironmentId,
+  DatabaseId,
+  Step,
+  FINAL_STAGE,
+} from "../types";
 
 export function stageName(task: Task, stageId: StageId): string {
   for (const stage of task.stageList) {
@@ -10,13 +17,9 @@ export function stageName(task: Task, stageId: StageId): string {
   return "<<Unknown stage>>";
 }
 
-// Returns true if the last stage of the task is DONE or SKIPPED
+// Returns true if the active step is the last step in the entire task
 export function pendingResolve(task: Task): boolean {
-  const lastStage = task.stageList[task.stageList.length - 1];
-  if (activeStage(task) == lastStage) {
-    return lastStage.status === "DONE" || lastStage.status === "SKIPPED";
-  }
-  return false;
+  return activeStage(task).type == "bytebase.stage.final";
 }
 
 export function activeStage(task: Task): Stage {
@@ -31,7 +34,7 @@ export function activeStage(task: Task): Stage {
       return stage;
     }
   }
-  return task.stageList[task.stageList.length - 1];
+  return FINAL_STAGE;
 }
 
 export function activeStageIsRunning(task: Task): boolean {

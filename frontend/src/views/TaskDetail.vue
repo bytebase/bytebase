@@ -37,6 +37,8 @@
                 index == 0
                   ? transition.type == 'RESOLVE'
                     ? 'btn-success'
+                    : transition.type == 'NEXT'
+                    ? 'btn-primary'
                     : 'btn-normal'
                   : 'btn-normal mr-2'
               "
@@ -152,13 +154,9 @@
       :transition="updateStatusModalState.payload.transition"
       :outputFieldList="outputFieldList"
       @submit="
-        (outputValueList, comment) => {
+        (comment) => {
           updateStatusModalState.show = false;
-          doTaskStatusTransition(
-            updateStatusModalState.payload,
-            outputValueList,
-            comment
-          );
+          doTaskStatusTransition(updateStatusModalState.payload, comment);
         }
       "
       @cancel="
@@ -185,7 +183,7 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
-import { idFromSlug, taskSlug, isDemo } from "../utils";
+import { idFromSlug, taskSlug, isDemo, pendingResolve } from "../utils";
 import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
 import TaskStageFlow from "./TaskStageFlow.vue";
 import TaskOutputPanel from "../views/TaskOutputPanel.vue";
@@ -199,13 +197,17 @@ import {
   TaskNew,
   TaskType,
   TaskPatch,
-  TaskStatus,
   TaskStatusTransition,
   TaskStatusTransitionType,
-  StageProgressPatch,
+  StageStatusPatch,
   PrincipalId,
   TASK_STATUS_TRANSITION_LIST,
   Database,
+  ASSIGNEE_APPLICABLE_ACTION_LIST,
+  CREATOR_APPLICABLE_ACTION_LIST,
+  TaskStatusPatch,
+  StageStatus,
+  StageId,
 } from "../types";
 import {
   defaulTemplate,
@@ -215,25 +217,7 @@ import {
   TaskContext,
 } from "../plugins";
 
-// The first transition in the list is the primary action and the rests are
-// the normal action. For now there are at most 1 primary 1 normal action.
-const CREATOR_APPLICABLE_ACTION_LIST: Map<
-  TaskStatus,
-  TaskStatusTransitionType[]
-> = new Map([
-  ["OPEN", ["ABORT"]],
-  ["DONE", ["REOPEN"]],
-  ["CANCELED", ["REOPEN"]],
-]);
-
-const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
-  TaskStatus,
-  TaskStatusTransitionType[]
-> = new Map([
-  ["OPEN", ["RESOLVE", "ABORT"]],
-  ["DONE", ["REOPEN"]],
-  ["CANCELED", ["REOPEN"]],
-]);
+type WorkflowType = "SINGLE_STEP" | "SINGLE_STAGE" | "MULTI_STAGE";
 
 type UpdateStatusModalStatePayload = {
   transition: TaskStatusTransition;
@@ -504,10 +488,17 @@ export default {
     const allowTransition = (transition: TaskStatusTransition): boolean => {
       const task: Task = state.task as Task;
       if (transition.type == "RESOLVE") {
-        // if (pendingResolve(task)) {
-        return allowResolve.value;
-        // }
-        // return false;
+        if (pendingResolve(task)) {
+          // Returns false if any of the required output fields is not provided.
+          for (let i = 0; i < outputFieldList.value.length; i++) {
+            const field = outputFieldList.value[i];
+            if (field.required && !field.resolved(taskContext.value)) {
+              return false;
+            }
+          }
+          return true;
+        }
+        return false;
       }
       return true;
     };
@@ -540,26 +531,20 @@ export default {
 
     const doTaskStatusTransition = (
       payload: UpdateStatusModalStatePayload,
-      outputValueList: string[],
       comment?: string
     ) => {
-      let payloadChanged = false;
-      for (let i = 0; i < outputValueList.length; i++) {
-        const field = outputFieldList.value[i];
-        if (!isEqual(state.task.payload[field.id], outputValueList[i])) {
-          state.task.payload[field.id] = outputValueList[i];
-          payloadChanged = true;
-        }
-      }
+      const taskStatusPatch: TaskStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: payload.transition.to,
+        comment: comment ? comment.trim() : undefined,
+      };
 
-      const theComment = comment ? comment.trim() : undefined;
-      patchTask(
-        {
-          status: payload.transition.to,
-          comment: theComment ? theComment : undefined,
-          payload: payloadChanged ? state.task.payload : undefined,
-        },
-        () => {
+      store
+        .dispatch("task/updateTaskStatus", {
+          taskId: (state.task as Task).id,
+          taskStatusPatch,
+        })
+        .then((updatedTask) => {
           if (
             payload.transition.to == "DONE" &&
             taskTemplate.value.type == "bytebase.database.schema.update"
@@ -570,8 +555,25 @@ export default {
             });
           }
           payload.didTransit();
-        }
-      );
+        });
+    };
+
+    const changeStageStatus = (
+      stageId: StageId,
+      stageStatus: StageStatus,
+      comment?: string
+    ) => {
+      const stageStatusPatch: StageStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: stageStatus,
+        comment: comment ? comment.trim() : undefined,
+      };
+
+      store.dispatch("stage/updateStageStatus", {
+        taskId: (state.task as Task).id,
+        stageId,
+        stageStatusPatch,
+      });
     };
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
@@ -635,12 +637,20 @@ export default {
         });
     };
 
-    const changeStageStatus = (stage: StageProgressPatch, comment?: string) => {
-      patchTask({
-        stage,
-        comment,
-      });
-    };
+    const workflowType = computed(
+      (): WorkflowType => {
+        if (state.task.stageList.length > 1) {
+          return "MULTI_STAGE";
+        }
+        if (
+          state.task.stageList.length == 1 &&
+          state.task.stageList[0].stepList.length > 1
+        ) {
+          return "SINGLE_STAGE";
+        }
+        return "SINGLE_STEP";
+      }
+    );
 
     const allowCreate = computed(() => {
       const newTask = state.task as TaskNew;
@@ -663,16 +673,6 @@ export default {
           ) {
             return false;
           }
-        }
-      }
-      return true;
-    });
-
-    const allowResolve = computed(() => {
-      for (let i = 0; i < outputFieldList.value.length; i++) {
-        const field = outputFieldList.value[i];
-        if (field.required && !field.resolved(taskContext.value)) {
-          return false;
         }
       }
       return true;
@@ -714,7 +714,7 @@ export default {
     });
 
     const showTaskStageFlowBar = computed(() => {
-      return !state.new && state.task.stageList.length > 0;
+      return !state.new && workflowType.value != "SINGLE_STEP";
     });
 
     const showTaskOutputPanel = computed(() => {
@@ -749,10 +749,24 @@ export default {
             }
           });
         }
-        return list.map(
-          (type: TaskStatusTransitionType) =>
-            TASK_STATUS_TRANSITION_LIST.get(type)!
-        );
+
+        return list
+          .filter((item) => {
+            if (pendingResolve(state.task as Task)) {
+              if (item == "NEXT") {
+                return false;
+              }
+            } else {
+              if (item == "RESOLVE") {
+                return false;
+              }
+            }
+            return true;
+          })
+          .map(
+            (type: TaskStatusTransitionType) =>
+              TASK_STATUS_TRANSITION_LIST.get(type)!
+          );
       }
     );
 
@@ -771,6 +785,7 @@ export default {
       updateCustomField,
       doCreate,
       changeStageStatus,
+      workflowType,
       allowCreate,
       currentUser,
       taskTemplate,

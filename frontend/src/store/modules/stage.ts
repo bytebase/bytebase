@@ -1,9 +1,12 @@
+import axios from "axios";
 import { root } from "postcss";
 import {
   ResourceIdentifier,
   ResourceObject,
   Stage,
+  StageId,
   StageState,
+  StageStatusPatch,
   Step,
   Task,
   TaskId,
@@ -77,6 +80,30 @@ const getters = {
     }
 
     return result;
+  },
+
+  async updateStageStatus(
+    { dispatch }: any,
+    {
+      taskId,
+      stageId,
+      stageStatusPatch,
+    }: {
+      taskId: TaskId;
+      stageId: StageId;
+      stageStatusPatch: StageStatusPatch;
+    }
+  ) {
+    const data = (
+      await axios.patch(`/api/task/${taskId}/stage/${stageId}/status`, {
+        data: {
+          type: "stagestatuspatch",
+          attributes: stageStatusPatch,
+        },
+      })
+    ).data;
+
+    dispatch("task/fetchTaskById", taskId, { root: true });
   },
 };
 

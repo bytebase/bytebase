@@ -121,7 +121,7 @@
                     </router-link>
                   </template>
                   <template
-                    v-else-if="message.type == 'bb.msg.task.updatestatus'"
+                    v-else-if="message.type == 'bb.msg.task.status.update'"
                   >
                     <router-link
                       :to="`/task/${message.containerId}`"
@@ -334,10 +334,19 @@ export default {
           }
           return "assigned task";
         }
-        case "bb.msg.task.updatestatus": {
+        case "bb.msg.task.status.update": {
           const payload = message.payload as TaskUpdateStatusMessagePayload;
           return (
             "changed task status from " +
+            payload.oldStatus +
+            " to " +
+            payload.newStatus
+          );
+        }
+        case "bb.msg.task.stage.status.update": {
+          const payload = message.payload as TaskUpdateStatusMessagePayload;
+          return (
+            "changed task stage status from " +
             payload.oldStatus +
             " to " +
             payload.newStatus

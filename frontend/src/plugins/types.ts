@@ -27,6 +27,7 @@ export enum TaskBuiltinFieldId {
   SQL = "11",
   ROLLBACK_SQL = "12",
   SUBSCRIBER_LIST = "13",
+  STAGE_STATUS = "14",
 }
 
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
