@@ -3,6 +3,7 @@ import isEqual from "lodash-es/isEqual";
 import { WORKSPACE_ID } from "./index";
 import { IssueBuiltinFieldId } from "../../plugins";
 import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../../types";
+import { postIssueMessageToReceiver } from "../utils";
 
 export default function configureIssue(route) {
   route.get("/issue", function (schema, request) {
@@ -126,16 +127,17 @@ export default function configureIssue(route) {
           newValue: attrs.assigneeId,
         });
 
+        messageTemplate.type = "bb.msg.issue.assign";
+        messageTemplate.payload = {
+          issueName: issue.name,
+          oldAssigneeId: issue.assigneeId,
+          newAssigneeId: attrs.assigneeId,
+        };
+
         // Send a message to the new assignee
         messageList.push({
           ...messageTemplate,
-          type: "bb.msg.issue.assign",
           receiverId: attrs.assigneeId,
-          payload: {
-            issueName: issue.name,
-            oldAssigneeId: issue.assigneeId,
-            newAssigneeId: attrs.assigneeId,
-          },
         });
 
         // Send a message to the old assignee
@@ -145,13 +147,7 @@ export default function configureIssue(route) {
         ) {
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.issue.assign",
             receiverId: issue.assigneeId,
-            payload: {
-              issueName: issue.name,
-              oldAssigneeId: issue.assigneeId,
-              newAssigneeId: attrs.assigneeId,
-            },
           });
         }
 
@@ -159,13 +155,7 @@ export default function configureIssue(route) {
         if (issue.creatorId != attrs.assigneeId) {
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.issue.assign",
             receiverId: issue.creatorId,
-            payload: {
-              issueName: issue.name,
-              oldAssigneeId: issue.assigneeId,
-              newAssigneeId: attrs.assigneeId,
-            },
           });
         }
       }
@@ -331,49 +321,19 @@ export default function configureIssue(route) {
       workspaceId: WORKSPACE_ID,
     };
 
-    if (attrs.status) {
-      if (issue.status != attrs.status) {
-        changeList.push({
-          fieldId: IssueBuiltinFieldId.STATUS,
-          oldValue: issue.status,
-          newValue: attrs.status,
-        });
+    if (attrs.status && issue.status != attrs.status) {
+      changeList.push({
+        fieldId: IssueBuiltinFieldId.STATUS,
+        oldValue: issue.status,
+        newValue: attrs.status,
+      });
 
-        messageList.push({
-          ...messageTemplate,
-          type: "bb.msg.issue.status.update",
-          receiverId: issue.creatorId,
-          payload: {
-            issueName: issue.name,
-            oldStatus: issue.status,
-            newStatus: attrs.status,
-          },
-        });
-
-        if (issue.assigneeId) {
-          messageList.push({
-            ...messageTemplate,
-            type: "bb.msg.issue.status.update",
-            receiverId: issue.assigneeId,
-          });
-        }
-
-        for (let subscriberId of issue.subscriberIdList) {
-          if (
-            subscriberId != issue.creatorId &&
-            subscriberId != issue.assigneeId
-          ) {
-            messageList.push({
-              ...messageTemplate,
-              type: "bb.msg.issue.status.update",
-              receiverId: subscriberId,
-              payload: {
-                issueName: issue.name,
-              },
-            });
-          }
-        }
-      }
+      messageTemplate.type = "bb.msg.issue.status.update";
+      messageTemplate.payload = {
+        issueName: issue.name,
+        oldStatus: issue.status,
+        newStatus: attrs.status,
+      };
     }
 
     if (changeList.length) {
@@ -395,14 +355,12 @@ export default function configureIssue(route) {
         workspaceId: WORKSPACE_ID,
       });
 
-      if (messageList.length > 0) {
-        for (const message of messageList) {
-          // We only send out message if it's NOT destined to self.
-          if (attrs.updaterId != message.receiverId) {
-            schema.messages.create(message);
-          }
-        }
-      }
+      postIssueMessageToReceiver(
+        schema,
+        updatedIssue,
+        attrs.updaterId,
+        messageTemplate
+      );
 
       return updatedIssue;
     }

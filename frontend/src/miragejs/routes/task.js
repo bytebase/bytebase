@@ -62,49 +62,19 @@ export default function configureTask(route) {
         workspaceId: WORKSPACE_ID,
       };
 
-      if (attrs.status) {
-        if (issue.status != attrs.status) {
-          changeList.push({
-            fieldId: IssueBuiltinFieldId.TASK_STATUS,
-            oldValue: issue.status,
-            newValue: attrs.status,
-          });
+      if (attrs.status && task.status != attrs.status) {
+        changeList.push({
+          fieldId: IssueBuiltinFieldId.TASK_STATUS,
+          oldValue: task.status,
+          newValue: attrs.status,
+        });
 
-          messageList.push({
-            ...messageTemplate,
-            type: "bb.msg.issue.task.status.update",
-            receiverId: issue.creatorId,
-            payload: {
-              issueName: issue.name,
-              oldStatus: issue.status,
-              newStatus: attrs.status,
-            },
-          });
-
-          if (issue.assigneeId) {
-            messageList.push({
-              ...messageTemplate,
-              type: "bb.msg.issue.task.status.update",
-              receiverId: issue.assigneeId,
-            });
-          }
-
-          for (let subscriberId of issue.subscriberIdList) {
-            if (
-              subscriberId != issue.creatorId &&
-              subscriberId != issue.assigneeId
-            ) {
-              messageList.push({
-                ...messageTemplate,
-                type: "bb.msg.issue.task.status.update",
-                receiverId: subscriberId,
-                payload: {
-                  issueName: issue.name,
-                },
-              });
-            }
-          }
-        }
+        messageTemplate.type = "bb.msg.issue.task.status.update";
+        messageTemplate.payload = {
+          issueName: task.name,
+          oldAssigneeId: task.status,
+          newAssigneeId: attrs.status,
+        };
       }
 
       if (changeList.length) {
@@ -125,6 +95,13 @@ export default function configureTask(route) {
           payload,
           workspaceId: WORKSPACE_ID,
         });
+
+        postIssueMessageToReceiver(
+          schema,
+          updatedIssue,
+          attrs.updaterId,
+          messageTemplate
+        );
 
         if (messageList.length > 0) {
           for (const message of messageList) {

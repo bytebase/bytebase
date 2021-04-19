@@ -1,3 +1,4 @@
+import { UNKNOWN_ID } from "../types";
 import { WORKSPACE_ID } from "./routes/index";
 
 export const randomNumber = (quantity) =>
@@ -22,6 +23,43 @@ export const postMessageToOwnerAndDBA = function (
       receiverId: member.principalId,
     });
   });
+
+  for (const message of messageList) {
+    // We only send out message if it's NOT destined to self.
+    if (creatorId != message.receiverId) {
+      schema.messages.create(message);
+    }
+  }
+};
+
+export const postIssueMessageToReceiver = function (
+  schema,
+  issue,
+  creatorId,
+  messageTemplate
+) {
+  const messageList = [];
+
+  messageList.push({
+    ...messageTemplate,
+    receiverId: issue.creatorId,
+  });
+
+  if (issue.assigneeId != UNKNOWN_ID && issue.assigneeId != issue.creatorId) {
+    messageList.push({
+      ...messageTemplate,
+      receiverId: issue.assigneeId,
+    });
+  }
+
+  for (let subscriberId of issue.subscriberIdList) {
+    if (subscriberId != issue.creatorId && subscriberId != issue.assigneeId) {
+      messageList.push({
+        ...messageTemplate,
+        receiverId: subscriberId,
+      });
+    }
+  }
 
   for (const message of messageList) {
     // We only send out message if it's NOT destined to self.
