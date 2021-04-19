@@ -318,6 +318,8 @@ export type ProjectId = string;
 
 export type IssueId = string;
 
+export type PipelineId = string;
+
 export type TaskId = string;
 
 export type StepId = string;
@@ -559,49 +561,6 @@ export type ProjectPatch = {
   key?: string;
 };
 
-// Issue, Task, Step are the backbones of execution.
-//
-// A ISSUE consists of multiple TASKS. A TASK consists of multiple STEPS.
-//
-// Comparison with Tekton
-// ISSUE = Tekton Pipeline
-// TASK = Tekton Task
-// STEP = Tekton Step
-//
-// Comparison with GitLab:
-// ISSUE = GitLab Pipeline
-// TASK = GitLab Task
-// STEP = GitLab Job
-//
-// Comparison with Octopus:
-// ISSUE = Octopus Lifecycle
-// TASK = Octopus Phase
-// STEP = Octopus Step
-
-// We require a task to associate with a database. Since database belongs to an instance, which
-// in turns belongs to an environment, thus the task is also associated with an instance and environment.
-// The environment has tiers which defines rules like whether requires manual approval.
-
-/*
- An example
- 
- An alter schema ISSUE
-  Dev TASK (db_dev, env_dev)
-    Change dev database schema
-  
-  Testing TASK (db_test, env_test)
-    Change testing database schema
-    Verify integration test pass
-
-  Staging TASK (db_staging, env_staging)
-    Approve change
-    Change staging database schema
-
-  Prod TASK (db_prod, env_prod)
-    Approve change
-    Change prod database schema
-*/
-
 // Issue
 type IssueTypeGeneral = "bytebase.general";
 
@@ -755,6 +714,93 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
   ["DONE", ["REOPEN"]],
   ["CANCELED", ["REOPEN"]],
 ]);
+
+// Pipeline, Task, Step are the backbones of execution.
+//
+// A PIPELINE consists of multiple TASKS. A TASK consists of multiple STEPS.
+//
+// Comparison with Tekton
+// PIPELINE = Tekton Pipeline
+// TASK = Tekton Task
+// STEP = Tekton Step
+//
+// Comparison with GitLab:
+// PIPELINE = GitLab Pipeline
+// TASK = GitLab Task
+// STEP = GitLab Job
+//
+// Comparison with Octopus:
+// PIPELINE = Octopus Lifecycle
+// TASK = Octopus Phase
+// STEP = Octopus Step
+
+// We require a task to associate with a database. Since database belongs to an instance, which
+// in turns belongs to an environment, thus the task is also associated with an instance and environment.
+// The environment has tiers which defines rules like whether requires manual approval.
+
+/*
+ An example
+ 
+ An alter schema PIPELINE
+  Dev TASK (db_dev, env_dev)
+    Change dev database schema
+  
+  Testing TASK (db_test, env_test)
+    Change testing database schema
+    Verify integration test pass
+
+  Staging TASK (db_staging, env_staging)
+    Approve change
+    Change staging database schema
+
+  Prod TASK (db_prod, env_prod)
+    Approve change
+    Change prod database schema
+*/
+// Pipeline
+export type PipelineStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "FAILED"
+  | "CANCELED";
+
+export type Pipeline = {
+  id: PipelineId;
+
+  // Related fields
+  taskList: Task[];
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  updatedTs: number;
+
+  // Domain specific fields
+  name: string;
+  status: PipelineStatus;
+};
+
+export type PipelineNew = {
+  // Related fields
+  taskList: TaskNew[];
+
+  // Standard fields
+  creatorId: PrincipalId;
+
+  // Domain specific fields
+  name: string;
+};
+
+export type PipelineStatusPatch = {
+  // Standard fields
+  updaterId: PrincipalId;
+
+  // Domain specific fields
+  status: PipelineStatus;
+  comment?: string;
+};
 
 // Task
 export type TaskType =

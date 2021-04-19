@@ -26,6 +26,7 @@ export default {
     project: hasMany(),
     projectMember: hasMany(),
     issue: hasMany(),
+    pipeline: hasMany(),
     task: hasMany(),
     step: hasMany(),
     environment: hasMany(),
@@ -88,6 +89,15 @@ export default {
   issueNew: Model,
   issuePatch: Model,
   issueStatusPatch: Model,
+
+  // Pipeline
+  pipeline: Model.extend({
+    workspace: belongsTo(),
+    task: hasMany(),
+    step: hasMany(),
+  }),
+  taskPatch: Model,
+  taskStatusPatch: Model,
 
   // Task
   task: Model.extend({
