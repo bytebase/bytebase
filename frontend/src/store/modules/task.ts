@@ -50,21 +50,24 @@ function convert(
       item.type == "stage" &&
       (item.relationships!.task.data as ResourceIdentifier).id == task.id
     ) {
-      const stage = rootGetters["stage/convertPartial"](item, includedList);
+      const stage: Stage = rootGetters["stage/convertPartial"](
+        item,
+        includedList
+      );
       stageList.push(stage);
     }
 
     if (
       item.type == "project" &&
       (item.relationships!.task.data as ResourceIdentifier[]).find(
-        (item) => item.id == projectId
+        (item) => item.id == task.id
       )
     ) {
       project = rootGetters["project/convert"](item);
     }
   }
 
-  return {
+  const result: Task = {
     ...(task.attributes as Omit<
       Task,
       | "id"
@@ -72,17 +75,28 @@ function convert(
       | "creator"
       | "updater"
       | "assignee"
-      | "stageList"
       | "subscriberList"
+      | "stageList"
     >),
     id: task.id,
     project,
     creator,
     updater,
     assignee,
-    stageList,
     subscriberList,
+    stageList,
   };
+
+  // Now we have a complate task, we assign it back to stage and step
+  for (const stage of result.stageList) {
+    stage.task = result;
+    for (const step of stage.stepList) {
+      step.task = result;
+      step.stage = stage;
+    }
+  }
+
+  return result;
 }
 
 const state: () => TaskState = () => ({

@@ -5,6 +5,9 @@ import {
   Step,
   Task,
   Stage,
+  unknown,
+  TaskId,
+  StageId,
 } from "../../types";
 
 const state: () => StepState = () => ({});
@@ -47,9 +50,21 @@ const getters = {
     getters: any,
     rootState: any,
     rootGetters: any
-  ) => (step: ResourceObject): Omit<Step, "task" | "stage"> => {
-    // It's only called when task/stage tries to convert themselves. So we pass empty includedList here to avoid circular dependency.
-    return convertPartial(step, rootGetters);
+  ) => (step: ResourceObject): Step => {
+    // It's only called when task/stage tries to convert themselves, so we don't have a task/stage yet.
+    const taskId = step.attributes.taskId as TaskId;
+    let task: Task = unknown("TASK") as Task;
+    task.id = taskId;
+
+    const stageId = step.attributes.stageId as StageId;
+    let stage: Stage = unknown("STAGE") as Stage;
+    stage.id = stageId;
+
+    return {
+      ...convertPartial(step, rootGetters),
+      task,
+      stage,
+    };
   },
 };
 

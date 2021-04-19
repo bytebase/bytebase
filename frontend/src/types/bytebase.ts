@@ -182,6 +182,7 @@ export const unknown = (
     name: "<<Unknown stage>>",
     type: "bytebase.stage.general",
     status: "PENDING",
+    task: UNKNOWN_TASK,
     database: UNKNOWN_DATABASE,
     stepList: [],
   };
@@ -705,6 +706,7 @@ export type Stage = {
 
   // Related fields
   stepList: Step[];
+  task: Task;
   database: Database;
 
   // Standard fields
