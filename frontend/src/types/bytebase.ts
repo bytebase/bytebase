@@ -2,7 +2,10 @@ import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
 import { FieldId } from "../plugins";
 
+// UNKNOWN_ID means an anomaly.
 export const UNKNOWN_ID = "-1";
+// ZERO_ID means an expected behavior. NO ID
+export const ZERO_ID = "0";
 
 // The project to hold those databases synced from the instance but haven't been assigned an application
 // project yet. We can't use UNKNOWN_ID because of referential integrity.
@@ -271,7 +274,7 @@ export const unknown = (
 };
 
 export const FINAL_STAGE: Stage = {
-  id: "0",
+  id: ZERO_ID,
   creator: unknown("PRINCIPAL") as Principal,
   createdTs: 0,
   updater: unknown("PRINCIPAL") as Principal,
@@ -285,7 +288,7 @@ export const FINAL_STAGE: Stage = {
 };
 
 export const FINAL_STEP: Step = {
-  id: "0",
+  id: ZERO_ID,
   issue: unknown("ISSUE") as Issue,
   stage: FINAL_STAGE,
   creator: unknown("PRINCIPAL") as Principal,

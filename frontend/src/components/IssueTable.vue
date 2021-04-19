@@ -125,7 +125,7 @@ import {
   activeDatabaseId,
   activeStage,
 } from "../utils";
-import { Issue } from "../types";
+import { Issue, ZERO_ID } from "../types";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -229,15 +229,18 @@ export default {
 
     const activeEnvironmentName = function (issue: Issue) {
       const id = activeEnvironmentId(issue);
-      if (id) {
-        return store.getters["environment/environmentById"](id).name;
+      if (id == ZERO_ID) {
+        return "";
       }
-      return "";
+      return store.getters["environment/environmentById"](id).name;
     };
 
     const activeDatabaseName = function (issue: Issue) {
-      return store.getters["database/databaseById"](activeDatabaseId(issue))
-        .name;
+      const id = activeDatabaseId(issue);
+      if (id == ZERO_ID) {
+        return "";
+      }
+      return store.getters["database/databaseById"](id).name;
     };
 
     const router = useRouter();

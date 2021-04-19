@@ -6,6 +6,7 @@ import {
   DatabaseId,
   Step,
   FINAL_STAGE,
+  ZERO_ID,
 } from "../types";
 
 export function stageName(issue: Issue, stageId: StageId): string {
@@ -43,10 +44,16 @@ export function activeStageIsRunning(issue: Issue): boolean {
 
 export function activeEnvironmentId(issue: Issue): EnvironmentId {
   const stage: Stage = activeStage(issue);
+  if (stage.id == ZERO_ID) {
+    return ZERO_ID;
+  }
   return stage.database.instance.environment.id;
 }
 
 export function activeDatabaseId(issue: Issue): DatabaseId {
   const stage = activeStage(issue);
+  if (stage.id == ZERO_ID) {
+    return ZERO_ID;
+  }
   return stage.database.id;
 }
