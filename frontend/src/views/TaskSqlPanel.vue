@@ -9,8 +9,9 @@
         @click.prevent="beginEdit"
       >
         <!-- Heroicon name: solid/pencil -->
+        <!-- Use h-5 to avoid flickering when show/hide icon -->
         <svg
-          class="h-6 w-6"
+          class="h-5 w-5"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
