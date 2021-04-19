@@ -7,13 +7,14 @@ import {
   SignupInfo,
   ActivateInfo,
   ResourceObject,
-  unknown,
+  empty,
+  EMPTY_ID,
 } from "../../types";
 
 const GUEST: Principal = {
-  id: "0",
-  creator: unknown("PRINCIPAL") as Principal,
-  updater: unknown("PRINCIPAL") as Principal,
+  id: EMPTY_ID,
+  creator: empty("PRINCIPAL") as Principal,
+  updater: empty("PRINCIPAL") as Principal,
   createdTs: 0,
   updatedTs: 0,
   status: "ACTIVE",

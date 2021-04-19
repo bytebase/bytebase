@@ -6,7 +6,7 @@ import {
   DatabaseId,
   Step,
   FINAL_TASK,
-  ZERO_ID,
+  EMPTY_ID,
 } from "../types";
 
 export function taskName(issue: Issue, taskId: TaskId): string {
@@ -44,16 +44,16 @@ export function activeTaskIsRunning(issue: Issue): boolean {
 
 export function activeEnvironmentId(issue: Issue): EnvironmentId {
   const task: Task = activeTask(issue);
-  if (task.id == ZERO_ID) {
-    return ZERO_ID;
+  if (task.id == EMPTY_ID) {
+    return EMPTY_ID;
   }
   return task.database.instance.environment.id;
 }
 
 export function activeDatabaseId(issue: Issue): DatabaseId {
   const task = activeTask(issue);
-  if (task.id == ZERO_ID) {
-    return ZERO_ID;
+  if (task.id == EMPTY_ID) {
+    return EMPTY_ID;
   }
   return task.database.id;
 }

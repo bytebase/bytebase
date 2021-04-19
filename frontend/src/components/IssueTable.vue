@@ -125,7 +125,7 @@ import {
   activeDatabaseId,
   activeTask,
 } from "../utils";
-import { Issue, ZERO_ID } from "../types";
+import { Issue, EMPTY_ID } from "../types";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -229,7 +229,7 @@ export default {
 
     const activeEnvironmentName = function (issue: Issue) {
       const id = activeEnvironmentId(issue);
-      if (id == ZERO_ID) {
+      if (id == EMPTY_ID) {
         return "";
       }
       return store.getters["environment/environmentById"](id).name;
@@ -237,7 +237,7 @@ export default {
 
     const activeDatabaseName = function (issue: Issue) {
       const id = activeDatabaseId(issue);
-      if (id == ZERO_ID) {
+      if (id == EMPTY_ID) {
         return "";
       }
       return store.getters["database/databaseById"](id).name;

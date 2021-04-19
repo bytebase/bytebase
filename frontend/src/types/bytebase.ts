@@ -2,16 +2,17 @@ import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
 import { FieldId } from "../plugins";
 
-// UNKNOWN_ID means an anomaly.
-export const UNKNOWN_ID = "-1";
-// ZERO_ID means an expected behavior. NO ID
-export const ZERO_ID = "0";
-
 // The project to hold those databases synced from the instance but haven't been assigned an application
 // project yet. We can't use UNKNOWN_ID because of referential integrity.
 export const DEFAULT_PROJECT_ID = "1";
 
 export const ALL_DATABASE_NAME = "*";
+
+// UNKNOWN_ID means an anomaly, it expects a resource which is missing (e.g. Keyed lookup missing).
+export const UNKNOWN_ID = "-1";
+// EMPTY_ID means an expected behavior, it expects no resource (e.g. contains an empty value, using this technic enables
+// us to declare variable as required, which leads to cleaner code)
+export const EMPTY_ID = "0";
 
 export type ResourceType =
   | "PRINCIPAL"
@@ -25,12 +26,14 @@ export type ResourceType =
   | "DATABASE"
   | "DATA_SOURCE"
   | "ISSUE"
+  | "PIPELINE"
   | "TASK"
   | "STEP"
   | "ACTIVITY"
   | "MESSAGE"
   | "BOOKMARK";
 
+// unknown represents an anomaly.
 // Returns as function to avoid caller accidentally mutate it.
 export const unknown = (
   type: ResourceType
@@ -46,6 +49,7 @@ export const unknown = (
   | Database
   | DataSource
   | Issue
+  | Pipeline
   | Task
   | Step
   | Activity
@@ -176,6 +180,17 @@ export const unknown = (
     payload: {},
   };
 
+  const UNKNOWN_PIPELINE: Pipeline = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Unknown pipeline>>",
+    status: "PENDING",
+    taskList: [],
+  };
+
   const UNKNOWN_TASK: Task = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
@@ -260,6 +275,8 @@ export const unknown = (
       return UNKNOWN_DATA_SOURCE;
     case "ISSUE":
       return UNKNOWN_ISSUE;
+    case "PIPELINE":
+      return UNKNOWN_PIPELINE;
     case "TASK":
       return UNKNOWN_TASK;
     case "STEP":
@@ -273,27 +290,283 @@ export const unknown = (
   }
 };
 
+// empty represents an expected behavior.
+export const empty = (
+  type: ResourceType
+):
+  | Execution
+  | Principal
+  | User
+  | Member
+  | Environment
+  | Project
+  | ProjectMember
+  | Instance
+  | Database
+  | DataSource
+  | Issue
+  | Pipeline
+  | Task
+  | Step
+  | Activity
+  | Message
+  | Bookmark => {
+  const EMPTY_EXECUTION: Execution = {
+    id: EMPTY_ID,
+    status: "PENDING",
+  };
+
+  // Have to omit creator and updater to avoid recursion.
+  const EMPTY_PRINCIPAL: Principal = {
+    id: EMPTY_ID,
+    createdTs: 0,
+    updatedTs: 0,
+    status: "UNKNOWN",
+    name: "<<Empty principal>>",
+    email: "",
+    role: "GUEST",
+  } as Principal;
+
+  const EMPTY_USER: User = {
+    id: EMPTY_ID,
+    createdTs: 0,
+    updatedTs: 0,
+    status: "UNKNOWN",
+    name: "<<Empty user>>",
+    email: "empty@example.com",
+  };
+
+  const EMPTY_MEMBER: Member = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    role: "GUEST",
+    principalId: EMPTY_ID,
+  };
+
+  const EMPTY_ENVIRONMENT: Environment = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    rowStatus: "NORMAL",
+    name: "<<Empty environment>>",
+    order: 0,
+  };
+
+  const EMPTY_PROJECT: Project = {
+    id: EMPTY_ID,
+    rowStatus: "NORMAL",
+    name: "<<Empty project>>",
+    key: "EMT",
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    memberList: [],
+  };
+
+  const EMPTY_PROJECT_MEMBER: ProjectMember = {
+    id: EMPTY_ID,
+    project: EMPTY_PROJECT,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    role: "DEVELOPER",
+    principal: EMPTY_PRINCIPAL,
+  };
+
+  const EMPTY_INSTANCE: Instance = {
+    id: EMPTY_ID,
+    rowStatus: "NORMAL",
+    environment: EMPTY_ENVIRONMENT,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    name: "<<Empty instance>>",
+    host: "",
+  };
+
+  const EMPTY_DATABASE: Database = {
+    id: EMPTY_ID,
+    instance: EMPTY_INSTANCE,
+    project: EMPTY_PROJECT,
+    dataSourceList: [],
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Empty database>>",
+    syncStatus: "NOT_FOUND",
+    lastSuccessfulSyncTs: 0,
+    fingerprint: "",
+  };
+
+  const EMPTY_DATA_SOURCE: DataSource = {
+    id: EMPTY_ID,
+    instance: EMPTY_INSTANCE,
+    database: EMPTY_DATABASE,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    memberList: [],
+    name: "<<Empty data source>>",
+    type: "RO",
+  };
+
+  const EMPTY_ISSUE: Issue = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    project: EMPTY_PROJECT,
+    name: "<<Empty issue>>",
+    status: "OPEN",
+    type: "bytebase.general",
+    description: "",
+    taskList: [],
+    subscriberList: [],
+    payload: {},
+  };
+
+  const EMPTY_PIPELINE: Pipeline = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Empty pipeline>>",
+    status: "PENDING",
+    taskList: [],
+  };
+
+  const EMPTY_TASK: Task = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Empty task>>",
+    type: "bytebase.task.unknown",
+    status: "PENDING",
+    issue: EMPTY_ISSUE,
+    database: EMPTY_DATABASE,
+    stepList: [],
+  };
+
+  const EMPTY_STEP: Step = {
+    id: EMPTY_ID,
+    issue: EMPTY_ISSUE,
+    task: EMPTY_TASK,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Empty step>>",
+    type: "bytebase.step.unknown",
+    status: "PENDING",
+  };
+
+  const EMPTY_ACTIVITY: Activity = {
+    id: EMPTY_ID,
+    containerId: EMPTY_ID,
+    createdTs: 0,
+    updatedTs: 0,
+    actionType: "bytebase.issue.create",
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    comment: "<<Empty comment>>",
+  };
+
+  const EMPTY_MESSAGE: Message = {
+    id: EMPTY_ID,
+    containerId: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    type: "bb.msg.issue.assign",
+    status: "DELIVERED",
+    description: "",
+    receiver: EMPTY_PRINCIPAL,
+  };
+
+  const EMPTY_BOOKMARK: Bookmark = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    name: "",
+    link: "",
+  };
+
+  switch (type) {
+    case "EXECUTION":
+      return EMPTY_EXECUTION;
+    case "PRINCIPAL":
+      return EMPTY_PRINCIPAL;
+    case "USER":
+      return EMPTY_USER;
+    case "MEMBER":
+      return EMPTY_MEMBER;
+    case "ENVIRONMENT":
+      return EMPTY_ENVIRONMENT;
+    case "PROJECT":
+      return EMPTY_PROJECT;
+    case "PROJECT_MEMBER":
+      return EMPTY_PROJECT_MEMBER;
+    case "INSTANCE":
+      return EMPTY_INSTANCE;
+    case "DATABASE":
+      return EMPTY_DATABASE;
+    case "DATA_SOURCE":
+      return EMPTY_DATA_SOURCE;
+    case "ISSUE":
+      return EMPTY_ISSUE;
+    case "PIPELINE":
+      return EMPTY_PIPELINE;
+    case "TASK":
+      return EMPTY_TASK;
+    case "STEP":
+      return EMPTY_STEP;
+    case "ACTIVITY":
+      return EMPTY_ACTIVITY;
+    case "MESSAGE":
+      return EMPTY_MESSAGE;
+    case "BOOKMARK":
+      return EMPTY_BOOKMARK;
+  }
+};
+
 export const FINAL_TASK: Task = {
-  id: ZERO_ID,
-  creator: unknown("PRINCIPAL") as Principal,
+  id: EMPTY_ID,
+  creator: empty("PRINCIPAL") as Principal,
   createdTs: 0,
-  updater: unknown("PRINCIPAL") as Principal,
+  updater: empty("PRINCIPAL") as Principal,
   updatedTs: 0,
   name: "Final task",
   type: "bytebase.task.final",
   status: "PENDING",
-  issue: unknown("ISSUE") as Issue,
-  database: unknown("DATABASE") as Database,
+  issue: empty("ISSUE") as Issue,
+  database: empty("DATABASE") as Database,
   stepList: [],
 };
 
 export const FINAL_STEP: Step = {
-  id: ZERO_ID,
-  issue: unknown("ISSUE") as Issue,
+  id: EMPTY_ID,
+  issue: empty("ISSUE") as Issue,
   task: FINAL_TASK,
-  creator: unknown("PRINCIPAL") as Principal,
+  creator: empty("PRINCIPAL") as Principal,
   createdTs: 0,
-  updater: unknown("PRINCIPAL") as Principal,
+  updater: empty("PRINCIPAL") as Principal,
   updatedTs: 0,
   name: "Final step",
   type: "bytebase.step.final",
