@@ -4,11 +4,11 @@ import { WORKSPACE_ID } from "./index";
 import { IssueBuiltinFieldId } from "../../plugins";
 import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../../types";
 
-export default function configureStage(route) {
+export default function configureTask(route) {
   route.patch(
-    "/issue/:issueId/stage/:stageId/status",
+    "/issue/:issueId/task/:taskId/status",
     function (schema, request) {
-      const attrs = this.normalizedRequestAttrs("stage-status-patch");
+      const attrs = this.normalizedRequestAttrs("task-status-patch");
       const issue = schema.issues.find(request.params.issueId);
 
       if (!issue) {
@@ -19,12 +19,12 @@ export default function configureStage(route) {
         );
       }
 
-      const stage = schema.stages.find(request.params.stageId);
-      if (!stage) {
+      const task = schema.tasks.find(request.params.taskId);
+      if (!task) {
         return new Response(
           404,
           {},
-          { errors: "Stage " + request.params.stageId + " not found" }
+          { errors: "Task " + request.params.taskId + " not found" }
         );
       }
 
@@ -34,7 +34,7 @@ export default function configureStage(route) {
         // We check each steps. Returns error if any of them is not finished.
         const stepList = schema.steps.where({
           issueId: issue.id,
-          stageId: stage.id,
+          taskId: task.id,
         }).models;
 
         for (let j = 0; j < stepList.length; j++) {
@@ -43,7 +43,7 @@ export default function configureStage(route) {
               404,
               {},
               {
-                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in stage ${stage[i].name} is in ${step[j].status} status`,
+                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in task ${task[i].name} is in ${step[j].status} status`,
               }
             );
           }
@@ -65,14 +65,14 @@ export default function configureStage(route) {
       if (attrs.status) {
         if (issue.status != attrs.status) {
           changeList.push({
-            fieldId: IssueBuiltinFieldId.STAGE_STATUS,
+            fieldId: IssueBuiltinFieldId.TASK_STATUS,
             oldValue: issue.status,
             newValue: attrs.status,
           });
 
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.issue.stage.status.update",
+            type: "bb.msg.issue.task.status.update",
             receiverId: issue.creatorId,
             payload: {
               issueName: issue.name,
@@ -84,7 +84,7 @@ export default function configureStage(route) {
           if (issue.assigneeId) {
             messageList.push({
               ...messageTemplate,
-              type: "bb.msg.issue.stage.status.update",
+              type: "bb.msg.issue.task.status.update",
               receiverId: issue.assigneeId,
             });
           }
@@ -96,7 +96,7 @@ export default function configureStage(route) {
             ) {
               messageList.push({
                 ...messageTemplate,
-                type: "bb.msg.issue.stage.status.update",
+                type: "bb.msg.issue.task.status.update",
                 receiverId: subscriberId,
                 payload: {
                   issueName: issue.name,
@@ -108,7 +108,7 @@ export default function configureStage(route) {
       }
 
       if (changeList.length) {
-        stage.update({ ...attrs, updatedTs: ts });
+        task.update({ ...attrs, updatedTs: ts });
 
         const payload = {
           changeList,
@@ -119,7 +119,7 @@ export default function configureStage(route) {
           createdTs: ts,
           updaterId: attrs.updaterId,
           updatedTs: ts,
-          actionType: "bytebase.issue.stage.status.update",
+          actionType: "bytebase.issue.task.status.update",
           containerId: updatedIssue.id,
           comment: attrs.comment,
           payload,

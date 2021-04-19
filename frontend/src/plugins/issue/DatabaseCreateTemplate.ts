@@ -20,10 +20,10 @@ const template: IssueTemplate = {
       name: "Request new db",
       type: "bytebase.database.create",
       description: "",
-      stageList: [
+      taskList: [
         {
           name: "Create database",
-          type: "bytebase.stage.database.create",
+          type: "bytebase.task.database.create",
           databaseId:
             ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
           stepList: [

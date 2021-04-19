@@ -3,51 +3,51 @@ import { root } from "postcss";
 import {
   ResourceIdentifier,
   ResourceObject,
-  Stage,
-  StageId,
-  StageState,
-  StageStatusPatch,
+  Task,
+  TaskId,
+  TaskState,
+  TaskStatusPatch,
   Step,
   Issue,
   IssueId,
   unknown,
 } from "../../types";
 
-const state: () => StageState = () => ({});
+const state: () => TaskState = () => ({});
 
 function convertPartial(
-  stage: ResourceObject,
+  task: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
-): Omit<Stage, "issue"> {
+): Omit<Task, "issue"> {
   const creator = rootGetters["principal/principalById"](
-    stage.attributes.creatorId
+    task.attributes.creatorId
   );
   const updater = rootGetters["principal/principalById"](
-    stage.attributes.updaterId
+    task.attributes.updaterId
   );
 
   const database = rootGetters["database/databaseById"](
-    (stage.relationships!.database.data as ResourceIdentifier).id
+    (task.relationships!.database.data as ResourceIdentifier).id
   );
 
   const stepList: Step[] = [];
   for (const item of includedList || []) {
     if (
       item.type == "step" &&
-      (item.relationships!.stage.data as ResourceIdentifier).id == stage.id
+      (item.relationships!.task.data as ResourceIdentifier).id == task.id
     ) {
       const step = rootGetters["step/convertPartial"](item);
       stepList.push(step);
     }
   }
 
-  const result: Omit<Stage, "issue"> = {
-    ...(stage.attributes as Omit<
-      Stage,
+  const result: Omit<Task, "issue"> = {
+    ...(task.attributes as Omit<
+      Task,
       "id" | "creator" | "updater" | "issue" | "database" | "stepList"
     >),
-    id: stage.id,
+    id: task.id,
     creator,
     updater,
     database,
@@ -59,46 +59,46 @@ function convertPartial(
 
 const getters = {
   convertPartial: (
-    state: StageState,
+    state: TaskState,
     getters: any,
     rootState: any,
     rootGetters: any
-  ) => (stage: ResourceObject, includedList: ResourceObject[]): Stage => {
+  ) => (task: ResourceObject, includedList: ResourceObject[]): Task => {
     // It's only called when issue tries to convert itself, so we don't have a issue yet.
-    const issueId = stage.attributes.issueId as IssueId;
+    const issueId = task.attributes.issueId as IssueId;
     let issue: Issue = unknown("ISSUE") as Issue;
     issue.id = issueId;
 
-    const result: Stage = {
-      ...convertPartial(stage, includedList, rootGetters),
+    const result: Task = {
+      ...convertPartial(task, includedList, rootGetters),
       issue,
     };
 
     for (const step of result.stepList) {
-      step.stage = result;
+      step.task = result;
       step.issue = issue;
     }
 
     return result;
   },
 
-  async updateStageStatus(
+  async updateTaskStatus(
     { dispatch }: any,
     {
       issueId,
-      stageId,
-      stageStatusPatch,
+      taskId,
+      taskStatusPatch,
     }: {
       issueId: IssueId;
-      stageId: StageId;
-      stageStatusPatch: StageStatusPatch;
+      taskId: TaskId;
+      taskStatusPatch: TaskStatusPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/issue/${issueId}/stage/${stageId}/status`, {
+      await axios.patch(`/api/issue/${issueId}/task/${taskId}/status`, {
         data: {
-          type: "stagestatuspatch",
-          attributes: stageStatusPatch,
+          type: "taskstatuspatch",
+          attributes: taskStatusPatch,
         },
       })
     ).data;

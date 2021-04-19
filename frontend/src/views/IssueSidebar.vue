@@ -301,7 +301,7 @@ export default {
     const database = computed(
       (): Database => {
         const databaseId = props.new
-          ? (props.issue as IssueNew).stageList[0].databaseId
+          ? (props.issue as IssueNew).taskList[0].databaseId
           : activeDatabaseId(props.issue as Issue);
         return store.getters["database/databaseById"](databaseId);
       }
@@ -309,8 +309,8 @@ export default {
 
     const project = computed(
       (): Project => {
-        // For new issue, we derive the project from the 1st stage's database.
-        // For existing issue, we use issue's project. We can't derive from the stage's database because
+        // For new issue, we derive the project from the 1st task's database.
+        // For existing issue, we use issue's project. We can't derive from the task's database because
         // database may be transferred to a different project after creating the issue.
         return props.new
           ? database.value.project

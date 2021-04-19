@@ -72,7 +72,7 @@
       <BBTableCell :leftPadding="4" class="table-cell">
         <IssueStatusIcon
           :issueStatus="issue.status"
-          :stageStatus="activeStage(issue).status"
+          :taskStatus="activeTask(issue).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
@@ -88,7 +88,7 @@
         {{ activeDatabaseName(issue) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
-        <BBStepBar :stepList="stageList(issue)" />
+        <BBStepBar :stepList="taskList(issue)" />
       </BBTableCell>
       <BBTableCell class="hidden md:table-cell">
         {{ humanizeTs(issue.updatedTs) }}
@@ -123,7 +123,7 @@ import {
   issueSlug,
   activeEnvironmentId,
   activeDatabaseId,
-  activeStage,
+  activeTask,
 } from "../utils";
 import { Issue, ZERO_ID } from "../types";
 
@@ -245,12 +245,12 @@ export default {
 
     const router = useRouter();
 
-    const stageList = function (issue: Issue): BBStep[] {
-      return issue.stageList.map((stage) => {
+    const taskList = function (issue: Issue): BBStep[] {
+      return issue.taskList.map((task) => {
         let stepStatus: BBStepStatus = "PENDING";
-        switch (stage.status) {
+        switch (task.status) {
           case "PENDING":
-            if (activeStage(issue).id === stage.id) {
+            if (activeTask(issue).id === task.id) {
               stepStatus = "PENDING_ACTIVE";
             } else {
               stepStatus = "PENDING";
@@ -270,7 +270,7 @@ export default {
             break;
         }
         return {
-          title: stage.name,
+          title: task.name,
           status: stepStatus,
           link: (): string => {
             return `/issue/${issue.id}`;
@@ -289,8 +289,8 @@ export default {
       columnList: columnListMap.get(props.mode),
       activeEnvironmentName,
       activeDatabaseName,
-      stageList,
-      activeStage,
+      taskList,
+      activeTask,
       clickIssue,
     };
   },

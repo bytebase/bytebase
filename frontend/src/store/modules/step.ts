@@ -4,10 +4,10 @@ import {
   StepState,
   Step,
   Issue,
-  Stage,
+  Task,
   unknown,
   IssueId,
-  StageId,
+  TaskId,
 } from "../../types";
 
 const state: () => StepState = () => ({});
@@ -15,7 +15,7 @@ const state: () => StepState = () => ({});
 function convertPartial(
   step: ResourceObject,
   rootGetters: any
-): Omit<Step, "issue" | "stage"> {
+): Omit<Step, "issue" | "task"> {
   const creator = rootGetters["principal/principalById"](
     step.attributes.creatorId
   );
@@ -26,7 +26,7 @@ function convertPartial(
   return {
     ...(step.attributes as Omit<
       Step,
-      "id" | "creator" | "updater" | "issue" | "stage"
+      "id" | "creator" | "updater" | "issue" | "task"
     >),
     id: step.id,
     creator,
@@ -36,11 +36,11 @@ function convertPartial(
 
 function convert(step: ResourceObject, rootGetters: any): Step {
   const issue: Issue = rootGetters["issue/issueById"](step.attributes.issueId);
-  const stage: Stage = rootGetters["stage/stageById"](step.attributes.stageId);
+  const task: Task = rootGetters["task/taskById"](step.attributes.taskId);
   return {
     ...convertPartial(step, rootGetters),
     issue,
-    stage,
+    task,
   };
 }
 
@@ -51,19 +51,19 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (step: ResourceObject): Step => {
-    // It's only called when issue/stage tries to convert themselves, so we don't have a issue/stage yet.
+    // It's only called when issue/task tries to convert themselves, so we don't have a issue/task yet.
     const issueId = step.attributes.issueId as IssueId;
     let issue: Issue = unknown("ISSUE") as Issue;
     issue.id = issueId;
 
-    const stageId = step.attributes.stageId as StageId;
-    let stage: Stage = unknown("STAGE") as Stage;
-    stage.id = stageId;
+    const taskId = step.attributes.taskId as TaskId;
+    let task: Task = unknown("TASK") as Task;
+    task.id = taskId;
 
     return {
       ...convertPartial(step, rootGetters),
       issue,
-      stage,
+      task,
     };
   },
 };

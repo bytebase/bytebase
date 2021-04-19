@@ -7,7 +7,7 @@ import {
   IssueContext,
 } from "../types";
 
-import { Database, Stage, StageNew, IssueNew, UNKNOWN_ID } from "../../types";
+import { Database, Task, TaskNew, IssueNew, UNKNOWN_ID } from "../../types";
 
 const template: IssueTemplate = {
   type: "bytebase.database.schema.update",
@@ -17,11 +17,11 @@ const template: IssueTemplate = {
       name: "Change db",
       type: "bytebase.database.schema.update",
       description: "",
-      stageList: ctx.databaseList.map(
-        (database: Database): StageNew => {
+      taskList: ctx.databaseList.map(
+        (database: Database): TaskNew => {
           return {
             name: `[${database.instance.environment.name}] ${database.name}`,
-            type: "bytebase.stage.schema.update",
+            type: "bytebase.task.schema.update",
             databaseId: database.id,
             stepList: [
               {

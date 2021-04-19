@@ -54,19 +54,19 @@
       </IssueHighlightPanel>
     </div>
 
-    <!-- Stage Flow Bar -->
-    <IssueStageFlow
-      v-if="showIssueStageFlowBar"
+    <!-- Task Flow Bar -->
+    <IssueTaskFlow
+      v-if="showIssueTaskFlowBar"
       :issue="state.issue"
-      @change-stage-status="changeStageStatus"
+      @change-task-status="changeTaskStatus"
     />
 
     <!-- Output Panel -->
-    <!-- Only render the top border if IssueStageFlow is not displayed, otherwise it would overlap with the bottom border of the IssueStageFlow -->
+    <!-- Only render the top border if IssueTaskFlow is not displayed, otherwise it would overlap with the bottom border of the IssueTaskFlow -->
     <div
       v-if="showIssueOutputPanel"
       class="px-2 py-4 md:flex md:flex-col"
-      :class="showIssueStageFlowBar ? '' : 'lg:border-t'"
+      :class="showIssueTaskFlowBar ? '' : 'lg:border-t'"
     >
       <IssueOutputPanel
         :issue="state.issue"
@@ -80,7 +80,7 @@
     <main
       class="flex-1 relative overflow-y-auto focus:outline-none"
       :class="
-        showIssueStageFlowBar && !showIssueOutputPanel
+        showIssueTaskFlowBar && !showIssueOutputPanel
           ? ''
           : 'lg:border-t lg:border-block-border'
       "
@@ -185,7 +185,7 @@ import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
 import { idFromSlug, issueSlug, isDemo, pendingResolve } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
-import IssueStageFlow from "./IssueStageFlow.vue";
+import IssueTaskFlow from "./IssueTaskFlow.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
 import IssueSqlPanel from "../views/IssueSqlPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
@@ -199,15 +199,15 @@ import {
   IssuePatch,
   IssueStatusTransition,
   IssueStatusTransitionType,
-  StageStatusPatch,
+  TaskStatusPatch,
   PrincipalId,
   ISSUE_STATUS_TRANSITION_LIST,
   Database,
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
   IssueStatusPatch,
-  StageStatus,
-  StageId,
+  TaskStatus,
+  TaskId,
 } from "../types";
 import {
   defaulTemplate,
@@ -217,7 +217,7 @@ import {
   IssueContext,
 } from "../plugins";
 
-type WorkflowType = "SINGLE_STEP" | "SINGLE_STAGE" | "MULTI_STAGE";
+type WorkflowType = "SINGLE_STEP" | "SINGLE_TASK" | "MULTI_TASK";
 
 type UpdateStatusModalStatePayload = {
   transition: IssueStatusTransition;
@@ -247,7 +247,7 @@ export default {
   },
   components: {
     IssueHighlightPanel,
-    IssueStageFlow,
+    IssueTaskFlow,
     IssueOutputPanel,
     IssueSqlPanel,
     IssueDescriptionPanel,
@@ -558,21 +558,21 @@ export default {
         });
     };
 
-    const changeStageStatus = (
-      stageId: StageId,
-      stageStatus: StageStatus,
+    const changeTaskStatus = (
+      taskId: TaskId,
+      taskStatus: TaskStatus,
       comment?: string
     ) => {
-      const stageStatusPatch: StageStatusPatch = {
+      const taskStatusPatch: TaskStatusPatch = {
         updaterId: currentUser.value.id,
-        status: stageStatus,
+        status: taskStatus,
         comment: comment ? comment.trim() : undefined,
       };
 
-      store.dispatch("stage/updateStageStatus", {
+      store.dispatch("task/updateTaskStatus", {
         issueId: (state.issue as Issue).id,
-        stageId,
-        stageStatusPatch,
+        taskId,
+        taskStatusPatch,
       });
     };
 
@@ -641,14 +641,14 @@ export default {
 
     const workflowType = computed(
       (): WorkflowType => {
-        if (state.issue.stageList.length > 1) {
-          return "MULTI_STAGE";
+        if (state.issue.taskList.length > 1) {
+          return "MULTI_TASK";
         }
         if (
-          state.issue.stageList.length == 1 &&
-          state.issue.stageList[0].stepList.length > 1
+          state.issue.taskList.length == 1 &&
+          state.issue.taskList[0].stepList.length > 1
         ) {
-          return "SINGLE_STAGE";
+          return "SINGLE_TASK";
         }
         return "SINGLE_STEP";
       }
@@ -715,7 +715,7 @@ export default {
       return state.new;
     });
 
-    const showIssueStageFlowBar = computed(() => {
+    const showIssueTaskFlowBar = computed(() => {
       return !state.new && workflowType.value != "SINGLE_STEP";
     });
 
@@ -788,7 +788,7 @@ export default {
       updateSubscriberIdList,
       updateCustomField,
       doCreate,
-      changeStageStatus,
+      changeTaskStatus,
       workflowType,
       allowCreate,
       currentUser,
@@ -799,7 +799,7 @@ export default {
       allowEditOutput,
       allowEditNameAndDescription,
       allowEditSql,
-      showIssueStageFlowBar,
+      showIssueTaskFlowBar,
       showIssueOutputPanel,
       showIssueSqlPanel,
       showIssueRollbackSqlPanel,

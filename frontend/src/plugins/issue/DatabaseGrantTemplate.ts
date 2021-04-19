@@ -20,10 +20,10 @@ const template: IssueTemplate = {
       name: "Request database access",
       type: "bytebase.database.grant",
       description: "",
-      stageList: [
+      taskList: [
         {
           name: "Request database access",
-          type: "bytebase.stage.database.grant",
+          type: "bytebase.task.database.grant",
           databaseId:
             ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
           stepList: [

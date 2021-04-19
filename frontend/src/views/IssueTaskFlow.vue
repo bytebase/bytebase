@@ -4,7 +4,7 @@
       class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0"
     >
       <li
-        v-for="(stage, index) in stageList"
+        v-for="(task, index) in taskList"
         :key="index"
         class="relative md:flex-1 md:flex"
       >
@@ -14,11 +14,11 @@
           <span class="pl-4 py-3 flex items-center text-sm font-medium">
             <div
               class="relative w-6 h-6 flex items-center justify-center rounded-full select-none"
-              :class="stageIconClass(stage)"
+              :class="taskIconClass(task)"
             >
-              <template v-if="stage.status === 'PENDING'">
+              <template v-if="task.status === 'PENDING'">
                 <span
-                  v-if="activeStage(issue).id === stage.id"
+                  v-if="activeTask(issue).id === task.id"
                   class="h-1.5 w-1.5 bg-blue-600 rounded-full"
                   aria-hidden="true"
                 ></span>
@@ -28,7 +28,7 @@
                   aria-hidden="true"
                 ></span>
               </template>
-              <template v-else-if="stage.status == 'RUNNING'">
+              <template v-else-if="task.status == 'RUNNING'">
                 <span
                   class="h-2.5 w-2.5 bg-blue-600 rounded-full"
                   style="
@@ -37,7 +37,7 @@
                   aria-hidden="true"
                 ></span>
               </template>
-              <template v-else-if="stage.status == 'DONE'">
+              <template v-else-if="task.status == 'DONE'">
                 <svg
                   class="w-5 h-5"
                   xmlns="http://www.w3.org/2000/svg"
@@ -52,14 +52,14 @@
                   />
                 </svg>
               </template>
-              <template v-else-if="stage.status == 'FAILED'">
+              <template v-else-if="task.status == 'FAILED'">
                 <span
                   class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
                   aria-hidden="true"
                   >!</span
                 >
               </template>
-              <template v-else-if="stage.status == 'SKIPPED'">
+              <template v-else-if="task.status == 'SKIPPED'">
                 <svg
                   class="w-5 h-5"
                   fill="currentColor"
@@ -76,24 +76,24 @@
                 </svg>
               </template>
             </div>
-            <span class="ml-2 text-sm" :class="stageTextClass(stage)">{{
-              stage.title
+            <span class="ml-2 text-sm" :class="taskTextClass(task)">{{
+              task.title
             }}</span>
           </span>
           <div
             v-if="
-              activeStage(issue).id === stage.id &&
-              applicableStageTransitionList.length > 0
+              activeTask(issue).id === task.id &&
+              applicableTaskTransitionList.length > 0
             "
             class="flex flex-row space-x-1 mr-4"
           >
             <button
               class="btn-icon"
               @click.prevent="
-                tryChangeStageStatus(stage.id, applicableStageTransitionList[0])
+                tryChangeTaskStatus(task.id, applicableTaskTransitionList[0])
               "
             >
-              <template v-if="applicableStageTransitionList[0].type == 'RUN'">
+              <template v-if="applicableTaskTransitionList[0].type == 'RUN'">
                 <svg
                   class="w-6 h-6"
                   fill="none"
@@ -116,7 +116,7 @@
                 </svg>
               </template>
               <template
-                v-else-if="applicableStageTransitionList[0].type == 'RETRY'"
+                v-else-if="applicableTaskTransitionList[0].type == 'RETRY'"
               >
                 <svg
                   class="w-5 h-5"
@@ -134,7 +134,7 @@
                 </svg>
               </template>
               <template
-                v-else-if="applicableStageTransitionList[0].type == 'STOP'"
+                v-else-if="applicableTaskTransitionList[0].type == 'STOP'"
               >
                 <svg
                   class="w-6 h-6"
@@ -158,7 +158,7 @@
                 </svg>
               </template>
             </button>
-            <template v-if="applicableStageTransitionList.length > 1">
+            <template v-if="applicableTaskTransitionList.length > 1">
               <button
                 class="btn-icon"
                 @click.prevent="$refs.menu.toggle($event)"
@@ -185,11 +185,11 @@
                 <template
                   v-for="(
                     transition, index
-                  ) in applicableStageTransitionList.slice(1)"
+                  ) in applicableTaskTransitionList.slice(1)"
                   :key="index"
                 >
                   <a
-                    @click.prevent="tryChangeStageStatus(stage.id, transition)"
+                    @click.prevent="tryChangeTaskStatus(task.id, transition)"
                     class="menu-item"
                     role="menuitem"
                   >
@@ -203,7 +203,7 @@
 
         <!-- Arrow separator -->
         <div
-          v-if="index != stageList.length - 1"
+          v-if="index != taskList.length - 1"
           class="hidden lg:block absolute top-0 right-0 h-full w-5"
           aria-hidden="true"
         >
@@ -229,14 +229,14 @@
     :title="modalState.title"
     @close="modalState.show = false"
   >
-    <StageStatusTransitionForm
+    <TaskStatusTransitionForm
       :okText="modalState.okText"
       :issue="issue"
       :transition="modalState.transition"
       @submit="
         (transition, comment) => {
           modalState.show = false;
-          doChangeStageStatus(modalState.stageId, transition, comment);
+          doChangeTaskStatus(modalState.taskId, transition, comment);
         }
       "
       @cancel="
@@ -251,23 +251,23 @@
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
-import StageStatusTransitionForm from "../components/StageStatusTransitionForm.vue";
+import TaskStatusTransitionForm from "../components/TaskStatusTransitionForm.vue";
 import {
   Issue,
-  StageId,
-  StageStatus,
-  StageStatusTransitionType,
-  StageStatusTransition,
-  STAGE_TRANSITION_LIST,
+  TaskId,
+  TaskStatus,
+  TaskStatusTransitionType,
+  TaskStatusTransition,
+  TASK_TRANSITION_LIST,
   UNKNOWN_ID,
 } from "../types";
-import { activeStage } from "../utils";
+import { activeTask } from "../utils";
 
 // The first transition in the list is the primary action and the rests are
 // the normal action which is hidden in the vertical dots icon.
-const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
-  StageStatus,
-  StageStatusTransitionType[]
+const CREATOR_APPLICABLE_TASK_ACTION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", []],
   ["RUNNING", []],
@@ -276,9 +276,9 @@ const CREATOR_APPLICABLE_STAGE_ACTION_LIST: Map<
   ["SKIPPED", []],
 ]);
 
-const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
-  StageStatus,
-  StageStatusTransitionType[]
+const ASSIGNEE_APPLICABLE_TASK_ACTION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", ["RUN", "SKIP"]],
   ["RUNNING", ["STOP"]],
@@ -288,35 +288,35 @@ const ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST: Map<
 ]);
 
 interface FlowItem {
-  id: StageId;
+  id: TaskId;
   title: string;
   status: string;
   link: () => string;
 }
 
 interface ModalState {
-  stageId: StageId;
+  taskId: TaskId;
   show: boolean;
   okText: string;
   title: string;
-  transition?: StageStatusTransition;
+  transition?: TaskStatusTransition;
 }
 
 export default {
-  name: "IssueStageFlow",
-  emits: ["change-stage-status"],
+  name: "IssueTaskFlow",
+  emits: ["change-task-status"],
   props: {
     issue: {
       required: true,
       type: Object as PropType<Issue>,
     },
   },
-  components: { StageStatusTransitionForm },
+  components: { TaskStatusTransitionForm },
   setup(props, { emit }) {
     const store = useStore();
 
     const modalState = reactive<ModalState>({
-      stageId: UNKNOWN_ID,
+      taskId: UNKNOWN_ID,
       show: false,
       okText: "OK",
       title: "",
@@ -324,12 +324,12 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const stageList = computed<FlowItem[]>(() => {
-      return props.issue.stageList.map((stage) => {
+    const taskList = computed<FlowItem[]>(() => {
+      return props.issue.taskList.map((task) => {
         return {
-          id: stage.id,
-          title: stage.name,
-          status: stage.status,
+          id: task.id,
+          title: task.name,
+          status: task.status,
           link: (): string => {
             return `/issue/${props.issue.id}`;
           },
@@ -337,10 +337,10 @@ export default {
       });
     });
 
-    const stageIconClass = (stage: FlowItem) => {
-      switch (stage.status) {
+    const taskIconClass = (task: FlowItem) => {
+      switch (task.status) {
         case "PENDING":
-          if (activeStage(props.issue).id === stage.id) {
+          if (activeTask(props.issue).id === task.id) {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
           return "bg-white border-2 border-gray-300";
@@ -355,18 +355,18 @@ export default {
       }
     };
 
-    const stageTextClass = (stage: FlowItem) => {
+    const taskTextClass = (task: FlowItem) => {
       let textClass =
-        activeStage(props.issue).id === stage.id
+        activeTask(props.issue).id === task.id
           ? "font-medium "
           : "font-normal ";
-      switch (stage.status) {
+      switch (task.status) {
         case "SKIPPED":
           return textClass + "text-gray-500";
         case "DONE":
           return textClass + "text-control";
         case "PENDING":
-          if (activeStage(props.issue).id === stage.id) {
+          if (activeTask(props.issue).id === task.id) {
             return textClass + "text-blue-600";
           }
           return textClass + "text-control";
@@ -377,14 +377,14 @@ export default {
       }
     };
 
-    const applicableStageTransitionList = computed(() => {
-      const stage = activeStage(props.issue as Issue);
-      const list: StageStatusTransitionType[] = [];
+    const applicableTaskTransitionList = computed(() => {
+      const task = activeTask(props.issue as Issue);
+      const list: TaskStatusTransitionType[] = [];
       if (currentUser.value.id === (props.issue as Issue).assignee?.id) {
-        list.push(...ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!);
+        list.push(...ASSIGNEE_APPLICABLE_TASK_ACTION_LIST.get(task.status)!);
       }
       if (currentUser.value.id === (props.issue as Issue).creator.id) {
-        CREATOR_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!.forEach(
+        CREATOR_APPLICABLE_TASK_ACTION_LIST.get(task.status)!.forEach(
           (item) => {
             if (list.indexOf(item) == -1) {
               list.push(item);
@@ -394,44 +394,44 @@ export default {
       }
       return list
         .filter((type) => {
-          const transition = STAGE_TRANSITION_LIST.get(type)!;
-          return !transition.requireRunnable || stage.runnable;
+          const transition = TASK_TRANSITION_LIST.get(type)!;
+          return !transition.requireRunnable || task.runnable;
         })
-        .map((type) => STAGE_TRANSITION_LIST.get(type));
+        .map((type) => TASK_TRANSITION_LIST.get(type));
     });
 
-    const tryChangeStageStatus = (
-      stageId: StageId,
-      transition: StageStatusTransition
+    const tryChangeTaskStatus = (
+      taskId: TaskId,
+      transition: TaskStatusTransition
     ) => {
-      modalState.stageId = stageId;
+      modalState.taskId = taskId;
       modalState.okText = transition.actionName;
       modalState.title =
         transition.actionName +
         ' "' +
-        activeStage(props.issue as Issue).name +
+        activeTask(props.issue as Issue).name +
         '" ?';
       modalState.transition = transition;
       modalState.show = true;
     };
 
-    const doChangeStageStatus = (
-      stageId: StageId,
-      transition: StageStatusTransition,
+    const doChangeTaskStatus = (
+      taskId: TaskId,
+      transition: TaskStatusTransition,
       comment?: string
     ) => {
-      emit("change-stage-status", stageId, transition.to, comment);
+      emit("change-task-status", taskId, transition.to, comment);
     };
 
     return {
       modalState,
-      stageList,
-      activeStage,
-      stageIconClass,
-      stageTextClass,
-      applicableStageTransitionList,
-      tryChangeStageStatus,
-      doChangeStageStatus,
+      taskList,
+      activeTask,
+      taskIconClass,
+      taskTextClass,
+      applicableTaskTransitionList,
+      tryChangeTaskStatus,
+      doChangeTaskStatus,
     };
   },
 };

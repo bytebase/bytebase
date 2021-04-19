@@ -8,7 +8,7 @@ const template: IssueTemplate = {
       name: "",
       type: "bytebase.general",
       description: "",
-      stageList: [],
+      taskList: [],
       creatorId: ctx.currentUser.id,
       subscriberIdList: [],
       payload: {},

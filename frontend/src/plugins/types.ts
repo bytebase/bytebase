@@ -10,7 +10,7 @@ import {
 } from "../types";
 
 // Issue
-// It has to be string type because the id for stage field contain multiple parts.
+// It has to be string type because the id for task field contain multiple parts.
 export type FieldId = string;
 
 export enum IssueBuiltinFieldId {
@@ -23,11 +23,11 @@ export enum IssueBuiltinFieldId {
   INSTANCE = "7",
   DATABASE = "8",
   DATA_SOURCE = "9",
-  STAGE = "10", // The full id is concatenated with the actual stage id e.g. "8".<<stage id>>
+  TASK = "10", // The full id is concatenated with the actual task id e.g. "8".<<task id>>
   SQL = "11",
   ROLLBACK_SQL = "12",
   SUBSCRIBER_LIST = "13",
-  STAGE_STATUS = "14",
+  TASK_STATUS = "14",
 }
 
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";

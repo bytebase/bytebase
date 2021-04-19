@@ -46,8 +46,8 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { activeStage, activeEnvironmentId } from "../utils";
-import { Environment, Issue, StageStatus } from "../types";
+import { activeTask, activeEnvironmentId } from "../utils";
+import { Environment, Issue, TaskStatus } from "../types";
 
 interface LocalState {
   createdList: Issue[];
@@ -164,7 +164,7 @@ export default {
     };
 
     const openIssueSorter = (a: Issue, b: Issue) => {
-      const statusOrder = (status: StageStatus) => {
+      const statusOrder = (status: TaskStatus) => {
         switch (status) {
           case "FAILED":
             return 0;
@@ -178,8 +178,8 @@ export default {
             return 4;
         }
       };
-      const aStatusOrder = statusOrder(activeStage(a).status);
-      const bStatusOrder = statusOrder(activeStage(b).status);
+      const aStatusOrder = statusOrder(activeTask(a).status);
+      const bStatusOrder = statusOrder(activeTask(b).status);
       if (aStatusOrder == bStatusOrder) {
         return b.updatedTs - a.updatedTs;
       }

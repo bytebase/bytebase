@@ -12,7 +12,7 @@ import {
   Project,
   ResourceIdentifier,
   ProjectId,
-  Stage,
+  Task,
   IssueStatusPatch,
 } from "../../types";
 
@@ -46,17 +46,14 @@ function convert(
   let project: Project = unknown("PROJECT") as Project;
   project.id = projectId;
 
-  const stageList: Stage[] = [];
+  const taskList: Task[] = [];
   for (const item of includedList || []) {
     if (
-      item.type == "stage" &&
+      item.type == "task" &&
       (item.relationships!.issue.data as ResourceIdentifier).id == issue.id
     ) {
-      const stage: Stage = rootGetters["stage/convertPartial"](
-        item,
-        includedList
-      );
-      stageList.push(stage);
+      const task: Task = rootGetters["task/convertPartial"](item, includedList);
+      taskList.push(task);
     }
 
     if (
@@ -78,7 +75,7 @@ function convert(
       | "updater"
       | "assignee"
       | "subscriberList"
-      | "stageList"
+      | "taskList"
     >),
     id: issue.id,
     project,
@@ -86,15 +83,15 @@ function convert(
     updater,
     assignee,
     subscriberList,
-    stageList,
+    taskList,
   };
 
-  // Now we have a complate issue, we assign it back to stage and step
-  for (const stage of result.stageList) {
-    stage.issue = result;
-    for (const step of stage.stepList) {
+  // Now we have a complate issue, we assign it back to task and step
+  for (const task of result.taskList) {
+    task.issue = result;
+    for (const step of task.stepList) {
       step.issue = result;
-      step.stage = stage;
+      step.task = task;
     }
   }
 
@@ -119,7 +116,7 @@ const getters = {
 const actions = {
   async fetchIssueListForUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
-      await axios.get(`/api/issue?user=${userId}&include=project,stage,step`)
+      await axios.get(`/api/issue?user=${userId}&include=project,task,step`)
     ).data;
     const issueList = data.data.map((issue: ResourceObject) => {
       return convert(issue, data.included, rootGetters);
@@ -133,7 +130,7 @@ const actions = {
   async fetchIssueListForProject({ rootGetters }: any, projectId: ProjectId) {
     const data = (
       await axios.get(
-        `/api/issue?project=${projectId}&include=project,stage,step`
+        `/api/issue?project=${projectId}&include=project,task,step`
       )
     ).data;
     const issueList = data.data.map((issue: ResourceObject) => {
@@ -146,7 +143,7 @@ const actions = {
 
   async fetchIssueById({ commit, rootGetters }: any, issueId: IssueId) {
     const data = (
-      await axios.get(`/api/issue/${issueId}?include=project,stage,step`)
+      await axios.get(`/api/issue/${issueId}?include=project,task,step`)
     ).data;
     const issue = convert(data.data, data.included, rootGetters);
     commit("setIssueById", {
@@ -158,7 +155,7 @@ const actions = {
 
   async createIssue({ commit, rootGetters }: any, newIssue: IssueNew) {
     const data = (
-      await axios.post(`/api/issue?include=project,stage,step`, {
+      await axios.post(`/api/issue?include=project,task,step`, {
         data: {
           type: "issuenew",
           attributes: newIssue,
@@ -186,7 +183,7 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/issue/${issueId}?include=project,stage,step`, {
+      await axios.patch(`/api/issue/${issueId}?include=project,task,step`, {
         data: {
           type: "issuepatch",
           attributes: issuePatch,
@@ -217,7 +214,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/issue/${issueId}/status?include=project,stage,step`,
+        `/api/issue/${issueId}/status?include=project,task,step`,
         {
           data: {
             type: "issuestatuspatch",

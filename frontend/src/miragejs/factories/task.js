@@ -3,7 +3,7 @@ import faker from "faker";
 import { UNKNOWN_ID } from "../../types";
 
 export default {
-  stage: Factory.extend({
+  task: Factory.extend({
     creatorId() {
       return UNKNOWN_ID;
     },
@@ -20,7 +20,7 @@ export default {
       return faker.fake("{{lorem.sentence}}");
     },
     type() {
-      return "bytebase.stage.unknown";
+      return "bytebase.task.unknown";
     },
     status() {
       return "PENDING";

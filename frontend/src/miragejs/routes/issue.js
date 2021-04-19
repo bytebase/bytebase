@@ -39,8 +39,8 @@ export default function configureIssue(route) {
 
   route.post("/issue", function (schema, request) {
     const ts = Date.now();
-    const { stageList, ...attrs } = this.normalizedRequestAttrs("issue-new");
-    const database = schema.databases.find(stageList[0].databaseId);
+    const { taskList, ...attrs } = this.normalizedRequestAttrs("issue-new");
+    const database = schema.databases.find(taskList[0].databaseId);
 
     const newIssue = {
       ...attrs,
@@ -53,10 +53,10 @@ export default function configureIssue(route) {
     };
     const createdIssue = schema.issues.create(newIssue);
 
-    for (const stage of stageList) {
-      const { stepList, ...stageAttrs } = stage;
-      const createdStage = schema.stages.create({
-        ...stageAttrs,
+    for (const task of taskList) {
+      const { stepList, ...taskAttrs } = task;
+      const createdTask = schema.tasks.create({
+        ...taskAttrs,
         createdTs: ts,
         updaterId: attrs.creatorId,
         updatedTs: ts,
@@ -73,7 +73,7 @@ export default function configureIssue(route) {
           updatedTs: ts,
           status: "PENDING",
           issue: createdIssue,
-          stage: createdStage,
+          task: createdTask,
           workspaceId: WORKSPACE_ID,
         });
       }
@@ -182,16 +182,16 @@ export default function configureIssue(route) {
       }
     }
 
-    if (attrs.stage !== undefined) {
-      const stage = issue.stageList.find((item) => item.id == attrs.stage.id);
-      if (stage) {
+    if (attrs.task !== undefined) {
+      const task = issue.taskList.find((item) => item.id == attrs.task.id);
+      if (task) {
         changeList.push({
-          fieldId: [IssueBuiltinFieldId.STAGE, stage.id].join("."),
-          oldValue: stage.status,
-          newValue: attrs.stage.status,
+          fieldId: [IssueBuiltinFieldId.TASK, task.id].join("."),
+          oldValue: task.status,
+          newValue: attrs.task.status,
         });
-        stage.status = attrs.stage.status;
-        attrs.stageList = issue.stageList;
+        task.status = attrs.task.status;
+        attrs.taskList = issue.taskList;
       }
     }
 
@@ -286,23 +286,23 @@ export default function configureIssue(route) {
     const ts = Date.now();
 
     if (attrs.status == "DONE") {
-      const stageList = schema.stages.where({ issueId: issue.id }).models;
+      const taskList = schema.tasks.where({ issueId: issue.id }).models;
 
-      // We check each of the stage and its steps. Returns error if any of them is not finished.
-      for (let i = 0; i < stageList.length; i++) {
-        if (stage[i].status != "DONE" || stage[i].status != "SKIPPED") {
+      // We check each of the task and its steps. Returns error if any of them is not finished.
+      for (let i = 0; i < taskList.length; i++) {
+        if (task[i].status != "DONE" || task[i].status != "SKIPPED") {
           return new Response(
             404,
             {},
             {
-              errors: `Can't resolve issue ${issue.name}. Stage ${stage[i].name} is in ${stage[i].status} status`,
+              errors: `Can't resolve issue ${issue.name}. Task ${task[i].name} is in ${task[i].status} status`,
             }
           );
         }
 
         const stepList = schema.steps.where({
           issueId: issue.id,
-          stageId: stage[i].id,
+          taskId: task[i].id,
         }).models;
 
         for (let j = 0; j < stepList.length; j++) {
@@ -311,7 +311,7 @@ export default function configureIssue(route) {
               404,
               {},
               {
-                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in stage ${stage[i].name} is in ${step[j].status} status`,
+                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in task ${task[i].name} is in ${step[j].status} status`,
               }
             );
           }

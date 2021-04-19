@@ -7,7 +7,7 @@ import dataSource from "./dataSource";
 import dataSourceMember from "./dataSourceMember";
 import database from "./database";
 import issue from "./issue";
-import stage from "./stage";
+import task from "./task";
 import step from "./step";
 import activity from "./activity";
 import message from "./message";
@@ -35,7 +35,7 @@ export default {
   ...database,
   ...message,
   ...issue,
-  ...stage,
+  ...task,
   ...step,
   ...activity,
 

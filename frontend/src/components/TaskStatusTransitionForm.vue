@@ -48,14 +48,14 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType } from "vue";
-import { Issue, StageStatusTransition } from "../types";
+import { Issue, TaskStatusTransition } from "../types";
 
 interface LocalState {
   comment: string;
 }
 
 export default {
-  name: "StageStatusTransitionForm",
+  name: "TaskStatusTransitionForm",
   emits: ["submit", "cancel"],
   props: {
     okText: {
@@ -68,7 +68,7 @@ export default {
     },
     transition: {
       required: true,
-      type: Object as PropType<StageStatusTransition>,
+      type: Object as PropType<TaskStatusTransition>,
     },
   },
   setup(props, ctx) {

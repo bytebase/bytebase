@@ -29,10 +29,10 @@
             class="mt-1 w-full"
             id="environment"
             name="environment"
-            :selectedId="state.singleStageConfig.environmentId"
+            :selectedId="state.singleTaskConfig.environmentId"
             @select-environment-id="
               (environmentId) => {
-                state.singleStageConfig.environmentId = environmentId;
+                state.singleTaskConfig.environmentId = environmentId;
               }
             "
           />
@@ -45,13 +45,13 @@
             class="mt-1 w-full"
             id="database"
             name="database"
-            :selectedId="state.singleStageConfig.databaseId"
-            :environmentId="state.singleStageConfig.environmentId"
+            :selectedId="state.singleTaskConfig.databaseId"
+            :environmentId="state.singleTaskConfig.environmentId"
             :projectId="state.project.id"
             :mode="'USER'"
             @select-database-id="
               (databaseId) => {
-                state.singleStageConfig.databaseId = databaseId;
+                state.singleTaskConfig.databaseId = databaseId;
               }
             "
           />
@@ -94,7 +94,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 
-type StageConfig = {
+type TaskConfig = {
   environmentId: EnvironmentId;
   databaseId: DatabaseId;
 };
@@ -102,8 +102,8 @@ type StageConfig = {
 interface LocalState {
   project: Project;
   singleEnvironment: boolean;
-  singleStageConfig: StageConfig;
-  stageConfigList: StageConfig[];
+  singleTaskConfig: TaskConfig;
+  taskConfigList: TaskConfig[];
 }
 
 export default {
@@ -138,19 +138,19 @@ export default {
         ? store.getters["project/projectById"](props.projectId)
         : (unknown("PROJECT") as Project),
       singleEnvironment: true,
-      singleStageConfig: {
+      singleTaskConfig: {
         environmentId: UNKNOWN_ID,
         databaseId: UNKNOWN_ID,
       },
-      stageConfigList: [],
+      taskConfigList: [],
     });
 
     const allowNext = computed(() => {
       if (state.singleEnvironment) {
         return (
           state.project.id != UNKNOWN_ID &&
-          state.singleStageConfig.environmentId != UNKNOWN_ID &&
-          state.singleStageConfig.databaseId != UNKNOWN_ID
+          state.singleTaskConfig.environmentId != UNKNOWN_ID &&
+          state.singleTaskConfig.databaseId != UNKNOWN_ID
         );
       }
       return true;
@@ -160,7 +160,7 @@ export default {
       state.project = store.getters["project/projectById"](projectId);
       if (state.singleEnvironment) {
       } else {
-        state.stageConfigList = [];
+        state.taskConfigList = [];
       }
     };
 
@@ -173,7 +173,7 @@ export default {
 
       if (state.singleEnvironment) {
         const database = store.getters["database/databaseById"](
-          state.singleStageConfig.databaseId
+          state.singleTaskConfig.databaseId
         );
 
         router.push({
