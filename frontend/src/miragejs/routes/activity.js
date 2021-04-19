@@ -31,44 +31,47 @@ export default function configureActivity(route) {
       createdTs: ts,
       updaterId: attrs.creatorId,
       updatedTs: ts,
-      actionType: "bytebase.task.comment.create",
+      actionType: "bytebase.issue.comment.create",
       workspaceId: WORKSPACE_ID,
     };
     const createdActivity = schema.activities.create(newActivity);
 
-    const task = schema.tasks.find(attrs.containerId);
+    const issue = schema.issues.find(attrs.containerId);
 
-    if (task) {
+    if (issue) {
       const messageList = [];
       const messageTemplate = {
         containerId: attrs.containerId,
         createdTs: ts,
         updatedTs: ts,
-        type: "bb.msg.task.comment",
+        type: "bb.msg.issue.comment",
         status: "DELIVERED",
         description: attrs.comment,
         creatorId: attrs.creatorId,
         workspaceId: WORKSPACE_ID,
         payload: {
-          taskName: task.name,
+          issueName: issue.name,
           commentId: createdActivity.id,
         },
       };
 
       messageList.push({
         ...messageTemplate,
-        receiverId: task.creatorId,
+        receiverId: issue.creatorId,
       });
 
-      if (task.assigneeId) {
+      if (issue.assigneeId) {
         messageList.push({
           ...messageTemplate,
-          receiverId: task.assigneeId,
+          receiverId: issue.assigneeId,
         });
       }
 
-      for (let subscriberId of task.subscriberIdList) {
-        if (subscriberId != task.creatorId && subscriberId != task.assigneeId) {
+      for (let subscriberId of issue.subscriberIdList) {
+        if (
+          subscriberId != issue.creatorId &&
+          subscriberId != issue.assigneeId
+        ) {
           messageList.push({
             ...messageTemplate,
             receiverId: subscriberId,

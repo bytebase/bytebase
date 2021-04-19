@@ -506,20 +506,20 @@ const routes: Array<RouteRecordRaw> = [
             ],
           },
           {
-            path: "task/:taskSlug",
-            name: "workspace.task.detail",
+            path: "issue/:issueSlug",
+            name: "workspace.issue.detail",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const slug = route.params.taskSlug as string;
+                const slug = route.params.issueSlug as string;
                 if (slug.toLowerCase() == "new") {
                   return "New";
                 }
-                return store.getters["task/taskById"](idFromSlug(slug)).name;
+                return store.getters["issue/issueById"](idFromSlug(slug)).name;
               },
               allowBookmark: true,
             },
             components: {
-              content: () => import("../views/TaskDetail.vue"),
+              content: () => import("../views/IssueDetail.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true },
@@ -657,7 +657,7 @@ router.beforeEach((to, from, next) => {
   const routerSlug = store.getters["router/routeSlug"](to);
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
-  const taskSlug = routerSlug.taskSlug;
+  const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
@@ -693,14 +693,14 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (taskSlug) {
-    if (taskSlug.toLowerCase() == "new") {
+  if (issueSlug) {
+    if (issueSlug.toLowerCase() == "new") {
       next();
       return;
     }
     store
-      .dispatch("task/fetchTaskById", idFromSlug(taskSlug))
-      .then((task) => {
+      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
+      .then((issue) => {
         next();
       })
       .catch((error) => {

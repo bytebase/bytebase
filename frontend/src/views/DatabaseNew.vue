@@ -93,34 +93,34 @@ input[type="number"] {
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="task" class="textlabel"> Task </label>
+        <label for="issue" class="textlabel"> Issue </label>
         <div class="mt-1 relative rounded-md shadow-sm">
           <router-link
-            v-if="$router.currentRoute.value.query.task"
-            :to="`/task/${$router.currentRoute.value.query.task}`"
+            v-if="$router.currentRoute.value.query.issue"
+            :to="`/issue/${$router.currentRoute.value.query.issue}`"
             class="normal-link"
           >
-            {{ `task/${$router.currentRoute.value.query.task}` }}
+            {{ `issue/${$router.currentRoute.value.query.issue}` }}
           </router-link>
           <template v-else>
             <div
               class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
             >
-              <span class="text-accent font-semibold sm:text-sm">task/</span>
+              <span class="text-accent font-semibold sm:text-sm">issue/</span>
             </div>
             <div class="flex flex-row space-x-2 items-center">
               <input
                 class="textfield w-full pl-12"
-                id="task"
-                name="task"
+                id="issue"
+                name="issue"
                 type="number"
-                placeholder="Your task id (e.g. 1234)"
-                :disabled="!allowEditTask"
-                v-model="state.taskId"
+                placeholder="Your issue id (e.g. 1234)"
+                :disabled="!allowEditIssue"
+                v-model="state.issueId"
               />
-              <template v-if="taskLink">
+              <template v-if="issueLink">
                 <router-link
-                  :to="taskLink"
+                  :to="issueLink"
                   target="_blank"
                   class="ml-2 normal-link text-sm"
                 >
@@ -162,11 +162,11 @@ import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
-import { instanceSlug, databaseSlug, taskSlug } from "../utils";
+import { instanceSlug, databaseSlug, issueSlug } from "../utils";
 import {
-  Task,
-  TaskId,
-  TaskType,
+  Issue,
+  IssueId,
+  IssueType,
   DataSourceNew,
   EnvironmentId,
   InstanceId,
@@ -174,7 +174,7 @@ import {
   ProjectId,
   DatabaseNew,
 } from "../types";
-import { TaskField, templateForType } from "../plugins";
+import { IssueField, templateForType } from "../plugins";
 import { isEqual } from "lodash";
 
 interface LocalState {
@@ -182,8 +182,8 @@ interface LocalState {
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
   databaseName?: string;
-  taskId?: TaskId;
-  fromTaskType?: TaskType;
+  issueId?: IssueId;
+  fromIssueType?: IssueType;
 }
 
 export default {
@@ -226,8 +226,8 @@ export default {
         ? (router.currentRoute.value.query.instance as InstanceId)
         : undefined,
       databaseName: router.currentRoute.value.query.name as string,
-      taskId: router.currentRoute.value.query.task as TaskId,
-      fromTaskType: router.currentRoute.value.query.from as TaskType,
+      issueId: router.currentRoute.value.query.issue as IssueId,
+      fromIssueType: router.currentRoute.value.query.from as IssueType,
     });
 
     const allowCreate = computed(() => {
@@ -239,28 +239,31 @@ export default {
       );
     });
 
-    // If it's from database request task, we disallow changing the preset field.
+    // If it's from database request issue, we disallow changing the preset field.
     // This is to prevent accidentally changing the requested field.
     const allowEditProject = computed(() => {
       return (
-        state.fromTaskType != "bytebase.database.create" || !state.projectId
+        state.fromIssueType != "bytebase.database.create" || !state.projectId
       );
     });
 
     const allowEditEnvironment = computed(() => {
       return (
-        state.fromTaskType != "bytebase.database.create" || !state.environmentId
+        state.fromIssueType != "bytebase.database.create" ||
+        !state.environmentId
       );
     });
 
     const allowEditDatabaseName = computed(() => {
       return (
-        state.fromTaskType != "bytebase.database.create" || !state.databaseName
+        state.fromIssueType != "bytebase.database.create" || !state.databaseName
       );
     });
 
-    const allowEditTask = computed(() => {
-      return state.fromTaskType != "bytebase.database.create" || !state.taskId;
+    const allowEditIssue = computed(() => {
+      return (
+        state.fromIssueType != "bytebase.database.create" || !state.issueId
+      );
     });
 
     const instanceLink = computed((): string => {
@@ -273,11 +276,11 @@ export default {
       return "";
     });
 
-    const taskLink = computed((): string => {
-      if (state.taskId) {
-        // We intentionally not to validate whether the taskId is legit, we will do the validation
+    const issueLink = computed((): string => {
+      if (state.issueId) {
+        // We intentionally not to validate whether the issueId is legit, we will do the validation
         // when actually trying to create the database.
-        return `/task/${state.taskId}`;
+        return `/issue/${state.issueId}`;
       }
       return "";
     });
@@ -348,14 +351,17 @@ export default {
     };
 
     const create = async () => {
-      // If taskId id provided, we check its existence first.
-      // We only set the taskId if it's valid.
-      let linkedTask: Task | undefined = undefined;
-      if (state.taskId) {
+      // If issueId id provided, we check its existence first.
+      // We only set the issueId if it's valid.
+      let linkedIssue: Issue | undefined = undefined;
+      if (state.issueId) {
         try {
-          linkedTask = await store.dispatch("task/fetchTaskById", state.taskId);
+          linkedIssue = await store.dispatch(
+            "issue/fetchIssueById",
+            state.issueId
+          );
         } catch (err) {
-          console.warn(`Unable to fetch linked task id ${state.taskId}`, err);
+          console.warn(`Unable to fetch linked issue id ${state.issueId}`, err);
         }
       }
 
@@ -365,7 +371,7 @@ export default {
         name: state.databaseName!,
         instanceId: state.instanceId!,
         projectId: state.projectId!,
-        taskId: linkedTask?.id,
+        issueId: linkedIssue?.id,
       };
       const createdDatabase = await store.dispatch(
         "database/createDatabase",
@@ -375,22 +381,22 @@ export default {
       // Redirect to the created database.
       router.push(`/db/${databaseSlug(createdDatabase)}`);
 
-      // If a valid task id is provided, we will set the database output field
+      // If a valid issue id is provided, we will set the database output field
       // if it's not set before. This is based on the assumption that user creates
-      // the database to fullfill that particular task (e.g. completing the request db workflow)
-      // TODO: If there is no applicable database field, we should also link the database to the task.
-      if (linkedTask) {
-        const template = templateForType(linkedTask.type);
+      // the database to fullfill that particular issue (e.g. completing the request db workflow)
+      // TODO: If there is no applicable database field, we should also link the database to the issue.
+      if (linkedIssue) {
+        const template = templateForType(linkedIssue.type);
         if (template) {
           const databaseOutputField = template.fieldList.find(
-            (item: TaskField) =>
+            (item: IssueField) =>
               item.category == "OUTPUT" && item.type == "Database"
           );
 
           if (databaseOutputField) {
-            const payload = cloneDeep(linkedTask.payload);
+            const payload = cloneDeep(linkedIssue.payload);
             // Only sets the value if it's empty to prevent accidentally overwriting
-            // the existing legit data (e.g. someone provides a wrong task id)
+            // the existing legit data (e.g. someone provides a wrong issue id)
             if (
               databaseOutputField &&
               isEmpty(payload[databaseOutputField.id])
@@ -398,10 +404,10 @@ export default {
               payload[databaseOutputField.id] = createdDatabase.id;
             }
 
-            if (!isEqual(payload, linkedTask.payload)) {
-              await store.dispatch("task/patchTask", {
-                taskId: linkedTask.id,
-                taskPatch: {
+            if (!isEqual(payload, linkedIssue.payload)) {
+              await store.dispatch("issue/patchIssue", {
+                issueId: linkedIssue.id,
+                issuePatch: {
                   payload,
                   updaterId: currentUser.value.id,
                 },
@@ -420,14 +426,14 @@ export default {
         module: "bytebase",
         style: "SUCCESS",
         title: `Succesfully created database '${createdDatabase.name}'.`,
-        description: linkedTask
-          ? `We also linked the created database to the requested task '${linkedTask.name}'.`
+        description: linkedIssue
+          ? `We also linked the created database to the requested issue '${linkedIssue.name}'.`
           : "",
-        link: linkedTask
-          ? `/task/${taskSlug(linkedTask.name, linkedTask.id)}`
+        link: linkedIssue
+          ? `/issue/${issueSlug(linkedIssue.name, linkedIssue.id)}`
           : undefined,
-        linkTitle: linkedTask ? "View task" : undefined,
-        manualHide: linkedTask != undefined,
+        linkTitle: linkedIssue ? "View issue" : undefined,
+        manualHide: linkedIssue != undefined,
       });
     };
 
@@ -437,9 +443,9 @@ export default {
       allowEditProject,
       allowEditEnvironment,
       allowEditDatabaseName,
-      allowEditTask,
+      allowEditIssue,
       instanceLink,
-      taskLink,
+      issueLink,
       selectProject,
       selectEnvironment,
       selectInstance,

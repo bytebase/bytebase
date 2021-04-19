@@ -93,8 +93,8 @@
 import { computed, reactive, ref, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { Task, TaskStatusTransition } from "../types";
-import { TaskField, TaskBuiltinFieldId } from "../plugins";
+import { Issue, IssueStatusTransition } from "../types";
+import { IssueField, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
   comment: string;
@@ -102,24 +102,24 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskStatusTransitionForm",
+  name: "IssueStatusTransitionForm",
   emits: ["submit", "cancel"],
   props: {
     okText: {
       type: String,
       default: "OK",
     },
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
     transition: {
       required: true,
-      type: Object as PropType<TaskStatusTransition>,
+      type: Object as PropType<IssueStatusTransition>,
     },
     outputFieldList: {
       required: true,
-      type: Object as PropType<TaskField[]>,
+      type: Object as PropType<IssueField[]>,
     },
   },
   components: { DatabaseSelect },
@@ -129,12 +129,12 @@ export default {
     const state = reactive<LocalState>({
       comment: "",
       outputValueList: props.outputFieldList.map((field) =>
-        cloneDeep(props.task.payload[field.id])
+        cloneDeep(props.issue.payload[field.id])
       ),
     });
 
     const environmentId = computed(() => {
-      return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+      return props.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
     });
 
     const submitButtonStyle = computed(() => {

@@ -1,20 +1,20 @@
 import isEmpty from "lodash-es/isEmpty";
 import {
-  TaskTemplate,
+  IssueTemplate,
   TemplateContext,
-  TaskBuiltinFieldId,
+  IssueBuiltinFieldId,
   OUTPUT_CUSTOM_FIELD_ID_BEGIN,
-  TaskContext,
+  IssueContext,
 } from "../types";
-import { TaskNew, UNKNOWN_ID } from "../../types";
+import { IssueNew, UNKNOWN_ID } from "../../types";
 
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
-const template: TaskTemplate = {
+const template: IssueTemplate = {
   type: "bytebase.database.create",
-  buildTask: (ctx: TemplateContext): TaskNew => {
+  buildIssue: (ctx: TemplateContext): IssueNew => {
     const payload: any = {};
-    payload[TaskBuiltinFieldId.DATABASE] = "";
+    payload[IssueBuiltinFieldId.DATABASE] = "";
 
     return {
       name: "Request new db",
@@ -42,37 +42,38 @@ const template: TaskTemplate = {
   fieldList: [
     {
       category: "INPUT",
-      id: TaskBuiltinFieldId.PROJECT,
+      id: IssueBuiltinFieldId.PROJECT,
       slug: "project",
       name: "Project",
       type: "Project",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const projectId = ctx.task.payload[TaskBuiltinFieldId.PROJECT];
+      resolved: (ctx: IssueContext): boolean => {
+        const projectId = ctx.issue.payload[IssueBuiltinFieldId.PROJECT];
         return !isEmpty(projectId);
       },
     },
     {
       category: "INPUT",
-      id: TaskBuiltinFieldId.ENVIRONMENT,
+      id: IssueBuiltinFieldId.ENVIRONMENT,
       slug: "environment",
       name: "Environment",
       type: "Environment",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+      resolved: (ctx: IssueContext): boolean => {
+        const environmentId =
+          ctx.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
         return !isEmpty(environmentId);
       },
     },
     {
       category: "INPUT",
-      id: TaskBuiltinFieldId.DATABASE,
+      id: IssueBuiltinFieldId.DATABASE,
       slug: "database",
       name: "DB name",
       type: "NewDatabase",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const databaseName = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+      resolved: (ctx: IssueContext): boolean => {
+        const databaseName = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
         return !isEmpty(databaseName);
       },
       placeholder: "New database name",
@@ -85,12 +86,12 @@ const template: TaskTemplate = {
       type: "Database",
       required: true,
       // Returns true if it's set and matches the requested database name.
-      resolved: (ctx: TaskContext): boolean => {
-        const databaseId = ctx.task.payload[OUTPUT_DATABASE_FIELD_ID];
+      resolved: (ctx: IssueContext): boolean => {
+        const databaseId = ctx.issue.payload[OUTPUT_DATABASE_FIELD_ID];
         if (isEmpty(databaseId) || databaseId == UNKNOWN_ID) {
           return false;
         }
-        const requestedName = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+        const requestedName = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
         const database = ctx.store.getters["database/databaseById"](databaseId);
         return database && database.name == requestedName;
       },

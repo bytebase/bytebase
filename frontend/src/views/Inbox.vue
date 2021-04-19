@@ -112,30 +112,30 @@
                       {{ message.payload.instanceName }}
                     </span>
                   </template>
-                  <template v-else-if="message.type == 'bb.msg.task.assign'">
+                  <template v-else-if="message.type == 'bb.msg.issue.assign'">
                     <router-link
-                      :to="`/task/${message.containerId}`"
+                      :to="`/issue/${message.containerId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.taskName }}
+                      {{ message.payload.issueName }}
                     </router-link>
                   </template>
                   <template
-                    v-else-if="message.type == 'bb.msg.task.status.update'"
+                    v-else-if="message.type == 'bb.msg.issue.status.update'"
                   >
                     <router-link
-                      :to="`/task/${message.containerId}`"
+                      :to="`/issue/${message.containerId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.taskName }}
+                      {{ message.payload.issueName }}
                     </router-link>
                   </template>
-                  <template v-else-if="message.type == 'bb.msg.task.comment'">
+                  <template v-else-if="message.type == 'bb.msg.issue.comment'">
                     <router-link
-                      :to="`/task/${message.containerId}#activity${message.payload.commentId}`"
+                      :to="`/issue/${message.containerId}#activity${message.payload.commentId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.taskName }}
+                      {{ message.payload.issueName }}
                     </router-link>
                   </template>
                   <span
@@ -167,8 +167,8 @@ import {
   Message,
   Principal,
   PrincipalId,
-  TaskAssignMessagePayload,
-  TaskUpdateStatusMessagePayload,
+  IssueAssignMessagePayload,
+  IssueUpdateStatusMessagePayload,
   UNKNOWN_ID,
 } from "../types";
 import { isDBAOrOwner, roleName } from "../utils";
@@ -301,15 +301,15 @@ export default {
           return "archived instance";
         case "bb.msg.instance.restore":
           return "restored instance";
-        case "bb.msg.task.assign": {
-          const payload = message.payload as TaskAssignMessagePayload;
+        case "bb.msg.issue.assign": {
+          const payload = message.payload as IssueAssignMessagePayload;
           if (
             payload.oldAssigneeId == UNKNOWN_ID &&
             payload.newAssigneeId != UNKNOWN_ID
           ) {
             return "assigned " + currentUser.value.id == payload.newAssigneeId
               ? "you"
-              : principalFromId(payload.newAssigneeId).name + " task";
+              : principalFromId(payload.newAssigneeId).name + " issue";
           } else if (
             payload.oldAssigneeId != UNKNOWN_ID &&
             payload.newAssigneeId == UNKNOWN_ID
@@ -317,7 +317,7 @@ export default {
             return "un-assigned " + currentUser.value.id ==
               payload.oldAssigneeId
               ? "you"
-              : principalFromId(payload.oldAssigneeId).name + " task";
+              : principalFromId(payload.oldAssigneeId).name + " issue";
           } else if (
             payload.oldAssigneeId != UNKNOWN_ID &&
             payload.newAssigneeId != UNKNOWN_ID
@@ -330,30 +330,30 @@ export default {
                   currentUser.value.id ==
                 payload.newAssigneeId
               ? "you"
-              : principalFromId(payload.newAssigneeId).name + " task";
+              : principalFromId(payload.newAssigneeId).name + " issue";
           }
-          return "assigned task";
+          return "assigned issue";
         }
-        case "bb.msg.task.status.update": {
-          const payload = message.payload as TaskUpdateStatusMessagePayload;
+        case "bb.msg.issue.status.update": {
+          const payload = message.payload as IssueUpdateStatusMessagePayload;
           return (
-            "changed task status from " +
+            "changed issue status from " +
             payload.oldStatus +
             " to " +
             payload.newStatus
           );
         }
-        case "bb.msg.task.stage.status.update": {
-          const payload = message.payload as TaskUpdateStatusMessagePayload;
+        case "bb.msg.issue.stage.status.update": {
+          const payload = message.payload as IssueUpdateStatusMessagePayload;
           return (
-            "changed task stage status from " +
+            "changed issue stage status from " +
             payload.oldStatus +
             " to " +
             payload.newStatus
           );
         }
-        case "bb.msg.task.comment":
-          return "commented task";
+        case "bb.msg.issue.comment":
+          return "commented issue";
       }
     };
 

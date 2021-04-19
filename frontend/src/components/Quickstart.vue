@@ -93,8 +93,8 @@ export default {
 
     const introList: IntroItem[] = reactive([
       {
-        name: "Bookmark a task",
-        link: "/task/hello-world-1",
+        name: "Bookmark a issue",
+        link: "/issue/hello-world-1",
         allowDeveloper: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("bookmark.create");
@@ -119,7 +119,7 @@ export default {
       {
         name: "Request a database",
         link:
-          "/task/new?template=bytebase.database.create&description=Estimated QPS: 10",
+          "/issue/new?template=bytebase.database.create&description=Estimated QPS: 10",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.create")
@@ -128,7 +128,7 @@ export default {
       {
         name: "Create a table",
         link:
-          "/task/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
+          "/issue/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")

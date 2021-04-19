@@ -35,7 +35,7 @@ function convert(
     (item: any): DataSourceMember => {
       return {
         principal: rootGetters["principal/principalById"](item.principalId),
-        taskId: item.taskId,
+        issueId: item.issueId,
         createdTs: item.createdTs,
       };
     }

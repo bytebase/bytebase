@@ -13,7 +13,7 @@ import database from "./modules/database";
 import principal from "./modules/principal";
 import plan from "./modules/plan";
 import auth from "./modules/auth";
-import task from "./modules/task";
+import issue from "./modules/issue";
 import stage from "./modules/stage";
 import step from "./modules/step";
 
@@ -41,7 +41,7 @@ export const store: Store<any> = createStore({
     principal,
     plan,
     auth,
-    task,
+    issue,
     stage,
     step,
     uistate,

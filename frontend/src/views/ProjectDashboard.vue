@@ -69,10 +69,10 @@ export default {
         // Select "All"
         return list;
       }
-      return list.filter((task) => {
+      return list.filter((issue) => {
         return (
           !state.searchText ||
-          task.name.toLowerCase().includes(state.searchText.toLowerCase())
+          issue.name.toLowerCase().includes(state.searchText.toLowerCase())
         );
       });
     };

@@ -48,7 +48,7 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType } from "vue";
-import { Task, StageStatusTransition } from "../types";
+import { Issue, StageStatusTransition } from "../types";
 
 interface LocalState {
   comment: string;
@@ -62,9 +62,9 @@ export default {
       type: String,
       default: "OK",
     },
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
     transition: {
       required: true,

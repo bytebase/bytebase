@@ -157,7 +157,7 @@ export default function configureDataSource(route) {
           if (!member) {
             newList.push({
               principalId: attrs.principalId,
-              taskId: attrs.taskId,
+              issueId: attrs.issueId,
               createdTs: Date.now(),
             });
             return dataSource.update({

@@ -2,7 +2,7 @@
   <h2 class="px-4 text-lg font-medium">
     Output
     <span class="text-base font-normal text-control-light">
-      (these fields must be filled by the assignee before resolving the task)
+      (these fields must be filled by the assignee before resolving the issue)
     </span>
   </h2>
 
@@ -18,7 +18,9 @@
               class="ml-2 normal-link"
             >
               {{
-                task.type == "bytebase.database.create" ? "+ Create" : "+ Grant"
+                issue.type == "bytebase.database.create"
+                  ? "+ Create"
+                  : "+ Grant"
               }}
             </router-link>
           </template>
@@ -103,18 +105,18 @@
               View
             </router-link>
           </template>
-          <template v-if="task.type == 'bytebase.database.create'">
+          <template v-if="issue.type == 'bytebase.database.create'">
             <div
-              v-if="field.resolved(taskContext)"
+              v-if="field.resolved(issueContext)"
               class="text-sm text-success"
             >
               (Created)
             </div>
             <div v-else class="text-sm text-error">(To be created)</div>
           </template>
-          <template v-else-if="task.type == 'bytebase.database.grant'">
+          <template v-else-if="issue.type == 'bytebase.database.grant'">
             <div
-              v-if="field.resolved(taskContext)"
+              v-if="field.resolved(issueContext)"
               class="text-sm text-success"
             >
               (Granted)
@@ -135,22 +137,22 @@ import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { fullDatabasePath } from "../utils";
-import { TaskField, TaskBuiltinFieldId, TaskContext } from "../plugins";
-import { DatabaseId, DataSource, EnvironmentId, Task } from "../types";
+import { IssueField, IssueBuiltinFieldId, IssueContext } from "../plugins";
+import { DatabaseId, DataSource, EnvironmentId, Issue } from "../types";
 
 interface LocalState {}
 
 export default {
-  name: "TaskOutputPanel",
+  name: "IssueOutputPanel",
   emits: ["update-custom-field"],
   props: {
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
     fieldList: {
       required: true,
-      type: Object as PropType<TaskField[]>,
+      type: Object as PropType<IssueField[]>,
     },
     allowEdit: {
       required: true,
@@ -168,21 +170,21 @@ export default {
 
     const environmentId = computed(
       (): EnvironmentId => {
-        return props.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+        return props.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
       }
     );
 
-    const fieldValue = (field: TaskField): string => {
-      return props.task.payload[field.id];
+    const fieldValue = (field: IssueField): string => {
+      return props.issue.payload[field.id];
     };
 
-    const taskContext = computed(
-      (): TaskContext => {
+    const issueContext = computed(
+      (): IssueContext => {
         return {
           store,
           currentUser: currentUser.value,
           new: false,
-          task: props.task,
+          issue: props.issue,
         };
       }
     );
@@ -192,8 +194,8 @@ export default {
         return false;
       }
       return (
-        props.task.type == "bytebase.database.create" ||
-        props.task.type == "bytebase.database.grant"
+        props.issue.type == "bytebase.database.create" ||
+        props.issue.type == "bytebase.database.grant"
       );
     });
 
@@ -201,32 +203,32 @@ export default {
       return link?.trim().length > 0;
     };
 
-    const databaseActionLink = (field: TaskField): string => {
+    const databaseActionLink = (field: IssueField): string => {
       const queryParamList: string[] = [];
 
-      if (props.task.type == "bytebase.database.create") {
+      if (props.issue.type == "bytebase.database.create") {
         if (environmentId.value) {
           queryParamList.push(`environment=${environmentId.value}`);
         }
 
-        const databaseName = props.task.payload[TaskBuiltinFieldId.DATABASE];
+        const databaseName = props.issue.payload[IssueBuiltinFieldId.DATABASE];
         queryParamList.push(`name=${databaseName}`);
 
-        queryParamList.push(`task=${props.task.id}`);
+        queryParamList.push(`issue=${props.issue.id}`);
 
-        queryParamList.push(`from=${props.task.type}`);
+        queryParamList.push(`from=${props.issue.type}`);
 
         return "/db/new?" + queryParamList.join("&");
       }
 
-      if (props.task.type == "bytebase.database.grant") {
-        const databaseId = props.task.payload[TaskBuiltinFieldId.DATABASE];
+      if (props.issue.type == "bytebase.database.grant") {
+        const databaseId = props.issue.payload[IssueBuiltinFieldId.DATABASE];
         if (databaseId) {
           const database = store.getters["database/databaseById"](databaseId);
           if (database) {
             // TODO: Hard-code from DatabaseGrantTemplate
             const READ_ONLY_ID = 100;
-            const readOnly = props.task.payload[READ_ONLY_ID];
+            const readOnly = props.issue.payload[READ_ONLY_ID];
             let dataSourceId;
             for (const dataSource of database.dataSourceList) {
               if (readOnly && dataSource.type == "RO") {
@@ -243,9 +245,9 @@ export default {
 
               queryParamList.push(`datasource=${dataSourceId}`);
 
-              queryParamList.push(`grantee=${props.task.creator.id}`);
+              queryParamList.push(`grantee=${props.issue.creator.id}`);
 
-              queryParamList.push(`task=${props.task.id}`);
+              queryParamList.push(`issue=${props.issue.id}`);
 
               return "/db/grant?" + queryParamList.join("&");
             }
@@ -256,7 +258,7 @@ export default {
       return "";
     };
 
-    const databaseViewLink = (field: TaskField): string => {
+    const databaseViewLink = (field: IssueField): string => {
       if (field.type == "Database") {
         const databaseId = fieldValue(field);
         if (databaseId) {
@@ -269,8 +271,8 @@ export default {
       return "";
     };
 
-    const copyText = (field: TaskField) => {
-      toClipboard(props.task.payload[field.id]).then(() => {
+    const copyText = (field: IssueField) => {
+      toClipboard(props.issue.payload[field.id]).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
@@ -294,7 +296,7 @@ export default {
     };
 
     const trySaveCustomField = (
-      field: TaskField,
+      field: IssueField,
       value: string | DatabaseId
     ) => {
       if (!isEqual(value, fieldValue(field))) {
@@ -306,7 +308,7 @@ export default {
       state,
       environmentId,
       fieldValue,
-      taskContext,
+      issueContext,
       allowEditDatabase,
       isValidLink,
       databaseActionLink,

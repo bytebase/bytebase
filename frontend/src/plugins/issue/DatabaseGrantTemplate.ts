@@ -1,19 +1,19 @@
 import isEmpty from "lodash-es/isEmpty";
 import {
-  TaskTemplate,
+  IssueTemplate,
   TemplateContext,
-  TaskBuiltinFieldId,
+  IssueBuiltinFieldId,
   INPUT_CUSTOM_FIELD_ID_BEGIN,
-  TaskContext,
+  IssueContext,
 } from "../types";
-import { TaskNew, EnvironmentId, UNKNOWN_ID, Task } from "../../types";
+import { IssueNew, EnvironmentId, UNKNOWN_ID, Issue } from "../../types";
 import { allowDatabaseAccess } from "../../utils";
 
 const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
 
-const template: TaskTemplate = {
+const template: IssueTemplate = {
   type: "bytebase.database.grant",
-  buildTask: (ctx: TemplateContext): TaskNew => {
+  buildIssue: (ctx: TemplateContext): IssueNew => {
     const payload: any = {};
 
     return {
@@ -42,37 +42,38 @@ const template: TaskTemplate = {
   fieldList: [
     {
       category: "INPUT",
-      id: TaskBuiltinFieldId.PROJECT,
+      id: IssueBuiltinFieldId.PROJECT,
       slug: "project",
       name: "Project",
       type: "Project",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const projectId = ctx.task.payload[TaskBuiltinFieldId.PROJECT];
+      resolved: (ctx: IssueContext): boolean => {
+        const projectId = ctx.issue.payload[IssueBuiltinFieldId.PROJECT];
         return !isEmpty(projectId);
       },
     },
     {
       category: "INPUT",
-      id: TaskBuiltinFieldId.ENVIRONMENT,
+      id: IssueBuiltinFieldId.ENVIRONMENT,
       slug: "environment",
       name: "Environment",
       type: "Environment",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const environmentId = ctx.task.payload[TaskBuiltinFieldId.ENVIRONMENT];
+      resolved: (ctx: IssueContext): boolean => {
+        const environmentId =
+          ctx.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
         return !isEmpty(environmentId);
       },
     },
     {
       category: "INPUT",
-      id: TaskBuiltinFieldId.DATABASE,
+      id: IssueBuiltinFieldId.DATABASE,
       slug: "database",
       name: "Database",
       type: "Database",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+      resolved: (ctx: IssueContext): boolean => {
+        const databaseId = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
         return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
       },
     },
@@ -83,7 +84,7 @@ const template: TaskTemplate = {
       name: "Read Only",
       type: "Boolean",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
+      resolved: (ctx: IssueContext): boolean => {
         return true;
       },
     },
@@ -91,16 +92,16 @@ const template: TaskTemplate = {
       category: "OUTPUT",
       // This is the same ID as the INPUT database field because the granted database should be the same
       // as the requested database.
-      id: TaskBuiltinFieldId.DATABASE,
+      id: IssueBuiltinFieldId.DATABASE,
       slug: "database",
       name: "Granted database",
       type: "Database",
       required: true,
-      resolved: (ctx: TaskContext): boolean => {
-        const databaseId = ctx.task.payload[TaskBuiltinFieldId.DATABASE];
+      resolved: (ctx: IssueContext): boolean => {
+        const databaseId = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
         const database = ctx.store.getters["database/databaseById"](databaseId);
-        const creator = (ctx.task as Task).creator;
-        const type = ctx.task.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";
+        const creator = (ctx.issue as Issue).creator;
+        const type = ctx.issue.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";
         return allowDatabaseAccess(database, creator, type);
       },
     },

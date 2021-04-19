@@ -4,7 +4,7 @@ import {
   Environment,
   Instance,
   Project,
-  TaskId,
+  IssueId,
 } from "../types";
 import slug from "slug";
 
@@ -13,8 +13,8 @@ export function idFromSlug(slug: string) {
   return parts[parts.length - 1];
 }
 
-export function taskSlug(taskName: string, taskId: TaskId) {
-  return [slug(taskName), taskId].join("-");
+export function issueSlug(issueName: string, issueId: IssueId) {
+  return [slug(issueName), issueId].join("-");
 }
 
 // On the other hand, it's not possible to de-slug due to slug's one-way algorithm

@@ -13,7 +13,7 @@ const getters = {
   ): RouterSlug => {
     {
       // /environment/:environmentSlug
-      // Total 2 elements, 2nd element is the task slug
+      // Total 2 elements, 2nd element is the issue slug
       const environmentComponents = currentRoute.path.match(
         "/environment/([0-9a-zA-Z_-]+)"
       ) || ["/", undefined];
@@ -38,14 +38,14 @@ const getters = {
     }
 
     {
-      // /task/:taskSlug
-      // Total 2 elements, 2nd element is the task slug
-      const taskComponents = currentRoute.path.match(
-        "/task/([0-9a-zA-Z_-]+)"
+      // /issue/:issueSlug
+      // Total 2 elements, 2nd element is the issue slug
+      const issueComponents = currentRoute.path.match(
+        "/issue/([0-9a-zA-Z_-]+)"
       ) || ["/", undefined];
-      if (taskComponents[1]) {
+      if (issueComponents[1]) {
         return {
-          taskSlug: taskComponents[1],
+          issueSlug: issueComponents[1],
         };
       }
     }

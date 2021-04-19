@@ -10,7 +10,7 @@ export default {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
     type() {
-      return "bb.msg.task.assign";
+      return "bb.msg.issue.assign";
     },
     status(i) {
       return Math.floor(Math.random() * 2) % 2 == 0 ? "DELIVERED" : "CONSUMED";
@@ -31,7 +31,7 @@ export default {
     },
     payload() {
       return {
-        taskName: faker.fake("{{lorem.sentence}}"),
+        issueName: faker.fake("{{lorem.sentence}}"),
       };
     },
   }),

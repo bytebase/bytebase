@@ -1,48 +1,48 @@
 import { Response } from "miragejs";
 import isEqual from "lodash-es/isEqual";
 import { WORKSPACE_ID } from "./index";
-import { TaskBuiltinFieldId } from "../../plugins";
+import { IssueBuiltinFieldId } from "../../plugins";
 import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../../types";
 
-export default function configureTask(route) {
-  route.get("/task", function (schema, request) {
+export default function configureIssue(route) {
+  route.get("/issue", function (schema, request) {
     const {
       queryParams: { user: userId, project: projectId },
     } = request;
 
     if (userId || projectId) {
-      return schema.tasks.where((task) => {
+      return schema.issues.where((issue) => {
         return (
-          task.workspaceId == WORKSPACE_ID &&
+          issue.workspaceId == WORKSPACE_ID &&
           (!userId ||
-            task.creatorId == userId ||
-            task.assigneeId == userId ||
-            task.subscriberIdList.includes(userId)) &&
-          (!projectId || task.projectId == projectId)
+            issue.creatorId == userId ||
+            issue.assigneeId == userId ||
+            issue.subscriberIdList.includes(userId)) &&
+          (!projectId || issue.projectId == projectId)
         );
       });
     }
-    return schema.tasks.all();
+    return schema.issues.all();
   });
 
-  route.get("/task/:id", function (schema, request) {
-    const task = schema.tasks.find(request.params.id);
-    if (task) {
-      return task;
+  route.get("/issue/:id", function (schema, request) {
+    const issue = schema.issues.find(request.params.id);
+    if (issue) {
+      return issue;
     }
     return new Response(
       404,
       {},
-      { errors: "Task " + request.params.id + " not found" }
+      { errors: "Issue " + request.params.id + " not found" }
     );
   });
 
-  route.post("/task", function (schema, request) {
+  route.post("/issue", function (schema, request) {
     const ts = Date.now();
-    const { stageList, ...attrs } = this.normalizedRequestAttrs("task-new");
+    const { stageList, ...attrs } = this.normalizedRequestAttrs("issue-new");
     const database = schema.databases.find(stageList[0].databaseId);
 
-    const newTask = {
+    const newIssue = {
       ...attrs,
       createdTs: ts,
       updaterId: attrs.creatorId,
@@ -51,7 +51,7 @@ export default function configureTask(route) {
       projectId: database.projectId,
       workspaceId: WORKSPACE_ID,
     };
-    const createdTask = schema.tasks.create(newTask);
+    const createdIssue = schema.issues.create(newIssue);
 
     for (const stage of stageList) {
       const { stepList, ...stageAttrs } = stage;
@@ -61,7 +61,7 @@ export default function configureTask(route) {
         updaterId: attrs.creatorId,
         updatedTs: ts,
         status: "PENDING",
-        task: createdTask,
+        issue: createdIssue,
         workspaceId: WORKSPACE_ID,
       });
 
@@ -72,7 +72,7 @@ export default function configureTask(route) {
           updaterId: attrs.creatorId,
           updatedTs: ts,
           status: "PENDING",
-          task: createdTask,
+          issue: createdIssue,
           stage: createdStage,
           workspaceId: WORKSPACE_ID,
         });
@@ -84,24 +84,24 @@ export default function configureTask(route) {
       createdTs: ts,
       updaterId: attrs.updaterId,
       updatedTs: ts,
-      actionType: "bytebase.task.create",
-      containerId: createdTask.id,
+      actionType: "bytebase.issue.create",
+      containerId: createdIssue.id,
       comment: "",
       workspaceId: WORKSPACE_ID,
     });
 
-    return createdTask;
+    return createdIssue;
   });
 
-  route.patch("/task/:taskId", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("task-patch");
-    const task = schema.tasks.find(request.params.taskId);
+  route.patch("/issue/:issueId", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("issue-patch");
+    const issue = schema.issues.find(request.params.issueId);
 
-    if (!task) {
+    if (!issue) {
       return new Response(
         404,
         {},
-        { errors: "Task " + request.params.id + " not found" }
+        { errors: "Issue " + request.params.id + " not found" }
       );
     }
 
@@ -109,7 +109,7 @@ export default function configureTask(route) {
     const changeList = [];
     const messageList = [];
     const messageTemplate = {
-      containerId: task.id,
+      containerId: issue.id,
       creatorId: attrs.updaterId,
       createdTs: ts,
       updaterId: attrs.updaterId,
@@ -119,51 +119,51 @@ export default function configureTask(route) {
     };
 
     if (attrs.assigneeId) {
-      if (task.assigneeId != attrs.assigneeId) {
+      if (issue.assigneeId != attrs.assigneeId) {
         changeList.push({
-          fieldId: TaskBuiltinFieldId.ASSIGNEE,
-          oldValue: task.assigneeId,
+          fieldId: IssueBuiltinFieldId.ASSIGNEE,
+          oldValue: issue.assigneeId,
           newValue: attrs.assigneeId,
         });
 
         // Send a message to the new assignee
         messageList.push({
           ...messageTemplate,
-          type: "bb.msg.task.assign",
+          type: "bb.msg.issue.assign",
           receiverId: attrs.assigneeId,
           payload: {
-            taskName: task.name,
-            oldAssigneeId: task.assigneeId,
+            issueName: issue.name,
+            oldAssigneeId: issue.assigneeId,
             newAssigneeId: attrs.assigneeId,
           },
         });
 
         // Send a message to the old assignee
         if (
-          task.assigneeId != UNKNOWN_ID &&
-          task.creatorId != task.assigneeId
+          issue.assigneeId != UNKNOWN_ID &&
+          issue.creatorId != issue.assigneeId
         ) {
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.task.assign",
-            receiverId: task.assigneeId,
+            type: "bb.msg.issue.assign",
+            receiverId: issue.assigneeId,
             payload: {
-              taskName: task.name,
-              oldAssigneeId: task.assigneeId,
+              issueName: issue.name,
+              oldAssigneeId: issue.assigneeId,
               newAssigneeId: attrs.assigneeId,
             },
           });
         }
 
         // Send a message to the creator
-        if (task.creatorId != attrs.assigneeId) {
+        if (issue.creatorId != attrs.assigneeId) {
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.task.assign",
-            receiverId: task.creatorId,
+            type: "bb.msg.issue.assign",
+            receiverId: issue.creatorId,
             payload: {
-              taskName: task.name,
-              oldAssigneeId: task.assigneeId,
+              issueName: issue.name,
+              oldAssigneeId: issue.assigneeId,
               newAssigneeId: attrs.assigneeId,
             },
           });
@@ -173,72 +173,72 @@ export default function configureTask(route) {
 
     // Empty string is valid
     if (attrs.description !== undefined) {
-      if (task.description != attrs.description) {
+      if (issue.description != attrs.description) {
         changeList.push({
-          fieldId: TaskBuiltinFieldId.DESCRIPTION,
-          oldValue: task.description,
+          fieldId: IssueBuiltinFieldId.DESCRIPTION,
+          oldValue: issue.description,
           newValue: attrs.description,
         });
       }
     }
 
     if (attrs.stage !== undefined) {
-      const stage = task.stageList.find((item) => item.id == attrs.stage.id);
+      const stage = issue.stageList.find((item) => item.id == attrs.stage.id);
       if (stage) {
         changeList.push({
-          fieldId: [TaskBuiltinFieldId.STAGE, stage.id].join("."),
+          fieldId: [IssueBuiltinFieldId.STAGE, stage.id].join("."),
           oldValue: stage.status,
           newValue: attrs.stage.status,
         });
         stage.status = attrs.stage.status;
-        attrs.stageList = task.stageList;
+        attrs.stageList = issue.stageList;
       }
     }
 
     if (attrs.subscriberIdList !== undefined) {
-      if (task.subscriberIdList != attrs.subscriberIdList) {
+      if (issue.subscriberIdList != attrs.subscriberIdList) {
         changeList.push({
-          fieldId: TaskBuiltinFieldId.SUBSCRIBER_LIST,
-          oldValue: task.subscriberIdList,
+          fieldId: IssueBuiltinFieldId.SUBSCRIBER_LIST,
+          oldValue: issue.subscriberIdList,
           newValue: attrs.subscriberIdList,
         });
       }
     }
 
     if (attrs.sql !== undefined) {
-      if (task.sql != attrs.sql) {
+      if (issue.sql != attrs.sql) {
         changeList.push({
-          fieldId: TaskBuiltinFieldId.SQL,
-          oldValue: task.sql,
+          fieldId: IssueBuiltinFieldId.SQL,
+          oldValue: issue.sql,
           newValue: attrs.sql,
         });
       }
     }
 
     if (attrs.rollbackSql !== undefined) {
-      if (task.rollbackSql != attrs.rollbackSql) {
+      if (issue.rollbackSql != attrs.rollbackSql) {
         changeList.push({
-          fieldId: TaskBuiltinFieldId.ROLLBACK_SQL,
-          oldValue: task.rollbackSql,
+          fieldId: IssueBuiltinFieldId.ROLLBACK_SQL,
+          oldValue: issue.rollbackSql,
           newValue: attrs.rollbackSql,
         });
       }
     }
 
     for (const fieldId in attrs.payload) {
-      const oldValue = task.payload[fieldId];
+      const oldValue = issue.payload[fieldId];
       const newValue = attrs.payload[fieldId];
       if (!isEqual(oldValue, newValue)) {
         changeList.push({
           fieldId: fieldId,
-          oldValue: task.payload[fieldId],
+          oldValue: issue.payload[fieldId],
           newValue: attrs.payload[fieldId],
         });
       }
     }
 
     if (changeList.length) {
-      const updatedTask = task.update({ ...attrs, updatedTs: ts });
+      const updatedIssue = issue.update({ ...attrs, updatedTs: ts });
 
       const payload = {
         changeList,
@@ -249,8 +249,8 @@ export default function configureTask(route) {
         createdTs: ts,
         updaterId: attrs.updaterId,
         updatedTs: ts,
-        actionType: "bytebase.task.field.update",
-        containerId: updatedTask.id,
+        actionType: "bytebase.issue.field.update",
+        containerId: updatedIssue.id,
         comment: attrs.comment,
         payload,
         workspaceId: WORKSPACE_ID,
@@ -265,28 +265,28 @@ export default function configureTask(route) {
         }
       }
 
-      return updatedTask;
+      return updatedIssue;
     }
 
-    return task;
+    return issue;
   });
 
-  route.patch("/task/:taskId/status", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("task-status-patch");
-    const task = schema.tasks.find(request.params.taskId);
+  route.patch("/issue/:issueId/status", function (schema, request) {
+    const attrs = this.normalizedRequestAttrs("issue-status-patch");
+    const issue = schema.issues.find(request.params.issueId);
 
-    if (!task) {
+    if (!issue) {
       return new Response(
         404,
         {},
-        { errors: "Task " + request.params.id + " not found" }
+        { errors: "Issue " + request.params.id + " not found" }
       );
     }
 
     const ts = Date.now();
 
     if (attrs.status == "DONE") {
-      const stageList = schema.stages.where({ taskId: task.id }).models;
+      const stageList = schema.stages.where({ issueId: issue.id }).models;
 
       // We check each of the stage and its steps. Returns error if any of them is not finished.
       for (let i = 0; i < stageList.length; i++) {
@@ -295,13 +295,13 @@ export default function configureTask(route) {
             404,
             {},
             {
-              errors: `Can't resolve task ${task.name}. Stage ${stage[i].name} is in ${stage[i].status} status`,
+              errors: `Can't resolve issue ${issue.name}. Stage ${stage[i].name} is in ${stage[i].status} status`,
             }
           );
         }
 
         const stepList = schema.steps.where({
-          taskId: task.id,
+          issueId: issue.id,
           stageId: stage[i].id,
         }).models;
 
@@ -311,7 +311,7 @@ export default function configureTask(route) {
               404,
               {},
               {
-                errors: `Can't resolve task ${task.name}. Step ${step[j].name} in stage ${stage[i].name} is in ${step[j].status} status`,
+                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in stage ${stage[i].name} is in ${step[j].status} status`,
               }
             );
           }
@@ -322,7 +322,7 @@ export default function configureTask(route) {
     const changeList = [];
     const messageList = [];
     const messageTemplate = {
-      containerId: task.id,
+      containerId: issue.id,
       creatorId: attrs.updaterId,
       createdTs: ts,
       updaterId: attrs.updaterId,
@@ -332,43 +332,43 @@ export default function configureTask(route) {
     };
 
     if (attrs.status) {
-      if (task.status != attrs.status) {
+      if (issue.status != attrs.status) {
         changeList.push({
-          fieldId: TaskBuiltinFieldId.STATUS,
-          oldValue: task.status,
+          fieldId: IssueBuiltinFieldId.STATUS,
+          oldValue: issue.status,
           newValue: attrs.status,
         });
 
         messageList.push({
           ...messageTemplate,
-          type: "bb.msg.task.status.update",
-          receiverId: task.creatorId,
+          type: "bb.msg.issue.status.update",
+          receiverId: issue.creatorId,
           payload: {
-            taskName: task.name,
-            oldStatus: task.status,
+            issueName: issue.name,
+            oldStatus: issue.status,
             newStatus: attrs.status,
           },
         });
 
-        if (task.assigneeId) {
+        if (issue.assigneeId) {
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.task.status.update",
-            receiverId: task.assigneeId,
+            type: "bb.msg.issue.status.update",
+            receiverId: issue.assigneeId,
           });
         }
 
-        for (let subscriberId of task.subscriberIdList) {
+        for (let subscriberId of issue.subscriberIdList) {
           if (
-            subscriberId != task.creatorId &&
-            subscriberId != task.assigneeId
+            subscriberId != issue.creatorId &&
+            subscriberId != issue.assigneeId
           ) {
             messageList.push({
               ...messageTemplate,
-              type: "bb.msg.task.status.update",
+              type: "bb.msg.issue.status.update",
               receiverId: subscriberId,
               payload: {
-                taskName: task.name,
+                issueName: issue.name,
               },
             });
           }
@@ -377,7 +377,7 @@ export default function configureTask(route) {
     }
 
     if (changeList.length) {
-      const updatedTask = task.update({ ...attrs, updatedTs: ts });
+      const updatedIssue = issue.update({ ...attrs, updatedTs: ts });
 
       const payload = {
         changeList,
@@ -388,8 +388,8 @@ export default function configureTask(route) {
         createdTs: ts,
         updaterId: attrs.updaterId,
         updatedTs: ts,
-        actionType: "bytebase.task.status.update",
-        containerId: updatedTask.id,
+        actionType: "bytebase.issue.status.update",
+        containerId: updatedIssue.id,
         comment: attrs.comment,
         payload,
         workspaceId: WORKSPACE_ID,
@@ -404,9 +404,9 @@ export default function configureTask(route) {
         }
       }
 
-      return updatedTask;
+      return updatedIssue;
     }
 
-    return task;
+    return issue;
   });
 }

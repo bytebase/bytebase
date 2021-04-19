@@ -3,7 +3,7 @@ import faker from "faker";
 import { UNKNOWN_ID } from "../../types";
 
 export default {
-  task: Factory.extend({
+  issue: Factory.extend({
     name(i) {
       return faker.fake("{{lorem.sentence}}");
     },

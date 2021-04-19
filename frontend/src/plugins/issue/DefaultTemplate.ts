@@ -1,9 +1,9 @@
-import { TaskNew, UNKNOWN_ID } from "../../types";
-import { TaskTemplate, TemplateContext } from "../types";
+import { IssueNew, UNKNOWN_ID } from "../../types";
+import { IssueTemplate, TemplateContext } from "../types";
 
-const template: TaskTemplate = {
+const template: IssueTemplate = {
   type: "bytebase.general",
-  buildTask: (ctx: TemplateContext): TaskNew => {
+  buildIssue: (ctx: TemplateContext): IssueNew => {
     return {
       name: "",
       type: "bytebase.general",

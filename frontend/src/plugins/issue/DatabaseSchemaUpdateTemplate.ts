@@ -1,17 +1,17 @@
 import isEmpty from "lodash-es/isEmpty";
 
 import {
-  TaskTemplate,
+  IssueTemplate,
   TemplateContext,
-  TaskBuiltinFieldId,
-  TaskContext,
+  IssueBuiltinFieldId,
+  IssueContext,
 } from "../types";
 
-import { Database, Stage, StageNew, TaskNew, UNKNOWN_ID } from "../../types";
+import { Database, Stage, StageNew, IssueNew, UNKNOWN_ID } from "../../types";
 
-const template: TaskTemplate = {
+const template: IssueTemplate = {
   type: "bytebase.database.schema.update",
-  buildTask: (ctx: TemplateContext): TaskNew => {
+  buildIssue: (ctx: TemplateContext): IssueNew => {
     const payload: any = {};
     return {
       name: "Change db",

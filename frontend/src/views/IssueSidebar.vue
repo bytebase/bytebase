@@ -8,9 +8,9 @@
         </h2>
         <div class="col-span-2">
           <span class="flex items-center space-x-2">
-            <TaskStatusIcon :taskStatus="task.status" :size="'normal'" />
+            <IssueStatusIcon :issueStatus="issue.status" :size="'normal'" />
             <span class="text-main capitalize">
-              {{ task.status.toLowerCase() }}
+              {{ issue.status.toLowerCase() }}
             </span>
           </span>
         </div>
@@ -19,11 +19,11 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Assignee<span v-if="$props.new" class="text-red-600">*</span>
       </h2>
-      <!-- Only DBA can be assigned to the task -->
+      <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2">
         <PrincipalSelect
           :disabled="!allowEditAssignee"
-          :selectedId="$props.new ? task.assigneeId : task.assignee?.id"
+          :selectedId="$props.new ? issue.assigneeId : issue.assignee?.id"
           :allowedRoleList="['DBA']"
           @select-principal-id="
             (principalId) => {
@@ -153,14 +153,14 @@
           Updated
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(task.updatedTs).format("LLL") }}</span
+          {{ moment(issue.updatedTs).format("LLL") }}</span
         >
 
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Created
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(task.createdTs).format("LLL") }}</span
+          {{ moment(issue.createdTs).format("LLL") }}</span
         >
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Creator
@@ -168,13 +168,13 @@
         <ul class="col-span-2">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
-              <BBAvatar :size="'small'" :username="task.creator.name" />
+              <BBAvatar :size="'small'" :username="issue.creator.name" />
             </div>
             <router-link
-              :to="`/u/${task.creator.id}`"
+              :to="`/u/${issue.creator.id}`"
               class="text-sm font-medium text-main hover:underline"
             >
-              {{ task.creator.name }}
+              {{ issue.creator.name }}
             </router-link>
           </li>
         </ul>
@@ -188,8 +188,8 @@
         class="textlabel flex items-center col-span-1 col-start-1 whitespace-nowrap"
       >
         {{
-          task.subscriberList.length +
-          (task.subscriberList.length > 1 ? " subscribers" : " subscriber")
+          issue.subscriberList.length +
+          (issue.subscriberList.length > 1 ? " subscribers" : " subscriber")
         }}
       </h2>
       <div v-if="subscriberList.length > 0" class="col-span-3 col-start-1">
@@ -239,8 +239,8 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
-import TaskStatusIcon from "../components/TaskStatusIcon.vue";
-import { TaskField, DatabaseFieldPayload } from "../plugins";
+import IssueStatusIcon from "../components/IssueStatusIcon.vue";
+import { IssueField, DatabaseFieldPayload } from "../plugins";
 import {
   Database,
   DatabaseId,
@@ -248,8 +248,8 @@ import {
   EnvironmentId,
   Principal,
   Project,
-  Task,
-  TaskNew,
+  Issue,
+  IssueNew,
   UNKNOWN_ID,
 } from "../types";
 import { activeDatabaseId, isDBAOrOwner } from "../utils";
@@ -257,16 +257,16 @@ import { activeDatabaseId, isDBAOrOwner } from "../utils";
 interface LocalState {}
 
 export default {
-  name: "TaskSidebar",
+  name: "IssueSidebar",
   emits: [
     "update-assignee-id",
     "update-subscriber-list",
     "update-custom-field",
   ],
   props: {
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task | TaskNew>,
+      type: Object as PropType<Issue | IssueNew>,
     },
     new: {
       required: true,
@@ -274,7 +274,7 @@ export default {
     },
     fieldList: {
       required: true,
-      type: Object as PropType<TaskField[]>,
+      type: Object as PropType<IssueField[]>,
     },
     allowEdit: {
       required: true,
@@ -286,7 +286,7 @@ export default {
     ProjectSelect,
     EnvironmentSelect,
     PrincipalSelect,
-    TaskStatusIcon,
+    IssueStatusIcon,
   },
   setup(props, { emit }) {
     const store = useStore();
@@ -294,27 +294,27 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const fieldValue = (field: TaskField): string | DatabaseFieldPayload => {
-      return props.task.payload[field.id];
+    const fieldValue = (field: IssueField): string | DatabaseFieldPayload => {
+      return props.issue.payload[field.id];
     };
 
     const database = computed(
       (): Database => {
         const databaseId = props.new
-          ? (props.task as TaskNew).stageList[0].databaseId
-          : activeDatabaseId(props.task as Task);
+          ? (props.issue as IssueNew).stageList[0].databaseId
+          : activeDatabaseId(props.issue as Issue);
         return store.getters["database/databaseById"](databaseId);
       }
     );
 
     const project = computed(
       (): Project => {
-        // For new task, we derive the project from the 1st stage's database.
-        // For existing task, we use task's project. We can't derive from the stage's database because
-        // database may be transferred to a different project after creating the task.
+        // For new issue, we derive the project from the 1st stage's database.
+        // For existing issue, we use issue's project. We can't derive from the stage's database because
+        // database may be transferred to a different project after creating the issue.
         return props.new
           ? database.value.project
-          : (props.task as Task).project;
+          : (props.issue as Issue).project;
       }
     );
 
@@ -325,7 +325,7 @@ export default {
     );
 
     const isCurrentUserSubscribed = computed((): boolean => {
-      for (const principal of (props.task as Task).subscriberList) {
+      for (const principal of (props.issue as Issue).subscriberList) {
         if (currentUser.value.id == principal.id) {
           return true;
         }
@@ -335,7 +335,7 @@ export default {
 
     const subscriberList = computed((): Principal[] => {
       const list: Principal[] = [];
-      (props.task as Task).subscriberList.forEach((principal: Principal) => {
+      (props.issue as Issue).subscriberList.forEach((principal: Principal) => {
         // Put the current user at the front if in the list.
         if (currentUser.value.id == principal.id) {
           list.unshift(principal);
@@ -347,20 +347,20 @@ export default {
     });
 
     const allowEditAssignee = computed(() => {
-      // We allow the current assignee or DBA to re-assign the task.
-      // Though only DBA can be assigned to the task, the current
+      // We allow the current assignee or DBA to re-assign the issue.
+      // Though only DBA can be assigned to the issue, the current
       // assignee might not have DBA role in case its role is revoked after
-      // being assigned to the task.
+      // being assigned to the issue.
       return (
         props.new ||
-        ((props.task as Task).status == "OPEN" &&
-          (currentUser.value.id == (props.task as Task).assignee?.id ||
+        ((props.issue as Issue).status == "OPEN" &&
+          (currentUser.value.id == (props.issue as Issue).assignee?.id ||
             isDBAOrOwner(currentUser.value.role)))
       );
     });
 
     const trySaveCustomField = (
-      field: TaskField,
+      field: IssueField,
       value: string | EnvironmentId | DatabaseFieldPayload
     ) => {
       if (!isEqual(value, fieldValue(field))) {
@@ -368,7 +368,7 @@ export default {
       }
     };
 
-    const trySaveDatabaseNew = (field: TaskField, isNew: boolean) => {
+    const trySaveDatabaseNew = (field: IssueField, isNew: boolean) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -377,7 +377,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseName = (field: TaskField, value: string) => {
+    const trySaveDatabaseName = (field: IssueField, value: string) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -386,7 +386,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseId = (field: TaskField, value: DatabaseId) => {
+    const trySaveDatabaseId = (field: IssueField, value: DatabaseId) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -395,7 +395,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseReadOnly = (field: TaskField, value: boolean) => {
+    const trySaveDatabaseReadOnly = (field: IssueField, value: boolean) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -405,9 +405,9 @@ export default {
     };
 
     const toggleSubscription = () => {
-      const list = cloneDeep((props.task as Task).subscriberList);
+      const list = cloneDeep((props.issue as Issue).subscriberList);
       if (isCurrentUserSubscribed.value) {
-        const index = (props.task as Task).subscriberList.findIndex(
+        const index = (props.issue as Issue).subscriberList.findIndex(
           (item: Principal) => {
             return item.id == currentUser.value.id;
           }

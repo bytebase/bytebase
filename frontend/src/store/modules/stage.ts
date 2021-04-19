@@ -8,8 +8,8 @@ import {
   StageState,
   StageStatusPatch,
   Step,
-  Task,
-  TaskId,
+  Issue,
+  IssueId,
   unknown,
 } from "../../types";
 
@@ -19,7 +19,7 @@ function convertPartial(
   stage: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
-): Omit<Stage, "task"> {
+): Omit<Stage, "issue"> {
   const creator = rootGetters["principal/principalById"](
     stage.attributes.creatorId
   );
@@ -42,10 +42,10 @@ function convertPartial(
     }
   }
 
-  const result: Omit<Stage, "task"> = {
+  const result: Omit<Stage, "issue"> = {
     ...(stage.attributes as Omit<
       Stage,
-      "id" | "creator" | "updater" | "task" | "database" | "stepList"
+      "id" | "creator" | "updater" | "issue" | "database" | "stepList"
     >),
     id: stage.id,
     creator,
@@ -64,19 +64,19 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (stage: ResourceObject, includedList: ResourceObject[]): Stage => {
-    // It's only called when task tries to convert itself, so we don't have a task yet.
-    const taskId = stage.attributes.taskId as TaskId;
-    let task: Task = unknown("TASK") as Task;
-    task.id = taskId;
+    // It's only called when issue tries to convert itself, so we don't have a issue yet.
+    const issueId = stage.attributes.issueId as IssueId;
+    let issue: Issue = unknown("ISSUE") as Issue;
+    issue.id = issueId;
 
     const result: Stage = {
       ...convertPartial(stage, includedList, rootGetters),
-      task,
+      issue,
     };
 
     for (const step of result.stepList) {
       step.stage = result;
-      step.task = task;
+      step.issue = issue;
     }
 
     return result;
@@ -85,17 +85,17 @@ const getters = {
   async updateStageStatus(
     { dispatch }: any,
     {
-      taskId,
+      issueId,
       stageId,
       stageStatusPatch,
     }: {
-      taskId: TaskId;
+      issueId: IssueId;
       stageId: StageId;
       stageStatusPatch: StageStatusPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/task/${taskId}/stage/${stageId}/status`, {
+      await axios.patch(`/api/issue/${issueId}/stage/${stageId}/status`, {
         data: {
           type: "stagestatuspatch",
           attributes: stageStatusPatch,
@@ -103,7 +103,7 @@ const getters = {
       })
     ).data;
 
-    dispatch("task/fetchTaskById", taskId, { root: true });
+    dispatch("issue/fetchIssueById", issueId, { root: true });
   },
 };
 

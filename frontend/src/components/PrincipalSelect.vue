@@ -14,7 +14,7 @@
     <template v-slot:menuItem="{ item }">
       <!--TODO: Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
-          The specific value and breakpoint is to make it align with other select in the task sidebar.
+          The specific value and breakpoint is to make it align with other select in the issue sidebar.
           -->
       <span class="flex lg:40 xl:w-44 items-center space-x-2">
         <BBAvatar :size="'small'" :username="item.name" />
@@ -24,7 +24,7 @@
     <template v-slot:placeholder="{ placeholder }">
       <!--TODO: Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
-          The specific value and breakpoint is to make it align with other select in the task sidebar.
+          The specific value and breakpoint is to make it align with other select in the issue sidebar.
           -->
       <!-- Add my-0.5 padding to avoid flickering when switching to assignee -->
       <span class="flex my-0.5 lg:40 xl:w-44">

@@ -1,13 +1,13 @@
 <template>
   <BBTable
     :columnList="columnList"
-    :sectionDataSource="taskSectionList"
+    :sectionDataSource="issueSectionList"
     :showHeader="true"
     :leftBordered="leftBordered"
     :rightBordered="rightBordered"
     :topBordered="topBordered"
     :bottomBordered="bottomBordered"
-    @click-row="clickTask"
+    @click-row="clickIssue"
   >
     <template v-slot:header>
       <BBTableHeaderCell class="w-4 table-cell" :title="columnList[0].title" />
@@ -68,39 +68,39 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: task }">
+    <template v-slot:body="{ rowData: issue }">
       <BBTableCell :leftPadding="4" class="table-cell">
-        <TaskStatusIcon
-          :taskStatus="task.status"
-          :stageStatus="activeStage(task).status"
+        <IssueStatusIcon
+          :issueStatus="issue.status"
+          :stageStatus="activeStage(issue).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
-        <span class="">{{ task.project.key }}</span>
+        <span class="">{{ issue.project.key }}</span>
       </BBTableCell>
       <BBTableCell class="truncate">
-        {{ task.name }}
+        {{ issue.name }}
       </BBTableCell>
       <BBTableCell class="table-cell">
-        {{ activeEnvironmentName(task) }}
+        {{ activeEnvironmentName(issue) }}
       </BBTableCell>
       <BBTableCell class="table-cell">
-        {{ activeDatabaseName(task) }}
+        {{ activeDatabaseName(issue) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
-        <BBStepBar :stepList="stageList(task)" />
+        <BBStepBar :stepList="stageList(issue)" />
       </BBTableCell>
       <BBTableCell class="hidden md:table-cell">
-        {{ humanizeTs(task.updatedTs) }}
+        {{ humanizeTs(issue.updatedTs) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'small'"
-            :username="task.assignee ? task.assignee.name : 'Unassigned'"
+            :username="issue.assignee ? issue.assignee.name : 'Unassigned'"
           />
           <span class="ml-2">{{
-            task.assignee ? task.assignee.name : "Unassigned"
+            issue.assignee ? issue.assignee.name : "Unassigned"
           }}</span>
         </div>
       </BBTableCell>
@@ -118,14 +118,14 @@ import {
   BBStep,
   BBStepStatus,
 } from "../bbkit/types";
-import TaskStatusIcon from "../components/TaskStatusIcon.vue";
+import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import {
-  taskSlug,
+  issueSlug,
   activeEnvironmentId,
   activeDatabaseId,
   activeStage,
 } from "../utils";
-import { Task } from "../types";
+import { Issue } from "../types";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -192,12 +192,12 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskTable",
-  components: { TaskStatusIcon },
+  name: "IssueTable",
+  components: { IssueStatusIcon },
   props: {
-    taskSectionList: {
+    issueSectionList: {
       required: true,
-      type: Object as PropType<BBTableSectionDataSource<Task>[]>,
+      type: Object as PropType<BBTableSectionDataSource<Issue>[]>,
     },
     mode: {
       default: "ALL",
@@ -227,27 +227,27 @@ export default {
       dataSource: [],
     });
 
-    const activeEnvironmentName = function (task: Task) {
-      const id = activeEnvironmentId(task);
+    const activeEnvironmentName = function (issue: Issue) {
+      const id = activeEnvironmentId(issue);
       if (id) {
         return store.getters["environment/environmentById"](id).name;
       }
       return "";
     };
 
-    const activeDatabaseName = function (task: Task) {
-      return store.getters["database/databaseById"](activeDatabaseId(task))
+    const activeDatabaseName = function (issue: Issue) {
+      return store.getters["database/databaseById"](activeDatabaseId(issue))
         .name;
     };
 
     const router = useRouter();
 
-    const stageList = function (task: Task): BBStep[] {
-      return task.stageList.map((stage) => {
+    const stageList = function (issue: Issue): BBStep[] {
+      return issue.stageList.map((stage) => {
         let stepStatus: BBStepStatus = "PENDING";
         switch (stage.status) {
           case "PENDING":
-            if (activeStage(task).id === stage.id) {
+            if (activeStage(issue).id === stage.id) {
               stepStatus = "PENDING_ACTIVE";
             } else {
               stepStatus = "PENDING";
@@ -270,15 +270,15 @@ export default {
           title: stage.name,
           status: stepStatus,
           link: (): string => {
-            return `/task/${task.id}`;
+            return `/issue/${issue.id}`;
           },
         };
       });
     };
 
-    const clickTask = function (section: number, row: number) {
-      const task = props.taskSectionList[section].list[row];
-      router.push(`/task/${taskSlug(task.name, task.id)}`);
+    const clickIssue = function (section: number, row: number) {
+      const issue = props.issueSectionList[section].list[row];
+      router.push(`/issue/${issueSlug(issue.name, issue.id)}`);
     };
 
     return {
@@ -288,7 +288,7 @@ export default {
       activeDatabaseName,
       stageList,
       activeStage,
-      clickTask,
+      clickIssue,
     };
   },
 };

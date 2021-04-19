@@ -7,7 +7,7 @@ import configureMember from "./member";
 import configureActivity from "./activity";
 import configureMessage from "./message";
 import configureBookmark from "./bookmark";
-import configureTask from "./task";
+import configureIssue from "./issue";
 import configureProject from "./project";
 import configureProjectMember from "./projectMember";
 import configureEnvironment from "./environment";
@@ -51,8 +51,8 @@ export default function routes() {
   // ProjectMember
   configureProjectMember(this);
 
-  // Task
-  configureTask(this);
+  // Issue
+  configureIssue(this);
 
   // Environment
   configureEnvironment(this);

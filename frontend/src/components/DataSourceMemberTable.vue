@@ -64,10 +64,10 @@
         </BBTableCell>
         <BBTableCell>
           <router-link
-            v-if="member.taskId"
-            :to="`/task/${member.taskId}`"
+            v-if="member.issueId"
+            :to="`/issue/${member.issueId}`"
             class="normal-link"
-            >task/{{ member.taskId }}
+            >issue/{{ member.issueId }}
           </router-link>
         </BBTableCell>
         <BBTableCell>
@@ -109,7 +109,7 @@ const columnList = [
     title: "User",
   },
   {
-    title: "Requested task",
+    title: "Requested issue",
   },
   {
     title: "Added time",

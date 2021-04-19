@@ -58,7 +58,7 @@
     :okText="'Do not show again'"
     :cancelText="'Dismiss'"
     :title="'How to setup \'Environment\' ?'"
-    :description="'Each environment in Bytebase maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment and most tasks also require specifying an environment first.'"
+    :description="'Each environment in Bytebase maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment and most issues also require specifying an environment first.'"
     @ok="
       () => {
         doDismissGuide();

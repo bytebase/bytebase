@@ -6,21 +6,21 @@ import {
   Instance,
   Principal,
   StageType,
-  Task,
+  Issue,
   DEFAULT_PROJECT_ID,
   ALL_DATABASE_NAME,
-  TaskNew,
-  TaskStatus,
+  IssueNew,
+  IssueStatus,
   StageNew,
   StageStatus,
   StageId,
   DatabaseId,
   ProjectId,
   PrincipalId,
-  TaskId,
+  IssueId,
   StepStatus,
 } from "../../types";
-import { databaseSlug, taskSlug } from "../../utils";
+import { databaseSlug, issueSlug } from "../../utils";
 
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
@@ -178,12 +178,12 @@ const workspacesSeeder = (server: any) => {
     }).models[0]
   );
 
-  // Task
-  let task = server.create("task", {
+  // Issue
+  let issue = server.create("issue", {
     type: "bytebase.general",
     name: "Hello, World!",
     description:
-      "Welcome to Bytebase, this is the task interface where DBAs and developers collaborate on database management tasks such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this task by clicking the star icon on the top of this page.",
+      "Welcome to Bytebase, this is the issue interface where DBAs and developers collaborate on database management issues such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this issue by clicking the star icon on the top of this page.",
     sql:
       "SELECT 'Welcome'\nFROM engineering\nWHERE role IN ('DBA', 'Developer') AND taste = 'Good';",
     creatorId: ws1Dev1.id,
@@ -195,8 +195,8 @@ const workspacesSeeder = (server: any) => {
   });
 
   const createdActivity = server.create("activity", {
-    actionType: "bytebase.task.create",
-    containerId: task.id,
+    actionType: "bytebase.issue.create",
+    containerId: issue.id,
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     workspace: workspace1,
@@ -205,27 +205,27 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.task.comment",
-        containerId: task.id,
+        type: "bb.msg.issue.comment",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws1Owner.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           commentId: createdActivity.id,
         },
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.status.update",
-        containerId: task.id,
+        type: "bb.msg.issue.status.update",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws1Owner.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           oldStatus: "OPEN",
           newStatus: "DONE",
         },
@@ -236,27 +236,27 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.task.comment",
-        containerId: task.id,
+        type: "bb.msg.issue.comment",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws1DBA.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           commentId: createdActivity.id,
         },
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.status.update",
-        containerId: task.id,
+        type: "bb.msg.issue.status.update",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws1DBA.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           oldStatus: "OPEN",
           newStatus: "CANCELED",
         },
@@ -267,27 +267,27 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.task.comment",
-        containerId: task.id,
+        type: "bb.msg.issue.comment",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws1Dev1.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           commentId: createdActivity.id,
         },
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.status.update",
-        containerId: task.id,
+        type: "bb.msg.issue.status.update",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws1Dev1.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           oldStatus: "OPEN",
           newStatus: "DONE",
         },
@@ -298,26 +298,26 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.task.comment",
-        containerId: task.id,
+        type: "bb.msg.issue.comment",
+        containerId: issue.id,
         creatorId: ws2DBA.id,
         receiverId: ws2Dev.id,
         workspace: workspace2,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           commentId: createdActivity.id,
         },
       });
     } else {
       server.create("message", {
-        type: "bb.msg.task.status.update",
-        containerId: task.id,
+        type: "bb.msg.issue.status.update",
+        containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
         receiverId: ws2Dev.id,
         workspace: workspace1,
         payload: {
-          taskName: faker.fake("{{lorem.sentence}}"),
+          issueName: faker.fake("{{lorem.sentence}}"),
           oldStatus: "OPEN",
           newStatus: "DONE",
         },
@@ -328,8 +328,8 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 3; i++) {
     const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {
-      actionType: "bytebase.task.comment.create",
-      containerId: task.id,
+      actionType: "bytebase.issue.comment.create",
+      containerId: issue.id,
       creatorId: user.id,
       updaterId: user.id,
       comment: faker.fake("{{lorem.paragraph}}"),
@@ -346,7 +346,7 @@ const workspacesSeeder = (server: any) => {
     "history",
   ];
 
-  task = server.create("task", {
+  issue = server.create("issue", {
     type: "bytebase.database.create",
     name: `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`,
     creatorId: ws1Dev1.id,
@@ -369,7 +369,7 @@ const workspacesSeeder = (server: any) => {
     type: "bytebase.stage.database.create",
     status: "PENDING",
     databaseId: databaseList1[1].id,
-    task,
+    issue,
     workspace: workspace1,
   });
 
@@ -379,14 +379,14 @@ const workspacesSeeder = (server: any) => {
     name: "Waiting approval",
     type: "bytebase.step.approve",
     status: "PENDING",
-    task,
+    issue,
     stage,
     workspace: workspace1,
   });
 
   server.create("activity", {
-    actionType: "bytebase.task.create",
-    containerId: task.id,
+    actionType: "bytebase.issue.create",
+    containerId: issue.id,
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     workspace: workspace1,
@@ -395,8 +395,8 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 3; i++) {
     const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {
-      actionType: "bytebase.task.comment.create",
-      containerId: task.id,
+      actionType: "bytebase.issue.comment.create",
+      containerId: issue.id,
       creatorId: user.id,
       updaterId: user.id,
       comment: faker.fake("{{lorem.paragraph}}"),
@@ -408,7 +408,7 @@ const workspacesSeeder = (server: any) => {
     title: string;
     sql: string;
   };
-  const randomUpdateSchemaTaskName = (): SQLData => {
+  const randomUpdateSchemaIssueName = (): SQLData => {
     const tableName =
       tableNameList[Math.floor(Math.random() * tableNameList.length)];
     const list: SQLData[] = [
@@ -450,42 +450,42 @@ const workspacesSeeder = (server: any) => {
   };
 
   const statusSetList: {
-    taskStatus: TaskStatus;
+    issueStatus: IssueStatus;
     stageStatusList: StageStatus[];
     stepStatusList: StepStatus[];
   }[] = [
     {
-      taskStatus: "OPEN",
+      issueStatus: "OPEN",
       stageStatusList: ["PENDING"],
       stepStatusList: ["PENDING"],
     },
     {
-      taskStatus: "OPEN",
+      issueStatus: "OPEN",
       stageStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
       stepStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
     },
     {
-      taskStatus: "DONE",
+      issueStatus: "DONE",
       stageStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
       stepStatusList: ["DONE", "CANCELED", "DONE", "DONE"],
     },
     {
-      taskStatus: "OPEN",
+      issueStatus: "OPEN",
       stageStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
       stepStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
     },
     {
-      taskStatus: "CANCELED",
+      issueStatus: "CANCELED",
       stageStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
       stepStatusList: ["DONE", "CANCELED", "DONE", "PENDING"],
     },
   ];
 
   for (let i = 0; i < 3; i++) {
-    const data = randomUpdateSchemaTaskName();
+    const data = randomUpdateSchemaIssueName();
     const statusSet =
       statusSetList[Math.floor(Math.random() * statusSetList.length)];
-    task = server.create("task", {
+    issue = server.create("issue", {
       name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev1.id,
@@ -493,7 +493,7 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1Owner.id,
       sql: data.sql,
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-      status: statusSet.taskStatus,
+      status: statusSet.issueStatus,
       project: projectList1[i],
       workspace: workspace1,
     });
@@ -501,7 +501,7 @@ const workspacesSeeder = (server: any) => {
     createUpdateSchemaStage(
       server,
       workspace1.id,
-      task.id,
+      issue.id,
       ws1Dev1.id,
       environmentList1,
       databaseList1,
@@ -510,8 +510,8 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("activity", {
-      actionType: "bytebase.task.create",
-      containerId: task.id,
+      actionType: "bytebase.issue.create",
+      containerId: issue.id,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       workspace: workspace1,
@@ -520,8 +520,8 @@ const workspacesSeeder = (server: any) => {
     for (let i = 0; i < 3; i++) {
       const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
-        actionType: "bytebase.task.comment.create",
-        containerId: task.id,
+        actionType: "bytebase.issue.comment.create",
+        containerId: issue.id,
         creatorId: user.id,
         updaterId: user.id,
         comment: faker.fake("{{lorem.paragraph}}"),
@@ -531,10 +531,10 @@ const workspacesSeeder = (server: any) => {
   }
 
   for (let i = 0; i < 3; i++) {
-    const data = randomUpdateSchemaTaskName();
+    const data = randomUpdateSchemaIssueName();
     const statusSet =
       statusSetList[Math.floor(Math.random() * statusSetList.length)];
-    task = server.create("task", {
+    issue = server.create("issue", {
       name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Owner.id,
@@ -542,7 +542,7 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Dev2.id],
-      status: statusSet.taskStatus,
+      status: statusSet.issueStatus,
       project: projectList1[i],
       workspace: workspace1,
     });
@@ -550,7 +550,7 @@ const workspacesSeeder = (server: any) => {
     createUpdateSchemaStage(
       server,
       workspace1.id,
-      task.id,
+      issue.id,
       ws1Owner.id,
       environmentList1,
       databaseList1,
@@ -559,8 +559,8 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("activity", {
-      actionType: "bytebase.task.create",
-      containerId: task.id,
+      actionType: "bytebase.issue.create",
+      containerId: issue.id,
       creatorId: ws1Owner.id,
       updaterId: ws1Owner.id,
       workspace: workspace1,
@@ -569,8 +569,8 @@ const workspacesSeeder = (server: any) => {
     for (let i = 0; i < 3; i++) {
       const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
-        actionType: "bytebase.task.comment.create",
-        containerId: task.id,
+        actionType: "bytebase.issue.comment.create",
+        containerId: issue.id,
         creatorId: user.id,
         updaterId: user.id,
         comment: faker.fake("{{lorem.paragraph}}"),
@@ -580,10 +580,10 @@ const workspacesSeeder = (server: any) => {
   }
 
   for (let i = 0; i < 3; i++) {
-    const data = randomUpdateSchemaTaskName();
+    const data = randomUpdateSchemaIssueName();
     const statusSet =
       statusSetList[Math.floor(Math.random() * statusSetList.length)];
-    task = server.create("task", {
+    issue = server.create("issue", {
       name: data.title,
       type: "bytebase.database.schema.update",
       creatorId: ws1Dev2.id,
@@ -591,7 +591,7 @@ const workspacesSeeder = (server: any) => {
       assigneeId: ws1DBA.id,
       sql: data.sql,
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
-      status: statusSet.taskStatus,
+      status: statusSet.issueStatus,
       project: projectList1[i],
       workspace: workspace1,
     });
@@ -599,7 +599,7 @@ const workspacesSeeder = (server: any) => {
     createUpdateSchemaStage(
       server,
       workspace1.id,
-      task.id,
+      issue.id,
       ws1Dev2.id,
       environmentList1,
       databaseList1,
@@ -608,8 +608,8 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("activity", {
-      actionType: "bytebase.task.create",
-      containerId: task.id,
+      actionType: "bytebase.issue.create",
+      containerId: issue.id,
       creatorId: ws1Dev2.id,
       updaterId: ws1Dev2.id,
       workspace: workspace1,
@@ -618,8 +618,8 @@ const workspacesSeeder = (server: any) => {
     for (let i = 0; i < 3; i++) {
       const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
-        actionType: "bytebase.task.comment.create",
-        containerId: task.id,
+        actionType: "bytebase.issue.comment.create",
+        containerId: issue.id,
         creatorId: user.id,
         updaterId: user.id,
         comment: faker.fake("{{lorem.paragraph}}"),
@@ -628,17 +628,17 @@ const workspacesSeeder = (server: any) => {
     }
   }
 
-  const data = randomUpdateSchemaTaskName();
+  const data = randomUpdateSchemaIssueName();
   const statusSet =
     statusSetList[Math.floor(Math.random() * statusSetList.length)];
-  task = server.create("task", {
+  issue = server.create("issue", {
     name: data.title,
     type: "bytebase.database.schema.update",
     creatorId: ws2Dev.id,
     updaterId: ws2Dev.id,
     assigneeId: ws2DBA.id,
     sql: data.sql,
-    status: statusSet.taskStatus,
+    status: statusSet.issueStatus,
     project: projectList2[0],
     workspace: workspace2,
   });
@@ -646,7 +646,7 @@ const workspacesSeeder = (server: any) => {
   createUpdateSchemaStage(
     server,
     workspace2.id,
-    task.id,
+    issue.id,
     ws2Dev.id,
     environmentList2,
     databaseList2,
@@ -655,8 +655,8 @@ const workspacesSeeder = (server: any) => {
   );
 
   server.create("activity", {
-    actionType: "bytebase.task.create",
-    containerId: task.id,
+    actionType: "bytebase.issue.create",
+    containerId: issue.id,
     creatorId: ws2Dev.id,
     updaterId: ws2Dev.id,
     workspace: workspace2,
@@ -676,14 +676,14 @@ const workspacesSeeder = (server: any) => {
 
   {
     // Workspace 2
-    // Task
-    const task = server.schema.tasks.findBy({
+    // Issue
+    const issue = server.schema.issues.findBy({
       workspaceId: workspace2.id,
     });
     server.create("bookmark", {
       workspace: workspace2,
-      name: task.name,
-      link: `/task/${taskSlug(task.name, task.id)}`,
+      name: issue.name,
+      link: `/issue/${issueSlug(issue.name, issue.id)}`,
       creatorId: ws2DBA.id,
     });
   }
@@ -766,7 +766,7 @@ const createInstanceList = (
 const createUpdateSchemaStage = (
   server: any,
   workspaceId: string,
-  taskId: TaskId,
+  issueId: IssueId,
   creatorId: PrincipalId,
   environmentList: Environment[],
   databaseList: Database[],
@@ -781,7 +781,7 @@ const createUpdateSchemaStage = (
       type: "bytebase.stage.schema.update",
       status: stageStatusList[i],
       databaseId: databaseList[i].id,
-      taskId,
+      issueId,
       workspaceId,
     });
 
@@ -791,7 +791,7 @@ const createUpdateSchemaStage = (
       name: "Waiting approval",
       type: "bytebase.step.approve",
       status: stepStatusList[i],
-      taskId,
+      issueId,
       stage,
       workspaceId,
     });
@@ -802,7 +802,7 @@ const createUpdateSchemaStage = (
       name: `Update ${databaseList[i].name} schema`,
       type: "bytebase.step.schema.udpate",
       status: stepStatusList[i],
-      taskId,
+      issueId,
       stage,
       workspaceId,
     });

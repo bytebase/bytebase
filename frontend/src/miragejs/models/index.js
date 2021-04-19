@@ -25,7 +25,7 @@ export default {
     message: hasMany(),
     project: hasMany(),
     projectMember: hasMany(),
-    task: hasMany(),
+    issue: hasMany(),
     stage: hasMany(),
     step: hasMany(),
     environment: hasMany(),
@@ -65,7 +65,7 @@ export default {
     workspace: belongsTo(),
     database: hasMany(),
     projectMember: hasMany(),
-    task: hasMany(),
+    issue: hasMany(),
   }),
   projectNew: Model,
   projectPatch: Model,
@@ -78,21 +78,21 @@ export default {
   projectMemberNew: Model,
   projectMemberPatch: Model,
 
-  // Task
-  task: Model.extend({
+  // Issue
+  issue: Model.extend({
     workspace: belongsTo(),
     project: belongsTo(),
     stage: hasMany(),
     step: hasMany(),
   }),
-  taskNew: Model,
-  taskPatch: Model,
-  taskStatusPatch: Model,
+  issueNew: Model,
+  issuePatch: Model,
+  issueStatusPatch: Model,
 
   // Stage
   stage: Model.extend({
     workspace: belongsTo(),
-    task: belongsTo(),
+    issue: belongsTo(),
     database: belongsTo(),
   }),
   stagePatch: Model,
@@ -101,7 +101,7 @@ export default {
   // Step
   step: Model.extend({
     workspace: belongsTo(),
-    task: belongsTo(),
+    issue: belongsTo(),
     stage: belongsTo(),
   }),
   stepPatch: Model,

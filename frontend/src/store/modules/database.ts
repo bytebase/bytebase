@@ -183,7 +183,7 @@ const actions = {
     // Unlike other list fetch, we don't fetch the data source here.
     // As the sole purpose for the fetch here is to prepare the database info
     // itself (in particular the environment name, database name and project name)
-    // to be displayed in the task list on the home page.
+    // to be displayed in the issue list on the home page.
     // The data source contains sensitive connection credentials so we shouldn't
     // return it unconditionally.
     const data = (

@@ -4,10 +4,10 @@
       <div class="flex flex-col">
         <div class="flex items-center">
           <div>
-            <TaskStatusIcon
+            <IssueStatusIcon
               v-if="!$props.new"
-              :taskStatus="task.status"
-              :stageStatus="activeStage(task).status"
+              :issueStatus="issue.status"
+              :stageStatus="activeStage(issue).status"
             />
           </div>
           <BBTextField
@@ -17,21 +17,21 @@
             :focusOnMount="$props.new"
             :bordered="false"
             :value="state.name"
-            :placeholder="'Task name'"
+            :placeholder="'Issue name'"
             @end-editing="(text) => trySaveName(text)"
           />
         </div>
         <div v-if="!$props.new">
           <p class="text-sm text-control-light">
-            #{{ task.id }} opened by
+            #{{ issue.id }} opened by
             <router-link
-              :to="`/u/${task.creator.id}`"
+              :to="`/u/${issue.creator.id}`"
               class="font-medium text-control hover:underline"
-              >{{ task.creator.name }}</router-link
+              >{{ issue.creator.name }}</router-link
             >
             at
             <span href="#" class="font-medium text-control">{{
-              moment(task.updatedTs).format("LLL")
+              moment(issue.updatedTs).format("LLL")
             }}</span>
           </p>
         </div>
@@ -45,9 +45,9 @@
 
 <script lang="ts">
 import { reactive, watch, PropType } from "vue";
-import TaskStatusIcon from "../components/TaskStatusIcon.vue";
+import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import { activeStage } from "../utils";
-import { Task } from "../types";
+import { Issue } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -55,12 +55,12 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskHighlightPanel",
+  name: "IssueHighlightPanel",
   emits: ["update-name"],
   props: {
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
     new: {
       required: true,
@@ -71,23 +71,23 @@ export default {
       type: Boolean,
     },
   },
-  components: { TaskStatusIcon },
+  components: { IssueStatusIcon },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       editing: false,
-      name: props.task.name,
+      name: props.issue.name,
     });
 
     watch(
-      () => props.task,
-      (curTask, _) => {
-        state.name = curTask.name;
+      () => props.issue,
+      (curIssue, _) => {
+        state.name = curIssue.name;
       }
     );
 
     const trySaveName = (text: string) => {
       state.name = text;
-      if (text != props.task.name) {
+      if (text != props.issue.name) {
         emit("update-name", state.name);
       }
     };

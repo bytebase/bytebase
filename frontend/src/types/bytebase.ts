@@ -21,7 +21,7 @@ export type ResourceType =
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
-  | "TASK"
+  | "ISSUE"
   | "STAGE"
   | "STEP"
   | "ACTIVITY"
@@ -42,7 +42,7 @@ export const unknown = (
   | Instance
   | Database
   | DataSource
-  | Task
+  | Issue
   | Stage
   | Step
   | Activity
@@ -157,14 +157,14 @@ export const unknown = (
     type: "RO",
   };
 
-  const UNKNOWN_TASK: Task = {
+  const UNKNOWN_ISSUE: Issue = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     project: UNKNOWN_PROJECT,
-    name: "<<Unknown task>>",
+    name: "<<Unknown issue>>",
     status: "OPEN",
     type: "bytebase.general",
     description: "",
@@ -182,14 +182,14 @@ export const unknown = (
     name: "<<Unknown stage>>",
     type: "bytebase.stage.unknown",
     status: "PENDING",
-    task: UNKNOWN_TASK,
+    issue: UNKNOWN_ISSUE,
     database: UNKNOWN_DATABASE,
     stepList: [],
   };
 
   const UNKNOWN_STEP: Step = {
     id: UNKNOWN_ID,
-    task: UNKNOWN_TASK,
+    issue: UNKNOWN_ISSUE,
     stage: UNKNOWN_STAGE,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -205,7 +205,7 @@ export const unknown = (
     containerId: UNKNOWN_ID,
     createdTs: 0,
     updatedTs: 0,
-    actionType: "bytebase.task.create",
+    actionType: "bytebase.issue.create",
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     comment: "<<Unknown comment>>",
@@ -218,7 +218,7 @@ export const unknown = (
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
-    type: "bb.msg.task.assign",
+    type: "bb.msg.issue.assign",
     status: "DELIVERED",
     description: "",
     receiver: UNKNOWN_PRINCIPAL,
@@ -255,8 +255,8 @@ export const unknown = (
       return UNKNOWN_DATABASE;
     case "DATA_SOURCE":
       return UNKNOWN_DATA_SOURCE;
-    case "TASK":
-      return UNKNOWN_TASK;
+    case "ISSUE":
+      return UNKNOWN_ISSUE;
     case "STAGE":
       return UNKNOWN_STAGE;
     case "STEP":
@@ -279,14 +279,14 @@ export const FINAL_STAGE: Stage = {
   name: "Final stage",
   type: "bytebase.stage.final",
   status: "PENDING",
-  task: unknown("TASK") as Task,
+  issue: unknown("ISSUE") as Issue,
   database: unknown("DATABASE") as Database,
   stepList: [],
 };
 
 export const FINAL_STEP: Step = {
   id: "0",
-  task: unknown("TASK") as Task,
+  issue: unknown("ISSUE") as Issue,
   stage: FINAL_STAGE,
   creator: unknown("PRINCIPAL") as Principal,
   createdTs: 0,
@@ -313,7 +313,7 @@ export type BookmarkId = string;
 
 export type ProjectId = string;
 
-export type TaskId = string;
+export type IssueId = string;
 
 export type StageId = string;
 
@@ -335,9 +335,9 @@ export type CommandId = string;
 export type CommandRegisterId = string;
 
 // This references to the object id, which can be used as a container.
-// Currently, only task can be used a container.
+// Currently, only issue can be used a container.
 // The type is used by Activity and Message
-export type ContainerId = TaskId;
+export type ContainerId = IssueId;
 
 export type BatchUpdate = {
   updaterId: PrincipalId;
@@ -556,17 +556,17 @@ export type ProjectPatch = {
   key?: string;
 };
 
-// Task, Stage, Step are the backbones of execution.
+// Issue, Stage, Step are the backbones of execution.
 //
-// A TASK consists of multiple STAGES. A STAGE consists of multiple STEPS.
+// A ISSUE consists of multiple STAGES. A STAGE consists of multiple STEPS.
 //
 // Comparison with GitLab:
-// TASK = GitLab Pipeline
+// ISSUE = GitLab Pipeline
 // STAGE = GitLab Stage
 // STEP = GitLab Job
 //
 // Comparison with Octopus:
-// TASK = Octopus Lifecycle
+// ISSUE = Octopus Lifecycle
 // STAGE = Octopus Phase
 // STEP = Octopus Step
 
@@ -577,7 +577,7 @@ export type ProjectPatch = {
 /*
  An example
  
- An alter schema TASK
+ An alter schema ISSUE
   Dev STAGE (db_dev, env_dev)
     Change dev database schema
   
@@ -594,24 +594,27 @@ export type ProjectPatch = {
     Change prod database schema
 */
 
-// Task
-type TaskTypeGeneral = "bytebase.general";
+// Issue
+type IssueTypeGeneral = "bytebase.general";
 
-type TaskTypeDatabase =
+type IssueTypeDatabase =
   | "bytebase.database.create"
   | "bytebase.database.grant"
   | "bytebase.database.schema.update";
 
-type TaskTypeDataSource = "bytebase.data-source.request";
+type IssueTypeDataSource = "bytebase.data-source.request";
 
-export type TaskType = TaskTypeGeneral | TaskTypeDatabase | TaskTypeDataSource;
+export type IssueType =
+  | IssueTypeGeneral
+  | IssueTypeDatabase
+  | IssueTypeDataSource;
 
-export type TaskStatus = "OPEN" | "DONE" | "CANCELED";
+export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 
-export type TaskPayload = { [key: string]: any };
+export type IssuePayload = { [key: string]: any };
 
-export type Task = {
-  id: TaskId;
+export type Issue = {
+  id: IssueId;
 
   // Related fields
   project: Project;
@@ -625,17 +628,17 @@ export type Task = {
 
   // Domain specific fields
   name: string;
-  status: TaskStatus;
-  type: TaskType;
+  status: IssueStatus;
+  type: IssueType;
   description: string;
   assignee?: Principal;
   subscriberList: Principal[];
   sql?: string;
   rollbackSql?: string;
-  payload: TaskPayload;
+  payload: IssuePayload;
 };
 
-export type TaskNew = {
+export type IssueNew = {
   // Related fields
   stageList: StageNew[];
 
@@ -644,16 +647,16 @@ export type TaskNew = {
 
   // Domain specific fields
   name: string;
-  type: TaskType;
+  type: IssueType;
   description: string;
   assigneeId?: PrincipalId;
   subscriberIdList: PrincipalId[];
   sql?: string;
   rollbackSql?: string;
-  payload: TaskPayload;
+  payload: IssuePayload;
 };
 
-export type TaskPatch = {
+export type IssuePatch = {
   // Related fields
   projectId?: ProjectId;
 
@@ -667,29 +670,29 @@ export type TaskPatch = {
   sql?: string;
   rollbackSql?: string;
   assigneeId?: PrincipalId;
-  payload?: TaskPayload;
+  payload?: IssuePayload;
 };
 
-export type TaskStatusPatch = {
+export type IssueStatusPatch = {
   // Standard fields
   updaterId: PrincipalId;
 
   // Domain specific fields
-  status: TaskStatus;
+  status: IssueStatus;
   comment?: string;
 };
 
-export type TaskStatusTransitionType = "NEXT" | "RESOLVE" | "ABORT" | "REOPEN";
+export type IssueStatusTransitionType = "NEXT" | "RESOLVE" | "ABORT" | "REOPEN";
 
-export interface TaskStatusTransition {
-  type: TaskStatusTransitionType;
+export interface IssueStatusTransition {
+  type: IssueStatusTransitionType;
   actionName: string;
-  to: TaskStatus;
+  to: IssueStatus;
 }
 
-export const TASK_STATUS_TRANSITION_LIST: Map<
-  TaskStatusTransitionType,
-  TaskStatusTransition
+export const ISSUE_STATUS_TRANSITION_LIST: Map<
+  IssueStatusTransitionType,
+  IssueStatusTransition
 > = new Map([
   [
     "NEXT",
@@ -728,8 +731,8 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
 // The first transition in the list is the primary action and the rests are
 // the normal action. For now there are at most 1 primary 1 normal action.
 export const CREATOR_APPLICABLE_ACTION_LIST: Map<
-  TaskStatus,
-  TaskStatusTransitionType[]
+  IssueStatus,
+  IssueStatusTransitionType[]
 > = new Map([
   ["OPEN", ["ABORT"]],
   ["DONE", ["REOPEN"]],
@@ -737,8 +740,8 @@ export const CREATOR_APPLICABLE_ACTION_LIST: Map<
 ]);
 
 export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
-  TaskStatus,
-  TaskStatusTransitionType[]
+  IssueStatus,
+  IssueStatusTransitionType[]
 > = new Map([
   ["OPEN", ["NEXT", "RESOLVE", "ABORT"]],
   ["DONE", ["REOPEN"]],
@@ -768,7 +771,7 @@ export type Stage = {
 
   // Related fields
   stepList: Step[];
-  task: Task;
+  issue: Issue;
   database: Database;
 
   // Standard fields
@@ -872,7 +875,7 @@ export type Step = {
   id: StepId;
 
   // Related fields
-  task: Task;
+  issue: Issue;
   stage: Stage;
 
   // Standard fields
@@ -903,16 +906,16 @@ export type StepPatch = {
 };
 
 // Activity
-export type TaskActionType =
-  | "bytebase.task.create"
-  | "bytebase.task.comment.create"
-  | "bytebase.task.field.update"
-  | "bytebase.task.status.update"
-  | "bytebase.task.stage.status.update";
+export type IssueActionType =
+  | "bytebase.issue.create"
+  | "bytebase.issue.comment.create"
+  | "bytebase.issue.field.update"
+  | "bytebase.issue.status.update"
+  | "bytebase.issue.stage.status.update";
 
-export type ActionType = TaskActionType;
+export type ActionType = IssueActionType;
 
-export type ActionTaskFieldUpdatePayload = {
+export type ActionIssueFieldUpdatePayload = {
   changeList: {
     fieldId: FieldId;
     oldValue?: string;
@@ -920,14 +923,14 @@ export type ActionTaskFieldUpdatePayload = {
   }[];
 };
 
-export type ActionPayloadType = ActionTaskFieldUpdatePayload;
+export type ActionPayloadType = ActionIssueFieldUpdatePayload;
 
 export type Activity = {
   id: ActivityId;
 
   // Related fields
   // The object where this activity belongs
-  // e.g if actionType is "bytebase.task.xxx", then this field refers to the corresponding task's id.
+  // e.g if actionType is "bytebase.issue.xxx", then this field refers to the corresponding issue's id.
   containerId: ContainerId;
 
   // Standard fields
@@ -991,17 +994,17 @@ export type InstanceMessageType =
   | "bb.msg.instance.archive"
   | "bb.msg.instance.restore";
 
-export type TaskMessageType =
-  | "bb.msg.task.assign"
-  | "bb.msg.task.status.update"
-  | "bb.msg.task.stage.status.update"
-  | "bb.msg.task.comment";
+export type IssueMessageType =
+  | "bb.msg.issue.assign"
+  | "bb.msg.issue.status.update"
+  | "bb.msg.issue.stage.status.update"
+  | "bb.msg.issue.comment";
 
 export type MessageType =
   | MemberMessageType
   | EnvironmentMessageType
   | InstanceMessageType
-  | TaskMessageType;
+  | IssueMessageType;
 
 export type MemberMessagePayload = {
   principalId: PrincipalId;
@@ -1048,20 +1051,20 @@ export type InstanceMessagePaylaod = {
   instanceName: string;
 };
 
-export type TaskAssignMessagePayload = {
-  taskName: string;
+export type IssueAssignMessagePayload = {
+  issueName: string;
   oldAssigneeId: PrincipalId;
   newAssigneeId: PrincipalId;
 };
 
-export type TaskUpdateStatusMessagePayload = {
-  taskName: string;
-  oldStatus: TaskStatus;
-  newStatus: TaskStatus;
+export type IssueUpdateStatusMessagePayload = {
+  issueName: string;
+  oldStatus: IssueStatus;
+  newStatus: IssueStatus;
 };
 
-export type TaskCommentMessagePayload = {
-  taskName: string;
+export type IssueCommentMessagePayload = {
+  issueName: string;
   commentId: ActivityId;
 };
 
@@ -1070,9 +1073,9 @@ export type MessagePayload =
   | EnvironmentMessagePayload
   | EnvironmentUpdateMessagePayload
   | InstanceMessagePaylaod
-  | TaskAssignMessagePayload
-  | TaskUpdateStatusMessagePayload
-  | TaskCommentMessagePayload;
+  | IssueAssignMessagePayload
+  | IssueUpdateStatusMessagePayload
+  | IssueCommentMessagePayload;
 
 export type MessageStatus = "DELIVERED" | "CONSUMED";
 
@@ -1235,7 +1238,7 @@ export type DatabaseNew = {
 
   // Domain specific fields
   name: string;
-  taskId?: TaskId;
+  issueId?: IssueId;
 };
 
 export type DatabasePatch = {
@@ -1309,13 +1312,13 @@ export type DataSourceMember = {
 
   // Domain specific fields
   principal: Principal;
-  taskId?: TaskId;
+  issueId?: IssueId;
 };
 
 export type DataSourceMemberNew = {
   // Domain specific fields
   principalId: PrincipalId;
-  taskId?: TaskId;
+  issueId?: IssueId;
 };
 
 // Auth
@@ -1342,7 +1345,7 @@ export type FeatureType =
   // Support Owner and DBA role at the workspace level
   | "bytebase.admin"
   // Support DBA workflow, including
-  // 1. Developers can't create database directly, they need to do this via a request db task.
+  // 1. Developers can't create database directly, they need to do this via a request db issue.
   // 2. Allow developers to submit troubleshooting ticket.
   | "bytebase.dba-workflow"
   // Support defining extra data source for a database and exposing the related data source UI.
@@ -1358,7 +1361,7 @@ export enum PlanType {
 export type RouterSlug = {
   environmentSlug?: string;
   projectSlug?: string;
-  taskSlug?: string;
+  issueSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
   dataSourceSlug?: string;
@@ -1436,19 +1439,19 @@ export interface BookmarkState {
 
 export interface ActivityState {
   activityListByUser: Map<UserId, Activity[]>;
-  activityListByTask: Map<TaskId, Activity[]>;
+  activityListByIssue: Map<IssueId, Activity[]>;
 }
 
 export interface MessageState {
   messageListByUser: Map<UserId, Message[]>;
 }
 
-export interface TaskState {
-  // [NOTE] This is only used by the task list view. We don't
-  // update the entry here if any task is changed (the updated task only gets updated in taskById).
-  // Instead, we always fetch the list every time we display the task list view.
-  taskListByUser: Map<UserId, Task[]>;
-  taskById: Map<TaskId, Task>;
+export interface IssueState {
+  // [NOTE] This is only used by the issue list view. We don't
+  // update the entry here if any issue is changed (the updated issue only gets updated in issueById).
+  // Instead, we always fetch the list every time we display the issue list view.
+  issueListByUser: Map<UserId, Issue[]>;
+  issueById: Map<IssueId, Issue>;
 }
 
 export interface StageState {}

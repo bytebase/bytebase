@@ -3,10 +3,10 @@ import {
   ResourceObject,
   StepState,
   Step,
-  Task,
+  Issue,
   Stage,
   unknown,
-  TaskId,
+  IssueId,
   StageId,
 } from "../../types";
 
@@ -15,7 +15,7 @@ const state: () => StepState = () => ({});
 function convertPartial(
   step: ResourceObject,
   rootGetters: any
-): Omit<Step, "task" | "stage"> {
+): Omit<Step, "issue" | "stage"> {
   const creator = rootGetters["principal/principalById"](
     step.attributes.creatorId
   );
@@ -26,7 +26,7 @@ function convertPartial(
   return {
     ...(step.attributes as Omit<
       Step,
-      "id" | "creator" | "updater" | "task" | "stage"
+      "id" | "creator" | "updater" | "issue" | "stage"
     >),
     id: step.id,
     creator,
@@ -35,11 +35,11 @@ function convertPartial(
 }
 
 function convert(step: ResourceObject, rootGetters: any): Step {
-  const task: Task = rootGetters["task/taskById"](step.attributes.taskId);
+  const issue: Issue = rootGetters["issue/issueById"](step.attributes.issueId);
   const stage: Stage = rootGetters["stage/stageById"](step.attributes.stageId);
   return {
     ...convertPartial(step, rootGetters),
-    task,
+    issue,
     stage,
   };
 }
@@ -51,10 +51,10 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (step: ResourceObject): Step => {
-    // It's only called when task/stage tries to convert themselves, so we don't have a task/stage yet.
-    const taskId = step.attributes.taskId as TaskId;
-    let task: Task = unknown("TASK") as Task;
-    task.id = taskId;
+    // It's only called when issue/stage tries to convert themselves, so we don't have a issue/stage yet.
+    const issueId = step.attributes.issueId as IssueId;
+    let issue: Issue = unknown("ISSUE") as Issue;
+    issue.id = issueId;
 
     const stageId = step.attributes.stageId as StageId;
     let stage: Stage = unknown("STAGE") as Stage;
@@ -62,7 +62,7 @@ const getters = {
 
     return {
       ...convertPartial(step, rootGetters),
-      task,
+      issue,
       stage,
     };
   },

@@ -17,7 +17,7 @@
                 aria-hidden="true"
               ></span>
               <div class="relative flex items-start">
-                <template v-if="activity.actionType == 'bytebase.task.create'">
+                <template v-if="activity.actionType == 'bytebase.issue.create'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -39,7 +39,7 @@
                 </template>
                 <template
                   v-else-if="
-                    activity.actionType == 'bytebase.task.field.update'
+                    activity.actionType == 'bytebase.issue.field.update'
                   "
                 >
                   <div class="relative pl-0.5">
@@ -86,7 +86,7 @@
                           v-if="
                             activity.createdTs != activity.updatedTs &&
                             activity.actionType ==
-                              'bytebase.task.comment.create'
+                              'bytebase.issue.comment.create'
                           "
                         >
                           (edited
@@ -126,7 +126,7 @@
                         <button
                           v-if="
                             activity.actionType ==
-                            'bytebase.task.comment.create'
+                            'bytebase.issue.comment.create'
                           "
                           class="btn-icon"
                           @click.prevent="
@@ -297,14 +297,14 @@ import {
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
-  Task,
+  Issue,
   Activity,
-  ActionTaskFieldUpdatePayload,
+  ActionIssueFieldUpdatePayload,
   Environment,
   Principal,
 } from "../types";
 import { sizeToFit, stageName } from "../utils";
-import { fieldFromId, TaskTemplate, TaskBuiltinFieldId } from "../plugins";
+import { fieldFromId, IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -313,16 +313,16 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskActivityPanel",
+  name: "IssueActivityPanel",
   emits: ["update-subscriber-list"],
   props: {
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
-    taskTemplate: {
+    issueTemplate: {
       required: true,
-      type: Object as PropType<TaskTemplate>,
+      type: Object as PropType<IssueTemplate>,
     },
   },
   components: {},
@@ -370,12 +370,12 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareActivityList = () => {
-      store.dispatch("activity/fetchActivityListForTask", props.task.id);
+      store.dispatch("activity/fetchActivityListForIssue", props.issue.id);
     };
 
     watchEffect(prepareActivityList);
 
-    // The activity list and its anchor is not immediately available when the task shows up.
+    // The activity list and its anchor is not immediately available when the issue shows up.
     // Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
     // So we manually use scrollIntoView after rendering the activity list.
     nextTick(() => {
@@ -389,13 +389,15 @@ export default {
 
     // Need to use computed to make list reactive to activity list changes.
     const activityList = computed((): Activity[] => {
-      const list = store.getters["activity/activityListByTask"](props.task.id);
+      const list = store.getters["activity/activityListByIssue"](
+        props.issue.id
+      );
       return list.filter((activity: Activity) => {
-        if (activity.actionType == "bytebase.task.field.update") {
+        if (activity.actionType == "bytebase.issue.field.update") {
           let containUserVisibleChange = false;
-          for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
+          for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
             ?.changeList || []) {
-            if (update.fieldId != TaskBuiltinFieldId.SUBSCRIBER_LIST) {
+            if (update.fieldId != IssueBuiltinFieldId.SUBSCRIBER_LIST) {
               containUserVisibleChange = true;
               break;
             }
@@ -415,8 +417,8 @@ export default {
     const doCreateComment = () => {
       store
         .dispatch("activity/createActivity", {
-          actionType: "bytebase.task.comment.create",
-          containerId: props.task.id,
+          actionType: "bytebase.issue.comment.create",
+          containerId: props.issue.id,
           creatorId: currentUser.value.id,
           comment: newComment.value,
         })
@@ -425,16 +427,16 @@ export default {
           nextTick(() => sizeToFit(newCommentTextArea.value));
 
           // Because the user just added a comment and we assume she is interested in this
-          // task, and we add her to the subscriber list if she is not there
+          // issue, and we add her to the subscriber list if she is not there
           let isSubscribed = false;
-          for (const principal of props.task.subscriberList) {
+          for (const principal of props.issue.subscriberList) {
             if (principal.id == currentUser.value.id) {
               isSubscribed = true;
               break;
             }
           }
           if (!isSubscribed) {
-            const list = props.task.subscriberList.map((item: Principal) => {
+            const list = props.issue.subscriberList.map((item: Principal) => {
               return item.id;
             });
             list.push(currentUser.value.id);
@@ -482,32 +484,32 @@ export default {
 
     const actionSentence = (activity: Activity): string => {
       switch (activity.actionType) {
-        case "bytebase.task.create":
-          return "created task";
-        case "bytebase.task.comment.create":
+        case "bytebase.issue.create":
+          return "created issue";
+        case "bytebase.issue.comment.create":
           return "commented";
-        case "bytebase.task.field.update":
-        case "bytebase.task.status.update":
-        case "bytebase.task.stage.status.update": {
+        case "bytebase.issue.field.update":
+        case "bytebase.issue.status.update":
+        case "bytebase.issue.stage.status.update": {
           const updateInfoList: string[] = [];
-          for (const update of (activity.payload as ActionTaskFieldUpdatePayload)
+          for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
             ?.changeList || []) {
             let name = "Unknown Field";
             let oldValue = undefined;
             let newValue = undefined;
-            if (update.fieldId == TaskBuiltinFieldId.NAME) {
+            if (update.fieldId == IssueBuiltinFieldId.NAME) {
               name = "name";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.STATUS) {
+            } else if (update.fieldId == IssueBuiltinFieldId.STATUS) {
               name = "status";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.STAGE_STATUS) {
+            } else if (update.fieldId == IssueBuiltinFieldId.STAGE_STATUS) {
               name = "stage status";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.ASSIGNEE) {
+            } else if (update.fieldId == IssueBuiltinFieldId.ASSIGNEE) {
               name = "assignee";
               if (update.oldValue) {
                 oldValue = store.getters["principal/principalById"](
@@ -519,27 +521,27 @@ export default {
                   update.newValue
                 ).name;
               }
-            } else if (update.fieldId == TaskBuiltinFieldId.DESCRIPTION) {
+            } else if (update.fieldId == IssueBuiltinFieldId.DESCRIPTION) {
               name = "description";
             } else if (
-              update.fieldId.split(".")[0] == TaskBuiltinFieldId.STAGE
+              update.fieldId.split(".")[0] == IssueBuiltinFieldId.STAGE
             ) {
               const stageId = update.fieldId.split(".")[1];
-              name = stageName(props.task, stageId);
+              name = stageName(props.issue, stageId);
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.SQL) {
+            } else if (update.fieldId == IssueBuiltinFieldId.SQL) {
               name = "SQL";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.ROLLBACK_SQL) {
+            } else if (update.fieldId == IssueBuiltinFieldId.ROLLBACK_SQL) {
               name = "Rollback SQL";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == TaskBuiltinFieldId.SUBSCRIBER_LIST) {
+            } else if (update.fieldId == IssueBuiltinFieldId.SUBSCRIBER_LIST) {
               continue;
             } else {
-              const field = fieldFromId(props.taskTemplate, update.fieldId);
+              const field = fieldFromId(props.issueTemplate, update.fieldId);
               name = field.name;
               if (field.type === "String") {
                 oldValue = update.oldValue;

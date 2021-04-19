@@ -177,9 +177,9 @@ export default {
         );
 
         router.push({
-          name: "workspace.task.detail",
+          name: "workspace.issue.detail",
           params: {
-            taskSlug: "new",
+            issueSlug: "new",
           },
           query: {
             template: "bytebase.database.schema.update",

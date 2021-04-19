@@ -26,10 +26,10 @@ export default {
       store.dispatch("instance/fetchInstanceList"),
       // [TODO] Fetches all databases. This may cause performance issue if the entire fleet
       // has a lot of databases.
-      // The purpose it serves is our task list in the home view displays the database name column.
-      // User with the Developer role may subscribe to the task, while she is not granted to that task's
-      // related database. In such case, user won't fetch that task by her user id, so we need to do
-      // a separate fetch somewhere. Another way to do it is to do on-demand fetch for each task whose
+      // The purpose it serves is our issue list in the home view displays the database name column.
+      // User with the Developer role may subscribe to the issue, while she is not granted to that issue's
+      // related database. In such case, user won't fetch that issue by her user id, so we need to do
+      // a separate fetch somewhere. Another way to do it is to do on-demand fetch for each issue whose
       // database hasn't been fetched yet, that solution is more complex and might not bring better
       // performance because it requires to do more round-trips because of the N+1 nature. Thus,
       // we choose to do a full fetch when initializing the context here.

@@ -76,7 +76,7 @@ export default function configureDatabase(route) {
 
   route.post("/database", function (schema, request) {
     const ts = Date.now();
-    const { taskId, creatorId, ...attrs } = this.normalizedRequestAttrs(
+    const { issueId, creatorId, ...attrs } = this.normalizedRequestAttrs(
       "database-new"
     );
 
@@ -107,14 +107,14 @@ export default function configureDatabase(route) {
       workspaceId: WORKSPACE_ID,
     };
 
-    if (taskId) {
+    if (issueId) {
       schema.activities.create({
         creatorId: creatorId,
         createdTs: ts,
         updaterId: creatorId,
         updatedTs: ts,
-        actionType: "bytebase.task",
-        containerId: taskId,
+        actionType: "bytebase.issue",
+        containerId: issueId,
         comment: `Created database ${newDatabase.name}`,
         workspaceId: WORKSPACE_ID,
       });

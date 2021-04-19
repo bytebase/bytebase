@@ -195,7 +195,7 @@
         v-if="quickAction == 'quickaction.bytebase.database.troubleshoot'"
         class="flex flex-col items-center w-28"
       >
-        <router-link to="/task/new" class="btn-icon-primary p-3">
+        <router-link to="/issue/new" class="btn-icon-primary p-3">
           <svg
             class="w-6 h-6"
             fill="none"

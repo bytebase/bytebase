@@ -1,13 +1,13 @@
 <template>
   <div
-    id="task-detail-top"
+    id="issue-detail-top"
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
-      <TaskHighlightPanel
-        :task="state.task"
+      <IssueHighlightPanel
+        :issue="state.issue"
         :new="state.new"
         :allowEdit="allowEditNameAndDescription"
         @update-name="updateName"
@@ -44,32 +44,32 @@
               "
               :disabled="!allowTransition(transition)"
               @click.prevent="
-                tryStartTaskStatusTransition(transition.type, () => {})
+                tryStartIssueStatusTransition(transition.type, () => {})
               "
             >
               {{ transition.actionName }}
             </button>
           </template>
         </div>
-      </TaskHighlightPanel>
+      </IssueHighlightPanel>
     </div>
 
     <!-- Stage Flow Bar -->
-    <TaskStageFlow
-      v-if="showTaskStageFlowBar"
-      :task="state.task"
+    <IssueStageFlow
+      v-if="showIssueStageFlowBar"
+      :issue="state.issue"
       @change-stage-status="changeStageStatus"
     />
 
     <!-- Output Panel -->
-    <!-- Only render the top border if TaskStageFlow is not displayed, otherwise it would overlap with the bottom border of the TaskStageFlow -->
+    <!-- Only render the top border if IssueStageFlow is not displayed, otherwise it would overlap with the bottom border of the IssueStageFlow -->
     <div
-      v-if="showTaskOutputPanel"
+      v-if="showIssueOutputPanel"
       class="px-2 py-4 md:flex md:flex-col"
-      :class="showTaskStageFlowBar ? '' : 'lg:border-t'"
+      :class="showIssueStageFlowBar ? '' : 'lg:border-t'"
     >
-      <TaskOutputPanel
-        :task="state.task"
+      <IssueOutputPanel
+        :issue="state.issue"
         :fieldList="outputFieldList"
         :allowEdit="allowEditOutput"
         @update-custom-field="updateCustomField"
@@ -80,7 +80,7 @@
     <main
       class="flex-1 relative overflow-y-auto focus:outline-none"
       :class="
-        showTaskStageFlowBar && !showTaskOutputPanel
+        showIssueStageFlowBar && !showIssueOutputPanel
           ? ''
           : 'lg:border-t lg:border-block-border'
       "
@@ -91,8 +91,8 @@
           <div
             class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border"
           >
-            <TaskSidebar
-              :task="state.task"
+            <IssueSidebar
+              :issue="state.issue"
               :new="state.new"
               :fieldList="inputFieldList"
               :allowEdit="allowEditSidebar"
@@ -103,26 +103,26 @@
           </div>
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
-            <section v-if="showTaskSqlPanel" class="border-b mb-4">
-              <TaskSqlPanel
-                :task="state.task"
+            <section v-if="showIssueSqlPanel" class="border-b mb-4">
+              <IssueSqlPanel
+                :issue="state.issue"
                 :new="state.new"
                 :rollback="false"
                 :allowEdit="allowEditSql"
                 @update-sql="updateSql"
               />
             </section>
-            <section v-if="showTaskRollbackSqlPanel" class="border-b mb-4">
-              <TaskSqlPanel
-                :task="state.task"
+            <section v-if="showIssueRollbackSqlPanel" class="border-b mb-4">
+              <IssueSqlPanel
+                :issue="state.issue"
                 :new="state.new"
                 :rollback="true"
                 :allowEdit="allowEditSql"
                 @update-sql="updateRollbackSql"
               />
             </section>
-            <TaskDescriptionPanel
-              :task="state.task"
+            <IssueDescriptionPanel
+              :issue="state.issue"
               :new="state.new"
               :allowEdit="allowEditNameAndDescription"
               @update-description="updateDescription"
@@ -132,9 +132,9 @@
               aria-labelledby="activity-title"
               class="mt-4"
             >
-              <TaskActivityPanel
-                :task="state.task"
-                :taskTemplate="taskTemplate"
+              <IssueActivityPanel
+                :issue="state.issue"
+                :issueTemplate="issueTemplate"
                 @update-subscriber-list="updateSubscriberIdList"
               />
             </section>
@@ -148,15 +148,15 @@
     :title="updateStatusModalState.title"
     @close="updateStatusModalState.show = false"
   >
-    <TaskStatusTransitionForm
+    <IssueStatusTransitionForm
       :okText="updateStatusModalState.okText"
-      :task="state.task"
+      :issue="state.issue"
       :transition="updateStatusModalState.payload.transition"
       :outputFieldList="outputFieldList"
       @submit="
         (comment) => {
           updateStatusModalState.show = false;
-          doTaskStatusTransition(updateStatusModalState.payload, comment);
+          doIssueStatusTransition(updateStatusModalState.payload, comment);
         }
       "
       @cancel="
@@ -183,44 +183,44 @@ import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
-import { idFromSlug, taskSlug, isDemo, pendingResolve } from "../utils";
-import TaskHighlightPanel from "../views/TaskHighlightPanel.vue";
-import TaskStageFlow from "./TaskStageFlow.vue";
-import TaskOutputPanel from "../views/TaskOutputPanel.vue";
-import TaskSqlPanel from "../views/TaskSqlPanel.vue";
-import TaskDescriptionPanel from "./TaskDescriptionPanel.vue";
-import TaskActivityPanel from "../views/TaskActivityPanel.vue";
-import TaskSidebar from "../views/TaskSidebar.vue";
-import TaskStatusTransitionForm from "../components/TaskStatusTransitionForm.vue";
+import { idFromSlug, issueSlug, isDemo, pendingResolve } from "../utils";
+import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
+import IssueStageFlow from "./IssueStageFlow.vue";
+import IssueOutputPanel from "../views/IssueOutputPanel.vue";
+import IssueSqlPanel from "../views/IssueSqlPanel.vue";
+import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
+import IssueActivityPanel from "../views/IssueActivityPanel.vue";
+import IssueSidebar from "../views/IssueSidebar.vue";
+import IssueStatusTransitionForm from "../components/IssueStatusTransitionForm.vue";
 import {
-  Task,
-  TaskNew,
-  TaskType,
-  TaskPatch,
-  TaskStatusTransition,
-  TaskStatusTransitionType,
+  Issue,
+  IssueNew,
+  IssueType,
+  IssuePatch,
+  IssueStatusTransition,
+  IssueStatusTransitionType,
   StageStatusPatch,
   PrincipalId,
-  TASK_STATUS_TRANSITION_LIST,
+  ISSUE_STATUS_TRANSITION_LIST,
   Database,
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
-  TaskStatusPatch,
+  IssueStatusPatch,
   StageStatus,
   StageId,
 } from "../types";
 import {
   defaulTemplate,
   templateForType,
-  TaskField,
-  TaskTemplate,
-  TaskContext,
+  IssueField,
+  IssueTemplate,
+  IssueContext,
 } from "../plugins";
 
 type WorkflowType = "SINGLE_STEP" | "SINGLE_STAGE" | "MULTI_STAGE";
 
 type UpdateStatusModalStatePayload = {
-  transition: TaskStatusTransition;
+  transition: IssueStatusTransition;
   didTransit: () => {};
 };
 
@@ -234,26 +234,26 @@ interface UpdateStatusModalState {
 
 interface LocalState {
   new: boolean;
-  task: ComputedRef<Task | TaskNew>;
+  issue: ComputedRef<Issue | IssueNew>;
 }
 
 export default {
-  name: "TaskDetail",
+  name: "IssueDetail",
   props: {
-    taskSlug: {
+    issueSlug: {
       required: true,
       type: String,
     },
   },
   components: {
-    TaskHighlightPanel,
-    TaskStageFlow,
-    TaskOutputPanel,
-    TaskSqlPanel,
-    TaskDescriptionPanel,
-    TaskActivityPanel,
-    TaskSidebar,
-    TaskStatusTransitionForm,
+    IssueHighlightPanel,
+    IssueStageFlow,
+    IssueOutputPanel,
+    IssueSqlPanel,
+    IssueDescriptionPanel,
+    IssueActivityPanel,
+    IssueSidebar,
+    IssueStatusTransitionForm,
   },
 
   setup(props, ctx) {
@@ -272,7 +272,7 @@ export default {
       // The hypothesis is that because the scroll bar is in the nested
       // route, thus setting the scrollBehavior in the global router
       // won't work.
-      document.getElementById("task-detail-top")!.scrollIntoView();
+      document.getElementById("issue-detail-top")!.scrollIntoView();
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -282,40 +282,40 @@ export default {
     });
 
     const isNew = computed(() => {
-      return props.taskSlug.toLowerCase() == "new";
+      return props.issueSlug.toLowerCase() == "new";
     });
 
-    const taskContext = computed(
-      (): TaskContext => {
+    const issueContext = computed(
+      (): IssueContext => {
         return {
           store,
           currentUser: currentUser.value,
           new: isNew.value,
-          task: state.task,
+          issue: state.issue,
         };
       }
     );
 
-    let newTaskTemplate = ref<TaskTemplate>(defaulTemplate());
+    let newIssueTemplate = ref<IssueTemplate>(defaulTemplate());
 
     const refreshTemplate = () => {
-      const taskType = router.currentRoute.value.query.template as TaskType;
-      if (taskType) {
-        const template = templateForType(taskType);
+      const issueType = router.currentRoute.value.query.template as IssueType;
+      if (issueType) {
+        const template = templateForType(issueType);
         if (template) {
-          newTaskTemplate.value = template;
+          newIssueTemplate.value = template;
         } else {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "CRITICAL",
-            title: `Unknown template '${taskType}'.`,
+            title: `Unknown template '${issueType}'.`,
             description: "Fallback to the default template",
           });
         }
       }
 
-      if (!newTaskTemplate.value) {
-        newTaskTemplate.value = defaulTemplate();
+      if (!newIssueTemplate.value) {
+        newIssueTemplate.value = defaulTemplate();
       }
     };
 
@@ -339,96 +339,96 @@ export default {
           databaseList.push(store.getters["database/databaseById"](databaseId));
       }
 
-      const newTask: TaskNew = newTaskTemplate.value.buildTask({
+      const newIssue: IssueNew = newIssueTemplate.value.buildIssue({
         databaseList,
         currentUser: currentUser.value,
       });
 
-      // For demo mode, we assign the task to the current user, so it can also experience the assignee user flow.
+      // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
       if (isDemo()) {
-        newTask.assigneeId = currentUser.value.id;
+        newIssue.assigneeId = currentUser.value.id;
       }
 
-      newTask.creatorId = currentUser.value.id;
+      newIssue.creatorId = currentUser.value.id;
 
       if (router.currentRoute.value.query.name) {
-        newTask.name = router.currentRoute.value.query.name as string;
+        newIssue.name = router.currentRoute.value.query.name as string;
       }
       if (router.currentRoute.value.query.description) {
-        newTask.description = router.currentRoute.value.query
+        newIssue.description = router.currentRoute.value.query
           .description as string;
       }
       if (router.currentRoute.value.query.sql) {
-        newTask.sql = router.currentRoute.value.query.sql as string;
+        newIssue.sql = router.currentRoute.value.query.sql as string;
       }
       if (router.currentRoute.value.query.rollbacksql) {
-        newTask.rollbackSql = router.currentRoute.value.query
+        newIssue.rollbackSql = router.currentRoute.value.query
           .rollbacksql as string;
       }
       if (router.currentRoute.value.query.assignee) {
-        newTask.assigneeId = router.currentRoute.value.query
+        newIssue.assigneeId = router.currentRoute.value.query
           .assignee as PrincipalId;
       }
 
-      for (const field of newTaskTemplate.value.fieldList.filter(
+      for (const field of newIssueTemplate.value.fieldList.filter(
         (item) => item.category == "INPUT"
       )) {
         const value = router.currentRoute.value.query[field.slug] as string;
         if (value) {
           if (field.type == "Boolean") {
-            newTask.payload[field.id] =
+            newIssue.payload[field.id] =
               value != "0" && value.toLowerCase() != "false";
           } else {
-            newTask.payload[field.id] = value;
+            newIssue.payload[field.id] = value;
           }
         }
       }
 
       return {
         new: isNew.value,
-        task: isNew.value
-          ? newTask
+        issue: isNew.value
+          ? newIssue
           : cloneDeep(
-              store.getters["task/taskById"](idFromSlug(props.taskSlug))
+              store.getters["issue/issueById"](idFromSlug(props.issueSlug))
             ),
       };
     };
 
     const state = reactive<LocalState>(refreshState());
 
-    const refreshTask = () => {
+    const refreshIssue = () => {
       const updatedState = refreshState();
       state.new = updatedState.new;
-      state.task = updatedState.task;
+      state.issue = updatedState.issue;
     };
 
-    watchEffect(refreshTask);
+    watchEffect(refreshIssue);
 
-    const taskTemplate = computed(
-      () => templateForType(state.task.type) || defaulTemplate()
+    const issueTemplate = computed(
+      () => templateForType(state.issue.type) || defaulTemplate()
     );
 
     const outputFieldList = computed(
       () =>
-        taskTemplate.value.fieldList.filter(
+        issueTemplate.value.fieldList.filter(
           (item) => item.category == "OUTPUT"
         ) || []
     );
     const inputFieldList = computed(
       () =>
-        taskTemplate.value.fieldList.filter(
+        issueTemplate.value.fieldList.filter(
           (item) => item.category == "INPUT"
         ) || []
     );
 
     const updateName = (
       newName: string,
-      postUpdated: (updatedTask: Task) => void
+      postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.new) {
-        (state.task as TaskNew).name = newName;
+        (state.issue as IssueNew).name = newName;
       } else {
-        patchTask(
+        patchIssue(
           {
             name: newName,
           },
@@ -439,12 +439,12 @@ export default {
 
     const updateSql = (
       newSql: string,
-      postUpdated: (updatedTask: Task) => void
+      postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.new) {
-        (state.task as TaskNew).sql = newSql;
+        (state.issue as IssueNew).sql = newSql;
       } else {
-        patchTask(
+        patchIssue(
           {
             sql: newSql,
           },
@@ -455,12 +455,12 @@ export default {
 
     const updateRollbackSql = (
       newSql: string,
-      postUpdated: (updatedTask: Task) => void
+      postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.new) {
-        (state.task as TaskNew).rollbackSql = newSql;
+        (state.issue as IssueNew).rollbackSql = newSql;
       } else {
-        patchTask(
+        patchIssue(
           {
             rollbackSql: newSql,
           },
@@ -471,12 +471,12 @@ export default {
 
     const updateDescription = (
       newDescription: string,
-      postUpdated: (updatedTask: Task) => void
+      postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.new) {
-        (state.task as TaskNew).description = newDescription;
+        (state.issue as IssueNew).description = newDescription;
       } else {
-        patchTask(
+        patchIssue(
           {
             description: newDescription,
           },
@@ -485,14 +485,14 @@ export default {
       }
     };
 
-    const allowTransition = (transition: TaskStatusTransition): boolean => {
-      const task: Task = state.task as Task;
+    const allowTransition = (transition: IssueStatusTransition): boolean => {
+      const issue: Issue = state.issue as Issue;
       if (transition.type == "RESOLVE") {
-        if (pendingResolve(task)) {
+        if (pendingResolve(issue)) {
           // Returns false if any of the required output fields is not provided.
           for (let i = 0; i < outputFieldList.value.length; i++) {
             const field = outputFieldList.value[i];
-            if (field.required && !field.resolved(taskContext.value)) {
+            if (field.required && !field.resolved(issueContext.value)) {
               return false;
             }
           }
@@ -502,24 +502,24 @@ export default {
       }
       return true;
     };
-    const tryStartTaskStatusTransition = (
-      type: TaskStatusTransitionType,
+    const tryStartIssueStatusTransition = (
+      type: IssueStatusTransitionType,
       didTransit: () => {}
     ) => {
-      const transition = TASK_STATUS_TRANSITION_LIST.get(type)!;
+      const transition = ISSUE_STATUS_TRANSITION_LIST.get(type)!;
       updateStatusModalState.okText = transition.actionName;
       switch (transition.to) {
         case "OPEN":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Reopen task?";
+          updateStatusModalState.title = "Reopen issue?";
           break;
         case "DONE":
           updateStatusModalState.style = "SUCCESS";
-          updateStatusModalState.title = "Resolve task?";
+          updateStatusModalState.title = "Resolve issue?";
           break;
         case "CANCELED":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Abort task?";
+          updateStatusModalState.title = "Abort issue?";
           break;
       }
       updateStatusModalState.payload = {
@@ -529,25 +529,25 @@ export default {
       updateStatusModalState.show = true;
     };
 
-    const doTaskStatusTransition = (
+    const doIssueStatusTransition = (
       payload: UpdateStatusModalStatePayload,
       comment?: string
     ) => {
-      const taskStatusPatch: TaskStatusPatch = {
+      const issueStatusPatch: IssueStatusPatch = {
         updaterId: currentUser.value.id,
         status: payload.transition.to,
         comment: comment ? comment.trim() : undefined,
       };
 
       store
-        .dispatch("task/updateTaskStatus", {
-          taskId: (state.task as Task).id,
-          taskStatusPatch,
+        .dispatch("issue/updateIssueStatus", {
+          issueId: (state.issue as Issue).id,
+          issueStatusPatch,
         })
-        .then((updatedTask) => {
+        .then((updatedIssue) => {
           if (
             payload.transition.to == "DONE" &&
-            taskTemplate.value.type == "bytebase.database.schema.update"
+            issueTemplate.value.type == "bytebase.database.schema.update"
           ) {
             store.dispatch("uistate/saveIntroStateByKey", {
               key: "table.create",
@@ -570,7 +570,7 @@ export default {
       };
 
       store.dispatch("stage/updateStageStatus", {
-        taskId: (state.task as Task).id,
+        issueId: (state.issue as Issue).id,
         stageId,
         stageStatusPatch,
       });
@@ -578,27 +578,27 @@ export default {
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
       if (state.new) {
-        (state.task as TaskNew).assigneeId = newAssigneeId;
+        (state.issue as IssueNew).assigneeId = newAssigneeId;
       } else {
-        patchTask({
+        patchIssue({
           assigneeId: newAssigneeId,
         });
       }
     };
 
     const updateSubscriberIdList = (newSubscriberIdList: PrincipalId[]) => {
-      patchTask({
+      patchIssue({
         subscriberIdList: newSubscriberIdList,
       });
     };
 
-    const updateCustomField = (field: TaskField, value: any) => {
+    const updateCustomField = (field: IssueField, value: any) => {
       console.log("updateCustomField", field.name, value);
-      if (!isEqual(state.task.payload[field.id], value)) {
-        state.task.payload[field.id] = value;
+      if (!isEqual(state.issue.payload[field.id], value)) {
+        state.issue.payload[field.id] = value;
         if (!state.new) {
-          patchTask({
-            payload: state.task.payload,
+          patchIssue({
+            payload: state.issue.payload,
           });
         }
       }
@@ -606,30 +606,32 @@ export default {
 
     const doCreate = () => {
       store
-        .dispatch("task/createTask", state.task)
-        .then((createdTask) => {
-          router.push(`/task/${taskSlug(createdTask.name, createdTask.id)}`);
+        .dispatch("issue/createIssue", state.issue)
+        .then((createdIssue) => {
+          router.push(
+            `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
+          );
         })
         .catch((error) => {
           console.log(error);
         });
     };
 
-    const patchTask = (
-      taskPatch: Omit<TaskPatch, "updaterId">,
-      postUpdated?: (updatedTask: Task) => void
+    const patchIssue = (
+      issuePatch: Omit<IssuePatch, "updaterId">,
+      postUpdated?: (updatedIssue: Issue) => void
     ) => {
       store
-        .dispatch("task/patchTask", {
-          taskId: (state.task as Task).id,
-          taskPatch: {
-            ...taskPatch,
+        .dispatch("issue/patchIssue", {
+          issueId: (state.issue as Issue).id,
+          issuePatch: {
+            ...issuePatch,
             updaterId: currentUser.value.id,
           },
         })
-        .then((updatedTask) => {
+        .then((updatedIssue) => {
           if (postUpdated) {
-            postUpdated(updatedTask);
+            postUpdated(updatedIssue);
           }
         })
         .catch((error) => {
@@ -639,12 +641,12 @@ export default {
 
     const workflowType = computed(
       (): WorkflowType => {
-        if (state.task.stageList.length > 1) {
+        if (state.issue.stageList.length > 1) {
           return "MULTI_STAGE";
         }
         if (
-          state.task.stageList.length == 1 &&
-          state.task.stageList[0].stepList.length > 1
+          state.issue.stageList.length == 1 &&
+          state.issue.stageList[0].stepList.length > 1
         ) {
           return "SINGLE_STAGE";
         }
@@ -653,23 +655,23 @@ export default {
     );
 
     const allowCreate = computed(() => {
-      const newTask = state.task as TaskNew;
-      if (isEmpty(newTask.name)) {
+      const newIssue = state.issue as IssueNew;
+      if (isEmpty(newIssue.name)) {
         return false;
       }
 
-      if (!newTask.assigneeId) {
+      if (!newIssue.assigneeId) {
         return false;
       }
 
-      if (newTaskTemplate.value.fieldList) {
-        for (const field of newTaskTemplate.value.fieldList.filter(
+      if (newIssueTemplate.value.fieldList) {
+        for (const field of newIssueTemplate.value.fieldList.filter(
           (item) => item.category == "INPUT"
         )) {
           if (
             field.type != "Boolean" && // Switch is boolean value which always is present
             field.required &&
-            !field.resolved(taskContext.value)
+            !field.resolved(issueContext.value)
           ) {
             return false;
           }
@@ -679,33 +681,33 @@ export default {
     });
 
     const allowEditSidebar = computed(() => {
-      // For now, we only allow assignee to update the field when the task
+      // For now, we only allow assignee to update the field when the issue
       // is 'OPEN'. This reduces flexibility as creator must ask assignee to
       // change any fields if there is typo. On the other hand, this avoids
       // the trouble that the creator changes field value when the creator
-      // is performing the task based on the old value.
+      // is performing the issue based on the old value.
       // For now, we choose to be on the safe side at the cost of flexibility.
       return (
         state.new ||
-        ((state.task as Task).status == "OPEN" &&
-          currentUser.value.id == (state.task as Task).assignee?.id)
+        ((state.issue as Issue).status == "OPEN" &&
+          currentUser.value.id == (state.issue as Issue).assignee?.id)
       );
     });
 
     const allowEditOutput = computed(() => {
       return (
         state.new ||
-        ((state.task as Task).status == "OPEN" &&
-          currentUser.value.id == (state.task as Task).assignee?.id)
+        ((state.issue as Issue).status == "OPEN" &&
+          currentUser.value.id == (state.issue as Issue).assignee?.id)
       );
     });
 
     const allowEditNameAndDescription = computed(() => {
       return (
         state.new ||
-        ((state.task as Task).status == "OPEN" &&
-          (currentUser.value.id == (state.task as Task).assignee?.id ||
-            currentUser.value.id == (state.task as Task).creator.id))
+        ((state.issue as Issue).status == "OPEN" &&
+          (currentUser.value.id == (state.issue as Issue).assignee?.id ||
+            currentUser.value.id == (state.issue as Issue).creator.id))
       );
     });
 
@@ -713,36 +715,38 @@ export default {
       return state.new;
     });
 
-    const showTaskStageFlowBar = computed(() => {
+    const showIssueStageFlowBar = computed(() => {
       return !state.new && workflowType.value != "SINGLE_STEP";
     });
 
-    const showTaskOutputPanel = computed(() => {
+    const showIssueOutputPanel = computed(() => {
       return !state.new && outputFieldList.value.length > 0;
     });
 
-    const showTaskSqlPanel = computed(() => {
+    const showIssueSqlPanel = computed(() => {
       return (
-        state.task.type == "bytebase.general" ||
-        state.task.type == "bytebase.database.schema.update"
+        state.issue.type == "bytebase.general" ||
+        state.issue.type == "bytebase.database.schema.update"
       );
     });
 
-    const showTaskRollbackSqlPanel = computed(() => {
-      return state.task.type == "bytebase.database.schema.update";
+    const showIssueRollbackSqlPanel = computed(() => {
+      return state.issue.type == "bytebase.database.schema.update";
     });
 
     const applicableStatusTransitionList = computed(
-      (): TaskStatusTransition[] => {
-        const list: TaskStatusTransitionType[] = [];
-        if (currentUser.value.id === (state.task as Task).assignee?.id) {
+      (): IssueStatusTransition[] => {
+        const list: IssueStatusTransitionType[] = [];
+        if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
           list.push(
-            ...ASSIGNEE_APPLICABLE_ACTION_LIST.get((state.task as Task).status)!
+            ...ASSIGNEE_APPLICABLE_ACTION_LIST.get(
+              (state.issue as Issue).status
+            )!
           );
         }
-        if (currentUser.value.id === (state.task as Task).creator.id) {
+        if (currentUser.value.id === (state.issue as Issue).creator.id) {
           CREATOR_APPLICABLE_ACTION_LIST.get(
-            (state.task as Task).status
+            (state.issue as Issue).status
           )!.forEach((item) => {
             if (list.indexOf(item) == -1) {
               list.push(item);
@@ -752,7 +756,7 @@ export default {
 
         return list
           .filter((item) => {
-            if (pendingResolve(state.task as Task)) {
+            if (pendingResolve(state.issue as Issue)) {
               if (item == "NEXT") {
                 return false;
               }
@@ -764,8 +768,8 @@ export default {
             return true;
           })
           .map(
-            (type: TaskStatusTransitionType) =>
-              TASK_STATUS_TRANSITION_LIST.get(type)!
+            (type: IssueStatusTransitionType) =>
+              ISSUE_STATUS_TRANSITION_LIST.get(type)!
           );
       }
     );
@@ -778,8 +782,8 @@ export default {
       updateSql,
       updateRollbackSql,
       allowTransition,
-      tryStartTaskStatusTransition,
-      doTaskStatusTransition,
+      tryStartIssueStatusTransition,
+      doIssueStatusTransition,
       updateAssigneeId,
       updateSubscriberIdList,
       updateCustomField,
@@ -788,17 +792,17 @@ export default {
       workflowType,
       allowCreate,
       currentUser,
-      taskTemplate,
+      issueTemplate,
       outputFieldList,
       inputFieldList,
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,
       allowEditSql,
-      showTaskStageFlowBar,
-      showTaskOutputPanel,
-      showTaskSqlPanel,
-      showTaskRollbackSqlPanel,
+      showIssueStageFlowBar,
+      showIssueOutputPanel,
+      showIssueSqlPanel,
+      showIssueRollbackSqlPanel,
       applicableStatusTransitionList,
     };
   },

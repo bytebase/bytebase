@@ -1,29 +1,29 @@
-import { TaskField, FieldId, TaskTemplate, UNKNOWN_FIELD } from "../types";
-import { TaskType } from "../../types";
+import { IssueField, FieldId, IssueTemplate, UNKNOWN_FIELD } from "../types";
+import { IssueType } from "../../types";
 import DefaultTemplate from "./DefaultTemplate";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
 import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
 
-const allTaskTemplateList: TaskTemplate[] = [
+const allIssueTemplateList: IssueTemplate[] = [
   DefaultTemplate,
   DatabaseCreateTemplate,
   DatabaseGrantTemplate,
   DatabaseSchemaUpdateTemplate,
 ];
 
-export function defaulTemplate(): TaskTemplate {
+export function defaulTemplate(): IssueTemplate {
   return DefaultTemplate;
 }
 
-export function templateForType(type: TaskType): TaskTemplate | undefined {
-  return allTaskTemplateList.find((template) => template.type === type);
+export function templateForType(type: IssueType): IssueTemplate | undefined {
+  return allIssueTemplateList.find((template) => template.type === type);
 }
 
 export function fieldFromId(
-  template: TaskTemplate,
+  template: IssueTemplate,
   fieldId: FieldId
-): TaskField {
+): IssueField {
   if (template.fieldList) {
     return (
       template.fieldList.find((field) => field.id == fieldId) || UNKNOWN_FIELD

@@ -16,7 +16,7 @@ input[type="number"] {
   <DataSourceMemberForm
     :dataSource="state.dataSource"
     :principalId="state.granteeId"
-    :taskId="state.taskId"
+    :issueId="state.issueId"
     @submit="submit"
     @cancel="cancel"
   />
@@ -27,13 +27,13 @@ import { reactive, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
-import { TaskId, PrincipalId, DataSource } from "../types";
+import { IssueId, PrincipalId, DataSource } from "../types";
 import { fullDataSourcePath } from "../utils";
 
 interface LocalState {
   dataSource?: DataSource;
   granteeId?: PrincipalId;
-  taskId?: TaskId;
+  issueId?: IssueId;
 }
 
 export default {
@@ -70,7 +70,7 @@ export default {
     const state = reactive<LocalState>({
       dataSource,
       granteeId: router.currentRoute.value.query.grantee as PrincipalId,
-      taskId: router.currentRoute.value.query.task as TaskId,
+      issueId: router.currentRoute.value.query.issue as IssueId,
     });
 
     const cancel = () => {

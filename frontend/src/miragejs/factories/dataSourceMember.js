@@ -5,7 +5,7 @@ export default {
     principalId(i) {
       return "100";
     },
-    taskId(i) {
+    issueId(i) {
       return (i + 1).toString();
     },
     createdTs(i) {

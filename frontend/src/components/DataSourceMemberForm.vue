@@ -116,27 +116,27 @@ input[type="number"] {
         </div>
 
         <div class="col-span-2 col-start-2 w-64">
-          <label for="task" class="textlabel"> Task </label>
+          <label for="issue" class="textlabel"> Issue </label>
           <div class="mt-1 relative rounded-md shadow-sm">
             <div
               class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
             >
-              <span class="text-accent font-semibold sm:text-sm">task/</span>
+              <span class="text-accent font-semibold sm:text-sm">issue/</span>
             </div>
             <div class="flex flex-row space-x-2 items-center">
               <input
                 class="textfield w-full pl-12"
-                id="task"
-                name="task"
+                id="issue"
+                name="issue"
                 type="number"
-                placeholder="Your task id (e.g. 1234)"
-                :disabled="!allowUpdateTaskId"
-                :value="state.taskId"
-                @input="updateState('taskId', $event.target.value)"
+                placeholder="Your issue id (e.g. 1234)"
+                :disabled="!allowUpdateIssueId"
+                :value="state.issueId"
+                @input="updateState('issueId', $event.target.value)"
               />
-              <template v-if="taskLink">
+              <template v-if="issueLink">
                 <router-link
-                  :to="taskLink"
+                  :to="issueLink"
                   target="_blank"
                   class="ml-2 normal-link text-sm"
                 >
@@ -186,11 +186,11 @@ import {
   EnvironmentId,
   InstanceId,
   PrincipalId,
-  Task,
-  TaskId,
+  Issue,
+  IssueId,
   UNKNOWN_ID,
 } from "../types";
-import { taskSlug } from "../utils";
+import { issueSlug } from "../utils";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -199,7 +199,7 @@ interface LocalState {
   dataSourceId?: DataSourceId;
   granteeId?: PrincipalId;
   granteeError: string;
-  taskId?: TaskId;
+  issueId?: IssueId;
 }
 
 export default {
@@ -212,7 +212,7 @@ export default {
     principalId: {
       type: String,
     },
-    taskId: {
+    issueId: {
       type: String,
     },
   },
@@ -235,7 +235,7 @@ export default {
       dataSourceId: props.dataSource ? props.dataSource.id : undefined,
       granteeId: props.principalId,
       granteeError: "",
-      taskId: props.taskId,
+      issueId: props.issueId,
     });
 
     const database = computed(() => {
@@ -274,19 +274,19 @@ export default {
       return !props.principalId && state.dataSourceId;
     });
 
-    const allowUpdateTaskId = computed(() => {
-      return !props.taskId;
+    const allowUpdateIssueId = computed(() => {
+      return !props.issueId;
     });
 
     const allowCreate = computed(() => {
       return state.dataSourceId && state.granteeId && !state.granteeError;
     });
 
-    const taskLink = computed((): string => {
-      if (state.taskId) {
-        // We intentionally not to validate whether the taskId is legit, we will do the validation
+    const issueLink = computed((): string => {
+      if (state.issueId) {
+        // We intentionally not to validate whether the issueId is legit, we will do the validation
         // when actually trying to create the database.
-        return `/task/${state.taskId}`;
+        return `/issue/${state.issueId}`;
       }
       return "";
     });
@@ -316,8 +316,8 @@ export default {
       } else if (field == "granteeId") {
         state.granteeId = value;
         validateGrantee();
-      } else if (field == "taskId") {
-        state.taskId = value;
+      } else if (field == "issueId") {
+        state.issueId = value;
       }
     };
 
@@ -326,20 +326,23 @@ export default {
     };
 
     const doGrant = async () => {
-      // If taskId id provided, we check its existence first.
-      // We only set the taskId if it's valid.
-      let linkedTask: Task | undefined = undefined;
-      if (state.taskId) {
+      // If issueId id provided, we check its existence first.
+      // We only set the issueId if it's valid.
+      let linkedIssue: Issue | undefined = undefined;
+      if (state.issueId) {
         try {
-          linkedTask = await store.dispatch("task/fetchTaskById", state.taskId);
+          linkedIssue = await store.dispatch(
+            "issue/fetchIssueById",
+            state.issueId
+          );
         } catch (err) {
-          console.warn(`Unable to fetch linked task id ${state.taskId}`, err);
+          console.warn(`Unable to fetch linked issue id ${state.issueId}`, err);
         }
       }
 
       const newDataSouceMember: DataSourceMemberNew = {
         principalId: state.granteeId!,
-        taskId: linkedTask?.id,
+        issueId: linkedIssue?.id,
       };
       store
         .dispatch("dataSource/createDataSourceMember", {
@@ -361,13 +364,13 @@ export default {
             title: `Successfully granted '${dataSource.name}' to '${
               addedMember!.principal.name
             }'.`,
-            description: linkedTask
-              ? `We also linked the granted database to the requested task '${linkedTask.name}'.`
+            description: linkedIssue
+              ? `We also linked the granted database to the requested issue '${linkedIssue.name}'.`
               : "",
-            link: linkedTask
-              ? `/task/${taskSlug(linkedTask.name, linkedTask.id)}`
+            link: linkedIssue
+              ? `/issue/${issueSlug(linkedIssue.name, linkedIssue.id)}`
               : undefined,
-            manualHide: linkedTask != undefined,
+            manualHide: linkedIssue != undefined,
           });
         })
         .catch((error) => {
@@ -382,9 +385,9 @@ export default {
       database,
       allowConfigure,
       allowUpdateDataSourceMember,
-      allowUpdateTaskId,
+      allowUpdateIssueId,
       allowCreate,
-      taskLink,
+      issueLink,
       updateState,
       cancel,
       doGrant,

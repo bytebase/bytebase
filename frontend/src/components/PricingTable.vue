@@ -68,7 +68,7 @@
               />
             </svg>
             <span class="text-sm text-main whitespace-nowrap"
-              >100 tasks (excluding archived)</span
+              >100 issues (excluding archived)</span
             >
           </li>
 
@@ -241,7 +241,7 @@
                 clip-rule="evenodd"
               />
             </svg>
-            <span class="text-sm text-main">Unlimited tasks</span>
+            <span class="text-sm text-main">Unlimited issues</span>
           </li>
 
           <li class="flex space-x-3">
@@ -419,7 +419,7 @@
                 clip-rule="evenodd"
               />
             </svg>
-            <span class="text-sm text-main">Unlimited tasks </span>
+            <span class="text-sm text-main">Unlimited issues </span>
           </li>
 
           <li class="flex space-x-3">

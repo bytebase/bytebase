@@ -213,9 +213,9 @@ export default {
       );
       if (state.create == "ON") {
         router.push({
-          name: "workspace.task.detail",
+          name: "workspace.issue.detail",
           params: {
-            taskSlug: "new",
+            issueSlug: "new",
           },
           query: {
             template: "bytebase.database.create",
@@ -229,9 +229,9 @@ export default {
           state.databaseId
         );
         router.push({
-          name: "workspace.task.detail",
+          name: "workspace.issue.detail",
           params: {
-            taskSlug: "new",
+            issueSlug: "new",
           },
           query: {
             template: "bytebase.database.grant",

@@ -18,7 +18,7 @@
             >
               <template v-if="stage.status === 'PENDING'">
                 <span
-                  v-if="activeStage(task).id === stage.id"
+                  v-if="activeStage(issue).id === stage.id"
                   class="h-1.5 w-1.5 bg-blue-600 rounded-full"
                   aria-hidden="true"
                 ></span>
@@ -82,7 +82,7 @@
           </span>
           <div
             v-if="
-              activeStage(task).id === stage.id &&
+              activeStage(issue).id === stage.id &&
               applicableStageTransitionList.length > 0
             "
             class="flex flex-row space-x-1 mr-4"
@@ -231,7 +231,7 @@
   >
     <StageStatusTransitionForm
       :okText="modalState.okText"
-      :task="task"
+      :issue="issue"
       :transition="modalState.transition"
       @submit="
         (transition, comment) => {
@@ -253,7 +253,7 @@ import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import StageStatusTransitionForm from "../components/StageStatusTransitionForm.vue";
 import {
-  Task,
+  Issue,
   StageId,
   StageStatus,
   StageStatusTransitionType,
@@ -303,12 +303,12 @@ interface ModalState {
 }
 
 export default {
-  name: "TaskStageFlow",
+  name: "IssueStageFlow",
   emits: ["change-stage-status"],
   props: {
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
   },
   components: { StageStatusTransitionForm },
@@ -325,13 +325,13 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const stageList = computed<FlowItem[]>(() => {
-      return props.task.stageList.map((stage) => {
+      return props.issue.stageList.map((stage) => {
         return {
           id: stage.id,
           title: stage.name,
           status: stage.status,
           link: (): string => {
-            return `/task/${props.task.id}`;
+            return `/issue/${props.issue.id}`;
           },
         };
       });
@@ -340,7 +340,7 @@ export default {
     const stageIconClass = (stage: FlowItem) => {
       switch (stage.status) {
         case "PENDING":
-          if (activeStage(props.task).id === stage.id) {
+          if (activeStage(props.issue).id === stage.id) {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
           return "bg-white border-2 border-gray-300";
@@ -357,7 +357,7 @@ export default {
 
     const stageTextClass = (stage: FlowItem) => {
       let textClass =
-        activeStage(props.task).id === stage.id
+        activeStage(props.issue).id === stage.id
           ? "font-medium "
           : "font-normal ";
       switch (stage.status) {
@@ -366,7 +366,7 @@ export default {
         case "DONE":
           return textClass + "text-control";
         case "PENDING":
-          if (activeStage(props.task).id === stage.id) {
+          if (activeStage(props.issue).id === stage.id) {
             return textClass + "text-blue-600";
           }
           return textClass + "text-control";
@@ -378,12 +378,12 @@ export default {
     };
 
     const applicableStageTransitionList = computed(() => {
-      const stage = activeStage(props.task as Task);
+      const stage = activeStage(props.issue as Issue);
       const list: StageStatusTransitionType[] = [];
-      if (currentUser.value.id === (props.task as Task).assignee?.id) {
+      if (currentUser.value.id === (props.issue as Issue).assignee?.id) {
         list.push(...ASSIGNEE_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!);
       }
-      if (currentUser.value.id === (props.task as Task).creator.id) {
+      if (currentUser.value.id === (props.issue as Issue).creator.id) {
         CREATOR_APPLICABLE_STAGE_ACTION_LIST.get(stage.status)!.forEach(
           (item) => {
             if (list.indexOf(item) == -1) {
@@ -409,7 +409,7 @@ export default {
       modalState.title =
         transition.actionName +
         ' "' +
-        activeStage(props.task as Task).name +
+        activeStage(props.issue as Issue).name +
         '" ?';
       modalState.transition = transition;
       modalState.show = true;

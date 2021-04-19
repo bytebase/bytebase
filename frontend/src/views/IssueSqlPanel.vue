@@ -53,7 +53,7 @@
       @input="
         (e) => {
           sizeToFit(e.target);
-          // When creating the task, we will emit the event on keystroke to update the in-memory state.
+          // When creating the issue, we will emit the event on keystroke to update the in-memory state.
           if ($props.new) {
             $emit('update-sql', state.editSql);
           }
@@ -87,7 +87,7 @@ import {
   watch,
   computed,
 } from "vue";
-import { Task } from "../types";
+import { Issue } from "../types";
 import { sizeToFit } from "../utils";
 import command from "../store/modules/command";
 
@@ -97,12 +97,12 @@ interface LocalState {
 }
 
 export default {
-  name: "TaskSqlPanel",
+  name: "IssueSqlPanel",
   emits: ["update-sql"],
   props: {
-    task: {
+    issue: {
       required: true,
-      type: Object as PropType<Task>,
+      type: Object as PropType<Issue>,
     },
     new: {
       required: true,
@@ -121,13 +121,13 @@ export default {
   setup(props, { emit }) {
     const editSqlTextArea = ref();
 
-    const effectiveSql = (task: Task): string => {
-      return (props.rollback ? task.rollbackSql : task.sql) || "";
+    const effectiveSql = (issue: Issue): string => {
+      return (props.rollback ? issue.rollbackSql : issue.sql) || "";
     };
 
     const state = reactive<LocalState>({
       editing: false,
-      editSql: effectiveSql(props.task),
+      editSql: effectiveSql(props.issue),
     });
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -136,11 +136,11 @@ export default {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
           if (props.rollback) {
-            if (state.editSql != props.task.rollbackSql) {
+            if (state.editSql != props.issue.rollbackSql) {
               saveEdit();
             }
           } else {
-            if (state.editSql != props.task.sql) {
+            if (state.editSql != props.issue.sql) {
               saveEdit();
             }
           }
@@ -170,7 +170,7 @@ export default {
       window.removeEventListener("resize", resizeTextAreaHandler);
     });
 
-    // Reset the edit state after creating the task.
+    // Reset the edit state after creating the issue.
     watch(
       () => props.new,
       (curNew, prevNew) => {
@@ -182,12 +182,12 @@ export default {
 
     const allowSave = computed(() => {
       return props.rollback
-        ? state.editSql != props.task.rollbackSql
-        : state.editSql != props.task.sql;
+        ? state.editSql != props.issue.rollbackSql
+        : state.editSql != props.issue.sql;
     });
 
     const beginEdit = () => {
-      state.editSql = effectiveSql(props.task);
+      state.editSql = effectiveSql(props.issue);
       state.editing = true;
       nextTick(() => {
         editSqlTextArea.value.focus();
@@ -195,14 +195,14 @@ export default {
     };
 
     const saveEdit = () => {
-      emit("update-sql", state.editSql, (updatedTask: Task) => {
-        state.editSql = effectiveSql(updatedTask);
+      emit("update-sql", state.editSql, (updatedIssue: Issue) => {
+        state.editSql = effectiveSql(updatedIssue);
         state.editing = false;
       });
     };
 
     const cancelEdit = () => {
-      state.editSql = effectiveSql(props.task);
+      state.editSql = effectiveSql(props.issue);
       state.editing = false;
     };
 

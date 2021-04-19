@@ -1,21 +1,21 @@
 import { Response } from "miragejs";
 import isEqual from "lodash-es/isEqual";
 import { WORKSPACE_ID } from "./index";
-import { TaskBuiltinFieldId } from "../../plugins";
+import { IssueBuiltinFieldId } from "../../plugins";
 import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../../types";
 
 export default function configureStage(route) {
   route.patch(
-    "/task/:taskId/stage/:stageId/status",
+    "/issue/:issueId/stage/:stageId/status",
     function (schema, request) {
       const attrs = this.normalizedRequestAttrs("stage-status-patch");
-      const task = schema.tasks.find(request.params.taskId);
+      const issue = schema.issues.find(request.params.issueId);
 
-      if (!task) {
+      if (!issue) {
         return new Response(
           404,
           {},
-          { errors: "Task " + request.params.taskId + " not found" }
+          { errors: "Issue " + request.params.issueId + " not found" }
         );
       }
 
@@ -33,7 +33,7 @@ export default function configureStage(route) {
       if (attrs.status == "DONE") {
         // We check each steps. Returns error if any of them is not finished.
         const stepList = schema.steps.where({
-          taskId: task.id,
+          issueId: issue.id,
           stageId: stage.id,
         }).models;
 
@@ -43,7 +43,7 @@ export default function configureStage(route) {
               404,
               {},
               {
-                errors: `Can't resolve task ${task.name}. Step ${step[j].name} in stage ${stage[i].name} is in ${step[j].status} status`,
+                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in stage ${stage[i].name} is in ${step[j].status} status`,
               }
             );
           }
@@ -53,7 +53,7 @@ export default function configureStage(route) {
       const changeList = [];
       const messageList = [];
       const messageTemplate = {
-        containerId: task.id,
+        containerId: issue.id,
         creatorId: attrs.updaterId,
         createdTs: ts,
         updaterId: attrs.updaterId,
@@ -63,43 +63,43 @@ export default function configureStage(route) {
       };
 
       if (attrs.status) {
-        if (task.status != attrs.status) {
+        if (issue.status != attrs.status) {
           changeList.push({
-            fieldId: TaskBuiltinFieldId.STAGE_STATUS,
-            oldValue: task.status,
+            fieldId: IssueBuiltinFieldId.STAGE_STATUS,
+            oldValue: issue.status,
             newValue: attrs.status,
           });
 
           messageList.push({
             ...messageTemplate,
-            type: "bb.msg.task.stage.status.update",
-            receiverId: task.creatorId,
+            type: "bb.msg.issue.stage.status.update",
+            receiverId: issue.creatorId,
             payload: {
-              taskName: task.name,
-              oldStatus: task.status,
+              issueName: issue.name,
+              oldStatus: issue.status,
               newStatus: attrs.status,
             },
           });
 
-          if (task.assigneeId) {
+          if (issue.assigneeId) {
             messageList.push({
               ...messageTemplate,
-              type: "bb.msg.task.stage.status.update",
-              receiverId: task.assigneeId,
+              type: "bb.msg.issue.stage.status.update",
+              receiverId: issue.assigneeId,
             });
           }
 
-          for (let subscriberId of task.subscriberIdList) {
+          for (let subscriberId of issue.subscriberIdList) {
             if (
-              subscriberId != task.creatorId &&
-              subscriberId != task.assigneeId
+              subscriberId != issue.creatorId &&
+              subscriberId != issue.assigneeId
             ) {
               messageList.push({
                 ...messageTemplate,
-                type: "bb.msg.task.stage.status.update",
+                type: "bb.msg.issue.stage.status.update",
                 receiverId: subscriberId,
                 payload: {
-                  taskName: task.name,
+                  issueName: issue.name,
                 },
               });
             }
@@ -119,8 +119,8 @@ export default function configureStage(route) {
           createdTs: ts,
           updaterId: attrs.updaterId,
           updatedTs: ts,
-          actionType: "bytebase.task.stage.status.update",
-          containerId: updatedTask.id,
+          actionType: "bytebase.issue.stage.status.update",
+          containerId: updatedIssue.id,
           comment: attrs.comment,
           payload,
           workspaceId: WORKSPACE_ID,
@@ -135,10 +135,10 @@ export default function configureStage(route) {
           }
         }
 
-        return updatedTask;
+        return updatedIssue;
       }
 
-      return task;
+      return issue;
     }
   );
 }

@@ -2,18 +2,18 @@ import { Store } from "vuex";
 import {
   Environment,
   Principal,
-  TaskNew,
-  Task,
+  IssueNew,
+  Issue,
   DatabaseId,
   UNKNOWN_ID,
   Database,
 } from "../types";
 
-// Task
+// Issue
 // It has to be string type because the id for stage field contain multiple parts.
 export type FieldId = string;
 
-export enum TaskBuiltinFieldId {
+export enum IssueBuiltinFieldId {
   NAME = "1",
   STATUS = "2",
   ASSIGNEE = "3",
@@ -33,7 +33,7 @@ export enum TaskBuiltinFieldId {
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
 export const OUTPUT_CUSTOM_FIELD_ID_BEGIN = "200";
 
-export type TaskFieldType =
+export type IssueFieldType =
   | "Boolean"
   | "String"
   | "Environment"
@@ -41,24 +41,24 @@ export type TaskFieldType =
   | "Database"
   | "NewDatabase";
 
-export type TaskFieldReferenceProvider = {
+export type IssueFieldReferenceProvider = {
   title: string;
   link: string;
 };
 
-export type TaskFieldReferenceProviderContext = {
-  task: Task;
-  field: TaskField;
+export type IssueFieldReferenceProviderContext = {
+  issue: Issue;
+  field: IssueField;
 };
 
-export type TaskContext = {
+export type IssueContext = {
   store: Store<any>;
   currentUser: Principal;
   new: boolean;
-  task: Task | TaskNew;
+  issue: Issue | IssueNew;
 };
 
-export type TaskField = {
+export type IssueField = {
   category: "INPUT" | "OUTPUT";
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
@@ -74,18 +74,18 @@ export type TaskField = {
   // The display name. OK to change.
   name: string;
   // Field type. This must NOT be changed after in use. Similar to id field.
-  type: TaskFieldType;
+  type: IssueFieldType;
   // Whether the field is required.
   required: boolean;
   // Whether the field is resolved.
   // For INPUT, one use case is together with "required" field to validate whether it's ready to submit the data.
-  // For OUTPUT, one use case is to validate whether the field is filled properly according to the task.
-  resolved: (ctx: TaskContext) => boolean;
+  // For OUTPUT, one use case is to validate whether the field is filled properly according to the issue.
+  resolved: (ctx: IssueContext) => boolean;
   // Placeholder displayed on UI.
   placeholder?: string;
 };
 
-export const UNKNOWN_FIELD: TaskField = {
+export const UNKNOWN_FIELD: IssueField = {
   category: "INPUT",
   id: UNKNOWN_ID,
   slug: "",
@@ -111,8 +111,8 @@ export type TemplateContext = {
   currentUser: Principal;
 };
 
-export type TaskTemplate = {
+export type IssueTemplate = {
   type: string;
-  buildTask: (ctx: TemplateContext) => TaskNew;
-  fieldList: TaskField[];
+  buildIssue: (ctx: TemplateContext) => IssueNew;
+  fieldList: IssueField[];
 };

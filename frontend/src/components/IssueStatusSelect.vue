@@ -8,7 +8,7 @@
   >
     <template v-slot:menuItem="{ item }">
       <span class="flex items-center space-x-2">
-        <TaskStatusIcon :taskStatus="item" :size="'small'" />
+        <IssueStatusIcon :issueStatus="item" :size="'small'" />
         <span>
           {{ item }}
         </span>
@@ -19,16 +19,16 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import TaskStatusIcon from "../components/TaskStatusIcon.vue";
-import { TaskStatus, TaskStatusTransitionType } from "../types";
+import IssueStatusIcon from "../components/IssueStatusIcon.vue";
+import { IssueStatus, IssueStatusTransitionType } from "../types";
 
 export default {
-  name: "TaskStatusSelect",
+  name: "IssueStatusSelect",
   emits: ["start-transition"],
-  components: { TaskStatusIcon },
+  components: { IssueStatusIcon },
   props: {
     selectedStatus: {
-      type: String as PropType<TaskStatus>,
+      type: String as PropType<IssueStatus>,
     },
     disabled: {
       default: false,
@@ -36,8 +36,8 @@ export default {
     },
   },
   setup(_, { emit }) {
-    const changeStatus = (newStatus: TaskStatus, didChange: () => {}) => {
-      let transition: TaskStatusTransitionType;
+    const changeStatus = (newStatus: IssueStatus, didChange: () => {}) => {
+      let transition: IssueStatusTransitionType;
       switch (newStatus) {
         case "OPEN":
           transition = "REOPEN";

@@ -7,27 +7,27 @@
       />
       <BBTableSearch
         ref="searchField"
-        :placeholder="'Search task name'"
+        :placeholder="'Search issue name'"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <TaskTable
+    <IssueTable
       :leftBordered="false"
       :rightBordered="false"
       :topBordered="true"
       :bottomBordered="true"
-      :taskSectionList="[
+      :issueSectionList="[
         {
           title: 'Assigned',
-          list: filteredList(state.assignedList).sort(openTaskSorter),
+          list: filteredList(state.assignedList).sort(openIssueSorter),
         },
         {
           title: 'Created',
-          list: filteredList(state.createdList).sort(openTaskSorter),
+          list: filteredList(state.createdList).sort(openIssueSorter),
         },
         {
           title: 'Subscribed',
-          list: filteredList(state.subscribeList).sort(openTaskSorter),
+          list: filteredList(state.subscribeList).sort(openIssueSorter),
         },
         {
           title: 'Recently Closed',
@@ -45,15 +45,15 @@ import { watchEffect, computed, nextTick, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
-import TaskTable from "../components/TaskTable.vue";
+import IssueTable from "../components/IssueTable.vue";
 import { activeStage, activeEnvironmentId } from "../utils";
-import { Environment, Task, StageStatus } from "../types";
+import { Environment, Issue, StageStatus } from "../types";
 
 interface LocalState {
-  createdList: Task[];
-  assignedList: Task[];
-  subscribeList: Task[];
-  closeList: Task[];
+  createdList: Issue[];
+  assignedList: Issue[];
+  subscribeList: Issue[];
+  closeList: Issue[];
   searchText: string;
   selectedEnvironment?: Environment;
 }
@@ -62,7 +62,7 @@ export default {
   name: "Home",
   components: {
     EnvironmentTabFilter,
-    TaskTable,
+    IssueTable,
   },
   props: {},
   setup(props, ctx) {
@@ -91,36 +91,36 @@ export default {
       searchField.value.$el.querySelector("#search").focus();
     });
 
-    const prepareTaskList = () => {
+    const prepareIssueList = () => {
       store
-        .dispatch("task/fetchTaskListForUser", currentUser.value.id)
-        .then((taskList: Task[]) => {
+        .dispatch("issue/fetchIssueListForUser", currentUser.value.id)
+        .then((issueList: Issue[]) => {
           state.createdList = [];
           state.assignedList = [];
           state.subscribeList = [];
           state.closeList = [];
-          for (const task of taskList) {
+          for (const issue of issueList) {
             // "OPEN"
-            if (task.status === "OPEN") {
-              if (task.creator.id === currentUser.value.id) {
-                state.createdList.push(task);
-              } else if (task.assignee?.id === currentUser.value.id) {
-                state.assignedList.push(task);
+            if (issue.status === "OPEN") {
+              if (issue.creator.id === currentUser.value.id) {
+                state.createdList.push(issue);
+              } else if (issue.assignee?.id === currentUser.value.id) {
+                state.assignedList.push(issue);
               } else if (
-                task.subscriberList.find(
+                issue.subscriberList.find(
                   (item) => item.id == currentUser.value.id
                 )
               ) {
-                state.subscribeList.push(task);
+                state.subscribeList.push(issue);
               }
             }
             // "DONE" or "CANCELED"
-            else if (task.status === "DONE" || task.status === "CANCELED") {
+            else if (issue.status === "DONE" || issue.status === "CANCELED") {
               if (
-                task.creator.id === currentUser.value.id ||
-                task.assignee?.id === currentUser.value.id
+                issue.creator.id === currentUser.value.id ||
+                issue.assignee?.id === currentUser.value.id
               ) {
-                state.closeList.push(task);
+                state.closeList.push(issue);
               }
             }
           }
@@ -130,7 +130,7 @@ export default {
         });
     };
 
-    watchEffect(prepareTaskList);
+    watchEffect(prepareIssueList);
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
@@ -148,22 +148,22 @@ export default {
       state.searchText = searchText;
     };
 
-    const filteredList = (list: Task[]) => {
+    const filteredList = (list: Issue[]) => {
       if (!state.selectedEnvironment && !state.searchText) {
         // Select "All"
         return list;
       }
-      return list.filter((task) => {
+      return list.filter((issue) => {
         return (
           (!state.selectedEnvironment ||
-            activeEnvironmentId(task) === state.selectedEnvironment.id) &&
+            activeEnvironmentId(issue) === state.selectedEnvironment.id) &&
           (!state.searchText ||
-            task.name.toLowerCase().includes(state.searchText.toLowerCase()))
+            issue.name.toLowerCase().includes(state.searchText.toLowerCase()))
         );
       });
     };
 
-    const openTaskSorter = (a: Task, b: Task) => {
+    const openIssueSorter = (a: Issue, b: Issue) => {
       const statusOrder = (status: StageStatus) => {
         switch (status) {
           case "FAILED":
@@ -192,7 +192,7 @@ export default {
       filteredList,
       selectEnvironment,
       changeSearchText,
-      openTaskSorter,
+      openIssueSorter,
     };
   },
 };

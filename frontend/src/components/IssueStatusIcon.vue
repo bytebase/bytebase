@@ -1,9 +1,9 @@
 <template>
   <span
     class="flex items-center justify-center rounded-full select-none"
-    :class="taskIconClass()"
+    :class="issueIconClass()"
   >
-    <template v-if="taskStatus === `OPEN`">
+    <template v-if="issueStatus === `OPEN`">
       <span
         v-if="stageStatus === 'RUNNING'"
         class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
@@ -22,7 +22,7 @@
         aria-hidden="true"
       ></span>
     </template>
-    <template v-else-if="taskStatus === `DONE`">
+    <template v-else-if="issueStatus === `DONE`">
       <svg
         class="w-4 h-4"
         xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +37,7 @@
         />
       </svg>
     </template>
-    <template v-else-if="taskStatus === `CANCELED`">
+    <template v-else-if="issueStatus === `CANCELED`">
       <svg
         class="w-5 h-5"
         fill="currentColor"
@@ -59,16 +59,16 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { activeStage } from "../utils";
-import { StageStatus, TaskStatus } from "../types";
+import { StageStatus, IssueStatus } from "../types";
 
 type SizeType = "small" | "normal";
 
 export default {
-  name: "TaskStatusIcon",
+  name: "IssueStatusIcon",
   props: {
-    taskStatus: {
+    issueStatus: {
       required: true,
-      type: String as PropType<TaskStatus>,
+      type: String as PropType<IssueStatus>,
     },
     stageStatus: {
       type: String as PropType<StageStatus>,
@@ -80,9 +80,9 @@ export default {
   },
   components: {},
   setup(props, ctx) {
-    const taskIconClass = () => {
+    const issueIconClass = () => {
       let iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
-      switch (props.taskStatus) {
+      switch (props.issueStatus) {
         case "OPEN":
           if (props.stageStatus && props.stageStatus === "FAILED") {
             return (
@@ -105,7 +105,7 @@ export default {
     };
 
     return {
-      taskIconClass,
+      issueIconClass,
       activeStage,
     };
   },

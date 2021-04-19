@@ -1,2 +1,2 @@
-export * from "./task/template";
+export * from "./issue/template";
 export * from "./types";
