@@ -19,7 +19,7 @@ export default function configureMessage(route) {
     const attrs = this.normalizedRequestAttrs("message-patch");
     const message = schema.messages.find(request.params.messageId);
     if (message) {
-      return message.update({ ...attrs, lastUpdatedTs: Date.now() });
+      return message.update({ ...attrs, updatedTs: Date.now() });
     }
     return new Response(
       404,

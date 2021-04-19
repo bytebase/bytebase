@@ -88,7 +88,7 @@
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
           <span>
-            {{ humanizeTs(member.lastUpdatedTs) }}
+            {{ humanizeTs(member.updatedTs) }}
           </span>
           <span>by</span>
           <router-link :to="`/u/${member.updater.id}`" class="normal-link"

@@ -54,7 +54,7 @@ export default function configureProrjectMember(route) {
       creatorId: attrs.creatorId,
       updaterId: attrs.creatorId,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       role: attrs.role,
       principalId: attrs.principalId,
       projectId: request.params.projectId,
@@ -66,7 +66,7 @@ export default function configureProrjectMember(route) {
     const messageTemplate = {
       containerId: request.params.projectId,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.project.member.create",
       status: "DELIVERED",
       creatorId: attrs.creatorId,
@@ -115,7 +115,7 @@ export default function configureProrjectMember(route) {
       const messageTemplate = {
         containerId: request.params.projectId,
         createdTs: ts,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         type: "bb.msg.project.member.updaterole",
         status: "DELIVERED",
         creatorId: attrs.updaterId,
@@ -168,7 +168,7 @@ export default function configureProrjectMember(route) {
       const messageTemplate = {
         containerId: request.params.projectId,
         createdTs: ts,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         type: "bb.msg.project.member.revoke",
         status: "DELIVERED",
         creatorId: FAKE_API_CALLER_ID,

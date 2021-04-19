@@ -91,7 +91,7 @@
         <BBStepBar :stepList="stageList(task)" />
       </BBTableCell>
       <BBTableCell class="hidden md:table-cell">
-        {{ humanizeTs(task.lastUpdatedTs) }}
+        {{ humanizeTs(task.updatedTs) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
         <div class="flex flex-row items-center">

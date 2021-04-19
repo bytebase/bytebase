@@ -57,7 +57,7 @@ export const unknown = (
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     status: "UNKNOWN",
     name: "<<Unknown principal>>",
     email: "",
@@ -67,7 +67,7 @@ export const unknown = (
   const UNKNOWN_USER: User = {
     id: UNKNOWN_ID,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     status: "UNKNOWN",
     name: "<<Unknown user>>",
     email: "unknown@example.com",
@@ -78,7 +78,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     role: "GUEST",
     principalId: UNKNOWN_ID,
   };
@@ -88,7 +88,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
@@ -102,7 +102,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     memberList: [],
   };
 
@@ -112,7 +112,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     role: "DEVELOPER",
     principal: UNKNOWN_PRINCIPAL,
   };
@@ -124,7 +124,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     name: "<<Unknown instance>>",
     host: "",
   };
@@ -137,7 +137,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     name: "<<Unknown database>>",
     syncStatus: "NOT_FOUND",
     lastSuccessfulSyncTs: 0,
@@ -151,7 +151,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     memberList: [],
     name: "<<Unknown data source>>",
     type: "RO",
@@ -162,7 +162,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     project: UNKNOWN_PROJECT,
     name: "<<Unknown task>>",
     status: "OPEN",
@@ -178,7 +178,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     name: "<<Unknown stage>>",
     type: "bytebase.stage.unknown",
     status: "PENDING",
@@ -194,7 +194,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     name: "<<Unknown step>>",
     type: "bytebase.step.unknown",
     status: "PENDING",
@@ -204,7 +204,7 @@ export const unknown = (
     id: UNKNOWN_ID,
     containerId: UNKNOWN_ID,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     actionType: "bytebase.task.create",
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
@@ -217,7 +217,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     type: "bb.msg.task.assign",
     status: "DELIVERED",
     description: "",
@@ -229,7 +229,7 @@ export const unknown = (
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
-    lastUpdatedTs: 0,
+    updatedTs: 0,
     name: "",
     link: "",
   };
@@ -275,7 +275,7 @@ export const FINAL_STAGE: Stage = {
   creator: unknown("PRINCIPAL") as Principal,
   createdTs: 0,
   updater: unknown("PRINCIPAL") as Principal,
-  lastUpdatedTs: 0,
+  updatedTs: 0,
   name: "Final stage",
   type: "bytebase.stage.final",
   status: "PENDING",
@@ -291,7 +291,7 @@ export const FINAL_STEP: Step = {
   creator: unknown("PRINCIPAL") as Principal,
   createdTs: 0,
   updater: unknown("PRINCIPAL") as Principal,
-  lastUpdatedTs: 0,
+  updatedTs: 0,
   name: "Final step",
   type: "bytebase.step.final",
   status: "PENDING",
@@ -370,7 +370,7 @@ export type Member = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   role: RoleType;
@@ -407,7 +407,7 @@ export type ProjectMember = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   role: ProjectRoleType;
@@ -444,7 +444,7 @@ export type Principal = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   status: PrincipalStatus;
@@ -478,7 +478,7 @@ export type User = {
   // [TODO] User doesn't have updater, creator fields because of bootstrap issue.
   // Who is the updater, creator for the 1st user?
   createdTs: number;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   status: PrincipalStatus;
@@ -502,7 +502,7 @@ export type Bookmark = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   name: string;
@@ -526,7 +526,7 @@ export type Project = {
   creator: Principal;
   updater: Principal;
   createdTs: number;
-  lastUpdatedTs: number;
+  updatedTs: number;
   rowStatus: RowStatus;
 
   // Domain specific fields
@@ -621,7 +621,7 @@ export type Task = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   name: string;
@@ -775,7 +775,7 @@ export type Stage = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   name: string;
@@ -879,7 +879,7 @@ export type Step = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   name: string;
@@ -934,7 +934,7 @@ export type Activity = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   actionType: ActionType;
@@ -1087,7 +1087,7 @@ export type Message = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   type: MessageType;
@@ -1096,7 +1096,7 @@ export type Message = {
   receiver: Principal;
   payload?: MessagePayload;
 };
-export type MessageNew = Omit<Message, "id" | "createdTs" | "lastUpdatedTs">;
+export type MessageNew = Omit<Message, "id" | "createdTs" | "updatedTs">;
 
 export type MessagePatch = {
   updaterId: PrincipalId;
@@ -1112,7 +1112,7 @@ export type Environment = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
   rowStatus: RowStatus;
 
   // Domain specific fields
@@ -1147,7 +1147,7 @@ export type Instance = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
   rowStatus: RowStatus;
 
   // Domain specific fields
@@ -1216,7 +1216,7 @@ export type Database = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   name: string;
@@ -1267,7 +1267,7 @@ export type DataSource = {
   creator: Principal;
   createdTs: number;
   updater: Principal;
-  lastUpdatedTs: number;
+  updatedTs: number;
 
   // Domain specific fields
   name: string;

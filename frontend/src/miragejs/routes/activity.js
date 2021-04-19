@@ -30,7 +30,7 @@ export default function configureActivity(route) {
       ...attrs,
       createdTs: ts,
       updaterId: attrs.creatorId,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       actionType: "bytebase.task.comment.create",
       workspaceId: WORKSPACE_ID,
     };
@@ -43,7 +43,7 @@ export default function configureActivity(route) {
       const messageTemplate = {
         containerId: attrs.containerId,
         createdTs: ts,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         type: "bb.msg.task.comment",
         status: "DELIVERED",
         description: attrs.comment,
@@ -93,7 +93,7 @@ export default function configureActivity(route) {
     const attrs = this.normalizedRequestAttrs("activity-patch");
     const activity = schema.activities.find(request.params.activityId);
     if (activity) {
-      return activity.update({ ...attrs, lastUpdatedTs: Date.now() });
+      return activity.update({ ...attrs, updatedTs: Date.now() });
     }
     return new Response(
       404,

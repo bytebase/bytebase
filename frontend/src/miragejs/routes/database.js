@@ -101,7 +101,7 @@ export default function configureDatabase(route) {
       creatorId,
       createdTs: ts,
       updaterId: creatorId,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       syncStatus: "OK",
       lastSuccessfulSyncTs: ts,
       workspaceId: WORKSPACE_ID,
@@ -112,7 +112,7 @@ export default function configureDatabase(route) {
         creatorId: creatorId,
         createdTs: ts,
         updaterId: creatorId,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         actionType: "bytebase.task",
         containerId: taskId,
         comment: `Created database ${newDatabase.name}`,
@@ -138,6 +138,6 @@ export default function configureDatabase(route) {
       return new Response(400, {}, { errors: "Can't update database *" });
     }
 
-    return database.update({ ...attrs, lastUpdatedTs: Date.now() });
+    return database.update({ ...attrs, updatedTs: Date.now() });
   });
 }

@@ -47,7 +47,7 @@ export default function configureDataSource(route) {
         creatorId: attrs.creatorId,
         createdTs: ts,
         updaterId: attrs.creatorId,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
       };
       return schema.dataSources.create(newDataSource);
     }
@@ -96,7 +96,7 @@ export default function configureDataSource(route) {
         }
 
         if (hasChange) {
-          return dataSource.update({ ...attrs, lastUpdatedTs: Date.now() });
+          return dataSource.update({ ...attrs, updatedTs: Date.now() });
         }
         return dataSource;
       }

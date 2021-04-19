@@ -12,7 +12,7 @@ export default {
     updaterId() {
       return UNKNOWN_ID;
     },
-    lastUpdatedTs(i) {
+    updatedTs(i) {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
     actionType() {

@@ -16,7 +16,7 @@ export default function configureUser(route) {
       creatorId: attrs.creatorId,
       createdTs: ts,
       updaterId: attrs.creatorId,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
     });
   });
 
@@ -37,7 +37,7 @@ export default function configureUser(route) {
     const ts = Date.now();
     return user.update({
       ...attrs,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
     });
   });
 }

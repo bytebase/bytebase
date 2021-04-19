@@ -13,7 +13,7 @@ export default {
     updaterId() {
       return UNKNOWN_ID;
     },
-    lastUpdatedTs(i) {
+    updatedTs(i) {
       return Date.now() - i * 3600 * 1000;
     },
     name(i) {

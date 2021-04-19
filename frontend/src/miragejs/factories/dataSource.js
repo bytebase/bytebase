@@ -15,7 +15,7 @@ export default {
     updaterId(i) {
       return UNKNOWN_ID;
     },
-    lastUpdatedTs(i) {
+    updatedTs(i) {
       return Date.now() - i * 3600 * 1000;
     },
     type(i) {

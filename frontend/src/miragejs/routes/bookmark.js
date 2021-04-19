@@ -20,7 +20,7 @@ export default function configureBookmark(route) {
       creatorId: attrs.creatorId,
       createdTs: ts,
       updaterId: attrs.creatorId,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       workspaceId: WORKSPACE_ID,
     };
     return schema.bookmarks.create(newBookmark);

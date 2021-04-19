@@ -43,7 +43,7 @@ function convert(
     creator,
     updater,
     createdTs: attrs.createdTs,
-    lastUpdatedTs: attrs.lastUpdatedTs,
+    updatedTs: attrs.updatedTs,
     memberList: [],
   };
 
@@ -93,7 +93,7 @@ function convertMember(
     creator,
     updater,
     createdTs: attrs.createdTs,
-    lastUpdatedTs: attrs.lastUpdatedTs,
+    updatedTs: attrs.updatedTs,
     role: attrs.role,
     principal,
   };

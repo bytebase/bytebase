@@ -27,7 +27,7 @@ function convert(user: ResourceObject, rootGetters: any): Principal {
     creator,
     updater,
     createdTs: user.attributes.createdTs as number,
-    lastUpdatedTs: user.attributes.lastUpdatedTs as number,
+    updatedTs: user.attributes.updatedTs as number,
     status: user.attributes.status as PrincipalStatus,
     name: user.attributes.name as string,
     email: user.attributes.email as string,

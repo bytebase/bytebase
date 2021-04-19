@@ -2,7 +2,7 @@
   {
     "id": "1",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",
@@ -13,7 +13,7 @@
   {
     "id": "2",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",
@@ -24,7 +24,7 @@
   {
     "id": "3",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",
@@ -35,7 +35,7 @@
   {
     "id": "4",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",
@@ -46,7 +46,7 @@
   {
     "id": "5",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",
@@ -57,7 +57,7 @@
   {
     "id": "6",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "INVITED",
@@ -68,7 +68,7 @@
   {
     "id": "7",
     "updaterId": "1",
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",

@@ -84,7 +84,7 @@
                         {{ humanizeTs(activity.createdTs) }}
                         <template
                           v-if="
-                            activity.createdTs != activity.lastUpdatedTs &&
+                            activity.createdTs != activity.updatedTs &&
                             activity.actionType ==
                               'bytebase.task.comment.create'
                           "

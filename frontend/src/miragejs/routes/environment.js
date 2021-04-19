@@ -48,7 +48,7 @@ export default function configureEnvironment(route) {
       creatorId: attrs.creatorId,
       createdTs: ts,
       updaterId: attrs.creatorId,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       workspaceId: WORKSPACE_ID,
       rowStatus: "NORMAL",
       order,
@@ -58,7 +58,7 @@ export default function configureEnvironment(route) {
     const messageTemplate = {
       containerId: createdEnvironment.id,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.environment.create",
       status: "DELIVERED",
       creatorId: attrs.creatorId,
@@ -91,7 +91,7 @@ export default function configureEnvironment(route) {
     const messageTemplate = {
       containerId: WORKSPACE_ID,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.environment.reorder",
       status: "DELIVERED",
       creatorId: attrs.updaterId,
@@ -151,7 +151,7 @@ export default function configureEnvironment(route) {
     const messageTemplate = {
       containerId: environment.id,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type,
       status: "DELIVERED",
       creatorId: attrs.updaterId,

@@ -6,7 +6,7 @@
     "creatorId": "1",
     "updaterId": "1",
     "createdTs": 1614528000000,
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "name": "Default"
   },
   {
@@ -16,7 +16,7 @@
     "creatorId": "4",
     "updaterId": "4",
     "createdTs": 1614528000000,
-    "lastUpdatedTs": 1614571200000,
+    "updatedTs": 1614571200000,
     "name": "Default"
   }
 ]

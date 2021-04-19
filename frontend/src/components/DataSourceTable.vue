@@ -91,7 +91,7 @@
           {{ state.showPassword ? dataSource.password : "******" }}
         </BBTableCell>
         <BBTableCell>
-          {{ humanizeTs(dataSource.lastUpdatedTs) }}
+          {{ humanizeTs(dataSource.updatedTs) }}
         </BBTableCell>
         <BBTableCell>
           {{ humanizeTs(dataSource.createdTs) }}
@@ -137,7 +137,7 @@ const columnList: BBTableColumn[] = [
     title: "Password",
   },
   {
-    title: "Last updated",
+    title: "Updated",
   },
   {
     title: "Created",

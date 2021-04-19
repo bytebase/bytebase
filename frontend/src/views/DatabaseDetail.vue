@@ -109,7 +109,7 @@
             <div class="col-span-1 col-start-1">
               <dt class="text-sm font-medium text-control-light">Updated</dt>
               <dd class="mt-1 text-sm text-main">
-                {{ humanizeTs(database.lastUpdatedTs) }}
+                {{ humanizeTs(database.updatedTs) }}
               </dd>
             </div>
 

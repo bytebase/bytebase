@@ -24,7 +24,7 @@ export default function configureMember(route) {
       creatorId: attrs.creatorId,
       updaterId: attrs.creatorId,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       role: attrs.role,
       principalId: attrs.principalId,
       workspaceId: WORKSPACE_ID,
@@ -41,7 +41,7 @@ export default function configureMember(route) {
     const messageTemplate = {
       containerId: WORKSPACE_ID,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type,
       status: "DELIVERED",
       creatorId: attrs.creatorId,
@@ -77,7 +77,7 @@ export default function configureMember(route) {
     const messageTemplate = {
       containerId: WORKSPACE_ID,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.member.updaterole",
       status: "DELIVERED",
       creatorId: attrs.updaterId,
@@ -113,7 +113,7 @@ export default function configureMember(route) {
     const messageTemplate = {
       containerId: WORKSPACE_ID,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.member.revoke",
       status: "DELIVERED",
       creatorId: FAKE_API_CALLER_ID,

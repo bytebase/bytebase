@@ -31,7 +31,7 @@
             >
             at
             <span href="#" class="font-medium text-control">{{
-              moment(task.lastUpdatedTs).format("LLL")
+              moment(task.updatedTs).format("LLL")
             }}</span>
           </p>
         </div>

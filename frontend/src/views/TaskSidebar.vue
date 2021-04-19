@@ -153,7 +153,7 @@
           Updated
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(task.lastUpdatedTs).format("LLL") }}</span
+          {{ moment(task.updatedTs).format("LLL") }}</span
         >
 
         <h2 class="textlabel flex items-center col-span-1 col-start-1">

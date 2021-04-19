@@ -57,7 +57,7 @@ export default function configureStage(route) {
         creatorId: attrs.updaterId,
         createdTs: ts,
         updaterId: attrs.updaterId,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         status: "DELIVERED",
         workspaceId: WORKSPACE_ID,
       };
@@ -108,7 +108,7 @@ export default function configureStage(route) {
       }
 
       if (changeList.length) {
-        stage.update({ ...attrs, lastUpdatedTs: ts });
+        stage.update({ ...attrs, updatedTs: ts });
 
         const payload = {
           changeList,
@@ -118,7 +118,7 @@ export default function configureStage(route) {
           creatorId: attrs.updaterId,
           createdTs: ts,
           updaterId: attrs.updaterId,
-          lastUpdatedTs: ts,
+          updatedTs: ts,
           actionType: "bytebase.task.stage.status.update",
           containerId: updatedTask.id,
           comment: attrs.comment,

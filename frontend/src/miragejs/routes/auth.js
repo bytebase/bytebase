@@ -32,7 +32,7 @@ export default function configureAuth(route) {
     const ts = Date.now();
     const createdUser = schema.users.create({
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       status: "ACTIVE",
       ...signupInfo,
     });
@@ -48,7 +48,7 @@ export default function configureAuth(route) {
       creatorId: createdUser.id,
       createdTs: ts,
       updaterId: createdUser.id,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       role: "DEVELOPER",
       updaterId: createdUser.id,
       workspaceId: WORKSPACE_ID,
@@ -58,7 +58,7 @@ export default function configureAuth(route) {
     const messageTemplate = {
       containerId: WORKSPACE_ID,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.member.join",
       status: "DELIVERED",
       creatorId: createdUser.id,
@@ -85,7 +85,7 @@ export default function configureAuth(route) {
       user.update({
         name: activateInfo.name,
         status: "ACTIVE",
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         passwordHash: activateInfo.password,
       });
 
@@ -97,7 +97,7 @@ export default function configureAuth(route) {
       const messageTemplate = {
         containerId: WORKSPACE_ID,
         createdTs: ts,
-        lastUpdatedTs: ts,
+        updatedTs: ts,
         type: "bb.msg.member.join",
         status: "DELIVERED",
         creatorId: user.id,

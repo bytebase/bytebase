@@ -57,7 +57,7 @@ export default function configurInstance(route) {
       creatorId: attrs.creatorId,
       updaterId: attrs.creatorId,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       workspaceId: WORKSPACE_ID,
     });
 
@@ -81,7 +81,7 @@ export default function configurInstance(route) {
     const messageTemplate = {
       containerId: createdInstance.id,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.instance.create",
       status: "DELIVERED",
       creatorId: attrs.creatorId,
@@ -223,7 +223,7 @@ export default function configurInstance(route) {
     const messageTemplate = {
       containerId: updatedInstance.id,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type,
       status: "DELIVERED",
       creatorId: attrs.updaterId,
@@ -269,7 +269,7 @@ export default function configurInstance(route) {
     const messageTemplate = {
       containerId: instance.id,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       type: "bb.msg.instance.delete",
       status: "DELIVERED",
       creatorId: FAKE_API_CALLER_ID,

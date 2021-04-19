@@ -15,7 +15,7 @@ const GUEST: Principal = {
   creator: unknown("PRINCIPAL") as Principal,
   updater: unknown("PRINCIPAL") as Principal,
   createdTs: 0,
-  lastUpdatedTs: 0,
+  updatedTs: 0,
   status: "ACTIVE",
   name: "Guest",
   email: "guest@bytebase.com",

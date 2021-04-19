@@ -6,7 +6,7 @@ export default {
     createdTs(i) {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
-    lastUpdatedTs(i) {
+    updatedTs(i) {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
     type() {

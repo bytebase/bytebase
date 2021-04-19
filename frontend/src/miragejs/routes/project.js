@@ -66,7 +66,7 @@ export default function configureProject(route) {
       creatorId: attrs.creatorId,
       createdTs: ts,
       updaterId: attrs.creatorId,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       workspaceId: WORKSPACE_ID,
     };
     const project = schema.projects.create(newProject);
@@ -75,7 +75,7 @@ export default function configureProject(route) {
       creatorId: attrs.creatorId,
       updaterId: attrs.creatorId,
       createdTs: ts,
-      lastUpdatedTs: ts,
+      updatedTs: ts,
       projectId: project.id,
       role: "OWNER",
       principalId: attrs.creatorId,
@@ -117,7 +117,7 @@ export default function configureProject(route) {
     return schema.projects.find(request.params.projectId).update({
       ...attrs,
       updaterId: attrs.updaterId,
-      lastUpdatedTs: Date.now(),
+      updatedTs: Date.now(),
     });
   });
 }

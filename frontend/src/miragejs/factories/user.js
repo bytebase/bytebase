@@ -13,7 +13,7 @@ export default {
     createdTs(i) {
       return Date.now() - (i + 1) * 1800 * 1000;
     },
-    lastUpdatedTs(i) {
+    updatedTs(i) {
       return Date.now() - i * 3600 * 1000;
     },
     name() {

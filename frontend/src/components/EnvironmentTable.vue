@@ -18,7 +18,7 @@
         {{ humanizeTs(environment.createdTs) }}
       </BBTableCell>
       <BBTableCell class="w-24 table-cell">
-        {{ humanizeTs(environment.lastUpdatedTs) }}
+        {{ humanizeTs(environment.updatedTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -41,7 +41,7 @@ const COLUMN_LIST = [
     title: "Created",
   },
   {
-    title: "Last updated",
+    title: "Updated",
   },
 ];
 

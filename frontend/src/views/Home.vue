@@ -32,7 +32,7 @@
         {
           title: 'Recently Closed',
           list: filteredList(state.closeList).sort((a, b) => {
-            return b.lastUpdatedTs - a.lastUpdatedTs;
+            return b.updatedTs - a.updatedTs;
           }),
         },
       ]"
@@ -181,7 +181,7 @@ export default {
       const aStatusOrder = statusOrder(activeStage(a).status);
       const bStatusOrder = statusOrder(activeStage(b).status);
       if (aStatusOrder == bStatusOrder) {
-        return b.lastUpdatedTs - a.lastUpdatedTs;
+        return b.updatedTs - a.updatedTs;
       }
       return aStatusOrder - bStatusOrder;
     };
