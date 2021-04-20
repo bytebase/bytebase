@@ -28,6 +28,7 @@ export enum IssueBuiltinFieldId {
   ROLLBACK_SQL = "12",
   SUBSCRIBER_LIST = "13",
   TASK_STATUS = "14",
+  STEP_STATUS = "15",
 }
 
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";

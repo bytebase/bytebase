@@ -24,30 +24,21 @@
         </template>
         <!-- Action Button List -->
         <div
-          v-else-if="applicableStatusTransitionList.length > 0"
-          class="flex flex-row-reverse"
+          v-else-if="applicableStepStatusTransitionList.length > 0"
+          class="flex space-x-2"
         >
           <template
-            v-for="(transition, index) in applicableStatusTransitionList"
+            v-for="(
+              transition, index
+            ) in applicableStepStatusTransitionList.reverse()"
             :key="index"
           >
             <button
               type="button"
-              :class="
-                index == 0
-                  ? transition.type == 'RESOLVE'
-                    ? 'btn-success'
-                    : transition.type == 'NEXT'
-                    ? 'btn-primary'
-                    : 'btn-normal'
-                  : 'btn-normal mr-2'
-              "
-              :disabled="!allowTransition(transition)"
-              @click.prevent="
-                tryStartIssueStatusTransition(transition.type, () => {})
-              "
+              :class="transition.buttonClass"
+              @click.prevent="tryStartStepStatusTransition(transition)"
             >
-              {{ transition.actionName }}
+              {{ transition.buttonName }}
             </button>
           </template>
         </div>
@@ -169,21 +160,21 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  onMounted,
-  watch,
-  watchEffect,
-  reactive,
-  ref,
-  ComputedRef,
-} from "vue";
+import { computed, onMounted, watch, watchEffect, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
-import { idFromSlug, issueSlug, isDemo, pendingResolve } from "../utils";
+import {
+  idFromSlug,
+  issueSlug,
+  isDemo,
+  pendingResolve,
+  StepStatusTransition,
+  applicableStepTransition,
+  activeStep,
+} from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
 import IssueTaskFlow from "./IssueTaskFlow.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
@@ -211,6 +202,8 @@ import {
   UNKNOWN_ID,
   ProjectId,
   Environment,
+  StepStatusPatch,
+  StepId,
 } from "../types";
 import {
   defaulTemplate,
@@ -520,6 +513,49 @@ export default {
       }
       return true;
     };
+
+    const tryStartStepStatusTransition = (transition: StepStatusTransition) => {
+      const step = activeStep((state.issue as Issue).pipeline);
+      doStepStatusTransition(transition, step.id);
+    };
+
+    const doStepStatusTransition = (
+      transition: StepStatusTransition,
+      stepId: StepId,
+      comment?: string
+    ) => {
+      const stepStatusPatch: StepStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: transition.to,
+        comment: comment ? comment.trim() : undefined,
+      };
+
+      store.dispatch("step/updateStatus", {
+        issueId: (state.issue as Issue).id,
+        pipelineId: (state.issue as Issue).pipeline.id,
+        stepId,
+        stepStatusPatch,
+      });
+    };
+
+    const changeStepStatus = (
+      taskId: TaskId,
+      taskStatus: TaskStatus,
+      comment?: string
+    ) => {
+      const taskStatusPatch: TaskStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: taskStatus,
+        comment: comment ? comment.trim() : undefined,
+      };
+
+      store.dispatch("task/updateTaskStatus", {
+        issueId: (state.issue as Issue).id,
+        taskId,
+        taskStatusPatch,
+      });
+    };
+
     const tryStartIssueStatusTransition = (
       type: IssueStatusTransitionType,
       didTransit: () => {}
@@ -753,6 +789,18 @@ export default {
       return state.issue.type == "bytebase.database.schema.update";
     });
 
+    const applicableStepStatusTransitionList = computed(
+      (): StepStatusTransition[] => {
+        let list: StepStatusTransition[] = [];
+
+        if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
+          list = applicableStepTransition((state.issue as Issue).pipeline);
+        }
+
+        return list;
+      }
+    );
+
     const applicableStatusTransitionList = computed(
       (): IssueStatusTransition[] => {
         const list: IssueStatusTransitionType[] = [];
@@ -801,13 +849,16 @@ export default {
       updateSql,
       updateRollbackSql,
       allowTransition,
+      tryStartStepStatusTransition,
+      doStepStatusTransition,
+      changeStepStatus,
       tryStartIssueStatusTransition,
       doIssueStatusTransition,
+      changeTaskStatus,
       updateAssigneeId,
       updateSubscriberIdList,
       updateCustomField,
       doCreate,
-      changeTaskStatus,
       workflowType,
       allowCreate,
       currentUser,
@@ -822,6 +873,7 @@ export default {
       showIssueOutputPanel,
       showIssueSqlPanel,
       showIssueRollbackSqlPanel,
+      applicableStepStatusTransitionList,
       applicableStatusTransitionList,
     };
   },

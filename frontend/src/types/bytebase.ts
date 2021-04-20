@@ -1002,7 +1002,7 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
 //
 // Comparison with GitLab:
 // PIPELINE = GitLab Pipeline
-// TASK = GitLab Task
+// TASK = GitLab Stage
 // STEP = GitLab Job
 //
 // Comparison with Octopus:
@@ -1195,13 +1195,7 @@ export type StepType =
   | "bytebase.step.approve"
   | "bytebase.step.database.schema.update";
 
-export type StepStatus =
-  | "PENDING"
-  | "RUNNING"
-  | "DONE"
-  | "FAILED"
-  | "CANCELED"
-  | "SKIPPED";
+export type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 
 export type DatabaseSchemaUpdateStepPayload = {
   sql: string;
@@ -1244,13 +1238,20 @@ export type StepPatch = {
   status: StepStatus;
 };
 
+export type StepStatusPatch = {
+  updaterId: PrincipalId;
+  status: StepStatus;
+  comment?: string;
+};
+
 // Activity
 export type IssueActionType =
   | "bytebase.issue.create"
   | "bytebase.issue.comment.create"
   | "bytebase.issue.field.update"
   | "bytebase.issue.status.update"
-  | "bytebase.issue.task.status.update";
+  | "bytebase.issue.task.status.update"
+  | "bytebase.issue.task.step.status.update";
 
 export type ActionType = IssueActionType;
 

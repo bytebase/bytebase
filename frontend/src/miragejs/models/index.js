@@ -115,6 +115,7 @@ export default {
     task: belongsTo(),
   }),
   stepPatch: Model,
+  stepStatusPatch: Model,
 
   // Environment
   environment: Model.extend({

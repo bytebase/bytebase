@@ -490,7 +490,8 @@ export default {
           return "commented";
         case "bytebase.issue.field.update":
         case "bytebase.issue.status.update":
-        case "bytebase.issue.task.status.update": {
+        case "bytebase.issue.task.status.update":
+        case "bytebase.issue.task.step.status.update": {
           const updateInfoList: string[] = [];
           for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
             ?.changeList || []) {
@@ -507,6 +508,10 @@ export default {
               newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.TASK_STATUS) {
               name = "task status";
+              oldValue = update.oldValue;
+              newValue = update.newValue;
+            } else if (update.fieldId == IssueBuiltinFieldId.STEP_STATUS) {
+              name = "step status";
               oldValue = update.oldValue;
               newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.ASSIGNEE) {

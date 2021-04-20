@@ -8,6 +8,7 @@ import configureActivity from "./activity";
 import configureMessage from "./message";
 import configureBookmark from "./bookmark";
 import configureIssue from "./issue";
+import configureStep from "./step";
 import configureProject from "./project";
 import configureProjectMember from "./projectMember";
 import configureEnvironment from "./environment";
@@ -53,6 +54,9 @@ export default function routes() {
 
   // Issue
   configureIssue(this);
+
+  // Step
+  configureStep(this);
 
   // Environment
   configureEnvironment(this);

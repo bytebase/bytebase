@@ -1,15 +1,16 @@
+import axios from "axios";
 import {
-  ResourceIdentifier,
   ResourceObject,
   StepState,
   Step,
-  Issue,
   Task,
   unknown,
   IssueId,
   TaskId,
   PipelineId,
   Pipeline,
+  StepStatusPatch,
+  StepId,
 } from "../../types";
 
 const state: () => StepState = () => ({});
@@ -60,7 +61,34 @@ const getters = {
   },
 };
 
-const actions = {};
+const actions = {
+  async updateStatus(
+    { dispatch }: any,
+    {
+      issueId,
+      pipelineId,
+      stepId,
+      stepStatusPatch,
+    }: {
+      issueId: IssueId;
+      pipelineId: PipelineId;
+      stepId: StepId;
+      stepStatusPatch: StepStatusPatch;
+    }
+  ) {
+    // TODO: Returns the updated pipeline and update the issue.
+    const data = (
+      await axios.patch(`/api/pipeline/${pipelineId}/step/${stepId}/status`, {
+        data: {
+          type: "stepstatuspatch",
+          attributes: stepStatusPatch,
+        },
+      })
+    ).data;
+
+    dispatch("issue/fetchIssueById", issueId, { root: true });
+  },
+};
 
 const mutations = {};
 
