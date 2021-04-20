@@ -322,7 +322,7 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     status: "UNKNOWN",
-    name: "<<Empty principal>>",
+    name: "",
     email: "",
     role: "GUEST",
   } as Principal;
@@ -332,8 +332,8 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     status: "UNKNOWN",
-    name: "<<Empty user>>",
-    email: "empty@example.com",
+    name: "",
+    email: "",
   };
 
   const EMPTY_MEMBER: Member = {
@@ -353,15 +353,15 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     rowStatus: "NORMAL",
-    name: "<<Empty environment>>",
+    name: "",
     order: 0,
   };
 
   const EMPTY_PROJECT: Project = {
     id: EMPTY_ID,
     rowStatus: "NORMAL",
-    name: "<<Empty project>>",
-    key: "EMT",
+    name: "",
+    key: "",
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
@@ -388,7 +388,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
-    name: "<<Empty instance>>",
+    name: "",
     host: "",
   };
 
@@ -401,7 +401,7 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    name: "<<Empty database>>",
+    name: "",
     syncStatus: "NOT_FOUND",
     lastSuccessfulSyncTs: 0,
     fingerprint: "",
@@ -416,7 +416,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     memberList: [],
-    name: "<<Empty data source>>",
+    name: "",
     type: "RO",
   };
 
@@ -426,7 +426,7 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    name: "<<Empty pipeline>>",
+    name: "",
     status: "PENDING",
     taskList: [],
   };
@@ -439,7 +439,7 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    name: "<<Empty issue>>",
+    name: "",
     status: "OPEN",
     type: "bytebase.general",
     description: "",
@@ -454,9 +454,10 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    name: "<<Empty task>>",
+    name: "",
     type: "bytebase.task.unknown",
     status: "PENDING",
+    environment: EMPTY_ENVIRONMENT,
     database: EMPTY_DATABASE,
     stepList: [],
   };
@@ -469,7 +470,7 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    name: "<<Empty step>>",
+    name: "",
     type: "bytebase.step.unknown",
     status: "PENDING",
   };
@@ -482,7 +483,7 @@ export const empty = (
     actionType: "bytebase.issue.create",
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
-    comment: "<<Empty comment>>",
+    comment: "",
   };
 
   const EMPTY_MESSAGE: Message = {
