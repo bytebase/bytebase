@@ -90,7 +90,7 @@
             :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
             :environmentId="environmentId"
-            :selectedId="fieldValue(field)"
+            :selectedId="fieldValue(field) || UNKNOWN_ID"
             @select-database-id="
               (databaseId) => {
                 trySaveCustomField(field, databaseId);
@@ -138,7 +138,13 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { fullDatabasePath } from "../utils";
 import { IssueField, IssueBuiltinFieldId, IssueContext } from "../plugins";
-import { DatabaseId, DataSource, EnvironmentId, Issue } from "../types";
+import {
+  DatabaseId,
+  DataSource,
+  EnvironmentId,
+  Issue,
+  UNKNOWN_ID,
+} from "../types";
 
 interface LocalState {}
 
@@ -305,6 +311,7 @@ export default {
     };
 
     return {
+      UNKNOWN_ID,
       state,
       environmentId,
       fieldValue,
