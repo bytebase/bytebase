@@ -15,6 +15,7 @@ import {
   IssueStatusPatch,
   Pipeline,
   empty,
+  EMPTY_ID,
 } from "../../types";
 
 function convert(
@@ -100,6 +101,10 @@ const getters = {
   },
 
   issueById: (state: IssueState) => (issueId: IssueId): Issue => {
+    if (issueId == EMPTY_ID) {
+      return empty("ISSUE") as Issue;
+    }
+
     return state.issueById.get(issueId) || (unknown("ISSUE") as Issue);
   },
 };

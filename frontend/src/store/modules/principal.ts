@@ -10,6 +10,8 @@ import {
   ResourceObject,
   UserPatch,
   unknown,
+  empty,
+  EMPTY_ID,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
 
@@ -54,6 +56,10 @@ const getters = {
   principalById: (state: PrincipalState) => (
     principalId: PrincipalId
   ): Principal => {
+    if (principalId == EMPTY_ID) {
+      return empty("PRINCIPAL") as Principal;
+    }
+
     return (
       state.principalList.find((item) => item.id == principalId) ||
       (unknown("PRINCIPAL") as Principal)

@@ -11,6 +11,8 @@ import {
   unknown,
   InstancePatch,
   RowStatus,
+  empty,
+  EMPTY_ID,
 } from "../../types";
 
 function convert(
@@ -108,6 +110,10 @@ const getters = {
   instanceById: (state: InstanceState) => (
     instanceId: InstanceId
   ): Instance => {
+    if (instanceId == EMPTY_ID) {
+      return empty("INSTANCE") as Instance;
+    }
+
     return (
       state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
     );

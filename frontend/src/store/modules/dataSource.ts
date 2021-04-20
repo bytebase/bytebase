@@ -14,6 +14,8 @@ import {
   Database,
   Instance,
   DataSourcePatch,
+  EMPTY_ID,
+  empty,
 } from "../../types";
 
 function convert(
@@ -91,6 +93,10 @@ const getters = {
   dataSourceById: (state: DataSourceState) => (
     dataSourceId: DataSourceId
   ): DataSource => {
+    if (dataSourceId == EMPTY_ID) {
+      return empty("DATA_SOURCE") as DataSource;
+    }
+
     return (
       state.dataSourceById.get(dataSourceId) ||
       (unknown("DATA_SOURCE") as DataSource)

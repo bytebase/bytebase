@@ -8,6 +8,8 @@ import {
   ResourceObject,
   PrincipalId,
   unknown,
+  empty,
+  EMPTY_ID,
 } from "../../types";
 
 function convert(member: ResourceObject, rootGetters: any): Member {
@@ -34,6 +36,10 @@ const getters = {
     return state.memberList;
   },
   memberByPrincipalId: (state: MemberState) => (id: PrincipalId): Member => {
+    if (id == EMPTY_ID) {
+      return empty("MEMBER") as Member;
+    }
+
     return (
       state.memberList.find((item) => item.principalId == id) ||
       (unknown("MEMBER") as Member)

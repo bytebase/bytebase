@@ -15,6 +15,8 @@ import {
   PrincipalId,
   ResourceIdentifier,
   RowStatus,
+  EMPTY_ID,
+  empty,
 } from "../../types";
 
 function convert(
@@ -136,6 +138,10 @@ const getters = {
   },
 
   projectById: (state: ProjectState) => (projectId: ProjectId): Project => {
+    if (projectId == EMPTY_ID) {
+      return empty("PROJECT") as Project;
+    }
+
     return state.projectById.get(projectId) || (unknown("PROJECT") as Project);
   },
 };

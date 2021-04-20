@@ -12,6 +12,8 @@ import {
   unknown,
   PipelineId,
   Pipeline,
+  Database,
+  empty,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -28,9 +30,13 @@ function convertPartial(
     task.attributes.updaterId
   );
 
-  const database = rootGetters["database/databaseById"](
-    (task.relationships!.database.data as ResourceIdentifier).id
-  );
+  let database: Database = empty("DATABASE") as Database;
+  // For create database task, there is no database id.
+  if (task.relationships!.database.data) {
+    database = rootGetters["database/databaseById"](
+      (task.relationships!.database.data as ResourceIdentifier).id
+    );
+  }
 
   const stepList: Step[] = [];
   for (const item of includedList || []) {

@@ -16,6 +16,8 @@ import {
   DataSourceMember,
   Project,
   ProjectId,
+  EMPTY_ID,
+  empty,
 } from "../../types";
 
 function convert(
@@ -159,6 +161,10 @@ const getters = {
     databaseId: DatabaseId,
     instanceId?: InstanceId
   ): Database => {
+    if (databaseId == EMPTY_ID) {
+      return empty("DATABASE") as Database;
+    }
+
     if (instanceId) {
       const list = state.databaseListByInstanceId.get(instanceId) || [];
       return (

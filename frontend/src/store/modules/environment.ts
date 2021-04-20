@@ -10,6 +10,8 @@ import {
   EnvironmentPatch,
   BatchUpdate,
   PrincipalId,
+  empty,
+  EMPTY_ID,
 } from "../../types";
 
 function convert(environment: ResourceObject, rootGetters: any): Environment {
@@ -46,6 +48,10 @@ const getters = {
   environmentById: (state: EnvironmentState) => (
     environmentId: EnvironmentId
   ): Environment => {
+    if (environmentId == EMPTY_ID) {
+      return empty("ENVIRONMENT") as Environment;
+    }
+
     for (const environment of state.environmentList) {
       if (environment.id == environmentId) {
         return environment;
