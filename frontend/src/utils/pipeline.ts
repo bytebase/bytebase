@@ -1,8 +1,8 @@
 import {
-  DatabaseId,
+  Database,
+  empty,
   EMPTY_ID,
-  EnvironmentId,
-  FINAL_TASK,
+  Environment,
   Pipeline,
   Task,
 } from "../types";
@@ -19,25 +19,25 @@ export function activeTask(pipeline: Pipeline): Task {
       return task;
     }
   }
-  return FINAL_TASK;
+  return empty("TASK") as Task;
 }
 
 export function activeTaskIsRunning(pipeline: Pipeline): boolean {
   return activeTask(pipeline).status === "RUNNING";
 }
 
-export function activeEnvironmentId(pipeline: Pipeline): EnvironmentId {
+export function activeEnvironment(pipeline: Pipeline): Environment {
   const task: Task = activeTask(pipeline);
   if (task.id == EMPTY_ID) {
-    return EMPTY_ID;
+    return empty("ENVIRONMENT") as Environment;
   }
-  return task.database.instance.environment.id;
+  return task.environment;
 }
 
-export function activeDatabaseId(pipeline: Pipeline): DatabaseId {
+export function activeDatabase(pipeline: Pipeline): Database {
   const task = activeTask(pipeline);
   if (task.id == EMPTY_ID) {
-    return EMPTY_ID;
+    return empty("DATABASE") as Database;
   }
-  return task.database.id;
+  return task.database;
 }

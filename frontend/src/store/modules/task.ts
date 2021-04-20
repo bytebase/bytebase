@@ -14,6 +14,7 @@ import {
   Pipeline,
   Database,
   empty,
+  Environment,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -28,6 +29,11 @@ function convertPartial(
   );
   const updater = rootGetters["principal/principalById"](
     task.attributes.updaterId
+  );
+
+  // We should always have a valid environment
+  const environment: Environment = rootGetters["environment/environmentById"](
+    (task.relationships!.environment.data as ResourceIdentifier).id
   );
 
   let database: Database = empty("DATABASE") as Database;
@@ -57,6 +63,7 @@ function convertPartial(
     id: task.id,
     creator,
     updater,
+    environment,
     database,
     stepList,
   };

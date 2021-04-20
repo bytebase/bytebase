@@ -116,7 +116,7 @@
     <div
       class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
     >
-      <template v-if="database.id != UNKNOWN_ID">
+      <template v-if="database.id != EMPTY_ID">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Database<span v-if="$props.new" class="text-red-600">*</span>
         </h2>
@@ -126,27 +126,27 @@
         >
           {{ database.name }}
         </router-link>
-
-        <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Environment
-        </h2>
-        <router-link
-          :to="`/environment/${environmentSlug(environment)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
-        >
-          {{ environmentName(environment) }}
-        </router-link>
-
-        <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Project
-        </h2>
-        <router-link
-          :to="`/project/${projectSlug(project)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
-        >
-          {{ projectName(project) }}
-        </router-link>
       </template>
+
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        Environment
+      </h2>
+      <router-link
+        :to="`/environment/${environmentSlug(environment)}`"
+        class="col-span-2 text-sm font-medium text-main hover:underline"
+      >
+        {{ environmentName(environment) }}
+      </router-link>
+
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        Project
+      </h2>
+      <router-link
+        :to="`/project/${projectSlug(project)}`"
+        class="col-span-2 text-sm font-medium text-main hover:underline"
+      >
+        {{ projectName(project) }}
+      </router-link>
 
       <template v-if="!$props.new">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -250,9 +250,9 @@ import {
   Project,
   Issue,
   IssueNew,
-  UNKNOWN_ID,
+  EMPTY_ID,
 } from "../types";
-import { activeDatabaseId, isDBAOrOwner } from "../utils";
+import { activeDatabase, activeEnvironment, isDBAOrOwner } from "../utils";
 
 interface LocalState {}
 
@@ -300,27 +300,34 @@ export default {
 
     const database = computed(
       (): Database => {
-        const databaseId = props.new
-          ? (props.issue as IssueNew).pipeline?.taskList[0].databaseId
-          : activeDatabaseId((props.issue as Issue).pipeline);
-        return store.getters["database/databaseById"](databaseId);
+        if (props.new) {
+          const databaseId = (props.issue as IssueNew).pipeline?.taskList[0]
+            .databaseId;
+          return store.getters["database/databaseById"](databaseId);
+        }
+        return activeDatabase((props.issue as Issue).pipeline);
       }
     );
 
     const project = computed(
       (): Project => {
-        // For new issue, we derive the project from the 1st task's database.
-        // For existing issue, we use issue's project. We can't derive from the task's database because
-        // database may be transferred to a different project after creating the issue.
-        return props.new
-          ? database.value.project
-          : (props.issue as Issue).project;
+        if (props.new) {
+          return store.getters["project/projectById"](
+            (props.issue as IssueNew).projectId
+          );
+        }
+        return (props.issue as Issue).project;
       }
     );
 
     const environment = computed(
       (): Environment => {
-        return database.value.instance.environment;
+        if (props.new) {
+          const environmentId = (props.issue as IssueNew).pipeline?.taskList[0]
+            .environmentId;
+          return store.getters["environment/environmentById"](environmentId);
+        }
+        return activeEnvironment((props.issue as Issue).pipeline);
       }
     );
 
@@ -427,7 +434,7 @@ export default {
     };
 
     return {
-      UNKNOWN_ID,
+      EMPTY_ID,
       state,
       allowEditAssignee,
       fieldValue,

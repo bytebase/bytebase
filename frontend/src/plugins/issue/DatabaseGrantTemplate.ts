@@ -27,8 +27,8 @@ const template: IssueTemplate = {
           {
             name: "Request database access",
             type: "bytebase.task.database.grant",
-            databaseId:
-              ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
+            environmentId: ctx.environmentList[0].id,
+            databaseId: ctx.databaseList[0].id,
             stepList: [
               {
                 name: "Waiting for approval",

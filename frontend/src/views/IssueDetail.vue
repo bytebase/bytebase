@@ -210,6 +210,7 @@ import {
   TaskId,
   UNKNOWN_ID,
   ProjectId,
+  Environment,
 } from "../types";
 import {
   defaulTemplate,
@@ -334,15 +335,28 @@ export default {
 
     const refreshState = () => {
       const databaseList: Database[] = [];
-
       if (router.currentRoute.value.query.databaseList) {
         for (const databaseId of (router.currentRoute.value.query
           .databaseList as string).split(","))
           databaseList.push(store.getters["database/databaseById"](databaseId));
       }
 
+      const environmentList: Environment[] = [];
+      if (router.currentRoute.value.query.environment) {
+        environmentList.push(
+          store.getters["environment/environmentById"](
+            router.currentRoute.value.query.environment
+          )
+        );
+      } else if (databaseList.length > 0) {
+        for (const database of databaseList) {
+          environmentList.push(database.instance.environment);
+        }
+      }
+
       const newIssue: IssueNew = {
         ...newIssueTemplate.value.buildIssue({
+          environmentList,
           databaseList,
           currentUser: currentUser.value,
         }),

@@ -102,6 +102,7 @@ export default {
   task: Model.extend({
     workspace: belongsTo(),
     pipeline: belongsTo(),
+    environment: belongsTo(),
     database: belongsTo(),
   }),
   taskPatch: Model,

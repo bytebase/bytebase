@@ -201,6 +201,7 @@ export const unknown = (
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
     status: "PENDING",
+    environment: UNKNOWN_ENVIRONMENT,
     database: UNKNOWN_DATABASE,
     stepList: [],
   };
@@ -550,6 +551,7 @@ export const empty = (
 export const FINAL_TASK: Task = {
   id: EMPTY_ID,
   pipeline: empty("PIPELINE") as Pipeline,
+  environment: empty("ENVIRONMENT") as Environment,
   database: empty("DATABASE") as Database,
   stepList: [],
   creator: empty("PRINCIPAL") as Principal,
@@ -1100,6 +1102,8 @@ export type Task = {
   // Related fields
   stepList: Step[];
   pipeline: Pipeline;
+  environment: Environment;
+  // We may get an empty database for tasks like creating database.
   database: Database;
 
   // Standard fields
@@ -1118,6 +1122,7 @@ export type Task = {
 export type TaskNew = {
   // Related fields
   stepList: StepNew[];
+  environmentId: EnvironmentId;
   databaseId: DatabaseId;
 
   // Domain specific fields

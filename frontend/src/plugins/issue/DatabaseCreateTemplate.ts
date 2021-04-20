@@ -5,9 +5,11 @@ import {
   IssueBuiltinFieldId,
   OUTPUT_CUSTOM_FIELD_ID_BEGIN,
   IssueContext,
+  INPUT_CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
-import { IssueNew, UNKNOWN_ID } from "../../types";
+import { EMPTY_ID, IssueNew, UNKNOWN_ID } from "../../types";
 
+const INPUT_DATABASE_NAME = INPUT_CUSTOM_FIELD_ID_BEGIN;
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
@@ -26,8 +28,9 @@ const template: IssueTemplate = {
         taskList: [
           {
             name: "Create database",
+            environmentId: ctx.environmentList[0].id,
+            databaseId: EMPTY_ID,
             type: "bytebase.task.database.create",
-            databaseId: UNKNOWN_ID,
             stepList: [
               {
                 name: "Waiting for approval",
@@ -45,38 +48,13 @@ const template: IssueTemplate = {
   fieldList: [
     {
       category: "INPUT",
-      id: IssueBuiltinFieldId.PROJECT,
-      slug: "project",
-      name: "Project",
-      type: "Project",
-      required: true,
-      resolved: (ctx: IssueContext): boolean => {
-        const projectId = ctx.issue.payload[IssueBuiltinFieldId.PROJECT];
-        return !isEmpty(projectId);
-      },
-    },
-    {
-      category: "INPUT",
-      id: IssueBuiltinFieldId.ENVIRONMENT,
-      slug: "environment",
-      name: "Environment",
-      type: "Environment",
-      required: true,
-      resolved: (ctx: IssueContext): boolean => {
-        const environmentId =
-          ctx.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
-        return !isEmpty(environmentId);
-      },
-    },
-    {
-      category: "INPUT",
-      id: IssueBuiltinFieldId.DATABASE,
-      slug: "database",
+      id: INPUT_DATABASE_NAME,
+      slug: "databaseName",
       name: "DB name",
       type: "NewDatabase",
       required: true,
       resolved: (ctx: IssueContext): boolean => {
-        const databaseName = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
+        const databaseName = ctx.issue.payload[INPUT_DATABASE_NAME];
         return !isEmpty(databaseName);
       },
       placeholder: "New database name",
@@ -94,7 +72,7 @@ const template: IssueTemplate = {
         if (isEmpty(databaseId) || databaseId == UNKNOWN_ID) {
           return false;
         }
-        const requestedName = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
+        const requestedName = ctx.issue.payload[INPUT_DATABASE_NAME];
         const database = ctx.store.getters["database/databaseById"](databaseId);
         return database && database.name == requestedName;
       },

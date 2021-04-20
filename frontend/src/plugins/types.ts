@@ -68,8 +68,6 @@ export type IssueField = {
   // Though changing it won't have catastrophic consequence like changing
   // id, we strongly recommend NOT to change it as well, otherwise, previous
   // generated artifacts based on this info such as URL would become invalid.
-  // slug will be formmatted to lowercase and replace any space with "-",
-  // e.g. "foo Bar" => "foo-bar"
   slug: string;
   // The display name. OK to change.
   name: string;
@@ -108,6 +106,7 @@ export type DatabaseFieldPayload = {
 // Template
 export type TemplateContext = {
   databaseList: Database[];
+  environmentList: Environment[];
   currentUser: Principal;
 };
 

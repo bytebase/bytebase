@@ -224,7 +224,7 @@ export default {
             name: `[${environment.name}] Request new database '${state.databaseName}'`,
             environment: state.environmentId,
             project: state.projectId,
-            database: state.databaseName,
+            databaseName: state.databaseName,
           },
         });
       } else {
@@ -243,7 +243,7 @@ export default {
             }`,
             environment: state.environmentId,
             project: state.projectId,
-            database: state.databaseId,
+            databaseList: state.databaseId,
             readonly: state.readOnly ? "true" : "false",
           },
         });

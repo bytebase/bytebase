@@ -46,7 +46,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { activeTask, activeEnvironmentId } from "../utils";
+import { activeTask, activeEnvironment } from "../utils";
 import { Environment, Issue, TaskStatus } from "../types";
 
 interface LocalState {
@@ -156,7 +156,7 @@ export default {
       return list.filter((issue) => {
         return (
           (!state.selectedEnvironment ||
-            activeEnvironmentId(issue.pipeline) ===
+            activeEnvironment(issue.pipeline).id ===
               state.selectedEnvironment.id) &&
           (!state.searchText ||
             issue.name.toLowerCase().includes(state.searchText.toLowerCase()))

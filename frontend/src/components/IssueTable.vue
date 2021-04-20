@@ -121,8 +121,8 @@ import {
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import {
   issueSlug,
-  activeEnvironmentId,
-  activeDatabaseId,
+  activeEnvironment,
+  activeDatabase,
   activeTask,
 } from "../utils";
 import { Issue, EMPTY_ID } from "../types";
@@ -228,19 +228,11 @@ export default {
     });
 
     const activeEnvironmentName = function (issue: Issue) {
-      const id = activeEnvironmentId(issue.pipeline);
-      if (id == EMPTY_ID) {
-        return "";
-      }
-      return store.getters["environment/environmentById"](id).name;
+      return activeEnvironment(issue.pipeline).name;
     };
 
     const activeDatabaseName = function (issue: Issue) {
-      const id = activeDatabaseId(issue.pipeline);
-      if (id == EMPTY_ID) {
-        return "";
-      }
-      return store.getters["database/databaseById"](id).name;
+      return activeDatabase(issue.pipeline).name;
     };
 
     const router = useRouter();

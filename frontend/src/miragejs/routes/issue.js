@@ -2,7 +2,7 @@ import { Response } from "miragejs";
 import isEqual from "lodash-es/isEqual";
 import { WORKSPACE_ID } from "./index";
 import { IssueBuiltinFieldId } from "../../plugins";
-import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../../types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_ID, EMPTY_ID } from "../../types";
 import { postIssueMessageToReceiver } from "../utils";
 
 export default function configureIssue(route) {
@@ -41,10 +41,8 @@ export default function configureIssue(route) {
   route.post("/issue", function (schema, request) {
     const ts = Date.now();
     const { pipeline, ...attrs } = this.normalizedRequestAttrs("issue-new");
-    const database = schema.databases.find(pipeline.taskList[0].databaseId);
 
     let createdPipeline;
-
     // Create pipeline if exists
     if (pipeline) {
       const newPipeline = {
@@ -59,12 +57,15 @@ export default function configureIssue(route) {
       createdPipeline = schema.pipelines.create(newPipeline);
 
       for (const task of pipeline.taskList) {
-        const { stepList, ...taskAttrs } = task;
+        const { stepList, databaseId, environmentId, ...taskAttrs } = task;
+
         const createdTask = schema.tasks.create({
           ...taskAttrs,
           createdTs: ts,
           updaterId: attrs.creatorId,
           updatedTs: ts,
+          environmentId,
+          databaseId: databaseId != EMPTY_ID ? databaseId : null,
           status: "PENDING",
           pipeline: createdPipeline,
           workspaceId: WORKSPACE_ID,
@@ -95,8 +96,8 @@ export default function configureIssue(route) {
       pipeline: createdPipeline,
       workspaceId: WORKSPACE_ID,
     };
-    const createdIssue = schema.issues.create(newIssue);
 
+    const createdIssue = schema.issues.create(newIssue);
     schema.activities.create({
       creatorId: attrs.creatorId,
       createdTs: ts,
@@ -327,7 +328,6 @@ export default function configureIssue(route) {
     }
 
     const changeList = [];
-    const messageList = [];
     const messageTemplate = {
       containerId: issue.id,
       creatorId: attrs.updaterId,
