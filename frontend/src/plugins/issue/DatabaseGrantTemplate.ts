@@ -5,11 +5,13 @@ import {
   IssueBuiltinFieldId,
   INPUT_CUSTOM_FIELD_ID_BEGIN,
   IssueContext,
+  OUTPUT_CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
 import { IssueNew, EnvironmentId, UNKNOWN_ID, Issue } from "../../types";
 import { allowDatabaseAccess } from "../../utils";
 
 const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
+const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
   type: "bytebase.database.grant",
@@ -46,43 +48,6 @@ const template: IssueTemplate = {
   fieldList: [
     {
       category: "INPUT",
-      id: IssueBuiltinFieldId.PROJECT,
-      slug: "project",
-      name: "Project",
-      type: "Project",
-      required: true,
-      resolved: (ctx: IssueContext): boolean => {
-        const projectId = ctx.issue.payload[IssueBuiltinFieldId.PROJECT];
-        return !isEmpty(projectId);
-      },
-    },
-    {
-      category: "INPUT",
-      id: IssueBuiltinFieldId.ENVIRONMENT,
-      slug: "environment",
-      name: "Environment",
-      type: "Environment",
-      required: true,
-      resolved: (ctx: IssueContext): boolean => {
-        const environmentId =
-          ctx.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
-        return !isEmpty(environmentId);
-      },
-    },
-    {
-      category: "INPUT",
-      id: IssueBuiltinFieldId.DATABASE,
-      slug: "database",
-      name: "Database",
-      type: "Database",
-      required: true,
-      resolved: (ctx: IssueContext): boolean => {
-        const databaseId = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
-        return !isEmpty(databaseId) || databaseId == UNKNOWN_ID;
-      },
-    },
-    {
-      category: "INPUT",
       id: INPUT_READ_ONLY_FIELD_ID,
       slug: "readonly",
       name: "Read Only",
@@ -96,13 +61,13 @@ const template: IssueTemplate = {
       category: "OUTPUT",
       // This is the same ID as the INPUT database field because the granted database should be the same
       // as the requested database.
-      id: IssueBuiltinFieldId.DATABASE,
-      slug: "database",
+      id: OUTPUT_DATABASE_FIELD_ID,
+      slug: "",
       name: "Granted database",
       type: "Database",
       required: true,
       resolved: (ctx: IssueContext): boolean => {
-        const databaseId = ctx.issue.payload[IssueBuiltinFieldId.DATABASE];
+        const databaseId = ctx.issue.payload[OUTPUT_DATABASE_FIELD_ID];
         const database = ctx.store.getters["database/databaseById"](databaseId);
         const creator = (ctx.issue as Issue).creator;
         const type = ctx.issue.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";

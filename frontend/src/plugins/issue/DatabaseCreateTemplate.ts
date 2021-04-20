@@ -62,7 +62,7 @@ const template: IssueTemplate = {
     {
       category: "OUTPUT",
       id: OUTPUT_DATABASE_FIELD_ID,
-      slug: "database",
+      slug: "",
       name: "Created database",
       type: "Database",
       required: true,

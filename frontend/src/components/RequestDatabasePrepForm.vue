@@ -132,7 +132,7 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
+import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 
 interface LocalState {
@@ -140,8 +140,8 @@ interface LocalState {
   projectId: ProjectId;
   // Radio button only accept string value
   create: "ON" | "OFF";
-  databaseName?: string;
-  databaseId?: string;
+  databaseName: string;
+  databaseId: DatabaseId;
   readOnly: boolean;
 }
 
@@ -174,6 +174,8 @@ export default {
       environmentId: UNKNOWN_ID,
       projectId: UNKNOWN_ID,
       create: "ON",
+      databaseName: "",
+      databaseId: UNKNOWN_ID,
       readOnly: true,
     });
 
@@ -198,7 +200,7 @@ export default {
         state.environmentId != UNKNOWN_ID &&
         state.projectId != UNKNOWN_ID &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
-          (state.create == "OFF" && state.databaseId)) &&
+          (state.create == "OFF" && state.databaseId != UNKNOWN_ID)) &&
         !alreadyGranted.value
       );
     });
