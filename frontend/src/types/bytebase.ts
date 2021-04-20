@@ -1195,7 +1195,13 @@ export type StepType =
   | "bytebase.step.approve"
   | "bytebase.step.database.schema.update";
 
-export type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+export type StepStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "FAILED"
+  | "CANCELED"
+  | "SKIPPED";
 
 export type DatabaseSchemaUpdateStepPayload = {
   sql: string;
