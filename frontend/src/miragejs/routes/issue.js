@@ -293,37 +293,97 @@ export default function configureIssue(route) {
 
     const ts = Date.now();
 
-    if (attrs.status == "DONE") {
-      const taskList = schema.tasks.where({ issueId: issue.id }).models;
+    if (issue.pipelineId) {
+      const pipeline = schema.pipelines.find(issue.pipelineId);
+      const taskList = schema.tasks.where({ pipelineId: pipeline.id }).models;
 
-      // We check each of the task and its steps. Returns error if any of them is not finished.
-      for (let i = 0; i < taskList.length; i++) {
-        if (task[i].status != "DONE" || task[i].status != "SKIPPED") {
+      if (attrs.status == "DONE") {
+        if (pipeline.status != "DONE" || pipeline.status != "CANCELED") {
           return new Response(
             404,
             {},
             {
-              errors: `Can't resolve issue ${issue.name}. Task ${task[i].name} is in ${task[i].status} status`,
+              errors: `Can't resolve issue ${issue.name}. Pipeline is in ${pipeline.status} status`,
             }
           );
         }
 
-        const stepList = schema.steps.where({
-          issueId: issue.id,
-          taskId: task[i].id,
-        }).models;
-
-        for (let j = 0; j < stepList.length; j++) {
-          if (step[j].status != "DONE" || step[j].status != "SKIPPED") {
+        // We check each of the task and its steps. Returns error if any of them is not finished.
+        for (let i = 0; i < taskList.length; i++) {
+          if (
+            taskList[i].status != "DONE" ||
+            taskList[i].status != "CANCELED" ||
+            taskList[i].status != "SKIPPED"
+          ) {
             return new Response(
               404,
               {},
               {
-                errors: `Can't resolve issue ${issue.name}. Step ${step[j].name} in task ${task[i].name} is in ${step[j].status} status`,
+                errors: `Can't resolve issue ${issue.name}. Task ${taskList[i].name} is in ${taskList[i].status} status`,
               }
             );
           }
+
+          const stepList = schema.steps.where({
+            issueId: issue.id,
+            taskId: taskList[i].id,
+          }).models;
+
+          for (let j = 0; j < stepList.length; j++) {
+            if (
+              stepList[j].status != "DONE" ||
+              stepList[j].status != "CANCELED" ||
+              stepList[j].status != "SKIPPED"
+            ) {
+              return new Response(
+                404,
+                {},
+                {
+                  errors: `Can't resolve issue ${issue.name}. Step ${stepList[j].name} in task ${taskList[i].name} is in ${stepList[j].status} status`,
+                }
+              );
+            }
+          }
         }
+
+        pipeline.update({ status: "DONE" });
+      }
+
+      // If issue is canceled, we find the current running tasks and steps, mark each of them CANCELED.
+      // We keep PENDING tasks and steps as is since the issue maybe reopened later, and it's better to
+      // keep them in the state before it was canceled.
+      if (attrs.status == "CANCELED") {
+        pipeline.update({ status: "CAMCELED" });
+
+        for (let i = 0; i < taskList.length; i++) {
+          if (taskList[i].status == "RUNNING") {
+            schema.tasks.find(taskList[i].id).update({
+              status: "CANCELED",
+            });
+
+            const stepList = schema.steps.where({
+              issueId: issue.id,
+              taskId: taskList[i].id,
+            }).models;
+
+            for (let j = 0; j < stepList.length; j++) {
+              if (stepList[j].status == "RUNNING") {
+                schema.steps.find(stepList[j].id).update({
+                  status: "CANCELED",
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // If issue is opened, we just move the pipeline to the PENDING status.
+      // We keep tasks and steps status as is since even those status are canceled,
+      // we don't known whether it's canceled because of the issue is previously
+      // canceled, or it's canceled for a different reason. And it's always safer
+      // for user to explicitly resume the execution.
+      if (attrs.status == "OPEN") {
+        pipeline.update({ status: "PENDING" });
       }
     }
 
