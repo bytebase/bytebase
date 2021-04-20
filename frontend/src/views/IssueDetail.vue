@@ -236,6 +236,9 @@ interface UpdateStatusModalState {
 }
 
 interface LocalState {
+  // Needs to maintain this state and set it manually after creating the issue.
+  // router.push won't trigger the reload because new and existing issue shares
+  // the same component.
   new: boolean;
   issue: ComputedRef<Issue | IssueNew>;
 }
@@ -333,7 +336,8 @@ export default {
 
     watchEffect(refreshTemplate);
 
-    const refreshState = () => {
+    let newIssue: IssueNew;
+    if (isNew.value) {
       const databaseList: Database[] = [];
       if (router.currentRoute.value.query.databaseList) {
         for (const databaseId of (router.currentRoute.value.query
@@ -354,7 +358,7 @@ export default {
         }
       }
 
-      const newIssue: IssueNew = {
+      newIssue = {
         ...newIssueTemplate.value.buildIssue({
           environmentList,
           databaseList,
@@ -403,23 +407,23 @@ export default {
           }
         }
       }
+    }
 
-      return {
-        new: isNew.value,
-        issue: isNew.value
-          ? newIssue
-          : cloneDeep(
-              store.getters["issue/issueById"](idFromSlug(props.issueSlug))
-            ),
-      };
-    };
-
-    const state = reactive<LocalState>(refreshState());
+    const state = reactive<LocalState>({
+      new: isNew.value,
+      issue: isNew.value
+        ? newIssue!
+        : cloneDeep(
+            store.getters["issue/issueById"](idFromSlug(props.issueSlug))
+          ),
+    });
 
     const refreshIssue = () => {
-      const updatedState = refreshState();
-      state.new = updatedState.new;
-      state.issue = updatedState.issue;
+      state.issue = state.new
+        ? newIssue
+        : cloneDeep(
+            store.getters["issue/issueById"](idFromSlug(props.issueSlug))
+          );
     };
 
     watchEffect(refreshIssue);
@@ -628,6 +632,7 @@ export default {
       store
         .dispatch("issue/createIssue", state.issue)
         .then((createdIssue) => {
+          state.new = false;
           router.push(
             `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
           );
