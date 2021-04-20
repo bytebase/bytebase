@@ -1,5 +1,4 @@
 import axios from "axios";
-import { root } from "postcss";
 import {
   ResourceIdentifier,
   ResourceObject,
@@ -11,6 +10,8 @@ import {
   Issue,
   IssueId,
   unknown,
+  PipelineId,
+  Pipeline,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -19,7 +20,7 @@ function convertPartial(
   task: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
-): Omit<Task, "issue"> {
+): Omit<Task, "pipeline"> {
   const creator = rootGetters["principal/principalById"](
     task.attributes.creatorId
   );
@@ -42,10 +43,10 @@ function convertPartial(
     }
   }
 
-  const result: Omit<Task, "issue"> = {
+  const result: Omit<Task, "pipeline"> = {
     ...(task.attributes as Omit<
       Task,
-      "id" | "creator" | "updater" | "issue" | "database" | "stepList"
+      "id" | "creator" | "updater" | "database" | "stepList"
     >),
     id: task.id,
     creator,
@@ -64,19 +65,19 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (task: ResourceObject, includedList: ResourceObject[]): Task => {
-    // It's only called when issue tries to convert itself, so we don't have a issue yet.
-    const issueId = task.attributes.issueId as IssueId;
-    let issue: Issue = unknown("ISSUE") as Issue;
-    issue.id = issueId;
+    // It's only called when pipeline tries to convert itself, so we don't have a issue yet.
+    const pipelineId = task.attributes.pipelineId as PipelineId;
+    let pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
+    pipeline.id = pipelineId;
 
     const result: Task = {
       ...convertPartial(task, includedList, rootGetters),
-      issue,
+      pipeline,
     };
 
     for (const step of result.stepList) {
       step.task = result;
-      step.issue = issue;
+      step.pipeline = pipeline;
     }
 
     return result;

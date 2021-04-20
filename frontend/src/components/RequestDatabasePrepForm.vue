@@ -132,12 +132,12 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { EnvironmentId, ProjectId } from "../types";
+import { EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 
 interface LocalState {
-  environmentId?: EnvironmentId;
-  projectId?: ProjectId;
+  environmentId: EnvironmentId;
+  projectId: ProjectId;
   // Radio button only accept string value
   create: "ON" | "OFF";
   databaseName?: string;
@@ -171,6 +171,8 @@ export default {
     });
 
     const state = reactive<LocalState>({
+      environmentId: UNKNOWN_ID,
+      projectId: UNKNOWN_ID,
       create: "ON",
       readOnly: true,
     });
@@ -193,8 +195,8 @@ export default {
 
     const allowRequest = computed(() => {
       return (
-        state.environmentId &&
-        state.projectId &&
+        state.environmentId != UNKNOWN_ID &&
+        state.projectId != UNKNOWN_ID &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
           (state.create == "OFF" && state.databaseId)) &&
         !alreadyGranted.value
@@ -221,6 +223,7 @@ export default {
             template: "bytebase.database.create",
             name: `[${environment.name}] Request new database '${state.databaseName}'`,
             environment: state.environmentId,
+            project: state.projectId,
             database: state.databaseName,
           },
         });

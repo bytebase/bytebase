@@ -164,22 +164,6 @@ export const unknown = (
     type: "RO",
   };
 
-  const UNKNOWN_ISSUE: Issue = {
-    id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    project: UNKNOWN_PROJECT,
-    name: "<<Unknown issue>>",
-    status: "OPEN",
-    type: "bytebase.general",
-    description: "",
-    taskList: [],
-    subscriberList: [],
-    payload: {},
-  };
-
   const UNKNOWN_PIPELINE: Pipeline = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
@@ -191,8 +175,25 @@ export const unknown = (
     taskList: [],
   };
 
+  const UNKNOWN_ISSUE: Issue = {
+    id: UNKNOWN_ID,
+    project: UNKNOWN_PROJECT,
+    pipeline: UNKNOWN_PIPELINE,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Unknown issue>>",
+    status: "OPEN",
+    type: "bytebase.general",
+    description: "",
+    subscriberList: [],
+    payload: {},
+  };
+
   const UNKNOWN_TASK: Task = {
     id: UNKNOWN_ID,
+    pipeline: UNKNOWN_PIPELINE,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
@@ -200,14 +201,13 @@ export const unknown = (
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
     status: "PENDING",
-    issue: UNKNOWN_ISSUE,
     database: UNKNOWN_DATABASE,
     stepList: [],
   };
 
   const UNKNOWN_STEP: Step = {
     id: UNKNOWN_ID,
-    issue: UNKNOWN_ISSUE,
+    pipeline: UNKNOWN_PIPELINE,
     task: UNKNOWN_TASK,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -420,22 +420,6 @@ export const empty = (
     type: "RO",
   };
 
-  const EMPTY_ISSUE: Issue = {
-    id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    project: EMPTY_PROJECT,
-    name: "<<Empty issue>>",
-    status: "OPEN",
-    type: "bytebase.general",
-    description: "",
-    taskList: [],
-    subscriberList: [],
-    payload: {},
-  };
-
   const EMPTY_PIPELINE: Pipeline = {
     id: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,
@@ -447,8 +431,25 @@ export const empty = (
     taskList: [],
   };
 
+  const EMPTY_ISSUE: Issue = {
+    id: EMPTY_ID,
+    pipeline: EMPTY_PIPELINE,
+    project: EMPTY_PROJECT,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Empty issue>>",
+    status: "OPEN",
+    type: "bytebase.general",
+    description: "",
+    subscriberList: [],
+    payload: {},
+  };
+
   const EMPTY_TASK: Task = {
     id: EMPTY_ID,
+    pipeline: EMPTY_PIPELINE,
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
@@ -456,14 +457,13 @@ export const empty = (
     name: "<<Empty task>>",
     type: "bytebase.task.unknown",
     status: "PENDING",
-    issue: EMPTY_ISSUE,
     database: EMPTY_DATABASE,
     stepList: [],
   };
 
   const EMPTY_STEP: Step = {
     id: EMPTY_ID,
-    issue: EMPTY_ISSUE,
+    pipeline: EMPTY_PIPELINE,
     task: EMPTY_TASK,
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
@@ -548,6 +548,9 @@ export const empty = (
 
 export const FINAL_TASK: Task = {
   id: EMPTY_ID,
+  pipeline: empty("PIPELINE") as Pipeline,
+  database: empty("DATABASE") as Database,
+  stepList: [],
   creator: empty("PRINCIPAL") as Principal,
   createdTs: 0,
   updater: empty("PRINCIPAL") as Principal,
@@ -555,14 +558,11 @@ export const FINAL_TASK: Task = {
   name: "Final task",
   type: "bytebase.task.final",
   status: "PENDING",
-  issue: empty("ISSUE") as Issue,
-  database: empty("DATABASE") as Database,
-  stepList: [],
 };
 
 export const FINAL_STEP: Step = {
   id: EMPTY_ID,
-  issue: empty("ISSUE") as Issue,
+  pipeline: empty("PIPELINE") as Pipeline,
   task: FINAL_TASK,
   creator: empty("PRINCIPAL") as Principal,
   createdTs: 0,
@@ -858,7 +858,7 @@ export type Issue = {
 
   // Related fields
   project: Project;
-  taskList: Task[];
+  pipeline: Pipeline;
 
   // Standard fields
   creator: Principal;
@@ -880,7 +880,8 @@ export type Issue = {
 
 export type IssueNew = {
   // Related fields
-  taskList: TaskNew[];
+  projectId: ProjectId;
+  pipeline?: PipelineNew;
 
   // Standard fields
   creatorId: PrincipalId;
@@ -890,7 +891,6 @@ export type IssueNew = {
   type: IssueType;
   description: string;
   assigneeId?: PrincipalId;
-  subscriberIdList: PrincipalId[];
   sql?: string;
   rollbackSql?: string;
   payload: IssuePayload;
@@ -1098,7 +1098,7 @@ export type Task = {
 
   // Related fields
   stepList: Step[];
-  issue: Issue;
+  pipeline: Pipeline;
   database: Database;
 
   // Standard fields
@@ -1202,7 +1202,7 @@ export type Step = {
   id: StepId;
 
   // Related fields
-  issue: Issue;
+  pipeline: Pipeline;
   task: Task;
 
   // Standard fields
@@ -1780,6 +1780,8 @@ export interface IssueState {
   issueListByUser: Map<UserId, Issue[]>;
   issueById: Map<IssueId, Issue>;
 }
+
+export interface PipelineState {}
 
 export interface TaskState {}
 

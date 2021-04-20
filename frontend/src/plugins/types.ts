@@ -113,6 +113,8 @@ export type TemplateContext = {
 
 export type IssueTemplate = {
   type: string;
-  buildIssue: (ctx: TemplateContext) => IssueNew;
+  buildIssue: (
+    ctx: TemplateContext
+  ) => Omit<IssueNew, "projectId" | "creatorId">;
   fieldList: IssueField[];
 };

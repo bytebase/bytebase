@@ -18,7 +18,7 @@
             >
               <template v-if="task.status === 'PENDING'">
                 <span
-                  v-if="activeTask(issue).id === task.id"
+                  v-if="activeTask(issue.pipeline).id === task.id"
                   class="h-1.5 w-1.5 bg-blue-600 rounded-full"
                   aria-hidden="true"
                 ></span>
@@ -82,7 +82,7 @@
           </span>
           <div
             v-if="
-              activeTask(issue).id === task.id &&
+              activeTask(issue.pipeline).id === task.id &&
               applicableTaskTransitionList.length > 0
             "
             class="flex flex-row space-x-1 mr-4"
@@ -325,7 +325,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const taskList = computed<FlowItem[]>(() => {
-      return props.issue.taskList.map((task) => {
+      return props.issue.pipeline.taskList.map((task) => {
         return {
           id: task.id,
           title: task.name,
@@ -340,7 +340,7 @@ export default {
     const taskIconClass = (task: FlowItem) => {
       switch (task.status) {
         case "PENDING":
-          if (activeTask(props.issue).id === task.id) {
+          if (activeTask(props.issue.pipeline).id === task.id) {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
           return "bg-white border-2 border-gray-300";
@@ -357,7 +357,7 @@ export default {
 
     const taskTextClass = (task: FlowItem) => {
       let textClass =
-        activeTask(props.issue).id === task.id
+        activeTask(props.issue.pipeline).id === task.id
           ? "font-medium "
           : "font-normal ";
       switch (task.status) {
@@ -366,7 +366,7 @@ export default {
         case "DONE":
           return textClass + "text-control";
         case "PENDING":
-          if (activeTask(props.issue).id === task.id) {
+          if (activeTask(props.issue.pipeline).id === task.id) {
             return textClass + "text-blue-600";
           }
           return textClass + "text-control";
@@ -378,7 +378,7 @@ export default {
     };
 
     const applicableTaskTransitionList = computed(() => {
-      const task = activeTask(props.issue as Issue);
+      const task = activeTask((props.issue as Issue).pipeline);
       const list: TaskStatusTransitionType[] = [];
       if (currentUser.value.id === (props.issue as Issue).assignee?.id) {
         list.push(...ASSIGNEE_APPLICABLE_TASK_ACTION_LIST.get(task.status)!);
@@ -409,7 +409,7 @@ export default {
       modalState.title =
         transition.actionName +
         ' "' +
-        activeTask(props.issue as Issue).name +
+        activeTask((props.issue as Issue).pipeline).name +
         '" ?';
       modalState.transition = transition;
       modalState.show = true;

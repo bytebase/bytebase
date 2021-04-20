@@ -301,8 +301,8 @@ export default {
     const database = computed(
       (): Database => {
         const databaseId = props.new
-          ? (props.issue as IssueNew).taskList[0].databaseId
-          : activeDatabaseId(props.issue as Issue);
+          ? (props.issue as IssueNew).pipeline?.taskList[0].databaseId
+          : activeDatabaseId((props.issue as Issue).pipeline);
         return store.getters["database/databaseById"](databaseId);
       }
     );

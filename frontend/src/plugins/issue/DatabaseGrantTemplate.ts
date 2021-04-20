@@ -13,29 +13,33 @@ const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
   type: "bytebase.database.grant",
-  buildIssue: (ctx: TemplateContext): IssueNew => {
+  buildIssue: (
+    ctx: TemplateContext
+  ): Omit<IssueNew, "projectId" | "creatorId"> => {
     const payload: any = {};
 
     return {
       name: "Request database access",
       type: "bytebase.database.grant",
       description: "",
-      taskList: [
-        {
-          name: "Request database access",
-          type: "bytebase.task.database.grant",
-          databaseId:
-            ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
-          stepList: [
-            {
-              name: "Waiting for approval",
-              type: "bytebase.step.approve",
-            },
-          ],
-        },
-      ],
-      creatorId: ctx.currentUser.id,
-      subscriberIdList: [],
+      pipeline: {
+        taskList: [
+          {
+            name: "Request database access",
+            type: "bytebase.task.database.grant",
+            databaseId:
+              ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
+            stepList: [
+              {
+                name: "Waiting for approval",
+                type: "bytebase.step.approve",
+              },
+            ],
+          },
+        ],
+        creatorId: ctx.currentUser.id,
+        name: "Request database access",
+      },
       payload,
     };
   },

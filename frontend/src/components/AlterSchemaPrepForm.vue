@@ -114,7 +114,6 @@ import {
   EnvironmentId,
   Project,
   ProjectId,
-  unknown,
   UNKNOWN_ID,
 } from "../types";
 
@@ -218,6 +217,7 @@ export default {
           query: {
             template: "bytebase.database.schema.update",
             name: `[${database.name}] Alter schema`,
+            project: state.project.id,
             databaseList: database.id,
           },
         });

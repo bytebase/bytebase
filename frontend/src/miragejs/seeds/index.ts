@@ -19,6 +19,7 @@ import {
   PrincipalId,
   IssueId,
   StepStatus,
+  PipelineId,
 } from "../../types";
 import { databaseSlug, issueSlug } from "../../utils";
 
@@ -346,9 +347,19 @@ const workspacesSeeder = (server: any) => {
     "history",
   ];
 
+  const title = `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`;
+
+  let pipeline = server.create("pipeline", {
+    name: `Pipeline ${title}`,
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    status: "PENDING",
+    workspace: workspace1,
+  });
+
   issue = server.create("issue", {
     type: "bytebase.database.create",
-    name: `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`,
+    name: title,
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
@@ -359,6 +370,7 @@ const workspacesSeeder = (server: any) => {
       8: databaseList1[1].name,
     },
     project: projectList1[1],
+    pipeline,
     workspace: workspace1,
   });
 
@@ -369,7 +381,7 @@ const workspacesSeeder = (server: any) => {
     type: "bytebase.task.database.create",
     status: "PENDING",
     databaseId: databaseList1[1].id,
-    issue,
+    pipeline,
     workspace: workspace1,
   });
 
@@ -379,7 +391,7 @@ const workspacesSeeder = (server: any) => {
     name: "Waiting approval",
     type: "bytebase.step.approve",
     status: "PENDING",
-    issue,
+    pipeline,
     task,
     workspace: workspace1,
   });
@@ -485,6 +497,15 @@ const workspacesSeeder = (server: any) => {
     const data = randomUpdateSchemaIssueName();
     const statusSet =
       statusSetList[Math.floor(Math.random() * statusSetList.length)];
+
+    pipeline = server.create("pipeline", {
+      name: `Pipeline ${data.title}`,
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      status: "PENDING",
+      workspace: workspace1,
+    });
+
     issue = server.create("issue", {
       name: data.title,
       type: "bytebase.database.schema.update",
@@ -495,13 +516,14 @@ const workspacesSeeder = (server: any) => {
       subscriberIdList: [ws1DBA.id, ws1Dev2.id],
       status: statusSet.issueStatus,
       project: projectList1[i],
+      pipeline,
       workspace: workspace1,
     });
 
     createUpdateSchemaTask(
       server,
       workspace1.id,
-      issue.id,
+      pipeline.id,
       ws1Dev1.id,
       environmentList1,
       databaseList1,
@@ -534,6 +556,15 @@ const workspacesSeeder = (server: any) => {
     const data = randomUpdateSchemaIssueName();
     const statusSet =
       statusSetList[Math.floor(Math.random() * statusSetList.length)];
+
+    pipeline = server.create("pipeline", {
+      name: `Pipeline ${data.title}`,
+      creatorId: ws1Owner.id,
+      updaterId: ws1Owner.id,
+      status: "PENDING",
+      workspace: workspace1,
+    });
+
     issue = server.create("issue", {
       name: data.title,
       type: "bytebase.database.schema.update",
@@ -544,13 +575,14 @@ const workspacesSeeder = (server: any) => {
       subscriberIdList: [ws1Dev2.id],
       status: statusSet.issueStatus,
       project: projectList1[i],
+      pipeline,
       workspace: workspace1,
     });
 
     createUpdateSchemaTask(
       server,
       workspace1.id,
-      issue.id,
+      pipeline.id,
       ws1Owner.id,
       environmentList1,
       databaseList1,
@@ -583,6 +615,15 @@ const workspacesSeeder = (server: any) => {
     const data = randomUpdateSchemaIssueName();
     const statusSet =
       statusSetList[Math.floor(Math.random() * statusSetList.length)];
+
+    pipeline = server.create("pipeline", {
+      name: `Pipeline ${data.title}`,
+      creatorId: ws1Dev2.id,
+      updaterId: ws1Dev2.id,
+      status: "PENDING",
+      workspace: workspace1,
+    });
+
     issue = server.create("issue", {
       name: data.title,
       type: "bytebase.database.schema.update",
@@ -593,13 +634,14 @@ const workspacesSeeder = (server: any) => {
       subscriberIdList: [ws1Owner.id, ws1Dev1.id],
       status: statusSet.issueStatus,
       project: projectList1[i],
+      pipeline,
       workspace: workspace1,
     });
 
     createUpdateSchemaTask(
       server,
       workspace1.id,
-      issue.id,
+      pipeline.id,
       ws1Dev2.id,
       environmentList1,
       databaseList1,
@@ -631,6 +673,15 @@ const workspacesSeeder = (server: any) => {
   const data = randomUpdateSchemaIssueName();
   const statusSet =
     statusSetList[Math.floor(Math.random() * statusSetList.length)];
+
+  pipeline = server.create("pipeline", {
+    name: `Pipeline ${data.title}`,
+    creatorId: ws2Dev.id,
+    updaterId: ws2Dev.id,
+    status: "PENDING",
+    workspace: workspace2,
+  });
+
   issue = server.create("issue", {
     name: data.title,
     type: "bytebase.database.schema.update",
@@ -640,13 +691,14 @@ const workspacesSeeder = (server: any) => {
     sql: data.sql,
     status: statusSet.issueStatus,
     project: projectList2[0],
+    pipeline,
     workspace: workspace2,
   });
 
   createUpdateSchemaTask(
     server,
     workspace2.id,
-    issue.id,
+    pipeline.id,
     ws2Dev.id,
     environmentList2,
     databaseList2,
@@ -766,7 +818,7 @@ const createInstanceList = (
 const createUpdateSchemaTask = (
   server: any,
   workspaceId: string,
-  issueId: IssueId,
+  pipelineId: PipelineId,
   creatorId: PrincipalId,
   environmentList: Environment[],
   databaseList: Database[],
@@ -781,7 +833,7 @@ const createUpdateSchemaTask = (
       type: "bytebase.task.schema.update",
       status: taskStatusList[i],
       databaseId: databaseList[i].id,
-      issueId,
+      pipelineId,
       workspaceId,
     });
 
@@ -791,7 +843,7 @@ const createUpdateSchemaTask = (
       name: "Waiting approval",
       type: "bytebase.step.approve",
       status: stepStatusList[i],
-      issueId,
+      pipelineId,
       task,
       workspaceId,
     });
@@ -802,7 +854,7 @@ const createUpdateSchemaTask = (
       name: `Update ${databaseList[i].name} schema`,
       type: "bytebase.step.schema.udpate",
       status: stepStatusList[i],
-      issueId,
+      pipelineId,
       task,
       workspaceId,
     });

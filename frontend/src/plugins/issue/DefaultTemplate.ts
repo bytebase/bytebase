@@ -3,14 +3,13 @@ import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
   type: "bytebase.general",
-  buildIssue: (ctx: TemplateContext): IssueNew => {
+  buildIssue: (
+    ctx: TemplateContext
+  ): Omit<IssueNew, "projectId" | "creatorId"> => {
     return {
       name: "",
       type: "bytebase.general",
       description: "",
-      taskList: [],
-      creatorId: ctx.currentUser.id,
-      subscriberIdList: [],
       payload: {},
     };
   },

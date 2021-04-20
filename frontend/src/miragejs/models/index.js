@@ -83,8 +83,7 @@ export default {
   issue: Model.extend({
     workspace: belongsTo(),
     project: belongsTo(),
-    task: hasMany(),
-    step: hasMany(),
+    pipeline: belongsTo(),
   }),
   issueNew: Model,
   issuePatch: Model,
@@ -96,13 +95,13 @@ export default {
     task: hasMany(),
     step: hasMany(),
   }),
-  taskPatch: Model,
-  taskStatusPatch: Model,
+  pipelinePatch: Model,
+  pipelineStatusPatch: Model,
 
   // Task
   task: Model.extend({
     workspace: belongsTo(),
-    issue: belongsTo(),
+    pipeline: belongsTo(),
     database: belongsTo(),
   }),
   taskPatch: Model,
@@ -111,7 +110,7 @@ export default {
   // Step
   step: Model.extend({
     workspace: belongsTo(),
-    issue: belongsTo(),
+    pipeline: belongsTo(),
     task: belongsTo(),
   }),
   stepPatch: Model,

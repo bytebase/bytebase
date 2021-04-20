@@ -72,7 +72,7 @@
       <BBTableCell :leftPadding="4" class="table-cell">
         <IssueStatusIcon
           :issueStatus="issue.status"
-          :taskStatus="activeTask(issue).status"
+          :taskStatus="activeTask(issue.pipeline).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
@@ -228,7 +228,7 @@ export default {
     });
 
     const activeEnvironmentName = function (issue: Issue) {
-      const id = activeEnvironmentId(issue);
+      const id = activeEnvironmentId(issue.pipeline);
       if (id == EMPTY_ID) {
         return "";
       }
@@ -236,7 +236,7 @@ export default {
     };
 
     const activeDatabaseName = function (issue: Issue) {
-      const id = activeDatabaseId(issue);
+      const id = activeDatabaseId(issue.pipeline);
       if (id == EMPTY_ID) {
         return "";
       }
@@ -246,11 +246,11 @@ export default {
     const router = useRouter();
 
     const taskList = function (issue: Issue): BBStep[] {
-      return issue.taskList.map((task) => {
+      return issue.pipeline.taskList.map((task) => {
         let stepStatus: BBStepStatus = "PENDING";
         switch (task.status) {
           case "PENDING":
-            if (activeTask(issue).id === task.id) {
+            if (activeTask(issue.pipeline).id === task.id) {
               stepStatus = "PENDING_ACTIVE";
             } else {
               stepStatus = "PENDING";

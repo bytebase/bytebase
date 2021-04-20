@@ -7,7 +7,7 @@
             <IssueStatusIcon
               v-if="!$props.new"
               :issueStatus="issue.status"
-              :taskStatus="activeTask(issue).status"
+              :taskStatus="activeTask(issue.pipeline).status"
             />
           </div>
           <BBTextField

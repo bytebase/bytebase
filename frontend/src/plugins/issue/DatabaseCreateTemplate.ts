@@ -12,7 +12,9 @@ const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
   type: "bytebase.database.create",
-  buildIssue: (ctx: TemplateContext): IssueNew => {
+  buildIssue: (
+    ctx: TemplateContext
+  ): Omit<IssueNew, "projectId" | "creatorId"> => {
     const payload: any = {};
     payload[IssueBuiltinFieldId.DATABASE] = "";
 
@@ -20,22 +22,23 @@ const template: IssueTemplate = {
       name: "Request new db",
       type: "bytebase.database.create",
       description: "",
-      taskList: [
-        {
-          name: "Create database",
-          type: "bytebase.task.database.create",
-          databaseId:
-            ctx.databaseList.length > 0 ? ctx.databaseList[0].id : UNKNOWN_ID,
-          stepList: [
-            {
-              name: "Waiting for approval",
-              type: "bytebase.step.approve",
-            },
-          ],
-        },
-      ],
-      creatorId: ctx.currentUser.id,
-      subscriberIdList: [],
+      pipeline: {
+        taskList: [
+          {
+            name: "Create database",
+            type: "bytebase.task.database.create",
+            databaseId: UNKNOWN_ID,
+            stepList: [
+              {
+                name: "Waiting for approval",
+                type: "bytebase.step.approve",
+              },
+            ],
+          },
+        ],
+        creatorId: ctx.currentUser.id,
+        name: "Create database pipeline",
+      },
       payload,
     };
   },

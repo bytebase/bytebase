@@ -208,6 +208,8 @@ import {
   IssueStatusPatch,
   TaskStatus,
   TaskId,
+  UNKNOWN_ID,
+  ProjectId,
 } from "../types";
 import {
   defaulTemplate,
@@ -339,17 +341,21 @@ export default {
           databaseList.push(store.getters["database/databaseById"](databaseId));
       }
 
-      const newIssue: IssueNew = newIssueTemplate.value.buildIssue({
-        databaseList,
-        currentUser: currentUser.value,
-      });
+      const newIssue: IssueNew = {
+        ...newIssueTemplate.value.buildIssue({
+          databaseList,
+          currentUser: currentUser.value,
+        }),
+        projectId: router.currentRoute.value.query.project
+          ? (router.currentRoute.value.query.project as ProjectId)
+          : UNKNOWN_ID,
+        creatorId: currentUser.value.id,
+      };
 
       // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
       if (isDemo()) {
         newIssue.assigneeId = currentUser.value.id;
       }
-
-      newIssue.creatorId = currentUser.value.id;
 
       if (router.currentRoute.value.query.name) {
         newIssue.name = router.currentRoute.value.query.name as string;
@@ -641,12 +647,12 @@ export default {
 
     const workflowType = computed(
       (): WorkflowType => {
-        if (state.issue.taskList.length > 1) {
+        if ((state.issue as Issue).pipeline.taskList.length > 1) {
           return "MULTI_TASK";
         }
         if (
-          state.issue.taskList.length == 1 &&
-          state.issue.taskList[0].stepList.length > 1
+          (state.issue as Issue).pipeline.taskList.length == 1 &&
+          (state.issue as Issue).pipeline.taskList[0].stepList.length > 1
         ) {
           return "SINGLE_TASK";
         }

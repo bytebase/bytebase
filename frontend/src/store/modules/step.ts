@@ -8,6 +8,8 @@ import {
   unknown,
   IssueId,
   TaskId,
+  PipelineId,
+  Pipeline,
 } from "../../types";
 
 const state: () => StepState = () => ({});
@@ -15,7 +17,7 @@ const state: () => StepState = () => ({});
 function convertPartial(
   step: ResourceObject,
   rootGetters: any
-): Omit<Step, "issue" | "task"> {
+): Omit<Step, "pipeline" | "task"> {
   const creator = rootGetters["principal/principalById"](
     step.attributes.creatorId
   );
@@ -26,21 +28,11 @@ function convertPartial(
   return {
     ...(step.attributes as Omit<
       Step,
-      "id" | "creator" | "updater" | "issue" | "task"
+      "id" | "creator" | "updater" | "pipeline" | "task"
     >),
     id: step.id,
     creator,
     updater,
-  };
-}
-
-function convert(step: ResourceObject, rootGetters: any): Step {
-  const issue: Issue = rootGetters["issue/issueById"](step.attributes.issueId);
-  const task: Task = rootGetters["task/taskById"](step.attributes.taskId);
-  return {
-    ...convertPartial(step, rootGetters),
-    issue,
-    task,
   };
 }
 
@@ -51,10 +43,10 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) => (step: ResourceObject): Step => {
-    // It's only called when issue/task tries to convert themselves, so we don't have a issue/task yet.
-    const issueId = step.attributes.issueId as IssueId;
-    let issue: Issue = unknown("ISSUE") as Issue;
-    issue.id = issueId;
+    // It's only called when pipeline/task tries to convert itself, so we don't have a issue yet.
+    const pipelineId = step.attributes.pipelineId as PipelineId;
+    let pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
+    pipeline.id = pipelineId;
 
     const taskId = step.attributes.taskId as TaskId;
     let task: Task = unknown("TASK") as Task;
@@ -62,7 +54,7 @@ const getters = {
 
     return {
       ...convertPartial(step, rootGetters),
-      issue,
+      pipeline,
       task,
     };
   },

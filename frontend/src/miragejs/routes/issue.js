@@ -40,8 +40,50 @@ export default function configureIssue(route) {
 
   route.post("/issue", function (schema, request) {
     const ts = Date.now();
-    const { taskList, ...attrs } = this.normalizedRequestAttrs("issue-new");
-    const database = schema.databases.find(taskList[0].databaseId);
+    const { pipeline, ...attrs } = this.normalizedRequestAttrs("issue-new");
+    const database = schema.databases.find(pipeline.taskList[0].databaseId);
+
+    let createdPipeline;
+
+    // Create pipeline if exists
+    if (pipeline) {
+      const newPipeline = {
+        createdTs: ts,
+        updaterId: attrs.creatorId,
+        updatedTs: ts,
+        name: pipeline.name,
+        status: "OPEN",
+        workspaceId: WORKSPACE_ID,
+      };
+
+      createdPipeline = schema.pipelines.create(newPipeline);
+
+      for (const task of pipeline.taskList) {
+        const { stepList, ...taskAttrs } = task;
+        const createdTask = schema.tasks.create({
+          ...taskAttrs,
+          createdTs: ts,
+          updaterId: attrs.creatorId,
+          updatedTs: ts,
+          status: "PENDING",
+          pipeline: createdPipeline,
+          workspaceId: WORKSPACE_ID,
+        });
+
+        for (const step of stepList) {
+          schema.steps.create({
+            ...step,
+            createdTs: ts,
+            updaterId: attrs.creatorId,
+            updatedTs: ts,
+            status: "PENDING",
+            pipeline: createdPipeline,
+            task: createdTask,
+            workspaceId: WORKSPACE_ID,
+          });
+        }
+      }
+    }
 
     const newIssue = {
       ...attrs,
@@ -49,36 +91,11 @@ export default function configureIssue(route) {
       updaterId: attrs.creatorId,
       updatedTs: ts,
       status: "OPEN",
-      projectId: database.projectId,
+      subscriberIdList: [],
+      pipeline: createdPipeline,
       workspaceId: WORKSPACE_ID,
     };
     const createdIssue = schema.issues.create(newIssue);
-
-    for (const task of taskList) {
-      const { stepList, ...taskAttrs } = task;
-      const createdTask = schema.tasks.create({
-        ...taskAttrs,
-        createdTs: ts,
-        updaterId: attrs.creatorId,
-        updatedTs: ts,
-        status: "PENDING",
-        issue: createdIssue,
-        workspaceId: WORKSPACE_ID,
-      });
-
-      for (const step of stepList) {
-        schema.steps.create({
-          ...step,
-          createdTs: ts,
-          updaterId: attrs.creatorId,
-          updatedTs: ts,
-          status: "PENDING",
-          issue: createdIssue,
-          task: createdTask,
-          workspaceId: WORKSPACE_ID,
-        });
-      }
-    }
 
     schema.activities.create({
       creatorId: attrs.creatorId,

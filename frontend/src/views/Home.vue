@@ -156,7 +156,8 @@ export default {
       return list.filter((issue) => {
         return (
           (!state.selectedEnvironment ||
-            activeEnvironmentId(issue) === state.selectedEnvironment.id) &&
+            activeEnvironmentId(issue.pipeline) ===
+              state.selectedEnvironment.id) &&
           (!state.searchText ||
             issue.name.toLowerCase().includes(state.searchText.toLowerCase()))
         );
@@ -178,8 +179,8 @@ export default {
             return 4;
         }
       };
-      const aStatusOrder = statusOrder(activeTask(a).status);
-      const bStatusOrder = statusOrder(activeTask(b).status);
+      const aStatusOrder = statusOrder(activeTask(a.pipeline).status);
+      const bStatusOrder = statusOrder(activeTask(b.pipeline).status);
       if (aStatusOrder == bStatusOrder) {
         return b.updatedTs - a.updatedTs;
       }
