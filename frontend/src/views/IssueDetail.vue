@@ -236,11 +236,11 @@ interface UpdateStatusModalState {
 }
 
 interface LocalState {
-  // Needs to maintain this state and set it manually after creating the issue.
+  // Needs to maintain this state and set it to false manually after creating the issue.
   // router.push won't trigger the reload because new and existing issue shares
   // the same component.
   new: boolean;
-  issue: ComputedRef<Issue | IssueNew>;
+  issue: Issue | IssueNew;
 }
 
 export default {
@@ -283,20 +283,12 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
-    });
-
-    const isNew = computed(() => {
-      return props.issueSlug.toLowerCase() == "new";
-    });
-
     const issueContext = computed(
       (): IssueContext => {
         return {
           store,
           currentUser: currentUser.value,
-          new: isNew.value,
+          new: state.new,
           issue: state.issue,
         };
       }
@@ -336,8 +328,10 @@ export default {
 
     watchEffect(refreshTemplate);
 
+    const isNew = props.issueSlug.toLowerCase() == "new";
+
     let newIssue: IssueNew;
-    if (isNew.value) {
+    if (isNew) {
       const databaseList: Database[] = [];
       if (router.currentRoute.value.query.databaseList) {
         for (const databaseId of (router.currentRoute.value.query
@@ -410,8 +404,8 @@ export default {
     }
 
     const state = reactive<LocalState>({
-      new: isNew.value,
-      issue: isNew.value
+      new: isNew,
+      issue: isNew
         ? newIssue!
         : cloneDeep(
             store.getters["issue/issueById"](idFromSlug(props.issueSlug))
