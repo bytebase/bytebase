@@ -46,18 +46,18 @@
     </div>
 
     <!-- Task Flow Bar -->
-    <IssueTaskFlow
-      v-if="showIssueTaskFlowBar"
-      :issue="state.issue"
-      @change-task-status="changeTaskStatus"
-    />
+    <template v-if="showPipelineFlowBar">
+      <template v-if="pipelineType == 'MULTI_SINGLE_STEP_TASK'">
+        <PipelineSimpleFlow :pipeline="state.issue.pipeline" />
+      </template>
+    </template>
 
     <!-- Output Panel -->
     <!-- Only render the top border if IssueTaskFlow is not displayed, otherwise it would overlap with the bottom border of the IssueTaskFlow -->
     <div
       v-if="showIssueOutputPanel"
       class="px-2 py-4 md:flex md:flex-col"
-      :class="showIssueTaskFlowBar ? '' : 'lg:border-t'"
+      :class="showPipelineFlowBar ? '' : 'lg:border-t'"
     >
       <IssueOutputPanel
         :issue="state.issue"
@@ -71,7 +71,7 @@
     <main
       class="flex-1 relative overflow-y-auto focus:outline-none"
       :class="
-        showIssueTaskFlowBar && !showIssueOutputPanel
+        showPipelineFlowBar && !showIssueOutputPanel
           ? ''
           : 'lg:border-t lg:border-block-border'
       "
@@ -183,6 +183,7 @@ import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "../views/IssueActivityPanel.vue";
 import IssueSidebar from "../views/IssueSidebar.vue";
 import IssueStatusTransitionForm from "../components/IssueStatusTransitionForm.vue";
+import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import {
   Issue,
   IssueNew,
@@ -204,6 +205,8 @@ import {
   Environment,
   StepStatusPatch,
   StepId,
+  Pipeline,
+  EMPTY_ID,
 } from "../types";
 import {
   defaulTemplate,
@@ -213,7 +216,11 @@ import {
   IssueContext,
 } from "../plugins";
 
-type WorkflowType = "SINGLE_STEP" | "SINGLE_TASK" | "MULTI_TASK";
+type PipelineType =
+  | "NO_PIPELINE"
+  | "SINGLE_TASK"
+  | "MULTI_SINGLE_STEP_TASK"
+  | "MULTI_TASK";
 
 type UpdateStatusModalStatePayload = {
   transition: IssueStatusTransition;
@@ -253,6 +260,7 @@ export default {
     IssueActivityPanel,
     IssueSidebar,
     IssueStatusTransitionForm,
+    PipelineSimpleFlow,
   },
 
   setup(props, ctx) {
@@ -694,20 +702,25 @@ export default {
         });
     };
 
-    const workflowType = computed(
-      (): WorkflowType => {
-        if ((state.issue as Issue).pipeline.taskList.length > 1) {
-          return "MULTI_TASK";
-        }
-        if (
-          (state.issue as Issue).pipeline.taskList.length == 1 &&
-          (state.issue as Issue).pipeline.taskList[0].stepList.length > 1
-        ) {
+    const pipelineType = computed(
+      (): PipelineType => {
+        const pipeline: Pipeline = (state.issue as Issue).pipeline;
+        if (pipeline.taskList.length == 0) {
+          return "NO_PIPELINE";
+        } else if (pipeline.taskList.length == 1) {
           return "SINGLE_TASK";
+        } else {
+          for (const task of (state.issue as Issue).pipeline.taskList) {
+            if (task.stepList.length > 1) {
+              return "MULTI_TASK";
+            }
+          }
+          return "MULTI_SINGLE_STEP_TASK";
         }
-        return "SINGLE_STEP";
       }
     );
+
+    console.log(pipelineType.value);
 
     const allowCreate = computed(() => {
       const newIssue = state.issue as IssueNew;
@@ -770,8 +783,8 @@ export default {
       return state.new;
     });
 
-    const showIssueTaskFlowBar = computed(() => {
-      return !state.new && workflowType.value != "SINGLE_STEP";
+    const showPipelineFlowBar = computed(() => {
+      return !state.new && pipelineType.value != "NO_PIPELINE";
     });
 
     const showIssueOutputPanel = computed(() => {
@@ -859,7 +872,7 @@ export default {
       updateSubscriberIdList,
       updateCustomField,
       doCreate,
-      workflowType,
+      pipelineType,
       allowCreate,
       currentUser,
       issueTemplate,
@@ -869,7 +882,7 @@ export default {
       allowEditOutput,
       allowEditNameAndDescription,
       allowEditSql,
-      showIssueTaskFlowBar,
+      showPipelineFlowBar,
       showIssueOutputPanel,
       showIssueSqlPanel,
       showIssueRollbackSqlPanel,
