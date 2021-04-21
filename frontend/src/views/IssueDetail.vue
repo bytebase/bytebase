@@ -10,6 +10,12 @@
     >
       Canceled
     </div>
+    <div
+      v-if="showSuccessBanner"
+      class="h-10 w-full text-2xl font-bold bg-success text-white flex justify-center items-center"
+    >
+      Done
+    </div>
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
       <IssueHighlightPanel
@@ -777,6 +783,10 @@ export default {
       return !state.new && (state.issue as Issue).status == "CANCELED";
     });
 
+    const showSuccessBanner = computed(() => {
+      return !state.new && (state.issue as Issue).status == "DONE";
+    });
+
     const showPipelineFlowBar = computed(() => {
       return !state.new && currentPipelineType.value != "NO_PIPELINE";
     });
@@ -877,6 +887,7 @@ export default {
       allowEditNameAndDescription,
       allowEditSql,
       showCancelBanner,
+      showSuccessBanner,
       showPipelineFlowBar,
       showIssueOutputPanel,
       showIssueSqlPanel,
