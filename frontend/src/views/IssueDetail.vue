@@ -113,6 +113,7 @@
               <button
                 type="button"
                 :class="transition.buttonClass"
+                :disabled="!allowIssueStatusTransition(transition)"
                 @click.prevent="tryStartIssueStatusTransition(transition)"
               >
                 {{ transition.buttonName }}
@@ -570,7 +571,9 @@ export default {
       }
     };
 
-    const allowTransition = (transition: IssueStatusTransition): boolean => {
+    const allowIssueStatusTransition = (
+      transition: IssueStatusTransition
+    ): boolean => {
       const issue: Issue = state.issue as Issue;
       if (transition.type == "RESOLVE") {
         // Returns false if any of the required output fields is not provided.
@@ -893,7 +896,7 @@ export default {
       updateDescription,
       updateSql,
       updateRollbackSql,
-      allowTransition,
+      allowIssueStatusTransition,
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
       tryStartIssueStatusTransition,
