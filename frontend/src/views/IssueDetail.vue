@@ -47,7 +47,7 @@
 
     <!-- Task Flow Bar -->
     <template v-if="showPipelineFlowBar">
-      <template v-if="pipelineType == 'MULTI_SINGLE_STEP_TASK'">
+      <template v-if="currentPipelineType == 'MULTI_SINGLE_STEP_TASK'">
         <PipelineSimpleFlow :pipeline="state.issue.pipeline" />
       </template>
     </template>
@@ -174,6 +174,8 @@ import {
   StepStatusTransition,
   applicableStepTransition,
   activeStep,
+  pipelineType,
+  PipelineType,
 } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
 import IssueTaskFlow from "./IssueTaskFlow.vue";
@@ -215,12 +217,6 @@ import {
   IssueTemplate,
   IssueContext,
 } from "../plugins";
-
-type PipelineType =
-  | "NO_PIPELINE"
-  | "SINGLE_TASK"
-  | "MULTI_SINGLE_STEP_TASK"
-  | "MULTI_TASK";
 
 type UpdateStatusModalStatePayload = {
   transition: IssueStatusTransition;
@@ -702,25 +698,13 @@ export default {
         });
     };
 
-    const pipelineType = computed(
+    const currentPipelineType = computed(
       (): PipelineType => {
-        const pipeline: Pipeline = (state.issue as Issue).pipeline;
-        if (pipeline.taskList.length == 0) {
-          return "NO_PIPELINE";
-        } else if (pipeline.taskList.length == 1) {
-          return "SINGLE_TASK";
-        } else {
-          for (const task of (state.issue as Issue).pipeline.taskList) {
-            if (task.stepList.length > 1) {
-              return "MULTI_TASK";
-            }
-          }
-          return "MULTI_SINGLE_STEP_TASK";
-        }
+        return pipelineType((state.issue as Issue).pipeline);
       }
     );
 
-    console.log(pipelineType.value);
+    console.log(currentPipelineType.value);
 
     const allowCreate = computed(() => {
       const newIssue = state.issue as IssueNew;
@@ -784,7 +768,7 @@ export default {
     });
 
     const showPipelineFlowBar = computed(() => {
-      return !state.new && pipelineType.value != "NO_PIPELINE";
+      return !state.new && currentPipelineType.value != "NO_PIPELINE";
     });
 
     const showIssueOutputPanel = computed(() => {
@@ -872,7 +856,7 @@ export default {
       updateSubscriberIdList,
       updateCustomField,
       doCreate,
-      pipelineType,
+      currentPipelineType,
       allowCreate,
       currentUser,
       issueTemplate,

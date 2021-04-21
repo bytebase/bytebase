@@ -7,7 +7,7 @@
             <IssueStatusIcon
               v-if="!$props.new"
               :issueStatus="issue.status"
-              :taskStatus="activeTask(issue.pipeline).status"
+              :stepStatus="activeStep(issue.pipeline).status"
             />
           </div>
           <BBTextField
@@ -46,7 +46,7 @@
 <script lang="ts">
 import { reactive, watch, PropType } from "vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import { activeTask } from "../utils";
+import { activeStep } from "../utils";
 import { Issue } from "../types";
 
 interface LocalState {
@@ -92,7 +92,7 @@ export default {
       }
     };
 
-    return { state, activeTask, trySaveName };
+    return { state, activeStep, trySaveName };
   },
 };
 </script>

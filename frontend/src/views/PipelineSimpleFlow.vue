@@ -159,6 +159,8 @@ export default {
       });
     });
 
+    console.log(itemList.value);
+
     const flowItemIconClass = (item: FlowItem) => {
       switch (item.stepStatus) {
         case "PENDING":

@@ -10,6 +10,38 @@ import {
   UNKNOWN_ID,
 } from "../types";
 
+export type PipelineType =
+  | "NO_PIPELINE"
+  | "SINGLE_TASK"
+  | "MULTI_SINGLE_STEP_TASK"
+  | "MULTI_TASK";
+
+export function pipelineType(pipeline: Pipeline): PipelineType {
+  if (pipeline.taskList.length == 0) {
+    return "NO_PIPELINE";
+  } else if (pipeline.taskList.length == 1) {
+    return "SINGLE_TASK";
+  } else {
+    for (const task of pipeline.taskList) {
+      if (task.stepList.length > 1) {
+        return "MULTI_TASK";
+      }
+    }
+    return "MULTI_SINGLE_STEP_TASK";
+  }
+}
+
+// Returns all steps from all tasks.
+export function allStepList(pipeline: Pipeline): Step[] {
+  const list: Step[] = [];
+  pipeline.taskList.forEach((task) => {
+    task.stepList.forEach((step) => {
+      list.push(step);
+    });
+  });
+  return list;
+}
+
 export function activeTask(pipeline: Pipeline): Task {
   for (const task of pipeline.taskList) {
     if (

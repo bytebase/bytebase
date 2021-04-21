@@ -72,7 +72,7 @@
       <BBTableCell :leftPadding="4" class="table-cell">
         <IssueStatusIcon
           :issueStatus="issue.status"
-          :taskStatus="activeTask(issue.pipeline).status"
+          :stepStatus="activeStep(issue.pipeline).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
@@ -88,7 +88,7 @@
         {{ activeDatabaseName(issue) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
-        <BBStepBar :stepList="taskList(issue)" />
+        <BBStepBar :stepList="stepList(issue)" />
       </BBTableCell>
       <BBTableCell class="hidden md:table-cell">
         {{ humanizeTs(issue.updatedTs) }}
@@ -123,9 +123,10 @@ import {
   issueSlug,
   activeEnvironment,
   activeDatabase,
-  activeTask,
+  activeStep,
+  allStepList,
 } from "../utils";
-import { Issue, EMPTY_ID } from "../types";
+import { Issue, EMPTY_ID, Step } from "../types";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -237,33 +238,12 @@ export default {
 
     const router = useRouter();
 
-    const taskList = function (issue: Issue): BBStep[] {
-      return issue.pipeline.taskList.map((task) => {
-        let stepStatus: BBStepStatus = "PENDING";
-        switch (task.status) {
-          case "PENDING":
-            if (activeTask(issue.pipeline).id === task.id) {
-              stepStatus = "PENDING_ACTIVE";
-            } else {
-              stepStatus = "PENDING";
-            }
-            break;
-          case "RUNNING":
-            stepStatus = "RUNNING";
-            break;
-          case "DONE":
-            stepStatus = "DONE";
-            break;
-          case "FAILED":
-            stepStatus = "FAILED";
-            break;
-          case "SKIPPED":
-            stepStatus = "SKIPPED";
-            break;
-        }
+    const stepList = function (issue: Issue): BBStep[] {
+      const list: Step[] = allStepList(issue.pipeline);
+      return list.map((step) => {
         return {
-          title: task.name,
-          status: stepStatus,
+          title: step.name,
+          status: step.status,
           link: (): string => {
             return `/issue/${issue.id}`;
           },
@@ -281,8 +261,8 @@ export default {
       columnList: columnListMap.get(props.mode),
       activeEnvironmentName,
       activeDatabaseName,
-      taskList,
-      activeTask,
+      stepList,
+      activeStep,
       clickIssue,
     };
   },
