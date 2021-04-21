@@ -1278,7 +1278,6 @@ export type EnvironmentMessageType =
 export type InstanceMessageType =
   | "bb.msg.instance.create"
   | "bb.msg.instance.update"
-  | "bb.msg.instance.delete"
   | "bb.msg.instance.archive"
   | "bb.msg.instance.restore";
 

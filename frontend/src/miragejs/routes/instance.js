@@ -1,6 +1,6 @@
 import { Response } from "miragejs";
 import { postMessageToOwnerAndDBA } from "../utils";
-import { WORKSPACE_ID, FAKE_API_CALLER_ID } from "./index";
+import { WORKSPACE_ID } from "./index";
 import { DEFAULT_PROJECT_ID, InstanceBuiltinFieldId } from "../../types";
 
 export default function configurInstance(route) {
@@ -137,8 +137,6 @@ export default function configurInstance(route) {
         type = "bb.msg.instance.archive";
       } else if (attrs.rowStatus == "NORMAL") {
         type = "bb.msg.instance.restore";
-      } else if (attrs.rowStatus == "PENDING_DELETE") {
-        type = "bb.msg.instance.delete";
       }
       changeList.push({
         fieldId: InstanceBuiltinFieldId.ROW_STATUS,
@@ -236,48 +234,5 @@ export default function configurInstance(route) {
     postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
 
     return updatedInstance;
-  });
-
-  route.delete("/instance/:instanceId", function (schema, request) {
-    const instance = schema.instances.find(request.params.instanceId);
-
-    if (!instance) {
-      return new Response(
-        404,
-        {},
-        {
-          errors: "Instance id " + request.params.instanceId + " not found",
-        }
-      );
-    }
-
-    // Delete data source and database before instance itself.
-    // Otherwise, the instanceId will be set to null.
-    const dataSourceList = schema.dataSources.where({
-      instanceId: request.params.instanceId,
-    });
-    dataSourceList.models.forEach((item) => item.destroy());
-
-    const databaseList = schema.databases.where({
-      instanceId: request.params.instanceId,
-    });
-    databaseList.models.forEach((item) => item.destroy());
-
-    instance.destroy();
-
-    const ts = Date.now();
-    const messageTemplate = {
-      containerId: instance.id,
-      createdTs: ts,
-      updatedTs: ts,
-      type: "bb.msg.instance.delete",
-      status: "DELIVERED",
-      creatorId: FAKE_API_CALLER_ID,
-      workspaceId: WORKSPACE_ID,
-      payload: {
-        instanceName: instance.name,
-      },
-    };
-    postMessageToOwnerAndDBA(schema, FAKE_API_CALLER_ID, messageTemplate);
   });
 }

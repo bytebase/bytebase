@@ -105,13 +105,6 @@
                       {{ message.payload.instanceName }}
                     </router-link>
                   </template>
-                  <template
-                    v-else-if="message.type == 'bb.msg.instance.delete'"
-                  >
-                    <span class="font-medium text-main ml-1">
-                      {{ message.payload.instanceName }}
-                    </span>
-                  </template>
                   <template v-else-if="message.type == 'bb.msg.issue.assign'">
                     <router-link
                       :to="`/issue/${message.containerId}`"
@@ -295,8 +288,6 @@ export default {
           return "created instance";
         case "bb.msg.instance.update":
           return "updated instance";
-        case "bb.msg.instance.delete":
-          return "deleted instance";
         case "bb.msg.instance.archive":
           return "archived instance";
         case "bb.msg.instance.restore":
