@@ -343,6 +343,15 @@ export default {
             payload.newStatus
           );
         }
+        case "bb.msg.issue.task.status.update": {
+          const payload = message.payload as IssueUpdateStatusMessagePayload;
+          return (
+            "changed issue task status from " +
+            payload.oldStatus +
+            " to " +
+            payload.newStatus
+          );
+        }
         case "bb.msg.issue.comment":
           return "commented issue";
       }
