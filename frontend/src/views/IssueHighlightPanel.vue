@@ -82,6 +82,8 @@ export default {
       () => props.issue,
       (curIssue, _) => {
         state.name = curIssue.name;
+
+        console.log("Current step", activeStep(props.issue.pipeline));
       }
     );
 

@@ -36,7 +36,7 @@
         </template>
         <!-- Action Button List -->
         <div
-          v-else-if="applicableStepStatusTransitionList.length > 0"
+          v-if="applicableStepStatusTransitionList.length > 0"
           class="flex space-x-2"
         >
           <template
@@ -53,7 +53,73 @@
               {{ transition.buttonName }}
             </button>
           </template>
+          <template v-if="applicableIssueStatusTransitionList.length > 0">
+            <button
+              type="button"
+              @click.prevent="$refs.menu.toggle($event)"
+              @contextmenu.capture.prevent="$refs.menu.toggle($event)"
+              class="text-control-light"
+              id="user-menu"
+              aria-label="User menu"
+              aria-haspopup="true"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                ></path>
+              </svg>
+            </button>
+            <BBContextMenu
+              ref="menu"
+              class="origin-top-right absolute w-24 right-0 mt-10 rounded-md shadow-lg"
+            >
+              <template
+                v-for="(
+                  transition, index
+                ) in applicableIssueStatusTransitionList"
+                :key="index"
+              >
+                <div
+                  @click.prevent="tryStartIssueStatusTransition(transition)"
+                  class="menu-item"
+                  role="menuitem"
+                >
+                  {{ transition.buttonName }}
+                </div>
+              </template>
+            </BBContextMenu>
+          </template>
         </div>
+        <template v-else>
+          <div
+            if="applicableIssueStatusTransitionList.length > 0"
+            class="flex space-x-2"
+          >
+            <template
+              v-for="(
+                transition, index
+              ) in applicableIssueStatusTransitionList.reverse()"
+              :key="index"
+            >
+              <button
+                type="button"
+                :class="transition.buttonClass"
+                @click.prevent="tryStartIssueStatusTransition(transition)"
+              >
+                {{ transition.buttonName }}
+              </button>
+            </template>
+          </div>
+        </template>
       </IssueHighlightPanel>
     </div>
 
@@ -182,7 +248,6 @@ import {
   idFromSlug,
   issueSlug,
   isDemo,
-  pendingResolve,
   StepStatusTransition,
   applicableStepTransition,
   activeStep,
@@ -232,7 +297,6 @@ import {
 
 type UpdateStatusModalStatePayload = {
   transition: IssueStatusTransition;
-  didTransit: () => {};
 };
 
 interface UpdateStatusModalState {
@@ -515,17 +579,14 @@ export default {
     const allowTransition = (transition: IssueStatusTransition): boolean => {
       const issue: Issue = state.issue as Issue;
       if (transition.type == "RESOLVE") {
-        if (pendingResolve(issue)) {
-          // Returns false if any of the required output fields is not provided.
-          for (let i = 0; i < outputFieldList.value.length; i++) {
-            const field = outputFieldList.value[i];
-            if (field.required && !field.resolved(issueContext.value)) {
-              return false;
-            }
+        // Returns false if any of the required output fields is not provided.
+        for (let i = 0; i < outputFieldList.value.length; i++) {
+          const field = outputFieldList.value[i];
+          if (field.required && !field.resolved(issueContext.value)) {
+            return false;
           }
-          return true;
         }
-        return false;
+        return true;
       }
       return true;
     };
@@ -573,11 +634,9 @@ export default {
     };
 
     const tryStartIssueStatusTransition = (
-      type: IssueStatusTransitionType,
-      didTransit: () => {}
+      transition: IssueStatusTransition
     ) => {
-      const transition = ISSUE_STATUS_TRANSITION_LIST.get(type)!;
-      updateStatusModalState.okText = transition.actionName;
+      updateStatusModalState.okText = transition.buttonName;
       switch (transition.to) {
         case "OPEN":
           updateStatusModalState.style = "INFO";
@@ -594,7 +653,6 @@ export default {
       }
       updateStatusModalState.payload = {
         transition,
-        didTransit,
       };
       updateStatusModalState.show = true;
     };
@@ -624,7 +682,6 @@ export default {
               newState: true,
             });
           }
-          payload.didTransit();
         });
     };
 
@@ -808,17 +865,24 @@ export default {
 
     const applicableStepStatusTransitionList = computed(
       (): StepStatusTransition[] => {
-        let list: StepStatusTransition[] = [];
+        switch ((state.issue as Issue).status) {
+          case "DONE":
+          case "CANCELED":
+            return [];
+          case "OPEN": {
+            let list: StepStatusTransition[] = [];
 
-        if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
-          list = applicableStepTransition((state.issue as Issue).pipeline);
+            if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
+              list = applicableStepTransition((state.issue as Issue).pipeline);
+            }
+
+            return list;
+          }
         }
-
-        return list;
       }
     );
 
-    const applicableStatusTransitionList = computed(
+    const applicableIssueStatusTransitionList = computed(
       (): IssueStatusTransition[] => {
         const list: IssueStatusTransitionType[] = [];
         if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
@@ -840,14 +904,20 @@ export default {
 
         return list
           .filter((item) => {
-            if (pendingResolve(state.issue as Issue)) {
-              if (item == "NEXT") {
-                return false;
-              }
-            } else {
-              if (item == "RESOLVE") {
-                return false;
-              }
+            const currentStep = activeStep((state.issue as Issue).pipeline);
+            // Disallow any issue status transition if the active step is in RUNNING state.
+            if (currentStep.status == "RUNNING") {
+              return false;
+            }
+
+            // Don't display the Resolve action if there is outstanding step.
+            if (item == "RESOLVE" && currentStep.id != EMPTY_ID) {
+              return false;
+            }
+
+            // Don't display the Abort action if there is NO outstanding step.
+            if (item == "ABORT" && currentStep.id == EMPTY_ID) {
+              return false;
             }
             return true;
           })
@@ -893,7 +963,7 @@ export default {
       showIssueSqlPanel,
       showIssueRollbackSqlPanel,
       applicableStepStatusTransitionList,
-      applicableStatusTransitionList,
+      applicableIssueStatusTransitionList,
     };
   },
 };

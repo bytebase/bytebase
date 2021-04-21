@@ -76,25 +76,21 @@
                 </svg>
               </template>
             </div>
-            <div class="hidden lg:ml-4 lg:flex lg:flex-col">
-              <span class="text-xs" :class="flowItemTextClass(item)">{{
+            <div
+              class="hidden lg:ml-4 lg:flex lg:flex-col"
+              :class="flowItemTextClass(item)"
+            >
+              <span class="text-xs">{{ item.taskName }}</span>
+              <span class="text-sm">{{ item.stepName }}</span>
+            </div>
+            <div
+              class="ml-4 grid grid-cols-2 lg:hidden"
+              :class="flowItemTextClass(item)"
+            >
+              <span class="col-span-1 flex items-center text-sm w-32">{{
                 item.taskName
               }}</span>
-              <span class="text-sm" :class="flowItemTextClass(item)">{{
-                item.stepName
-              }}</span>
-            </div>
-            <div class="ml-4 grid grid-cols-2 lg:hidden">
-              <span
-                class="col-span-1 flex items-center text-sm w-32"
-                :class="flowItemTextClass(item)"
-                >{{ item.taskName }}</span
-              >
-              <span
-                class="col-span-1 text-sm"
-                :class="flowItemTextClass(item)"
-                >{{ item.stepName }}</span
-              >
+              <span class="col-span-1 text-sm">{{ item.stepName }}</span>
             </div>
           </span>
         </div>
@@ -159,8 +155,6 @@ export default {
       });
     });
 
-    console.log(itemList.value);
-
     const flowItemIconClass = (item: FlowItem) => {
       switch (item.stepStatus) {
         case "PENDING":
@@ -182,7 +176,7 @@ export default {
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
         activeStep(props.pipeline).id === item.stepId
-          ? "font-medium "
+          ? "font-semibold "
           : "font-normal ";
       switch (item.stepStatus) {
         case "SKIPPED":
