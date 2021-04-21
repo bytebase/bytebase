@@ -25,16 +25,16 @@ const template: IssueTemplate = {
       type: "bytebase.database.grant",
       description: "",
       pipeline: {
-        taskList: [
+        stageList: [
           {
             name: "Request database access",
-            type: "bytebase.task.database.grant",
+            type: "bytebase.stage.database.grant",
             environmentId: ctx.environmentList[0].id,
             databaseId: ctx.databaseList[0].id,
-            stepList: [
+            taskList: [
               {
                 name: "Waiting for approval",
-                type: "bytebase.step.approve",
+                type: "bytebase.task.approve",
               },
             ],
           },

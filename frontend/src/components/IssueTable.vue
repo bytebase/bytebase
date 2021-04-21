@@ -72,7 +72,7 @@
       <BBTableCell :leftPadding="4" class="table-cell">
         <IssueStatusIcon
           :issueStatus="issue.status"
-          :stepStatus="activeStep(issue.pipeline).status"
+          :taskStatus="activeTask(issue.pipeline).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
@@ -88,7 +88,7 @@
         {{ activeDatabaseName(issue) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
-        <BBStepBar :stepList="stepList(issue)" />
+        <BBStepBar :stepList="taskList(issue)" />
       </BBTableCell>
       <BBTableCell class="hidden md:table-cell">
         {{ humanizeTs(issue.updatedTs) }}
@@ -116,17 +116,16 @@ import {
   BBTableColumn,
   BBTableSectionDataSource,
   BBStep,
-  BBStepStatus,
 } from "../bbkit/types";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import {
   issueSlug,
   activeEnvironment,
   activeDatabase,
-  activeStep,
-  allStepList,
+  activeTask,
+  allTaskList,
 } from "../utils";
-import { Issue, EMPTY_ID, Step } from "../types";
+import { Issue, EMPTY_ID, Task } from "../types";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -238,12 +237,12 @@ export default {
 
     const router = useRouter();
 
-    const stepList = function (issue: Issue): BBStep[] {
-      const list: Step[] = allStepList(issue.pipeline);
-      return list.map((step) => {
+    const taskList = function (issue: Issue): BBStep[] {
+      const list: Task[] = allTaskList(issue.pipeline);
+      return list.map((task) => {
         return {
-          title: step.name,
-          status: step.status,
+          title: task.name,
+          status: task.status,
           link: (): string => {
             return `/issue/${issue.id}`;
           },
@@ -261,8 +260,8 @@ export default {
       columnList: columnListMap.get(props.mode),
       activeEnvironmentName,
       activeDatabaseName,
-      stepList,
-      activeStep,
+      taskList,
+      activeTask,
       clickIssue,
     };
   },

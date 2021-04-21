@@ -418,7 +418,7 @@ export default {
 
     const alterSchema = () => {
       state.modalTitle = "Alter schema";
-      state.modalSubtitle = "Step 1 - choose database";
+      state.modalSubtitle = "Task 1 - choose database";
       state.quickActionType = "quickaction.bytebase.database.schema.update";
       state.showModal = true;
     };

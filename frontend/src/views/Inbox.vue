@@ -343,10 +343,10 @@ export default {
             payload.newStatus
           );
         }
-        case "bb.msg.issue.task.status.update": {
+        case "bb.msg.issue.stage.status.update": {
           const payload = message.payload as IssueUpdateStatusMessagePayload;
           return (
-            "changed issue task status from " +
+            "changed issue stage status from " +
             payload.oldStatus +
             " to " +
             payload.newStatus

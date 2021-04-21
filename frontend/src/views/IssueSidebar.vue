@@ -301,7 +301,7 @@ export default {
     const database = computed(
       (): Database => {
         if (props.new) {
-          const databaseId = (props.issue as IssueNew).pipeline?.taskList[0]
+          const databaseId = (props.issue as IssueNew).pipeline?.stageList[0]
             .databaseId;
           return store.getters["database/databaseById"](databaseId);
         }
@@ -323,7 +323,7 @@ export default {
     const environment = computed(
       (): Environment => {
         if (props.new) {
-          const environmentId = (props.issue as IssueNew).pipeline?.taskList[0]
+          const environmentId = (props.issue as IssueNew).pipeline?.stageList[0]
             .environmentId;
           return store.getters["environment/environmentById"](environmentId);
         }

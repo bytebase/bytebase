@@ -303,7 +303,7 @@ import {
   Environment,
   Principal,
 } from "../types";
-import { sizeToFit, taskName } from "../utils";
+import { sizeToFit, stageName } from "../utils";
 import { fieldFromId, IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
@@ -490,8 +490,8 @@ export default {
           return "commented";
         case "bytebase.issue.field.update":
         case "bytebase.issue.status.update":
-        case "bytebase.issue.task.status.update":
-        case "bytebase.issue.task.step.status.update": {
+        case "bytebase.issue.stage.status.update":
+        case "bytebase.issue.stage.task.status.update": {
           const updateInfoList: string[] = [];
           for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
             ?.changeList || []) {
@@ -506,12 +506,12 @@ export default {
               name = "status";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == IssueBuiltinFieldId.TASK_STATUS) {
-              name = "task status";
+            } else if (update.fieldId == IssueBuiltinFieldId.STAGE_STATUS) {
+              name = "stage status";
               oldValue = update.oldValue;
               newValue = update.newValue;
-            } else if (update.fieldId == IssueBuiltinFieldId.STEP_STATUS) {
-              name = "step status";
+            } else if (update.fieldId == IssueBuiltinFieldId.TASK_STATUS) {
+              name = "task status";
               oldValue = update.oldValue;
               newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.ASSIGNEE) {
@@ -529,10 +529,10 @@ export default {
             } else if (update.fieldId == IssueBuiltinFieldId.DESCRIPTION) {
               name = "description";
             } else if (
-              update.fieldId.split(".")[0] == IssueBuiltinFieldId.TASK
+              update.fieldId.split(".")[0] == IssueBuiltinFieldId.STAGE
             ) {
-              const taskId = update.fieldId.split(".")[1];
-              name = taskName(props.issue, taskId);
+              const stageId = update.fieldId.split(".")[1];
+              name = stageName(props.issue, stageId);
               oldValue = update.oldValue;
               newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.SQL) {

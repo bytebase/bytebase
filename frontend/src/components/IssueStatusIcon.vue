@@ -5,13 +5,13 @@
   >
     <template v-if="issueStatus === `OPEN`">
       <span
-        v-if="stepStatus === 'RUNNING'"
+        v-if="taskStatus === 'RUNNING'"
         class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
         style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
         aria-hidden="true"
       ></span>
       <span
-        v-else-if="stepStatus === 'FAILED'"
+        v-else-if="taskStatus === 'FAILED'"
         class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
         aria-hidden="true"
         >!</span
@@ -58,7 +58,7 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { StepStatus, IssueStatus } from "../types";
+import { TaskStatus, IssueStatus } from "../types";
 
 type SizeType = "small" | "normal";
 
@@ -69,9 +69,9 @@ export default {
       required: true,
       type: String as PropType<IssueStatus>,
     },
-    // Specify stepStatus if we want to show the step specific status when issueStatus is OPEN.
-    stepStatus: {
-      type: String as PropType<StepStatus>,
+    // Specify taskStatus if we want to show the task specific status when issueStatus is OPEN.
+    taskStatus: {
+      type: String as PropType<TaskStatus>,
     },
     size: {
       type: String as PropType<SizeType>,
@@ -84,7 +84,7 @@ export default {
       let iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
       switch (props.issueStatus) {
         case "OPEN":
-          if (props.stepStatus && props.stepStatus === "FAILED") {
+          if (props.taskStatus && props.taskStatus === "FAILED") {
             return (
               iconClass +
               " bg-error text-white hover:text-white hover:bg-error-hover"

@@ -7,7 +7,7 @@ import {
   IssueContext,
 } from "../types";
 
-import { Database, Task, TaskNew, IssueNew, UNKNOWN_ID } from "../../types";
+import { Database, Stage, StageNew, IssueNew, UNKNOWN_ID } from "../../types";
 
 const template: IssueTemplate = {
   type: "bytebase.database.schema.update",
@@ -15,21 +15,21 @@ const template: IssueTemplate = {
     ctx: TemplateContext
   ): Omit<IssueNew, "projectId" | "creatorId"> => {
     const payload: any = {};
-    const taskList: TaskNew[] = [];
+    const stageList: StageNew[] = [];
     for (let i = 0; i < ctx.databaseList.length; i++) {
-      taskList.push({
+      stageList.push({
         name: `[${ctx.databaseList[i].instance.environment.name}] ${ctx.databaseList[i].name}`,
-        type: "bytebase.task.schema.update",
+        type: "bytebase.stage.schema.update",
         environmentId: ctx.environmentList[i].id,
         databaseId: ctx.databaseList[i].id,
-        stepList: [
+        taskList: [
           {
             name: "Waiting for approval",
-            type: "bytebase.step.approve",
+            type: "bytebase.task.approve",
           },
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
-            type: "bytebase.step.database.schema.update",
+            type: "bytebase.task.database.schema.update",
           },
         ],
       });
@@ -39,7 +39,7 @@ const template: IssueTemplate = {
       type: "bytebase.database.schema.update",
       description: "",
       pipeline: {
-        taskList,
+        stageList,
         creatorId: ctx.currentUser.id,
         name: "Update database schema pipeline",
       },

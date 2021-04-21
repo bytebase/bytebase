@@ -10,10 +10,10 @@
             class="mt-1 w-full"
             id="environment"
             name="environment"
-            :selectedId="state.singleTaskConfig.environmentId"
+            :selectedId="state.singleStageConfig.environmentId"
             @select-environment-id="
               (environmentId) => {
-                state.singleTaskConfig.environmentId = environmentId;
+                state.singleStageConfig.environmentId = environmentId;
               }
             "
           />
@@ -50,8 +50,8 @@
             class="mt-1 w-full"
             id="database"
             name="database"
-            :selectedId="state.singleTaskConfig.databaseId"
-            :environmentId="state.singleTaskConfig.environmentId"
+            :selectedId="state.singleStageConfig.databaseId"
+            :environmentId="state.singleStageConfig.environmentId"
             :projectId="state.project.id"
             :mode="'USER'"
             @select-database-id="
@@ -117,7 +117,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 
-type TaskConfig = {
+type StageConfig = {
   environmentId: EnvironmentId;
   databaseId: DatabaseId;
 };
@@ -125,8 +125,8 @@ type TaskConfig = {
 interface LocalState {
   project: Project;
   singleEnvironment: boolean;
-  singleTaskConfig: TaskConfig;
-  taskConfigList: TaskConfig[];
+  singleStageConfig: StageConfig;
+  stageConfigList: StageConfig[];
 }
 
 export default {
@@ -160,19 +160,19 @@ export default {
     const state = reactive<LocalState>({
       project: store.getters["project/projectById"](props.projectId),
       singleEnvironment: true,
-      singleTaskConfig: {
+      singleStageConfig: {
         environmentId: UNKNOWN_ID,
         databaseId: UNKNOWN_ID,
       },
-      taskConfigList: [],
+      stageConfigList: [],
     });
 
     const allowNext = computed(() => {
       if (state.singleEnvironment) {
         return (
           state.project.id != UNKNOWN_ID &&
-          state.singleTaskConfig.environmentId != UNKNOWN_ID &&
-          state.singleTaskConfig.databaseId != UNKNOWN_ID
+          state.singleStageConfig.environmentId != UNKNOWN_ID &&
+          state.singleStageConfig.databaseId != UNKNOWN_ID
         );
       }
       return true;
@@ -182,16 +182,16 @@ export default {
       state.project = store.getters["project/projectById"](projectId);
       if (state.singleEnvironment) {
       } else {
-        state.taskConfigList = [];
+        state.stageConfigList = [];
       }
     };
 
     const changeDatabaseId = (databaseId: DatabaseId) => {
-      state.singleTaskConfig.databaseId = databaseId;
+      state.singleStageConfig.databaseId = databaseId;
 
       if (databaseId != UNKNOWN_ID) {
         const database: Database = store.getters["database/databaseById"](
-          state.singleTaskConfig.databaseId
+          state.singleStageConfig.databaseId
         );
         state.project = database.project;
       }
@@ -206,7 +206,7 @@ export default {
 
       if (state.singleEnvironment) {
         const database = store.getters["database/databaseById"](
-          state.singleTaskConfig.databaseId
+          state.singleStageConfig.databaseId
         );
 
         router.push({

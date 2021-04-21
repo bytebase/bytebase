@@ -36,19 +36,19 @@
         </template>
         <!-- Action Button List -->
         <div
-          v-if="applicableStepStatusTransitionList.length > 0"
+          v-if="applicableTaskStatusTransitionList.length > 0"
           class="flex space-x-2"
         >
           <template
             v-for="(
               transition, index
-            ) in applicableStepStatusTransitionList.reverse()"
+            ) in applicableTaskStatusTransitionList.reverse()"
             :key="index"
           >
             <button
               type="button"
               :class="transition.buttonClass"
-              @click.prevent="tryStartStepStatusTransition(transition)"
+              @click.prevent="tryStartTaskStatusTransition(transition)"
             >
               {{ transition.buttonName }}
             </button>
@@ -123,9 +123,9 @@
       </IssueHighlightPanel>
     </div>
 
-    <!-- Task Flow Bar -->
+    <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
-      <template v-if="currentPipelineType == 'MULTI_SINGLE_STEP_TASK'">
+      <template v-if="currentPipelineType == 'MULTI_SINGLE_TASK_STAGE'">
         <PipelineSimpleFlow :pipeline="state.issue.pipeline" />
       </template>
     </template>
@@ -248,9 +248,9 @@ import {
   idFromSlug,
   issueSlug,
   isDemo,
-  StepStatusTransition,
-  applicableStepTransition,
-  activeStep,
+  TaskStatusTransition,
+  applicableTaskTransition,
+  activeTask,
   pipelineType,
   PipelineType,
 } from "../utils";
@@ -278,8 +278,8 @@ import {
   UNKNOWN_ID,
   ProjectId,
   Environment,
-  StepStatusPatch,
-  StepId,
+  TaskStatusPatch,
+  TaskId,
   EMPTY_ID,
 } from "../types";
 import {
@@ -585,27 +585,27 @@ export default {
       return true;
     };
 
-    const tryStartStepStatusTransition = (transition: StepStatusTransition) => {
-      const step = activeStep((state.issue as Issue).pipeline);
-      doStepStatusTransition(transition, step.id);
+    const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
+      const task = activeTask((state.issue as Issue).pipeline);
+      doTaskStatusTransition(transition, task.id);
     };
 
-    const doStepStatusTransition = (
-      transition: StepStatusTransition,
-      stepId: StepId,
+    const doTaskStatusTransition = (
+      transition: TaskStatusTransition,
+      taskId: TaskId,
       comment?: string
     ) => {
-      const stepStatusPatch: StepStatusPatch = {
+      const taskStatusPatch: TaskStatusPatch = {
         updaterId: currentUser.value.id,
         status: transition.to,
         comment: comment ? comment.trim() : undefined,
       };
 
-      store.dispatch("step/updateStatus", {
+      store.dispatch("task/updateStatus", {
         issueId: (state.issue as Issue).id,
         pipelineId: (state.issue as Issue).pipeline.id,
-        stepId,
-        stepStatusPatch,
+        taskId,
+        taskStatusPatch,
       });
     };
 
@@ -821,17 +821,17 @@ export default {
       return state.issue.type == "bytebase.database.schema.update";
     });
 
-    const applicableStepStatusTransitionList = computed(
-      (): StepStatusTransition[] => {
+    const applicableTaskStatusTransitionList = computed(
+      (): TaskStatusTransition[] => {
         switch ((state.issue as Issue).status) {
           case "DONE":
           case "CANCELED":
             return [];
           case "OPEN": {
-            let list: StepStatusTransition[] = [];
+            let list: TaskStatusTransition[] = [];
 
             if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
-              list = applicableStepTransition((state.issue as Issue).pipeline);
+              list = applicableTaskTransition((state.issue as Issue).pipeline);
             }
 
             return list;
@@ -862,19 +862,19 @@ export default {
 
         return list
           .filter((item) => {
-            const currentStep = activeStep((state.issue as Issue).pipeline);
-            // Disallow any issue status transition if the active step is in RUNNING state.
-            if (currentStep.status == "RUNNING") {
+            const currentTask = activeTask((state.issue as Issue).pipeline);
+            // Disallow any issue status transition if the active task is in RUNNING state.
+            if (currentTask.status == "RUNNING") {
               return false;
             }
 
-            // Don't display the Resolve action if there is outstanding step.
-            if (item == "RESOLVE" && currentStep.id != EMPTY_ID) {
+            // Don't display the Resolve action if there is outstanding task.
+            if (item == "RESOLVE" && currentTask.id != EMPTY_ID) {
               return false;
             }
 
-            // Don't display the Abort action if there is NO outstanding step.
-            if (item == "ABORT" && currentStep.id == EMPTY_ID) {
+            // Don't display the Abort action if there is NO outstanding task.
+            if (item == "ABORT" && currentTask.id == EMPTY_ID) {
               return false;
             }
             return true;
@@ -894,8 +894,8 @@ export default {
       updateSql,
       updateRollbackSql,
       allowTransition,
-      tryStartStepStatusTransition,
-      doStepStatusTransition,
+      tryStartTaskStatusTransition,
+      doTaskStatusTransition,
       tryStartIssueStatusTransition,
       doIssueStatusTransition,
       updateAssigneeId,
@@ -918,7 +918,7 @@ export default {
       showIssueOutputPanel,
       showIssueSqlPanel,
       showIssueRollbackSqlPanel,
-      applicableStepStatusTransitionList,
+      applicableTaskStatusTransitionList,
       applicableIssueStatusTransitionList,
     };
   },

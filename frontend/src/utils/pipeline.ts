@@ -4,89 +4,89 @@ import {
   EMPTY_ID,
   Environment,
   Pipeline,
-  Step,
-  StepStatus,
   Task,
+  TaskStatus,
+  Stage,
   UNKNOWN_ID,
 } from "../types";
 
 export type PipelineType =
   | "NO_PIPELINE"
-  | "SINGLE_TASK"
-  | "MULTI_SINGLE_STEP_TASK"
-  | "MULTI_TASK";
+  | "SINGLE_STAGE"
+  | "MULTI_SINGLE_TASK_STAGE"
+  | "MULTI_STAGE";
 
 export function pipelineType(pipeline: Pipeline): PipelineType {
-  if (pipeline.taskList.length == 0) {
+  if (pipeline.stageList.length == 0) {
     return "NO_PIPELINE";
-  } else if (pipeline.taskList.length == 1) {
-    return "SINGLE_TASK";
+  } else if (pipeline.stageList.length == 1) {
+    return "SINGLE_STAGE";
   } else {
-    for (const task of pipeline.taskList) {
-      if (task.stepList.length > 1) {
-        return "MULTI_TASK";
+    for (const stage of pipeline.stageList) {
+      if (stage.taskList.length > 1) {
+        return "MULTI_STAGE";
       }
     }
-    return "MULTI_SINGLE_STEP_TASK";
+    return "MULTI_SINGLE_TASK_STAGE";
   }
 }
 
-// Returns all steps from all tasks.
-export function allStepList(pipeline: Pipeline): Step[] {
-  const list: Step[] = [];
-  pipeline.taskList.forEach((task) => {
-    task.stepList.forEach((step) => {
-      list.push(step);
+// Returns all tasks from all stages.
+export function allTaskList(pipeline: Pipeline): Task[] {
+  const list: Task[] = [];
+  pipeline.stageList.forEach((stage) => {
+    stage.taskList.forEach((task) => {
+      list.push(task);
     });
   });
   return list;
 }
 
-export function activeStep(pipeline: Pipeline): Step {
-  for (const task of pipeline.taskList) {
-    for (const step of task.stepList) {
+export function activeTask(pipeline: Pipeline): Task {
+  for (const stage of pipeline.stageList) {
+    for (const task of stage.taskList) {
       if (
-        step.status == "PENDING" ||
-        step.status == "RUNNING" ||
-        // "FAILED" is also a transient step status, which requires user
+        task.status == "PENDING" ||
+        task.status == "RUNNING" ||
+        // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
-        step.status == "FAILED"
+        task.status == "FAILED"
       ) {
-        return step;
+        return task;
       }
     }
   }
-  return empty("STEP") as Step;
+  return empty("TASK") as Task;
 }
 
 export function activeEnvironment(pipeline: Pipeline): Environment {
-  const task: Task = activeTask(pipeline);
-  if (task.id == EMPTY_ID) {
+  const stage: Stage = activeStage(pipeline);
+  if (stage.id == EMPTY_ID) {
     return empty("ENVIRONMENT") as Environment;
   }
-  return task.environment;
+  return stage.environment;
 }
 
 export function activeDatabase(pipeline: Pipeline): Database {
-  const task = activeTask(pipeline);
-  if (task.id == EMPTY_ID) {
+  const stage = activeStage(pipeline);
+  if (stage.id == EMPTY_ID) {
     return empty("DATABASE") as Database;
   }
-  return task.database;
+  return stage.database;
 }
 
-export type StepStatusTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
+export type TaskStatusTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
 
-export interface StepStatusTransition {
-  type: StepStatusTransitionType;
-  to: StepStatus;
+export interface TaskStatusTransition {
+  type: TaskStatusTransitionType;
+  to: TaskStatus;
   buttonName: string;
   buttonClass: string;
 }
 
-const STEP_STATUS_TRANSITION_LIST: Map<
-  StepStatusTransitionType,
-  StepStatusTransition
+const TASK_STATUS_TRANSITION_LIST: Map<
+  TaskStatusTransitionType,
+  TaskStatusTransition
 > = new Map([
   [
     "RUN",
@@ -128,9 +128,9 @@ const STEP_STATUS_TRANSITION_LIST: Map<
 ]);
 
 // The transition button is ordered from right to left on the UI
-const APPLICABLE_STEP_TRANSITION_LIST: Map<
-  StepStatus,
-  StepStatusTransitionType[]
+const APPLICABLE_TASK_TRANSITION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", ["RUN", "SKIP"]],
   ["RUNNING", ["CANCEL"]],
@@ -139,37 +139,37 @@ const APPLICABLE_STEP_TRANSITION_LIST: Map<
   ["SKIPPED", []],
 ]);
 
-export function applicableStepTransition(
+export function applicableTaskTransition(
   pipeline: Pipeline
-): StepStatusTransition[] {
-  const step = activeStep(pipeline);
+): TaskStatusTransition[] {
+  const task = activeTask(pipeline);
 
-  if (step.id == EMPTY_ID || step.id == UNKNOWN_ID) {
+  if (task.id == EMPTY_ID || task.id == UNKNOWN_ID) {
     return [];
   }
 
-  const list: StepStatusTransitionType[] = APPLICABLE_STEP_TRANSITION_LIST.get(
-    step.status
+  const list: TaskStatusTransitionType[] = APPLICABLE_TASK_TRANSITION_LIST.get(
+    task.status
   )!;
 
-  return list.map((type: StepStatusTransitionType) => {
-    return STEP_STATUS_TRANSITION_LIST.get(type)!;
+  return list.map((type: TaskStatusTransitionType) => {
+    return TASK_STATUS_TRANSITION_LIST.get(type)!;
   });
 }
 
-function activeTask(pipeline: Pipeline): Task {
-  for (const task of pipeline.taskList) {
-    for (const step of task.stepList) {
+function activeStage(pipeline: Pipeline): Stage {
+  for (const stage of pipeline.stageList) {
+    for (const task of stage.taskList) {
       if (
-        step.status == "PENDING" ||
-        step.status == "RUNNING" ||
-        // "FAILED" is also a transient step status, which requires user
+        task.status == "PENDING" ||
+        task.status == "RUNNING" ||
+        // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
-        step.status == "FAILED"
+        task.status == "FAILED"
       ) {
-        return task;
+        return stage;
       }
     }
   }
-  return empty("TASK") as Task;
+  return empty("STAGE") as Stage;
 }

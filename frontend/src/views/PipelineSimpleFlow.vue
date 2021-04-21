@@ -16,9 +16,9 @@
               class="relative w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-full select-none"
               :class="flowItemIconClass(item)"
             >
-              <template v-if="item.stepStatus === 'PENDING'">
+              <template v-if="item.taskStatus === 'PENDING'">
                 <span
-                  v-if="activeStep(pipeline).id === item.stepId"
+                  v-if="activeTask(pipeline).id === item.taskId"
                   class="h-1.5 w-1.5 bg-blue-600 rounded-full"
                   aria-hidden="true"
                 ></span>
@@ -28,7 +28,7 @@
                   aria-hidden="true"
                 ></span>
               </template>
-              <template v-else-if="item.stepStatus == 'RUNNING'">
+              <template v-else-if="item.taskStatus == 'RUNNING'">
                 <span
                   class="h-2.5 w-2.5 bg-blue-600 rounded-full"
                   style="
@@ -37,7 +37,7 @@
                   aria-hidden="true"
                 ></span>
               </template>
-              <template v-else-if="item.stepStatus == 'DONE'">
+              <template v-else-if="item.taskStatus == 'DONE'">
                 <svg
                   class="w-5 h-5"
                   xmlns="http://www.w3.org/2000/svg"
@@ -52,14 +52,14 @@
                   />
                 </svg>
               </template>
-              <template v-else-if="item.stepStatus == 'FAILED'">
+              <template v-else-if="item.taskStatus == 'FAILED'">
                 <span
                   class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
                   aria-hidden="true"
                   >!</span
                 >
               </template>
-              <template v-else-if="item.stepStatus == 'SKIPPED'">
+              <template v-else-if="item.taskStatus == 'SKIPPED'">
                 <svg
                   class="w-5 h-5"
                   fill="currentColor"
@@ -80,17 +80,17 @@
               class="hidden lg:ml-4 lg:flex lg:flex-col"
               :class="flowItemTextClass(item)"
             >
-              <span class="text-xs">{{ item.taskName }}</span>
-              <span class="text-sm">{{ item.stepName }}</span>
+              <span class="text-xs">{{ item.stageName }}</span>
+              <span class="text-sm">{{ item.taskName }}</span>
             </div>
             <div
               class="ml-4 grid grid-cols-2 lg:hidden"
               :class="flowItemTextClass(item)"
             >
               <span class="col-span-1 flex items-center text-sm w-32">{{
-                item.taskName
+                item.stageName
               }}</span>
-              <span class="col-span-1 text-sm">{{ item.stepName }}</span>
+              <span class="col-span-1 text-sm">{{ item.taskName }}</span>
             </div>
           </span>
         </div>
@@ -122,14 +122,14 @@
 
 <script lang="ts">
 import { computed, PropType } from "vue";
-import { Pipeline, StepStatus, StepId } from "../types";
-import { activeStep } from "../utils";
+import { Pipeline, TaskStatus, TaskId } from "../types";
+import { activeTask } from "../utils";
 
 interface FlowItem {
+  stageName: string;
+  taskId: TaskId;
   taskName: string;
-  stepId: StepId;
-  stepName: string;
-  stepStatus: StepStatus;
+  taskStatus: TaskStatus;
 }
 
 export default {
@@ -144,21 +144,21 @@ export default {
   components: {},
   setup(props, {}) {
     const itemList = computed<FlowItem[]>(() => {
-      return props.pipeline.taskList.map((task) => {
-        const step = task.stepList[0];
+      return props.pipeline.stageList.map((stage) => {
+        const task = stage.taskList[0];
         return {
+          stageName: stage.name,
+          taskId: task.id,
           taskName: task.name,
-          stepId: step.id,
-          stepName: step.name,
-          stepStatus: step.status,
+          taskStatus: task.status,
         };
       });
     });
 
     const flowItemIconClass = (item: FlowItem) => {
-      switch (item.stepStatus) {
+      switch (item.taskStatus) {
         case "PENDING":
-          if (activeStep(props.pipeline).id === item.stepId) {
+          if (activeTask(props.pipeline).id === item.taskId) {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
           return "bg-white border-2 border-gray-300";
@@ -175,16 +175,16 @@ export default {
 
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
-        activeStep(props.pipeline).id === item.stepId
+        activeTask(props.pipeline).id === item.taskId
           ? "font-semibold "
           : "font-normal ";
-      switch (item.stepStatus) {
+      switch (item.taskStatus) {
         case "SKIPPED":
           return textClass + "text-gray-500";
         case "DONE":
           return textClass + "text-control";
         case "PENDING":
-          if (activeStep(props.pipeline).id === item.stepId) {
+          if (activeTask(props.pipeline).id === item.taskId) {
             return textClass + "text-blue-600";
           }
           return textClass + "text-control";
@@ -197,7 +197,7 @@ export default {
 
     return {
       itemList,
-      activeStep,
+      activeTask,
       flowItemIconClass,
       flowItemTextClass,
     };

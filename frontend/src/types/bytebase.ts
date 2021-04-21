@@ -27,8 +27,8 @@ export type ResourceType =
   | "DATA_SOURCE"
   | "ISSUE"
   | "PIPELINE"
+  | "STAGE"
   | "TASK"
-  | "STEP"
   | "ACTIVITY"
   | "MESSAGE"
   | "BOOKMARK";
@@ -50,8 +50,8 @@ export const unknown = (
   | DataSource
   | Issue
   | Pipeline
+  | Stage
   | Task
-  | Step
   | Activity
   | Message
   | Bookmark => {
@@ -172,7 +172,7 @@ export const unknown = (
     updatedTs: 0,
     name: "<<Unknown pipeline>>",
     status: "DONE",
-    taskList: [],
+    stageList: [],
   };
 
   const UNKNOWN_ISSUE: Issue = {
@@ -191,30 +191,30 @@ export const unknown = (
     payload: {},
   };
 
+  const UNKNOWN_STAGE: Stage = {
+    id: UNKNOWN_ID,
+    pipeline: UNKNOWN_PIPELINE,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    name: "<<Unknown stage>>",
+    type: "bytebase.stage.unknown",
+    environment: UNKNOWN_ENVIRONMENT,
+    database: UNKNOWN_DATABASE,
+    taskList: [],
+  };
+
   const UNKNOWN_TASK: Task = {
     id: UNKNOWN_ID,
     pipeline: UNKNOWN_PIPELINE,
+    stage: UNKNOWN_STAGE,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
-    environment: UNKNOWN_ENVIRONMENT,
-    database: UNKNOWN_DATABASE,
-    stepList: [],
-  };
-
-  const UNKNOWN_STEP: Step = {
-    id: UNKNOWN_ID,
-    pipeline: UNKNOWN_PIPELINE,
-    task: UNKNOWN_TASK,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    name: "<<Unknown step>>",
-    type: "bytebase.step.unknown",
     status: "DONE",
   };
 
@@ -277,10 +277,10 @@ export const unknown = (
       return UNKNOWN_ISSUE;
     case "PIPELINE":
       return UNKNOWN_PIPELINE;
+    case "STAGE":
+      return UNKNOWN_STAGE;
     case "TASK":
       return UNKNOWN_TASK;
-    case "STEP":
-      return UNKNOWN_STEP;
     case "ACTIVITY":
       return UNKNOWN_ACTIVITY;
     case "MESSAGE":
@@ -306,8 +306,8 @@ export const empty = (
   | DataSource
   | Issue
   | Pipeline
+  | Stage
   | Task
-  | Step
   | Activity
   | Message
   | Bookmark => {
@@ -428,7 +428,7 @@ export const empty = (
     updatedTs: 0,
     name: "",
     status: "DONE",
-    taskList: [],
+    stageList: [],
   };
 
   const EMPTY_ISSUE: Issue = {
@@ -447,30 +447,30 @@ export const empty = (
     payload: {},
   };
 
+  const EMPTY_STAGE: Stage = {
+    id: EMPTY_ID,
+    pipeline: EMPTY_PIPELINE,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    name: "",
+    type: "bytebase.stage.unknown",
+    environment: EMPTY_ENVIRONMENT,
+    database: EMPTY_DATABASE,
+    taskList: [],
+  };
+
   const EMPTY_TASK: Task = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
+    stage: EMPTY_STAGE,
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     name: "",
     type: "bytebase.task.unknown",
-    environment: EMPTY_ENVIRONMENT,
-    database: EMPTY_DATABASE,
-    stepList: [],
-  };
-
-  const EMPTY_STEP: Step = {
-    id: EMPTY_ID,
-    pipeline: EMPTY_PIPELINE,
-    task: EMPTY_TASK,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    name: "",
-    type: "bytebase.step.unknown",
     status: "DONE",
   };
 
@@ -533,10 +533,10 @@ export const empty = (
       return EMPTY_ISSUE;
     case "PIPELINE":
       return EMPTY_PIPELINE;
+    case "STAGE":
+      return EMPTY_STAGE;
     case "TASK":
       return EMPTY_TASK;
-    case "STEP":
-      return EMPTY_STEP;
     case "ACTIVITY":
       return EMPTY_ACTIVITY;
     case "MESSAGE":
@@ -566,9 +566,9 @@ export type IssueId = string;
 
 export type PipelineId = string;
 
-export type TaskId = string;
+export type StageId = string;
 
-export type StepId = string;
+export type TaskId = string;
 
 export type ActivityId = string;
 
@@ -957,45 +957,45 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
   ["CANCELED", ["REOPEN"]],
 ]);
 
-// Pipeline, Task, Step are the backbones of execution.
+// Pipeline, Stage, Task are the backbones of execution.
 //
-// A PIPELINE consists of multiple TASKS. A TASK consists of multiple STEPS.
+// A PIPELINE consists of multiple STAGES. A STAGE consists of multiple TASKS.
 //
 // Comparison with Tekton
 // PIPELINE = Tekton Pipeline
+// STAGE = Tekton Stage
 // TASK = Tekton Task
-// STEP = Tekton Step
 //
 // Comparison with GitLab:
 // PIPELINE = GitLab Pipeline
-// TASK = GitLab Stage
-// STEP = GitLab Job
+// STAGE = GitLab Stage
+// TASK = GitLab Job
 //
 // Comparison with Octopus:
 // PIPELINE = Octopus Lifecycle
-// TASK = Octopus Phase
-// STEP = Octopus Step
+// STAGE = Octopus Phase
+// TASK = Octopus Task
 
-// We require a task to associate with a database. Since database belongs to an instance, which
-// in turns belongs to an environment, thus the task is also associated with an instance and environment.
+// We require a stage to associate with a database. Since database belongs to an instance, which
+// in turns belongs to an environment, thus the stage is also associated with an instance and environment.
 // The environment has tiers which defines rules like whether requires manual approval.
 
 /*
  An example
  
  An alter schema PIPELINE
-  Dev TASK (db_dev, env_dev)
+  Dev STAGE (db_dev, env_dev)
     Change dev database schema
   
-  Testing TASK (db_test, env_test)
+  Testing STAGE (db_test, env_test)
     Change testing database schema
     Verify integration test pass
 
-  Staging TASK (db_staging, env_staging)
+  Staging STAGE (db_staging, env_staging)
     Approve change
     Change staging database schema
 
-  Prod TASK (db_prod, env_prod)
+  Prod STAGE (db_prod, env_prod)
     Approve change
     Change prod database schema
 */
@@ -1006,7 +1006,7 @@ export type Pipeline = {
   id: PipelineId;
 
   // Related fields
-  taskList: Task[];
+  stageList: Stage[];
 
   // Standard fields
   creator: Principal;
@@ -1021,7 +1021,7 @@ export type Pipeline = {
 
 export type PipelineNew = {
   // Related fields
-  taskList: TaskNew[];
+  stageList: StageNew[];
 
   // Standard fields
   creatorId: PrincipalId;
@@ -1039,30 +1039,30 @@ export type PipelineStatusPatch = {
   comment?: string;
 };
 
-// Task
-export type TaskType =
-  | "bytebase.task.unknown"
-  | "bytebase.task.final"
-  | "bytebase.task.transition"
-  | "bytebase.task.database.create"
-  | "bytebase.task.database.grant"
-  | "bytebase.task.schema.update";
+// Stage
+export type StageType =
+  | "bytebase.stage.unknown"
+  | "bytebase.stage.final"
+  | "bytebase.stage.transition"
+  | "bytebase.stage.database.create"
+  | "bytebase.stage.database.grant"
+  | "bytebase.stage.schema.update";
 
-export type TaskRunnable = {
+export type StageRunnable = {
   auto: boolean;
   run: () => void;
 };
 
 // The database belongs to an instance which in turns belongs to an environment.
-// THus task can access both instance and environment info.
-export type Task = {
-  id: TaskId;
+// THus stage can access both instance and environment info.
+export type Stage = {
+  id: StageId;
 
   // Related fields
-  stepList: Step[];
+  taskList: Task[];
   pipeline: Pipeline;
   environment: Environment;
-  // We may get an empty database for tasks like creating database.
+  // We may get an empty database for stages like creating database.
   database: Database;
 
   // Standard fields
@@ -1073,44 +1073,44 @@ export type Task = {
 
   // Domain specific fields
   name: string;
-  type: TaskType;
-  runnable?: TaskRunnable;
+  type: StageType;
+  runnable?: StageRunnable;
 };
 
-export type TaskNew = {
+export type StageNew = {
   // Related fields
-  stepList: StepNew[];
+  taskList: TaskNew[];
   environmentId: EnvironmentId;
   databaseId: DatabaseId;
 
   // Domain specific fields
   name: string;
-  type: TaskType;
+  type: StageType;
 };
 
-// Step
-export type StepType =
-  | "bytebase.step.unknown"
-  | "bytebase.step.final"
-  | "bytebase.step.resolve"
-  | "bytebase.step.approve"
-  | "bytebase.step.database.schema.update";
+// Task
+export type TaskType =
+  | "bytebase.task.unknown"
+  | "bytebase.task.final"
+  | "bytebase.task.resolve"
+  | "bytebase.task.approve"
+  | "bytebase.task.database.schema.update";
 
-export type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
+export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 
-export type DatabaseSchemaUpdateStepPayload = {
+export type DatabaseSchemaUpdateTaskPayload = {
   sql: string;
   rollbackSql: string;
 };
 
-export type StepPayload = DatabaseSchemaUpdateStepPayload;
+export type TaskPayload = DatabaseSchemaUpdateTaskPayload;
 
-export type Step = {
-  id: StepId;
+export type Task = {
+  id: TaskId;
 
   // Related fields
   pipeline: Pipeline;
-  task: Task;
+  stage: Stage;
 
   // Standard fields
   creator: Principal;
@@ -1120,28 +1120,28 @@ export type Step = {
 
   // Domain specific fields
   name: string;
-  type: StepType;
-  status: StepStatus;
-  payload?: StepPayload;
+  type: TaskType;
+  status: TaskStatus;
+  payload?: TaskPayload;
 };
 
-export type StepNew = {
+export type TaskNew = {
   // Domain specific fields
   name: string;
-  type: StepType;
+  type: TaskType;
 };
 
-export type StepPatch = {
+export type TaskPatch = {
   // Standard fields
   updaterId: PrincipalId;
 
   // Domain specific fields
-  status: StepStatus;
+  status: TaskStatus;
 };
 
-export type StepStatusPatch = {
+export type TaskStatusPatch = {
   updaterId: PrincipalId;
-  status: StepStatus;
+  status: TaskStatus;
   comment?: string;
 };
 
@@ -1151,8 +1151,8 @@ export type IssueActionType =
   | "bytebase.issue.comment.create"
   | "bytebase.issue.field.update"
   | "bytebase.issue.status.update"
-  | "bytebase.issue.task.status.update"
-  | "bytebase.issue.task.step.status.update";
+  | "bytebase.issue.stage.status.update"
+  | "bytebase.issue.stage.task.status.update";
 
 export type ActionType = IssueActionType;
 
@@ -1238,7 +1238,7 @@ export type InstanceMessageType =
 export type IssueMessageType =
   | "bb.msg.issue.assign"
   | "bb.msg.issue.status.update"
-  | "bb.msg.issue.task.status.update"
+  | "bb.msg.issue.stage.status.update"
   | "bb.msg.issue.comment";
 
 export type MessageType =
@@ -1697,9 +1697,9 @@ export interface IssueState {
 
 export interface PipelineState {}
 
-export interface TaskState {}
+export interface StageState {}
 
-export interface StepState {}
+export interface TaskState {}
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;

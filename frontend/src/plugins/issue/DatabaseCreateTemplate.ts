@@ -25,16 +25,16 @@ const template: IssueTemplate = {
       type: "bytebase.database.create",
       description: "",
       pipeline: {
-        taskList: [
+        stageList: [
           {
             name: "Create database",
             environmentId: ctx.environmentList[0].id,
             databaseId: EMPTY_ID,
-            type: "bytebase.task.database.create",
-            stepList: [
+            type: "bytebase.stage.database.create",
+            taskList: [
               {
                 name: "Waiting for approval",
-                type: "bytebase.step.approve",
+                type: "bytebase.task.approve",
               },
             ],
           },

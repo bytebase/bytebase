@@ -1,10 +1,10 @@
-import { Issue, TaskId } from "../types";
+import { Issue, StageId } from "../types";
 
-export function taskName(issue: Issue, taskId: TaskId): string {
-  for (const task of issue.pipeline.taskList) {
-    if (task.id == taskId) {
-      return task.name;
+export function stageName(issue: Issue, stageId: StageId): string {
+  for (const stage of issue.pipeline.stageList) {
+    if (stage.id == stageId) {
+      return stage.name;
     }
   }
-  return "<<Unknown task>>";
+  return "<<Unknown stage>>";
 }

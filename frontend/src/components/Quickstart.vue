@@ -20,7 +20,7 @@
     <nav class="flex justify-center" aria-label="Progress">
       <ol class="space-y-4">
         <li v-for="(intro, index) in effectiveList" :key="index">
-          <!-- Complete Step -->
+          <!-- Complete Task -->
           <router-link :to="intro.link" class="group">
             <span class="flex items-start">
               <span
@@ -42,7 +42,7 @@
                     />
                   </svg>
                 </template>
-                <template v-else-if="isStepActive(index)">
+                <template v-else-if="isTaskActive(index)">
                   <span
                     class="absolute h-4 w-4 rounded-full bg-blue-200"
                   ></span>
@@ -152,7 +152,7 @@ export default {
       return isDeveloper(currentUser.value.role) ? devIntroList : introList;
     });
 
-    const isStepActive = (index: number): boolean => {
+    const isTaskActive = (index: number): boolean => {
       for (let i = index - 1; i >= 0; i--) {
         if (!introList[i].done) {
           return false;
@@ -184,7 +184,7 @@ export default {
 
     return {
       effectiveList,
-      isStepActive,
+      isTaskActive,
       hideQuickstart,
     };
   },

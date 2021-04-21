@@ -2,11 +2,11 @@ import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
 import { IssueBuiltinFieldId } from "../../plugins";
 
-export default function configureStep(route) {
+export default function configureTask(route) {
   route.patch(
-    "/pipeline/:pipelineId/step/:stepId/status",
+    "/pipeline/:pipelineId/task/:taskId/status",
     function (schema, request) {
-      const attrs = this.normalizedRequestAttrs("step-status-patch");
+      const attrs = this.normalizedRequestAttrs("task-status-patch");
       const pipeline = schema.pipelines.find(request.params.pipelineId);
 
       if (!pipeline) {
@@ -17,12 +17,12 @@ export default function configureStep(route) {
         );
       }
 
-      const step = schema.steps.find(request.params.stepId);
-      if (!step) {
+      const task = schema.tasks.find(request.params.taskId);
+      if (!task) {
         return new Response(
           404,
           {},
-          { errors: "Step " + request.params.stepId + " not found" }
+          { errors: "Task " + request.params.taskId + " not found" }
         );
       }
 
@@ -30,14 +30,14 @@ export default function configureStep(route) {
 
       const changeList = [];
 
-      if (attrs.status && step.status != attrs.status) {
+      if (attrs.status && task.status != attrs.status) {
         changeList.push({
-          fieldId: IssueBuiltinFieldId.STEP_STATUS,
-          oldValue: step.status,
+          fieldId: IssueBuiltinFieldId.TASK_STATUS,
+          oldValue: task.status,
           newValue: attrs.status,
         });
 
-        const updatedStep = step.update({ ...attrs, updatedTs: ts });
+        const updatedTask = task.update({ ...attrs, updatedTs: ts });
 
         const payload = {
           changeList,
@@ -48,17 +48,17 @@ export default function configureStep(route) {
           createdTs: ts,
           updaterId: attrs.updaterId,
           updatedTs: ts,
-          actionType: "bytebase.issue.task.step.status.update",
-          containerId: updatedStep.id,
+          actionType: "bytebase.issue.stage.task.status.update",
+          containerId: updatedTask.id,
           comment: attrs.comment,
           payload,
           workspaceId: WORKSPACE_ID,
         });
 
-        return updatedStep;
+        return updatedTask;
       }
 
-      return step;
+      return task;
     }
   );
 }

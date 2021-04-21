@@ -6,11 +6,11 @@ import {
   PipelineId,
   PipelineState,
   PipelineStatusPatch,
-  Step,
+  Task,
   Issue,
   IssueId,
   unknown,
-  Task,
+  Stage,
 } from "../../types";
 
 const state: () => PipelineState = () => ({});
@@ -27,35 +27,38 @@ function convert(
     pipeline.attributes.updaterId
   );
 
-  const taskList: Task[] = [];
+  const stageList: Stage[] = [];
   for (const item of includedList || []) {
     if (
-      item.type == "task" &&
+      item.type == "stage" &&
       (item.relationships!.pipeline.data as ResourceIdentifier).id ==
         pipeline.id
     ) {
-      const task: Task = rootGetters["task/convertPartial"](item, includedList);
-      taskList.push(task);
+      const stage: Stage = rootGetters["stage/convertPartial"](
+        item,
+        includedList
+      );
+      stageList.push(stage);
     }
   }
 
   const result: Pipeline = {
     ...(pipeline.attributes as Omit<
       Pipeline,
-      "id" | "creator" | "updater" | "taskList"
+      "id" | "creator" | "updater" | "stageList"
     >),
     id: pipeline.id,
     creator,
     updater,
-    taskList,
+    stageList,
   };
 
-  // Now we have a complate issue, we assign it back to task and step
-  for (const task of result.taskList) {
-    task.pipeline = result;
-    for (const step of task.stepList) {
-      step.pipeline = result;
-      step.task = task;
+  // Now we have a complate issue, we assign it back to stage and task
+  for (const stage of result.stageList) {
+    stage.pipeline = result;
+    for (const task of stage.taskList) {
+      task.pipeline = result;
+      task.stage = stage;
     }
   }
 

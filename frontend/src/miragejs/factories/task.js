@@ -20,10 +20,13 @@ export default {
       return faker.fake("{{lorem.sentence}}");
     },
     type() {
-      return "bytebase.task.unknown";
+      return "bytebase.task.final";
     },
-    databaseId() {
-      return UNKNOWN_ID;
+    status() {
+      return "PENDING";
+    },
+    payload() {
+      return undefined;
     },
   }),
 };

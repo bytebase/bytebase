@@ -5,19 +5,19 @@ import {
   Environment,
   Instance,
   Principal,
-  TaskType,
+  StageType,
   Issue,
   DEFAULT_PROJECT_ID,
   ALL_DATABASE_NAME,
   IssueNew,
   IssueStatus,
-  TaskNew,
-  TaskId,
+  StageNew,
+  StageId,
   DatabaseId,
   ProjectId,
   PrincipalId,
   IssueId,
-  StepStatus,
+  TaskStatus,
   PipelineId,
 } from "../../types";
 import { databaseSlug, issueSlug } from "../../utils";
@@ -373,11 +373,11 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace1,
   });
 
-  // const task = server.create("task", {
+  // const stage = server.create("stage", {
   //   creatorId: ws1Dev1.id,
   //   updaterId: ws1Dev1.id,
   //   name: "Create database",
-  //   type: "bytebase.task.database.create",
+  //   type: "bytebase.stage.database.create",
   //   status: "PENDING",
   //   environmentId: environmentList1[1].id,
   //   databaseId: databaseList1[1].id,
@@ -385,14 +385,14 @@ const workspacesSeeder = (server: any) => {
   //   workspace: workspace1,
   // });
 
-  // server.create("step", {
+  // server.create("task", {
   //   creatorId: ws1Dev1.id,
   //   updaterId: ws1Dev1.id,
   //   name: "Waiting approval",
-  //   type: "bytebase.step.approve",
+  //   type: "bytebase.task.approve",
   //   status: "PENDING",
   //   pipeline,
-  //   task,
+  //   stage,
   //   workspace: workspace1,
   // });
 
@@ -463,27 +463,27 @@ const workspacesSeeder = (server: any) => {
 
   const statusSetList: {
     issueStatus: IssueStatus;
-    stepStatusList: StepStatus[];
+    taskStatusList: TaskStatus[];
   }[] = [
     {
       issueStatus: "OPEN",
-      stepStatusList: ["PENDING"],
+      taskStatusList: ["PENDING"],
     },
     {
       issueStatus: "OPEN",
-      stepStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
+      taskStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
     },
     {
       issueStatus: "DONE",
-      stepStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
+      taskStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
     },
     {
       issueStatus: "OPEN",
-      stepStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
+      taskStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
     },
     {
       issueStatus: "CANCELED",
-      stepStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
+      taskStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
     },
   ];
 
@@ -514,14 +514,14 @@ const workspacesSeeder = (server: any) => {
       workspace: workspace1,
     });
 
-    createUpdateSchemaTask(
+    createUpdateSchemaStage(
       server,
       workspace1.id,
       pipeline.id,
       ws1Dev1.id,
       environmentList1,
       databaseList1,
-      statusSet.stepStatusList
+      statusSet.taskStatusList
     );
 
     server.create("activity", {
@@ -572,14 +572,14 @@ const workspacesSeeder = (server: any) => {
       workspace: workspace1,
     });
 
-    createUpdateSchemaTask(
+    createUpdateSchemaStage(
       server,
       workspace1.id,
       pipeline.id,
       ws1Owner.id,
       environmentList1,
       databaseList1,
-      statusSet.stepStatusList
+      statusSet.taskStatusList
     );
 
     server.create("activity", {
@@ -630,14 +630,14 @@ const workspacesSeeder = (server: any) => {
       workspace: workspace1,
     });
 
-    createUpdateSchemaTask(
+    createUpdateSchemaStage(
       server,
       workspace1.id,
       pipeline.id,
       ws1Dev2.id,
       environmentList1,
       databaseList1,
-      statusSet.stepStatusList
+      statusSet.taskStatusList
     );
 
     server.create("activity", {
@@ -686,7 +686,7 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace2,
   });
 
-  createUpdateSchemaTask(
+  createUpdateSchemaStage(
     server,
     workspace2.id,
     pipeline.id,
@@ -805,46 +805,46 @@ const createInstanceList = (
   return instanceList;
 };
 
-const createUpdateSchemaTask = (
+const createUpdateSchemaStage = (
   server: any,
   workspaceId: string,
   pipelineId: PipelineId,
   creatorId: PrincipalId,
   environmentList: Environment[],
   databaseList: Database[],
-  stepStatusList: StepStatus[]
+  taskStatusList: TaskStatus[]
 ) => {
-  for (let i = 0; i < stepStatusList.length; i++) {
-    const task = server.create("task", {
+  for (let i = 0; i < taskStatusList.length; i++) {
+    const stage = server.create("stage", {
       creatorId: creatorId,
       updaterId: creatorId,
       name: `${environmentList[i].name}`,
-      type: "bytebase.task.schema.update",
+      type: "bytebase.stage.schema.update",
       environmentId: environmentList[i].id,
       databaseId: databaseList[i].id,
       pipelineId,
       workspaceId,
     });
 
-    // server.create("step", {
+    // server.create("task", {
     //   creatorId: creatorId,
     //   updaterId: creatorId,
     //   name: "Waiting approval",
-    //   type: "bytebase.step.approve",
-    //   status: stepStatusList[i],
+    //   type: "bytebase.task.approve",
+    //   status: taskStatusList[i],
     //   pipelineId,
-    //   task,
+    //   stage,
     //   workspaceId,
     // });
 
-    server.create("step", {
+    server.create("task", {
       creatorId: creatorId,
       updaterId: creatorId,
       name: `Update ${databaseList[i].name} schema`,
-      type: "bytebase.step.schema.udpate",
-      status: stepStatusList[i],
+      type: "bytebase.task.schema.udpate",
+      status: taskStatusList[i],
       pipelineId,
-      task,
+      stage,
       workspaceId,
     });
   }

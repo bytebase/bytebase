@@ -63,7 +63,7 @@ const actions = {
     // Refresh the corresponding principal
     await dispatch("principal/fetchPrincipalById", newUser.id, { root: true });
 
-    // The conversion relies on the above step.
+    // The conversion relies on the above task.
     const convertedUser = convert(newUser, rootGetters);
 
     localStorage.setItem("bb.auth.user", JSON.stringify(convertedUser));
@@ -85,7 +85,7 @@ const actions = {
     // Refresh the corresponding principal
     dispatch("principal/fetchPrincipalById", activatedUser.id, { root: true });
 
-    // The conversion relies on the above step to get the lastest data
+    // The conversion relies on the above task to get the lastest data
     const convertedUser = convert(activatedUser, rootGetters);
 
     localStorage.setItem("bb.auth.user", JSON.stringify(convertedUser));

@@ -8,8 +8,8 @@ import dataSourceMember from "./dataSourceMember";
 import database from "./database";
 import issue from "./issue";
 import pipeline from "./pipeline";
+import stage from "./stage";
 import task from "./task";
-import step from "./step";
 import activity from "./activity";
 import message from "./message";
 import workspace from "./workspace";
@@ -37,8 +37,8 @@ export default {
   ...message,
   ...issue,
   ...pipeline,
+  ...stage,
   ...task,
-  ...step,
   ...activity,
 
   ...workspace,
