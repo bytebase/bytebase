@@ -217,7 +217,7 @@ export default {
           queryParamList.push(`environment=${environmentId.value}`);
         }
 
-        const databaseName = props.issue.payload[IssueBuiltinFieldId.DATABASE];
+        const databaseName = props.issue.payload[field.id];
         queryParamList.push(`name=${databaseName}`);
 
         queryParamList.push(`issue=${props.issue.id}`);

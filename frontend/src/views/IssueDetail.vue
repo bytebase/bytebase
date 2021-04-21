@@ -24,103 +24,13 @@
         :allowEdit="allowEditNameAndDescription"
         @update-name="updateName"
       >
-        <template v-if="state.new">
-          <button
-            type="button"
-            class="btn-primary px-4 py-2"
-            @click.prevent="doCreate"
-            :disabled="!allowCreate"
-          >
-            Create
-          </button>
-        </template>
-        <!-- Action Button List -->
-        <div
-          v-if="applicableTaskStatusTransitionList.length > 0"
-          class="flex space-x-2"
-        >
-          <template
-            v-for="(
-              transition, index
-            ) in applicableTaskStatusTransitionList.reverse()"
-            :key="index"
-          >
-            <button
-              type="button"
-              :class="transition.buttonClass"
-              @click.prevent="tryStartTaskStatusTransition(transition)"
-            >
-              {{ transition.buttonName }}
-            </button>
-          </template>
-          <template v-if="applicableIssueStatusTransitionList.length > 0">
-            <button
-              type="button"
-              @click.prevent="$refs.menu.toggle($event)"
-              @contextmenu.capture.prevent="$refs.menu.toggle($event)"
-              class="text-control-light"
-              id="user-menu"
-              aria-label="User menu"
-              aria-haspopup="true"
-            >
-              <svg
-                class="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                ></path>
-              </svg>
-            </button>
-            <BBContextMenu
-              ref="menu"
-              class="origin-top-right absolute w-24 right-0 mt-10 rounded-md shadow-lg"
-            >
-              <template
-                v-for="(
-                  transition, index
-                ) in applicableIssueStatusTransitionList"
-                :key="index"
-              >
-                <div
-                  @click.prevent="tryStartIssueStatusTransition(transition)"
-                  class="menu-item"
-                  role="menuitem"
-                >
-                  {{ transition.buttonName }}
-                </div>
-              </template>
-            </BBContextMenu>
-          </template>
-        </div>
-        <template v-else>
-          <div
-            if="applicableIssueStatusTransitionList.length > 0"
-            class="flex space-x-2"
-          >
-            <template
-              v-for="(
-                transition, index
-              ) in applicableIssueStatusTransitionList.reverse()"
-              :key="index"
-            >
-              <button
-                type="button"
-                :class="transition.buttonClass"
-                :disabled="!allowIssueStatusTransition(transition)"
-                @click.prevent="tryStartIssueStatusTransition(transition)"
-              >
-                {{ transition.buttonName }}
-              </button>
-            </template>
-          </div>
-        </template>
+        <IssueStatusTransitionButtonGroup
+          :new="state.new"
+          :issue="state.issue"
+          :issueTemplate="issueTemplate"
+          :outputFieldList="outputFieldList"
+          @create="doCreate"
+        />
       </IssueHighlightPanel>
     </div>
 
@@ -218,38 +128,6 @@
       </div>
     </main>
   </div>
-  <BBModal
-    v-if="updateStatusModalState.show"
-    :title="updateStatusModalState.title"
-    @close="updateStatusModalState.show = false"
-  >
-    <StatusTransitionForm
-      :mode="updateStatusModalState.mode"
-      :okText="updateStatusModalState.okText"
-      :issue="state.issue"
-      :transition="updateStatusModalState.transition"
-      :outputFieldList="outputFieldList"
-      @submit="
-        (comment) => {
-          updateStatusModalState.show = false;
-          if (updateStatusModalState.mode == 'ISSUE') {
-            doIssueStatusTransition(updateStatusModalState.transition, comment);
-          } else if (updateStatusModalState.mode == 'TASK') {
-            doTaskStatusTransition(
-              updateStatusModalState.transition,
-              updateStatusModalState.payload.id,
-              comment
-            );
-          }
-        }
-      "
-      @cancel="
-        () => {
-          updateStatusModalState.show = false;
-        }
-      "
-    />
-  </BBModal>
 </template>
 
 <script lang="ts">
@@ -257,15 +135,11 @@ import { computed, onMounted, watch, watchEffect, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
-import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
 import {
   idFromSlug,
   issueSlug,
   isDemo,
-  TaskStatusTransition,
-  applicableTaskTransition,
-  activeTask,
   pipelineType,
   PipelineType,
 } from "../utils";
@@ -275,45 +149,25 @@ import IssueSqlPanel from "../views/IssueSqlPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "../views/IssueActivityPanel.vue";
 import IssueSidebar from "../views/IssueSidebar.vue";
-import StatusTransitionForm from "../components/StatusTransitionForm.vue";
+import IssueStatusTransitionButtonGroup from "../components/IssueStatusTransitionButtonGroup.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import {
   Issue,
   IssueNew,
   IssueType,
   IssuePatch,
-  IssueStatusTransition,
-  IssueStatusTransitionType,
   PrincipalId,
-  ISSUE_STATUS_TRANSITION_LIST,
   Database,
-  ASSIGNEE_APPLICABLE_ACTION_LIST,
-  CREATOR_APPLICABLE_ACTION_LIST,
-  IssueStatusPatch,
   UNKNOWN_ID,
   ProjectId,
   Environment,
-  TaskStatusPatch,
-  TaskId,
-  EMPTY_ID,
 } from "../types";
 import {
   defaulTemplate,
   templateForType,
   IssueField,
   IssueTemplate,
-  IssueContext,
 } from "../plugins";
-
-interface UpdateStatusModalState {
-  mode: "ISSUE" | "TASK";
-  show: boolean;
-  style: string;
-  okText: string;
-  title: string;
-  transition?: IssueStatusTransition | TaskStatusTransition;
-  payload?: any;
-}
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -338,21 +192,13 @@ export default {
     IssueDescriptionPanel,
     IssueActivityPanel,
     IssueSidebar,
-    StatusTransitionForm,
+    IssueStatusTransitionButtonGroup,
     PipelineSimpleFlow,
   },
 
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
-
-    const updateStatusModalState = reactive<UpdateStatusModalState>({
-      mode: "ISSUE",
-      show: false,
-      style: "INFO",
-      okText: "OK",
-      title: "",
-    });
 
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
@@ -363,17 +209,6 @@ export default {
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    const issueContext = computed(
-      (): IssueContext => {
-        return {
-          store,
-          currentUser: currentUser.value,
-          new: state.new,
-          issue: state.issue,
-        };
-      }
-    );
 
     let newIssueTemplate = ref<IssueTemplate>(defaulTemplate());
 
@@ -584,121 +419,6 @@ export default {
       }
     };
 
-    const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
-      updateStatusModalState.mode = "TASK";
-      updateStatusModalState.okText = transition.buttonName;
-      const task = activeTask((state.issue as Issue).pipeline);
-      switch (transition.type) {
-        case "RUN":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Run '${task.name}'?`;
-          break;
-        case "RETRY":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Retry '${task.name}'?`;
-          break;
-        case "CANCEL":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Cancel '${task.name}'?`;
-          break;
-        case "SKIP":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Skip '${task.name}'?`;
-          break;
-      }
-      updateStatusModalState.transition = transition;
-      updateStatusModalState.payload = task;
-      updateStatusModalState.show = true;
-    };
-
-    const doTaskStatusTransition = (
-      transition: TaskStatusTransition,
-      taskId: TaskId,
-      comment?: string
-    ) => {
-      const taskStatusPatch: TaskStatusPatch = {
-        updaterId: currentUser.value.id,
-        containerId: (state.issue as Issue).id,
-        status: transition.to,
-        comment: comment ? comment.trim() : undefined,
-      };
-
-      store.dispatch("task/updateStatus", {
-        issueId: (state.issue as Issue).id,
-        pipelineId: (state.issue as Issue).pipeline.id,
-        taskId,
-        taskStatusPatch,
-      });
-    };
-
-    const allowIssueStatusTransition = (
-      transition: IssueStatusTransition
-    ): boolean => {
-      const issue: Issue = state.issue as Issue;
-      if (transition.type == "RESOLVE") {
-        // Returns false if any of the required output fields is not provided.
-        for (let i = 0; i < outputFieldList.value.length; i++) {
-          const field = outputFieldList.value[i];
-          if (field.required && !field.resolved(issueContext.value)) {
-            return false;
-          }
-        }
-        return true;
-      }
-      return true;
-    };
-
-    const tryStartIssueStatusTransition = (
-      transition: IssueStatusTransition
-    ) => {
-      updateStatusModalState.mode = "ISSUE";
-      updateStatusModalState.okText = transition.buttonName;
-      switch (transition.type) {
-        case "RESOLVE":
-          updateStatusModalState.style = "SUCCESS";
-          updateStatusModalState.title = "Resolve issue?";
-          break;
-        case "ABORT":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Abort issue?";
-          break;
-        case "REOPEN":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Reopen issue?";
-          break;
-      }
-      updateStatusModalState.transition = transition;
-      updateStatusModalState.show = true;
-    };
-
-    const doIssueStatusTransition = (
-      transition: IssueStatusTransition,
-      comment?: string
-    ) => {
-      const issueStatusPatch: IssueStatusPatch = {
-        updaterId: currentUser.value.id,
-        status: transition.to,
-        comment: comment ? comment.trim() : undefined,
-      };
-
-      store
-        .dispatch("issue/updateIssueStatus", {
-          issueId: (state.issue as Issue).id,
-          issueStatusPatch,
-        })
-        .then(() => {
-          if (
-            transition.to == "DONE" &&
-            issueTemplate.value.type == "bytebase.database.schema.update"
-          ) {
-            store.dispatch("uistate/saveIntroStateByKey", {
-              key: "table.create",
-              newState: true,
-            });
-          }
-        });
-    };
-
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
       if (state.new) {
         (state.issue as IssueNew).assigneeId = newAssigneeId;
@@ -771,32 +491,6 @@ export default {
 
     console.log(currentPipelineType.value);
 
-    const allowCreate = computed(() => {
-      const newIssue = state.issue as IssueNew;
-      if (isEmpty(newIssue.name)) {
-        return false;
-      }
-
-      if (!newIssue.assigneeId) {
-        return false;
-      }
-
-      if (newIssueTemplate.value.fieldList) {
-        for (const field of newIssueTemplate.value.fieldList.filter(
-          (item) => item.category == "INPUT"
-        )) {
-          if (
-            field.type != "Boolean" && // Switch is boolean value which always is present
-            field.required &&
-            !field.resolved(issueContext.value)
-          ) {
-            return false;
-          }
-        }
-      }
-      return true;
-    });
-
     const allowEditSidebar = computed(() => {
       // For now, we only allow assignee to update the field when the issue
       // is 'OPEN'. This reduces flexibility as creator must ask assignee to
@@ -859,85 +553,17 @@ export default {
       return state.issue.type == "bytebase.database.schema.update";
     });
 
-    const applicableTaskStatusTransitionList = computed(
-      (): TaskStatusTransition[] => {
-        switch ((state.issue as Issue).status) {
-          case "DONE":
-          case "CANCELED":
-            return [];
-          case "OPEN": {
-            let list: TaskStatusTransition[] = [];
-
-            if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
-              list = applicableTaskTransition((state.issue as Issue).pipeline);
-            }
-
-            return list;
-          }
-        }
-      }
-    );
-
-    const applicableIssueStatusTransitionList = computed(
-      (): IssueStatusTransition[] => {
-        const list: IssueStatusTransitionType[] = [];
-        if (currentUser.value.id === (state.issue as Issue).assignee?.id) {
-          list.push(
-            ...ASSIGNEE_APPLICABLE_ACTION_LIST.get(
-              (state.issue as Issue).status
-            )!
-          );
-        }
-        if (currentUser.value.id === (state.issue as Issue).creator.id) {
-          CREATOR_APPLICABLE_ACTION_LIST.get(
-            (state.issue as Issue).status
-          )!.forEach((item) => {
-            if (list.indexOf(item) == -1) {
-              list.push(item);
-            }
-          });
-        }
-
-        return list
-          .filter((item) => {
-            const currentTask = activeTask((state.issue as Issue).pipeline);
-            // Disallow any issue status transition if the active task is in RUNNING state.
-            if (currentTask.status == "RUNNING") {
-              return false;
-            }
-
-            // Don't display the Resolve action if there is outstanding task.
-            if (item == "RESOLVE" && currentTask.id != EMPTY_ID) {
-              return false;
-            }
-
-            return true;
-          })
-          .map(
-            (type: IssueStatusTransitionType) =>
-              ISSUE_STATUS_TRANSITION_LIST.get(type)!
-          );
-      }
-    );
-
     return {
-      updateStatusModalState,
       state,
       updateName,
       updateDescription,
       updateSql,
       updateRollbackSql,
-      tryStartTaskStatusTransition,
-      doTaskStatusTransition,
-      allowIssueStatusTransition,
-      tryStartIssueStatusTransition,
-      doIssueStatusTransition,
       updateAssigneeId,
       updateSubscriberIdList,
       updateCustomField,
       doCreate,
       currentPipelineType,
-      allowCreate,
       currentUser,
       issueTemplate,
       outputFieldList,
@@ -952,8 +578,6 @@ export default {
       showIssueOutputPanel,
       showIssueSqlPanel,
       showIssueRollbackSqlPanel,
-      applicableTaskStatusTransitionList,
-      applicableIssueStatusTransitionList,
     };
   },
 };
