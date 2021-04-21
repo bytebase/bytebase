@@ -302,22 +302,8 @@ export default function configureIssue(route) {
 
       const taskList = schema.tasks.where({ pipelineId: pipeline.id }).models;
       if (attrs.status == "DONE") {
-        // We check each of the task and its steps. Returns error if any of them is not finished.
+        // Returns error if any of the steps is not in the end status.
         for (let i = 0; i < taskList.length; i++) {
-          if (
-            taskList[i].status != "DONE" &&
-            taskList[i].status != "CANCELED" &&
-            taskList[i].status != "SKIPPED"
-          ) {
-            return new Response(
-              404,
-              {},
-              {
-                errors: `Can't resolve issue ${issue.name}. Task ${taskList[i].name} is in ${taskList[i].status} status`,
-              }
-            );
-          }
-
           const stepList = schema.steps.where({
             issueId: issue.id,
             taskId: taskList[i].id,

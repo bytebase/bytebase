@@ -131,7 +131,7 @@
     </template>
 
     <!-- Output Panel -->
-    <!-- Only render the top border if IssueTaskFlow is not displayed, otherwise it would overlap with the bottom border of the IssueTaskFlow -->
+    <!-- Only render the top border if PipelineFlowBar is not displayed, otherwise it would overlap with the bottom border of that -->
     <div
       v-if="showIssueOutputPanel"
       class="px-2 py-4 md:flex md:flex-col"
@@ -255,7 +255,6 @@ import {
   PipelineType,
 } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
-import IssueTaskFlow from "./IssueTaskFlow.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
 import IssueSqlPanel from "../views/IssueSqlPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
@@ -270,21 +269,17 @@ import {
   IssuePatch,
   IssueStatusTransition,
   IssueStatusTransitionType,
-  TaskStatusPatch,
   PrincipalId,
   ISSUE_STATUS_TRANSITION_LIST,
   Database,
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
   IssueStatusPatch,
-  TaskStatus,
-  TaskId,
   UNKNOWN_ID,
   ProjectId,
   Environment,
   StepStatusPatch,
   StepId,
-  Pipeline,
   EMPTY_ID,
 } from "../types";
 import {
@@ -325,7 +320,6 @@ export default {
   },
   components: {
     IssueHighlightPanel,
-    IssueTaskFlow,
     IssueOutputPanel,
     IssueSqlPanel,
     IssueDescriptionPanel,
@@ -615,24 +609,6 @@ export default {
       });
     };
 
-    const changeStepStatus = (
-      taskId: TaskId,
-      taskStatus: TaskStatus,
-      comment?: string
-    ) => {
-      const taskStatusPatch: TaskStatusPatch = {
-        updaterId: currentUser.value.id,
-        status: taskStatus,
-        comment: comment ? comment.trim() : undefined,
-      };
-
-      store.dispatch("task/updateTaskStatus", {
-        issueId: (state.issue as Issue).id,
-        taskId,
-        taskStatusPatch,
-      });
-    };
-
     const tryStartIssueStatusTransition = (
       transition: IssueStatusTransition
     ) => {
@@ -683,24 +659,6 @@ export default {
             });
           }
         });
-    };
-
-    const changeTaskStatus = (
-      taskId: TaskId,
-      taskStatus: TaskStatus,
-      comment?: string
-    ) => {
-      const taskStatusPatch: TaskStatusPatch = {
-        updaterId: currentUser.value.id,
-        status: taskStatus,
-        comment: comment ? comment.trim() : undefined,
-      };
-
-      store.dispatch("task/updateTaskStatus", {
-        issueId: (state.issue as Issue).id,
-        taskId,
-        taskStatusPatch,
-      });
     };
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
@@ -938,10 +896,8 @@ export default {
       allowTransition,
       tryStartStepStatusTransition,
       doStepStatusTransition,
-      changeStepStatus,
       tryStartIssueStatusTransition,
       doIssueStatusTransition,
-      changeTaskStatus,
       updateAssigneeId,
       updateSubscriberIdList,
       updateCustomField,

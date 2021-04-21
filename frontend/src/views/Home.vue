@@ -41,13 +41,13 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, nextTick, onMounted, reactive, ref } from "vue";
+import { watchEffect, computed, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { activeTask, activeEnvironment } from "../utils";
-import { Environment, Issue, TaskStatus } from "../types";
+import { activeEnvironment, activeStep } from "../utils";
+import { Environment, Issue, StepStatus } from "../types";
 
 interface LocalState {
   createdList: Issue[];
@@ -165,7 +165,7 @@ export default {
     };
 
     const openIssueSorter = (a: Issue, b: Issue) => {
-      const statusOrder = (status: TaskStatus) => {
+      const statusOrder = (status: StepStatus) => {
         switch (status) {
           case "FAILED":
             return 0;
@@ -179,8 +179,8 @@ export default {
             return 4;
         }
       };
-      const aStatusOrder = statusOrder(activeTask(a.pipeline).status);
-      const bStatusOrder = statusOrder(activeTask(b.pipeline).status);
+      const aStatusOrder = statusOrder(activeStep(a.pipeline).status);
+      const bStatusOrder = statusOrder(activeStep(b.pipeline).status);
       if (aStatusOrder == bStatusOrder) {
         return b.updatedTs - a.updatedTs;
       }

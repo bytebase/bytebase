@@ -12,7 +12,6 @@ import {
   IssueNew,
   IssueStatus,
   TaskNew,
-  TaskStatus,
   TaskId,
   DatabaseId,
   ProjectId,
@@ -374,28 +373,28 @@ const workspacesSeeder = (server: any) => {
     workspace: workspace1,
   });
 
-  const task = server.create("task", {
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    name: "Create database",
-    type: "bytebase.task.database.create",
-    status: "PENDING",
-    environmentId: environmentList1[1].id,
-    databaseId: databaseList1[1].id,
-    pipeline,
-    workspace: workspace1,
-  });
+  // const task = server.create("task", {
+  //   creatorId: ws1Dev1.id,
+  //   updaterId: ws1Dev1.id,
+  //   name: "Create database",
+  //   type: "bytebase.task.database.create",
+  //   status: "PENDING",
+  //   environmentId: environmentList1[1].id,
+  //   databaseId: databaseList1[1].id,
+  //   pipeline,
+  //   workspace: workspace1,
+  // });
 
-  server.create("step", {
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    name: "Waiting approval",
-    type: "bytebase.step.approve",
-    status: "PENDING",
-    pipeline,
-    task,
-    workspace: workspace1,
-  });
+  // server.create("step", {
+  //   creatorId: ws1Dev1.id,
+  //   updaterId: ws1Dev1.id,
+  //   name: "Waiting approval",
+  //   type: "bytebase.step.approve",
+  //   status: "PENDING",
+  //   pipeline,
+  //   task,
+  //   workspace: workspace1,
+  // });
 
   server.create("activity", {
     actionType: "bytebase.issue.create",
@@ -464,32 +463,26 @@ const workspacesSeeder = (server: any) => {
 
   const statusSetList: {
     issueStatus: IssueStatus;
-    taskStatusList: TaskStatus[];
     stepStatusList: StepStatus[];
   }[] = [
     {
       issueStatus: "OPEN",
-      taskStatusList: ["PENDING"],
       stepStatusList: ["PENDING"],
     },
     {
       issueStatus: "OPEN",
-      taskStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
       stepStatusList: ["DONE", "DONE", "RUNNING", "PENDING"],
     },
     {
       issueStatus: "DONE",
-      taskStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
       stepStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
     },
     {
       issueStatus: "OPEN",
-      taskStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
       stepStatusList: ["DONE", "FAILED", "PENDING", "PENDING"],
     },
     {
       issueStatus: "CANCELED",
-      taskStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
       stepStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
     },
   ];
@@ -528,7 +521,6 @@ const workspacesSeeder = (server: any) => {
       ws1Dev1.id,
       environmentList1,
       databaseList1,
-      statusSet.taskStatusList,
       statusSet.stepStatusList
     );
 
@@ -587,7 +579,6 @@ const workspacesSeeder = (server: any) => {
       ws1Owner.id,
       environmentList1,
       databaseList1,
-      statusSet.taskStatusList,
       statusSet.stepStatusList
     );
 
@@ -646,7 +637,6 @@ const workspacesSeeder = (server: any) => {
       ws1Dev2.id,
       environmentList1,
       databaseList1,
-      statusSet.taskStatusList,
       statusSet.stepStatusList
     );
 
@@ -703,7 +693,6 @@ const workspacesSeeder = (server: any) => {
     ws2Dev.id,
     environmentList2,
     databaseList2,
-    ["PENDING"],
     ["PENDING"]
   );
 
@@ -823,32 +812,30 @@ const createUpdateSchemaTask = (
   creatorId: PrincipalId,
   environmentList: Environment[],
   databaseList: Database[],
-  taskStatusList: TaskStatus[],
   stepStatusList: StepStatus[]
 ) => {
-  for (let i = 0; i < taskStatusList.length; i++) {
+  for (let i = 0; i < stepStatusList.length; i++) {
     const task = server.create("task", {
       creatorId: creatorId,
       updaterId: creatorId,
       name: `${environmentList[i].name}`,
       type: "bytebase.task.schema.update",
-      status: taskStatusList[i],
       environmentId: environmentList[i].id,
       databaseId: databaseList[i].id,
       pipelineId,
       workspaceId,
     });
 
-    server.create("step", {
-      creatorId: creatorId,
-      updaterId: creatorId,
-      name: "Waiting approval",
-      type: "bytebase.step.approve",
-      status: stepStatusList[i],
-      pipelineId,
-      task,
-      workspaceId,
-    });
+    // server.create("step", {
+    //   creatorId: creatorId,
+    //   updaterId: creatorId,
+    //   name: "Waiting approval",
+    //   type: "bytebase.step.approve",
+    //   status: stepStatusList[i],
+    //   pipelineId,
+    //   task,
+    //   workspaceId,
+    // });
 
     server.create("step", {
       creatorId: creatorId,

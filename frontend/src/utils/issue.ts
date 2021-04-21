@@ -1,5 +1,4 @@
 import { Issue, TaskId } from "../types";
-import { activeTask } from "./pipeline";
 
 export function taskName(issue: Issue, taskId: TaskId): string {
   for (const task of issue.pipeline.taskList) {

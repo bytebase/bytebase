@@ -5,7 +5,6 @@ import {
   Task,
   TaskId,
   TaskState,
-  TaskStatusPatch,
   Step,
   Issue,
   IssueId,
@@ -94,30 +93,6 @@ const getters = {
     }
 
     return result;
-  },
-
-  async updateTaskStatus(
-    { dispatch }: any,
-    {
-      issueId,
-      taskId,
-      taskStatusPatch,
-    }: {
-      issueId: IssueId;
-      taskId: TaskId;
-      taskStatusPatch: TaskStatusPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/issue/${issueId}/task/${taskId}/status`, {
-        data: {
-          type: "taskstatuspatch",
-          attributes: taskStatusPatch,
-        },
-      })
-    ).data;
-
-    dispatch("issue/fetchIssueById", issueId, { root: true });
   },
 };
 

@@ -48,14 +48,15 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType } from "vue";
-import { Issue, TaskStatusTransition } from "../types";
+import { Issue } from "../types";
+import { StepStatusTransition } from "../utils";
 
 interface LocalState {
   comment: string;
 }
 
 export default {
-  name: "TaskStatusTransitionForm",
+  name: "StepStatusTransitionForm",
   emits: ["submit", "cancel"],
   props: {
     okText: {
@@ -68,7 +69,7 @@ export default {
     },
     transition: {
       required: true,
-      type: Object as PropType<TaskStatusTransition>,
+      type: Object as PropType<StepStatusTransition>,
     },
   },
   setup(props, ctx) {
@@ -80,7 +81,7 @@ export default {
 
     const submitButtonStyle = computed(() => {
       switch (props.transition.type) {
-        case "STOP":
+        case "CANCEL":
           return "btn-danger";
         default:
           return "btn-primary";

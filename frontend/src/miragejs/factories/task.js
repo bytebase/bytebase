@@ -22,9 +22,6 @@ export default {
     type() {
       return "bytebase.task.unknown";
     },
-    status() {
-      return "PENDING";
-    },
     databaseId() {
       return UNKNOWN_ID;
     },

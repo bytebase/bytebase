@@ -200,7 +200,6 @@ export const unknown = (
     updatedTs: 0,
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
-    status: "DONE",
     environment: UNKNOWN_ENVIRONMENT,
     database: UNKNOWN_DATABASE,
     stepList: [],
@@ -457,7 +456,6 @@ export const empty = (
     updatedTs: 0,
     name: "",
     type: "bytebase.task.unknown",
-    status: "DONE",
     environment: EMPTY_ENVIRONMENT,
     database: EMPTY_DATABASE,
     stepList: [],
@@ -546,34 +544,6 @@ export const empty = (
     case "BOOKMARK":
       return EMPTY_BOOKMARK;
   }
-};
-
-export const FINAL_TASK: Task = {
-  id: EMPTY_ID,
-  pipeline: empty("PIPELINE") as Pipeline,
-  environment: empty("ENVIRONMENT") as Environment,
-  database: empty("DATABASE") as Database,
-  stepList: [],
-  creator: empty("PRINCIPAL") as Principal,
-  createdTs: 0,
-  updater: empty("PRINCIPAL") as Principal,
-  updatedTs: 0,
-  name: "Final task",
-  type: "bytebase.task.final",
-  status: "PENDING",
-};
-
-export const FINAL_STEP: Step = {
-  id: EMPTY_ID,
-  pipeline: empty("PIPELINE") as Pipeline,
-  task: FINAL_TASK,
-  creator: empty("PRINCIPAL") as Principal,
-  createdTs: 0,
-  updater: empty("PRINCIPAL") as Principal,
-  updatedTs: 0,
-  name: "Final step",
-  type: "bytebase.step.final",
-  status: "PENDING",
 };
 
 // These ID format may change in the future, so we encapsulate with a type.
@@ -1078,8 +1048,6 @@ export type TaskType =
   | "bytebase.task.database.grant"
   | "bytebase.task.schema.update";
 
-export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
-
 export type TaskRunnable = {
   auto: boolean;
   run: () => void;
@@ -1106,7 +1074,6 @@ export type Task = {
   // Domain specific fields
   name: string;
   type: TaskType;
-  status: TaskStatus;
   runnable?: TaskRunnable;
 };
 
@@ -1120,63 +1087,6 @@ export type TaskNew = {
   name: string;
   type: TaskType;
 };
-
-export type TaskStatusPatch = {
-  updaterId: PrincipalId;
-  status: TaskStatus;
-  comment?: string;
-};
-
-export type TaskStatusTransitionType = "RUN" | "RETRY" | "STOP" | "SKIP";
-
-export interface TaskStatusTransition {
-  type: TaskStatusTransitionType;
-  actionName: string;
-  requireRunnable: boolean;
-  to: TaskStatus;
-}
-
-export const TASK_TRANSITION_LIST: Map<
-  TaskStatusTransitionType,
-  TaskStatusTransition
-> = new Map([
-  [
-    "RUN",
-    {
-      type: "RUN",
-      actionName: "Run",
-      requireRunnable: true,
-      to: "RUNNING",
-    },
-  ],
-  [
-    "RETRY",
-    {
-      type: "RETRY",
-      actionName: "Rerun",
-      requireRunnable: true,
-      to: "RUNNING",
-    },
-  ],
-  [
-    "STOP",
-    {
-      type: "STOP",
-      actionName: "Stop",
-      requireRunnable: true,
-      to: "PENDING",
-    },
-  ],
-  [
-    "SKIP",
-    {
-      type: "SKIP",
-      actionName: "Skip",
-      requireRunnable: false,
-      to: "SKIPPED",
-    },
-  ],
-]);
 
 // Step
 export type StepType =

@@ -42,36 +42,18 @@ export function allStepList(pipeline: Pipeline): Step[] {
   return list;
 }
 
-export function activeTask(pipeline: Pipeline): Task {
-  for (const task of pipeline.taskList) {
-    if (
-      task.status == "PENDING" ||
-      task.status == "RUNNING" ||
-      // "FAILED" is also a transient task status, which requires user
-      // to take further action (e.g. Cancel, Skip, Retry)
-      task.status == "FAILED"
-    ) {
-      return task;
-    }
-  }
-  return empty("TASK") as Task;
-}
-
-export function activeTaskIsRunning(pipeline: Pipeline): boolean {
-  return activeTask(pipeline).status === "RUNNING";
-}
-
 export function activeStep(pipeline: Pipeline): Step {
-  const task = activeTask(pipeline);
-  for (const step of task.stepList) {
-    if (
-      step.status == "PENDING" ||
-      step.status == "RUNNING" ||
-      // "FAILED" is also a transient step status, which requires user
-      // to take further action (e.g. Skip, Retry)
-      step.status == "FAILED"
-    ) {
-      return step;
+  for (const task of pipeline.taskList) {
+    for (const step of task.stepList) {
+      if (
+        step.status == "PENDING" ||
+        step.status == "RUNNING" ||
+        // "FAILED" is also a transient step status, which requires user
+        // to take further action (e.g. Skip, Retry)
+        step.status == "FAILED"
+      ) {
+        return step;
+      }
     }
   }
   return empty("STEP") as Step;
@@ -173,4 +155,21 @@ export function applicableStepTransition(
   return list.map((type: StepStatusTransitionType) => {
     return STEP_STATUS_TRANSITION_LIST.get(type)!;
   });
+}
+
+function activeTask(pipeline: Pipeline): Task {
+  for (const task of pipeline.taskList) {
+    for (const step of task.stepList) {
+      if (
+        step.status == "PENDING" ||
+        step.status == "RUNNING" ||
+        // "FAILED" is also a transient step status, which requires user
+        // to take further action (e.g. Skip, Retry)
+        step.status == "FAILED"
+      ) {
+        return task;
+      }
+    }
+  }
+  return empty("TASK") as Task;
 }
