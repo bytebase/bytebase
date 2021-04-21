@@ -876,10 +876,6 @@ export default {
               return false;
             }
 
-            // Don't display the Abort action if there is NO outstanding task.
-            if (item == "ABORT" && currentTask.id == EMPTY_ID) {
-              return false;
-            }
             return true;
           })
           .map(
