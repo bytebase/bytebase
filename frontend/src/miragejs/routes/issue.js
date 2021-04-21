@@ -295,24 +295,18 @@ export default function configureIssue(route) {
 
     if (issue.pipelineId) {
       const pipeline = schema.pipelines.find(issue.pipelineId);
+      // Pipeline and issue status is 1-to-1 mapping, so we just change the pipeline status accordingly.
+      pipeline.update({
+        status: attrs.status,
+      });
+
       const taskList = schema.tasks.where({ pipelineId: pipeline.id }).models;
-
       if (attrs.status == "DONE") {
-        if (pipeline.status != "DONE" || pipeline.status != "CANCELED") {
-          return new Response(
-            404,
-            {},
-            {
-              errors: `Can't resolve issue ${issue.name}. Pipeline is in ${pipeline.status} status`,
-            }
-          );
-        }
-
         // We check each of the task and its steps. Returns error if any of them is not finished.
         for (let i = 0; i < taskList.length; i++) {
           if (
-            taskList[i].status != "DONE" ||
-            taskList[i].status != "CANCELED" ||
+            taskList[i].status != "DONE" &&
+            taskList[i].status != "CANCELED" &&
             taskList[i].status != "SKIPPED"
           ) {
             return new Response(
@@ -331,8 +325,8 @@ export default function configureIssue(route) {
 
           for (let j = 0; j < stepList.length; j++) {
             if (
-              stepList[j].status != "DONE" ||
-              stepList[j].status != "CANCELED" ||
+              stepList[j].status != "DONE" &&
+              stepList[j].status != "CANCELED" &&
               stepList[j].status != "SKIPPED"
             ) {
               return new Response(

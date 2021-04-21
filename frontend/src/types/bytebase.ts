@@ -1034,12 +1034,7 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
     Change prod database schema
 */
 // Pipeline
-export type PipelineStatus =
-  | "PENDING"
-  | "RUNNING"
-  | "DONE"
-  | "FAILED"
-  | "CANCELED";
+export type PipelineStatus = "OPEN" | "DONE" | "CANCELED";
 
 export type Pipeline = {
   id: PipelineId;
