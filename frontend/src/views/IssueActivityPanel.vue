@@ -302,8 +302,11 @@ import {
   ActionIssueFieldUpdatePayload,
   Environment,
   Principal,
+  ActionIssuePipelineStatusUpdatePayload,
+  UNKNOWN_ID,
+  EMPTY_ID,
 } from "../types";
-import { sizeToFit, stageName } from "../utils";
+import { findTaskById, sizeToFit, stageName } from "../utils";
 import { fieldFromId, IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
@@ -489,9 +492,7 @@ export default {
         case "bytebase.issue.comment.create":
           return "commented";
         case "bytebase.issue.field.update":
-        case "bytebase.issue.status.update":
-        case "bytebase.issue.stage.status.update":
-        case "bytebase.issue.stage.task.status.update": {
+        case "bytebase.issue.status.update": {
           const updateInfoList: string[] = [];
           for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
             ?.changeList || []) {
@@ -504,14 +505,6 @@ export default {
               newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.STATUS) {
               name = "status";
-              oldValue = update.oldValue;
-              newValue = update.newValue;
-            } else if (update.fieldId == IssueBuiltinFieldId.STAGE_STATUS) {
-              name = "stage status";
-              oldValue = update.oldValue;
-              newValue = update.newValue;
-            } else if (update.fieldId == IssueBuiltinFieldId.TASK_STATUS) {
-              name = "task status";
               oldValue = update.oldValue;
               newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.ASSIGNEE) {
@@ -583,26 +576,32 @@ export default {
             }
             if (oldValue && newValue) {
               updateInfoList.push(
-                "changed " +
-                  name +
-                  ' from "' +
-                  oldValue +
-                  '" to "' +
-                  newValue +
-                  '"'
+                `changed ${name} from "${oldValue}" to "${newValue}"`
               );
             } else if (oldValue) {
-              updateInfoList.push("unset " + name + ' from "' + oldValue + '"');
+              updateInfoList.push(`unset "${name} from "${oldValue}"`);
             } else if (newValue) {
-              updateInfoList.push("set " + name + ' to "' + newValue + '"');
+              updateInfoList.push(`set ${name} to "${newValue}"`);
             } else {
-              updateInfoList.push("changed " + name);
+              updateInfoList.push(`changed ${name}`);
             }
           }
           if (updateInfoList.length > 0) {
             return updateInfoList.join("; ");
           }
           return "updated";
+        }
+        case "bytebase.pipeline.task.status.update": {
+          if (props.issue.pipeline.id != EMPTY_ID) {
+            const payload = activity.payload as ActionIssuePipelineStatusUpdatePayload;
+            const task = findTaskById(props.issue.pipeline, payload.taskId);
+            if (task.id != UNKNOWN_ID) {
+              return `Changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
+            }
+          }
+          // This should never happen normally since only issue with pipeline can emit this activity.
+          // Just be defensive here.
+          return "Changed task status";
         }
       }
     };

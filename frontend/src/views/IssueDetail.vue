@@ -618,6 +618,7 @@ export default {
     ) => {
       const taskStatusPatch: TaskStatusPatch = {
         updaterId: currentUser.value.id,
+        containerId: (state.issue as Issue).id,
         status: transition.to,
         comment: comment ? comment.trim() : undefined,
       };

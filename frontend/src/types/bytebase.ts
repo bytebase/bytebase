@@ -1175,7 +1175,12 @@ export type TaskPatch = {
 };
 
 export type TaskStatusPatch = {
+  // Standard fields
   updaterId: PrincipalId;
+
+  // Domain specific fields
+  // This is the container containing the pipeline this task belongs.
+  containerId: ContainerId;
   status: TaskStatus;
   comment?: string;
 };
@@ -1186,8 +1191,7 @@ export type IssueActionType =
   | "bytebase.issue.comment.create"
   | "bytebase.issue.field.update"
   | "bytebase.issue.status.update"
-  | "bytebase.issue.stage.status.update"
-  | "bytebase.issue.stage.task.status.update";
+  | "bytebase.pipeline.task.status.update";
 
 export type ActionType = IssueActionType;
 
@@ -1199,7 +1203,15 @@ export type ActionIssueFieldUpdatePayload = {
   }[];
 };
 
-export type ActionPayloadType = ActionIssueFieldUpdatePayload;
+export type ActionIssuePipelineStatusUpdatePayload = {
+  taskId: TaskId;
+  oldStatus: TaskStatus;
+  newStatus: TaskStatus;
+};
+
+export type ActionPayloadType =
+  | ActionIssueFieldUpdatePayload
+  | ActionIssuePipelineStatusUpdatePayload;
 
 export type Activity = {
   id: ActivityId;

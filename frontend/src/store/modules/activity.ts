@@ -61,7 +61,7 @@ const actions = {
     issueId: IssueId
   ) {
     const activityList = (
-      await axios.get(`/api/activity?container=${issueId}&type=bytebase.issue.`)
+      await axios.get(`/api/activity?container=${issueId}`)
     ).data.data.map((activity: ResourceObject) => {
       return convert(activity, rootGetters);
     });

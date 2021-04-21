@@ -8,6 +8,8 @@ import {
   TaskStatus,
   Stage,
   UNKNOWN_ID,
+  unknown,
+  TaskId,
 } from "../types";
 
 export type PipelineType =
@@ -40,6 +42,17 @@ export function allTaskList(pipeline: Pipeline): Task[] {
     });
   });
   return list;
+}
+
+export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
+  for (const stage of pipeline.stageList) {
+    for (const task of stage.taskList) {
+      if (task.id == taskId) {
+        return task;
+      }
+    }
+  }
+  return unknown("TASK") as Task;
 }
 
 export function activeTask(pipeline: Pipeline): Task {

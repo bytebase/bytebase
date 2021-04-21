@@ -28,28 +28,22 @@ export default function configureTask(route) {
 
       const ts = Date.now();
 
-      const changeList = [];
-
       if (attrs.status && task.status != attrs.status) {
-        changeList.push({
-          fieldId: IssueBuiltinFieldId.TASK_STATUS,
-          oldValue: task.status,
-          newValue: attrs.status,
-        });
+        const payload = {
+          taskId: task.id,
+          oldStatus: task.status,
+          newStatus: attrs.status,
+        };
 
         const updatedTask = task.update({ ...attrs, updatedTs: ts });
-
-        const payload = {
-          changeList,
-        };
 
         schema.activities.create({
           creatorId: attrs.updaterId,
           createdTs: ts,
           updaterId: attrs.updaterId,
           updatedTs: ts,
-          actionType: "bytebase.issue.stage.task.status.update",
-          containerId: updatedTask.id,
+          actionType: "bytebase.pipeline.task.status.update",
+          containerId: attrs.containerId,
           comment: attrs.comment,
           payload,
           workspaceId: WORKSPACE_ID,
