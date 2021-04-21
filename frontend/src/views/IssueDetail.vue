@@ -126,7 +126,12 @@
 
     <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
-      <template v-if="currentPipelineType == 'MULTI_SINGLE_TASK_STAGE'">
+      <template
+        v-if="
+          currentPipelineType == 'MULTI_SINGLE_TASK_STAGE' ||
+          currentPipelineType == 'SINGLE_STAGE'
+        "
+      >
         <PipelineSimpleFlow :pipeline="state.issue.pipeline" />
       </template>
     </template>
