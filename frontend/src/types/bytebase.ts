@@ -171,7 +171,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     name: "<<Unknown pipeline>>",
-    status: "PENDING",
+    status: "DONE",
     taskList: [],
   };
 
@@ -184,7 +184,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     name: "<<Unknown issue>>",
-    status: "OPEN",
+    status: "DONE",
     type: "bytebase.general",
     description: "",
     subscriberList: [],
@@ -200,7 +200,7 @@ export const unknown = (
     updatedTs: 0,
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
-    status: "PENDING",
+    status: "DONE",
     environment: UNKNOWN_ENVIRONMENT,
     database: UNKNOWN_DATABASE,
     stepList: [],
@@ -216,7 +216,7 @@ export const unknown = (
     updatedTs: 0,
     name: "<<Unknown step>>",
     type: "bytebase.step.unknown",
-    status: "PENDING",
+    status: "DONE",
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -238,7 +238,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     type: "bb.msg.issue.assign",
-    status: "DELIVERED",
+    status: "CONSUMED",
     description: "",
     receiver: UNKNOWN_PRINCIPAL,
   };
@@ -428,7 +428,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     name: "",
-    status: "PENDING",
+    status: "DONE",
     taskList: [],
   };
 
@@ -441,7 +441,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     name: "",
-    status: "OPEN",
+    status: "DONE",
     type: "bytebase.general",
     description: "",
     subscriberList: [],
@@ -457,7 +457,7 @@ export const empty = (
     updatedTs: 0,
     name: "",
     type: "bytebase.task.unknown",
-    status: "PENDING",
+    status: "DONE",
     environment: EMPTY_ENVIRONMENT,
     database: EMPTY_DATABASE,
     stepList: [],
@@ -473,7 +473,7 @@ export const empty = (
     updatedTs: 0,
     name: "",
     type: "bytebase.step.unknown",
-    status: "PENDING",
+    status: "DONE",
   };
 
   const EMPTY_ACTIVITY: Activity = {
