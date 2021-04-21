@@ -4,6 +4,12 @@
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
+    <div
+      v-if="showCancelBanner"
+      class="h-10 w-full text-2xl font-bold bg-gray-400 text-white flex justify-center items-center"
+    >
+      Canceled
+    </div>
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
       <IssueHighlightPanel
@@ -767,6 +773,10 @@ export default {
       return state.new;
     });
 
+    const showCancelBanner = computed(() => {
+      return !state.new && (state.issue as Issue).status == "CANCELED";
+    });
+
     const showPipelineFlowBar = computed(() => {
       return !state.new && currentPipelineType.value != "NO_PIPELINE";
     });
@@ -866,6 +876,7 @@ export default {
       allowEditOutput,
       allowEditNameAndDescription,
       allowEditSql,
+      showCancelBanner,
       showPipelineFlowBar,
       showIssueOutputPanel,
       showIssueSqlPanel,
