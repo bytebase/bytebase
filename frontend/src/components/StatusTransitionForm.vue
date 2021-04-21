@@ -1,7 +1,7 @@
 <template>
   <div class="px-4 space-y-6 divide-y divide-gray-200">
     <div class="mt-2 grid grid-cols-1 gap-x-4 sm:grid-cols-4">
-      <template v-if="transition.type == 'RESOLVE'">
+      <template v-if="mode == 'ISSUE' && transition.type == 'RESOLVE'">
         <template v-for="(field, index) in outputFieldList" :key="index">
           <div class="flex flex-row items-center text-sm">
             <div class="sm:col-span-1">
@@ -92,9 +92,10 @@
 <script lang="ts">
 import { computed, reactive, ref, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
-import DatabaseSelect from "../components/DatabaseSelect.vue";
+import DatabaseSelect from "./DatabaseSelect.vue";
 import { Issue, IssueStatusTransition } from "../types";
 import { IssueField, IssueBuiltinFieldId } from "../plugins";
+import { TaskStatusTransition } from "../utils";
 
 interface LocalState {
   comment: string;
@@ -102,9 +103,13 @@ interface LocalState {
 }
 
 export default {
-  name: "IssueStatusTransitionForm",
+  name: "StatusTransitionForm",
   emits: ["submit", "cancel"],
   props: {
+    mode: {
+      required: true,
+      type: String as PropType<"ISSUE" | "TASK">,
+    },
     okText: {
       type: String,
       default: "OK",
@@ -115,7 +120,7 @@ export default {
     },
     transition: {
       required: true,
-      type: Object as PropType<IssueStatusTransition>,
+      type: Object as PropType<IssueStatusTransition | TaskStatusTransition>,
     },
     outputFieldList: {
       required: true,
@@ -138,13 +143,29 @@ export default {
     });
 
     const submitButtonStyle = computed(() => {
-      switch (props.transition.to) {
-        case "OPEN":
-          return "btn-primary";
-        case "DONE":
-          return "btn-success";
-        case "CANCELED":
-          return "btn-danger";
+      switch (props.mode) {
+        case "ISSUE": {
+          switch ((props.transition as IssueStatusTransition).type) {
+            case "RESOLVE":
+              return "btn-success";
+            case "ABORT":
+              return "btn-danger";
+            case "REOPEN":
+              return "btn-primary";
+          }
+        }
+        case "TASK": {
+          switch ((props.transition as TaskStatusTransition).type) {
+            case "RUN":
+              return "btn-primary";
+            case "RETRY":
+              return "btn-primary";
+            case "CANCEL":
+              return "btn-danger";
+            case "SKIP":
+              return "btn-danger";
+          }
+        }
       }
     });
 

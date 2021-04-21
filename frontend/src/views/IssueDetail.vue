@@ -223,15 +223,24 @@
     :title="updateStatusModalState.title"
     @close="updateStatusModalState.show = false"
   >
-    <IssueStatusTransitionForm
+    <StatusTransitionForm
+      :mode="updateStatusModalState.mode"
       :okText="updateStatusModalState.okText"
       :issue="state.issue"
-      :transition="updateStatusModalState.payload.transition"
+      :transition="updateStatusModalState.transition"
       :outputFieldList="outputFieldList"
       @submit="
         (comment) => {
           updateStatusModalState.show = false;
-          doIssueStatusTransition(updateStatusModalState.payload, comment);
+          if (updateStatusModalState.mode == 'ISSUE') {
+            doIssueStatusTransition(updateStatusModalState.transition, comment);
+          } else if (updateStatusModalState.mode == 'TASK') {
+            doTaskStatusTransition(
+              updateStatusModalState.transition,
+              updateStatusModalState.payload.id,
+              comment
+            );
+          }
         }
       "
       @cancel="
@@ -266,7 +275,7 @@ import IssueSqlPanel from "../views/IssueSqlPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "../views/IssueActivityPanel.vue";
 import IssueSidebar from "../views/IssueSidebar.vue";
-import IssueStatusTransitionForm from "../components/IssueStatusTransitionForm.vue";
+import StatusTransitionForm from "../components/StatusTransitionForm.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import {
   Issue,
@@ -296,16 +305,14 @@ import {
   IssueContext,
 } from "../plugins";
 
-type UpdateStatusModalStatePayload = {
-  transition: IssueStatusTransition;
-};
-
 interface UpdateStatusModalState {
+  mode: "ISSUE" | "TASK";
   show: boolean;
   style: string;
   okText: string;
   title: string;
-  payload?: UpdateStatusModalStatePayload;
+  transition?: IssueStatusTransition | TaskStatusTransition;
+  payload?: any;
 }
 
 interface LocalState {
@@ -331,7 +338,7 @@ export default {
     IssueDescriptionPanel,
     IssueActivityPanel,
     IssueSidebar,
-    IssueStatusTransitionForm,
+    StatusTransitionForm,
     PipelineSimpleFlow,
   },
 
@@ -340,6 +347,7 @@ export default {
     const router = useRouter();
 
     const updateStatusModalState = reactive<UpdateStatusModalState>({
+      mode: "ISSUE",
       show: false,
       style: "INFO",
       okText: "OK",
@@ -576,26 +584,31 @@ export default {
       }
     };
 
-    const allowIssueStatusTransition = (
-      transition: IssueStatusTransition
-    ): boolean => {
-      const issue: Issue = state.issue as Issue;
-      if (transition.type == "RESOLVE") {
-        // Returns false if any of the required output fields is not provided.
-        for (let i = 0; i < outputFieldList.value.length; i++) {
-          const field = outputFieldList.value[i];
-          if (field.required && !field.resolved(issueContext.value)) {
-            return false;
-          }
-        }
-        return true;
-      }
-      return true;
-    };
-
     const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
+      updateStatusModalState.mode = "TASK";
+      updateStatusModalState.okText = transition.buttonName;
       const task = activeTask((state.issue as Issue).pipeline);
-      doTaskStatusTransition(transition, task.id);
+      switch (transition.type) {
+        case "RUN":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = `Run '${task.name}'?`;
+          break;
+        case "RETRY":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = `Retry '${task.name}'?`;
+          break;
+        case "CANCEL":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = `Cancel '${task.name}'?`;
+          break;
+        case "SKIP":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = `Skip '${task.name}'?`;
+          break;
+      }
+      updateStatusModalState.transition = transition;
+      updateStatusModalState.payload = task;
+      updateStatusModalState.show = true;
     };
 
     const doTaskStatusTransition = (
@@ -617,37 +630,53 @@ export default {
       });
     };
 
+    const allowIssueStatusTransition = (
+      transition: IssueStatusTransition
+    ): boolean => {
+      const issue: Issue = state.issue as Issue;
+      if (transition.type == "RESOLVE") {
+        // Returns false if any of the required output fields is not provided.
+        for (let i = 0; i < outputFieldList.value.length; i++) {
+          const field = outputFieldList.value[i];
+          if (field.required && !field.resolved(issueContext.value)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return true;
+    };
+
     const tryStartIssueStatusTransition = (
       transition: IssueStatusTransition
     ) => {
+      updateStatusModalState.mode = "ISSUE";
       updateStatusModalState.okText = transition.buttonName;
-      switch (transition.to) {
-        case "OPEN":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Reopen issue?";
-          break;
-        case "DONE":
+      switch (transition.type) {
+        case "RESOLVE":
           updateStatusModalState.style = "SUCCESS";
           updateStatusModalState.title = "Resolve issue?";
           break;
-        case "CANCELED":
+        case "ABORT":
           updateStatusModalState.style = "INFO";
           updateStatusModalState.title = "Abort issue?";
           break;
+        case "REOPEN":
+          updateStatusModalState.style = "INFO";
+          updateStatusModalState.title = "Reopen issue?";
+          break;
       }
-      updateStatusModalState.payload = {
-        transition,
-      };
+      updateStatusModalState.transition = transition;
       updateStatusModalState.show = true;
     };
 
     const doIssueStatusTransition = (
-      payload: UpdateStatusModalStatePayload,
+      transition: IssueStatusTransition,
       comment?: string
     ) => {
       const issueStatusPatch: IssueStatusPatch = {
         updaterId: currentUser.value.id,
-        status: payload.transition.to,
+        status: transition.to,
         comment: comment ? comment.trim() : undefined,
       };
 
@@ -656,9 +685,9 @@ export default {
           issueId: (state.issue as Issue).id,
           issueStatusPatch,
         })
-        .then((updatedIssue) => {
+        .then(() => {
           if (
-            payload.transition.to == "DONE" &&
+            transition.to == "DONE" &&
             issueTemplate.value.type == "bytebase.database.schema.update"
           ) {
             store.dispatch("uistate/saveIntroStateByKey", {
@@ -897,9 +926,9 @@ export default {
       updateDescription,
       updateSql,
       updateRollbackSql,
-      allowIssueStatusTransition,
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
+      allowIssueStatusTransition,
       tryStartIssueStatusTransition,
       doIssueStatusTransition,
       updateAssigneeId,
