@@ -1135,8 +1135,6 @@ export type StageNew = {
 // Task
 export type TaskType =
   | "bytebase.task.unknown"
-  | "bytebase.task.final"
-  | "bytebase.task.resolve"
   | "bytebase.task.approve"
   | "bytebase.task.database.schema.update";
 
