@@ -32,21 +32,9 @@ export enum IssueBuiltinFieldId {
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
 export const OUTPUT_CUSTOM_FIELD_ID_BEGIN = "200";
 
-export type InputFieldType =
-  | "Boolean"
-  | "String"
-  | "Environment"
-  | "Project"
-  | "Database"
-  | "NewDatabase";
+export type InputFieldType = "Boolean" | "String";
 
-export type OutputFieldType =
-  | "Boolean"
-  | "String"
-  | "Environment"
-  | "Project"
-  | "Database"
-  | "NewDatabase";
+export type OutputFieldType = "String" | "Database";
 
 export type IssueContext = {
   store: Store<any>;
@@ -102,16 +90,6 @@ export type OutputField = {
   viewLink: (ctx: IssueContext) => string;
   // Corresponding text based on whether the field is resolved
   resolveStatusText: (resolved: boolean) => string;
-};
-
-// Field payload for "Database" and "NewDatabase" field
-export type DatabaseFieldPayload = {
-  isNew: boolean;
-  // If isNew is true, name stores the new database name, otherwise, is null.
-  name?: string;
-  // If isNew is false, id stores the database id, otherwise, is null.
-  id?: DatabaseId;
-  readOnly: boolean;
 };
 
 // Template

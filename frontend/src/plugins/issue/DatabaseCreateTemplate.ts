@@ -50,7 +50,7 @@ const template: IssueTemplate = {
       id: INPUT_DATABASE_NAME,
       slug: "databaseName",
       name: "DB name",
-      type: "NewDatabase",
+      type: "String",
       resolved: (ctx: IssueContext): boolean => {
         const databaseName = ctx.issue.payload[INPUT_DATABASE_NAME];
         return !isEmpty(databaseName);

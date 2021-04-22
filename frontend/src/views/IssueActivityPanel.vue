@@ -562,23 +562,6 @@ export default {
                     update.newValue
                   ).name;
                 }
-              } else if (field.type === "NewDatabase") {
-                // Value is the new database name
-                oldValue = update.oldValue;
-                newValue = update.newValue;
-              } else if (field.type === "Environment") {
-                if (update.oldValue) {
-                  const environment: Environment = store.getters[
-                    "environment/environmentById"
-                  ](update.oldValue);
-                  oldValue = environment.name;
-                }
-                if (update.newValue) {
-                  const environment: Environment = store.getters[
-                    "environment/environmentById"
-                  ](update.newValue);
-                  newValue = environment.name;
-                }
               }
             }
             if (oldValue && newValue) {

@@ -41,57 +41,6 @@
         <div class="col-span-2">
           <template v-if="field.type == 'String'">
             <BBTextField
-              class="mt-4 text-sm"
-              :disabled="!allowEdit"
-              :required="true"
-              :value="fieldValue(field)"
-              :placeholder="field.placeholder"
-              @end-editing="(text) => trySaveCustomField(field, text)"
-            />
-          </template>
-          <template v-else-if="field.type == 'Environment'">
-            <EnvironmentSelect
-              :disabled="!allowEdit"
-              :name="field.id"
-              :selectedId="fieldValue(field)"
-              :selectDefault="false"
-              @select-environment-id="
-                (environmentId) => {
-                  trySaveCustomField(field, environmentId);
-                }
-              "
-            />
-          </template>
-          <template v-else-if="field.type == 'Project'">
-            <ProjectSelect
-              :disabled="!allowEdit"
-              :name="field.id"
-              :selectedId="fieldValue(field)"
-              :selectDefault="false"
-              @select-project-id="
-                (projectId) => {
-                  trySaveCustomField(field, projectId);
-                }
-              "
-            />
-          </template>
-          <template v-else-if="field.type == 'Database'">
-            <DatabaseSelect
-              class="w-full"
-              :disabled="!allowEdit"
-              :selectedId="fieldValue(field)"
-              :mode="'USER'"
-              @select-database-id="
-                (databaseId) => {
-                  trySaveDatabaseId(field, databaseId);
-                }
-              "
-            />
-          </template>
-          <template v-else-if="field.type == 'NewDatabase'">
-            <BBTextField
-              type="text"
-              class="w-full text-sm"
               :disabled="!allowEdit"
               :required="true"
               :value="fieldValue(field)"
@@ -240,12 +189,10 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import { InputField, DatabaseFieldPayload } from "../plugins";
+import { InputField } from "../plugins";
 import {
   Database,
-  DatabaseId,
   Environment,
-  EnvironmentId,
   Principal,
   Project,
   Issue,
@@ -294,7 +241,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const fieldValue = (field: InputField): string | DatabaseFieldPayload => {
+    const fieldValue = (field: InputField): string => {
       return props.issue.payload[field.id];
     };
 
@@ -366,49 +313,10 @@ export default {
       );
     });
 
-    const trySaveCustomField = (
-      field: InputField,
-      value: string | EnvironmentId | DatabaseFieldPayload
-    ) => {
+    const trySaveCustomField = (field: InputField, value: string | boolean) => {
       if (!isEqual(value, fieldValue(field))) {
         emit("update-custom-field", field, value);
       }
-    };
-
-    const trySaveDatabaseNew = (field: InputField, isNew: boolean) => {
-      // Do a deep clone to prevent caller accidentally changes the original data.
-      const payload: DatabaseFieldPayload = cloneDeep(
-        fieldValue(field)
-      ) as DatabaseFieldPayload;
-      payload.isNew = isNew;
-      trySaveCustomField(field, payload);
-    };
-
-    const trySaveDatabaseName = (field: InputField, value: string) => {
-      // Do a deep clone to prevent caller accidentally changes the original data.
-      const payload: DatabaseFieldPayload = cloneDeep(
-        fieldValue(field)
-      ) as DatabaseFieldPayload;
-      payload.name = value;
-      trySaveCustomField(field, payload);
-    };
-
-    const trySaveDatabaseId = (field: InputField, value: DatabaseId) => {
-      // Do a deep clone to prevent caller accidentally changes the original data.
-      const payload: DatabaseFieldPayload = cloneDeep(
-        fieldValue(field)
-      ) as DatabaseFieldPayload;
-      payload.id = value;
-      trySaveCustomField(field, payload);
-    };
-
-    const trySaveDatabaseReadOnly = (field: InputField, value: boolean) => {
-      // Do a deep clone to prevent caller accidentally changes the original data.
-      const payload: DatabaseFieldPayload = cloneDeep(
-        fieldValue(field)
-      ) as DatabaseFieldPayload;
-      payload.readOnly = value;
-      trySaveCustomField(field, payload);
     };
 
     const toggleSubscription = () => {
@@ -444,10 +352,6 @@ export default {
       isCurrentUserSubscribed,
       subscriberList,
       trySaveCustomField,
-      trySaveDatabaseNew,
-      trySaveDatabaseName,
-      trySaveDatabaseId,
-      trySaveDatabaseReadOnly,
       toggleSubscription,
     };
   },
