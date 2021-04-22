@@ -897,17 +897,6 @@ const createUpdateSchemaStage = (
       workspaceId,
     });
 
-    // server.create("task", {
-    //   creatorId: creatorId,
-    //   updaterId: creatorId,
-    //   name: "Waiting approval",
-    //   type: "bytebase.task.approve",
-    //   status: taskStatusList[i],
-    //   pipelineId,
-    //   stage,
-    //   workspaceId,
-    // });
-
     server.create("task", {
       creatorId: creatorId,
       updaterId: creatorId,
