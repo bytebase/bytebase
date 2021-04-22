@@ -7,7 +7,7 @@
   </h2>
 
   <div class="my-2 mx-4 space-y-2">
-    <template v-for="(field, index) in fieldList" :key="index">
+    <template v-for="(field, index) in outputFieldList" :key="index">
       <div class="flex flex-col space-y-1">
         <div class="textlabel">
           {{ field.name }}
@@ -137,14 +137,12 @@ import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { fullDatabasePath } from "../utils";
-import { IssueField, IssueBuiltinFieldId, IssueContext } from "../plugins";
 import {
-  DatabaseId,
-  DataSource,
-  EnvironmentId,
-  Issue,
-  UNKNOWN_ID,
-} from "../types";
+  OutputIssueField,
+  IssueBuiltinFieldId,
+  IssueContext,
+} from "../plugins";
+import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
 
 interface LocalState {}
 
@@ -156,9 +154,9 @@ export default {
       required: true,
       type: Object as PropType<Issue>,
     },
-    fieldList: {
+    outputFieldList: {
       required: true,
-      type: Object as PropType<IssueField[]>,
+      type: Object as PropType<OutputIssueField[]>,
     },
     allowEdit: {
       required: true,
@@ -180,7 +178,7 @@ export default {
       }
     );
 
-    const fieldValue = (field: IssueField): string => {
+    const fieldValue = (field: OutputIssueField): string => {
       return props.issue.payload[field.id];
     };
 
@@ -209,7 +207,7 @@ export default {
       return link?.trim().length > 0;
     };
 
-    const databaseActionLink = (field: IssueField): string => {
+    const databaseActionLink = (field: OutputIssueField): string => {
       const queryParamList: string[] = [];
 
       if (props.issue.type == "bytebase.database.create") {
@@ -264,7 +262,7 @@ export default {
       return "";
     };
 
-    const databaseViewLink = (field: IssueField): string => {
+    const databaseViewLink = (field: OutputIssueField): string => {
       if (field.type == "Database") {
         const databaseId = fieldValue(field);
         if (databaseId) {
@@ -277,7 +275,7 @@ export default {
       return "";
     };
 
-    const copyText = (field: IssueField) => {
+    const copyText = (field: OutputIssueField) => {
       toClipboard(props.issue.payload[field.id]).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
@@ -302,7 +300,7 @@ export default {
     };
 
     const trySaveCustomField = (
-      field: IssueField,
+      field: OutputIssueField,
       value: string | DatabaseId
     ) => {
       if (!isEqual(value, fieldValue(field))) {

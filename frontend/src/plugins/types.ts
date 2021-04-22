@@ -32,7 +32,7 @@ export enum IssueBuiltinFieldId {
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
 export const OUTPUT_CUSTOM_FIELD_ID_BEGIN = "200";
 
-export type IssueFieldType =
+export type InputIssueFieldType =
   | "Boolean"
   | "String"
   | "Environment"
@@ -40,15 +40,13 @@ export type IssueFieldType =
   | "Database"
   | "NewDatabase";
 
-export type IssueFieldReferenceProvider = {
-  title: string;
-  link: string;
-};
-
-export type IssueFieldReferenceProviderContext = {
-  issue: Issue;
-  field: IssueField;
-};
+export type OutputIssueFieldType =
+  | "Boolean"
+  | "String"
+  | "Environment"
+  | "Project"
+  | "Database"
+  | "NewDatabase";
 
 export type IssueContext = {
   store: Store<any>;
@@ -57,8 +55,12 @@ export type IssueContext = {
   issue: Issue | IssueNew;
 };
 
-export type IssueField = {
-  category: "INPUT" | "OUTPUT";
+export type FieldInfo = {
+  name: string;
+  type: InputIssueFieldType | OutputIssueFieldType;
+};
+
+export type InputIssueField = {
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
   // is very similar to the message field id in Protocol Buffers.
@@ -71,25 +73,27 @@ export type IssueField = {
   // The display name. OK to change.
   name: string;
   // Field type. This must NOT be changed after in use. Similar to id field.
-  type: IssueFieldType;
-  // Whether the field is required.
-  required: boolean;
+  type: InputIssueFieldType;
   // Whether the field is resolved.
-  // For INPUT, one use case is together with "required" field to validate whether it's ready to submit the data.
+  // One use case is together with "required" field to validate whether it's ready to submit the data.
   // For OUTPUT, one use case is to validate whether the field is filled properly according to the issue.
   resolved: (ctx: IssueContext) => boolean;
   // Placeholder displayed on UI.
   placeholder?: string;
 };
 
-export const UNKNOWN_FIELD: IssueField = {
-  category: "INPUT",
-  id: UNKNOWN_ID,
-  slug: "",
-  name: "<<Unknown field>>",
-  type: "String",
-  required: false,
-  resolved: () => false,
+export type OutputIssueField = {
+  // Same as InputIssueField.id
+  id: FieldId;
+  // Same as InputIssueField.name
+  name: string;
+  // Same as InputIssueField.type
+  type: OutputIssueFieldType;
+  // Whether the field is resolved.
+  // One use case is to validate whether the field is filled properly according to the issue.
+  resolved: (ctx: IssueContext) => boolean;
+  // Same as InputIssueField.placeholder
+  placeholder?: string;
 };
 
 // Field payload for "Database" and "NewDatabase" field
@@ -114,5 +118,6 @@ export type IssueTemplate = {
   buildIssue: (
     ctx: TemplateContext
   ) => Omit<IssueNew, "projectId" | "creatorId">;
-  fieldList: IssueField[];
+  inputFieldList: InputIssueField[];
+  outputFieldList: OutputIssueField[];
 };

@@ -28,7 +28,6 @@
           :new="state.new"
           :issue="state.issue"
           :issueTemplate="issueTemplate"
-          :outputFieldList="outputFieldList"
           @create="doCreate"
         />
       </IssueHighlightPanel>
@@ -55,7 +54,7 @@
     >
       <IssueOutputPanel
         :issue="state.issue"
-        :fieldList="outputFieldList"
+        :outputFieldList="issueTemplate.outputFieldList"
         :allowEdit="allowEditOutput"
         @update-custom-field="updateCustomField"
       />
@@ -79,7 +78,7 @@
             <IssueSidebar
               :issue="state.issue"
               :new="state.new"
-              :fieldList="inputFieldList"
+              :inputFieldList="issueTemplate.inputFieldList"
               :allowEdit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
               @update-subscriber-list="updateSubscriberIdList"
@@ -165,7 +164,8 @@ import {
 import {
   defaulTemplate,
   templateForType,
-  IssueField,
+  InputIssueField,
+  OutputIssueField,
   IssueTemplate,
 } from "../plugins";
 
@@ -304,9 +304,7 @@ export default {
           .assignee as PrincipalId;
       }
 
-      for (const field of newIssueTemplate.value.fieldList.filter(
-        (item) => item.category == "INPUT"
-      )) {
+      for (const field of newIssueTemplate.value.inputFieldList) {
         const value = router.currentRoute.value.query[field.slug] as string;
         if (value) {
           if (field.type == "Boolean") {
@@ -340,19 +338,6 @@ export default {
 
     const issueTemplate = computed(
       () => templateForType(state.issue.type) || defaulTemplate()
-    );
-
-    const outputFieldList = computed(
-      () =>
-        issueTemplate.value.fieldList.filter(
-          (item) => item.category == "OUTPUT"
-        ) || []
-    );
-    const inputFieldList = computed(
-      () =>
-        issueTemplate.value.fieldList.filter(
-          (item) => item.category == "INPUT"
-        ) || []
     );
 
     const updateName = (
@@ -435,7 +420,10 @@ export default {
       });
     };
 
-    const updateCustomField = (field: IssueField, value: any) => {
+    const updateCustomField = (
+      field: InputIssueField | OutputIssueField,
+      value: any
+    ) => {
       console.log("updateCustomField", field.name, value);
       if (!isEqual(state.issue.payload[field.id], value)) {
         state.issue.payload[field.id] = value;
@@ -539,7 +527,7 @@ export default {
     });
 
     const showIssueOutputPanel = computed(() => {
-      return !state.new && outputFieldList.value.length > 0;
+      return !state.new && issueTemplate.value.outputFieldList.length > 0;
     });
 
     const showIssueSqlPanel = computed(() => {
@@ -566,8 +554,6 @@ export default {
       currentPipelineType,
       currentUser,
       issueTemplate,
-      outputFieldList,
-      inputFieldList,
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,

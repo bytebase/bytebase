@@ -105,7 +105,7 @@
       :okText="updateStatusModalState.okText"
       :issue="issue"
       :transition="updateStatusModalState.transition"
-      :outputFieldList="outputFieldList"
+      :outputFieldList="issueTemplate.outputFieldList"
       @submit="
         (comment) => {
           updateStatusModalState.show = false;
@@ -152,7 +152,7 @@ import {
   TaskId,
   TaskStatusPatch,
 } from "../types";
-import { IssueField, IssueTemplate } from "../plugins";
+import { OutputIssueField, IssueTemplate } from "../plugins";
 import { isEmpty } from "lodash";
 
 interface UpdateStatusModalState {
@@ -187,10 +187,6 @@ export default {
     issueTemplate: {
       required: true,
       type: Object as PropType<IssueTemplate>,
-    },
-    outputFieldList: {
-      required: true,
-      type: Object as PropType<IssueField[]>,
     },
   },
   components: {
@@ -334,9 +330,9 @@ export default {
       const issue: Issue = props.issue as Issue;
       if (transition.type == "RESOLVE") {
         // Returns false if any of the required output fields is not provided.
-        for (let i = 0; i < props.outputFieldList.length; i++) {
-          const field = props.outputFieldList[i];
-          if (field.required && !field.resolved(issueContext.value)) {
+        for (let i = 0; i < props.issueTemplate.outputFieldList.length; i++) {
+          const field = props.issueTemplate.outputFieldList[i];
+          if (!field.resolved(issueContext.value)) {
             return false;
           }
         }
@@ -406,17 +402,12 @@ export default {
         return false;
       }
 
-      if (props.issueTemplate.fieldList) {
-        for (const field of props.issueTemplate.fieldList.filter(
-          (item) => item.category == "INPUT"
-        )) {
-          if (
-            field.type != "Boolean" && // Switch is boolean value which always is present
-            field.required &&
-            !field.resolved(issueContext.value)
-          ) {
-            return false;
-          }
+      for (const field of props.issueTemplate.inputFieldList) {
+        if (
+          field.type != "Boolean" && // Switch is boolean value which always is present
+          !field.resolved(issueContext.value)
+        ) {
+          return false;
         }
       }
       return true;

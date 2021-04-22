@@ -1,4 +1,4 @@
-import { IssueField, FieldId, IssueTemplate, UNKNOWN_FIELD } from "../types";
+import { FieldId, IssueTemplate, FieldInfo } from "../types";
 import { IssueType } from "../../types";
 import DefaultTemplate from "./DefaultTemplate";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
@@ -20,14 +20,31 @@ export function templateForType(type: IssueType): IssueTemplate | undefined {
   return allIssueTemplateList.find((template) => template.type === type);
 }
 
-export function fieldFromId(
+export function fieldInfoFromId(
   template: IssueTemplate,
   fieldId: FieldId
-): IssueField {
-  if (template.fieldList) {
-    return (
-      template.fieldList.find((field) => field.id == fieldId) || UNKNOWN_FIELD
-    );
+): FieldInfo {
+  if (template.inputFieldList) {
+    const field = template.inputFieldList.find((field) => field.id == fieldId);
+    if (field) {
+      return {
+        name: field.name,
+        type: field.type,
+      };
+    }
   }
-  return UNKNOWN_FIELD;
+
+  if (template.outputFieldList) {
+    const field = template.outputFieldList.find((field) => field.id == fieldId);
+    if (field) {
+      return {
+        name: field.name,
+        type: field.type,
+      };
+    }
+  }
+  return {
+    name: "<<Unknown field>>",
+    type: "String",
+  };
 }

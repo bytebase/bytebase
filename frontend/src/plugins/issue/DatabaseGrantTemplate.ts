@@ -45,27 +45,24 @@ const template: IssueTemplate = {
       payload,
     };
   },
-  fieldList: [
+  inputFieldList: [
     {
-      category: "INPUT",
       id: INPUT_READ_ONLY_FIELD_ID,
       slug: "readonly",
       name: "Read Only",
       type: "Boolean",
-      required: true,
       resolved: (ctx: IssueContext): boolean => {
         return true;
       },
     },
+  ],
+  outputFieldList: [
     {
-      category: "OUTPUT",
       // This is the same ID as the INPUT database field because the granted database should be the same
       // as the requested database.
       id: OUTPUT_DATABASE_FIELD_ID,
-      slug: "",
       name: "Granted database",
       type: "Database",
-      required: true,
       resolved: (ctx: IssueContext): boolean => {
         const databaseId = ctx.issue.payload[OUTPUT_DATABASE_FIELD_ID];
         const database = ctx.store.getters["database/databaseById"](databaseId);

@@ -33,7 +33,7 @@
         />
       </div>
 
-      <template v-for="(field, index) in fieldList" :key="index">
+      <template v-for="(field, index) in inputFieldList" :key="index">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
@@ -240,7 +240,7 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import { IssueField, DatabaseFieldPayload } from "../plugins";
+import { InputIssueField, DatabaseFieldPayload } from "../plugins";
 import {
   Database,
   DatabaseId,
@@ -272,9 +272,9 @@ export default {
       required: true,
       type: Boolean,
     },
-    fieldList: {
+    inputFieldList: {
       required: true,
-      type: Object as PropType<IssueField[]>,
+      type: Object as PropType<InputIssueField[]>,
     },
     allowEdit: {
       required: true,
@@ -294,14 +294,16 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const fieldValue = (field: IssueField): string | DatabaseFieldPayload => {
+    const fieldValue = (
+      field: InputIssueField
+    ): string | DatabaseFieldPayload => {
       return props.issue.payload[field.id];
     };
 
     const database = computed(
       (): Database => {
         if (props.new) {
-          const databaseId = (props.issue as IssueNew).pipeline?.stageList[0]
+          const databaseId = (props.issue as IssueNew).pipeline?.taskList[0]
             .databaseId;
           return store.getters["database/databaseById"](databaseId);
         }
@@ -323,7 +325,7 @@ export default {
     const environment = computed(
       (): Environment => {
         if (props.new) {
-          const environmentId = (props.issue as IssueNew).pipeline?.stageList[0]
+          const environmentId = (props.issue as IssueNew).pipeline?.taskList[0]
             .environmentId;
           return store.getters["environment/environmentById"](environmentId);
         }
@@ -367,7 +369,7 @@ export default {
     });
 
     const trySaveCustomField = (
-      field: IssueField,
+      field: InputIssueField,
       value: string | EnvironmentId | DatabaseFieldPayload
     ) => {
       if (!isEqual(value, fieldValue(field))) {
@@ -375,7 +377,7 @@ export default {
       }
     };
 
-    const trySaveDatabaseNew = (field: IssueField, isNew: boolean) => {
+    const trySaveDatabaseNew = (field: InputIssueField, isNew: boolean) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -384,7 +386,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseName = (field: IssueField, value: string) => {
+    const trySaveDatabaseName = (field: InputIssueField, value: string) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -393,7 +395,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseId = (field: IssueField, value: DatabaseId) => {
+    const trySaveDatabaseId = (field: InputIssueField, value: DatabaseId) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -402,7 +404,10 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseReadOnly = (field: IssueField, value: boolean) => {
+    const trySaveDatabaseReadOnly = (
+      field: InputIssueField,
+      value: boolean
+    ) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)

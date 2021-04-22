@@ -45,27 +45,24 @@ const template: IssueTemplate = {
       payload,
     };
   },
-  fieldList: [
+  inputFieldList: [
     {
-      category: "INPUT",
       id: INPUT_DATABASE_NAME,
       slug: "databaseName",
       name: "DB name",
       type: "NewDatabase",
-      required: true,
       resolved: (ctx: IssueContext): boolean => {
         const databaseName = ctx.issue.payload[INPUT_DATABASE_NAME];
         return !isEmpty(databaseName);
       },
       placeholder: "New database name",
     },
+  ],
+  outputFieldList: [
     {
-      category: "OUTPUT",
       id: OUTPUT_DATABASE_FIELD_ID,
-      slug: "",
       name: "Created database",
       type: "Database",
-      required: true,
       // Returns true if it's set and matches the requested database name.
       resolved: (ctx: IssueContext): boolean => {
         const databaseId = ctx.issue.payload[OUTPUT_DATABASE_FIELD_ID];

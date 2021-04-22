@@ -174,7 +174,7 @@ import {
   ProjectId,
   DatabaseNew,
 } from "../types";
-import { IssueField, templateForType } from "../plugins";
+import { OutputField, templateForType } from "../plugins";
 import { isEqual } from "lodash";
 
 interface LocalState {
@@ -388,9 +388,8 @@ export default {
       if (linkedIssue) {
         const template = templateForType(linkedIssue.type);
         if (template) {
-          const databaseOutputField = template.fieldList.find(
-            (item: IssueField) =>
-              item.category == "OUTPUT" && item.type == "Database"
+          const databaseOutputField = template.outputFieldList.find(
+            (item: OutputField) => item.type == "Database"
           );
 
           if (databaseOutputField) {

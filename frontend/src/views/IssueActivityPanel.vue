@@ -307,7 +307,11 @@ import {
   EMPTY_ID,
 } from "../types";
 import { findTaskById, sizeToFit, stageName } from "../utils";
-import { fieldFromId, IssueTemplate, IssueBuiltinFieldId } from "../plugins";
+import {
+  IssueTemplate,
+  IssueBuiltinFieldId,
+  fieldInfoFromId,
+} from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -539,7 +543,10 @@ export default {
             } else if (update.fieldId == IssueBuiltinFieldId.SUBSCRIBER_LIST) {
               continue;
             } else {
-              const field = fieldFromId(props.issueTemplate, update.fieldId);
+              const field = fieldInfoFromId(
+                props.issueTemplate,
+                update.fieldId
+              );
               name = field.name;
               if (field.type === "String") {
                 oldValue = update.oldValue;

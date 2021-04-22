@@ -94,7 +94,7 @@ import { computed, reactive, ref, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import { Issue, IssueStatusTransition } from "../types";
-import { IssueField, IssueBuiltinFieldId } from "../plugins";
+import { OutputIssueField, IssueBuiltinFieldId } from "../plugins";
 import { TaskStatusTransition } from "../utils";
 
 interface LocalState {
@@ -124,7 +124,7 @@ export default {
     },
     outputFieldList: {
       required: true,
-      type: Object as PropType<IssueField[]>,
+      type: Object as PropType<OutputIssueField[]>,
     },
   },
   components: { DatabaseSelect },

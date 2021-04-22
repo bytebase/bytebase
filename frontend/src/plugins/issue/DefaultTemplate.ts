@@ -13,7 +13,8 @@ const template: IssueTemplate = {
       payload: {},
     };
   },
-  fieldList: [],
+  inputFieldList: [],
+  outputFieldList: [],
 };
 
 export default template;
