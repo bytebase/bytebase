@@ -984,6 +984,16 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
 // STAGE = Octopus Phase + Task
 // TASK = Octopus Step
 //
+// Comparsion with Jenkins:
+// PIPELINE = Jenkins Pipeline
+// STAGE = Jenkins Stage
+// TASK = Jenkins Step (but it's also called task from its doc)
+//
+// Comparsion with Spinnaker:
+// PIPELINE = Spinnaker Pipeline
+// STAGE = Spinnaker Stage
+// TASK = Spinnaker Task
+//
 //
 // Design consideration
 //
@@ -1010,6 +1020,8 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
 //   introducing this extra layer, thus we always try to make a fixed 1-to-1 mapping for their
 //   respective fields. Client code could combine Pipeline status and its running step status (substatus)
 //   to achieve more granular behavior.
+//
+// So we finally arrive the same conclusion as spinnaker
 //
 // We require a stage to associate with a database. Since database belongs to an instance, which
 // in turns belongs to an environment, thus the stage is also associated with an instance and environment.
