@@ -78,9 +78,7 @@
         class="flex space-x-2"
       >
         <template
-          v-for="(
-            transition, index
-          ) in applicableIssueStatusTransitionList.reverse()"
+          v-for="(transition, index) in applicableIssueStatusTransitionList"
           :key="index"
         >
           <button
@@ -320,7 +318,8 @@ export default {
           .map(
             (type: IssueStatusTransitionType) =>
               ISSUE_STATUS_TRANSITION_LIST.get(type)!
-          );
+          )
+          .reverse();
       }
     );
 
