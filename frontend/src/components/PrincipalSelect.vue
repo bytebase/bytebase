@@ -85,6 +85,13 @@ export default {
         }
       );
       return list.filter((item: Principal) => {
+        // The previouly selected item might no longer be applicable.
+        // e.g. The select limits to DBA only and the selected principal is no longer a DBA
+        // in such case, we still show the item.
+        if (item.id == props.selectedId) {
+          return true;
+        }
+
         return (
           item.status == "ACTIVE" &&
           // We write this way instead of props.allowedRoleList.includes(item.role)
