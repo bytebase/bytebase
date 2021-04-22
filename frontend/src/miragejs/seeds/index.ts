@@ -1,22 +1,13 @@
 import faker from "faker";
-import environment from "../../store/modules/environment";
 import {
   Database,
   Environment,
   Instance,
-  Principal,
-  StageType,
-  Issue,
   DEFAULT_PROJECT_ID,
   ALL_DATABASE_NAME,
-  IssueNew,
   IssueStatus,
-  StageNew,
-  StageId,
-  DatabaseId,
   ProjectId,
   PrincipalId,
-  IssueId,
   TaskStatus,
   PipelineId,
 } from "../../types";
@@ -179,6 +170,14 @@ const workspacesSeeder = (server: any) => {
   );
 
   // Issue
+  let pipeline = server.create("pipeline", {
+    name: `Pipeline hello world`,
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    status: "PENDING",
+    workspace: workspace1,
+  });
+
   let issue = server.create("issue", {
     type: "bytebase.general",
     name: "Hello, World!",
@@ -191,6 +190,30 @@ const workspacesSeeder = (server: any) => {
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id, ws1Dev1.id, ws1Owner.id],
     project: projectList1[0],
+    pipeline,
+    workspace: workspace1,
+  });
+
+  let stage = server.create("stage", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: environmentList1[3].name,
+    type: "bytebase.stage.database.create",
+    status: "PENDING",
+    environmentId: environmentList1[3].id,
+    pipeline,
+    workspace: workspace1,
+  });
+
+  server.create("task", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Waiting approval",
+    type: "bytebase.task.approve",
+    status: "PENDING",
+    databaseId: databaseList1[3].id,
+    pipeline,
+    stage,
     workspace: workspace1,
   });
 
@@ -348,7 +371,7 @@ const workspacesSeeder = (server: any) => {
 
   const title = `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`;
 
-  let pipeline = server.create("pipeline", {
+  pipeline = server.create("pipeline", {
     name: `Pipeline ${title}`,
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
@@ -364,37 +387,35 @@ const workspacesSeeder = (server: any) => {
     assigneeId: ws1Owner.id,
     subscriberIdList: [ws1DBA.id, ws1Dev2.id],
     payload: {
-      5: projectList1[1].id,
-      6: environmentList1[1].id,
-      8: databaseList1[1].name,
+      100: "newdb1",
     },
     project: projectList1[1],
     pipeline,
     workspace: workspace1,
   });
 
-  // const stage = server.create("stage", {
-  //   creatorId: ws1Dev1.id,
-  //   updaterId: ws1Dev1.id,
-  //   name: "Create database",
-  //   type: "bytebase.stage.database.create",
-  //   status: "PENDING",
-  //   environmentId: environmentList1[1].id,
-  //   pipeline,
-  //   workspace: workspace1,
-  // });
+  stage = server.create("stage", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Create database",
+    type: "bytebase.stage.database.create",
+    status: "PENDING",
+    environmentId: environmentList1[1].id,
+    pipeline,
+    workspace: workspace1,
+  });
 
-  // server.create("task", {
-  //   creatorId: ws1Dev1.id,
-  //   updaterId: ws1Dev1.id,
-  //   name: "Waiting approval",
-  //   type: "bytebase.task.approve",
-  //   status: "PENDING",
-  //   databaseId: databaseList1[1].id,
-  //   pipeline,
-  //   stage,
-  //   workspace: workspace1,
-  // });
+  server.create("task", {
+    creatorId: ws1Dev1.id,
+    updaterId: ws1Dev1.id,
+    name: "Waiting approval",
+    type: "bytebase.task.approve",
+    status: "PENDING",
+    databaseId: databaseList1[1].id,
+    pipeline,
+    stage,
+    workspace: workspace1,
+  });
 
   server.create("activity", {
     actionType: "bytebase.issue.create",

@@ -11,17 +11,13 @@
       <div class="flex flex-col space-y-1">
         <div class="textlabel">
           {{ field.name }}
-          <span v-if="field.required" class="text-red-600">*</span>
+          <span class="text-red-600">*</span>
           <template v-if="allowEditDatabase">
             <router-link
-              :to="databaseActionLink(field)"
+              :to="field.actionLink(issueContext)"
               class="ml-2 normal-link"
             >
-              {{
-                issue.type == "bytebase.database.create"
-                  ? "+ Create"
-                  : "+ Grant"
-              }}
+              {{ field.actionText }}
             </router-link>
           </template>
         </div>
@@ -97,32 +93,20 @@
               }
             "
           />
-          <template v-if="databaseViewLink(field)">
+          <template v-if="field.viewLink(issueContext)">
             <router-link
-              :to="databaseViewLink(field)"
+              :to="field.viewLink(issueContext)"
               class="ml-2 normal-link text-sm"
             >
               View
             </router-link>
           </template>
-          <template v-if="issue.type == 'bytebase.database.create'">
-            <div
-              v-if="field.resolved(issueContext)"
-              class="text-sm text-success"
-            >
-              (Created)
-            </div>
-            <div v-else class="text-sm text-error">(To be created)</div>
-          </template>
-          <template v-else-if="issue.type == 'bytebase.database.grant'">
-            <div
-              v-if="field.resolved(issueContext)"
-              class="text-sm text-success"
-            >
-              (Granted)
-            </div>
-            <div v-else class="text-sm text-error">(To be granted)</div>
-          </template>
+          <div v-if="field.resolved(issueContext)" class="text-sm text-success">
+            {{ field.resolveStatusText(true) }}
+          </div>
+          <div v-else class="text-sm text-error">
+            {{ field.resolveStatusText(false) }}
+          </div>
         </div>
       </div>
     </template>
@@ -136,7 +120,7 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { fullDatabasePath } from "../utils";
+import { activeEnvironment, fullDatabasePath } from "../utils";
 import { OutputField, IssueBuiltinFieldId, IssueContext } from "../plugins";
 import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
 
@@ -170,7 +154,7 @@ export default {
 
     const environmentId = computed(
       (): EnvironmentId => {
-        return props.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
+        return activeEnvironment(props.issue.pipeline).id;
       }
     );
 
@@ -201,74 +185,6 @@ export default {
 
     const isValidLink = (link: string): boolean => {
       return link?.trim().length > 0;
-    };
-
-    const databaseActionLink = (field: OutputField): string => {
-      const queryParamList: string[] = [];
-
-      if (props.issue.type == "bytebase.database.create") {
-        if (environmentId.value) {
-          queryParamList.push(`environment=${environmentId.value}`);
-        }
-
-        const databaseName = props.issue.payload[field.id];
-        queryParamList.push(`name=${databaseName}`);
-
-        queryParamList.push(`issue=${props.issue.id}`);
-
-        queryParamList.push(`from=${props.issue.type}`);
-
-        return "/db/new?" + queryParamList.join("&");
-      }
-
-      if (props.issue.type == "bytebase.database.grant") {
-        const databaseId = props.issue.payload[IssueBuiltinFieldId.DATABASE];
-        if (databaseId) {
-          const database = store.getters["database/databaseById"](databaseId);
-          if (database) {
-            // TODO: Hard-code from DatabaseGrantTemplate
-            const READ_ONLY_ID = 100;
-            const readOnly = props.issue.payload[READ_ONLY_ID];
-            let dataSourceId;
-            for (const dataSource of database.dataSourceList) {
-              if (readOnly && dataSource.type == "RO") {
-                dataSourceId = dataSource.id;
-                break;
-              } else if (!readOnly && dataSource.type == "RW") {
-                dataSourceId = dataSource.id;
-                break;
-              }
-            }
-
-            if (dataSourceId) {
-              queryParamList.push(`database=${databaseId}`);
-
-              queryParamList.push(`datasource=${dataSourceId}`);
-
-              queryParamList.push(`grantee=${props.issue.creator.id}`);
-
-              queryParamList.push(`issue=${props.issue.id}`);
-
-              return "/db/grant?" + queryParamList.join("&");
-            }
-          }
-        }
-      }
-
-      return "";
-    };
-
-    const databaseViewLink = (field: OutputField): string => {
-      if (field.type == "Database") {
-        const databaseId = fieldValue(field);
-        if (databaseId) {
-          const database = store.getters["database/databaseById"](databaseId);
-          if (database) {
-            return fullDatabasePath(database);
-          }
-        }
-      }
-      return "";
     };
 
     const copyText = (field: OutputField) => {
@@ -312,8 +228,6 @@ export default {
       issueContext,
       allowEditDatabase,
       isValidLink,
-      databaseActionLink,
-      databaseViewLink,
       copyText,
       goToLink,
       trySaveCustomField,

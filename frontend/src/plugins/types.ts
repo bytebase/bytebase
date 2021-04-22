@@ -94,6 +94,14 @@ export type OutputField = {
   resolved: (ctx: IssueContext) => boolean;
   // Same as InputField.placeholder
   placeholder?: string;
+  // Link text
+  actionText: string;
+  // Link to the place fullfilling this field resource
+  actionLink: (ctx: IssueContext) => string;
+  // Link to view the field resource
+  viewLink: (ctx: IssueContext) => string;
+  // Corresponding text based on whether the field is resolved
+  resolveStatusText: (resolved: boolean) => string;
 };
 
 // Field payload for "Database" and "NewDatabase" field
