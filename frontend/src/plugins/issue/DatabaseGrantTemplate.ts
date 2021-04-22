@@ -51,6 +51,7 @@ const template: IssueTemplate = {
       slug: "readonly",
       name: "Read Only",
       type: "Boolean",
+      allowEditAfterCreation: false,
       resolved: (ctx: IssueContext): boolean => {
         return true;
       },

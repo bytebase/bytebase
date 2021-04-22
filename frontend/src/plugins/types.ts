@@ -62,6 +62,8 @@ export type InputField = {
   name: string;
   // Field type. This must NOT be changed after in use. Similar to id field.
   type: InputFieldType;
+  // Whether to allow edit after creation.
+  allowEditAfterCreation: boolean;
   // Whether the field is resolved.
   // One use case is together with "required" field to validate whether it's ready to submit the data.
   // For OUTPUT, one use case is to validate whether the field is filled properly according to the issue.

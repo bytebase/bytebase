@@ -41,7 +41,8 @@
         <div class="col-span-2">
           <template v-if="field.type == 'String'">
             <BBTextField
-              :disabled="!allowEdit"
+              class="text-sm"
+              :disabled="!allowEditCustomField(field)"
               :required="true"
               :value="fieldValue(field)"
               :placeholder="field.placeholder"
@@ -50,7 +51,7 @@
           </template>
           <template v-else-if="field.type == 'Boolean'">
             <BBSwitch
-              :disabled="!allowEdit"
+              :disabled="!allowEditCustomField(field)"
               :value="fieldValue(field)"
               @toggle="
                 (on) => {
@@ -67,7 +68,7 @@
     >
       <template v-if="database.id != EMPTY_ID">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Database<span v-if="$props.new" class="text-red-600">*</span>
+          Database
         </h2>
         <router-link
           :to="`/db/${databaseSlug(database)}`"
@@ -313,6 +314,10 @@ export default {
       );
     });
 
+    const allowEditCustomField = (field: InputField) => {
+      return props.allowEdit && (props.new || field.allowEditAfterCreation);
+    };
+
     const trySaveCustomField = (field: InputField, value: string | boolean) => {
       if (!isEqual(value, fieldValue(field))) {
         emit("update-custom-field", field, value);
@@ -344,13 +349,14 @@ export default {
     return {
       EMPTY_ID,
       state,
-      allowEditAssignee,
       fieldValue,
       environment,
       database,
       project,
       isCurrentUserSubscribed,
       subscriberList,
+      allowEditAssignee,
+      allowEditCustomField,
       trySaveCustomField,
       toggleSubscription,
     };

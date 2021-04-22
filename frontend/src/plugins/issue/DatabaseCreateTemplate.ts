@@ -51,6 +51,8 @@ const template: IssueTemplate = {
       slug: "databaseName",
       name: "DB name",
       type: "String",
+      // Developer might create a database name which already exists, so we give the assignee the ability to change.
+      allowEditAfterCreation: true,
       resolved: (ctx: IssueContext): boolean => {
         const databaseName = ctx.issue.payload[INPUT_DATABASE_NAME];
         return !isEmpty(databaseName);
