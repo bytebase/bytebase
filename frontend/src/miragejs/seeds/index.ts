@@ -369,70 +369,121 @@ const workspacesSeeder = (server: any) => {
     "history",
   ];
 
-  const title = `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`;
+  {
+    // Create database issue
+    const title = `Create database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`;
 
-  pipeline = server.create("pipeline", {
-    name: `Pipeline ${title}`,
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    status: "PENDING",
-    workspace: workspace1,
-  });
+    pipeline = server.create("pipeline", {
+      name: `Pipeline ${title}`,
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      status: "PENDING",
+      workspace: workspace1,
+    });
 
-  issue = server.create("issue", {
-    type: "bytebase.database.create",
-    name: title,
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    assigneeId: ws1Owner.id,
-    subscriberIdList: [ws1DBA.id, ws1Dev2.id],
-    payload: {
-      100: "newdb1",
-    },
-    project: projectList1[1],
-    pipeline,
-    workspace: workspace1,
-  });
+    issue = server.create("issue", {
+      type: "bytebase.database.create",
+      name: title,
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      assigneeId: ws1Owner.id,
+      subscriberIdList: [ws1DBA.id, ws1Dev2.id],
+      payload: {
+        // New database name
+        100: "newdb1",
+      },
+      project: projectList1[1],
+      pipeline,
+      workspace: workspace1,
+    });
 
-  stage = server.create("stage", {
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    name: "Create database",
-    type: "bytebase.stage.database.create",
-    status: "PENDING",
-    environmentId: environmentList1[1].id,
-    pipeline,
-    workspace: workspace1,
-  });
+    stage = server.create("stage", {
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      name: "Create database",
+      type: "bytebase.stage.database.create",
+      status: "PENDING",
+      environmentId: environmentList1[1].id,
+      pipeline,
+      workspace: workspace1,
+    });
 
-  server.create("task", {
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    name: "Waiting approval",
-    type: "bytebase.task.approve",
-    status: "PENDING",
-    databaseId: databaseList1[1].id,
-    pipeline,
-    stage,
-    workspace: workspace1,
-  });
+    server.create("task", {
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      name: "Waiting approval",
+      type: "bytebase.task.approve",
+      status: "PENDING",
+      pipeline,
+      stage,
+      workspace: workspace1,
+    });
 
-  server.create("activity", {
-    actionType: "bytebase.issue.create",
-    containerId: issue.id,
-    creatorId: ws1Dev1.id,
-    updaterId: ws1Dev1.id,
-    workspace: workspace1,
-  });
-
-  for (let i = 0; i < 3; i++) {
-    const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {
-      actionType: "bytebase.issue.comment.create",
+      actionType: "bytebase.issue.create",
       containerId: issue.id,
-      creatorId: user.id,
-      updaterId: user.id,
-      comment: faker.fake("{{lorem.paragraph}}"),
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      workspace: workspace1,
+    });
+  }
+
+  {
+    // Grant database issue
+    const title = `Grant database '${databaseList1[1].name}' for environment - ${environmentList1[1].name}`;
+
+    pipeline = server.create("pipeline", {
+      name: `Pipeline ${title}`,
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      status: "PENDING",
+      workspace: workspace1,
+    });
+
+    issue = server.create("issue", {
+      type: "bytebase.database.grant",
+      name: title,
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      assigneeId: ws1Owner.id,
+      subscriberIdList: [ws1DBA.id, ws1Dev2.id],
+      payload: {
+        // readonly
+        100: true,
+      },
+      project: projectList1[1],
+      pipeline,
+      workspace: workspace1,
+    });
+
+    stage = server.create("stage", {
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      name: "Create database",
+      type: "bytebase.stage.database.grant",
+      status: "PENDING",
+      environmentId: environmentList1[2].id,
+      pipeline,
+      workspace: workspace1,
+    });
+
+    server.create("task", {
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
+      name: "Waiting approval",
+      type: "bytebase.task.approve",
+      status: "PENDING",
+      databaseId: databaseList1[2].id,
+      pipeline,
+      stage,
+      workspace: workspace1,
+    });
+
+    server.create("activity", {
+      actionType: "bytebase.issue.create",
+      containerId: issue.id,
+      creatorId: ws1Dev1.id,
+      updaterId: ws1Dev1.id,
       workspace: workspace1,
     });
   }
