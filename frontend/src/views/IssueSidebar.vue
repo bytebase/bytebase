@@ -24,7 +24,7 @@
         <PrincipalSelect
           :disabled="!allowEditAssignee"
           :selectedId="$props.new ? issue.assigneeId : issue.assignee?.id"
-          :allowedRoleList="['DBA']"
+          :allowedRoleList="['OWNER', 'DBA']"
           @select-principal-id="
             (principalId) => {
               $emit('update-assignee-id', principalId);
