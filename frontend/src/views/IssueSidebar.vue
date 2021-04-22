@@ -302,7 +302,7 @@ export default {
       (): Database => {
         if (props.new) {
           const databaseId = (props.issue as IssueNew).pipeline?.stageList[0]
-            .databaseId;
+            .taskList[0].databaseId;
           return store.getters["database/databaseById"](databaseId);
         }
         return activeDatabase((props.issue as Issue).pipeline);

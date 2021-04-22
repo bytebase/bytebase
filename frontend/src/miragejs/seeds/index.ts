@@ -380,7 +380,6 @@ const workspacesSeeder = (server: any) => {
   //   type: "bytebase.stage.database.create",
   //   status: "PENDING",
   //   environmentId: environmentList1[1].id,
-  //   databaseId: databaseList1[1].id,
   //   pipeline,
   //   workspace: workspace1,
   // });
@@ -391,6 +390,7 @@ const workspacesSeeder = (server: any) => {
   //   name: "Waiting approval",
   //   type: "bytebase.task.approve",
   //   status: "PENDING",
+  //   databaseId: databaseList1[1].id,
   //   pipeline,
   //   stage,
   //   workspace: workspace1,
@@ -821,7 +821,6 @@ const createUpdateSchemaStage = (
       name: `${environmentList[i].name}`,
       type: "bytebase.stage.schema.update",
       environmentId: environmentList[i].id,
-      databaseId: databaseList[i].id,
       pipelineId,
       workspaceId,
     });
@@ -843,6 +842,7 @@ const createUpdateSchemaStage = (
       name: `Update ${databaseList[i].name} schema`,
       type: "bytebase.task.schema.udpate",
       status: taskStatusList[i],
+      databaseId: databaseList[i].id,
       pipelineId,
       stage,
       workspaceId,

@@ -81,11 +81,11 @@ export function activeEnvironment(pipeline: Pipeline): Environment {
 }
 
 export function activeDatabase(pipeline: Pipeline): Database {
-  const stage = activeStage(pipeline);
-  if (stage.id == EMPTY_ID) {
+  const task = activeTask(pipeline);
+  if (task.id == EMPTY_ID) {
     return empty("DATABASE") as Database;
   }
-  return stage.database;
+  return task.database;
 }
 
 export type TaskStatusTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";

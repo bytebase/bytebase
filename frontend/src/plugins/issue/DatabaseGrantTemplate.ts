@@ -30,11 +30,11 @@ const template: IssueTemplate = {
             name: "Request database access",
             type: "bytebase.stage.database.grant",
             environmentId: ctx.environmentList[0].id,
-            databaseId: ctx.databaseList[0].id,
             taskList: [
               {
                 name: "Waiting for approval",
                 type: "bytebase.task.approve",
+                databaseId: ctx.databaseList[0].id,
               },
             ],
           },

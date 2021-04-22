@@ -21,7 +21,6 @@ const template: IssueTemplate = {
         name: `[${ctx.databaseList[i].instance.environment.name}] ${ctx.databaseList[i].name}`,
         type: "bytebase.stage.schema.update",
         environmentId: ctx.environmentList[i].id,
-        databaseId: ctx.databaseList[i].id,
         taskList: [
           {
             name: "Waiting for approval",
@@ -30,6 +29,7 @@ const template: IssueTemplate = {
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
             type: "bytebase.task.database.schema.update",
+            databaseId: ctx.databaseList[i].id,
           },
         ],
       });

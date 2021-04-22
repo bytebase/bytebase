@@ -201,7 +201,6 @@ export const unknown = (
     name: "<<Unknown stage>>",
     type: "bytebase.stage.unknown",
     environment: UNKNOWN_ENVIRONMENT,
-    database: UNKNOWN_DATABASE,
     taskList: [],
   };
 
@@ -216,6 +215,7 @@ export const unknown = (
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
     status: "DONE",
+    database: UNKNOWN_DATABASE,
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -457,7 +457,6 @@ export const empty = (
     name: "",
     type: "bytebase.stage.unknown",
     environment: EMPTY_ENVIRONMENT,
-    database: EMPTY_DATABASE,
     taskList: [],
   };
 
@@ -472,6 +471,7 @@ export const empty = (
     name: "",
     type: "bytebase.task.unknown",
     status: "DONE",
+    database: EMPTY_DATABASE,
   };
 
   const EMPTY_ACTIVITY: Activity = {
@@ -1097,8 +1097,6 @@ export type Stage = {
   taskList: Task[];
   pipeline: Pipeline;
   environment: Environment;
-  // We may get an empty database for stages like creating database.
-  database: Database;
 
   // Standard fields
   creator: Principal;
@@ -1116,7 +1114,6 @@ export type StageNew = {
   // Related fields
   taskList: TaskNew[];
   environmentId: EnvironmentId;
-  databaseId: DatabaseId;
 
   // Domain specific fields
   name: string;
@@ -1157,6 +1154,8 @@ export type Task = {
   name: string;
   type: TaskType;
   status: TaskStatus;
+  // We may get an empty database for tasks like creating database.
+  database: Database;
   payload?: TaskPayload;
 };
 
@@ -1164,6 +1163,7 @@ export type TaskNew = {
   // Domain specific fields
   name: string;
   type: TaskType;
+  databaseId?: DatabaseId;
 };
 
 export type TaskPatch = {

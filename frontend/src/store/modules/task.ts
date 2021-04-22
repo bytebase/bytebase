@@ -11,6 +11,9 @@ import {
   Pipeline,
   TaskStatusPatch,
   TaskId,
+  Database,
+  empty,
+  ResourceIdentifier,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -26,14 +29,23 @@ function convertPartial(
     task.attributes.updaterId
   );
 
+  let database: Database = empty("DATABASE") as Database;
+  // For create database stage, there is no database id.
+  if (task.relationships!.database.data) {
+    database = rootGetters["database/databaseById"](
+      (task.relationships!.database.data as ResourceIdentifier).id
+    );
+  }
+
   return {
     ...(task.attributes as Omit<
       Task,
-      "id" | "creator" | "updater" | "pipeline" | "stage"
+      "id" | "creator" | "updater" | "database" | "pipeline" | "stage"
     >),
     id: task.id,
     creator,
     updater,
+    database,
   };
 }
 

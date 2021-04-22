@@ -35,14 +35,6 @@ function convertPartial(
     (stage.relationships!.environment.data as ResourceIdentifier).id
   );
 
-  let database: Database = empty("DATABASE") as Database;
-  // For create database stage, there is no database id.
-  if (stage.relationships!.database.data) {
-    database = rootGetters["database/databaseById"](
-      (stage.relationships!.database.data as ResourceIdentifier).id
-    );
-  }
-
   const taskList: Task[] = [];
   for (const item of includedList || []) {
     if (
@@ -63,7 +55,6 @@ function convertPartial(
     creator,
     updater,
     environment,
-    database,
     taskList,
   };
 

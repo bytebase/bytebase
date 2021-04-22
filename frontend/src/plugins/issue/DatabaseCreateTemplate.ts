@@ -29,7 +29,6 @@ const template: IssueTemplate = {
           {
             name: "Create database",
             environmentId: ctx.environmentList[0].id,
-            databaseId: EMPTY_ID,
             type: "bytebase.stage.database.create",
             taskList: [
               {
