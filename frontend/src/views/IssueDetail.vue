@@ -164,8 +164,8 @@ import {
 import {
   defaulTemplate,
   templateForType,
-  InputIssueField,
-  OutputIssueField,
+  InputField,
+  OutputField,
   IssueTemplate,
 } from "../plugins";
 
@@ -420,10 +420,7 @@ export default {
       });
     };
 
-    const updateCustomField = (
-      field: InputIssueField | OutputIssueField,
-      value: any
-    ) => {
+    const updateCustomField = (field: InputField | OutputField, value: any) => {
       console.log("updateCustomField", field.name, value);
       if (!isEqual(state.issue.payload[field.id], value)) {
         state.issue.payload[field.id] = value;

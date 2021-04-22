@@ -1195,7 +1195,7 @@ export type IssueActionType =
 
 export type ActionType = IssueActionType;
 
-export type ActionIssueFieldUpdatePayload = {
+export type ActionFieldUpdatePayload = {
   changeList: {
     fieldId: FieldId;
     oldValue?: string;
@@ -1210,7 +1210,7 @@ export type ActionIssuePipelineStatusUpdatePayload = {
 };
 
 export type ActionPayloadType =
-  | ActionIssueFieldUpdatePayload
+  | ActionFieldUpdatePayload
   | ActionIssuePipelineStatusUpdatePayload;
 
 export type Activity = {

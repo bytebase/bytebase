@@ -299,7 +299,7 @@ import { useRouter } from "vue-router";
 import {
   Issue,
   Activity,
-  ActionIssueFieldUpdatePayload,
+  ActionFieldUpdatePayload,
   Environment,
   Principal,
   ActionIssuePipelineStatusUpdatePayload,
@@ -402,7 +402,7 @@ export default {
       return list.filter((activity: Activity) => {
         if (activity.actionType == "bytebase.issue.field.update") {
           let containUserVisibleChange = false;
-          for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
+          for (const update of (activity.payload as ActionFieldUpdatePayload)
             ?.changeList || []) {
             if (update.fieldId != IssueBuiltinFieldId.SUBSCRIBER_LIST) {
               containUserVisibleChange = true;
@@ -498,7 +498,7 @@ export default {
         case "bytebase.issue.field.update":
         case "bytebase.issue.status.update": {
           const updateInfoList: string[] = [];
-          for (const update of (activity.payload as ActionIssueFieldUpdatePayload)
+          for (const update of (activity.payload as ActionFieldUpdatePayload)
             ?.changeList || []) {
             let name = "Unknown Field";
             let oldValue = undefined;

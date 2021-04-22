@@ -32,7 +32,7 @@ export enum IssueBuiltinFieldId {
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
 export const OUTPUT_CUSTOM_FIELD_ID_BEGIN = "200";
 
-export type InputIssueFieldType =
+export type InputFieldType =
   | "Boolean"
   | "String"
   | "Environment"
@@ -40,7 +40,7 @@ export type InputIssueFieldType =
   | "Database"
   | "NewDatabase";
 
-export type OutputIssueFieldType =
+export type OutputFieldType =
   | "Boolean"
   | "String"
   | "Environment"
@@ -57,10 +57,10 @@ export type IssueContext = {
 
 export type FieldInfo = {
   name: string;
-  type: InputIssueFieldType | OutputIssueFieldType;
+  type: InputFieldType | OutputFieldType;
 };
 
-export type InputIssueField = {
+export type InputField = {
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
   // is very similar to the message field id in Protocol Buffers.
@@ -73,7 +73,7 @@ export type InputIssueField = {
   // The display name. OK to change.
   name: string;
   // Field type. This must NOT be changed after in use. Similar to id field.
-  type: InputIssueFieldType;
+  type: InputFieldType;
   // Whether the field is resolved.
   // One use case is together with "required" field to validate whether it's ready to submit the data.
   // For OUTPUT, one use case is to validate whether the field is filled properly according to the issue.
@@ -82,17 +82,17 @@ export type InputIssueField = {
   placeholder?: string;
 };
 
-export type OutputIssueField = {
-  // Same as InputIssueField.id
+export type OutputField = {
+  // Same as InputField.id
   id: FieldId;
-  // Same as InputIssueField.name
+  // Same as InputField.name
   name: string;
-  // Same as InputIssueField.type
-  type: OutputIssueFieldType;
+  // Same as InputField.type
+  type: OutputFieldType;
   // Whether the field is resolved.
   // One use case is to validate whether the field is filled properly according to the issue.
   resolved: (ctx: IssueContext) => boolean;
-  // Same as InputIssueField.placeholder
+  // Same as InputField.placeholder
   placeholder?: string;
 };
 
@@ -118,6 +118,6 @@ export type IssueTemplate = {
   buildIssue: (
     ctx: TemplateContext
   ) => Omit<IssueNew, "projectId" | "creatorId">;
-  inputFieldList: InputIssueField[];
-  outputFieldList: OutputIssueField[];
+  inputFieldList: InputField[];
+  outputFieldList: OutputField[];
 };

@@ -137,11 +137,7 @@ import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { fullDatabasePath } from "../utils";
-import {
-  OutputIssueField,
-  IssueBuiltinFieldId,
-  IssueContext,
-} from "../plugins";
+import { OutputField, IssueBuiltinFieldId, IssueContext } from "../plugins";
 import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
 
 interface LocalState {}
@@ -156,7 +152,7 @@ export default {
     },
     outputFieldList: {
       required: true,
-      type: Object as PropType<OutputIssueField[]>,
+      type: Object as PropType<OutputField[]>,
     },
     allowEdit: {
       required: true,
@@ -178,7 +174,7 @@ export default {
       }
     );
 
-    const fieldValue = (field: OutputIssueField): string => {
+    const fieldValue = (field: OutputField): string => {
       return props.issue.payload[field.id];
     };
 
@@ -207,7 +203,7 @@ export default {
       return link?.trim().length > 0;
     };
 
-    const databaseActionLink = (field: OutputIssueField): string => {
+    const databaseActionLink = (field: OutputField): string => {
       const queryParamList: string[] = [];
 
       if (props.issue.type == "bytebase.database.create") {
@@ -262,7 +258,7 @@ export default {
       return "";
     };
 
-    const databaseViewLink = (field: OutputIssueField): string => {
+    const databaseViewLink = (field: OutputField): string => {
       if (field.type == "Database") {
         const databaseId = fieldValue(field);
         if (databaseId) {
@@ -275,7 +271,7 @@ export default {
       return "";
     };
 
-    const copyText = (field: OutputIssueField) => {
+    const copyText = (field: OutputField) => {
       toClipboard(props.issue.payload[field.id]).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
@@ -300,7 +296,7 @@ export default {
     };
 
     const trySaveCustomField = (
-      field: OutputIssueField,
+      field: OutputField,
       value: string | DatabaseId
     ) => {
       if (!isEqual(value, fieldValue(field))) {

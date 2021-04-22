@@ -152,7 +152,7 @@ import {
   TaskId,
   TaskStatusPatch,
 } from "../types";
-import { OutputIssueField, IssueTemplate } from "../plugins";
+import { OutputField, IssueTemplate } from "../plugins";
 import { isEmpty } from "lodash";
 
 interface UpdateStatusModalState {

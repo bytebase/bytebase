@@ -240,7 +240,7 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import { InputIssueField, DatabaseFieldPayload } from "../plugins";
+import { InputField, DatabaseFieldPayload } from "../plugins";
 import {
   Database,
   DatabaseId,
@@ -274,7 +274,7 @@ export default {
     },
     inputFieldList: {
       required: true,
-      type: Object as PropType<InputIssueField[]>,
+      type: Object as PropType<InputField[]>,
     },
     allowEdit: {
       required: true,
@@ -294,9 +294,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const fieldValue = (
-      field: InputIssueField
-    ): string | DatabaseFieldPayload => {
+    const fieldValue = (field: InputField): string | DatabaseFieldPayload => {
       return props.issue.payload[field.id];
     };
 
@@ -369,7 +367,7 @@ export default {
     });
 
     const trySaveCustomField = (
-      field: InputIssueField,
+      field: InputField,
       value: string | EnvironmentId | DatabaseFieldPayload
     ) => {
       if (!isEqual(value, fieldValue(field))) {
@@ -377,7 +375,7 @@ export default {
       }
     };
 
-    const trySaveDatabaseNew = (field: InputIssueField, isNew: boolean) => {
+    const trySaveDatabaseNew = (field: InputField, isNew: boolean) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -386,7 +384,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseName = (field: InputIssueField, value: string) => {
+    const trySaveDatabaseName = (field: InputField, value: string) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -395,7 +393,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseId = (field: InputIssueField, value: DatabaseId) => {
+    const trySaveDatabaseId = (field: InputField, value: DatabaseId) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
@@ -404,10 +402,7 @@ export default {
       trySaveCustomField(field, payload);
     };
 
-    const trySaveDatabaseReadOnly = (
-      field: InputIssueField,
-      value: boolean
-    ) => {
+    const trySaveDatabaseReadOnly = (field: InputField, value: boolean) => {
       // Do a deep clone to prevent caller accidentally changes the original data.
       const payload: DatabaseFieldPayload = cloneDeep(
         fieldValue(field)
