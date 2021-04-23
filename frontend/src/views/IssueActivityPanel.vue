@@ -59,6 +59,21 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="activity.creator.id == SYSTEM_BOT_ID">
+                  <div class="relative">
+                    <div class="relative pl-0.5">
+                      <div
+                        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+                      >
+                        <img
+                          class="mt-1"
+                          src="../assets/logo-imageonly.svg"
+                          alt="Bytebase"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </template>
                 <template v-else>
                   <div class="relative">
                     <BBAvatar
@@ -302,9 +317,10 @@ import {
   ActionFieldUpdatePayload,
   Environment,
   Principal,
-  ActionIssuePipelineStatusUpdatePayload,
+  ActionTaskStatusUpdatePayload,
   UNKNOWN_ID,
   EMPTY_ID,
+  SYSTEM_BOT_ID,
 } from "../types";
 import { findTaskById, sizeToFit, stageName } from "../utils";
 import {
@@ -583,20 +599,24 @@ export default {
         }
         case "bytebase.pipeline.task.status.update": {
           if (props.issue.pipeline.id != EMPTY_ID) {
-            const payload = activity.payload as ActionIssuePipelineStatusUpdatePayload;
+            const payload = activity.payload as ActionTaskStatusUpdatePayload;
             const task = findTaskById(props.issue.pipeline, payload.taskId);
             if (task.id != UNKNOWN_ID) {
-              return `Changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
+              if (activity.creator.id == SYSTEM_BOT_ID) {
+                return `automatically changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
+              }
+              return `changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
             }
           }
           // This should never happen normally since only issue with pipeline can emit this activity.
           // Just be defensive here.
-          return "Changed task status";
+          return "changed task status";
         }
       }
     };
 
     return {
+      SYSTEM_BOT_ID,
       state,
       activityList,
       newComment,

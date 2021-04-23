@@ -1178,7 +1178,7 @@ export type ActionFieldUpdatePayload = {
   }[];
 };
 
-export type ActionIssuePipelineStatusUpdatePayload = {
+export type ActionTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
@@ -1186,7 +1186,7 @@ export type ActionIssuePipelineStatusUpdatePayload = {
 
 export type ActionPayloadType =
   | ActionFieldUpdatePayload
-  | ActionIssuePipelineStatusUpdatePayload;
+  | ActionTaskStatusUpdatePayload;
 
 export type Activity = {
   id: ActivityId;

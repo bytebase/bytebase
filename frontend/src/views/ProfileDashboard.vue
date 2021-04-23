@@ -105,7 +105,10 @@
       </div>
 
       <!-- Description list -->
-      <div class="mt-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        v-if="principal.type == 'END_USER'"
+        class="mt-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
         <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">Role</dt>
