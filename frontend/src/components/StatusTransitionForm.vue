@@ -95,7 +95,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import { Issue, IssueStatusTransition } from "../types";
 import { OutputField, IssueBuiltinFieldId } from "../plugins";
-import { TaskStatusTransition } from "../utils";
+import { activeEnvironment, TaskStatusTransition } from "../utils";
 
 interface LocalState {
   comment: string;
@@ -139,7 +139,7 @@ export default {
     });
 
     const environmentId = computed(() => {
-      return props.issue.payload[IssueBuiltinFieldId.ENVIRONMENT];
+      return activeEnvironment(props.issue.pipeline).id;
     });
 
     const submitButtonStyle = computed(() => {
