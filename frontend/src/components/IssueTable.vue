@@ -242,7 +242,12 @@ export default {
       return list.map((task) => {
         return {
           title: task.name,
-          status: task.status,
+          status:
+            task.status == "PENDING"
+              ? activeTask(issue.pipeline).id == task.id
+                ? "PENDING_ACTIVE"
+                : "PENDING"
+              : task.status,
           link: (): string => {
             return `/issue/${issue.id}`;
           },
