@@ -80,20 +80,20 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "OWNER",
                   [
-                    "quickaction.bytebase.user.manage",
-                    "quickaction.bytebase.instance.create",
                     "quickaction.bytebase.database.schema.update",
                     "quickaction.bytebase.database.create",
                     "quickaction.bytebase.database.troubleshoot",
+                    "quickaction.bytebase.instance.create",
+                    "quickaction.bytebase.user.manage",
                   ],
                 ],
                 [
                   "DBA",
                   [
-                    "quickaction.bytebase.instance.create",
                     "quickaction.bytebase.database.schema.update",
                     "quickaction.bytebase.database.create",
                     "quickaction.bytebase.database.troubleshoot",
+                    "quickaction.bytebase.instance.create",
                   ],
                 ],
                 [
@@ -101,8 +101,8 @@ const routes: Array<RouteRecordRaw> = [
                   [
                     "quickaction.bytebase.database.schema.update",
                     "quickaction.bytebase.database.request",
-                    "quickaction.bytebase.project.create",
                     "quickaction.bytebase.database.troubleshoot",
+                    "quickaction.bytebase.project.create",
                   ],
                 ],
               ]),
