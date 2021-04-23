@@ -44,6 +44,18 @@ export function allTaskList(pipeline: Pipeline): Task[] {
   return list;
 }
 
+export function lastTask(pipeline: Pipeline): Task {
+  if (
+    pipeline.stageList.length > 0 &&
+    pipeline.stageList[pipeline.stageList.length - 1].taskList.length > 0
+  ) {
+    const lastStage = pipeline.stageList[pipeline.stageList.length - 1];
+    return lastStage.taskList[lastStage.taskList.length - 1];
+  }
+
+  return empty("TASK") as Task;
+}
+
 export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
@@ -53,6 +65,27 @@ export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
     }
   }
   return unknown("TASK") as Task;
+}
+
+export function activeStage(pipeline: Pipeline): Stage {
+  for (const stage of pipeline.stageList) {
+    for (const task of stage.taskList) {
+      if (
+        task.status == "PENDING" ||
+        task.status == "RUNNING" ||
+        // "FAILED" is also a transient task status, which requires user
+        // to take further action (e.g. Skip, Retry)
+        task.status == "FAILED"
+      ) {
+        return stage;
+      }
+    }
+  }
+
+  if (pipeline.stageList.length > 0) {
+    return pipeline.stageList[pipeline.stageList.length - 1];
+  }
+  return empty("STAGE") as Stage;
 }
 
 export function activeTask(pipeline: Pipeline): Task {
@@ -69,6 +102,12 @@ export function activeTask(pipeline: Pipeline): Task {
       }
     }
   }
+
+  const theLastTask = lastTask(pipeline);
+  if (theLastTask.id != EMPTY_ID) {
+    return theLastTask;
+  }
+
   return empty("TASK") as Task;
 }
 
@@ -168,21 +207,4 @@ export function applicableTaskTransition(
   return list.map((type: TaskStatusTransitionType) => {
     return TASK_STATUS_TRANSITION_LIST.get(type)!;
   });
-}
-
-function activeStage(pipeline: Pipeline): Stage {
-  for (const stage of pipeline.stageList) {
-    for (const task of stage.taskList) {
-      if (
-        task.status == "PENDING" ||
-        task.status == "RUNNING" ||
-        // "FAILED" is also a transient task status, which requires user
-        // to take further action (e.g. Skip, Retry)
-        task.status == "FAILED"
-      ) {
-        return stage;
-      }
-    }
-  }
-  return empty("STAGE") as Stage;
 }

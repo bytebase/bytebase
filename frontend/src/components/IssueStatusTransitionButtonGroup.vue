@@ -133,6 +133,7 @@ import { Store, useStore } from "vuex";
 import StatusTransitionForm from "../components/StatusTransitionForm.vue";
 import {
   activeTask,
+  allTaskList,
   applicableTaskTransition,
   TaskStatusTransition,
 } from "../utils";
@@ -302,14 +303,22 @@ export default {
 
         return list
           .filter((item) => {
-            const currentTask = activeTask((props.issue as Issue).pipeline);
+            const pipeline = (props.issue as Issue).pipeline;
+            const currentTask = activeTask(pipeline);
             // Disallow any issue status transition if the active task is in RUNNING state.
             if (currentTask.status == "RUNNING") {
               return false;
             }
 
-            // Don't display the Resolve action if there is outstanding task.
-            if (item == "RESOLVE" && currentTask.id != EMPTY_ID) {
+            const taskList = allTaskList(pipeline);
+            // Don't display the Resolve action if the last task is NOT in end status.
+            if (
+              item == "RESOLVE" &&
+              taskList.length > 0 &&
+              (currentTask.id != taskList[taskList.length - 1].id ||
+                (currentTask.status != "DONE" &&
+                  currentTask.status != "SKIPPED"))
+            ) {
               return false;
             }
 

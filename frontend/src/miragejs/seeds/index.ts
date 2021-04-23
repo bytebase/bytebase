@@ -903,7 +903,7 @@ const createUpdateSchemaStage = (
     server.create("task", {
       creatorId: creatorId,
       updaterId: creatorId,
-      name: `Update ${databaseList[i].name} schema`,
+      name: `Update '${databaseList[i].name}' schema`,
       type: "bb.task.schema.udpate",
       status: taskStatusList[i],
       when: i < 3 ? "ON_SUCCESS" : "MANUAL",
