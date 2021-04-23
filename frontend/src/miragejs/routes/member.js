@@ -32,7 +32,7 @@ export default function configureMember(route) {
 
     const createdMember = schema.members.create(newMember);
 
-    const user = schema.users.find(attrs.principalId);
+    const user = schema.principals.find(attrs.principalId);
     const type =
       user.status == "INVITED"
         ? "bb.msg.member.invite"

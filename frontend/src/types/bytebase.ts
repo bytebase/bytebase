@@ -2,6 +2,9 @@ import { ResourceObject } from "./jsonapi";
 import { BBNotificationStyle } from "../bbkit/types";
 import { FieldId } from "../plugins";
 
+// System bot id
+export const SYSTEM_BOT_ID = "1";
+
 // The project to hold those databases synced from the instance but haven't been assigned an application
 // project yet. We can't use UNKNOWN_ID because of referential integrity.
 export const DEFAULT_PROJECT_ID = "1";
@@ -17,7 +20,6 @@ export const EMPTY_ID = "0";
 export type ResourceType =
   | "PRINCIPAL"
   | "EXECUTION"
-  | "USER"
   | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
@@ -40,7 +42,6 @@ export const unknown = (
 ):
   | Execution
   | Principal
-  | User
   | Member
   | Environment
   | Project
@@ -66,19 +67,11 @@ export const unknown = (
     createdTs: 0,
     updatedTs: 0,
     status: "UNKNOWN",
+    type: "END_USER",
     name: "<<Unknown principal>>",
     email: "",
     role: "GUEST",
   } as Principal;
-
-  const UNKNOWN_USER: User = {
-    id: UNKNOWN_ID,
-    createdTs: 0,
-    updatedTs: 0,
-    status: "UNKNOWN",
-    name: "<<Unknown user>>",
-    email: "unknown@example.com",
-  };
 
   const UNKNOWN_MEMBER: Member = {
     id: UNKNOWN_ID,
@@ -258,8 +251,6 @@ export const unknown = (
       return UNKNOWN_EXECUTION;
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
-    case "USER":
-      return UNKNOWN_USER;
     case "MEMBER":
       return UNKNOWN_MEMBER;
     case "ENVIRONMENT":
@@ -297,7 +288,6 @@ export const empty = (
 ):
   | Execution
   | Principal
-  | User
   | Member
   | Environment
   | Project
@@ -323,19 +313,11 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     status: "UNKNOWN",
+    type: "END_USER",
     name: "",
     email: "",
     role: "GUEST",
   } as Principal;
-
-  const EMPTY_USER: User = {
-    id: EMPTY_ID,
-    createdTs: 0,
-    updatedTs: 0,
-    status: "UNKNOWN",
-    name: "",
-    email: "",
-  };
 
   const EMPTY_MEMBER: Member = {
     id: EMPTY_ID,
@@ -515,8 +497,6 @@ export const empty = (
       return EMPTY_EXECUTION;
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
-    case "USER":
-      return EMPTY_USER;
     case "MEMBER":
       return EMPTY_MEMBER;
     case "ENVIRONMENT":
@@ -690,6 +670,8 @@ export type ProjectMemberPatch = {
 // we may support application/bot identity.
 export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
 
+export type PrincipalType = "END_USER" | "BOT";
+
 export type Principal = {
   id: PrincipalId;
 
@@ -701,6 +683,7 @@ export type Principal = {
 
   // Domain specific fields
   status: PrincipalStatus;
+  type: PrincipalType;
   name: string;
   email: string;
   role: RoleType;
@@ -716,30 +699,6 @@ export type PrincipalNew = {
 };
 
 export type PrincipalPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-  rowStatus?: RowStatus;
-
-  // Domain specific fields
-  name?: string;
-};
-
-export type User = {
-  id: UserId;
-
-  // Standard fields
-  // [TODO] User doesn't have updater, creator fields because of bootstrap issue.
-  // Who is the updater, creator for the 1st user?
-  createdTs: number;
-  updatedTs: number;
-
-  // Domain specific fields
-  status: PrincipalStatus;
-  name: string;
-  email: string;
-};
-
-export type UserPatch = {
   // Standard fields
   updaterId: PrincipalId;
 

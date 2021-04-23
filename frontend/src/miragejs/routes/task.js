@@ -1,6 +1,6 @@
 import { Response } from "miragejs";
 import { WORKSPACE_ID } from "./index";
-import { IssueBuiltinFieldId } from "../../plugins";
+import { SYSTEM_BOT_ID } from "../../types";
 
 export default function configureTask(route) {
   route.patch(
@@ -73,9 +73,9 @@ export default function configureTask(route) {
             });
 
             schema.activities.create({
-              creatorId: attrs.updaterId,
+              creatorId: SYSTEM_BOT_ID,
               createdTs: ts,
-              updaterId: attrs.updaterId,
+              updaterId: SYSTEM_BOT_ID,
               updatedTs: ts,
               actionType: "bytebase.pipeline.task.status.update",
               containerId: attrs.containerId,

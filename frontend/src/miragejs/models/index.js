@@ -12,10 +12,10 @@ import { Model, hasMany, belongsTo } from "miragejs";
  * Mirage JS guide on Relationships: https://miragejs.com/docs/main-concepts/relationships/
  */
 export default {
-  // User
-  user: Model.extend({}),
-  userNew: Model,
-  userPatch: Model,
+  // Principal
+  principal: Model.extend({}),
+  principalNew: Model,
+  principalPatch: Model,
 
   // Workspace
   workspace: Model.extend({

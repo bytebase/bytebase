@@ -1,4 +1,4 @@
-import user from "./user";
+import principal from "./principal";
 import bookmark from "./bookmark";
 import environment from "./environment";
 import project from "./project";
@@ -26,7 +26,7 @@ import activateInfo from "./activateInfo";
  * be done for all future factories
  */
 export default {
-  ...user,
+  ...principal,
   ...bookmark,
   ...environment,
   ...project,

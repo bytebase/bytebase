@@ -25,15 +25,15 @@ const workspacesSeeder = (server: any) => {
   const workspace2 = server.schema.workspaces.find(101);
 
   // User
-  const ws1Owner = server.schema.users.find(1001);
-  const ws1DBA = server.schema.users.find(1002);
-  const ws1Dev1 = server.schema.users.find(1003);
-  const ws1Dev2 = server.schema.users.find(1005);
+  const ws1Owner = server.schema.principals.find(1001);
+  const ws1DBA = server.schema.principals.find(1002);
+  const ws1Dev1 = server.schema.principals.find(1003);
+  const ws1Dev2 = server.schema.principals.find(1005);
 
   const ws1UserList = [ws1Owner, ws1DBA, ws1Dev1, ws1Dev2];
 
-  const ws2DBA = server.schema.users.find(1004);
-  const ws2Dev = server.schema.users.find(1001);
+  const ws2DBA = server.schema.principals.find(1004);
+  const ws2Dev = server.schema.principals.find(1001);
   const ws2UserList = [ws2DBA, ws2Dev];
 
   // Environment

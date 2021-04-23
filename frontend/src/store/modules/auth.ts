@@ -18,6 +18,7 @@ const GUEST: Principal = {
   createdTs: 0,
   updatedTs: 0,
   status: "ACTIVE",
+  type: "END_USER",
   name: "Guest",
   email: "guest@bytebase.com",
   role: "GUEST",

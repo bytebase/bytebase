@@ -4,12 +4,12 @@
 
 import workspaces from "./workspaceList.json";
 import members from "./memberList.json";
-import users from "./userList.json";
+import principals from "./principalList.json";
 import projects from "./projectList.json";
 
 export default {
   workspaces,
   members,
-  users,
+  principals,
   projects,
 };

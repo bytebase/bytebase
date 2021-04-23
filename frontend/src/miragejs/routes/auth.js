@@ -5,7 +5,7 @@ import { postMessageToOwnerAndDBA } from "../utils";
 export default function configureAuth(route) {
   route.post("/auth/login", function (schema, request) {
     const loginInfo = this.normalizedRequestAttrs("login-info");
-    const user = schema.users.findBy({
+    const user = schema.principals.findBy({
       email: loginInfo.email,
       passwordHash: loginInfo.password,
     });
@@ -21,7 +21,7 @@ export default function configureAuth(route) {
 
   route.post("/auth/signup", function (schema, request) {
     const signupInfo = this.normalizedRequestAttrs("signup-info");
-    const user = schema.users.findBy({ email: signupInfo.email });
+    const user = schema.principals.findBy({ email: signupInfo.email });
     if (user) {
       return new Response(
         409,
@@ -30,7 +30,7 @@ export default function configureAuth(route) {
       );
     }
     const ts = Date.now();
-    const createdUser = schema.users.create({
+    const createdUser = schema.principals.create({
       createdTs: ts,
       updatedTs: ts,
       status: "ACTIVE",
@@ -79,7 +79,7 @@ export default function configureAuth(route) {
       return new Response(400, {}, { errors: "Missing activation token" });
     }
 
-    const user = schema.users.findBy({ email: activateInfo.email });
+    const user = schema.principals.findBy({ email: activateInfo.email });
     if (user) {
       const ts = Date.now();
       user.update({

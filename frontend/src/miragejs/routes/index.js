@@ -1,7 +1,7 @@
 /*
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
-import configureUser from "./user";
+import configurePrincipal from "./principal";
 import configureAuth from "./auth";
 import configureMember from "./member";
 import configureActivity from "./activity";
@@ -29,8 +29,8 @@ export default function routes() {
 
   this.namespace = "api";
 
-  // User
-  configureUser(this);
+  // Principal
+  configurePrincipal(this);
 
   // Auth
   configureAuth(this);
