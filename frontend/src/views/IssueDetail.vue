@@ -244,8 +244,6 @@ export default {
 
     watchEffect(refreshTemplate);
 
-    const isNew = props.issueSlug.toLowerCase() == "new";
-
     const buildNewIssue = () => {
       const databaseList: Database[] = [];
       if (router.currentRoute.value.query.databaseList) {
@@ -318,6 +316,14 @@ export default {
       return newIssue;
     };
 
+    watch(
+      () => props.issueSlug,
+      (cur, prev) => {
+        state.new = cur.toLowerCase() == "new";
+      }
+    );
+
+    const isNew = props.issueSlug.toLowerCase() == "new";
     const state = reactive<LocalState>({
       new: isNew,
       issue: isNew
@@ -437,8 +443,8 @@ export default {
       store
         .dispatch("issue/createIssue", state.issue)
         .then((createdIssue) => {
-          state.new = false;
-          router.push(
+          // Use replace to omit the new issue url in the navigation history.
+          router.replace(
             `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
           );
         })
