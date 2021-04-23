@@ -246,8 +246,7 @@ export default {
 
     const isNew = props.issueSlug.toLowerCase() == "new";
 
-    let newIssue: IssueNew;
-    if (isNew) {
+    const buildNewIssue = () => {
       const databaseList: Database[] = [];
       if (router.currentRoute.value.query.databaseList) {
         for (const databaseId of (router.currentRoute.value.query
@@ -268,7 +267,7 @@ export default {
         }
       }
 
-      newIssue = {
+      const newIssue = {
         ...newIssueTemplate.value.buildIssue({
           environmentList,
           databaseList,
@@ -315,12 +314,14 @@ export default {
           }
         }
       }
-    }
+
+      return newIssue;
+    };
 
     const state = reactive<LocalState>({
       new: isNew,
       issue: isNew
-        ? newIssue!
+        ? buildNewIssue()
         : cloneDeep(
             store.getters["issue/issueById"](idFromSlug(props.issueSlug))
           ),
@@ -328,7 +329,7 @@ export default {
 
     const refreshIssue = () => {
       state.issue = state.new
-        ? newIssue
+        ? buildNewIssue()
         : cloneDeep(
             store.getters["issue/issueById"](idFromSlug(props.issueSlug))
           );
