@@ -14,7 +14,7 @@ const INPUT_DATABASE_NAME = INPUT_CUSTOM_FIELD_ID_BEGIN;
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
-  type: "bytebase.database.create",
+  type: "bb.database.create",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueNew, "projectId" | "creatorId"> => {
@@ -23,18 +23,18 @@ const template: IssueTemplate = {
 
     return {
       name: "Request new db",
-      type: "bytebase.database.create",
+      type: "bb.database.create",
       description: "",
       pipeline: {
         stageList: [
           {
             name: "Create database",
             environmentId: ctx.environmentList[0].id,
-            type: "bytebase.stage.database.create",
+            type: "bb.stage.database.create",
             taskList: [
               {
                 name: "Waiting for approval",
-                type: "bytebase.task.approve",
+                type: "bb.task.approve",
                 when: "MANUAL",
               },
             ],

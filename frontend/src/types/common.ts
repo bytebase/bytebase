@@ -50,16 +50,16 @@ export type Command = {
 };
 
 export type EnvironmentQuickActionType =
-  | "quickaction.bytebase.environment.create"
-  | "quickaction.bytebase.environment.reorder";
-export type ProjectQuickActionType = "quickaction.bytebase.project.create";
-export type InstanceQuickActionType = "quickaction.bytebase.instance.create";
-export type UserQuickActionType = "quickaction.bytebase.user.manage";
+  | "quickaction.bb.environment.create"
+  | "quickaction.bb.environment.reorder";
+export type ProjectQuickActionType = "quickaction.bb.project.create";
+export type InstanceQuickActionType = "quickaction.bb.instance.create";
+export type UserQuickActionType = "quickaction.bb.user.manage";
 export type DatabaseQuickActionType =
-  | "quickaction.bytebase.database.create" // Used by DBA and Owner
-  | "quickaction.bytebase.database.request" // Used by Developer
-  | "quickaction.bytebase.database.schema.update"
-  | "quickaction.bytebase.database.troubleshoot";
+  | "quickaction.bb.database.create" // Used by DBA and Owner
+  | "quickaction.bb.database.request" // Used by Developer
+  | "quickaction.bb.database.schema.update"
+  | "quickaction.bb.database.troubleshoot";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
@@ -228,7 +228,7 @@ export const unknown = (
     updatedTs: 0,
     name: "<<Unknown issue>>",
     status: "DONE",
-    type: "bytebase.general",
+    type: "bb.general",
     description: "",
     subscriberList: [],
     payload: {},
@@ -242,7 +242,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     name: "<<Unknown stage>>",
-    type: "bytebase.stage.unknown",
+    type: "bb.stage.unknown",
     environment: UNKNOWN_ENVIRONMENT,
     taskList: [],
   };
@@ -256,7 +256,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     name: "<<Unknown task>>",
-    type: "bytebase.task.unknown",
+    type: "bb.task.unknown",
     status: "DONE",
     when: "ON_SUCCESS",
     database: UNKNOWN_DATABASE,
@@ -267,7 +267,7 @@ export const unknown = (
     containerId: UNKNOWN_ID,
     createdTs: 0,
     updatedTs: 0,
-    actionType: "bytebase.issue.create",
+    actionType: "bb.issue.create",
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     comment: "<<Unknown comment>>",
@@ -466,7 +466,7 @@ export const empty = (
     updatedTs: 0,
     name: "",
     status: "DONE",
-    type: "bytebase.general",
+    type: "bb.general",
     description: "",
     subscriberList: [],
     payload: {},
@@ -480,7 +480,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     name: "",
-    type: "bytebase.stage.unknown",
+    type: "bb.stage.unknown",
     environment: EMPTY_ENVIRONMENT,
     taskList: [],
   };
@@ -494,7 +494,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     name: "",
-    type: "bytebase.task.unknown",
+    type: "bb.task.unknown",
     status: "DONE",
     when: "ON_SUCCESS",
     database: EMPTY_DATABASE,
@@ -505,7 +505,7 @@ export const empty = (
     containerId: EMPTY_ID,
     createdTs: 0,
     updatedTs: 0,
-    actionType: "bytebase.issue.create",
+    actionType: "bb.issue.create",
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
     comment: "",

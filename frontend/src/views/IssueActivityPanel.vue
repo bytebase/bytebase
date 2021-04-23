@@ -17,7 +17,7 @@
                 aria-hidden="true"
               ></span>
               <div class="relative flex items-start">
-                <template v-if="activity.actionType == 'bytebase.issue.create'">
+                <template v-if="activity.actionType == 'bb.issue.create'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -38,9 +38,7 @@
                   </div>
                 </template>
                 <template
-                  v-else-if="
-                    activity.actionType == 'bytebase.issue.field.update'
-                  "
+                  v-else-if="activity.actionType == 'bb.issue.field.update'"
                 >
                   <div class="relative pl-0.5">
                     <div
@@ -100,8 +98,7 @@
                         <template
                           v-if="
                             activity.createdTs != activity.updatedTs &&
-                            activity.actionType ==
-                              'bytebase.issue.comment.create'
+                            activity.actionType == 'bb.issue.comment.create'
                           "
                         >
                           (edited
@@ -140,8 +137,7 @@
                         <!-- Delete Comment Button-->
                         <button
                           v-if="
-                            activity.actionType ==
-                            'bytebase.issue.comment.create'
+                            activity.actionType == 'bb.issue.comment.create'
                           "
                           class="btn-icon"
                           @click.prevent="
@@ -416,7 +412,7 @@ export default {
         props.issue.id
       );
       return list.filter((activity: Activity) => {
-        if (activity.actionType == "bytebase.issue.field.update") {
+        if (activity.actionType == "bb.issue.field.update") {
           let containUserVisibleChange = false;
           for (const update of (activity.payload as ActionFieldUpdatePayload)
             ?.changeList || []) {
@@ -440,7 +436,7 @@ export default {
     const doCreateComment = () => {
       store
         .dispatch("activity/createActivity", {
-          actionType: "bytebase.issue.comment.create",
+          actionType: "bb.issue.comment.create",
           containerId: props.issue.id,
           creatorId: currentUser.value.id,
           comment: newComment.value,
@@ -507,12 +503,12 @@ export default {
 
     const actionSentence = (activity: Activity): string => {
       switch (activity.actionType) {
-        case "bytebase.issue.create":
+        case "bb.issue.create":
           return "created issue";
-        case "bytebase.issue.comment.create":
+        case "bb.issue.comment.create":
           return "commented";
-        case "bytebase.issue.field.update":
-        case "bytebase.issue.status.update": {
+        case "bb.issue.field.update":
+        case "bb.issue.status.update": {
           const updateInfoList: string[] = [];
           for (const update of (activity.payload as ActionFieldUpdatePayload)
             ?.changeList || []) {
@@ -597,7 +593,7 @@ export default {
           }
           return "updated";
         }
-        case "bytebase.pipeline.task.status.update": {
+        case "bb.pipeline.task.status.update": {
           if (props.issue.pipeline.id != EMPTY_ID) {
             const payload = activity.payload as ActionTaskStatusUpdatePayload;
             const task = findTaskById(props.issue.pipeline, payload.taskId);

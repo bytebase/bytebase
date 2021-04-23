@@ -27,7 +27,7 @@ export default function configureActivity(route) {
       createdTs: ts,
       updaterId: attrs.creatorId,
       updatedTs: ts,
-      actionType: "bytebase.issue.comment.create",
+      actionType: "bb.issue.comment.create",
       workspaceId: WORKSPACE_ID,
     };
     const createdActivity = schema.activities.create(newActivity);

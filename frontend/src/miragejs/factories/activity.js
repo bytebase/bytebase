@@ -16,7 +16,7 @@ export default {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
     actionType() {
-      return "bytebase.issue.comment.create";
+      return "bb.issue.comment.create";
     },
     containerId() {
       return "0";

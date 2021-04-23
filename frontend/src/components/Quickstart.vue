@@ -119,7 +119,7 @@ export default {
       {
         name: "Request a database",
         link:
-          "/issue/new?template=bytebase.database.create&description=Estimated QPS: 10",
+          "/issue/new?template=bb.database.create&description=Estimated QPS: 10",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.create")
@@ -128,7 +128,7 @@ export default {
       {
         name: "Create a table",
         link:
-          "/issue/new?template=bytebase.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
+          "/issue/new?template=bb.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")

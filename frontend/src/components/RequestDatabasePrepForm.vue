@@ -222,7 +222,7 @@ export default {
             issueSlug: "new",
           },
           query: {
-            template: "bytebase.database.create",
+            template: "bb.database.create",
             name: `[${environment.name}] Request new database '${state.databaseName}'`,
             environment: state.environmentId,
             project: state.projectId,
@@ -239,7 +239,7 @@ export default {
             issueSlug: "new",
           },
           query: {
-            template: "bytebase.database.grant",
+            template: "bb.database.grant",
             name: `[${environment.name}] Request database '${database.name}' ${
               state.readOnly ? "Read Only access" : "Read & Write access"
             }`,

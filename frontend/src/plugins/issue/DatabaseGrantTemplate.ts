@@ -14,7 +14,7 @@ const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
-  type: "bytebase.database.grant",
+  type: "bb.database.grant",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueNew, "projectId" | "creatorId"> => {
@@ -22,18 +22,18 @@ const template: IssueTemplate = {
 
     return {
       name: "Request database access",
-      type: "bytebase.database.grant",
+      type: "bb.database.grant",
       description: "",
       pipeline: {
         stageList: [
           {
             name: "Request database access",
-            type: "bytebase.stage.database.grant",
+            type: "bb.stage.database.grant",
             environmentId: ctx.environmentList[0].id,
             taskList: [
               {
                 name: "Waiting for approval",
-                type: "bytebase.task.approve",
+                type: "bb.task.approve",
                 when: "MANUAL",
                 databaseId: ctx.databaseList[0].id,
               },

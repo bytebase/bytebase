@@ -318,7 +318,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const hasDataSourceFeature = computed(() =>
-      store.getters["plan/feature"]("bytebase.data-source")
+      store.getters["plan/feature"]("bb.data-source")
     );
 
     const database = computed(() => {

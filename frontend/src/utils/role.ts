@@ -9,12 +9,12 @@ export function registerStoreWithRoleUtil(theStore: Store<any>) {
 
 // Returns true if admin feature is NOT supported or the principal is OWNER
 export function isOwner(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bytebase.admin") || role == "OWNER";
+  return !store.getters["plan/feature"]("bb.admin") || role == "OWNER";
 }
 
 // Returns true if admin feature is NOT supported or the principal is DBA
 export function isDBA(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bytebase.admin") || role == "DBA";
+  return !store.getters["plan/feature"]("bb.admin") || role == "DBA";
 }
 
 export function isDBAOrOwner(role: RoleType): boolean {
@@ -23,14 +23,12 @@ export function isDBAOrOwner(role: RoleType): boolean {
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
 export function isDeveloper(role: RoleType): boolean {
-  return (
-    !store.getters["plan/feature"]("bytebase.admin") || role == "DEVELOPER"
-  );
+  return !store.getters["plan/feature"]("bb.admin") || role == "DEVELOPER";
 }
 
 // Returns true if admin feature is NOT supported or the principal is GUEST
 export function isGuest(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bytebase.admin") || role == "GUEST";
+  return !store.getters["plan/feature"]("bb.admin") || role == "GUEST";
 }
 
 export function roleName(role: RoleType): string {
@@ -48,13 +46,11 @@ export function roleName(role: RoleType): string {
 
 // Project Role
 export function isProjectOwner(role: ProjectRoleType): boolean {
-  return !store.getters["plan/feature"]("bytebase.admin") || role == "OWNER";
+  return !store.getters["plan/feature"]("bb.admin") || role == "OWNER";
 }
 
 export function isProjectDeveloper(role: ProjectRoleType): boolean {
-  return (
-    !store.getters["plan/feature"]("bytebase.admin") || role == "DEVELOPER"
-  );
+  return !store.getters["plan/feature"]("bb.admin") || role == "DEVELOPER";
 }
 
 export function projectRoleName(role: ProjectRoleType): string {

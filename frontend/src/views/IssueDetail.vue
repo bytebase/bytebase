@@ -536,13 +536,13 @@ export default {
 
     const showIssueSqlPanel = computed(() => {
       return (
-        state.issue.type == "bytebase.general" ||
-        state.issue.type == "bytebase.database.schema.update"
+        state.issue.type == "bb.general" ||
+        state.issue.type == "bb.database.schema.update"
       );
     });
 
     const showIssueRollbackSqlPanel = computed(() => {
-      return state.issue.type == "bytebase.database.schema.update";
+      return state.issue.type == "bb.database.schema.update";
     });
 
     return {

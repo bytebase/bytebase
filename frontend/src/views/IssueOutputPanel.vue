@@ -178,8 +178,8 @@ export default {
         return false;
       }
       return (
-        props.issue.type == "bytebase.database.create" ||
-        props.issue.type == "bytebase.database.grant"
+        props.issue.type == "bb.database.create" ||
+        props.issue.type == "bb.database.grant"
       );
     });
 

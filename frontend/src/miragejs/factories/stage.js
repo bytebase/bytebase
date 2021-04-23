@@ -20,7 +20,7 @@ export default {
       return faker.fake("{{lorem.sentence}}");
     },
     type() {
-      return "bytebase.stage.unknown";
+      return "bb.stage.unknown";
     },
     databaseId() {
       return UNKNOWN_ID;

@@ -142,12 +142,12 @@ export type PipelineStatusPatch = {
 
 // Stage
 export type StageType =
-  | "bytebase.stage.unknown"
-  | "bytebase.stage.final"
-  | "bytebase.stage.transition"
-  | "bytebase.stage.database.create"
-  | "bytebase.stage.database.grant"
-  | "bytebase.stage.schema.update";
+  | "bb.stage.unknown"
+  | "bb.stage.final"
+  | "bb.stage.transition"
+  | "bb.stage.database.create"
+  | "bb.stage.database.grant"
+  | "bb.stage.schema.update";
 
 export type StageRunnable = {
   auto: boolean;
@@ -188,9 +188,9 @@ export type StageNew = {
 
 // Task
 export type TaskType =
-  | "bytebase.task.unknown"
-  | "bytebase.task.approve"
-  | "bytebase.task.database.schema.update";
+  | "bb.task.unknown"
+  | "bb.task.approve"
+  | "bb.task.database.schema.update";
 
 export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 

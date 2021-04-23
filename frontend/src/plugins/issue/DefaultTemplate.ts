@@ -2,13 +2,13 @@ import { IssueNew, UNKNOWN_ID } from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
-  type: "bytebase.general",
+  type: "bb.general",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueNew, "projectId" | "creatorId"> => {
     return {
       name: "",
-      type: "bytebase.general",
+      type: "bb.general",
       description: "",
       payload: {},
     };

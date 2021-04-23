@@ -119,14 +119,14 @@ export default {
 
     onMounted(() => {
       store.dispatch("command/registerCommand", {
-        id: "bytebase.environment.create",
+        id: "bb.environment.create",
         registerId: "environment.dashboard",
         run: () => {
           createEnvironment();
         },
       });
       store.dispatch("command/registerCommand", {
-        id: "bytebase.environment.reorder",
+        id: "bb.environment.reorder",
         registerId: "environment.dashboard",
         run: () => {
           startReorder();
@@ -146,11 +146,11 @@ export default {
 
     onUnmounted(() => {
       store.dispatch("command/unregisterCommand", {
-        id: "bytebase.environment.create",
+        id: "bb.environment.create",
         registerId: "environment.dashboard",
       });
       store.dispatch("command/unregisterCommand", {
-        id: "bytebase.environment.reorder",
+        id: "bb.environment.reorder",
         registerId: "environment.dashboard",
       });
     });

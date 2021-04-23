@@ -113,7 +113,7 @@ export default function configureDatabase(route) {
         createdTs: ts,
         updaterId: creatorId,
         updatedTs: ts,
-        actionType: "bytebase.issue",
+        actionType: "bb.issue",
         containerId: issueId,
         comment: `Created database ${newDatabase.name}`,
         workspaceId: WORKSPACE_ID,

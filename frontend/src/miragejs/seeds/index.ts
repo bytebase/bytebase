@@ -179,7 +179,7 @@ const workspacesSeeder = (server: any) => {
   });
 
   let issue = server.create("issue", {
-    type: "bytebase.general",
+    type: "bb.general",
     name: "Hello, World!",
     description:
       "Welcome to Bytebase, this is the issue interface where DBAs and developers collaborate on database management issues such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this issue by clicking the star icon on the top of this page.",
@@ -198,7 +198,7 @@ const workspacesSeeder = (server: any) => {
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     name: environmentList1[3].name,
-    type: "bytebase.stage.database.create",
+    type: "bb.stage.database.create",
     status: "PENDING",
     environmentId: environmentList1[3].id,
     pipeline,
@@ -209,7 +209,7 @@ const workspacesSeeder = (server: any) => {
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     name: "Waiting approval",
-    type: "bytebase.task.approve",
+    type: "bb.task.approve",
     status: "PENDING",
     when: "MANUAL",
     databaseId: databaseList1[3].id,
@@ -219,7 +219,7 @@ const workspacesSeeder = (server: any) => {
   });
 
   const createdActivity = server.create("activity", {
-    actionType: "bytebase.issue.create",
+    actionType: "bb.issue.create",
     containerId: issue.id,
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
@@ -352,7 +352,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 3; i++) {
     const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
     server.create("activity", {
-      actionType: "bytebase.issue.comment.create",
+      actionType: "bb.issue.comment.create",
       containerId: issue.id,
       creatorId: user.id,
       updaterId: user.id,
@@ -383,7 +383,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     issue = server.create("issue", {
-      type: "bytebase.database.create",
+      type: "bb.database.create",
       name: title,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -402,7 +402,7 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       name: "Create database",
-      type: "bytebase.stage.database.create",
+      type: "bb.stage.database.create",
       status: "PENDING",
       environmentId: environmentList1[1].id,
       pipeline,
@@ -413,7 +413,7 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       name: "Waiting approval",
-      type: "bytebase.task.approve",
+      type: "bb.task.approve",
       status: "PENDING",
       when: "MANUAL",
       pipeline,
@@ -422,7 +422,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     server.create("activity", {
-      actionType: "bytebase.issue.create",
+      actionType: "bb.issue.create",
       containerId: issue.id,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -443,7 +443,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     issue = server.create("issue", {
-      type: "bytebase.database.grant",
+      type: "bb.database.grant",
       name: title,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -462,7 +462,7 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       name: "Create database",
-      type: "bytebase.stage.database.grant",
+      type: "bb.stage.database.grant",
       status: "PENDING",
       environmentId: environmentList1[2].id,
       pipeline,
@@ -473,7 +473,7 @@ const workspacesSeeder = (server: any) => {
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       name: "Waiting approval",
-      type: "bytebase.task.approve",
+      type: "bb.task.approve",
       status: "PENDING",
       when: "MANUAL",
       databaseId: databaseList1[2].id,
@@ -483,7 +483,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     server.create("activity", {
-      actionType: "bytebase.issue.create",
+      actionType: "bb.issue.create",
       containerId: issue.id,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -577,7 +577,7 @@ const workspacesSeeder = (server: any) => {
 
     issue = server.create("issue", {
       name: data.title,
-      type: "bytebase.database.schema.update",
+      type: "bb.database.schema.update",
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       assigneeId: ws1Owner.id,
@@ -600,7 +600,7 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("activity", {
-      actionType: "bytebase.issue.create",
+      actionType: "bb.issue.create",
       containerId: issue.id,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -610,7 +610,7 @@ const workspacesSeeder = (server: any) => {
     for (let i = 0; i < 3; i++) {
       const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
-        actionType: "bytebase.issue.comment.create",
+        actionType: "bb.issue.comment.create",
         containerId: issue.id,
         creatorId: user.id,
         updaterId: user.id,
@@ -635,7 +635,7 @@ const workspacesSeeder = (server: any) => {
 
     issue = server.create("issue", {
       name: data.title,
-      type: "bytebase.database.schema.update",
+      type: "bb.database.schema.update",
       creatorId: ws1Owner.id,
       updaterId: ws1Owner.id,
       assigneeId: ws1DBA.id,
@@ -658,7 +658,7 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("activity", {
-      actionType: "bytebase.issue.create",
+      actionType: "bb.issue.create",
       containerId: issue.id,
       creatorId: ws1Owner.id,
       updaterId: ws1Owner.id,
@@ -668,7 +668,7 @@ const workspacesSeeder = (server: any) => {
     for (let i = 0; i < 3; i++) {
       const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
-        actionType: "bytebase.issue.comment.create",
+        actionType: "bb.issue.comment.create",
         containerId: issue.id,
         creatorId: user.id,
         updaterId: user.id,
@@ -693,7 +693,7 @@ const workspacesSeeder = (server: any) => {
 
     issue = server.create("issue", {
       name: data.title,
-      type: "bytebase.database.schema.update",
+      type: "bb.database.schema.update",
       creatorId: ws1Dev2.id,
       updaterId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
@@ -716,7 +716,7 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("activity", {
-      actionType: "bytebase.issue.create",
+      actionType: "bb.issue.create",
       containerId: issue.id,
       creatorId: ws1Dev2.id,
       updaterId: ws1Dev2.id,
@@ -726,7 +726,7 @@ const workspacesSeeder = (server: any) => {
     for (let i = 0; i < 3; i++) {
       const user = ws1UserList[Math.floor(Math.random() * ws1UserList.length)];
       server.create("activity", {
-        actionType: "bytebase.issue.comment.create",
+        actionType: "bb.issue.comment.create",
         containerId: issue.id,
         creatorId: user.id,
         updaterId: user.id,
@@ -750,7 +750,7 @@ const workspacesSeeder = (server: any) => {
 
   issue = server.create("issue", {
     name: data.title,
-    type: "bytebase.database.schema.update",
+    type: "bb.database.schema.update",
     creatorId: ws2Dev.id,
     updaterId: ws2Dev.id,
     assigneeId: ws2DBA.id,
@@ -772,7 +772,7 @@ const workspacesSeeder = (server: any) => {
   );
 
   server.create("activity", {
-    actionType: "bytebase.issue.create",
+    actionType: "bb.issue.create",
     containerId: issue.id,
     creatorId: ws2Dev.id,
     updaterId: ws2Dev.id,
@@ -894,7 +894,7 @@ const createUpdateSchemaStage = (
       creatorId: creatorId,
       updaterId: creatorId,
       name: `${environmentList[i].name}`,
-      type: "bytebase.stage.schema.update",
+      type: "bb.stage.schema.update",
       environmentId: environmentList[i].id,
       pipelineId,
       workspaceId,
@@ -904,7 +904,7 @@ const createUpdateSchemaStage = (
       creatorId: creatorId,
       updaterId: creatorId,
       name: `Update ${databaseList[i].name} schema`,
-      type: "bytebase.task.schema.udpate",
+      type: "bb.task.schema.udpate",
       status: taskStatusList[i],
       when: i < 3 ? "ON_SUCCESS" : "MANUAL",
       databaseId: databaseList[i].id,

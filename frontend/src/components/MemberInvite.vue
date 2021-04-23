@@ -145,7 +145,7 @@ export default {
     );
 
     const hasAdminFeature = computed(() =>
-      store.getters["plan/feature"]("bytebase.admin")
+      store.getters["plan/feature"]("bb.admin")
     );
 
     const state = reactive<LocalState>({

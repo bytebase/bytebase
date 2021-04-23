@@ -75,7 +75,7 @@ export default {
     const store = useStore();
 
     const hasDataSourceFeature = computed(() =>
-      store.getters["plan/feature"]("bytebase.data-source")
+      store.getters["plan/feature"]("bb.data-source")
     );
 
     const instance = computed(

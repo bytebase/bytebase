@@ -7,7 +7,7 @@
       :key="index"
     >
       <div
-        v-if="quickAction == 'quickaction.bytebase.instance.create'"
+        v-if="quickAction == 'quickaction.bb.instance.create'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
@@ -32,7 +32,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.user.manage'"
+        v-if="quickAction == 'quickaction.bb.user.manage'"
         class="flex flex-col items-center w-28"
       >
         <router-link to="/setting/member" class="btn-icon-primary p-3">
@@ -59,7 +59,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.query'"
+        v-if="quickAction == 'quickaction.bb.database.query'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3">
@@ -86,7 +86,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.data.edit'"
+        v-if="quickAction == 'quickaction.bb.database.data.edit'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3">
@@ -113,7 +113,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.create'"
+        v-if="quickAction == 'quickaction.bb.database.create'"
         class="flex flex-col items-center w-28"
       >
         <router-link to="/db/new" class="btn-icon-primary p-3">
@@ -140,7 +140,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.request'"
+        v-if="quickAction == 'quickaction.bb.database.request'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
@@ -167,7 +167,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.schema.update'"
+        v-if="quickAction == 'quickaction.bb.database.schema.update'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="alterSchema">
@@ -192,7 +192,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.database.troubleshoot'"
+        v-if="quickAction == 'quickaction.bb.database.troubleshoot'"
         class="flex flex-col items-center w-28"
       >
         <router-link to="/issue/new" class="btn-icon-primary p-3">
@@ -217,7 +217,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.environment.create'"
+        v-if="quickAction == 'quickaction.bb.environment.create'"
         class="flex flex-col items-center w-36"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
@@ -242,7 +242,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.environment.reorder'"
+        v-if="quickAction == 'quickaction.bb.environment.reorder'"
         class="flex flex-col items-center w-28"
       >
         <button
@@ -270,7 +270,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bytebase.project.create'"
+        v-if="quickAction == 'quickaction.bb.project.create'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
@@ -301,21 +301,17 @@
     :subtitle="state.modalSubtitle"
     @close="state.showModal = false"
   >
-    <template
-      v-if="state.quickActionType == 'quickaction.bytebase.project.create'"
-    >
+    <template v-if="state.quickActionType == 'quickaction.bb.project.create'">
       <ProjectNew @dismiss="state.showModal = false" />
     </template>
     <template
-      v-else-if="
-        state.quickActionType == 'quickaction.bytebase.instance.create'
-      "
+      v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
     >
       <InstanceForm :create="true" @dismiss="state.showModal = false" />
     </template>
     <template
       v-else-if="
-        state.quickActionType == 'quickaction.bytebase.database.schema.update'
+        state.quickActionType == 'quickaction.bb.database.schema.update'
       "
     >
       <AlterSchemaPrepForm
@@ -324,9 +320,7 @@
       />
     </template>
     <template
-      v-else-if="
-        state.quickActionType == 'quickaction.bytebase.database.request'
-      "
+      v-else-if="state.quickActionType == 'quickaction.bb.database.request'"
     >
       <RequestDatabasePrepForm @dismiss="state.showModal = false" />
     </template>
@@ -346,8 +340,8 @@ import { idFromSlug } from "../utils";
 
 // Quick action only applicable when DBA workflow feature is enabled.
 const DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST: QuickActionType[] = [
-  "quickaction.bytebase.database.request",
-  "quickaction.bytebase.database.troubleshoot",
+  "quickaction.bb.database.request",
+  "quickaction.bb.database.troubleshoot",
 ];
 
 interface LocalState {
@@ -379,11 +373,11 @@ export default {
       showModal: false,
       modalTitle: "",
       modalSubtitle: "",
-      quickActionType: "quickaction.bytebase.instance.create",
+      quickActionType: "quickaction.bb.instance.create",
     });
 
     const effectiveQuickActionList = computed((): QuickActionType[] => {
-      if (store.getters["plan/feature"]("bytebase.dba-workflow")) {
+      if (store.getters["plan/feature"]("bb.dba-workflow")) {
         return props.quickActionList;
       }
 
@@ -405,37 +399,37 @@ export default {
     const createProject = () => {
       state.modalTitle = "Create project";
       state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bytebase.project.create";
+      state.quickActionType = "quickaction.bb.project.create";
       state.showModal = true;
     };
 
     const createInstance = () => {
       state.modalTitle = "Create instance";
       state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bytebase.instance.create";
+      state.quickActionType = "quickaction.bb.instance.create";
       state.showModal = true;
     };
 
     const alterSchema = () => {
       state.modalTitle = "Alter schema";
       state.modalSubtitle = "Task 1 - choose database";
-      state.quickActionType = "quickaction.bytebase.database.schema.update";
+      state.quickActionType = "quickaction.bb.database.schema.update";
       state.showModal = true;
     };
 
     const requestDatabase = () => {
       state.modalTitle = "Request database";
       state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bytebase.database.request";
+      state.quickActionType = "quickaction.bb.database.request";
       state.showModal = true;
     };
 
     const createEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bytebase.environment.create");
+      store.dispatch("command/dispatchCommand", "bb.environment.create");
     };
 
     const reorderEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bytebase.environment.reorder");
+      store.dispatch("command/dispatchCommand", "bb.environment.reorder");
     };
 
     return {

@@ -80,29 +80,29 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "OWNER",
                   [
-                    "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
-                    "quickaction.bytebase.database.troubleshoot",
-                    "quickaction.bytebase.instance.create",
-                    "quickaction.bytebase.user.manage",
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.create",
+                    "quickaction.bb.database.troubleshoot",
+                    "quickaction.bb.instance.create",
+                    "quickaction.bb.user.manage",
                   ],
                 ],
                 [
                   "DBA",
                   [
-                    "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
-                    "quickaction.bytebase.database.troubleshoot",
-                    "quickaction.bytebase.instance.create",
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.create",
+                    "quickaction.bb.database.troubleshoot",
+                    "quickaction.bb.instance.create",
                   ],
                 ],
                 [
                   "DEVELOPER",
                   [
-                    "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.request",
-                    "quickaction.bytebase.database.troubleshoot",
-                    "quickaction.bytebase.project.create",
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.request",
+                    "quickaction.bb.database.troubleshoot",
+                    "quickaction.bb.project.create",
                   ],
                 ],
               ]),
@@ -275,15 +275,15 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "OWNER",
                   [
-                    "quickaction.bytebase.environment.create",
-                    "quickaction.bytebase.environment.reorder",
+                    "quickaction.bb.environment.create",
+                    "quickaction.bb.environment.reorder",
                   ],
                 ],
                 [
                   "DBA",
                   [
-                    "quickaction.bytebase.environment.create",
-                    "quickaction.bytebase.environment.reorder",
+                    "quickaction.bb.environment.create",
+                    "quickaction.bb.environment.reorder",
                   ],
                 ],
               ]),
@@ -318,9 +318,9 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => "Project",
               quickActionListByRole: new Map([
-                ["OWNER", ["quickaction.bytebase.project.create"]],
-                ["DBA", ["quickaction.bytebase.project.create"]],
-                ["DEVELOPER", ["quickaction.bytebase.project.create"]],
+                ["OWNER", ["quickaction.bb.project.create"]],
+                ["DBA", ["quickaction.bb.project.create"]],
+                ["DEVELOPER", ["quickaction.bb.project.create"]],
               ]),
             },
             components: {
@@ -339,9 +339,9 @@ const routes: Array<RouteRecordRaw> = [
                   .name;
               },
               quickActionListByRole: new Map([
-                ["OWNER", ["quickaction.bytebase.database.schema.update"]],
-                ["DBA", ["quickaction.bytebase.database.schema.update"]],
-                ["DEVELOPER", ["quickaction.bytebase.database.schema.update"]],
+                ["OWNER", ["quickaction.bb.database.schema.update"]],
+                ["DBA", ["quickaction.bb.database.schema.update"]],
+                ["DEVELOPER", ["quickaction.bb.database.schema.update"]],
               ]),
               allowBookmark: true,
             },
@@ -357,8 +357,8 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => "Instance",
               quickActionListByRole: new Map([
-                ["OWNER", ["quickaction.bytebase.instance.create"]],
-                ["DBA", ["quickaction.bytebase.instance.create"]],
+                ["OWNER", ["quickaction.bb.instance.create"]],
+                ["DBA", ["quickaction.bb.instance.create"]],
               ]),
             },
             components: {
@@ -376,23 +376,23 @@ const routes: Array<RouteRecordRaw> = [
                 [
                   "OWNER",
                   [
-                    "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.create",
                   ],
                 ],
                 [
                   "DBA",
                   [
-                    "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.create",
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.create",
                   ],
                 ],
                 [
                   "DEVELOPER",
                   [
-                    "quickaction.bytebase.database.schema.update",
-                    "quickaction.bytebase.database.request",
-                    "quickaction.bytebase.database.troubleshoot",
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.request",
+                    "quickaction.bb.database.troubleshoot",
                   ],
                 ],
               ]),
@@ -613,7 +613,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.database.create") {
     if (
-      !store.getters["plan/feature"]("bytebase.dba-workflow") ||
+      !store.getters["plan/feature"]("bb.dba-workflow") ||
       isDBAOrOwner(loginUser.role)
     ) {
       next();
@@ -628,7 +628,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
-      !store.getters["plan/feature"]("bytebase.data-source") ||
+      !store.getters["plan/feature"]("bb.data-source") ||
       !isDBAOrOwner(loginUser.role)
     ) {
       next({
