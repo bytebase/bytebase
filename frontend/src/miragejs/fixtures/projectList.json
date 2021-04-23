@@ -3,8 +3,8 @@
     "id": "1",
     "rowStatus": "NORMAL",
     "workspaceId": "1",
-    "creatorId": "1",
-    "updaterId": "1",
+    "creatorId": "1001",
+    "updaterId": "1001",
     "createdTs": 1614528000000,
     "updatedTs": 1614571200000,
     "name": "Default"
@@ -13,8 +13,8 @@
     "id": "2",
     "rowStatus": "NORMAL",
     "workspaceId": "101",
-    "creatorId": "4",
-    "updaterId": "4",
+    "creatorId": "1004",
+    "updaterId": "1004",
     "createdTs": 1614528000000,
     "updatedTs": 1614571200000,
     "name": "Default"
