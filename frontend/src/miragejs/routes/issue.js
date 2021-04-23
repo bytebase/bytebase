@@ -145,7 +145,7 @@ export default function configureIssue(route) {
           newValue: attrs.assigneeId,
         });
 
-        messageTemplate.type = "bb.msg.issue.assign";
+        messageTemplate.type = "bb.message.issue.assign";
         messageTemplate.payload = {
           issueName: issue.name,
           oldAssigneeId: issue.assigneeId,
@@ -385,7 +385,7 @@ export default function configureIssue(route) {
         newValue: attrs.status,
       });
 
-      messageTemplate.type = "bb.msg.issue.status.update";
+      messageTemplate.type = "bb.message.issue.status.update";
       messageTemplate.payload = {
         issueName: issue.name,
         oldStatus: issue.status,

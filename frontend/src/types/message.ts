@@ -5,36 +5,36 @@ import { Principal } from "./principal";
 import { ProjectRoleType } from "./project";
 
 export type MemberMessageType =
-  | "bb.msg.member.create"
-  | "bb.msg.member.invite"
-  | "bb.msg.member.join"
-  | "bb.msg.member.revoke"
-  | "bb.msg.member.updaterole";
+  | "bb.message.member.create"
+  | "bb.message.member.invite"
+  | "bb.message.member.join"
+  | "bb.message.member.revoke"
+  | "bb.message.member.updaterole";
 
 export type ProjectMemberMessageType =
-  | "bb.msg.project.member.create"
-  | "bb.msg.project.member.revoke"
-  | "bb.msg.project.member.updaterole";
+  | "bb.message.project.member.create"
+  | "bb.message.project.member.revoke"
+  | "bb.message.project.member.updaterole";
 
 export type EnvironmentMessageType =
-  | "bb.msg.environment.create"
-  | "bb.msg.environment.update"
-  | "bb.msg.environment.delete"
-  | "bb.msg.environment.archive"
-  | "bb.msg.environment.restore"
-  | "bb.msg.environment.reorder";
+  | "bb.message.environment.create"
+  | "bb.message.environment.update"
+  | "bb.message.environment.delete"
+  | "bb.message.environment.archive"
+  | "bb.message.environment.restore"
+  | "bb.message.environment.reorder";
 
 export type InstanceMessageType =
-  | "bb.msg.instance.create"
-  | "bb.msg.instance.update"
-  | "bb.msg.instance.archive"
-  | "bb.msg.instance.restore";
+  | "bb.message.instance.create"
+  | "bb.message.instance.update"
+  | "bb.message.instance.archive"
+  | "bb.message.instance.restore";
 
 export type IssueMessageType =
-  | "bb.msg.issue.assign"
-  | "bb.msg.issue.status.update"
-  | "bb.msg.issue.stage.status.update"
-  | "bb.msg.issue.comment";
+  | "bb.message.issue.assign"
+  | "bb.message.issue.status.update"
+  | "bb.message.issue.stage.status.update"
+  | "bb.message.issue.comment";
 
 export type MessageType =
   | MemberMessageType

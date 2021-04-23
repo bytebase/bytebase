@@ -59,7 +59,7 @@ export default function configureEnvironment(route) {
       containerId: createdEnvironment.id,
       createdTs: ts,
       updatedTs: ts,
-      type: "bb.msg.environment.create",
+      type: "bb.message.environment.create",
       status: "DELIVERED",
       creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
@@ -92,7 +92,7 @@ export default function configureEnvironment(route) {
       containerId: WORKSPACE_ID,
       createdTs: ts,
       updatedTs: ts,
-      type: "bb.msg.environment.reorder",
+      type: "bb.message.environment.reorder",
       status: "DELIVERED",
       creatorId: attrs.updaterId,
       workspaceId: WORKSPACE_ID,
@@ -120,15 +120,15 @@ export default function configureEnvironment(route) {
     }
 
     const changeList = [];
-    let type = "bb.msg.environment.update";
+    let type = "bb.message.environment.update";
 
     if (attrs.rowStatus && attrs.rowStatus != environment.rowStatus) {
       if (attrs.rowStatus == "ARCHIVED") {
-        type = "bb.msg.environment.archive";
+        type = "bb.message.environment.archive";
       } else if (attrs.rowStatus == "NORMAL") {
-        type = "bb.msg.environment.restore";
+        type = "bb.message.environment.restore";
       } else if (attrs.rowStatus == "PENDING_DELETE") {
-        type = "bb.msg.environment.delete";
+        type = "bb.message.environment.delete";
       }
       changeList.push({
         fieldId: EnvironmentBuiltinFieldId.ROW_STATUS,

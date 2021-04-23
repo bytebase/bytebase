@@ -10,7 +10,7 @@ export default {
       return Date.now() - (10 - i) * 1800 * 1000;
     },
     type() {
-      return "bb.msg.issue.assign";
+      return "bb.message.issue.assign";
     },
     status(i) {
       return Math.floor(Math.random() * 2) % 2 == 0 ? "DELIVERED" : "CONSUMED";

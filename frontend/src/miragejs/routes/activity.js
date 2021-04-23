@@ -40,7 +40,7 @@ export default function configureActivity(route) {
         containerId: attrs.containerId,
         createdTs: ts,
         updatedTs: ts,
-        type: "bb.msg.issue.comment",
+        type: "bb.message.issue.comment",
         status: "DELIVERED",
         description: attrs.comment,
         creatorId: attrs.creatorId,

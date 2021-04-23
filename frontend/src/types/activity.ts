@@ -4,11 +4,11 @@ import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 
 export type IssueActionType =
-  | "bytebase.issue.create"
-  | "bytebase.issue.comment.create"
-  | "bytebase.issue.field.update"
-  | "bytebase.issue.status.update"
-  | "bytebase.pipeline.task.status.update";
+  | "bb.issue.create"
+  | "bb.issue.comment.create"
+  | "bb.issue.field.update"
+  | "bb.issue.status.update"
+  | "bb.pipeline.task.status.update";
 
 export type ActionType = IssueActionType;
 
@@ -35,7 +35,7 @@ export type Activity = {
 
   // Related fields
   // The object where this activity belongs
-  // e.g if actionType is "bytebase.issue.xxx", then this field refers to the corresponding issue's id.
+  // e.g if actionType is "bb.issue.xxx", then this field refers to the corresponding issue's id.
   containerId: ContainerId;
 
   // Standard fields

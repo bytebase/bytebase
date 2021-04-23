@@ -35,8 +35,8 @@ export default function configureMember(route) {
     const user = schema.principals.find(attrs.principalId);
     const type =
       user.status == "INVITED"
-        ? "bb.msg.member.invite"
-        : "bb.msg.member.create";
+        ? "bb.message.member.invite"
+        : "bb.message.member.create";
 
     const messageTemplate = {
       containerId: WORKSPACE_ID,
@@ -78,7 +78,7 @@ export default function configureMember(route) {
       containerId: WORKSPACE_ID,
       createdTs: ts,
       updatedTs: ts,
-      type: "bb.msg.member.updaterole",
+      type: "bb.message.member.updaterole",
       status: "DELIVERED",
       creatorId: attrs.updaterId,
       workspaceId: WORKSPACE_ID,
@@ -114,7 +114,7 @@ export default function configureMember(route) {
       containerId: WORKSPACE_ID,
       createdTs: ts,
       updatedTs: ts,
-      type: "bb.msg.member.revoke",
+      type: "bb.message.member.revoke",
       status: "DELIVERED",
       creatorId: FAKE_API_CALLER_ID,
       workspaceId: WORKSPACE_ID,

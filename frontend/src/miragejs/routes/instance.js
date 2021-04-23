@@ -82,7 +82,7 @@ export default function configurInstance(route) {
       containerId: createdInstance.id,
       createdTs: ts,
       updatedTs: ts,
-      type: "bb.msg.instance.create",
+      type: "bb.message.instance.create",
       status: "DELIVERED",
       creatorId: attrs.creatorId,
       workspaceId: WORKSPACE_ID,
@@ -130,13 +130,13 @@ export default function configurInstance(route) {
     let hasInstanceChange = false;
     let hasDataSourceChange = false;
     const changeList = [];
-    let type = "bb.msg.instance.update";
+    let type = "bb.message.instance.update";
 
     if (attrs.rowStatus && attrs.rowStatus != instance.rowStatus) {
       if (attrs.rowStatus == "ARCHIVED") {
-        type = "bb.msg.instance.archive";
+        type = "bb.message.instance.archive";
       } else if (attrs.rowStatus == "NORMAL") {
-        type = "bb.msg.instance.restore";
+        type = "bb.message.instance.restore";
       }
       changeList.push({
         fieldId: InstanceBuiltinFieldId.ROW_STATUS,

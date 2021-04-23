@@ -60,20 +60,20 @@
                   <span class="ml-1"> {{ actionSentence(message) }}</span>
                   <template
                     v-if="
-                      message.type == 'bb.msg.member.create' ||
-                      message.type == 'bb.msg.member.invite' ||
-                      message.type == 'bb.msg.member.join' ||
-                      message.type == 'bb.msg.member.revoke' ||
-                      message.type == 'bb.msg.member.updaterole'
+                      message.type == 'bb.message.member.create' ||
+                      message.type == 'bb.message.member.invite' ||
+                      message.type == 'bb.message.member.join' ||
+                      message.type == 'bb.message.member.revoke' ||
+                      message.type == 'bb.message.member.updaterole'
                     "
                   >
                   </template>
                   <template
                     v-else-if="
-                      message.type == 'bb.msg.environment.create' ||
-                      message.type == 'bb.msg.environment.update' ||
-                      message.type == 'bb.msg.environment.archive' ||
-                      message.type == 'bb.msg.environment.restore'
+                      message.type == 'bb.message.environment.create' ||
+                      message.type == 'bb.message.environment.update' ||
+                      message.type == 'bb.message.environment.archive' ||
+                      message.type == 'bb.message.environment.restore'
                     "
                   >
                     <router-link
@@ -84,7 +84,7 @@
                     </router-link>
                   </template>
                   <template
-                    v-else-if="message.type == 'bb.msg.environment.delete'"
+                    v-else-if="message.type == 'bb.message.environment.delete'"
                   >
                     <span class="font-medium text-main ml-1">
                       {{ message.payload.environmentName }}
@@ -92,10 +92,10 @@
                   </template>
                   <template
                     v-else-if="
-                      message.type == 'bb.msg.instance.create' ||
-                      message.type == 'bb.msg.instance.update' ||
-                      message.type == 'bb.msg.instance.archive' ||
-                      message.type == 'bb.msg.instance.restore'
+                      message.type == 'bb.message.instance.create' ||
+                      message.type == 'bb.message.instance.update' ||
+                      message.type == 'bb.message.instance.archive' ||
+                      message.type == 'bb.message.instance.restore'
                     "
                   >
                     <router-link
@@ -105,16 +105,8 @@
                       {{ message.payload.instanceName }}
                     </router-link>
                   </template>
-                  <template v-else-if="message.type == 'bb.msg.issue.assign'">
-                    <router-link
-                      :to="`/issue/${message.containerId}`"
-                      class="normal-link ml-1"
-                    >
-                      {{ message.payload.issueName }}
-                    </router-link>
-                  </template>
                   <template
-                    v-else-if="message.type == 'bb.msg.issue.status.update'"
+                    v-else-if="message.type == 'bb.message.issue.assign'"
                   >
                     <router-link
                       :to="`/issue/${message.containerId}`"
@@ -123,7 +115,19 @@
                       {{ message.payload.issueName }}
                     </router-link>
                   </template>
-                  <template v-else-if="message.type == 'bb.msg.issue.comment'">
+                  <template
+                    v-else-if="message.type == 'bb.message.issue.status.update'"
+                  >
+                    <router-link
+                      :to="`/issue/${message.containerId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ message.payload.issueName }}
+                    </router-link>
+                  </template>
+                  <template
+                    v-else-if="message.type == 'bb.message.issue.comment'"
+                  >
                     <router-link
                       :to="`/issue/${message.containerId}#activity${message.payload.commentId}`"
                       class="normal-link ml-1"
@@ -220,9 +224,9 @@ export default {
       return state.messageList.filter((message: Message) => {
         if (
           (state.selectedIndex == GENERAL_TAB &&
-            message.type.startsWith("bb.msg.member.")) ||
+            message.type.startsWith("bb.message.member.")) ||
           (state.selectedIndex == MEMBERSHIP_TAB &&
-            !message.type.startsWith("bb.msg.member."))
+            !message.type.startsWith("bb.message.member."))
         ) {
           return false;
         }
@@ -243,56 +247,56 @@ export default {
 
     const actionSentence = (message: Message): string => {
       switch (message.type) {
-        case "bb.msg.member.create": {
+        case "bb.message.member.create": {
           const payload = message.payload as MemberMessagePayload;
           return `added ${
             principalFromId(payload.principalId).email
           } as ${roleName(payload.newRole!)}`;
         }
-        case "bb.msg.member.invite": {
+        case "bb.message.member.invite": {
           const payload = message.payload as MemberMessagePayload;
           return `invited ${
             principalFromId(payload.principalId).email
           } as ${roleName(payload.newRole!)}`;
         }
-        case "bb.msg.member.join": {
+        case "bb.message.member.join": {
           const payload = message.payload as MemberMessagePayload;
           return `joined as ${roleName(payload.newRole!)}`;
         }
-        case "bb.msg.member.revoke": {
+        case "bb.message.member.revoke": {
           const payload = message.payload as MemberMessagePayload;
           return `revoked ${roleName(payload.oldRole!)} from ${
             principalFromId(payload.principalId).name
           }`;
         }
-        case "bb.msg.member.updaterole":
+        case "bb.message.member.updaterole":
           const payload = message.payload as MemberMessagePayload;
           return `changed ${
             principalFromId(payload.principalId).name
           } role from ${roleName(payload.oldRole!)} to ${roleName(
             payload.newRole!
           )}`;
-        case "bb.msg.environment.create":
+        case "bb.message.environment.create":
           return "created environment";
-        case "bb.msg.environment.update":
+        case "bb.message.environment.update":
           return "updated environment";
-        case "bb.msg.environment.delete":
+        case "bb.message.environment.delete":
           return "deleted environment";
-        case "bb.msg.environment.archive":
+        case "bb.message.environment.archive":
           return "archived environment";
-        case "bb.msg.environment.restore":
+        case "bb.message.environment.restore":
           return "restored environment";
-        case "bb.msg.environment.reorder":
+        case "bb.message.environment.reorder":
           return "reordered environment";
-        case "bb.msg.instance.create":
+        case "bb.message.instance.create":
           return "created instance";
-        case "bb.msg.instance.update":
+        case "bb.message.instance.update":
           return "updated instance";
-        case "bb.msg.instance.archive":
+        case "bb.message.instance.archive":
           return "archived instance";
-        case "bb.msg.instance.restore":
+        case "bb.message.instance.restore":
           return "restored instance";
-        case "bb.msg.issue.assign": {
+        case "bb.message.issue.assign": {
           const payload = message.payload as IssueAssignMessagePayload;
           if (
             payload.oldAssigneeId == UNKNOWN_ID &&
@@ -325,7 +329,7 @@ export default {
           }
           return "assigned issue";
         }
-        case "bb.msg.issue.status.update": {
+        case "bb.message.issue.status.update": {
           const payload = message.payload as IssueUpdateStatusMessagePayload;
           return (
             "changed issue status from " +
@@ -334,7 +338,7 @@ export default {
             payload.newStatus
           );
         }
-        case "bb.msg.issue.stage.status.update": {
+        case "bb.message.issue.stage.status.update": {
           const payload = message.payload as IssueUpdateStatusMessagePayload;
           return (
             "changed issue stage status from " +
@@ -343,7 +347,7 @@ export default {
             payload.newStatus
           );
         }
-        case "bb.msg.issue.comment":
+        case "bb.message.issue.comment":
           return "commented issue";
       }
     };

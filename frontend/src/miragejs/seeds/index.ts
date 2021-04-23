@@ -229,7 +229,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.issue.comment",
+        type: "bb.message.issue.comment",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -242,7 +242,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.issue.status.update",
+        type: "bb.message.issue.status.update",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -260,7 +260,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.issue.comment",
+        type: "bb.message.issue.comment",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -273,7 +273,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.issue.status.update",
+        type: "bb.message.issue.status.update",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -291,7 +291,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.issue.comment",
+        type: "bb.message.issue.comment",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -304,7 +304,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.issue.status.update",
+        type: "bb.message.issue.status.update",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
@@ -322,7 +322,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     if (i % 2 == 0) {
       server.create("message", {
-        type: "bb.msg.issue.comment",
+        type: "bb.message.issue.comment",
         containerId: issue.id,
         creatorId: ws2DBA.id,
         receiverId: ws2Dev.id,
@@ -334,7 +334,7 @@ const workspacesSeeder = (server: any) => {
       });
     } else {
       server.create("message", {
-        type: "bb.msg.issue.status.update",
+        type: "bb.message.issue.status.update",
         containerId: issue.id,
         creatorId:
           ws1UserList[Math.floor(Math.random() * ws1UserList.length)].id,
