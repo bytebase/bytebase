@@ -1,13 +1,5 @@
 import { Store } from "vuex";
-import {
-  Environment,
-  Principal,
-  IssueNew,
-  Issue,
-  DatabaseId,
-  UNKNOWN_ID,
-  Database,
-} from "../types";
+import { Environment, Principal, IssueNew, Issue, Database } from "../types";
 
 // Issue
 // It has to be string type because the id for stage field contain multiple parts.
