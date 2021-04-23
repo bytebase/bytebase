@@ -49,6 +49,43 @@ export default function configureTask(route) {
           workspaceId: WORKSPACE_ID,
         });
 
+        if (attrs.status == "DONE" || attrs.status == "SKIPPED") {
+          const followingTask = schema.tasks.findBy((item) => {
+            if (item.workspaceId != WORKSPACE_ID) {
+              return false;
+            }
+
+            if (item.pipelineId != task.pipelineId) {
+              return false;
+            }
+
+            return item.id > task.id;
+          });
+
+          if (followingTask && followingTask.when == "ON_SUCCESS") {
+            const payload = {
+              taskId: followingTask.id,
+              oldStatus: followingTask.status,
+              newStatus: "RUNNING",
+            };
+            followingTask.update({
+              status: "RUNNING",
+            });
+
+            schema.activities.create({
+              creatorId: attrs.updaterId,
+              createdTs: ts,
+              updaterId: attrs.updaterId,
+              updatedTs: ts,
+              actionType: "bytebase.pipeline.task.status.update",
+              containerId: attrs.containerId,
+              comment: attrs.comment,
+              payload,
+              workspaceId: WORKSPACE_ID,
+            });
+          }
+        }
+
         return updatedTask;
       }
 

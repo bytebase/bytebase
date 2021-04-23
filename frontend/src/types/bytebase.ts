@@ -215,6 +215,7 @@ export const unknown = (
     name: "<<Unknown task>>",
     type: "bytebase.task.unknown",
     status: "DONE",
+    when: "ON_SUCCESS",
     database: UNKNOWN_DATABASE,
   };
 
@@ -471,6 +472,7 @@ export const empty = (
     name: "",
     type: "bytebase.task.unknown",
     status: "DONE",
+    when: "ON_SUCCESS",
     database: EMPTY_DATABASE,
   };
 
@@ -1140,6 +1142,8 @@ export type TaskType =
 
 export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 
+export type TaskWhenType = "ON_SUCCESS" | "MANUAL";
+
 export type DatabaseSchemaUpdateTaskPayload = {
   sql: string;
   rollbackSql: string;
@@ -1164,6 +1168,7 @@ export type Task = {
   name: string;
   type: TaskType;
   status: TaskStatus;
+  when: TaskWhenType;
   // We may get an empty database for tasks like creating database.
   database: Database;
   payload?: TaskPayload;
@@ -1173,6 +1178,7 @@ export type TaskNew = {
   // Domain specific fields
   name: string;
   type: TaskType;
+  when: TaskWhenType;
   databaseId?: DatabaseId;
 };
 

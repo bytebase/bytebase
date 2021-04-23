@@ -25,6 +25,7 @@ const template: IssueTemplate = {
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
             type: "bytebase.task.database.schema.update",
+            when: "MANUAL",
             databaseId: ctx.databaseList[i].id,
           },
         ],

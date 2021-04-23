@@ -34,6 +34,7 @@ const template: IssueTemplate = {
               {
                 name: "Waiting for approval",
                 type: "bytebase.task.approve",
+                when: "MANUAL",
                 databaseId: ctx.databaseList[0].id,
               },
             ],
