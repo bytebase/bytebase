@@ -19,12 +19,12 @@
               <template v-if="item.taskStatus === 'PENDING'">
                 <span
                   v-if="activeTask(pipeline).id === item.taskId"
-                  class="h-1.5 w-1.5 bg-blue-600 rounded-full"
+                  class="h-2 w-2 bg-blue-600 rounded-full"
                   aria-hidden="true"
                 ></span>
                 <span
                   v-else
-                  class="h-1.5 w-1.5 bg-gray-300 rounded-full"
+                  class="h-1.5 w-1.5 bg-control rounded-full"
                   aria-hidden="true"
                 ></span>
               </template>
@@ -161,7 +161,7 @@ export default {
           if (activeTask(props.pipeline).id === item.taskId) {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
-          return "bg-white border-2 border-gray-300";
+          return "bg-white border-2 border-control";
         case "RUNNING":
           return "bg-white border-2 border-blue-600 text-blue-600";
         case "DONE":
@@ -169,7 +169,7 @@ export default {
         case "FAILED":
           return "bg-error text-white";
         case "SKIPPED":
-          return "bg-white border-2 text-gray-400 border-gray-400";
+          return "bg-white border-2 text-gray-300 border-gray-300";
       }
     };
 
@@ -180,7 +180,7 @@ export default {
           : "font-normal ";
       switch (item.taskStatus) {
         case "SKIPPED":
-          return textClass + "text-gray-500";
+          return textClass + "text-control";
         case "DONE":
           return textClass + "text-control";
         case "PENDING":

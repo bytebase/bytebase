@@ -16,19 +16,19 @@
         >
           <template v-if="step.status == `PENDING`">
             <span
-              class="h-1.5 w-1.5 bg-gray-300 hover:bg-gray-400 rounded-full"
+              class="h-1.5 w-1.5 bg-control rounded-full"
               aria-hidden="true"
             ></span>
           </template>
           <template v-else-if="step.status == `PENDING_ACTIVE`">
             <span
-              class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+              class="h-2 w-2 bg-blue-600 rounded-full"
               aria-hidden="true"
             ></span>
           </template>
           <template v-else-if="step.status == `RUNNING`">
             <span
-              class="h-2.5 w-2.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+              class="h-2.5 w-2.5 bg-blue-600 rounded-full"
               style="
                 animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
               "
@@ -79,15 +79,12 @@
               fill="currentColor"
               viewBox="0 0 20 20"
               xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
             >
+              >
               <path
                 fill-rule="evenodd"
-                d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
-                clip-rule="evenodd"
-              ></path>
-              <path
-                fill-rule="evenodd"
-                d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
                 clip-rule="evenodd"
               ></path>
             </svg>
@@ -115,19 +112,19 @@ export default {
     const stepClass = (status: BBStepStatus) => {
       switch (status) {
         case "PENDING":
-          return "bg-white border-2 border-gray-300 hover:border-gray-400";
+          return "bg-white border-2 border-control";
         case "PENDING_ACTIVE":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+          return "bg-white border-2 border-blue-600 text-blue-600";
         case "RUNNING":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+          return "bg-white border-2 border-blue-600 text-blue-600";
         case "DONE":
-          return "bg-success hover:bg-success-hover text-white";
+          return "bg-success text-white";
         case "FAILED":
-          return "bg-error text-white hover:text-white hover:bg-error-hover";
+          return "bg-error text-white hover:text-white";
         case "CANCELED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+          return "bg-white border-2 text-gray-400 border-gray-400";
         case "SKIPPED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+          return "bg-white border-2 text-gray-300 border-gray-300";
       }
     };
 
