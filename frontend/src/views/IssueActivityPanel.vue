@@ -598,10 +598,29 @@ export default {
             const payload = activity.payload as ActionTaskStatusUpdatePayload;
             const task = findTaskById(props.issue.pipeline, payload.taskId);
             if (task.id != UNKNOWN_ID) {
-              if (activity.creator.id == SYSTEM_BOT_ID) {
-                return `automatically changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
+              let str = `changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
+              switch (payload.newStatus) {
+                case "PENDING": {
+                  if (payload.oldStatus == "RUNNING") {
+                    str = `canceled task "${task.name}"`;
+                  }
+                  break;
+                }
+                case "RUNNING": {
+                  str = `started task "${task.name}"`;
+                  break;
+                }
+                case "SKIPPED": {
+                  str = `skipped task "${task.name}"`;
+                  break;
+                }
+                case "DONE":
+                case "FAILED":
               }
-              return `changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
+              if (activity.creator.id == SYSTEM_BOT_ID) {
+                return "automatically " + str;
+              }
+              return str;
             }
           }
           // This should never happen normally since only issue with pipeline can emit this activity.
