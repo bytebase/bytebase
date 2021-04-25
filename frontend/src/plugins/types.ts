@@ -11,13 +11,9 @@ export enum IssueBuiltinFieldId {
   ASSIGNEE = "3",
   DESCRIPTION = "4",
   PROJECT = "5",
-  ENVIRONMENT = "6",
-  INSTANCE = "7",
-  DATABASE = "8",
-  DATA_SOURCE = "9",
-  SQL = "10",
-  ROLLBACK_SQL = "11",
-  SUBSCRIBER_LIST = "12",
+  SUBSCRIBER_LIST = "6",
+  SQL = "7",
+  ROLLBACK_SQL = "8",
 }
 
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";

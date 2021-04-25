@@ -19,7 +19,6 @@ const template: IssueTemplate = {
     ctx: TemplateContext
   ): Omit<IssueNew, "projectId" | "creatorId"> => {
     const payload: any = {};
-    payload[IssueBuiltinFieldId.DATABASE] = "";
 
     return {
       name: "Request new db",

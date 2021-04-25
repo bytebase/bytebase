@@ -565,10 +565,6 @@ export default {
               case IssueBuiltinFieldId.NAME:
               case IssueBuiltinFieldId.DESCRIPTION:
               case IssueBuiltinFieldId.PROJECT:
-              case IssueBuiltinFieldId.ENVIRONMENT:
-              case IssueBuiltinFieldId.INSTANCE:
-              case IssueBuiltinFieldId.DATABASE:
-              case IssueBuiltinFieldId.DATA_SOURCE:
               case IssueBuiltinFieldId.SQL:
               case IssueBuiltinFieldId.ROLLBACK_SQL: {
                 if (update.fieldId == IssueBuiltinFieldId.NAME) {
