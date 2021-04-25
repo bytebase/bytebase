@@ -143,8 +143,6 @@ export type PipelineStatusPatch = {
 // Stage
 export type StageType =
   | "bb.stage.general"
-  | "bb.stage.final"
-  | "bb.stage.transition"
   | "bb.stage.database.create"
   | "bb.stage.database.grant"
   | "bb.stage.schema.update";
