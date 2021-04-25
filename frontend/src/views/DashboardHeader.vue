@@ -64,14 +64,14 @@
             Team
           </div>
           <div v-else class="underline">Team</div>
-          <div
+          <!-- <div
             v-if="currentPlan != 2"
             class="bar-link"
             @click.prevent="switchToEnterprise"
           >
             Enterprise
           </div>
-          <div v-else class="underline">Enterprise</div>
+          <div v-else class="underline">Enterprise</div> -->
         </div>
         <div
           v-if="isDevOrDemo"
