@@ -302,30 +302,33 @@ export default {
             payload.oldAssigneeId == UNKNOWN_ID &&
             payload.newAssigneeId != UNKNOWN_ID
           ) {
-            return "assigned " + currentUser.value.id == payload.newAssigneeId
-              ? "you"
-              : principalFromId(payload.newAssigneeId).name + " issue";
+            const newName =
+              currentUser.value.id == payload.newAssigneeId
+                ? "you"
+                : principalFromId(payload.newAssigneeId).name;
+            return `assigned issue to ${newName}`;
           } else if (
             payload.oldAssigneeId != UNKNOWN_ID &&
             payload.newAssigneeId == UNKNOWN_ID
           ) {
-            return "un-assigned " + currentUser.value.id ==
-              payload.oldAssigneeId
-              ? "you"
-              : principalFromId(payload.oldAssigneeId).name + " issue";
+            const oldName =
+              currentUser.value.id == payload.oldAssigneeId
+                ? "you"
+                : principalFromId(payload.oldAssigneeId).name;
+            return `un-assigned issue from ${oldName}`;
           } else if (
             payload.oldAssigneeId != UNKNOWN_ID &&
             payload.newAssigneeId != UNKNOWN_ID
           ) {
-            return "re-assigned from " + currentUser.value.id ==
-              payload.oldAssigneeId
-              ? "you"
-              : principalFromId(payload.oldAssigneeId).name +
-                  " to " +
-                  currentUser.value.id ==
-                payload.newAssigneeId
-              ? "you"
-              : principalFromId(payload.newAssigneeId).name + " issue";
+            const oldName =
+              currentUser.value.id == payload.oldAssigneeId
+                ? "you"
+                : principalFromId(payload.oldAssigneeId).name;
+            const newName =
+              currentUser.value.id == payload.newAssigneeId
+                ? "you"
+                : principalFromId(payload.newAssigneeId).name;
+            return `re-assigned from ${oldName} to ${newName}`;
           }
           return "assigned issue";
         }
