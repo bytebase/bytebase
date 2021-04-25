@@ -49,7 +49,7 @@ export type Issue = {
 export type IssueNew = {
   // Related fields
   projectId: ProjectId;
-  pipeline?: PipelineNew;
+  pipeline: PipelineNew;
 
   // Standard fields
   creatorId: PrincipalId;

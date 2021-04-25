@@ -10,6 +10,25 @@ const template: IssueTemplate = {
       name: "",
       type: "bb.general",
       description: "",
+      pipeline: {
+        stageList: [
+          {
+            name: "Troubleshoot database",
+            environmentId: ctx.environmentList[0].id,
+            type: "bb.stage.general",
+            taskList: [
+              {
+                name: "Troubleshoot database",
+                type: "bb.task.general",
+                when: "MANUAL",
+                databaseId: UNKNOWN_ID,
+              },
+            ],
+          },
+        ],
+        creatorId: ctx.currentUser.id,
+        name: "Create database pipeline",
+      },
       payload: {},
     };
   },

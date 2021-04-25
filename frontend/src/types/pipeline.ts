@@ -143,6 +143,7 @@ export type PipelineStatusPatch = {
 // Stage
 export type StageType =
   | "bb.stage.unknown"
+  | "bb.stage.general"
   | "bb.stage.final"
   | "bb.stage.transition"
   | "bb.stage.database.create"
@@ -189,6 +190,7 @@ export type StageNew = {
 // Task
 export type TaskType =
   | "bb.task.unknown"
+  | "bb.task.general"
   | "bb.task.approve"
   | "bb.task.database.schema.update";
 

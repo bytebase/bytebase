@@ -48,15 +48,10 @@ function convert(
   let project: Project = unknown("PROJECT") as Project;
   project.id = projectId;
 
-  let pipeline: Pipeline;
-  if (issue.relationships!.pipeline.data) {
-    const pipelineId = (issue.relationships!.pipeline
-      .data as ResourceIdentifier).id;
-    pipeline = unknown("PIPELINE") as Pipeline;
-    pipeline.id = pipelineId;
-  } else {
-    pipeline = empty("PIPELINE") as Pipeline;
-  }
+  const pipelineId = (issue.relationships!.pipeline.data as ResourceIdentifier)
+    .id;
+  let pipeline = unknown("PIPELINE") as Pipeline;
+  pipeline.id = pipelineId;
 
   for (const item of includedList || []) {
     if (

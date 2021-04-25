@@ -43,46 +43,43 @@ export default function configureIssue(route) {
     const { pipeline, ...attrs } = this.normalizedRequestAttrs("issue-new");
 
     let createdPipeline;
-    // Create pipeline if exists
-    if (pipeline) {
-      const newPipeline = {
+    const newPipeline = {
+      createdTs: ts,
+      updaterId: attrs.creatorId,
+      updatedTs: ts,
+      name: pipeline.name,
+      status: "OPEN",
+      workspaceId: WORKSPACE_ID,
+    };
+
+    createdPipeline = schema.pipelines.create(newPipeline);
+
+    for (const stage of pipeline.stageList) {
+      const { taskList, databaseId, environmentId, ...stageAttrs } = stage;
+
+      const createdStage = schema.stages.create({
+        ...stageAttrs,
         createdTs: ts,
         updaterId: attrs.creatorId,
         updatedTs: ts,
-        name: pipeline.name,
-        status: "OPEN",
+        environmentId,
+        databaseId: databaseId != EMPTY_ID ? databaseId : null,
+        status: "PENDING",
+        pipeline: createdPipeline,
         workspaceId: WORKSPACE_ID,
-      };
+      });
 
-      createdPipeline = schema.pipelines.create(newPipeline);
-
-      for (const stage of pipeline.stageList) {
-        const { taskList, databaseId, environmentId, ...stageAttrs } = stage;
-
-        const createdStage = schema.stages.create({
-          ...stageAttrs,
+      for (const task of taskList) {
+        schema.tasks.create({
+          ...task,
           createdTs: ts,
           updaterId: attrs.creatorId,
           updatedTs: ts,
-          environmentId,
-          databaseId: databaseId != EMPTY_ID ? databaseId : null,
           status: "PENDING",
           pipeline: createdPipeline,
+          stage: createdStage,
           workspaceId: WORKSPACE_ID,
         });
-
-        for (const task of taskList) {
-          schema.tasks.create({
-            ...task,
-            createdTs: ts,
-            updaterId: attrs.creatorId,
-            updatedTs: ts,
-            status: "PENDING",
-            pipeline: createdPipeline,
-            stage: createdStage,
-            workspaceId: WORKSPACE_ID,
-          });
-        }
       }
     }
 
@@ -280,78 +277,76 @@ export default function configureIssue(route) {
 
     const ts = Date.now();
 
-    if (issue.pipelineId) {
-      const pipeline = schema.pipelines.find(issue.pipelineId);
-      // Pipeline and issue status is 1-to-1 mapping, so we just change the pipeline status accordingly.
-      pipeline.update({
-        status: attrs.status,
-      });
+    const pipeline = schema.pipelines.find(issue.pipelineId);
+    // Pipeline and issue status is 1-to-1 mapping, so we just change the pipeline status accordingly.
+    pipeline.update({
+      status: attrs.status,
+    });
 
-      const stageList = schema.stages.where({ pipelineId: pipeline.id }).models;
-      if (attrs.status == "DONE") {
-        // Returns error if any of the tasks is not in the end status.
-        for (let i = 0; i < stageList.length; i++) {
+    const stageList = schema.stages.where({ pipelineId: pipeline.id }).models;
+    if (attrs.status == "DONE") {
+      // Returns error if any of the tasks is not in the end status.
+      for (let i = 0; i < stageList.length; i++) {
+        const taskList = schema.tasks.where({
+          issueId: issue.id,
+          stageId: stageList[i].id,
+        }).models;
+
+        for (let j = 0; j < taskList.length; j++) {
+          if (
+            taskList[j].status != "DONE" &&
+            taskList[j].status != "CANCELED" &&
+            taskList[j].status != "SKIPPED"
+          ) {
+            return new Response(
+              404,
+              {},
+              {
+                errors: `Can't resolve issue ${issue.name}. Task ${taskList[j].name} in stage ${stageList[i].name} is in ${taskList[j].status} status`,
+              }
+            );
+          }
+        }
+      }
+
+      pipeline.update({ status: "DONE" });
+    }
+
+    // If issue is canceled, we find the current running stages and tasks, mark each of them CANCELED.
+    // We keep PENDING stages and tasks as is since the issue maybe reopened later, and it's better to
+    // keep them in the state before it was canceled.
+    if (attrs.status == "CANCELED") {
+      pipeline.update({ status: "CAMCELED" });
+
+      for (let i = 0; i < stageList.length; i++) {
+        if (stageList[i].status == "RUNNING") {
+          schema.stages.find(stageList[i].id).update({
+            status: "CANCELED",
+          });
+
           const taskList = schema.tasks.where({
             issueId: issue.id,
             stageId: stageList[i].id,
           }).models;
 
           for (let j = 0; j < taskList.length; j++) {
-            if (
-              taskList[j].status != "DONE" &&
-              taskList[j].status != "CANCELED" &&
-              taskList[j].status != "SKIPPED"
-            ) {
-              return new Response(
-                404,
-                {},
-                {
-                  errors: `Can't resolve issue ${issue.name}. Task ${taskList[j].name} in stage ${stageList[i].name} is in ${taskList[j].status} status`,
-                }
-              );
-            }
-          }
-        }
-
-        pipeline.update({ status: "DONE" });
-      }
-
-      // If issue is canceled, we find the current running stages and tasks, mark each of them CANCELED.
-      // We keep PENDING stages and tasks as is since the issue maybe reopened later, and it's better to
-      // keep them in the state before it was canceled.
-      if (attrs.status == "CANCELED") {
-        pipeline.update({ status: "CAMCELED" });
-
-        for (let i = 0; i < stageList.length; i++) {
-          if (stageList[i].status == "RUNNING") {
-            schema.stages.find(stageList[i].id).update({
-              status: "CANCELED",
-            });
-
-            const taskList = schema.tasks.where({
-              issueId: issue.id,
-              stageId: stageList[i].id,
-            }).models;
-
-            for (let j = 0; j < taskList.length; j++) {
-              if (taskList[j].status == "RUNNING") {
-                schema.tasks.find(taskList[j].id).update({
-                  status: "CANCELED",
-                });
-              }
+            if (taskList[j].status == "RUNNING") {
+              schema.tasks.find(taskList[j].id).update({
+                status: "CANCELED",
+              });
             }
           }
         }
       }
+    }
 
-      // If issue is opened, we just move the pipeline to the PENDING status.
-      // We keep stages and tasks status as is since even those status are canceled,
-      // we don't known whether it's canceled because of the issue is previously
-      // canceled, or it's canceled for a different reason. And it's always safer
-      // for user to explicitly resume the execution.
-      if (attrs.status == "OPEN") {
-        pipeline.update({ status: "PENDING" });
-      }
+    // If issue is opened, we just move the pipeline to the PENDING status.
+    // We keep stages and tasks status as is since even those status are canceled,
+    // we don't known whether it's canceled because of the issue is previously
+    // canceled, or it's canceled for a different reason. And it's always safer
+    // for user to explicitly resume the execution.
+    if (attrs.status == "OPEN") {
+      pipeline.update({ status: "PENDING" });
     }
 
     const changeList = [];

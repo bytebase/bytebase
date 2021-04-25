@@ -274,6 +274,8 @@ export default {
         for (const database of databaseList) {
           environmentList.push(database.instance.environment);
         }
+      } else {
+        environmentList.push(...store.getters["environment/environmentList"]());
       }
 
       const newIssue = {
