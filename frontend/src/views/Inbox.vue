@@ -341,15 +341,6 @@ export default {
             payload.newStatus
           );
         }
-        case "bb.message.issue.stage.status.update": {
-          const payload = message.payload as IssueUpdateStatusMessagePayload;
-          return (
-            "changed issue stage status from " +
-            payload.oldStatus +
-            " to " +
-            payload.newStatus
-          );
-        }
         case "bb.message.issue.comment":
           return "commented issue";
       }

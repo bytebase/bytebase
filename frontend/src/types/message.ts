@@ -33,7 +33,6 @@ export type InstanceMessageType =
 export type IssueMessageType =
   | "bb.message.issue.assign"
   | "bb.message.issue.status.update"
-  | "bb.message.issue.stage.status.update"
   | "bb.message.issue.comment";
 
 export type MessageType =
