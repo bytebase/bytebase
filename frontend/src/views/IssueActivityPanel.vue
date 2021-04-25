@@ -537,13 +537,6 @@ export default {
               }
             } else if (update.fieldId == IssueBuiltinFieldId.DESCRIPTION) {
               name = "description";
-            } else if (
-              update.fieldId.split(".")[0] == IssueBuiltinFieldId.STAGE
-            ) {
-              const stageId = update.fieldId.split(".")[1];
-              name = stageName(props.issue, stageId);
-              oldValue = update.oldValue;
-              newValue = update.newValue;
             } else if (update.fieldId == IssueBuiltinFieldId.SQL) {
               name = "SQL";
               oldValue = update.oldValue;

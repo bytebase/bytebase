@@ -190,19 +190,6 @@ export default function configureIssue(route) {
       }
     }
 
-    if (attrs.stage !== undefined) {
-      const stage = issue.stageList.find((item) => item.id == attrs.stage.id);
-      if (stage) {
-        changeList.push({
-          fieldId: [IssueBuiltinFieldId.STAGE, stage.id].join("."),
-          oldValue: stage.status,
-          newValue: attrs.stage.status,
-        });
-        stage.status = attrs.stage.status;
-        attrs.stageList = issue.stageList;
-      }
-    }
-
     if (attrs.subscriberIdList !== undefined) {
       if (issue.subscriberIdList != attrs.subscriberIdList) {
         changeList.push({
