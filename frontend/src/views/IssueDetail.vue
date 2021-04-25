@@ -41,7 +41,11 @@
           currentPipelineType == 'SINGLE_STAGE'
         "
       >
-        <PipelineSimpleFlow :pipeline="state.issue.pipeline" />
+        <PipelineSimpleFlow
+          :pipeline="state.issue.pipeline"
+          :selectedStage="selectedStage"
+          @select-stage-id="selectStageId"
+        />
       </template>
     </template>
 
@@ -78,11 +82,13 @@
             <IssueSidebar
               :issue="state.issue"
               :new="state.new"
+              :selectedStage="selectedStage"
               :inputFieldList="issueTemplate.inputFieldList"
               :allowEdit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
               @update-subscriber-list="updateSubscriberIdList"
               @update-custom-field="updateCustomField"
+              @select-stage-id="selectStageId"
             />
           </div>
           <div class="lg:hidden border-t border-block-border" />
@@ -141,6 +147,9 @@ import {
   isDemo,
   pipelineType,
   PipelineType,
+  indexFromSlug,
+  activeStage,
+  stageSlug,
 } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
@@ -160,6 +169,8 @@ import {
   UNKNOWN_ID,
   ProjectId,
   Environment,
+  Stage,
+  StageId,
 } from "../types";
 import {
   defaulTemplate,
@@ -483,6 +494,31 @@ export default {
 
     console.log(currentPipelineType.value);
 
+    const selectedStage = computed(
+      (): Stage => {
+        const stageSlug = router.currentRoute.value.query.stage as string;
+        if (stageSlug) {
+          const index = indexFromSlug(stageSlug);
+          return (state.issue as Issue).pipeline.stageList[index];
+        }
+        return activeStage((state.issue as Issue).pipeline);
+      }
+    );
+
+    const selectStageId = (stageId: StageId) => {
+      const stageList = (state.issue as Issue).pipeline.stageList;
+      const index = stageList.findIndex((item) => {
+        return item.id == stageId;
+      });
+      router.replace({
+        name: "workspace.issue.detail",
+        query: {
+          ...router.currentRoute.value.query,
+          stage: stageSlug(stageList[index].name, index),
+        },
+      });
+    };
+
     const allowEditSidebar = computed(() => {
       // For now, we only allow assignee to update the field when the issue
       // is 'OPEN'. This reduces flexibility as creator must ask assignee to
@@ -558,6 +594,8 @@ export default {
       currentPipelineType,
       currentUser,
       issueTemplate,
+      selectedStage,
+      selectStageId,
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,

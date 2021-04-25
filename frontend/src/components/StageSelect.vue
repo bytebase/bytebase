@@ -1,0 +1,64 @@
+<template>
+  <select
+    class="btn-select w-full disabled:cursor-not-allowed"
+    @change="
+      (e) => {
+        $emit('select-stage-id', e.target.value);
+      }
+    "
+  >
+    <template v-for="(stage, index) in pipeline.stageList" :key="index">
+      <option :value="stage.id" :selected="stage.id == state.selectedId">
+        {{ isActiveStage(stage.id) ? stage.name + " (active)" : stage.name }}
+      </option>
+    </template>
+  </select>
+</template>
+
+<script lang="ts">
+import { PropType, reactive, watch } from "vue";
+import { UNKNOWN_ID, Pipeline, StageId } from "../types";
+import { activeStage } from "../utils";
+
+interface LocalState {
+  selectedId: string;
+}
+
+export default {
+  name: "StageSelect",
+  emits: ["select-stage-id"],
+  components: {},
+  props: {
+    pipeline: {
+      required: true,
+      type: Object as PropType<Pipeline>,
+    },
+    selectedId: {
+      default: UNKNOWN_ID,
+      type: String,
+    },
+  },
+  setup(props, { emit }) {
+    const state = reactive<LocalState>({
+      selectedId: props.selectedId,
+    });
+
+    watch(
+      () => props.selectedId,
+      (cur, _) => {
+        state.selectedId = cur;
+      }
+    );
+
+    const isActiveStage = (stageId: StageId): boolean => {
+      const stage = activeStage(props.pipeline);
+      return stage.id == stageId;
+    };
+
+    return {
+      state,
+      isActiveStage,
+    };
+  },
+};
+</script>

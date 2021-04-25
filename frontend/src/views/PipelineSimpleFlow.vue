@@ -77,19 +77,19 @@
               </template>
             </div>
             <div
-              class="hidden lg:ml-4 lg:flex lg:flex-col"
+              class="hidden cursor-pointer hover:underline lg:ml-4 lg:flex lg:flex-col"
               :class="flowItemTextClass(item)"
+              @click.prevent="clickItem(item)"
             >
               <span class="text-xs">{{ item.stageName }}</span>
               <span class="text-sm">{{ item.taskName }}</span>
             </div>
             <div
-              class="ml-4 grid grid-cols-2 lg:hidden"
+              class="ml-4 group cursor-pointer grid grid-cols-2 lg:hidden"
               :class="flowItemTextClass(item)"
+              @click.prevent="clickItem(item)"
             >
-              <span class="col-span-1 flex items-center text-sm w-32">{{
-                item.stageName
-              }}</span>
+              <span class="col-span-1 text-sm w-32">{{ item.stageName }}</span>
               <span class="col-span-1 text-sm">{{ item.taskName }}</span>
             </div>
           </span>
@@ -122,10 +122,12 @@
 
 <script lang="ts">
 import { computed, PropType } from "vue";
-import { Pipeline, TaskStatus, TaskId } from "../types";
+import { useRouter } from "vue-router";
+import { Pipeline, TaskStatus, TaskId, Stage } from "../types";
 import { activeTask } from "../utils";
 
 interface FlowItem {
+  stageId: string;
   stageName: string;
   taskId: TaskId;
   taskName: string;
@@ -134,19 +136,26 @@ interface FlowItem {
 
 export default {
   name: "PipelineSimpleFlow",
-  emits: [],
+  emits: ["select-stage-id"],
   props: {
     pipeline: {
       required: true,
       type: Object as PropType<Pipeline>,
     },
+    selectedStage: {
+      required: true,
+      type: Object as PropType<Stage>,
+    },
   },
   components: {},
-  setup(props, {}) {
+  setup(props, { emit }) {
+    const router = useRouter();
+
     const itemList = computed<FlowItem[]>(() => {
       return props.pipeline.stageList.map((stage) => {
         const task = stage.taskList[0];
         return {
+          stageId: stage.id,
           stageName: stage.name,
           taskId: task.id,
           taskName: task.name,
@@ -176,8 +185,11 @@ export default {
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
         activeTask(props.pipeline).id === item.taskId
-          ? "font-semibold "
+          ? "font-bold "
           : "font-normal ";
+      if (item.stageId == props.selectedStage.id) {
+        textClass += "underline ";
+      }
       switch (item.taskStatus) {
         case "SKIPPED":
           return textClass + "text-control";
@@ -195,11 +207,16 @@ export default {
       }
     };
 
+    const clickItem = (item: FlowItem) => {
+      emit("select-stage-id", item.stageId);
+    };
+
     return {
       itemList,
       activeTask,
       flowItemIconClass,
       flowItemTextClass,
+      clickItem,
     };
   },
 };

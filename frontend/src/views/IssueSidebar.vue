@@ -66,17 +66,27 @@
     <div
       class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
     >
-      <template v-if="database.id != EMPTY_ID">
+      <template v-if="showStageSelect">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Database
+          Stage
         </h2>
-        <router-link
-          :to="`/db/${databaseSlug(database)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
-        >
-          {{ database.name }}
-        </router-link>
+        <div class="col-span-2">
+          <StageSelect
+            :pipeline="issue.pipeline"
+            :selectedId="selectedStage.id"
+            @select-stage-id="(stageId) => $emit('select-stage-id', stageId)"
+          />
+        </div>
       </template>
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        Database
+      </h2>
+      <router-link
+        :to="`/db/${databaseSlug(database)}`"
+        class="col-span-2 text-sm font-medium text-main hover:underline"
+      >
+        {{ database.id == EMPTY_ID ? "N/A" : database.name }}
+      </router-link>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Environment
@@ -87,7 +97,10 @@
       >
         {{ environmentName(environment) }}
       </router-link>
-
+    </div>
+    <div
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+    >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Project
       </h2>
@@ -189,6 +202,7 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
+import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import { InputField } from "../plugins";
 import {
@@ -199,8 +213,10 @@ import {
   Issue,
   IssueNew,
   EMPTY_ID,
+  Stage,
 } from "../types";
-import { activeDatabase, activeEnvironment, isDBAOrOwner } from "../utils";
+import { allTaskList, isDBAOrOwner } from "../utils";
+import { useRouter } from "vue-router";
 
 interface LocalState {}
 
@@ -210,6 +226,7 @@ export default {
     "update-assignee-id",
     "update-subscriber-list",
     "update-custom-field",
+    "select-stage-id",
   ],
   props: {
     issue: {
@@ -219,6 +236,10 @@ export default {
     new: {
       required: true,
       type: Boolean,
+    },
+    selectedStage: {
+      required: true,
+      type: Object as PropType<Stage>,
     },
     inputFieldList: {
       required: true,
@@ -234,10 +255,13 @@ export default {
     ProjectSelect,
     EnvironmentSelect,
     PrincipalSelect,
+    StageSelect,
     IssueStatusIcon,
   },
   setup(props, { emit }) {
     const store = useStore();
+    const router = useRouter();
+
     const state = reactive<LocalState>({});
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -253,7 +277,20 @@ export default {
             .taskList[0].databaseId;
           return store.getters["database/databaseById"](databaseId);
         }
-        return activeDatabase((props.issue as Issue).pipeline);
+        const stage = props.selectedStage;
+        return stage.taskList[0].database;
+      }
+    );
+
+    const environment = computed(
+      (): Environment => {
+        if (props.new) {
+          const environmentId = (props.issue as IssueNew).pipeline?.stageList[0]
+            .environmentId;
+          return store.getters["environment/environmentById"](environmentId);
+        }
+        const stage = props.selectedStage;
+        return stage.environment;
       }
     );
 
@@ -268,16 +305,11 @@ export default {
       }
     );
 
-    const environment = computed(
-      (): Environment => {
-        if (props.new) {
-          const environmentId = (props.issue as IssueNew).pipeline?.stageList[0]
-            .environmentId;
-          return store.getters["environment/environmentById"](environmentId);
-        }
-        return activeEnvironment((props.issue as Issue).pipeline);
-      }
-    );
+    const showStageSelect = computed((): boolean => {
+      return (
+        !props.new && allTaskList((props.issue as Issue).pipeline).length > 1
+      );
+    });
 
     const isCurrentUserSubscribed = computed((): boolean => {
       for (const principal of (props.issue as Issue).subscriberList) {
@@ -353,6 +385,7 @@ export default {
       environment,
       database,
       project,
+      showStageSelect,
       isCurrentUserSubscribed,
       subscriberList,
       allowEditAssignee,
