@@ -49,6 +49,14 @@
           </a>
         </div>
       </div>
+      <div
+        v-if="isDevOrDemo"
+        @click.prevent="ping"
+        class="py-1 menu-item"
+        role="menuitem"
+      >
+        Ping
+      </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
         <router-link to="/setting" class="menu-item" role="menuitem"
@@ -164,6 +172,16 @@ export default {
       });
     };
 
+    const ping = () => {
+      store.dispatch("debug/ping").then((message: string) => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: message,
+        });
+      });
+    };
+
     return {
       currentUser,
       resetQuickstart,
@@ -171,6 +189,7 @@ export default {
       switchToOwner,
       switchToDBA,
       switchToDeveloper,
+      ping,
     };
   },
 };

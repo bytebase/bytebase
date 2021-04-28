@@ -1,6 +1,7 @@
 /*
  * Mirage JS guide on Routes: https://miragejs.com/docs/route-handlers/functions
  */
+import { Response } from "miragejs";
 import configurePrincipal from "./principal";
 import configureAuth from "./auth";
 import configureMember from "./member";
@@ -28,6 +29,11 @@ export default function routes() {
   this.timing = 0;
 
   this.namespace = "api";
+
+  // Ping
+  this.get("/ping", function () {
+    return new Response(200, {}, "pong");
+  });
 
   // Principal
   configurePrincipal(this);
