@@ -7,10 +7,13 @@ import (
 	"os/signal"
 
 	"github.com/bytebase/bytebase/server"
+	"github.com/bytebase/bytebase/sqlite"
 )
 
 type Main struct {
 	Server *server.Server
+
+	DB *sqlite.DB
 }
 
 func main() {
@@ -55,13 +58,14 @@ func main() {
 func NewMain() *Main {
 	return &Main{
 		Server: server.NewServer(),
+		DB:     sqlite.NewDB(":memory:"),
 	}
 }
 
 func (m *Main) Run() error {
-	// if err := m.DB.Open(); err != nil {
-	// 	return fmt.Errorf("cannot open db: %w", err)
-	// }
+	if err := m.DB.Open(); err != nil {
+		return fmt.Errorf("cannot open db: %w", err)
+	}
 
 	// m.Server.TodoService = sqlite.NewTodoService(m.DB)
 
@@ -79,10 +83,10 @@ func (m *Main) Close() error {
 	// 		return err
 	// 	}
 	// }
-	// if m.DB != nil {
-	// 	if err := m.DB.Close(); err != nil {
-	// 		return err
-	// 	}
-	// }
+	if m.DB != nil {
+		if err := m.DB.Close(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
