@@ -78,8 +78,20 @@ app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 
 registerStoreWithRoleUtil(store);
 
+axios.interceptors.request.use((request) => {
+  if (isDev() && !request.url.startsWith("/mock")) {
+    console.log("Request", JSON.stringify(request, null, 2));
+  }
+  return request;
+});
+
 axios.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (isDev() && !response.config.url.startsWith("/mock")) {
+      console.log("Response", JSON.stringify(response, null, 2));
+    }
+    return response;
+  },
   (error) => {
     if (error.response) {
       store.dispatch("notification/pushNotification", {
