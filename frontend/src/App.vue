@@ -7,7 +7,15 @@
       </ProvideContext>
     </template>
     <template #fallback>
-      <span>Loading...</span>
+      <div class="flex flex-col p-4 space-y-4">
+        <span>Loading...</span>
+        <button
+          class="items-center flex justify-center btn-primary"
+          @click.prevent="ping"
+        >
+          Ping
+        </button>
+      </div>
     </template>
   </Suspense>
 </template>
@@ -42,6 +50,20 @@ export default {
       }
       return true;
     });
+
+    const ping = () => {
+      store.dispatch("debug/ping").then((message: string) => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: message,
+        });
+      });
+    };
+
+    return {
+      ping,
+    };
   },
 };
 </script>
