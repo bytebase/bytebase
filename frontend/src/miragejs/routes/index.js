@@ -78,4 +78,8 @@ export default function routes() {
   // Disable data source related route for now
   // as we only allow interacting with admin data source via instance API
   // configureDataSource(this);
+
+  // Endpoint destined to /api will pass through to the actual backend
+  this.namespace = "api";
+  this.passthrough();
 }
