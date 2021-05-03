@@ -49,7 +49,7 @@ const getters = {
 
 const actions = {
   async fetchMemberList({ commit, rootGetters }: any) {
-    const memberList = (await axios.get(`/api/member`)).data.data.map(
+    const memberList = (await axios.get(`/mock/member`)).data.data.map(
       (member: ResourceObject) => {
         return convert(member, rootGetters);
       }
@@ -63,7 +63,7 @@ const actions = {
   async createdMember({ commit, rootGetters }: any, newMember: MemberNew) {
     const createdMember = convert(
       (
-        await axios.post(`/api/member`, {
+        await axios.post(`/mock/member`, {
           data: {
             type: "membernew",
             attributes: newMember,
@@ -84,7 +84,7 @@ const actions = {
   ) {
     const updatedMember = convert(
       (
-        await axios.patch(`/api/member/${id}`, {
+        await axios.patch(`/mock/member/${id}`, {
           data: {
             type: "memberpatch",
             attributes: memberPatch,
@@ -103,7 +103,7 @@ const actions = {
     { state, commit }: { state: MemberState; commit: any },
     id: MemberId
   ) {
-    await axios.delete(`/api/member/${id}`);
+    await axios.delete(`/mock/member/${id}`);
 
     const newList = state.memberList.filter((item: Member) => {
       return item.id != id;

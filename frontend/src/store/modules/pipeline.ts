@@ -86,7 +86,7 @@ const getters = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/pipeline/${pipelineId}/status`, {
+      await axios.patch(`/mock/pipeline/${pipelineId}/status`, {
         data: {
           type: "pipelinestatuspatch",
           attributes: pipelineStatusPatch,

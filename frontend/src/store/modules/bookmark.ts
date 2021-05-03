@@ -49,7 +49,7 @@ const getters = {
 const actions = {
   async fetchBookmarkListByUser({ commit, rootGetters }: any, userId: UserId) {
     const bookmarkList = (
-      await axios.get(`/api/bookmark?user=${userId}`)
+      await axios.get(`/mock/bookmark?user=${userId}`)
     ).data.data.map((bookmark: ResourceObject) => {
       return convert(bookmark, rootGetters);
     });
@@ -60,7 +60,7 @@ const actions = {
   async createBookmark({ commit, rootGetters }: any, newBookmark: BookmarkNew) {
     const createdBookmark = convert(
       (
-        await axios.post(`/api/bookmark`, {
+        await axios.post(`/mock/bookmark`, {
           data: {
             type: "bookmark",
             attributes: newBookmark,
@@ -76,7 +76,7 @@ const actions = {
   },
 
   async deleteBookmark({ commit }: any, bookmark: Bookmark) {
-    await axios.delete(`/api/bookmark/${bookmark.id}`);
+    await axios.delete(`/mock/bookmark/${bookmark.id}`);
 
     commit("deleteBookmark", bookmark);
   },

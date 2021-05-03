@@ -42,7 +42,7 @@ const actions = {
   async login({ commit, rootGetters }: any, loginInfo: LoginInfo) {
     const loggedInUser = convert(
       (
-        await axios.post("/api/auth/login", {
+        await axios.post("/mock/auth/login", {
           data: { type: "loginInfo", attributes: loginInfo },
         })
       ).data.data,
@@ -56,7 +56,7 @@ const actions = {
 
   async signup({ commit, dispatch, rootGetters }: any, signupInfo: SignupInfo) {
     const newUser = (
-      await axios.post("/api/auth/signup", {
+      await axios.post("/mock/auth/signup", {
         data: { type: "signupInfo", attributes: signupInfo },
       })
     ).data.data;
@@ -78,7 +78,7 @@ const actions = {
     activateInfo: ActivateInfo
   ) {
     const activatedUser = (
-      await axios.post("/api/auth/activate", {
+      await axios.post("/mock/auth/activate", {
         data: { type: "activateInfo", attributes: activateInfo },
       })
     ).data.data;

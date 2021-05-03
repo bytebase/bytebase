@@ -28,11 +28,11 @@ export default function routes() {
   // By default development environment has a 400ms delay.
   this.timing = 0;
 
-  this.namespace = "api";
+  this.namespace = "mock";
 
   // Ping
   this.get("/ping", function () {
-    return new Response(200, {}, "pong");
+    return new Response(200, {}, "pong from mirage mock");
   });
 
   // Principal

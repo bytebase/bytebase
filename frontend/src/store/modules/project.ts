@@ -148,7 +148,7 @@ const getters = {
 
 const actions = {
   async fetchProjectList({ commit, rootGetters }: any) {
-    const data = (await axios.get(`/api/project?include=projectMember`)).data;
+    const data = (await axios.get(`/mock/project?include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
     });
@@ -168,7 +168,7 @@ const actions = {
     }
   ) {
     const path =
-      `/api/project?user=${userId}` +
+      `/mock/project?user=${userId}` +
       (rowStatusList ? "&rowstatus=" + rowStatusList.join(",") : "");
     const data = (await axios.get(`${path}&include=projectMember`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
@@ -181,7 +181,7 @@ const actions = {
 
   async fetchProjectById({ commit, rootGetters }: any, projectId: ProjectId) {
     const data = (
-      await axios.get(`/api/project/${projectId}?include=projectMember`)
+      await axios.get(`/mock/project/${projectId}?include=projectMember`)
     ).data;
     const project = convert(data.data, data.included, rootGetters);
 
@@ -194,7 +194,7 @@ const actions = {
 
   async createProject({ commit, rootGetters }: any, newProject: ProjectNew) {
     const data = (
-      await axios.post(`/api/project?include=projectMember`, {
+      await axios.post(`/mock/project?include=projectMember`, {
         data: {
           type: "projectnew",
           attributes: newProject,
@@ -222,7 +222,7 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/project/${projectId}?include=projectMember`, {
+      await axios.patch(`/mock/project/${projectId}?include=projectMember`, {
         data: {
           type: "projectpatch",
           attributes: projectPatch,
@@ -251,7 +251,7 @@ const actions = {
       projectMember: ProjectMemberNew;
     }
   ) {
-    await axios.post(`/api/project/${projectId}/member`, {
+    await axios.post(`/mock/project/${projectId}/member`, {
       data: {
         type: "projectmembernew",
         attributes: projectMember,
@@ -275,7 +275,7 @@ const actions = {
       projectMemberPatch: ProjectMemberPatch;
     }
   ) {
-    await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
+    await axios.patch(`/mock/project/${projectId}/member/${memberId}`, {
       data: {
         type: "projectmemberpatch",
         attributes: projectMemberPatch,
@@ -288,7 +288,9 @@ const actions = {
   },
 
   async deleteMember({ dispatch }: any, member: ProjectMember) {
-    await axios.delete(`/api/project/${member.project.id}/member/${member.id}`);
+    await axios.delete(
+      `/mock/project/${member.project.id}/member/${member.id}`
+    );
 
     const updatedProject = await dispatch(
       "fetchProjectById",
