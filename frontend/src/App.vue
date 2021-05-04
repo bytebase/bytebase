@@ -7,10 +7,10 @@
       </ProvideContext>
     </template>
     <template #fallback>
-      <div class="flex flex-col p-4 space-y-4">
-        <span>Loading...</span>
+      <div class="flex flex-row justify-between p-4 space-x-2">
+        <span class="items-center flex">Loading...</span>
         <button
-          class="items-center flex justify-center btn-primary"
+          class="items-center flex justify-center btn-normal"
           @click.prevent="ping"
         >
           Ping
