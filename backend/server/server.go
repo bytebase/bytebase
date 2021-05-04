@@ -49,6 +49,9 @@ func NewServer() *Server {
 		Skipper: func(c echo.Context) bool {
 			return !strings.HasPrefix(c.Path(), "/api")
 		},
+		Format: `{"time":"${time_rfc3339}",` +
+			`"method":"${method}","uri":"${uri}",` +
+			`"status":${status},"error":"${error}"` + "\n",
 	}))
 	e.Use(middleware.Recover())
 
