@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/sqlite"
@@ -41,18 +42,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	// r := gin.Default()
-	// // Dont worry about this line just yet, it will make sense in the Dockerise bit!
-	// r.Use(static.Serve("/", static.LocalFile("./web", true)))
-	// api := r.Group("/api")
-	// api.GET("/ping", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{
-	// 		"message": "pong from backend",
-	// 	})
-	// })
-
-	// r.Run()
 }
 
 func NewMain() *Main {
@@ -69,20 +58,28 @@ func (m *Main) Run() error {
 
 	// m.Server.TodoService = sqlite.NewTodoService(m.DB)
 
-	// if err := m.Server.Run(); err != nil {
-	// 	return err
-	// }
+	if err := m.Server.Run(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // Close gracefully stops the program.
 func (m *Main) Close() error {
-	// if m.Server != nil {
-	// 	if err := m.Server.Close(); err != nil {
-	// 		return err
-	// 	}
-	// }
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
+	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if m.Server != nil {
+		m.Server.Close(ctx)
+	}
+
 	if m.DB != nil {
 		if err := m.DB.Close(); err != nil {
 			return err

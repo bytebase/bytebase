@@ -1,7 +1,11 @@
 package server
 
-import "fmt"
+import (
+	"fmt"
 
-func (s *Server) registerEnvironmentRoutes() {
+	"github.com/labstack/echo/v4"
+)
+
+func (s *Server) registerEnvironmentRoutes(e *echo.Echo) {
 	fmt.Println("registerEnvironmentRoutes")
 }

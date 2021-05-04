@@ -16,3 +16,6 @@
 
 # Air (hot reload) generated
 .air
+
+# Frontend asset
+dist
