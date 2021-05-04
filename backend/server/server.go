@@ -7,21 +7,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type Environment struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Order uint   `json:"order"`
-}
-
-type EnvironmentService interface {
-}
-
 type Server struct {
-	EnvironmentService EnvironmentService
+	DebugService       api.DebugService
+	EnvironmentService api.EnvironmentService
 
 	e *echo.Echo
 }
@@ -70,9 +63,9 @@ func NewServer() *Server {
 
 	g := e.Group("/api")
 
-	s.registerDebugRoutes(g)
+	s.DebugService.RegisterRoutes(g)
 
-	s.registerEnvironmentRoutes(g)
+	s.EnvironmentService.RegisterRoutes(g)
 
 	return s
 }
