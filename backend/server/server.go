@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Environment struct {
@@ -38,6 +39,10 @@ func getFileSystem() http.FileSystem {
 
 func NewServer() *Server {
 	e := echo.New()
+
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
 	assetHandler := http.FileServer(getFileSystem())
 	e.GET("/", echo.WrapHandler(assetHandler))
