@@ -60,9 +60,11 @@ func NewServer() *Server {
 		e: e,
 	}
 
-	s.registerDebugRoutes(e)
+	g := e.Group("/api")
 
-	s.registerEnvironmentRoutes(e)
+	s.registerDebugRoutes(g)
+
+	s.registerEnvironmentRoutes(g)
 
 	return s
 }
