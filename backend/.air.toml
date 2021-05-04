@@ -2,8 +2,8 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  bin = "./.air/server"
-  cmd = "go build -o ./.air/server ./cmd/server/"
+  bin = "./.air/bytebase"
+  cmd = "go build -o ./.air/bytebase ./cmd/server/"
   delay = 1000
   exclude_dir = [".air", "vendor"]
   exclude_file = []

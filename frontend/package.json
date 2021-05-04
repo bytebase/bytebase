@@ -4,8 +4,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "mock": "vite",
-    "dev": "vite build --mode dev --outDir=../backend/server/dist --emptyOutDir",
-    "package": "vite build --outDir=../backend/server/dist --emptyOutDir",
+    "dev": "vite build --mode dev --outDir=../backend/cmd/server/dist --emptyOutDir",
+    "package": "vite build --outDir=../backend/cmd/server/dist --emptyOutDir",
     "demo": "vite build --mode demo --outDir=dist"
   },
   "dependencies": {
