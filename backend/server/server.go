@@ -5,6 +5,7 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -44,7 +45,11 @@ func NewServer() *Server {
 	e := echo.New()
 
 	// Middleware
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			return !strings.HasPrefix(c.Path(), "/api")
+		},
+	}))
 	e.Use(middleware.Recover())
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
