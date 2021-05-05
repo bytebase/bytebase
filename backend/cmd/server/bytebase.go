@@ -54,6 +54,7 @@ func main() {
 
 type Server struct {
 	DebugService       api.DebugService
+	AuthService        api.AuthService
 	EnvironmentService api.EnvironmentService
 
 	e *echo.Echo
@@ -126,7 +127,7 @@ func NewServer() *Server {
 		},
 		Format: `{"time":"${time_rfc3339}",` +
 			`"method":"${method}","uri":"${uri}",` +
-			`"status":${status},"error":"${error}"` + "\n",
+			`"status":${status},"error":"${error}"}` + "\n",
 	}))
 	e.Use(middleware.Recover())
 
@@ -146,6 +147,8 @@ func NewServer() *Server {
 	g := e.Group("/api")
 
 	s.DebugService.RegisterRoutes(g)
+
+	s.AuthService.RegisterRoutes(g)
 
 	s.EnvironmentService.RegisterRoutes(g)
 
