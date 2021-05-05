@@ -46,7 +46,7 @@ const getters = {
 
 const actions = {
   async fetchActivityListForUser({ commit, rootGetters }: any, userId: UserId) {
-    const activityList = (await axios.get(`/mock/activity`)).data.data.map(
+    const activityList = (await axios.get(`/api/activity`)).data.data.map(
       (activity: ResourceObject) => {
         return convert(activity, rootGetters);
       }
@@ -61,7 +61,7 @@ const actions = {
     issueId: IssueId
   ) {
     const activityList = (
-      await axios.get(`/mock/activity?container=${issueId}`)
+      await axios.get(`/api/activity?container=${issueId}`)
     ).data.data.map((activity: ResourceObject) => {
       return convert(activity, rootGetters);
     });
@@ -76,7 +76,7 @@ const actions = {
   ) {
     const createdActivity: Activity = convert(
       (
-        await axios.post(`/mock/activity`, {
+        await axios.post(`/api/activity`, {
           data: {
             type: "activitynew",
             attributes: newActivity,
@@ -112,7 +112,7 @@ const actions = {
     };
     const updatedActivity = convert(
       (
-        await axios.patch(`/mock/activity/${activityId}`, {
+        await axios.patch(`/api/activity/${activityId}`, {
           data: {
             type: "activitypatch",
             attributes: activityPatch,
@@ -128,7 +128,7 @@ const actions = {
   },
 
   async deleteActivity({ dispatch }: any, activity: Activity) {
-    await axios.delete(`/mock/activity/${activity.id}`);
+    await axios.delete(`/api/activity/${activity.id}`);
 
     if (activity.actionType.startsWith("bb.issue.")) {
       dispatch("fetchActivityListForIssue", activity.containerId);

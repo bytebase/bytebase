@@ -67,7 +67,7 @@ const actions = {
     rowStatusList?: RowStatus[]
   ) {
     const path =
-      "/mock/environment" +
+      "/api/environment" +
       (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
     const environmentList = (await axios.get(path)).data.data.map(
       (env: ResourceObject) => {
@@ -86,7 +86,7 @@ const actions = {
   ) {
     const createdEnvironment = convert(
       (
-        await axios.post(`/mock/environment`, {
+        await axios.post(`/api/environment`, {
           data: {
             type: "environment",
             attributes: newEnvironment,
@@ -118,7 +118,7 @@ const actions = {
       rowValueList: orderedEnvironmentList.map((_, index) => [index]),
     };
     const environmentList = (
-      await axios.patch(`/mock/environment/batch`, {
+      await axios.patch(`/api/environment/batch`, {
         data: {
           attributes: batchUpdate,
           type: "batchupdate",
@@ -145,7 +145,7 @@ const actions = {
   ) {
     const updatedEnvironment = convert(
       (
-        await axios.patch(`/mock/environment/${environmentId}`, {
+        await axios.patch(`/api/environment/${environmentId}`, {
           data: {
             type: "environmentpatch",
             attributes: environmentPatch,
@@ -164,7 +164,7 @@ const actions = {
     { commit }: { state: EnvironmentState; commit: any },
     id: EnvironmentId
   ) {
-    await axios.delete(`/mock/environment/${id}`);
+    await axios.delete(`/api/environment/${id}`);
 
     commit("deleteEnvironmentById", id);
   },

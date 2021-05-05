@@ -194,7 +194,7 @@ const actions = {
     // return it unconditionally.
     const data = (
       await axios.get(
-        `/mock/database?include=instance,project,project.projectMember`
+        `/api/database?include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -212,7 +212,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/mock/database?instance=${instanceId}&include=instance,project,project.projectMember`
+        `/api/database?instance=${instanceId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -230,7 +230,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/mock/database?project=${projectId}&include=instance,project,project.projectMember`
+        `/api/database?project=${projectId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -245,7 +245,7 @@ const actions = {
   async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
-        `/mock/database?user=${userId}&include=instance,project,project.projectMember`
+        `/api/database?user=${userId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -265,7 +265,7 @@ const actions = {
     // database of this particular environment.
     const data = (
       await axios.get(
-        `/mock/database?environment=${environmentId}&include=instance,project,project.projectMember`
+        `/api/database?environment=${environmentId}&include=instance,project,project.projectMember`
       )
     ).data;
     const databaseList = data.data.map((database: ResourceObject) => {
@@ -285,8 +285,8 @@ const actions = {
     }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
     const url = instanceId
-      ? `/mock/instance/${instanceId}/database/${databaseId}?include=instance,project,project.projectMember,dataSource`
-      : `/mock/database/${databaseId}?include=instance,project,project.projectMember,dataSource`;
+      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,project,project.projectMember,dataSource`
+      : `/api/database/${databaseId}?include=instance,project,project.projectMember,dataSource`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
@@ -300,7 +300,7 @@ const actions = {
   async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
     const data = (
       await axios.post(
-        `/mock/database?include=instance,project,project.projectMember`,
+        `/api/database?include=instance,project,project.projectMember`,
         {
           data: {
             type: "databasenew",
@@ -338,7 +338,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/mock/database/${databaseId}?include=instance,project,project.projectMember`,
+        `/api/database/${databaseId}?include=instance,project,project.projectMember`,
         {
           data: {
             type: "databasepatch",

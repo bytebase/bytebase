@@ -108,7 +108,7 @@ const actions = {
   async fetchIssueListForUser({ commit, rootGetters }: any, userId: UserId) {
     const data = (
       await axios.get(
-        `/mock/issue?user=${userId}&include=project,pipeline,pipeline.stage,pipeline.task`
+        `/api/issue?user=${userId}&include=project,pipeline,pipeline.stage,pipeline.task`
       )
     ).data;
     const issueList = data.data.map((issue: ResourceObject) => {
@@ -123,7 +123,7 @@ const actions = {
   async fetchIssueListForProject({ rootGetters }: any, projectId: ProjectId) {
     const data = (
       await axios.get(
-        `/mock/issue?project=${projectId}&include=project,pipeline,pipeline.stage,pipeline.task`
+        `/api/issue?project=${projectId}&include=project,pipeline,pipeline.stage,pipeline.task`
       )
     ).data;
     const issueList = data.data.map((issue: ResourceObject) => {
@@ -137,7 +137,7 @@ const actions = {
   async fetchIssueById({ commit, rootGetters }: any, issueId: IssueId) {
     const data = (
       await axios.get(
-        `/mock/issue/${issueId}?include=project,pipeline,pipeline.stage,pipeline.task`
+        `/api/issue/${issueId}?include=project,pipeline,pipeline.stage,pipeline.task`
       )
     ).data;
     const issue = convert(data.data, data.included, rootGetters);
@@ -151,7 +151,7 @@ const actions = {
   async createIssue({ commit, rootGetters }: any, newIssue: IssueNew) {
     const data = (
       await axios.post(
-        `/mock/issue?include=project,pipeline,pipeline.stage,pipeline.task`,
+        `/api/issue?include=project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
             type: "issuenew",
@@ -182,7 +182,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/mock/issue/${issueId}?include=project,pipeline,pipeline.stage,pipeline.task`,
+        `/api/issue/${issueId}?include=project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
             type: "issuepatch",
@@ -215,7 +215,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/mock/issue/${issueId}/status?include=project,pipeline,pipeline.stage,pipeline.task`,
+        `/api/issue/${issueId}/status?include=project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
             type: "issuestatuspatch",

@@ -90,7 +90,7 @@ const actions = {
   ) {
     // TODO: Returns the updated pipeline and update the issue.
     const data = (
-      await axios.patch(`/mock/pipeline/${pipelineId}/task/${taskId}/status`, {
+      await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
         data: {
           type: "taskstatuspatch",
           attributes: taskStatusPatch,

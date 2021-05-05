@@ -79,9 +79,22 @@ app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 registerStoreWithRoleUtil(store);
 
 axios.interceptors.request.use((request) => {
-  if (isDev() && !request.url.startsWith("/mock")) {
+  if (request.url.startsWith("/api")) {
+    // For demo version, we always use the mock data.
+    // Otherwise, we will gradually move the mock endpoint to the real backend endpoint.
+    if (
+      isDemo() ||
+      (!request.url.startsWith("/api/ping") &&
+        !request.url.startsWith("/api/auth/login"))
+    ) {
+      request.url = request.url.replace("/api", "/mock");
+    }
+  }
+
+  if (isDev() && request.url.startsWith("/api")) {
     console.log("Request", JSON.stringify(request, null, 2));
   }
+
   return request;
 });
 

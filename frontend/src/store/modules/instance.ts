@@ -126,7 +126,7 @@ const actions = {
     rowStatusList?: RowStatus[]
   ) {
     const path =
-      "/mock/instance" +
+      "/api/instance" +
       (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
     const data = (await axios.get(path)).data;
     const instanceList = data.data.map((instance: ResourceObject) => {
@@ -145,7 +145,7 @@ const actions = {
     // Data source contains sensitive info such as username, password so
     // we only fetch if requesting the specific instance id
     const data = (
-      await axios.get(`/mock/instance/${instanceId}?include=dataSource`)
+      await axios.get(`/api/instance/${instanceId}?include=dataSource`)
     ).data;
     const instance = convert(data.data, data.included, rootGetters);
 
@@ -158,7 +158,7 @@ const actions = {
 
   async createInstance({ commit, rootGetters }: any, newInstance: InstanceNew) {
     const data = (
-      await axios.post(`/mock/instance?include=dataSource`, {
+      await axios.post(`/api/instance?include=dataSource`, {
         data: {
           type: "instancenew",
           attributes: newInstance,
@@ -186,7 +186,7 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/mock/instance/${instanceId}?include=dataSource`, {
+      await axios.patch(`/api/instance/${instanceId}?include=dataSource`, {
         data: {
           type: "instancepatch",
           attributes: instancePatch,
@@ -207,7 +207,7 @@ const actions = {
     { commit }: { state: InstanceState; commit: any },
     instanceId: InstanceId
   ) {
-    await axios.delete(`/mock/instance/${instanceId}`);
+    await axios.delete(`/api/instance/${instanceId}`);
 
     commit("deleteInstanceById", instanceId);
   },

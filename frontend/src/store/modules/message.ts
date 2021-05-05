@@ -47,7 +47,7 @@ const getters = {
 const actions = {
   async fetchMessageListByUser({ commit, rootGetters }: any, userId: UserId) {
     const messageList = (
-      await axios.get(`/mock/message?user=${userId}`)
+      await axios.get(`/api/message?user=${userId}`)
     ).data.data.map((message: ResourceObject) => {
       return convert(message, rootGetters);
     });
@@ -65,7 +65,7 @@ const actions = {
   ) {
     const updatedMessage = convert(
       (
-        await axios.patch(`/mock/message/${messageId}`, {
+        await axios.patch(`/api/message/${messageId}`, {
           data: {
             type: "messagepatch",
             attributes: messagePatch,

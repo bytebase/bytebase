@@ -72,7 +72,7 @@ const getters = {
 
 const actions = {
   async fetchPrincipalList({ state, commit, rootGetters }: any) {
-    const userList: ResourceObject[] = (await axios.get(`/mock/principal`)).data
+    const userList: ResourceObject[] = (await axios.get(`/api/principal`)).data
       .data;
 
     // Dealing with bootstraping here. The system bot is the first user and we
@@ -101,7 +101,7 @@ const actions = {
     principalId: PrincipalId
   ) {
     const principal = convert(
-      (await axios.get(`/mock/principal/${principalId}`)).data.data,
+      (await axios.get(`/api/principal/${principalId}`)).data.data,
       rootGetters
     );
 
@@ -117,7 +117,7 @@ const actions = {
   ) {
     const createdPrincipal = convert(
       (
-        await axios.post(`/mock/principal`, {
+        await axios.post(`/api/principal`, {
           data: {
             type: "principalnew",
             attributes: {
@@ -149,7 +149,7 @@ const actions = {
   ) {
     const updatedPrincipal = convert(
       (
-        await axios.patch(`/mock/principal/${principalId}`, {
+        await axios.patch(`/api/principal/${principalId}`, {
           data: {
             type: "principalpatch",
             attributes: principalPatch,

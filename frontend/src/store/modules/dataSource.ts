@@ -114,7 +114,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/mock/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`
+        `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`
       )
     ).data;
     const dataSource = convert(data.data, data.included, rootGetters);
@@ -133,7 +133,7 @@ const actions = {
   ) {
     const data = (
       await axios.post(
-        `/mock/database/${newDataSource.databaseId}/datasource?include=database,instance`,
+        `/api/database/${newDataSource.databaseId}/datasource?include=database,instance`,
         {
           data: {
             type: "dataSourcenew",
@@ -173,7 +173,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/mock/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`,
+        `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`,
         {
           data: {
             type: "data-source-patch",
@@ -203,7 +203,7 @@ const actions = {
     }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
   ) {
     await axios.delete(
-      `/mock/database/${databaseId}/datasource/${dataSourceId}`
+      `/api/database/${databaseId}/datasource/${dataSourceId}`
     );
 
     commit("deleteDataSourceById", dataSourceId);
@@ -226,7 +226,7 @@ const actions = {
   ) {
     const data = (
       await axios.post(
-        `/mock/database/${databaseId}/datasource/${dataSourceId}/member?include=database,instance`,
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member?include=database,instance`,
         {
           data: {
             type: "dataSourceMember",
@@ -263,7 +263,7 @@ const actions = {
   ) {
     const data = (
       await axios.delete(
-        `/mock/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}?include=database,instance`
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}?include=database,instance`
       )
     ).data;
     // It's patching the data source and returns the updated data source
