@@ -26,32 +26,6 @@ type Main struct {
 	db *sqlite.DB
 }
 
-func main() {
-	// Setup signal handlers.
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() { <-c; cancel() }()
-
-	m := NewMain()
-
-	// Execute program.
-	if err := m.Run(); err != nil {
-		m.Close()
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	// Wait for CTRL-C.
-	<-ctx.Done()
-
-	// Clean up program.
-	if err := m.Close(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
-
 type Server struct {
 	DebugService       api.DebugService
 	AuthService        api.AuthService
@@ -162,5 +136,31 @@ func (server *Server) Run() error {
 func (server *Server) Close(ctx context.Context) {
 	if err := server.e.Shutdown(ctx); err != nil {
 		server.e.Logger.Fatal(err)
+	}
+}
+
+func main() {
+	// Setup signal handlers.
+	ctx, cancel := context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() { <-c; cancel() }()
+
+	m := NewMain()
+
+	// Execute program.
+	if err := m.Run(); err != nil {
+		m.Close()
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// Wait for CTRL-C.
+	<-ctx.Done()
+
+	// Clean up program.
+	if err := m.Close(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
