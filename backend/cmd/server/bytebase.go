@@ -17,6 +17,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+// const DSN = ":memory:"
+const DSN = "./data/bytebase_dev.db"
+
 type Main struct {
 	server *Server
 
@@ -74,7 +77,7 @@ func getFileSystem() http.FileSystem {
 func NewMain() *Main {
 	return &Main{
 		server: NewServer(),
-		db:     sqlite.NewDB(":memory:"),
+		db:     sqlite.NewDB(DSN),
 	}
 }
 

@@ -19,3 +19,6 @@
 
 # Frontend asset
 dist
+
+# Dev database
+data
