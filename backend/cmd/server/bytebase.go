@@ -32,6 +32,8 @@ func (m *Main) Run() error {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
+	m.server.AuthService = sqlite.NewAuthService(m.db)
+
 	if err := m.server.Run(); err != nil {
 		return err
 	}
