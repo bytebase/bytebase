@@ -13,7 +13,6 @@ import (
 )
 
 type Server struct {
-	DebugService       api.DebugService
 	AuthService        api.AuthService
 	EnvironmentService api.EnvironmentService
 
@@ -64,11 +63,11 @@ func NewServer() *Server {
 
 	g := e.Group("/api")
 
-	s.DebugService.RegisterRoutes(g)
+	s.registerDebugRoutes(g)
 
-	s.AuthService.RegisterRoutes(g)
+	s.registerAuthRoutes(g)
 
-	s.EnvironmentService.RegisterRoutes(g)
+	s.registerEnvironmentRoutes(g)
 
 	return s
 }

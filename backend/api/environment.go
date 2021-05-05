@@ -1,13 +1,7 @@
 package api
 
-import (
-	"fmt"
-
-	"github.com/labstack/echo/v4"
-)
-
 var (
-	_ Service = (*EnvironmentService)(nil)
+	_ EnvironmentService = (*EnvironmentService)(nil)
 )
 
 type Environment struct {
@@ -16,9 +10,5 @@ type Environment struct {
 	Order uint   `json:"order"`
 }
 
-type EnvironmentService struct {
-}
-
-func (s *EnvironmentService) RegisterRoutes(g *echo.Group) {
-	fmt.Println("registerEnvironmentRoutes")
+type EnvironmentService interface {
 }
