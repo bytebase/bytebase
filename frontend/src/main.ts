@@ -1,12 +1,14 @@
 import { createApp } from "vue";
 import axios from "axios";
 import moment from "moment";
+// @ts-ignore
 import VueClipboard from "vue3-clipboard";
 import App from "./App.vue";
 import { store } from "./store";
 import { router } from "./router";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
+// @ts-ignore
 import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
@@ -32,6 +34,7 @@ import {
 } from "./bbkit";
 import databaseSyncStatus from "./directives/database-sync-status";
 import dataSourceType from "./directives/data-source-type";
+// @ts-ignore
 import highlight from "./directives/highlight";
 import {
   isDev,
@@ -79,19 +82,20 @@ app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 registerStoreWithRoleUtil(store);
 
 axios.interceptors.request.use((request) => {
-  if (request.url.startsWith("/api")) {
+  if (request.url!.startsWith("/api")) {
     // For demo version, we always use the mock data.
     // Otherwise, we will gradually move the mock endpoint to the real backend endpoint.
     if (
       isDemo() ||
-      (!request.url.startsWith("/api/ping") &&
-        !request.url.startsWith("/api/auth/login"))
+      (!request.url!.startsWith("/api/ping") &&
+        !request.url!.startsWith("/api/auth/login") &&
+        !request.url!.startsWith("/api/principal"))
     ) {
-      request.url = request.url.replace("/api", "/mock");
+      request.url = request.url!.replace("/api", "/mock");
     }
   }
 
-  if (isDev() && request.url.startsWith("/api")) {
+  if (isDev() && request.url!.startsWith("/api")) {
     console.log("Request", JSON.stringify(request, null, 2));
   }
 
@@ -100,7 +104,7 @@ axios.interceptors.request.use((request) => {
 
 axios.interceptors.response.use(
   (response) => {
-    if (isDev() && !response.config.url.startsWith("/mock")) {
+    if (isDev() && !response.config.url!.startsWith("/mock")) {
       console.log("Response", JSON.stringify(response, null, 2));
     }
     return response;
