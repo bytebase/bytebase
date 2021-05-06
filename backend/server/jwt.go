@@ -15,8 +15,16 @@ const (
 	accessTokenCookieName  = "access-token"
 	refreshTokenCookieName = "refresh-token"
 	// Just for the demo purpose, I declared a secret here. In the real-world application, you might need to get it from the env variables.
-	jwtSecretKey        = "some-secret-key"
-	jwtRefreshSecretKey = "some-refresh-secret-key"
+	jwtSecretKey             = "some-secret-key"
+	jwtRefreshSecretKey      = "some-refresh-secret-key"
+	refreshThresholdDuration = 15 * time.Minute
+	accessTokenDuration      = 1 * time.Hour
+	refreshTokenDuration     = 24 * time.Hour
+	// Cookie expiration is the same as the refresh token.
+	// Suppose we have a valid refresh token, we should refresh the token in 2 cases:
+	// 1. The access token is about to expire in <<refreshThresholdDuration>>
+	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
+	cookieExpDuration = refreshTokenDuration
 )
 
 func GetJWTSecret() string {
@@ -36,39 +44,37 @@ type Claims struct {
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
 func GenerateTokensAndSetCookies(user *api.Principal, c echo.Context) error {
-	accessToken, exp, err := generateAccessToken(user)
+	accessToken, err := generateAccessToken(user)
 	if err != nil {
 		return err
 	}
-	setTokenCookie(accessTokenCookieName, accessToken, exp, c)
-	setUserCookie(user, exp, c)
+
+	cookieExp := time.Now().Add(cookieExpDuration)
+	setTokenCookie(accessTokenCookieName, accessToken, cookieExp, c)
+	setUserCookie(user, cookieExp, c)
 
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, exp, err := generateRefreshToken(user)
+	refreshToken, err := generateRefreshToken(user)
 	if err != nil {
 		return err
 	}
-	setTokenCookie(refreshTokenCookieName, refreshToken, exp, c)
+	setTokenCookie(refreshTokenCookieName, refreshToken, cookieExp, c)
 
 	return nil
 }
 
-func generateAccessToken(user *api.Principal) (string, time.Time, error) {
-	// Declare the expiration time of the token (1h).
-	expirationTime := time.Now().Add(1 * time.Hour)
-
+func generateAccessToken(user *api.Principal) (string, error) {
+	expirationTime := time.Now().Add(accessTokenDuration)
 	return generateToken(user, expirationTime, []byte(GetJWTSecret()))
 }
 
-func generateRefreshToken(user *api.Principal) (string, time.Time, error) {
-	// Declare the expiration time of the token - 24 hours.
-	expirationTime := time.Now().Add(24 * time.Hour)
-
+func generateRefreshToken(user *api.Principal) (string, error) {
+	expirationTime := time.Now().Add(refreshTokenDuration)
 	return generateToken(user, expirationTime, []byte(GetRefreshJWTSecret()))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(user *api.Principal, expirationTime time.Time, secret []byte) (string, time.Time, error) {
+func generateToken(user *api.Principal, expirationTime time.Time, secret []byte) (string, error) {
 	// Create the JWT claims, which includes the username and expiry time.
 	claims := &Claims{
 		Name: user.Name,
@@ -84,10 +90,10 @@ func generateToken(user *api.Principal, expirationTime time.Time, secret []byte)
 	// Create the JWT string.
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
-		return "", time.Now(), err
+		return "", err
 	}
 
-	return tokenString, expirationTime, nil
+	return tokenString, nil
 }
 
 // Here we are creating a new cookie, which will store the valid JWT token.
@@ -132,7 +138,7 @@ func TokenRefresherMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// We ensure that a new token is not issued until enough time has elapsed.
 		// In this case, a new token will only be issued if the old token is within
 		// 15 mins of expiry.
-		if time.Until(time.Unix(claims.ExpiresAt, 0)) < 15*time.Minute {
+		if time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration {
 			// Gets the refresh token from the cookie.
 			fmt.Println("Token about to expire, generate new token...")
 			rc, err := c.Cookie(refreshTokenCookieName)
