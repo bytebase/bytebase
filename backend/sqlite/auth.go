@@ -16,6 +16,6 @@ func NewAuthService(db *DB) *AuthService {
 	return &AuthService{db: db}
 }
 
-func (s *AuthService) FindUserWithEmailAndPassword(email string, password string) (*api.Principal, error) {
+func (s *AuthService) FindPrincipalByEmail(email string) (*api.Principal, error) {
 	return &api.Principal{ID: 1, Email: "foo@example.com"}, nil
 }

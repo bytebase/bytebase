@@ -6,5 +6,5 @@ type Login struct {
 }
 
 type AuthService interface {
-	FindUserWithEmailAndPassword(email string, password string) (*Principal, error)
+	FindPrincipalByEmail(email string) (*Principal, error)
 }

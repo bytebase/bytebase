@@ -16,12 +16,23 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request")
 		}
 
-		_, err := s.AuthService.FindUserWithEmailAndPassword(login.Email, login.Password)
+		user, err := s.AuthService.FindPrincipalByEmail(login.Email)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized)
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process login request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user")
+		}
+
+		// // Compare the stored hashed password, with the hashed version of the password that was received.
+		// if err := bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(u.Password)); err != nil {
+		// 	// If the two passwords don't match, return a 401 status.
+		// 	return echo.NewHTTPError(http.StatusUnauthorized, "Password is incorrect")
+		// }
+
+		// If password is correct, generate tokens and set cookies.
+		if err := GenerateTokensAndSetCookies(user, c); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token")
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
