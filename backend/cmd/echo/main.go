@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -21,20 +23,21 @@ type Main struct {
 }
 
 func NewMain() *Main {
-	return &Main{
-		server: server.NewServer(),
-		db:     sqlite.NewDB(DSN),
-	}
+	return &Main{}
 }
 
 func (m *Main) Run() error {
-	if err := m.db.Open(); err != nil {
+	db := sqlite.NewDB(DSN)
+	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
-	m.server.AuthService = sqlite.NewAuthService(m.db)
+	m.db = db
 
-	if err := m.server.Run(); err != nil {
+	server := server.NewServer()
+	server.AuthService = sqlite.NewAuthService(db)
+	m.server = server
+	if err := server.Run(); err != nil {
 		return err
 	}
 
@@ -43,20 +46,17 @@ func (m *Main) Run() error {
 
 // Close gracefully stops the program.
 func (m *Main) Close() error {
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
-	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-
+	log.Println("Trying to stop bytebase...")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if m.server != nil {
-		m.server.Close(ctx)
+		log.Println("Trying to gracefully shutdown server...")
+		m.server.Shutdown(ctx)
 	}
 
 	if m.db != nil {
+		log.Println("Trying to close database connections...")
 		if err := m.db.Close(); err != nil {
 			return err
 		}
@@ -65,27 +65,32 @@ func (m *Main) Close() error {
 }
 
 func main() {
+	m := NewMain()
+
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	go func() { <-c; cancel() }()
-
-	m := NewMain()
+	go func() {
+		<-c
+		if err := m.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		cancel()
+	}()
 
 	// Execute program.
 	if err := m.Run(); err != nil {
-		m.Close()
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		if err != http.ErrServerClosed {
+			m.Close()
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
 	// Wait for CTRL-C.
 	<-ctx.Done()
 
-	// Clean up program.
-	if err := m.Close(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	log.Println("Bytebase stopped properly.")
 }

@@ -90,7 +90,7 @@ func (server *Server) Run() error {
 	return server.e.Start(":8080")
 }
 
-func (server *Server) Close(ctx context.Context) {
+func (server *Server) Shutdown(ctx context.Context) {
 	if err := server.e.Shutdown(ctx); err != nil {
 		server.e.Logger.Fatal(err)
 	}
