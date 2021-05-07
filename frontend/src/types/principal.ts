@@ -5,7 +5,7 @@ import { PrincipalId } from "./id";
 import { RoleType } from "./member";
 
 // we may support application/bot identity.
-export type PrincipalStatus = "UNKNOWN" | "INVITED" | "ACTIVE";
+export type PrincipalStatus = "INVITED" | "ACTIVE";
 
 export type PrincipalType = "END_USER" | "BOT";
 
