@@ -6,7 +6,7 @@
     "createdTs": 1614528000000,
     "creatorId": "1",
     "status": "ACTIVE",
-    "type": "BOT",
+    "type": "SYSTEM_BOT",
     "name": "Bytebase",
     "email": "",
     "passwordHash": ""
