@@ -18,10 +18,10 @@ const (
 )
 
 type Principal struct {
-	ID        uint            `jsonapi:"primary,principal"`
-	CreatorId uint            `jsonapi:"attr,creatorId"`
+	ID        int             `jsonapi:"primary,principal"`
+	CreatorId int             `jsonapi:"attr,creatorId"`
 	CreatorTs int64           `jsonapi:"attr,creatorTs"`
-	UpdaterId uint            `jsonapi:"attr,updaterId"`
+	UpdaterId int             `jsonapi:"attr,updaterId"`
 	UpdatedTs int64           `jsonapi:"attr,updatedTs"`
 	Status    PrincipalStatus `jsonapi:"attr,status"`
 	Type      PrincipalType   `jsonapi:"attr,type"`
@@ -34,4 +34,5 @@ type Principal struct {
 type PrincipalService interface {
 	FindPrincipalList(ctx context.Context) ([]*Principal, error)
 	FindPrincipalByEmail(ctx context.Context, email string) (*Principal, error)
+	FindPrincipalByID(ctx context.Context, ID int) (*Principal, error)
 }

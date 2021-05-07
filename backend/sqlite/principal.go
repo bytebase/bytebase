@@ -40,6 +40,22 @@ func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email strin
 	return list[0], nil
 }
 
+func (s *PrincipalService) FindPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	list, err := findPrincipalList(ctx, tx, principalFilter{ID: &id})
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
+	}
+	return list[0], nil
+}
+
 // FindPrincipalList retrieves a list of principals.
 func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
