@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
@@ -25,11 +26,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user")
 		}
 
-		// // Compare the stored hashed password, with the hashed version of the password that was received.
-		// if err := bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(u.Password)); err != nil {
-		// 	// If the two passwords don't match, return a 401 status.
-		// 	return echo.NewHTTPError(http.StatusUnauthorized, "Password is incorrect")
-		// }
+		// Compare the stored hashed password, with the hashed version of the password that was received.
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(login.Password)); err != nil {
+			// If the two passwords don't match, return a 401 status.
+			return echo.NewHTTPError(http.StatusUnauthorized, "Password is incorrect")
+		}
 
 		// If password is correct, generate tokens and set cookies.
 		if err := GenerateTokensAndSetCookies(user, c); err != nil {

@@ -20,7 +20,8 @@ VALUES
         'END_USER',
         'Demo Owner',
         'demo@example.com',
-        ''
+        -- 1024
+        '$2a$10$/65QFlHOmDzXshEMt/qYuunbJrXtRLcaYDcRODbyOPa/9/N0N8Zc2'
     );
 
 INSERT INTO
@@ -43,7 +44,8 @@ VALUES
         'END_USER',
         'Jerry DBA',
         'jerry@example.com',
-        ''
+        -- aaa
+        '$2a$10$a.o5.ELPUO8PKYGuWTSDseOqNssImU2b9qFgBaDKI7CKAKIhQYVfG'
     );
 
 INSERT INTO
@@ -66,7 +68,8 @@ VALUES
         'END_USER',
         'Tom Dev',
         'tom@example.com',
-        ''
+        -- aaa
+        '$2a$10$cB0QuMqG0Bmz/j1LDI2gXOqUXtp.Yd87zRus6zxR026RyiyuWeJye'
     );
 
 INSERT INTO
@@ -89,7 +92,8 @@ VALUES
         'END_USER',
         'Alice DBA',
         'alice@example.com',
-        ''
+        -- aaa
+        '$2a$10$pbkq/3m/AJ.rE8.6G/.Moez5Ld6dIaFKRtnsHNtYofHjupWWP/6YW'
     );
 
 INSERT INTO
@@ -112,7 +116,8 @@ VALUES
         'END_USER',
         'Jane Dev',
         'jane@example.com',
-        ''
+        -- aaa
+        '$2a$10$DJ/T2SmdNiOAKXnuf.LQzenVYr4sIQSDu004Io1svmiRUmvAEMIw6'
     );
 
 INSERT INTO
@@ -135,5 +140,6 @@ VALUES
         'END_USER',
         'Bob Invited',
         'bob@example.com',
-        ''
+        -- aaa
+        '$2a$10$jD2RsG.vEvbcbO3T8bBrtePWWC9ewJclQGqyeoY9slwrslBMP/Ey6'
     );
