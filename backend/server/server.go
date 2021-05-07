@@ -13,7 +13,7 @@ import (
 )
 
 type Server struct {
-	AuthService        api.AuthService
+	PrincipalService   api.PrincipalService
 	EnvironmentService api.EnvironmentService
 
 	e *echo.Echo
@@ -65,7 +65,7 @@ func NewServer() *Server {
 
 	g.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		Skipper: func(c echo.Context) bool {
-			return strings.HasPrefix(c.Path(), "/api/auth")
+			return strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/principal")
 		},
 		Claims:                  &Claims{},
 		SigningMethod:           middleware.AlgorithmHS256,
@@ -80,6 +80,8 @@ func NewServer() *Server {
 	s.registerDebugRoutes(g)
 
 	s.registerAuthRoutes(g)
+
+	s.registerPrincipalRoutes(g)
 
 	s.registerEnvironmentRoutes(g)
 

@@ -35,7 +35,8 @@ func (m *Main) Run() error {
 	m.db = db
 
 	server := server.NewServer()
-	server.AuthService = sqlite.NewAuthService(db)
+	server.PrincipalService = sqlite.NewPrincipalService(db)
+
 	m.server = server
 	if err := server.Run(); err != nil {
 		return err

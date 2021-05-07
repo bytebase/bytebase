@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/bytebase/bytebase"
@@ -16,7 +17,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request")
 		}
 
-		user, err := s.AuthService.FindPrincipalByEmail(login.Email)
+		user, err := s.PrincipalService.FindPrincipalByEmail(context.Background(), login.Email)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized)
@@ -37,7 +38,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, login); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal login response")
 		}
 

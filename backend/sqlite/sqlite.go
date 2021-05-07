@@ -238,3 +238,18 @@ type Tx struct {
 	db  *DB
 	now time.Time
 }
+
+// FormatError returns err as a bytebase error, if possible.
+// Otherwise returns the original error.
+func FormatError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	switch err.Error() {
+	// case "UNIQUE constraint failed: dial_memberships.dial_id, dial_memberships.user_id":
+	// 	return bytebase.Errorf(bytebase.ECONFLICT, "Dial membership already exists.")
+	default:
+		return err
+	}
+}

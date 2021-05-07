@@ -1,15 +1,15 @@
 CREATE TABLE principal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     -- "INVITED" | "ACTIVE"
     `status` TEXT NOT NULL,
     -- "END_USER" | "SYSTEM_BOT"
     `type` TEXT NOT NULL,
     name TEXT NOT NULL,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
 );
 
@@ -45,9 +45,9 @@ VALUES
 CREATE TABLE workspace (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     -- "NORMAL" | "ARCHIVED" | "PENDING_DELETE"
     row_status TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
