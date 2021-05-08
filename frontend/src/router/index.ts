@@ -545,8 +545,7 @@ export const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const loginUser: Principal = store.getters["auth/currentUser"]();
-  const isGuest = loginUser.id == "0";
+  const isLoggedIn = store.getters["auth/isLoggedIn"]();
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
@@ -563,7 +562,7 @@ router.beforeEach((to, from, next) => {
     to.name === ACTIVATE_MODULE ||
     to.name === PASSWORD_RESET_MODULE
   ) {
-    if (!isGuest) {
+    if (isLoggedIn) {
       next({ name: HOME_MODULE, replace: true });
     } else {
       if (to.name === ACTIVATE_MODULE) {
@@ -581,12 +580,13 @@ router.beforeEach((to, from, next) => {
     }
     return;
   } else {
-    if (isGuest) {
+    if (!isLoggedIn) {
       next({ name: SIGNIN_MODULE, replace: true });
       return;
     }
   }
 
+  const loginUser: Principal = store.getters["auth/currentUser"]();
   if (to.name === "workspace.environment" || to.name === "workspace.instance") {
     if (isDBAOrOwner(loginUser.role)) {
       next();

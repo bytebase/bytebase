@@ -79,3 +79,16 @@ export function randomString(n?: number): string {
   }
   return result;
 }
+
+export function getCookie(name: string): string {
+  const list = document.cookie.split(";");
+  for (var i = 0; i < list.length; i++) {
+    const parts = list[i].split("=");
+    if (parts[0] == name) {
+      // For now, just assumes strings are enclosed by quotes
+      return parts.length > 1 ? parts[1].slice(1, -1) : "";
+    }
+  }
+
+  return "";
+}

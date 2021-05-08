@@ -1,5 +1,6 @@
 import axios from "axios";
 import isEqual from "lodash-es/isEqual";
+import isEmpty from "lodash-es/isEmpty";
 import {
   Principal,
   AuthState,
@@ -7,32 +8,23 @@ import {
   SignupInfo,
   ActivateInfo,
   ResourceObject,
-  empty,
-  EMPTY_ID,
+  unknown,
 } from "../../types";
-
-const GUEST: Principal = {
-  id: EMPTY_ID,
-  creator: empty("PRINCIPAL") as Principal,
-  updater: empty("PRINCIPAL") as Principal,
-  createdTs: 0,
-  updatedTs: 0,
-  status: "ACTIVE",
-  type: "END_USER",
-  name: "Guest",
-  email: "guest@bb.com",
-  role: "GUEST",
-};
+import { getCookie } from "../../utils";
 
 function convert(user: ResourceObject, rootGetters: any): Principal {
   return rootGetters["principal/principalById"](user.id);
 }
 
 const state: () => AuthState = () => ({
-  currentUser: GUEST,
+  currentUser: unknown("PRINCIPAL") as Principal,
 });
 
 const getters = {
+  isLoggedIn: (state: AuthState) => (): boolean => {
+    return !isEmpty(getCookie("user"));
+  },
+
   currentUser: (state: AuthState) => (): Principal => {
     return state.currentUser;
   },
@@ -102,7 +94,7 @@ const actions = {
       commit("setCurrentUser", user);
       return user;
     }
-    return GUEST;
+    return unknown("PRINCIPAL") as Principal;
   },
 
   async refreshUser({ commit, state, rootGetters }: any) {
@@ -118,8 +110,8 @@ const actions = {
 
   async logout({ commit }: any) {
     localStorage.removeItem("bb.auth.user");
-    commit("setCurrentUser", GUEST);
-    return GUEST;
+    commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
+    return unknown("PRINCIPAL") as Principal;
   },
 };
 

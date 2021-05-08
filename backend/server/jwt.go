@@ -29,7 +29,7 @@ const (
 	// Suppose we have a valid refresh token, we should refresh the token in 2 cases:
 	// 1. The access token is about to expire in <<refreshThresholdDuration>>
 	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
-	cookieExpDuration = refreshTokenDuration - 1*time.Minute
+	cookieExpDuration = 24 * time.Hour //refreshTokenDuration - 1*time.Minute
 
 	// The key name used to store jwt token in the context
 	tokenContextKey = "token"
