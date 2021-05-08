@@ -19,6 +19,7 @@ import { Message } from "./message";
 import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
+import { Notification } from "./notification";
 
 export interface AuthState {
   currentUser: Principal;
