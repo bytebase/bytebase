@@ -58,7 +58,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s.", c.Param("id")))
 		}
 
-		principalPatch := &api.PrincipalPatch{}
+		principalPatch := &api.PrincipalPatch{UpdaterId: c.Get(GetPrincipalIdContextKey()).(int)}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			log.Println(err)
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request.")

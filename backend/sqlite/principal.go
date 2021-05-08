@@ -178,11 +178,12 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 	// Execute update query with RETURNING.
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE principal
-		SET name = ?
+		SET name = ?, updater_id = ?
 		WHERE id = ?
 		RETURNING *
 	`,
 		principal.Name,
+		principal.UpdaterId,
 		id,
 	)
 	if err != nil {

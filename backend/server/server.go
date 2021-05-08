@@ -65,17 +65,17 @@ func NewServer() *Server {
 
 	g.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		Skipper: func(c echo.Context) bool {
-			return strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/principal")
+			return strings.HasPrefix(c.Path(), "/api/auth") || c.Path() == "/api/principal"
 		},
 		Claims:                  &Claims{},
 		SigningMethod:           middleware.AlgorithmHS256,
 		SigningKey:              []byte(GetJWTSecret()),
-		ContextKey:              "user",
+		ContextKey:              GetTokenContextKey(),
 		TokenLookup:             "cookie:access-token", // "<source>:<name>"
 		ErrorHandlerWithContext: JWTErrorChecker,
 	}))
 
-	g.Use(TokenRefresherMiddleware)
+	g.Use(TokenMiddleware)
 
 	s.registerDebugRoutes(g)
 

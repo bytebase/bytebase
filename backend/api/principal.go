@@ -18,20 +18,29 @@ const (
 )
 
 type Principal struct {
-	ID        int             `jsonapi:"primary,principal"`
-	CreatorId int             `jsonapi:"attr,creatorId"`
-	CreatorTs int64           `jsonapi:"attr,creatorTs"`
-	UpdaterId int             `jsonapi:"attr,updaterId"`
-	UpdatedTs int64           `jsonapi:"attr,updatedTs"`
-	Status    PrincipalStatus `jsonapi:"attr,status"`
-	Type      PrincipalType   `jsonapi:"attr,type"`
-	Name      string          `jsonapi:"attr,name"`
-	Email     string          `jsonapi:"attr,email"`
+	ID int `jsonapi:"primary,principal"`
+
+	// Standard fields
+	CreatorId int   `jsonapi:"attr,creatorId"`
+	CreatorTs int64 `jsonapi:"attr,creatorTs"`
+	UpdaterId int   `jsonapi:"attr,updaterId"`
+	UpdatedTs int64 `jsonapi:"attr,updatedTs"`
+
+	// Domain specific fields
+	Status PrincipalStatus `jsonapi:"attr,status"`
+	Type   PrincipalType   `jsonapi:"attr,type"`
+	Name   string          `jsonapi:"attr,name"`
+	Email  string          `jsonapi:"attr,email"`
 	// Not needed to return to the client
 	PasswordHash string
 }
 
 type PrincipalPatch struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterId int
+
+	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
 }
 

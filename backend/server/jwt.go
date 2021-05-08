@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +26,12 @@ const (
 	// 1. The access token is about to expire in <<refreshThresholdDuration>>
 	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
 	cookieExpDuration = refreshTokenDuration
+
+	// The key name used to store jwt token in the context
+	tokenContextKey = "token"
+	// The key name used to store principal id in the context
+	// principal id is extracted from the jwt token subject field.
+	principalIdContextKey = "principal-id"
 )
 
 func GetJWTSecret() string {
@@ -33,6 +40,14 @@ func GetJWTSecret() string {
 
 func GetRefreshJWTSecret() string {
 	return jwtRefreshSecretKey
+}
+
+func GetTokenContextKey() string {
+	return tokenContextKey
+}
+
+func GetPrincipalIdContextKey() string {
+	return principalIdContextKey
 }
 
 // Create a struct that will be encoded to a JWT.
@@ -81,6 +96,7 @@ func generateToken(user *api.Principal, expirationTime time.Time, secret []byte)
 		StandardClaims: jwt.StandardClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds.
 			ExpiresAt: expirationTime.Unix(),
+			Subject:   strconv.Itoa(user.ID),
 		},
 	}
 
@@ -119,7 +135,10 @@ func setUserCookie(user *api.Principal, expiration time.Time, c echo.Context) {
 	c.SetCookie(cookie)
 }
 
-func TokenRefresherMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+// TokenMiddleware does following things
+// 1. Extract principal id from the token and set it in the context to be used by the handler.
+// 2. Refresh the access_token and refresh_token if access_token is about to expire.
+func TokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {
@@ -127,13 +146,19 @@ func TokenRefresherMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// If the user is not authenticated (no user token data in the context), don't do anything.
-		if c.Get("user") == nil {
+		if c.Get(GetTokenContextKey()) == nil {
 			return next(c)
 		}
 		// Gets user token from the context.
-		u := c.Get("user").(*jwt.Token)
+		u := c.Get(GetTokenContextKey()).(*jwt.Token)
 
 		claims := u.Claims.(*Claims)
+
+		principalId, err := strconv.Atoi(claims.Subject)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")
+		}
+		c.Set(GetPrincipalIdContextKey(), principalId)
 
 		// We ensure that a new token is not issued until enough time has elapsed.
 		// In this case, a new token will only be issued if the old token is within
