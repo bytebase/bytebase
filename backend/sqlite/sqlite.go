@@ -156,7 +156,6 @@ func (db *DB) migrate() error {
 	v1, dirty1, err := m.Version()
 	if err != nil {
 		if err != migrate.ErrNilVersion {
-			log.Fatal(err)
 			return err
 		}
 	}
@@ -166,8 +165,7 @@ func (db *DB) migrate() error {
 		if err == migrate.ErrNoChange {
 			log.Println("No need to migrate down.")
 		} else {
-			log.Fatal(err)
-			return err
+			return fmt.Errorf("migrate down error: %w", err)
 		}
 	}
 
@@ -175,7 +173,6 @@ func (db *DB) migrate() error {
 	log.Printf("Database version before migration up: %v, dirty: %v", v2, dirty2)
 	if err != nil {
 		if err != migrate.ErrNilVersion {
-			log.Fatal(err)
 			return err
 		}
 	}
@@ -184,15 +181,13 @@ func (db *DB) migrate() error {
 		if err == migrate.ErrNoChange {
 			log.Println("No need to migrate up.")
 		} else {
-			log.Fatal(err)
-			return err
+			return fmt.Errorf("migrate up error: %w", err)
 		}
 	}
 
 	v3, dirty3, err := m.Version()
 	if err != nil {
 		if err != migrate.ErrNilVersion {
-			log.Fatal(err)
 			return err
 		}
 	}

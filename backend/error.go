@@ -36,7 +36,7 @@ type Error struct {
 
 // Error implements the error interface. Not used by the application otherwise.
 func (e *Error) Error() string {
-	return fmt.Sprintf("wtf error: code=%s message=%s", e.Code, e.Message)
+	return fmt.Sprintf("bytebase error: code=%s message=%s", e.Code, e.Message)
 }
 
 // ErrorCode unwraps an application error and returns its code.

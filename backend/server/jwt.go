@@ -62,7 +62,7 @@ type Claims struct {
 func GenerateTokensAndSetCookies(user *api.Principal, c echo.Context) error {
 	accessToken, err := generateAccessToken(user)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate access token: %w", err)
 	}
 
 	cookieExp := time.Now().Add(cookieExpDuration)
@@ -72,7 +72,7 @@ func GenerateTokensAndSetCookies(user *api.Principal, c echo.Context) error {
 	// We generate here a new refresh token and saving it to the cookie.
 	refreshToken, err := generateRefreshToken(user)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 	setTokenCookie(refreshTokenCookieName, refreshToken, cookieExp, c)
 
@@ -195,5 +195,5 @@ func TokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 // JWTErrorChecker will be executed when user try to access a protected path.
 func JWTErrorChecker(err error, c echo.Context) error {
 	log.Printf("Unauthorized to access protected route %s, err: %v\n", c.Path(), err)
-	return err
+	return fmt.Errorf("invalid access token: %w", err)
 }

@@ -26,7 +26,7 @@ func NewPrincipalService(db *DB) *PrincipalService {
 func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
@@ -36,7 +36,7 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 
 	return principal, nil
@@ -47,7 +47,7 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
@@ -55,7 +55,7 @@ func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email strin
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "principal not found."}
 	}
 	return list[0], nil
 }
@@ -65,7 +65,7 @@ func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email strin
 func (s *PrincipalService) FindPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
@@ -76,7 +76,7 @@ func (s *PrincipalService) FindPrincipalByID(ctx context.Context, id int) (*api.
 func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
@@ -93,17 +93,17 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 func (s *PrincipalService) PatchPrincipalByID(ctx context.Context, id int, patch *api.PrincipalPatch) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
 	principal, err := patchPrincipal(ctx, tx, id, patch)
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 
 	return principal, nil
@@ -232,7 +232,7 @@ func findPrincipalByID(ctx context.Context, tx *Tx, id int) (*api.Principal, err
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "principal not found."}
 	}
 	return list[0], nil
 }
@@ -281,5 +281,5 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 		return &principal, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "principal not found."}
 }
