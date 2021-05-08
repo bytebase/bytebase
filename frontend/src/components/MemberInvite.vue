@@ -247,12 +247,10 @@ export default {
           });
         }
       }
-      state.inviteList = [
-        {
-          email: "",
-          role: "DEVELOPER",
-        },
-      ];
+      state.inviteList.forEach((item) => {
+        item.email = "";
+        item.role = "DEVELOPER";
+      });
       state.errorList = [""];
     };
 
