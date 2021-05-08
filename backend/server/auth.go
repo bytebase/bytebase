@@ -21,7 +21,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		user, err := s.PrincipalService.FindPrincipalByEmail(context.Background(), login.Email)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(err)
+				return echo.NewHTTPError(http.StatusUnauthorized, bytebase.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to authenticate user").SetInternal(err)
 		}
@@ -69,7 +69,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		user, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-				return echo.NewHTTPError(http.StatusConflict).SetInternal(err)
+				return echo.NewHTTPError(http.StatusConflict, bytebase.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to signup user").SetInternal(err)
 		}

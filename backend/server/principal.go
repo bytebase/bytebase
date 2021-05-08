@@ -38,7 +38,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		principal, err := s.PrincipalService.FindPrincipalByID(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("failed to find principal ID: %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusNotFound, bytebase.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch principal ID: %v", id)).SetInternal(err)
 		}
@@ -67,7 +67,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		principal, err := s.PrincipalService.PatchPrincipalByID(context.Background(), id, principalPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("failed to find principal ID: %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusNotFound, bytebase.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to patch principal ID: %v", id)).SetInternal(err)
 		}

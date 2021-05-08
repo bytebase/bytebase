@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	_ "github.com/mattn/go-sqlite3"
 
@@ -242,8 +243,8 @@ func FormatError(err error) error {
 	}
 
 	switch err.Error() {
-	// case "UNIQUE constraint failed: dial_memberships.dial_id, dial_memberships.user_id":
-	// 	return bytebase.Errorf(bytebase.ECONFLICT, "Dial membership already exists.")
+	case "UNIQUE constraint failed: principal.email":
+		return bytebase.Errorf(bytebase.ECONFLICT, "email already exists")
 	default:
 		return err
 	}
