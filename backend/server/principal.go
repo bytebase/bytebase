@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -14,6 +13,34 @@ import (
 )
 
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
+	g.POST("/principal", func(c echo.Context) error {
+		principalCreate := &api.PrincipalCreate{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create principal request.").SetInternal(err)
+		}
+
+		principalCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		principalCreate.Status = api.Invited
+		principalCreate.Type = api.EndUser
+		principalCreate.PasswordHash = ""
+
+		principal, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+				return echo.NewHTTPError(http.StatusConflict, bytebase.ErrorMessage(err))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create principal.").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, principal); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create principal response").SetInternal(err)
+		}
+
+		return nil
+	})
+
 	g.GET("/principal", func(c echo.Context) error {
 		list, err := s.PrincipalService.FindPrincipalList(context.Background())
 		if err != nil {
@@ -60,7 +87,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principalPatch := &api.PrincipalPatch{UpdaterId: c.Get(GetPrincipalIdContextKey()).(int)}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
-			log.Println(err)
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request.").SetInternal(err)
 		}
 

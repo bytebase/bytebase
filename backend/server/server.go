@@ -65,7 +65,7 @@ func NewServer() *Server {
 
 	g.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		Skipper: func(c echo.Context) bool {
-			return strings.HasPrefix(c.Path(), "/api/auth") || c.Path() == "/api/principal"
+			return strings.HasPrefix(c.Path(), "/api/auth") || (c.Path() == "/api/principal" && c.Request().Method == "GET")
 		},
 		Claims:                  &Claims{},
 		SigningMethod:           middleware.AlgorithmHS256,
