@@ -24,11 +24,12 @@ const (
 	refreshThresholdDuration = 15 * time.Minute
 	accessTokenDuration      = 1 * time.Hour
 	refreshTokenDuration     = 24 * time.Hour
-	// Cookie expiration is the same as the refresh token.
+	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
+	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
 	// Suppose we have a valid refresh token, we should refresh the token in 2 cases:
 	// 1. The access token is about to expire in <<refreshThresholdDuration>>
 	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
-	cookieExpDuration = refreshTokenDuration
+	cookieExpDuration = refreshTokenDuration - 1*time.Minute
 
 	// The key name used to store jwt token in the context
 	tokenContextKey = "token"
