@@ -14,6 +14,8 @@ import (
 )
 
 const (
+	issuer = "bytebase"
+
 	accessTokenCookieName  = "access-token"
 	refreshTokenCookieName = "refresh-token"
 	// Just for the demo purpose, I declared a secret here. In the real-world application, you might need to get it from the env variables.
@@ -97,6 +99,8 @@ func generateToken(user *api.Principal, expirationTime time.Time, secret []byte)
 		StandardClaims: jwt.StandardClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds.
 			ExpiresAt: expirationTime.Unix(),
+			IssuedAt:  time.Now().Unix(),
+			Issuer:    issuer,
 			Subject:   strconv.Itoa(user.ID),
 		},
 	}
