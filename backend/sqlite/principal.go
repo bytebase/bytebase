@@ -22,7 +22,7 @@ func NewPrincipalService(db *DB) *PrincipalService {
 	return &PrincipalService{db: db}
 }
 
-// FindPrincipalList retrieves a principal by email.
+// FindPrincipalByEmail retrieves a principal by email.
 // Returns ENOTFOUND if no matching email.
 func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -40,6 +40,8 @@ func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email strin
 	return list[0], nil
 }
 
+// FindPrincipalByID retrieves a principal by id.
+// Returns ENOTFOUND if no matching id.
 func (s *PrincipalService) FindPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -47,13 +49,7 @@ func (s *PrincipalService) FindPrincipalByID(ctx context.Context, id int) (*api.
 	}
 	defer tx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, principalFilter{ID: &id})
-	if err != nil {
-		return nil, err
-	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
-	}
-	return list[0], nil
+	return findPrincipalByID(ctx, tx, id)
 }
 
 // FindPrincipalList retrieves a list of principals.
@@ -72,11 +68,32 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 	return list, nil
 }
 
+// PatchPrincipalByID updates an existing principal by ID.
+// Returns ENOTFOUND if principal does not exist.
+func (s *PrincipalService) PatchPrincipalByID(ctx context.Context, id int, patch *api.PrincipalPatch) (*api.Principal, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	principal, err := patchPrincipal(ctx, tx, id, patch)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return principal, nil
+}
+
 // principalFilter represents a filter passed to findPrincipalList().
 type principalFilter struct {
 	// Filtering fields.
 	ID    *int
-	email *string `json:"email"`
+	email *string
 }
 
 func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ []*api.Principal, err error) {
@@ -114,7 +131,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ [
 	list := make([]*api.Principal, 0)
 	for rows.Next() {
 		var principal api.Principal
-		if rows.Scan(
+		if err := rows.Scan(
 			&principal.ID,
 			&principal.CreatorId,
 			&principal.CreatorTs,
@@ -126,7 +143,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ [
 			&principal.Email,
 			&principal.PasswordHash,
 		); err != nil {
-			return nil, err
+			return nil, FormatError(err)
 		}
 
 		list = append(list, &principal)
@@ -136,4 +153,62 @@ func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ [
 	}
 
 	return list, nil
+}
+
+// findPrincipalByID retrieves a principal by id.
+// Returns ENOTFOUND if no matching id.
+func findPrincipalByID(ctx context.Context, tx *Tx, id int) (*api.Principal, error) {
+	list, err := findPrincipalList(ctx, tx, principalFilter{ID: &id})
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
+	}
+	return list[0], nil
+}
+
+// patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
+func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPatch) (*api.Principal, error) {
+	principal := api.Principal{}
+	// Update fields, if set.
+	if v := patch.Name; v != nil {
+		principal.Name = *v
+	}
+
+	// Execute update query with RETURNING.
+	rows, err := tx.QueryContext(ctx, `
+		UPDATE principal
+		SET name = ?
+		WHERE id = ?
+		RETURNING *
+	`,
+		principal.Name,
+		id,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var principal api.Principal
+		if err := rows.Scan(
+			&principal.ID,
+			&principal.CreatorId,
+			&principal.CreatorTs,
+			&principal.UpdaterId,
+			&principal.UpdatedTs,
+			&principal.Status,
+			&principal.Type,
+			&principal.Name,
+			&principal.Email,
+			&principal.PasswordHash,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &principal, nil
+	}
+
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "Principal not found."}
 }

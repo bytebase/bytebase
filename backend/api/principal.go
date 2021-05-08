@@ -31,8 +31,13 @@ type Principal struct {
 	PasswordHash string
 }
 
+type PrincipalPatch struct {
+	Name *string `jsonapi:"attr,name"`
+}
+
 type PrincipalService interface {
 	FindPrincipalList(ctx context.Context) ([]*Principal, error)
 	FindPrincipalByEmail(ctx context.Context, email string) (*Principal, error)
-	FindPrincipalByID(ctx context.Context, ID int) (*Principal, error)
+	FindPrincipalByID(ctx context.Context, id int) (*Principal, error)
+	PatchPrincipalByID(ctx context.Context, id int, patch *PrincipalPatch) (*Principal, error)
 }
