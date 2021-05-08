@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -193,7 +194,6 @@ func TokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 // JWTErrorChecker will be executed when user try to access a protected path.
 func JWTErrorChecker(err error, c echo.Context) error {
-	// Redirects to the signIn form.
-	fmt.Printf("Unauthorized to access protected route %s, err: %v\n", c.Path(), err)
+	log.Printf("Unauthorized to access protected route %s, err: %v\n", c.Path(), err)
 	return err
 }

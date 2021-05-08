@@ -22,6 +22,26 @@ func NewPrincipalService(db *DB) *PrincipalService {
 	return &PrincipalService{db: db}
 }
 
+// CreatePrincipal creates a new principal.
+func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	principal, err := createPrincipal(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return principal, nil
+}
+
 // FindPrincipalByEmail retrieves a principal by email.
 // Returns ENOTFOUND if no matching email.
 func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
@@ -87,6 +107,56 @@ func (s *PrincipalService) PatchPrincipalByID(ctx context.Context, id int, patch
 	}
 
 	return principal, nil
+}
+
+// createPrincipal creates a new principal.
+func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (*api.Principal, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO principal (
+			creator_id,
+			updater_id,
+			status,
+			type,
+			name,
+			email,
+			password_hash
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		RETURNING *
+	`,
+		create.CreatorId,
+		create.CreatorId,
+		create.Status,
+		create.Type,
+		create.Name,
+		create.Email,
+		create.PasswordHash,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var principal api.Principal
+	if err := row.Scan(
+		&principal.ID,
+		&principal.CreatorId,
+		&principal.CreatorTs,
+		&principal.UpdaterId,
+		&principal.UpdatedTs,
+		&principal.Status,
+		&principal.Type,
+		&principal.Name,
+		&principal.Email,
+		&principal.PasswordHash,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &principal, nil
 }
 
 // principalFilter represents a filter passed to findPrincipalList().
@@ -176,7 +246,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 	}
 
 	// Execute update query with RETURNING.
-	rows, err := tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE principal
 		SET name = ?, updater_id = ?
 		WHERE id = ?
@@ -189,11 +259,11 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer rows.Close()
+	defer row.Close()
 
-	if rows.Next() {
+	if row.Next() {
 		var principal api.Principal
-		if err := rows.Scan(
+		if err := row.Scan(
 			&principal.ID,
 			&principal.CreatorId,
 			&principal.CreatorTs,

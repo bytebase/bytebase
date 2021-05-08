@@ -2,6 +2,8 @@ package api
 
 import "context"
 
+const SYSTEM_BOT_ID = 1
+
 type PrincipalStatus string
 
 const (
@@ -35,6 +37,20 @@ type Principal struct {
 	PasswordHash string
 }
 
+type PrincipalCreate struct {
+	// Standard fields
+	// For signup, value is SYSTEM_BOT_ID
+	// For invite, value is assigned from the jwt subject field passed by the client.
+	CreatorId int
+
+	// Domain specific fields
+	Status       PrincipalStatus `jsonapi:"attr,status"`
+	Type         PrincipalType
+	Name         string `jsonapi:"attr,name"`
+	Email        string `jsonapi:"attr,email"`
+	PasswordHash string
+}
+
 type PrincipalPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -45,6 +61,7 @@ type PrincipalPatch struct {
 }
 
 type PrincipalService interface {
+	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
 	FindPrincipalList(ctx context.Context) ([]*Principal, error)
 	FindPrincipalByEmail(ctx context.Context, email string) (*Principal, error)
 	FindPrincipalByID(ctx context.Context, id int) (*Principal, error)

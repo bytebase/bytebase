@@ -45,4 +45,45 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		return nil
 	})
+
+	g.POST("/auth/signup", func(c echo.Context) error {
+		signup := &api.Signup{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, signup); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted signup request.")
+		}
+
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(signup.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash.")
+		}
+
+		principalCreate := &api.PrincipalCreate{
+			CreatorId:    api.SYSTEM_BOT_ID,
+			Status:       api.Active,
+			Type:         api.EndUser,
+			Name:         signup.Name,
+			Email:        signup.Email,
+			PasswordHash: string(passwordHash),
+		}
+
+		user, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+				return echo.NewHTTPError(http.StatusConflict)
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup user.")
+		}
+
+		if err := GenerateTokensAndSetCookies(user, c); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token.")
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal signup response.")
+		}
+
+		return nil
+	})
 }

@@ -89,6 +89,7 @@ axios.interceptors.request.use((request) => {
       isDemo() ||
       (!request.url!.startsWith("/api/ping") &&
         !request.url!.startsWith("/api/auth/login") &&
+        !request.url!.startsWith("/api/auth/signup") &&
         !request.url!.startsWith("/api/principal"))
     ) {
       request.url = request.url!.replace("/api", "/mock");
