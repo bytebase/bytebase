@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/sqlite"
 )
@@ -17,25 +17,29 @@ import (
 const DSN = "./data/bytebase_dev.db"
 
 type Main struct {
+	l *bytebase.Logger
+
 	server *server.Server
 
 	db *sqlite.DB
 }
 
 func NewMain() *Main {
-	return &Main{}
+	return &Main{
+		l: bytebase.NewLogger(),
+	}
 }
 
 func (m *Main) Run() error {
-	db := sqlite.NewDB(DSN)
+	db := sqlite.NewDB(m.l, DSN)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
 	m.db = db
 
-	server := server.NewServer()
-	server.PrincipalService = sqlite.NewPrincipalService(db)
+	server := server.NewServer(m.l)
+	server.PrincipalService = sqlite.NewPrincipalService(m.l, db)
 
 	m.server = server
 	if err := server.Run(); err != nil {
@@ -47,17 +51,17 @@ func (m *Main) Run() error {
 
 // Close gracefully stops the program.
 func (m *Main) Close() error {
-	log.Println("Trying to stop bytebase...")
+	m.l.Log(bytebase.INFO, "Trying to stop bytebase...")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if m.server != nil {
-		log.Println("Trying to gracefully shutdown server...")
+		m.l.Log(bytebase.INFO, "Trying to gracefully shutdown server...")
 		m.server.Shutdown(ctx)
 	}
 
 	if m.db != nil {
-		log.Println("Trying to close database connections...")
+		m.l.Log(bytebase.INFO, "Trying to close database connections...")
 		if err := m.db.Close(); err != nil {
 			return err
 		}
@@ -93,5 +97,5 @@ func main() {
 	// Wait for CTRL-C.
 	<-ctx.Done()
 
-	log.Println("Bytebase stopped properly.")
+	m.l.Log(bytebase.INFO, "Bytebase stopped properly.")
 }

@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server struct {
+	l *bytebase.Logger
+
 	PrincipalService   api.PrincipalService
 	EnvironmentService api.EnvironmentService
 
@@ -34,7 +37,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer() *Server {
+func NewServer(logger *bytebase.Logger) *Server {
 	e := echo.New()
 
 	// Middleware
@@ -58,6 +61,7 @@ func NewServer() *Server {
 	e.GET("/assets/*", echo.WrapHandler(assetHandler))
 
 	s := &Server{
+		l: logger,
 		e: e,
 	}
 
@@ -67,15 +71,19 @@ func NewServer() *Server {
 		Skipper: func(c echo.Context) bool {
 			return strings.HasPrefix(c.Path(), "/api/auth") || (c.Path() == "/api/principal" && c.Request().Method == "GET")
 		},
-		Claims:                  &Claims{},
-		SigningMethod:           middleware.AlgorithmHS256,
-		SigningKey:              []byte(GetJWTSecret()),
-		ContextKey:              GetTokenContextKey(),
-		TokenLookup:             "cookie:access-token", // "<source>:<name>"
-		ErrorHandlerWithContext: JWTErrorChecker,
+		Claims:        &Claims{},
+		SigningMethod: middleware.AlgorithmHS256,
+		SigningKey:    []byte(GetJWTSecret()),
+		ContextKey:    GetTokenContextKey(),
+		TokenLookup:   "cookie:access-token", // "<source>:<name>"
+		ErrorHandlerWithContext: func(err error, c echo.Context) error {
+			return JWTErrorChecker(logger, err, c)
+		},
 	}))
 
-	g.Use(TokenMiddleware)
+	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return TokenMiddleware(logger, next)
+	})
 
 	s.registerDebugRoutes(g)
 

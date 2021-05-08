@@ -2,12 +2,12 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
@@ -143,7 +143,7 @@ func setUserCookie(user *api.Principal, expiration time.Time, c echo.Context) {
 // TokenMiddleware does following things
 // 1. Extract principal id from the token and set it in the context to be used by the handler.
 // 2. Refresh the access_token and refresh_token if access_token is about to expire.
-func TokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func TokenMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {
@@ -170,7 +170,7 @@ func TokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// 15 mins of expiry.
 		if time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration {
 			// Gets the refresh token from the cookie.
-			fmt.Println("Token about to expire, generate new token...")
+			l.Log(bytebase.INFO, "Token about to expire, generate new token...")
 			rc, err := c.Cookie(refreshTokenCookieName)
 			if err == nil && rc != nil {
 				// Parses token and checks if it valid.
@@ -197,7 +197,7 @@ func TokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 // JWTErrorChecker will be executed when user try to access a protected path.
-func JWTErrorChecker(err error, c echo.Context) error {
-	log.Printf("Unauthorized to access protected route %s, err: %v\n", c.Path(), err)
+func JWTErrorChecker(l *bytebase.Logger, err error, c echo.Context) error {
+	l.Logf(bytebase.INFO, "Unauthorized to access protected route %s, err: %v", c.Path(), err)
 	return fmt.Errorf("invalid access token: %w", err)
 }

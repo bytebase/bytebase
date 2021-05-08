@@ -14,12 +14,13 @@ var (
 
 // PrincipalService represents a service for managing principal.
 type PrincipalService struct {
+	l  *bytebase.Logger
 	db *DB
 }
 
-// NewAuthService returns a new instance of AuthService.
-func NewPrincipalService(db *DB) *PrincipalService {
-	return &PrincipalService{db: db}
+// NewPrincipalService returns a new instance of PrincipalService.
+func NewPrincipalService(logger *bytebase.Logger, db *DB) *PrincipalService {
+	return &PrincipalService{l: logger, db: db}
 }
 
 // CreatePrincipal creates a new principal.

@@ -71,7 +71,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, bytebase.ErrorMessage(err))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup user.").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup.").SetInternal(err)
 		}
 
 		if err := GenerateTokensAndSetCookies(user, c); err != nil {

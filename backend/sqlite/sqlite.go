@@ -6,7 +6,6 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -33,6 +32,8 @@ var seedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
+	l *bytebase.Logger
+
 	db     *sql.DB
 	ctx    context.Context // background context
 	cancel func()          // cancel background context
@@ -46,8 +47,9 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(dsn string) *DB {
+func NewDB(logger *bytebase.Logger, dsn string) *DB {
 	db := &DB{
+		l:   logger,
 		DSN: strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
 		Now: time.Now,
 	}
@@ -87,7 +89,7 @@ func (db *DB) Open() (err error) {
 
 // seed loads the seed data for testing
 func (db *DB) seed() error {
-	log.Println("Seeding database...")
+	db.l.Log(bytebase.INFO, "Seeding database...")
 	names, err := fs.Glob(seedFS, "seed/*.sql")
 	if err != nil {
 		return err
@@ -105,13 +107,13 @@ func (db *DB) seed() error {
 			return fmt.Errorf("seed error: name=%q err=%w", name, err)
 		}
 	}
-	log.Println("Completed database seeding.")
+	db.l.Log(bytebase.INFO, "Completed database seeding.")
 	return nil
 }
 
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
-	log.Printf("Seeding %s...\n", name)
+	db.l.Logf(bytebase.INFO, "Seeding %s...", name)
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
@@ -137,11 +139,11 @@ func (db *DB) seedFile(name string) error {
 // is not re-executed. Migrations run in a transaction to prevent partial
 // migrations.
 func (db *DB) migrate() error {
-	log.Println("Apply database migration if needed...")
+	db.l.Log(bytebase.INFO, "Apply database migration if needed...")
 
 	source, err := httpfs.New(http.FS(migrationFS), "migration")
 	if err != nil {
-		log.Fatal(err)
+		db.l.Log(bytebase.FATAL, err)
 		return err
 	}
 
@@ -150,7 +152,7 @@ func (db *DB) migrate() error {
 		source,
 		"sqlite3://"+db.DSN)
 	if err != nil {
-		log.Fatal(err)
+		db.l.Log(bytebase.FATAL, err)
 		return err
 	}
 
@@ -160,18 +162,18 @@ func (db *DB) migrate() error {
 			return err
 		}
 	}
-	log.Printf("Database version before migration down: %v, dirty: %v", v1, dirty1)
+	db.l.Logf(bytebase.INFO, "Database version before migration down: %v, dirty: %v", v1, dirty1)
 
 	if err := m.Down(); err != nil {
 		if err == migrate.ErrNoChange {
-			log.Println("No need to migrate down.")
+			db.l.Log(bytebase.INFO, "No need to migrate down.")
 		} else {
 			return fmt.Errorf("migrate down error: %w", err)
 		}
 	}
 
 	v2, dirty2, err := m.Version()
-	log.Printf("Database version before migration up: %v, dirty: %v", v2, dirty2)
+	db.l.Logf(bytebase.INFO, "Database version before migration up: %v, dirty: %v", v2, dirty2)
 	if err != nil {
 		if err != migrate.ErrNilVersion {
 			return err
@@ -180,7 +182,7 @@ func (db *DB) migrate() error {
 
 	if err := m.Up(); err != nil {
 		if err == migrate.ErrNoChange {
-			log.Println("No need to migrate up.")
+			db.l.Log(bytebase.INFO, "No need to migrate up.")
 		} else {
 			return fmt.Errorf("migrate up error: %w", err)
 		}
@@ -192,9 +194,9 @@ func (db *DB) migrate() error {
 			return err
 		}
 	}
-	log.Printf("Database version after migration: %v, dirty: %v", v3, dirty3)
+	db.l.Logf(bytebase.INFO, "Database version after migration: %v, dirty: %v", v3, dirty3)
 
-	log.Println("Completed database migration.")
+	db.l.Log(bytebase.INFO, "Completed database migration.")
 
 	return nil
 }
