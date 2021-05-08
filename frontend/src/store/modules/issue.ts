@@ -116,7 +116,6 @@ const actions = {
     });
 
     commit("setIssueListForUser", { userId, issueList });
-    console.log(issueList);
     return issueList;
   },
 
