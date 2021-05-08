@@ -10,7 +10,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getCookie } from "../../utils";
+import { getIntCookie, removeCookie } from "../../utils";
 
 function convert(user: ResourceObject, rootGetters: any): Principal {
   return rootGetters["principal/principalById"](user.id);
@@ -22,7 +22,7 @@ const state: () => AuthState = () => ({
 
 const getters = {
   isLoggedIn: (state: AuthState) => (): boolean => {
-    return !isEmpty(getCookie("user"));
+    return getIntCookie("user") != undefined;
   },
 
   currentUser: (state: AuthState) => (): Principal => {
@@ -41,7 +41,6 @@ const actions = {
       rootGetters
     );
 
-    localStorage.setItem("bb.auth.user", JSON.stringify(loggedInUser));
     commit("setCurrentUser", loggedInUser);
     return loggedInUser;
   },
@@ -59,7 +58,6 @@ const actions = {
     // The conversion relies on the above task.
     const convertedUser = convert(newUser, rootGetters);
 
-    localStorage.setItem("bb.auth.user", JSON.stringify(convertedUser));
     commit("setCurrentUser", convertedUser);
 
     return convertedUser;
@@ -81,18 +79,24 @@ const actions = {
     // The conversion relies on the above task to get the lastest data
     const convertedUser = convert(activatedUser, rootGetters);
 
-    localStorage.setItem("bb.auth.user", JSON.stringify(convertedUser));
     commit("setCurrentUser", convertedUser);
 
     return convertedUser;
   },
 
-  async restoreUser({ commit }: any) {
-    const jsonUser = localStorage.getItem("bb.auth.user");
-    if (jsonUser) {
-      const user: Principal = JSON.parse(jsonUser);
-      commit("setCurrentUser", user);
-      return user;
+  async restoreUser({ commit, dispatch }: any) {
+    const userId = getIntCookie("user");
+    if (!isEmpty(userId)) {
+      const loggedInUser = await dispatch(
+        "principal/fetchPrincipalById",
+        userId,
+        {
+          root: true,
+        }
+      );
+
+      commit("setCurrentUser", loggedInUser);
+      return loggedInUser;
     }
     return unknown("PRINCIPAL") as Principal;
   },
@@ -102,14 +106,13 @@ const actions = {
       state.currentUser.id
     );
     if (!isEqual(refreshedUser, state.currentUser)) {
-      localStorage.setItem("bb.auth.user", JSON.stringify(refreshedUser));
       commit("setCurrentUser", refreshedUser);
     }
     return refreshedUser;
   },
 
   async logout({ commit }: any) {
-    localStorage.removeItem("bb.auth.user");
+    removeCookie("user");
     commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
     return unknown("PRINCIPAL") as Principal;
   },

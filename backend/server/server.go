@@ -69,7 +69,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 
 	g.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		Skipper: func(c echo.Context) bool {
-			return strings.HasPrefix(c.Path(), "/api/auth") || (c.Path() == "/api/principal" && c.Request().Method == "GET")
+			return strings.HasPrefix(c.Path(), "/api/auth")
 		},
 		Claims:        &Claims{},
 		SigningMethod: middleware.AlgorithmHS256,

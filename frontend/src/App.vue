@@ -1,30 +1,27 @@
 <template>
-  <!-- Suspense is experimental, be aware of the potential change -->
-  <Suspense>
-    <template #default>
-      <ProvideContext>
-        <router-view />
-      </ProvideContext>
-    </template>
-    <template #fallback>
-      <div class="flex flex-row justify-between p-4 space-x-2">
-        <span class="items-center flex">Loading...</span>
-        <button
-          class="items-center flex justify-center btn-normal"
-          @click.prevent="ping"
-        >
-          Ping
-        </button>
-      </div>
-    </template>
-  </Suspense>
+  <router-view />
+  <template v-if="state.notificationList.length > 0">
+    <BBNotification
+      :placement="'BOTTOM_RIGHT'"
+      :notificationList="state.notificationList"
+      @close="removeNotification"
+    />
+  </template>
 </template>
 
 <script lang="ts">
-import { onErrorCaptured } from "vue";
+import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import ProvideContext from "./components/ProvideContext.vue";
 import { isDev } from "./utils";
+import { Notification } from "./types";
+import { BBNotificationItem } from "./bbkit/types";
+
+const NOTIFICAITON_DURATION = 8000;
+
+interface LocalState {
+  notificationList: BBNotificationItem[];
+}
 
 export default {
   name: "App",
@@ -32,10 +29,44 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    // Restore previously logged in user if applicable.
-    store.dispatch("auth/restoreUser").catch((error: Error) => {
-      console.log(error);
+    const state = reactive<LocalState>({
+      notificationList: [],
     });
+
+    const removeNotification = (id: string) => {
+      state.notificationList.shift();
+    };
+
+    const watchNotification = () => {
+      store
+        .dispatch("notification/tryPopNotification", {
+          module: "bytebase",
+        })
+        .then((notification: Notification | undefined) => {
+          if (notification) {
+            state.notificationList.push({
+              style: notification.style,
+              title: notification.title,
+              description: notification.description || "",
+              link: notification.link || "",
+              linkTitle: notification.linkTitle || "",
+            });
+            // state.notification = notification;
+            // We don't want user to miss "CRITICAL" notification and
+            // thus don't automatically dismiss it.
+            if (notification.style != "CRITICAL" && !notification.manualHide) {
+              setTimeout(() => {
+                removeNotification(notification.id);
+              }, NOTIFICAITON_DURATION);
+            }
+          }
+        });
+    };
+
+    watchEffect(watchNotification);
+
+    // Restore previously logged in user if applicable.
+    store.dispatch("auth/restoreUser");
 
     onErrorCaptured((e: any, _, info) => {
       // If e has response, then we assume it's an http error and has already been
@@ -51,18 +82,9 @@ export default {
       return true;
     });
 
-    const ping = () => {
-      store.dispatch("debug/ping").then((message: string) => {
-        store.dispatch("notification/pushNotification", {
-          module: "bytebase",
-          style: "SUCCESS",
-          title: message,
-        });
-      });
-    };
-
     return {
-      ping,
+      state,
+      removeNotification,
     };
   },
 };

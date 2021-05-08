@@ -135,7 +135,7 @@ func setTokenCookie(name, token string, expiration time.Time, c echo.Context) {
 func setUserCookie(user *api.Principal, expiration time.Time, c echo.Context) {
 	cookie := new(http.Cookie)
 	cookie.Name = "user"
-	cookie.Value = user.Name
+	cookie.Value = strconv.Itoa(user.ID)
 	cookie.Expires = expiration
 	cookie.Path = "/"
 	c.SetCookie(cookie)
