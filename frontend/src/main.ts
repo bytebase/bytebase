@@ -112,13 +112,15 @@ axios.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: error.response.data.errors,
-      });
-      throw error;
+      if (error.response.data.message) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: error.response.data.message,
+        });
+      }
     }
+    throw error;
   }
 );
 
