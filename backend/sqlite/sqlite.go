@@ -244,7 +244,7 @@ func FormatError(err error) error {
 
 	switch err.Error() {
 	case "UNIQUE constraint failed: principal.email":
-		return bytebase.Errorf(bytebase.ECONFLICT, "email already exists")
+		return bytebase.Errorf(bytebase.ECONFLICT, "Email already exists.")
 	default:
 		return err
 	}
