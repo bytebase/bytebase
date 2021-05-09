@@ -74,6 +74,21 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup.").SetInternal(err)
 		}
 
+		memberCreate := &api.MemberCreate{
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			CreatorId:   api.SYSTEM_BOT_ID,
+			Role:        api.Developer,
+			PrincipalId: user.ID,
+		}
+
+		_, err = s.MemberService.CreateMember(context.Background(), memberCreate)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+				return echo.NewHTTPError(http.StatusConflict, bytebase.ErrorMessage(err))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup.").SetInternal(err)
+		}
+
 		if err := GenerateTokensAndSetCookies(user, c); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token.").SetInternal(err)
 		}
