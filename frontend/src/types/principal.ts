@@ -13,9 +13,11 @@ export type Principal = {
   id: PrincipalId;
 
   // Standard fields
-  creator: Principal;
+  // Unlike other models, we use creatorId and updaterId instead of converting
+  // them to full principal object to avoid recursive issue.
+  creatorId: PrincipalId;
   createdTs: number;
-  updater: Principal;
+  updaterId: PrincipalId;
   updatedTs: number;
 
   // Domain specific fields

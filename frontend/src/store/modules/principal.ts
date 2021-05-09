@@ -1,7 +1,5 @@
 import axios from "axios";
-import { cloneDeep } from "lodash";
 import {
-  UNKNOWN_ID,
   PrincipalId,
   Principal,
   PrincipalNew,
@@ -13,24 +11,16 @@ import {
   empty,
   EMPTY_ID,
   PrincipalType,
-  SYSTEM_BOT_ID,
 } from "../../types";
 import { isDevOrDemo, randomString } from "../../utils";
 
 function convert(principal: ResourceObject, rootGetters: any): Principal {
-  const creator = rootGetters["principal/principalById"](
-    principal.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    principal.attributes.updaterId
-  );
-
   const member = rootGetters["member/memberByPrincipalId"](principal.id);
   return {
     id: principal.id,
-    creator,
-    updater,
+    creatorId: principal.attributes.creatorId as PrincipalId,
     createdTs: principal.attributes.createdTs as number,
+    updaterId: principal.attributes.updaterId as PrincipalId,
     updatedTs: principal.attributes.updatedTs as number,
     status: principal.attributes.status as PrincipalStatus,
     type: principal.attributes.type as PrincipalType,
@@ -74,20 +64,6 @@ const actions = {
   async fetchPrincipalList({ state, commit, rootGetters }: any) {
     const userList: ResourceObject[] = (await axios.get(`/api/principal`)).data
       .data;
-
-    // Dealing with bootstraping here. The system bot is the first user and we
-    // assign itself as the creator/updater.
-    // We also convert the system bot alone first so that the remaining users
-    // can convert their creater/updater properly.
-    const systemBot = userList.find((item) => item.id == SYSTEM_BOT_ID);
-    if (systemBot) {
-      const theBot = convert(systemBot, rootGetters);
-      // Use cloneDeep to avoid infinite recursion during JSON.stringify
-      theBot.creator = cloneDeep(theBot);
-      theBot.updater = cloneDeep(theBot);
-      commit("upsertPrincipalInList", theBot);
-    }
-
     const principalList = userList.map((user) => {
       return convert(user, rootGetters);
     });

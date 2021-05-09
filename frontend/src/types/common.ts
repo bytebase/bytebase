@@ -114,7 +114,9 @@ export const unknown = (
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
+    creatorId: UNKNOWN_ID,
     createdTs: 0,
+    updaterId: UNKNOWN_ID,
     updatedTs: 0,
     status: "ACTIVE",
     type: "END_USER",
