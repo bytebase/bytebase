@@ -1,3 +1,4 @@
+-- principal
 CREATE TABLE principal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
@@ -10,6 +11,11 @@ CREATE TABLE principal (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
 );
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('principal', 1000);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_principal_modification_time`
 AFTER
@@ -48,6 +54,7 @@ VALUES
         ''
     );
 
+-- workspace
 -- We only allow a single workspace for on-premise deployment.
 -- So theoretically speaking, we don't need to create a workspace table.
 -- But we create this table mostly for preparing a future cloud version
@@ -65,6 +72,11 @@ CREATE TABLE workspace (
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL
 );
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('workspace', 1000);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_workspace_modification_time`
 AFTER

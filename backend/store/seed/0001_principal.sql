@@ -2,7 +2,6 @@
 -- Setting the id explicitly changes the next id value to be +1
 INSERT INTO
     principal (
-        id,
         creator_id,
         updater_id,
         `status`,
@@ -13,7 +12,6 @@ INSERT INTO
     )
 VALUES
     (
-        1001,
         1,
         1,
         'ACTIVE',
@@ -26,7 +24,6 @@ VALUES
 
 INSERT INTO
     principal (
-        id,
         creator_id,
         updater_id,
         `status`,
@@ -37,7 +34,6 @@ INSERT INTO
     )
 VALUES
     (
-        1002,
         1,
         1,
         'ACTIVE',
@@ -50,7 +46,6 @@ VALUES
 
 INSERT INTO
     principal (
-        id,
         creator_id,
         updater_id,
         `status`,
@@ -61,7 +56,6 @@ INSERT INTO
     )
 VALUES
     (
-        1003,
         1,
         1,
         'ACTIVE',
@@ -74,7 +68,6 @@ VALUES
 
 INSERT INTO
     principal (
-        id,
         creator_id,
         updater_id,
         `status`,
@@ -85,7 +78,6 @@ INSERT INTO
     )
 VALUES
     (
-        1004,
         1,
         1,
         'ACTIVE',
@@ -98,7 +90,6 @@ VALUES
 
 INSERT INTO
     principal (
-        id,
         creator_id,
         updater_id,
         `status`,
@@ -109,7 +100,6 @@ INSERT INTO
     )
 VALUES
     (
-        1005,
         1,
         1,
         'ACTIVE',

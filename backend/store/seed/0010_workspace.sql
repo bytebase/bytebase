@@ -2,7 +2,6 @@
 -- advertently return data from a different workspace.
 INSERT INTO
     workspace (
-        id,
         creator_id,
         updater_id,
         row_status,
@@ -10,4 +9,4 @@ INSERT INTO
         name
     )
 VALUES
-    (2, 1, 1, 'NORMAL', 'ws2', 'Workspace2');
+    (1, 1, 'NORMAL', 'ws2', 'Workspace2');
