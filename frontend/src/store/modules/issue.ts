@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  UserId,
+  PrincipalId,
   IssueId,
   Issue,
   IssueNew,
@@ -91,7 +91,7 @@ const state: () => IssueState = () => ({
 });
 
 const getters = {
-  issueListByUser: (state: IssueState) => (userId: UserId) => {
+  issueListByUser: (state: IssueState) => (userId: PrincipalId) => {
     return state.issueListByUser.get(userId) || [];
   },
 
@@ -105,7 +105,10 @@ const getters = {
 };
 
 const actions = {
-  async fetchIssueListForUser({ commit, rootGetters }: any, userId: UserId) {
+  async fetchIssueListForUser(
+    { commit, rootGetters }: any,
+    userId: PrincipalId
+  ) {
     const data = (
       await axios.get(
         `/api/issue?user=${userId}&include=project,pipeline,pipeline.stage,pipeline.task`
@@ -243,7 +246,7 @@ const mutations = {
       userId,
       issueList,
     }: {
-      userId: UserId;
+      userId: PrincipalId;
       issueList: Issue[];
     }
   ) {

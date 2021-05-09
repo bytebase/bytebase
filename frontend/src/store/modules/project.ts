@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  UserId,
+  PrincipalId,
   ProjectId,
   Project,
   ProjectNew,
@@ -116,7 +116,7 @@ const getters = {
   },
 
   projectListByUser: (state: ProjectState) => (
-    userId: UserId,
+    userId: PrincipalId,
     rowStatusList?: RowStatus[]
   ): Project[] => {
     const result: Project[] = [];
@@ -163,7 +163,7 @@ const actions = {
       userId,
       rowStatusList,
     }: {
-      userId: UserId;
+      userId: PrincipalId;
       rowStatusList?: RowStatus[];
     }
   ) {

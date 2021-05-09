@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  UserId,
+  PrincipalId,
   IssueId,
   ActivityId,
   Activity,
@@ -33,7 +33,7 @@ const state: () => ActivityState = () => ({
 
 const getters = {
   activityListByUser: (state: ActivityState) => (
-    userId: UserId
+    userId: PrincipalId
   ): Activity[] => {
     return state.activityListByUser.get(userId) || [];
   },
@@ -45,7 +45,10 @@ const getters = {
 };
 
 const actions = {
-  async fetchActivityListForUser({ commit, rootGetters }: any, userId: UserId) {
+  async fetchActivityListForUser(
+    { commit, rootGetters }: any,
+    userId: PrincipalId
+  ) {
     const activityList = (await axios.get(`/api/activity`)).data.data.map(
       (activity: ResourceObject) => {
         return convert(activity, rootGetters);
@@ -143,7 +146,7 @@ const mutations = {
       userId,
       activityList,
     }: {
-      userId: UserId;
+      userId: PrincipalId;
       activityList: Activity[];
     }
   ) {
@@ -156,7 +159,7 @@ const mutations = {
       issueId,
       activityList,
     }: {
-      issueId: UserId;
+      issueId: PrincipalId;
       activityList: Activity[];
     }
   ) {

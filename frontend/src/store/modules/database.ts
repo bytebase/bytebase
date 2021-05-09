@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  UserId,
+  PrincipalId,
   Database,
   DatabaseNew,
   DatabaseId,
@@ -112,8 +112,8 @@ const getters = {
     return state.databaseListByInstanceId.get(instanceId) || [];
   },
 
-  databaseListByUserId: (state: DatabaseState) => (
-    userId: UserId
+  databaseListByPrincipalId: (state: DatabaseState) => (
+    userId: PrincipalId
   ): Database[] => {
     const list: Database[] = [];
     for (let [_, databaseList] of state.databaseListByInstanceId) {
@@ -242,7 +242,10 @@ const actions = {
     return databaseList;
   },
 
-  async fetchDatabaseListByUser({ commit, rootGetters }: any, userId: UserId) {
+  async fetchDatabaseListByUser(
+    { commit, rootGetters }: any,
+    userId: PrincipalId
+  ) {
     const data = (
       await axios.get(
         `/api/database?user=${userId}&include=instance,project,project.projectMember`

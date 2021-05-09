@@ -10,7 +10,7 @@ import {
   InstanceId,
   IssueId,
   ProjectId,
-  UserId,
+  PrincipalId,
 } from "./id";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
@@ -38,23 +38,23 @@ export interface PrincipalState {
 }
 
 export interface BookmarkState {
-  bookmarkListByUser: Map<UserId, Bookmark[]>;
+  bookmarkListByUser: Map<PrincipalId, Bookmark[]>;
 }
 
 export interface ActivityState {
-  activityListByUser: Map<UserId, Activity[]>;
+  activityListByUser: Map<PrincipalId, Activity[]>;
   activityListByIssue: Map<IssueId, Activity[]>;
 }
 
 export interface MessageState {
-  messageListByUser: Map<UserId, Message[]>;
+  messageListByUser: Map<PrincipalId, Message[]>;
 }
 
 export interface IssueState {
   // [NOTE] This is only used by the issue list view. We don't
   // update the entry here if any issue is changed (the updated issue only gets updated in issueById).
   // Instead, we always fetch the list every time we display the issue list view.
-  issueListByUser: Map<UserId, Issue[]>;
+  issueListByUser: Map<PrincipalId, Issue[]>;
   issueById: Map<IssueId, Issue>;
 }
 

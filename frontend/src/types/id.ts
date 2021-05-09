@@ -3,10 +3,7 @@
 
 export type ExecutionId = string;
 
-export type UserId = string;
-
-// For now, Principal is equal to UserId, in the future it may contain other id such as application, bot etc.
-export type PrincipalId = UserId;
+export type PrincipalId = number;
 
 export type MemberId = string;
 

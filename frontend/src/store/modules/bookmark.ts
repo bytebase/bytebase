@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  UserId,
+  PrincipalId,
   Bookmark,
   BookmarkNew,
   BookmarkState,
@@ -30,12 +30,12 @@ const state: () => BookmarkState = () => ({
 
 const getters = {
   bookmarkListByUser: (state: BookmarkState) => (
-    userId: UserId
+    userId: PrincipalId
   ): Bookmark[] => {
     return state.bookmarkListByUser.get(userId) || [];
   },
   bookmarkByUserAndLink: (state: BookmarkState, getters: any) => (
-    userId: UserId,
+    userId: PrincipalId,
     link: string
   ): Bookmark => {
     const list = getters["bookmarkListByUser"](userId);
@@ -47,13 +47,16 @@ const getters = {
 };
 
 const actions = {
-  async fetchBookmarkListByUser({ commit, rootGetters }: any, userId: UserId) {
+  async fetchBookmarkListByUser(
+    { commit, rootGetters }: any,
+    userId: PrincipalId
+  ) {
     const bookmarkList = (
       await axios.get(`/api/bookmark?user=${userId}`)
     ).data.data.map((bookmark: ResourceObject) => {
       return convert(bookmark, rootGetters);
     });
-    commit("setBookmarkListByUserId", { userId, bookmarkList });
+    commit("setBookmarkListByPrincipalId", { userId, bookmarkList });
     return bookmarkList;
   },
 
@@ -83,13 +86,13 @@ const actions = {
 };
 
 const mutations = {
-  setBookmarkListByUserId(
+  setBookmarkListByPrincipalId(
     state: BookmarkState,
     {
       userId,
       bookmarkList,
     }: {
-      userId: UserId;
+      userId: PrincipalId;
       bookmarkList: Bookmark[];
     }
   ) {

@@ -124,7 +124,7 @@ export default {
           props.instanceId
         );
       } else if (props.mode == "USER") {
-        list = store.getters["database/databaseListByUserId"](
+        list = store.getters["database/databaseListByPrincipalId"](
           currentUser.value.id
         );
         if (

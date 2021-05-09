@@ -42,7 +42,7 @@ export default {
 
     // Use this to make the list reactive when project is transferred.
     const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByUserId"](
+      return store.getters["database/databaseListByPrincipalId"](
         currentUser.value.id
       );
     });

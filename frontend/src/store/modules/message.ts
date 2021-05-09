@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  UserId,
+  PrincipalId,
   MessageId,
   Message,
   MessageNew,
@@ -39,13 +39,18 @@ const state: () => MessageState = () => ({
 });
 
 const getters = {
-  messageListByUser: (state: MessageState) => (userId: UserId): Message[] => {
+  messageListByUser: (state: MessageState) => (
+    userId: PrincipalId
+  ): Message[] => {
     return state.messageListByUser.get(userId) || [];
   },
 };
 
 const actions = {
-  async fetchMessageListByUser({ commit, rootGetters }: any, userId: UserId) {
+  async fetchMessageListByUser(
+    { commit, rootGetters }: any,
+    userId: PrincipalId
+  ) {
     const messageList = (
       await axios.get(`/api/message?user=${userId}`)
     ).data.data.map((message: ResourceObject) => {
@@ -88,7 +93,7 @@ const mutations = {
       userId,
       messageList,
     }: {
-      userId: UserId;
+      userId: PrincipalId;
       messageList: Message[];
     }
   ) {
