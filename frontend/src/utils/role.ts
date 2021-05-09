@@ -26,11 +26,6 @@ export function isDeveloper(role: RoleType): boolean {
   return !store.getters["plan/feature"]("bb.admin") || role == "DEVELOPER";
 }
 
-// Returns true if admin feature is NOT supported or the principal is GUEST
-export function isGuest(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bb.admin") || role == "GUEST";
-}
-
 export function roleName(role: RoleType): string {
   switch (role) {
     case "OWNER":
@@ -39,8 +34,6 @@ export function roleName(role: RoleType): string {
       return "DBA";
     case "DEVELOPER":
       return "Developer";
-    case "GUEST":
-      return "Guest";
   }
 }
 

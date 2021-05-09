@@ -122,7 +122,7 @@ export const unknown = (
     type: "END_USER",
     name: "<<Unknown principal>>",
     email: "",
-    role: "GUEST",
+    role: "DEVELOPER",
   } as Principal;
 
   const UNKNOWN_MEMBER: Member = {
@@ -131,7 +131,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
-    role: "GUEST",
+    role: "DEVELOPER",
     principalId: UNKNOWN_ID,
   };
 
@@ -360,7 +360,7 @@ export const empty = (
     type: "END_USER",
     name: "",
     email: "",
-    role: "GUEST",
+    role: "DEVELOPER",
   } as Principal;
 
   const EMPTY_MEMBER: Member = {
@@ -369,7 +369,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
-    role: "GUEST",
+    role: "DEVELOPER",
     principalId: EMPTY_ID,
   };
 

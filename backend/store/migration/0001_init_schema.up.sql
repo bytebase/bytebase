@@ -113,7 +113,7 @@ CREATE TABLE member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     `role` TEXT NOT NULL CHECK (
-        `role` IN ('OWNER', 'DBA', 'DEVELOPER', "GUEST")
+        `role` IN ('OWNER', 'DBA', 'DEVELOPER')
     ),
     principal_id INTEGER NOT NULL REFERENCES principal (id)
 );

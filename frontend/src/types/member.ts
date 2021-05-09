@@ -1,7 +1,7 @@
 import { MemberId, PrincipalId } from "./id";
 import { Principal } from "./principal";
 
-export type RoleType = "OWNER" | "DBA" | "DEVELOPER" | "GUEST";
+export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
 export type Member = {
   id: MemberId;

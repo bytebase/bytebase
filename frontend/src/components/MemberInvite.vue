@@ -169,7 +169,7 @@ export default {
           const principal = store.getters["principal/principalByEmail"](
             invite.email
           );
-          if (principal && principal.role != "GUEST") {
+          if (principal) {
             return "Already a member";
           }
         }
