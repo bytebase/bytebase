@@ -145,7 +145,7 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 	if err := row.Scan(
 		&principal.ID,
 		&principal.CreatorId,
-		&principal.CreatorTs,
+		&principal.CreatedTs,
 		&principal.UpdaterId,
 		&principal.UpdatedTs,
 		&principal.Status,
@@ -205,7 +205,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ [
 		if err := rows.Scan(
 			&principal.ID,
 			&principal.CreatorId,
-			&principal.CreatorTs,
+			&principal.CreatedTs,
 			&principal.UpdaterId,
 			&principal.UpdatedTs,
 			&principal.Status,
@@ -267,7 +267,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 		if err := row.Scan(
 			&principal.ID,
 			&principal.CreatorId,
-			&principal.CreatorTs,
+			&principal.CreatedTs,
 			&principal.UpdaterId,
 			&principal.UpdatedTs,
 			&principal.Status,

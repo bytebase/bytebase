@@ -24,7 +24,7 @@ type Principal struct {
 
 	// Standard fields
 	CreatorId int   `jsonapi:"attr,creatorId"`
-	CreatorTs int64 `jsonapi:"attr,creatorTs"`
+	CreatedTs int64 `jsonapi:"attr,createdTs"`
 	UpdaterId int   `jsonapi:"attr,updaterId"`
 	UpdatedTs int64 `jsonapi:"attr,updatedTs"`
 
