@@ -10,6 +10,10 @@ export default function configureAuth(route) {
       passwordHash: loginInfo.password,
     });
     if (user) {
+      const cookieExpiration = new Date(Date.now() + 24 * 3600 * 1000);
+      document.cookie = `user=${
+        user.id
+      }; path=/; expires=${cookieExpiration.toUTCString()};`;
       return user;
     }
     return new Response(
