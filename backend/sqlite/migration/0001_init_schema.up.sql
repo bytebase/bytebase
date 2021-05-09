@@ -4,10 +4,8 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    -- "INVITED" | "ACTIVE"
-    `status` TEXT NOT NULL,
-    -- "END_USER" | "SYSTEM_BOT"
-    `type` TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (`status` IN ('INVITED', 'ACTIVE')),
+    `type` TEXT NOT NULL CHECK (`type` IN ('END_USER', 'SYSTEM_BOT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -61,8 +59,9 @@ CREATE TABLE workspace (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    -- "NORMAL" | "ARCHIVED" | "PENDING_DELETE"
-    row_status TEXT NOT NULL,
+    row_status TEXT NOT NULL CHECK (
+        `row_status` IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ),
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL
 );
