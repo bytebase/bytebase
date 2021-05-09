@@ -200,5 +200,5 @@ func TokenMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFunc
 // JWTErrorChecker will be executed when user try to access a protected path.
 func JWTErrorChecker(l *bytebase.Logger, err error, c echo.Context) error {
 	l.Logf(bytebase.INFO, "Unauthorized to access protected route %s, err: %v", c.Path(), err)
-	return fmt.Errorf("invalid access token: %w", err)
+	return echo.NewHTTPError(http.StatusUnauthorized, "Invalid access token.").SetInternal(err)
 }

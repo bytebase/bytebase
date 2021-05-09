@@ -12,15 +12,20 @@
 <script lang="ts">
 import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import ProvideContext from "./components/ProvideContext.vue";
 import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 
+// Check expiration every 30 sec and logout if expired
+const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
+
 const NOTIFICAITON_DURATION = 8000;
 
 interface LocalState {
   notificationList: BBNotificationItem[];
+  prevLoggedIn: boolean;
 }
 
 export default {
@@ -28,10 +33,24 @@ export default {
   components: { ProvideContext },
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       notificationList: [],
+      prevLoggedIn: store.getters["auth/isLoggedIn"](),
     });
+
+    setInterval(() => {
+      const loggedIn = store.getters["auth/isLoggedIn"]();
+      if (state.prevLoggedIn != loggedIn) {
+        state.prevLoggedIn = loggedIn;
+        if (!loggedIn) {
+          store.dispatch("auth/logout").then(() => {
+            router.push({ name: "auth.signin" });
+          });
+        }
+      }
+    }, CHECK_LOGGEDIN_STATE_DURATION);
 
     const removeNotification = (id: string) => {
       state.notificationList.shift();
