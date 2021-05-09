@@ -31,18 +31,22 @@ const getters = {
 };
 
 const actions = {
-  async login({ commit, rootGetters }: any, loginInfo: LoginInfo) {
-    const loggedInUser = convert(
-      (
-        await axios.post("/api/auth/login", {
-          data: { type: "loginInfo", attributes: loginInfo },
-        })
-      ).data.data,
-      rootGetters
-    );
+  async login({ commit, dispatch, rootGetters }: any, loginInfo: LoginInfo) {
+    const loggedInUser = (
+      await axios.post("/api/auth/login", {
+        data: { type: "loginInfo", attributes: loginInfo },
+      })
+    ).data.data;
 
-    commit("setCurrentUser", loggedInUser);
-    return loggedInUser;
+    // Refresh the corresponding principal
+    await dispatch("principal/fetchPrincipalById", loggedInUser.id, {
+      root: true,
+    });
+
+    // The conversion relies on the above refresh.
+    const convertedUser = convert(loggedInUser, rootGetters);
+    commit("setCurrentUser", convertedUser);
+    return convertedUser;
   },
 
   async signup({ commit, dispatch, rootGetters }: any, signupInfo: SignupInfo) {
@@ -55,11 +59,9 @@ const actions = {
     // Refresh the corresponding principal
     await dispatch("principal/fetchPrincipalById", newUser.id, { root: true });
 
-    // The conversion relies on the above task.
+    // The conversion relies on the above refresh.
     const convertedUser = convert(newUser, rootGetters);
-
     commit("setCurrentUser", convertedUser);
-
     return convertedUser;
   },
 
@@ -78,9 +80,7 @@ const actions = {
 
     // The conversion relies on the above task to get the lastest data
     const convertedUser = convert(activatedUser, rootGetters);
-
     commit("setCurrentUser", convertedUser);
-
     return convertedUser;
   },
 
