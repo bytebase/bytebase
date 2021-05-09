@@ -86,7 +86,7 @@ const actions = {
 
   async restoreUser({ commit, dispatch }: any) {
     const userId = getIntCookie("user");
-    if (!isEmpty(userId)) {
+    if (userId) {
       const loggedInUser = await dispatch(
         "principal/fetchPrincipalById",
         userId,
