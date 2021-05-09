@@ -254,7 +254,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 		RETURNING *
 	`,
 		principal.Name,
-		principal.UpdaterId,
+		patch.UpdaterId,
 		id,
 	)
 	if err != nil {
