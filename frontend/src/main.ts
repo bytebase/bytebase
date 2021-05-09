@@ -39,7 +39,8 @@ import highlight from "./directives/highlight";
 import {
   isDev,
   isDemo,
-  isDevOrDemo,
+  isMock,
+  isRelease,
   humanizeTs,
   sizeToFit,
   urlfy,
@@ -54,7 +55,7 @@ import {
   registerStoreWithRoleUtil,
 } from "./utils";
 
-if (isDevOrDemo()) {
+if (!isRelease()) {
   makeServer();
 }
 
@@ -67,7 +68,8 @@ app.config.globalProperties.moment = moment;
 app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDev = isDev();
 app.config.globalProperties.isDemo = isDemo();
-app.config.globalProperties.isDevOrDemo = isDevOrDemo();
+app.config.globalProperties.isMock = isMock();
+app.config.globalProperties.isRelease = isRelease();
 app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.environmentName = environmentName;
@@ -87,7 +89,9 @@ axios.interceptors.request.use((request) => {
     // Otherwise, we will gradually move the mock endpoint to the real backend endpoint.
     if (
       isDemo() ||
-      (!request.url!.startsWith("/api/ping") &&
+      isMock() ||
+      (isDev() &&
+        !request.url!.startsWith("/api/ping") &&
         !request.url!.startsWith("/api/auth/login") &&
         !request.url!.startsWith("/api/auth/signup") &&
         !request.url!.startsWith("/api/principal"))

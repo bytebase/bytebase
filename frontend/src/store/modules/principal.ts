@@ -12,7 +12,7 @@ import {
   EMPTY_ID,
   PrincipalType,
 } from "../../types";
-import { isDevOrDemo, randomString } from "../../utils";
+import { isRelease, randomString } from "../../utils";
 
 function convert(principal: ResourceObject, rootGetters: any): Principal {
   const member = rootGetters["member/memberByPrincipalId"](principal.id);
@@ -100,7 +100,7 @@ const actions = {
               status: "INVITED",
               name: newPrincipal.name,
               email: newPrincipal.email,
-              password: isDevOrDemo() ? "aaa" : randomString(),
+              password: isRelease() ? randomString() : "aaa",
             },
           },
         })

@@ -28,7 +28,7 @@
         </p>
       </router-link>
       <div class="border-t border-gray-100"></div>
-      <div v-if="isDevOrDemo" class="md:hidden py-1">
+      <div v-if="!isRelease" class="md:hidden py-1">
         <div v-if="currentUser.role != 'OWNER'" class="py-1">
           <a @click.prevent="switchToOwner" class="menu-item" role="menuitem">
             Switch to Owner
@@ -50,7 +50,7 @@
         </div>
       </div>
       <div
-        v-if="isDevOrDemo"
+        v-if="!isRelease"
         @click.prevent="ping"
         class="py-1 menu-item"
         role="menuitem"

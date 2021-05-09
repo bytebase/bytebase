@@ -30,7 +30,7 @@
     <div>
       <div class="flex items-center space-x-3">
         <div
-          v-if="isDevOrDemo"
+          v-if="!isRelease"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm"
         >
           <span class="hidden lg:block"
@@ -74,7 +74,7 @@
           <div v-else class="underline">Enterprise</div> -->
         </div>
         <div
-          v-if="isDevOrDemo"
+          v-if="!isRelease"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm"
         >
           <span class="hidden lg:block"

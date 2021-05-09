@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "license": "UNLICENSED",
   "scripts": {
-    "mock": "vite",
-    "dev": "vite build --mode dev --outDir=../backend/server/dist --emptyOutDir",
+    "mock": "vite --mode mock",
+    "proxy": "vite --mode proxy",
     "package": "vite build --outDir=../backend/server/dist --emptyOutDir",
     "demo": "vite build --mode demo --outDir=dist"
   },

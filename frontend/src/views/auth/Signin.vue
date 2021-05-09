@@ -88,7 +88,7 @@ import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { LoginInfo } from "../../types";
-import { isDev, isDevOrDemo, isValidEmail } from "../../utils";
+import { isRelease, isValidEmail } from "../../utils";
 
 interface LocalState {
   email: string;
@@ -102,8 +102,8 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      email: isDevOrDemo() ? "demo@example.com" : "",
-      password: isDev() ? "1024" : "",
+      email: isRelease() ? "" : "demo@example.com",
+      password: isRelease() ? "" : "1024",
     });
 
     const allowSignin = computed(() => {
