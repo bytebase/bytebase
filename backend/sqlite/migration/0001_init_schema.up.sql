@@ -13,6 +13,19 @@ CREATE TABLE principal (
     password_hash TEXT NOT NULL
 );
 
+CREATE TRIGGER IF NOT EXISTS `trigger_update_principal_modification_time`
+AFTER
+UPDATE
+    ON `principal` FOR EACH ROW BEGIN
+UPDATE
+    `principal`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Default bytebase system account id is 1
 INSERT INTO
     principal (
@@ -53,6 +66,19 @@ CREATE TABLE workspace (
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL
 );
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_workspace_modification_time`
+AFTER
+UPDATE
+    ON `workspace` FOR EACH ROW BEGIN
+UPDATE
+    `workspace`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
 
 -- Default workspace for on-premise deployment, id is 1
 INSERT INTO
