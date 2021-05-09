@@ -70,17 +70,5 @@
     "name": "Jane Dev",
     "email": "jane@example.com",
     "passwordHash": "aaa"
-  },
-  {
-    "id": "1006",
-    "updaterId": "1",
-    "updatedTs": 1614571200000,
-    "createdTs": 1614528000000,
-    "creatorId": "1",
-    "status": "INVITED",
-    "type": "END_USER",
-    "name": "Bob Invited",
-    "email": "bob@example.com",
-    "passwordHash": "aaa"
   }
 ]

@@ -58,15 +58,5 @@
     "createdTs": 1609603200000,
     "role": "DEVELOPER",
     "principalId": "1005"
-  },
-  {
-    "id": "7",
-    "workspaceId": "1",
-    "updaterId": "1001",
-    "updatedTs": 1609646400000,
-    "creatorId": "1001",
-    "createdTs": 1609603200000,
-    "role": "DEVELOPER",
-    "principalId": "1006"
   }
 ]

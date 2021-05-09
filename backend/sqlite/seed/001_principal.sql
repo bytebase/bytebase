@@ -119,27 +119,3 @@ VALUES
         -- aaa
         '$2a$10$DJ/T2SmdNiOAKXnuf.LQzenVYr4sIQSDu004Io1svmiRUmvAEMIw6'
     );
-
-INSERT INTO
-    principal (
-        id,
-        creator_id,
-        updater_id,
-        `status`,
-        `type`,
-        name,
-        email,
-        password_hash
-    )
-VALUES
-    (
-        1006,
-        1,
-        1,
-        'INVITED',
-        'END_USER',
-        'Bob Invited',
-        'bob@example.com',
-        -- aaa
-        '$2a$10$jD2RsG.vEvbcbO3T8bBrtePWWC9ewJclQGqyeoY9slwrslBMP/Ey6'
-    );

@@ -9,21 +9,17 @@
 
 <script lang="ts">
 import { computed } from "vue";
-import { useStore } from "vuex";
 import MemberInvite from "../components/MemberInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
-import { isOwner } from "../utils";
 
 export default {
   name: "SettingWorkspaceMember",
   components: { MemberInvite, MemberTable },
   props: {},
   setup(props, ctx) {
-    const store = useStore();
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
+    // TODO: Disable invite for now as it requires mail server
     const allowInvite = computed(() => {
-      return isOwner(currentUser.value.role);
+      return false;
     });
 
     return {
