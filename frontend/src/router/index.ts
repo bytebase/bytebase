@@ -84,6 +84,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bb.database.create",
                     "quickaction.bb.database.troubleshoot",
                     "quickaction.bb.instance.create",
+                    "quickaction.bb.project.create",
                     "quickaction.bb.user.manage",
                   ],
                 ],
@@ -94,6 +95,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bb.database.create",
                     "quickaction.bb.database.troubleshoot",
                     "quickaction.bb.instance.create",
+                    "quickaction.bb.project.create",
                   ],
                 ],
                 [
