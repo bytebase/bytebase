@@ -232,7 +232,7 @@ func patchMember(ctx context.Context, tx *Tx, id int, patch *api.MemberPatch) (*
 		UPDATE member
 		SET role = ?, updater_id = ?
 		WHERE id = ?
-		RETURNING *
+		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
 	`,
 		member.Role,
 		patch.UpdaterId,

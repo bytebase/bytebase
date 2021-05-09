@@ -124,7 +124,7 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 			password_hash
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING *
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, status, type, name, email, password_hash
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -251,7 +251,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 		UPDATE principal
 		SET name = ?, updater_id = ?
 		WHERE id = ?
-		RETURNING *
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, status, type, name, email, password_hash
 	`,
 		principal.Name,
 		patch.UpdaterId,
