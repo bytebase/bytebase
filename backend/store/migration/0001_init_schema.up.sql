@@ -91,3 +91,35 @@ INSERT INTO
     )
 VALUES
     (1, 1, 1, 'NORMAL', '', 'Default workspace');
+
+-- Member table stores the workspace membership
+CREATE TABLE member (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    `role` TEXT NOT NULL CHECK (
+        `role` IN ('OWNER', 'DBA', 'DEVELOPER', "GUEST")
+    ),
+    principal_id INTEGER NOT NULL REFERENCES principal (id)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('member', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_member_modification_time`
+AFTER
+UPDATE
+    ON `member` FOR EACH ROW BEGIN
+UPDATE
+    `member`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
