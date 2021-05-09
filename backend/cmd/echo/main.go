@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/server"
-	"github.com/bytebase/bytebase/sqlite"
+	"github.com/bytebase/bytebase/store"
 )
 
 // const DSN = ":memory:"
@@ -21,7 +21,7 @@ type Main struct {
 
 	server *server.Server
 
-	db *sqlite.DB
+	db *store.DB
 }
 
 func NewMain() *Main {
@@ -31,7 +31,7 @@ func NewMain() *Main {
 }
 
 func (m *Main) Run() error {
-	db := sqlite.NewDB(m.l, DSN)
+	db := store.NewDB(m.l, DSN)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
@@ -39,7 +39,7 @@ func (m *Main) Run() error {
 	m.db = db
 
 	server := server.NewServer(m.l)
-	server.PrincipalService = sqlite.NewPrincipalService(m.l, db)
+	server.PrincipalService = store.NewPrincipalService(m.l, db)
 
 	m.server = server
 	if err := server.Run(); err != nil {
