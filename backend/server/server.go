@@ -17,6 +17,7 @@ type Server struct {
 	l *bytebase.Logger
 
 	PrincipalService   api.PrincipalService
+	MemberService      api.MemberService
 	EnvironmentService api.EnvironmentService
 
 	e *echo.Echo
@@ -90,6 +91,8 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerAuthRoutes(g)
 
 	s.registerPrincipalRoutes(g)
+
+	s.registerMemberRoutes(g)
 
 	s.registerEnvironmentRoutes(g)
 
