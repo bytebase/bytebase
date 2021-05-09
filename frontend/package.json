@@ -4,7 +4,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "mock": "vite --mode mock",
-    "proxy": "vite --mode proxy",
+    "server": "vite --mode server",
     "package": "vite build --outDir=../backend/server/dist --emptyOutDir",
     "demo": "vite build --mode demo --outDir=dist"
   },
