@@ -1,6 +1,5 @@
 import axios from "axios";
 import {
-  PrincipalId,
   Database,
   DatabaseNew,
   DatabaseId,
@@ -13,7 +12,6 @@ import {
   PrincipalId,
   unknown,
   DataSource,
-  DataSourceMember,
   Project,
   ProjectId,
   EMPTY_ID,

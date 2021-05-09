@@ -12,7 +12,6 @@ import {
   ProjectMemberNew,
   ProjectMemberPatch,
   MemberId,
-  PrincipalId,
   ResourceIdentifier,
   RowStatus,
   EMPTY_ID,

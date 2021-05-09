@@ -3,7 +3,7 @@
 
 export type ExecutionId = string;
 
-export type PrincipalId = number;
+export type PrincipalId = string;
 
 export type MemberId = string;
 
