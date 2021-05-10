@@ -131,14 +131,14 @@ axios.interceptors.response.use(
         store.dispatch("auth/logout").then(() => {
           router.push({ name: "auth.signin" });
         });
+      }
+      if (error.response.data.message) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: error.response.data.message,
+        });
       } else {
-        if (error.response.data.message) {
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "CRITICAL",
-            title: error.response.data.message,
-          });
-        }
         throw error;
       }
     }
