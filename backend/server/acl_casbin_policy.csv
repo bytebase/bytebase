@@ -2,6 +2,7 @@ p, OWNER, /principal, POST
 p, OWNER, /principal, GET
 p, OWNER, /principal/{id}, GET
 p, OWNER, /principal/{id}, PATCH
+p, OWNER, /principal/{id}, PATCH_SELF
 
 p, OWNER, /member, POST
 p, OWNER, /member, GET
@@ -11,6 +12,6 @@ p, OWNER, /member/{id}, DELETE
 
 p, DBA, /principal, GET
 p, DBA, /principal/{id}, GET
-p, DBA, /principal/{id}, PATCH
+p, DBA, /principal/{id}, PATCH_SELF
 
 p, DBA, /member, GET

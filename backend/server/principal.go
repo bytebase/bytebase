@@ -56,8 +56,8 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/principal/:id", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("id"))
+	g.GET("/principal/:principalId", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("principalId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
@@ -82,8 +82,8 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/principal/:id", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("id"))
+	g.PATCH("/principal/:principalId", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("principalId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
