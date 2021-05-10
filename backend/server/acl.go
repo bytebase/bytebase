@@ -23,7 +23,12 @@ func AclMiddleware(l *bytebase.Logger, m api.MemberService, ce *casbin.Enforcer,
 		// Gets principal id from the context.
 		principalId := c.Get(GetPrincipalIdContextKey()).(int)
 
-		member, err := m.FindMemberByPrincipalID(context.Background(), api.DEFAULT_WORKPSACE_ID, principalId)
+		wsId := api.DEFAULT_WORKPSACE_ID
+		memberFilter := &api.MemberFilter{
+			WorkspaceId: &wsId,
+			PrincipalId: &principalId,
+		}
+		member, err := m.FindMember(context.Background(), memberFilter)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalId))
