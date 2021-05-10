@@ -115,7 +115,8 @@ CREATE TABLE member (
     `role` TEXT NOT NULL CHECK (
         `role` IN ('OWNER', 'DBA', 'DEVELOPER')
     ),
-    principal_id INTEGER NOT NULL REFERENCES principal (id)
+    principal_id INTEGER NOT NULL REFERENCES principal (id),
+    UNIQUE(workspace_id, principal_id)
 );
 
 INSERT INTO
