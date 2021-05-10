@@ -50,7 +50,9 @@ func NewServer(logger *bytebase.Logger) *Server {
 			`"method":"${method}","uri":"${uri}",` +
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
-	e.Use(middleware.Recover())
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return RecoverMiddleware(logger, next)
+	})
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
 	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
