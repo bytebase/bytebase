@@ -1,0 +1,4 @@
+p, 1001, /principal/:id, GET
+p, 1001, /principal, GET
+
+p, 1001, /member, GET

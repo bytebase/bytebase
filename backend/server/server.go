@@ -9,8 +9,11 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	scas "github.com/qiangmzsx/string-adapter/v2"
 )
 
 type Server struct {
@@ -28,6 +31,12 @@ var embededFiles embed.FS
 
 //go:embed dist/index.html
 var indexContent string
+
+//go:embed acl_casbin_model.conf
+var casbinModel string
+
+//go:embed acl_casbin_policy.csv
+var casbinPolicy string
 
 func getFileSystem() http.FileSystem {
 	fsys, err := fs.Sub(embededFiles, "dist")
@@ -86,6 +95,20 @@ func NewServer(logger *bytebase.Logger) *Server {
 
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return TokenMiddleware(logger, next)
+	})
+
+	m, err := model.NewModelFromString(casbinModel)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+
+	sa := scas.NewAdapter(casbinPolicy)
+	ce, err := casbin.NewEnforcer(m, sa)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return AclMiddleware(logger, ce, next)
 	})
 
 	s.registerDebugRoutes(g)
