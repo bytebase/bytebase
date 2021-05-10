@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase"
@@ -56,7 +57,7 @@ func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email strin
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "principal not found."}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal email not found: %s", email)}
 	}
 	return list[0], nil
 }
@@ -233,7 +234,7 @@ func findPrincipalByID(ctx context.Context, tx *Tx, id int) (*api.Principal, err
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "principal not found."}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal ID not found: %d", id)}
 	}
 	return list[0], nil
 }
@@ -282,5 +283,5 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 		return &principal, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "principal not found."}
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal ID not found: %d", id)}
 }

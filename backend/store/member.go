@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase"
@@ -152,7 +153,7 @@ func findMemberByID(ctx context.Context, tx *Tx, id int) (*api.Member, error) {
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "member not found."}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", id)}
 	}
 	return list[0], nil
 }
@@ -261,7 +262,7 @@ func patchMember(ctx context.Context, tx *Tx, id int, patch *api.MemberPatch) (*
 		return &member, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: "member not found."}
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", id)}
 }
 
 // deleteMember permanently deletes a member by ID.
