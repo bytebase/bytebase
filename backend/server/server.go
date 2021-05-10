@@ -35,8 +35,14 @@ var indexContent string
 //go:embed acl_casbin_model.conf
 var casbinModel string
 
-//go:embed acl_casbin_policy.csv
-var casbinPolicy string
+//go:embed acl_casbin_policy_owner.csv
+var casbinOwnerPolicy string
+
+//go:embed acl_casbin_policy_dba.csv
+var casbinDBAPolicy string
+
+//go:embed acl_casbin_policy_developer.csv
+var casbinDeveloperPolicy string
 
 func getFileSystem() http.FileSystem {
 	fsys, err := fs.Sub(embededFiles, "dist")
@@ -102,7 +108,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 		e.Logger.Fatal(err)
 	}
 
-	sa := scas.NewAdapter(casbinPolicy)
+	sa := scas.NewAdapter(strings.Join([]string{casbinOwnerPolicy, casbinDBAPolicy, casbinDeveloperPolicy}, "\n"))
 	ce, err := casbin.NewEnforcer(m, sa)
 	if err != nil {
 		e.Logger.Fatal(err)
