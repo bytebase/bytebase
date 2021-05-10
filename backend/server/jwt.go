@@ -151,10 +151,6 @@ func TokenMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFunc
 			return next(c)
 		}
 
-		// If the user is not authenticated (no user token data in the context), don't do anything.
-		if c.Get(GetTokenContextKey()) == nil {
-			return next(c)
-		}
 		// Gets user token from the context.
 		u := c.Get(GetTokenContextKey()).(*jwt.Token)
 
