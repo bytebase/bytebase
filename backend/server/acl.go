@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func AclMiddleware(l *bytebase.Logger, m api.MemberService, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
+func ACLMiddleware(l *bytebase.Logger, m api.MemberService, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {
