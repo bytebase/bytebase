@@ -12,12 +12,34 @@ const (
 	Active  PrincipalStatus = "ACTIVE"
 )
 
+func (e PrincipalStatus) String() string {
+	switch e {
+	case Unknown:
+		return "UNKNOWN"
+	case Invited:
+		return "INVITED"
+	case Active:
+		return "ACTIVE"
+	}
+	return ""
+}
+
 type PrincipalType string
 
 const (
 	EndUser PrincipalType = "END_USER"
 	BOT     PrincipalType = "BOT"
 )
+
+func (e PrincipalType) String() string {
+	switch e {
+	case EndUser:
+		return "END_USER"
+	case BOT:
+		return "BOT"
+	}
+	return ""
+}
 
 type Principal struct {
 	ID int `jsonapi:"primary,principal"`
