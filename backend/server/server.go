@@ -85,29 +85,14 @@ func NewServer(logger *bytebase.Logger) *Server {
 
 	g := e.Group("/api")
 
-	g.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		Skipper: func(c echo.Context) bool {
-			return strings.HasPrefix(c.Path(), "/api/auth")
-		},
-		Claims:        &Claims{},
-		SigningMethod: middleware.AlgorithmHS256,
-		SigningKey:    []byte(GetJWTSecret()),
-		ContextKey:    GetTokenContextKey(),
-		TokenLookup:   "cookie:access-token", // "<source>:<name>"
-		ErrorHandlerWithContext: func(err error, c echo.Context) error {
-			return JWTErrorChecker(logger, err, c)
-		},
-	}))
-
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return TokenMiddleware(logger, next)
+		return JWTMiddleware(logger, s.PrincipalService, next)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-
 	sa := scas.NewAdapter(strings.Join([]string{casbinOwnerPolicy, casbinDBAPolicy, casbinDeveloperPolicy}, "\n"))
 	ce, err := casbin.NewEnforcer(m, sa)
 	if err != nil {

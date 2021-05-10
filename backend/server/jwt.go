@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -22,43 +24,37 @@ const (
 	jwtSecretKey             = "some-secret-key"
 	jwtRefreshSecretKey      = "some-refresh-secret-key"
 	refreshThresholdDuration = 15 * time.Minute
-	accessTokenDuration      = 1 * time.Hour
+	accessTokenDuration      = 15 * time.Second
 	refreshTokenDuration     = 24 * time.Hour
 	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
-	// Suppose we have a valid refresh token, we should refresh the token in 2 cases:
+	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
 	// 1. The access token is about to expire in <<refreshThresholdDuration>>
 	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
-	cookieExpDuration = 24 * time.Hour //refreshTokenDuration - 1*time.Minute
+	cookieExpDuration = refreshTokenDuration - 1*time.Minute
 
-	// The key name used to store jwt token in the context
-	tokenContextKey = "token"
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIdContextKey = "principal-id"
 )
 
-func GetJWTSecret() string {
+// Create a struct that will be encoded to a JWT.
+// We add jwt.StandardClaims as an embedded type, to provide fields like name.
+type Claims struct {
+	Name string `json:"name"`
+	jwt.StandardClaims
+}
+
+func getJWTSecret() string {
 	return jwtSecretKey
 }
 
-func GetRefreshJWTSecret() string {
+func getRefreshJWTSecret() string {
 	return jwtRefreshSecretKey
-}
-
-func GetTokenContextKey() string {
-	return tokenContextKey
 }
 
 func GetPrincipalIdContextKey() string {
 	return principalIdContextKey
-}
-
-// Create a struct that will be encoded to a JWT.
-// We add jwt.StandardClaims as an embedded type, to provide fields like expiry time.
-type Claims struct {
-	Name string `json:"name"`
-	jwt.StandardClaims
 }
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
@@ -84,12 +80,12 @@ func GenerateTokensAndSetCookies(user *api.Principal, c echo.Context) error {
 
 func generateAccessToken(user *api.Principal) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
-	return generateToken(user, expirationTime, []byte(GetJWTSecret()))
+	return generateToken(user, expirationTime, []byte(getJWTSecret()))
 }
 
 func generateRefreshToken(user *api.Principal) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
-	return generateToken(user, expirationTime, []byte(GetRefreshJWTSecret()))
+	return generateToken(user, expirationTime, []byte(getRefreshJWTSecret()))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
@@ -141,60 +137,118 @@ func setUserCookie(user *api.Principal, expiration time.Time, c echo.Context) {
 	c.SetCookie(cookie)
 }
 
-// TokenMiddleware does following things
-// 1. Extract principal id from the token and set it in the context to be used by the handler.
-// 2. Refresh the access_token and refresh_token if access_token is about to expire.
-func TokenMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFunc {
+// JWTMiddleware validates the access token.
+// If the access token is about to expire or has expired and the request has a valid refresh token, it
+// will try to generate new access token and refresh token.
+func JWTMiddleware(l *bytebase.Logger, p api.PrincipalService, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {
 			return next(c)
 		}
 
-		// Gets user token from the context.
-		u := c.Get(GetTokenContextKey()).(*jwt.Token)
-
-		claims := u.Claims.(*Claims)
-
-		principalId, err := strconv.Atoi(claims.Subject)
+		cookie, err := c.Cookie(accessTokenCookieName)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing access token")
 		}
-		c.Set(GetPrincipalIdContextKey(), principalId)
 
-		// We ensure that a new token is not issued until enough time has elapsed.
-		// In this case, a new token will only be issued if the old token is within
-		// 15 mins of expiry.
-		if time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration {
-			// Gets the refresh token from the cookie.
-			l.Log(bytebase.INFO, "Token about to expire, generate new token...")
-			rc, err := c.Cookie(refreshTokenCookieName)
-			if err == nil && rc != nil {
-				// Parses token and checks if it valid.
-				tkn, err := jwt.ParseWithClaims(rc.Value, claims, func(token *jwt.Token) (interface{}, error) {
-					return []byte(GetRefreshJWTSecret()), nil
-				})
-				if err != nil {
-					if err == jwt.ErrSignatureInvalid {
-						c.Response().Writer.WriteHeader(http.StatusUnauthorized)
-					}
-				}
+		claims := &Claims{}
+		accessToken, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
+			// Check the signing method
+			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
+				return nil, fmt.Errorf("unexpected jwt signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+			}
+			// if kid, ok := t.Header["kid"].(string); ok {
+			// 	if key, ok := getJWTSecret(); ok {
+			// 		return key, nil
+			// 	}
+			// }
+			// return nil, fmt.Errorf("unexpected jwt key id=%v", t.Header["kid"])
 
-				if tkn != nil && tkn.Valid {
-					// If everything is good, update tokens.
-					_ = GenerateTokensAndSetCookies(&api.Principal{
-						Name: claims.Name,
-					}, c)
+			return []byte(getJWTSecret()), nil
+		})
+
+		generateToken := time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration
+		generateReason := "Token about to expire, generate new token..."
+		if err != nil {
+			var ve *jwt.ValidationError
+			if errors.As(err, &ve) {
+				// If expiration error is the only error,  we will clear the err
+				// and generate new access token and refresh token
+				if ve.Errors == jwt.ValidationErrorExpired {
+					err = nil
+					generateToken = true
+					generateReason = "Token has expired, generate new token..."
 				}
 			}
 		}
 
-		return next(c)
-	}
-}
+		// We either have a valid access token or we will attempt to generate new access token and refresh token
+		if err == nil {
+			principalId, err := strconv.Atoi(claims.Subject)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")
+			}
 
-// JWTErrorChecker will be executed when user try to access a protected path.
-func JWTErrorChecker(l *bytebase.Logger, err error, c echo.Context) error {
-	l.Logf(bytebase.INFO, "Unauthorized to access protected route %s, err: %v", c.Path(), err)
-	return echo.NewHTTPError(http.StatusUnauthorized, "Invalid access token.").SetInternal(err)
+			// Even if there is no error, we still need to make sure the user still exists.
+			principalFilter := &api.PrincipalFilter{
+				ID: &principalId,
+			}
+			user, err := p.FindPrincipal(context.Background(), principalFilter)
+			if err != nil {
+				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find to refresh expired token. User ID %d", principalId))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user to refresh expired token. User ID %d", principalId)).SetInternal(err)
+			}
+
+			if generateToken {
+				generateTokenFunc := func() error {
+					rc, err := c.Cookie(refreshTokenCookieName)
+
+					if err != nil {
+						return echo.NewHTTPError(http.StatusUnauthorized, "Failed to generate access token. Missing refresh token.")
+					}
+
+					// Parses token and checks if it's valid.
+					refreshTokenClaims := &Claims{}
+					refreshToken, err := jwt.ParseWithClaims(rc.Value, refreshTokenClaims, func(token *jwt.Token) (interface{}, error) {
+						return []byte(getRefreshJWTSecret()), nil
+					})
+					if err != nil {
+						if err == jwt.ErrSignatureInvalid {
+							return echo.NewHTTPError(http.StatusUnauthorized, "Failed to generate access token. Invalid refresh token signature.")
+						}
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalId)).SetInternal(err)
+					}
+
+					// If we have a valid refresh token, we will generate new access token and refresh token
+					if refreshToken != nil && refreshToken.Valid {
+						l.Log(bytebase.INFO, generateReason)
+						if err := GenerateTokensAndSetCookies(user, c); err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalId)).SetInternal(err)
+						}
+					}
+
+					return nil
+				}
+
+				// It may happen that we still have a valid access token, but we encounter issue when trying to generate new token
+				// In such case, we won't return the error.
+				if err := generateTokenFunc(); err != nil && !accessToken.Valid {
+					return err
+				}
+			}
+
+			// Stores principalId into context.
+			c.Set(GetPrincipalIdContextKey(), principalId)
+			return next(c)
+		}
+
+		return &echo.HTTPError{
+			Code:     http.StatusUnauthorized,
+			Message:  "Invalid or expired access token",
+			Internal: err,
+		}
+	}
 }
