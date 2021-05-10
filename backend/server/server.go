@@ -108,7 +108,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 		e.Logger.Fatal(err)
 	}
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return AclMiddleware(logger, ce, next)
+		return AclMiddleware(logger, s.MemberService, ce, next)
 	})
 
 	s.registerDebugRoutes(g)

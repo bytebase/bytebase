@@ -1,4 +1,10 @@
-p, 1001, /principal/:id, GET
-p, 1001, /principal, GET
+p, OWNER, /principal, POST
+p, OWNER, /principal, GET
+p, OWNER, /principal/:id, GET
+p, OWNER, /principal/:id, PATCH
 
-p, 1001, /member, GET
+p, OWNER, /member, POST
+p, OWNER, /member, GET
+p, OWNER, /member/:id, GET
+p, OWNER, /member/:id, PATCH
+p, OWNER, /member/:id, DELETE

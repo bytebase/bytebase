@@ -52,12 +52,30 @@ func (s *MemberService) FindMemberList(ctx context.Context, workspaceId int) ([]
 	}
 	defer tx.Rollback()
 
-	list, err := findMemberList(ctx, tx, memberFilter{Workspace_ID: &workspaceId})
+	list, err := findMemberList(ctx, tx, memberFilter{WorkspaceId: &workspaceId})
 	if err != nil {
 		return []*api.Member{}, err
 	}
 
 	return list, nil
+}
+
+// FindMemberByPrincipalID retrieves a member by principal ID.
+// Returns ENOTFOUND if no matching id.
+func (s *MemberService) FindMemberByPrincipalID(ctx context.Context, workspaceId int, principalId int) (*api.Member, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := findMemberList(ctx, tx, memberFilter{WorkspaceId: &workspaceId, PrincipalId: &principalId})
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member principal id not found: %d", principalId)}
+	}
+	return list[0], nil
 }
 
 // PatchMemberByID updates an existing member by ID.
@@ -83,14 +101,14 @@ func (s *MemberService) PatchMemberByID(ctx context.Context, id int, patch *api.
 
 // DeleteMemberByID deletes an existing member by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *MemberService) DeleteMemberByID(ctx context.Context, id int) error {
+func (s *MemberService) DeleteMemberByID(ctx context.Context, workspaceId int, id int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.Rollback()
 
-	err = deleteMember(ctx, tx, id)
+	err = deleteMember(ctx, tx, workspaceId, id)
 	if err != nil {
 		return FormatError(err)
 	}
@@ -148,8 +166,8 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 
 // findMemberByID retrieves a member by id.
 // Returns ENOTFOUND if no matching id.
-func findMemberByID(ctx context.Context, tx *Tx, id int) (*api.Member, error) {
-	list, err := findMemberList(ctx, tx, memberFilter{ID: &id})
+func findMemberByID(ctx context.Context, tx *Tx, workspaceId int, id int) (*api.Member, error) {
+	list, err := findMemberList(ctx, tx, memberFilter{ID: &id, WorkspaceId: &workspaceId})
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
@@ -161,8 +179,9 @@ func findMemberByID(ctx context.Context, tx *Tx, id int) (*api.Member, error) {
 // memberFilter represents a filter passed to findMemberList().
 type memberFilter struct {
 	// Filtering fields.
-	ID           *int
-	Workspace_ID *int
+	ID          *int
+	WorkspaceId *int
+	PrincipalId *int
 }
 
 func findMemberList(ctx context.Context, tx *Tx, filter memberFilter) (_ []*api.Member, err error) {
@@ -171,8 +190,11 @@ func findMemberList(ctx context.Context, tx *Tx, filter memberFilter) (_ []*api.
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := filter.Workspace_ID; v != nil {
+	if v := filter.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
+	}
+	if v := filter.PrincipalId; v != nil {
+		where, args = append(where, "principal_id = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -266,9 +288,9 @@ func patchMember(ctx context.Context, tx *Tx, id int, patch *api.MemberPatch) (*
 }
 
 // deleteMember permanently deletes a member by ID.
-func deleteMember(ctx context.Context, tx *Tx, id int) error {
+func deleteMember(ctx context.Context, tx *Tx, workspaceId int, id int) error {
 	// Verify object exists & the current user is the owner.
-	if _, err := findMemberByID(ctx, tx, id); err != nil {
+	if _, err := findMemberByID(ctx, tx, workspaceId, id); err != nil {
 		return err
 	}
 

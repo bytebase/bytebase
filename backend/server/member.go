@@ -90,7 +90,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		err = s.MemberService.DeleteMemberByID(context.Background(), id)
+		err = s.MemberService.DeleteMemberByID(context.Background(), api.DEFAULT_WORKPSACE_ID, id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))

@@ -10,6 +10,18 @@ const (
 	Developer Role = "DEVELOPER"
 )
 
+func (e Role) String() string {
+	switch e {
+	case Owner:
+		return "OWNER"
+	case DBA:
+		return "DBA"
+	case Developer:
+		return "DEVELOPER"
+	}
+	return ""
+}
+
 type Member struct {
 	ID int `jsonapi:"primary,principal"`
 
@@ -49,6 +61,7 @@ type MemberPatch struct {
 type MemberService interface {
 	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
 	FindMemberList(ctx context.Context, workspaceId int) ([]*Member, error)
+	FindMemberByPrincipalID(ctx context.Context, workspaceId int, id int) (*Member, error)
 	PatchMemberByID(ctx context.Context, id int, patch *MemberPatch) (*Member, error)
-	DeleteMemberByID(ctx context.Context, id int) error
+	DeleteMemberByID(ctx context.Context, workspaceId int, id int) error
 }
