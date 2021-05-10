@@ -44,50 +44,41 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	return principal, nil
 }
 
-// FindPrincipalByEmail retrieves a principal by email.
-// Returns ENOTFOUND if no matching email.
-func (s *PrincipalService) FindPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findPrincipalList(ctx, tx, principalFilter{email: &email})
-	if err != nil {
-		return nil, err
-	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal email not found: %s", email)}
-	}
-	return list[0], nil
-}
-
-// FindPrincipalByID retrieves a principal by id.
-// Returns ENOTFOUND if no matching id.
-func (s *PrincipalService) FindPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	return findPrincipalByID(ctx, tx, id)
-}
-
 // FindPrincipalList retrieves a list of principals.
-func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
+func (s *PrincipalService) FindPrincipalList(ctx context.Context, filter *api.PrincipalFilter) ([]*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, principalFilter{})
+	list, err := findPrincipalList(ctx, tx, filter)
 	if err != nil {
 		return []*api.Principal{}, err
 	}
 
 	return list, nil
+}
+
+// FindPrincipal retrieves a principal based on filter.
+// Returns ENOTFOUND if no matching record.
+// Returns the first matching one and prints a warning if finding more than 1 matching records.
+func (s *PrincipalService) FindPrincipal(ctx context.Context, filter *api.PrincipalFilter) (*api.Principal, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := findPrincipalList(ctx, tx, filter)
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal not found: %v", filter)}
+	} else if len(list) > 1 {
+		s.l.Logf(bytebase.WARN, "found mulitple principals: %d, expect 1", len(list))
+	}
+	return list[0], nil
 }
 
 // PatchPrincipalByID updates an existing principal by ID.
@@ -161,20 +152,13 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 	return &principal, nil
 }
 
-// principalFilter represents a filter passed to findPrincipalList().
-type principalFilter struct {
-	// Filtering fields.
-	ID    *int
-	email *string
-}
-
-func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ []*api.Principal, err error) {
+func findPrincipalList(ctx context.Context, tx *Tx, filter *api.PrincipalFilter) (_ []*api.Principal, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := filter.email; v != nil {
+	if v := filter.Email; v != nil {
 		where, args = append(where, "email = ?"), append(args, *v)
 	}
 
@@ -225,18 +209,6 @@ func findPrincipalList(ctx context.Context, tx *Tx, filter principalFilter) (_ [
 	}
 
 	return list, nil
-}
-
-// findPrincipalByID retrieves a principal by id.
-// Returns ENOTFOUND if no matching id.
-func findPrincipalByID(ctx context.Context, tx *Tx, id int) (*api.Principal, error) {
-	list, err := findPrincipalList(ctx, tx, principalFilter{ID: &id})
-	if err != nil {
-		return nil, err
-	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal ID not found: %d", id)}
-	}
-	return list[0], nil
 }
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.

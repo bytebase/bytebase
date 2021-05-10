@@ -42,7 +42,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 
 	g.GET("/principal", func(c echo.Context) error {
-		list, err := s.PrincipalService.FindPrincipalList(context.Background())
+		list, err := s.PrincipalService.FindPrincipalList(context.Background(), &api.PrincipalFilter{})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
@@ -62,7 +62,10 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		principal, err := s.PrincipalService.FindPrincipalByID(context.Background(), id)
+		principalFilter := &api.PrincipalFilter{
+			ID: &id,
+		}
+		principal, err := s.PrincipalService.FindPrincipal(context.Background(), principalFilter)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))

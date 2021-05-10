@@ -73,6 +73,14 @@ type PrincipalCreate struct {
 	PasswordHash string
 }
 
+type PrincipalFilter struct {
+	// Standard fields
+	ID *int
+
+	// Domain specific fields
+	Email *string
+}
+
 type PrincipalPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -84,8 +92,7 @@ type PrincipalPatch struct {
 
 type PrincipalService interface {
 	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
-	FindPrincipalList(ctx context.Context) ([]*Principal, error)
-	FindPrincipalByEmail(ctx context.Context, email string) (*Principal, error)
-	FindPrincipalByID(ctx context.Context, id int) (*Principal, error)
+	FindPrincipalList(ctx context.Context, filter *PrincipalFilter) ([]*Principal, error)
+	FindPrincipal(ctx context.Context, filter *PrincipalFilter) (*Principal, error)
 	PatchPrincipalByID(ctx context.Context, id int, patch *PrincipalPatch) (*Principal, error)
 }
