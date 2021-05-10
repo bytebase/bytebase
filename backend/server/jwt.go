@@ -23,9 +23,9 @@ const (
 	// Just for the demo purpose, I declared a secret here. In the real-world application, you might need to get it from the env variables.
 	jwtSecretKey             = "some-secret-key"
 	jwtRefreshSecretKey      = "some-refresh-secret-key"
-	refreshThresholdDuration = 15 * time.Minute
-	accessTokenDuration      = 15 * time.Second
-	refreshTokenDuration     = 24 * time.Hour
+	refreshThresholdDuration = 1 * time.Hour
+	accessTokenDuration      = 24 * time.Hour
+	refreshTokenDuration     = 7 * 24 * time.Hour
 	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
 	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
