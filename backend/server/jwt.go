@@ -20,11 +20,18 @@ const (
 	accessTokenAudience  = "bb.principal.access"
 	refreshTokenAudience = "bb.principal.refresh"
 
+	// Cookie section
 	accessTokenCookieName  = "access-token"
 	refreshTokenCookieName = "refresh-token"
-	// Just for the demo purpose, I declared a secret here. In the real-world application, you might need to get it from the env variables.
-	jwtSecretKey             = "some-secret-key"
-	jwtRefreshSecretKey      = "some-refresh-secret-key"
+
+	// Signing key section
+	keyId = "v1"
+
+	// TODO: Uses better keys
+	jwtSecretKey        = "some-secret-key"
+	jwtRefreshSecretKey = "some-refresh-secret-key"
+
+	// Expiration section
 	refreshThresholdDuration = 1 * time.Hour
 	accessTokenDuration      = 24 * time.Hour
 	refreshTokenDuration     = 7 * 24 * time.Hour
@@ -35,6 +42,7 @@ const (
 	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
 	cookieExpDuration = refreshTokenDuration - 1*time.Minute
 
+	// Conext section
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIdContextKey = "principal-id"
@@ -47,12 +55,18 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func getJWTSecret() string {
-	return jwtSecretKey
+func getJWTSecret(kid string) string {
+	if kid == keyId {
+		return jwtSecretKey
+	}
+	return ""
 }
 
-func getRefreshJWTSecret() string {
-	return jwtRefreshSecretKey
+func getRefreshJWTSecret(kid string) string {
+	if kid == keyId {
+		return jwtRefreshSecretKey
+	}
+	return ""
 }
 
 func GetPrincipalIdContextKey() string {
@@ -82,12 +96,12 @@ func GenerateTokensAndSetCookies(user *api.Principal, c echo.Context) error {
 
 func generateAccessToken(user *api.Principal) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
-	return generateToken(user, accessTokenAudience, expirationTime, []byte(getJWTSecret()))
+	return generateToken(user, accessTokenAudience, expirationTime, []byte(getJWTSecret(keyId)))
 }
 
 func generateRefreshToken(user *api.Principal) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
-	return generateToken(user, refreshTokenAudience, expirationTime, []byte(getRefreshJWTSecret()))
+	return generateToken(user, refreshTokenAudience, expirationTime, []byte(getRefreshJWTSecret(keyId)))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
@@ -107,6 +121,7 @@ func generateToken(user *api.Principal, aud string, expirationTime time.Time, se
 
 	// Declare the token with the HS256 algorithm used for signing, and the claims.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = keyId
 
 	// Create the JWT string.
 	tokenString, err := token.SignedString(secret)
@@ -157,18 +172,15 @@ func JWTMiddleware(l *bytebase.Logger, p api.PrincipalService, next echo.Handler
 
 		claims := &Claims{}
 		accessToken, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
-			// Check the signing method
 			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
-				return nil, fmt.Errorf("unexpected jwt signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+				return nil, fmt.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 			}
-			// if kid, ok := t.Header["kid"].(string); ok {
-			// 	if key, ok := getJWTSecret(); ok {
-			// 		return key, nil
-			// 	}
-			// }
-			// return nil, fmt.Errorf("unexpected jwt key id=%v", t.Header["kid"])
-
-			return []byte(getJWTSecret()), nil
+			if kid, ok := t.Header["kid"].(string); ok {
+				if key := getJWTSecret(kid); key != "" {
+					return []byte(key), nil
+				}
+			}
+			return nil, fmt.Errorf("unexpected access token kid=%v", t.Header["kid"])
 		})
 
 		generateToken := time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration
@@ -215,8 +227,16 @@ func JWTMiddleware(l *bytebase.Logger, p api.PrincipalService, next echo.Handler
 
 					// Parses token and checks if it's valid.
 					refreshTokenClaims := &Claims{}
-					refreshToken, err := jwt.ParseWithClaims(rc.Value, refreshTokenClaims, func(token *jwt.Token) (interface{}, error) {
-						return []byte(getRefreshJWTSecret()), nil
+					refreshToken, err := jwt.ParseWithClaims(rc.Value, refreshTokenClaims, func(t *jwt.Token) (interface{}, error) {
+						if t.Method.Alg() != jwt.SigningMethodHS256.Name {
+							return nil, fmt.Errorf("unexpected refresh token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+						}
+						if kid, ok := t.Header["kid"].(string); ok {
+							if key := getRefreshJWTSecret(kid); key != "" {
+								return []byte(key), nil
+							}
+						}
+						return nil, fmt.Errorf("unexpected refresh token kid=%v", t.Header["kid"])
 					})
 					if err != nil {
 						if err == jwt.ErrSignatureInvalid {
