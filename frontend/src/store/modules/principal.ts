@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   PrincipalId,
   Principal,
-  PrincipalNew,
+  PrincipalCreate,
   PrincipalPatch,
   PrincipalState,
   PrincipalStatus,
@@ -39,25 +39,27 @@ const getters = {
     return state.principalList;
   },
 
-  principalByEmail: (state: PrincipalState) => (email: string): Principal => {
-    return (
-      state.principalList.find((item) => item.email == email) ||
-      (unknown("PRINCIPAL") as Principal)
-    );
-  },
+  principalByEmail:
+    (state: PrincipalState) =>
+    (email: string): Principal => {
+      return (
+        state.principalList.find((item) => item.email == email) ||
+        (unknown("PRINCIPAL") as Principal)
+      );
+    },
 
-  principalById: (state: PrincipalState) => (
-    principalId: PrincipalId
-  ): Principal => {
-    if (principalId == EMPTY_ID) {
-      return empty("PRINCIPAL") as Principal;
-    }
+  principalById:
+    (state: PrincipalState) =>
+    (principalId: PrincipalId): Principal => {
+      if (principalId == EMPTY_ID) {
+        return empty("PRINCIPAL") as Principal;
+      }
 
-    return (
-      state.principalList.find((item) => item.id == principalId) ||
-      (unknown("PRINCIPAL") as Principal)
-    );
-  },
+      return (
+        state.principalList.find((item) => item.id == principalId) ||
+        (unknown("PRINCIPAL") as Principal)
+      );
+    },
 };
 
 const actions = {
@@ -89,13 +91,13 @@ const actions = {
   // Returns existing user if already created.
   async createPrincipal(
     { commit, rootGetters }: any,
-    newPrincipal: PrincipalNew
+    newPrincipal: PrincipalCreate
   ) {
     const createdPrincipal = convert(
       (
         await axios.post(`/api/principal`, {
           data: {
-            type: "principalnew",
+            type: "PrincipalCreate",
             attributes: {
               status: "INVITED",
               name: newPrincipal.name,

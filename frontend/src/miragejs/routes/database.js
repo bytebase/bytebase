@@ -76,9 +76,8 @@ export default function configureDatabase(route) {
 
   route.post("/database", function (schema, request) {
     const ts = Date.now();
-    const { issueId, creatorId, ...attrs } = this.normalizedRequestAttrs(
-      "database-new"
-    );
+    const { issueId, creatorId, ...attrs } =
+      this.normalizedRequestAttrs("database-create");
 
     if (
       schema.databases.findBy({

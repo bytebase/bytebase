@@ -87,11 +87,11 @@ import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import isEmpty from "lodash-es/isEmpty";
-import { Environment, EnvironmentNew, EnvironmentPatch } from "../types";
+import { Environment, EnvironmentCreate, EnvironmentPatch } from "../types";
 import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
-  environment: Environment | EnvironmentNew;
+  environment: Environment | EnvironmentCreate;
 }
 
 export default {
@@ -104,7 +104,7 @@ export default {
     },
     environment: {
       required: true,
-      type: Object as PropType<Environment | EnvironmentNew>,
+      type: Object as PropType<Environment | EnvironmentCreate>,
     },
   },
   setup(props, { emit }) {
@@ -115,7 +115,7 @@ export default {
 
     watch(
       () => props.environment,
-      (cur: Environment | EnvironmentNew) => {
+      (cur: Environment | EnvironmentCreate) => {
         state.environment = cloneDeep(cur);
       }
     );

@@ -275,8 +275,8 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { instanceSlug, isDBAOrOwner } from "../utils";
 import {
   Instance,
-  InstanceNew,
-  DataSourceNew,
+  InstanceCreate,
+  DataSourceCreate,
   UNKNOWN_ID,
   Principal,
   InstancePatch,
@@ -284,12 +284,12 @@ import {
 
 interface LocalState {
   originalInstance?: Instance;
-  instance: Instance | InstanceNew;
+  instance: Instance | InstanceCreate;
   showPassword: Boolean;
 }
 
 export default {
-  name: "DataSourceNewForm",
+  name: "DataSourceCreateForm",
   emits: ["dismiss"],
   props: {
     create: {
@@ -359,7 +359,7 @@ export default {
     //    info such as username/password there. It's harder to redact this on the instance. e.g.
     //    In miragejs, there doesn't seem to be way to achieve this. Thus the only option is to
     //    split those information into a separate resource which won't be pulled together.
-    const doCreate = async (newInstance: InstanceNew) => {
+    const doCreate = async (newInstance: InstanceCreate) => {
       store
         .dispatch("instance/createInstance", newInstance)
         .then((createdInstance) => {

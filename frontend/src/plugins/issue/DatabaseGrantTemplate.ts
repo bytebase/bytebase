@@ -7,7 +7,7 @@ import {
   IssueContext,
   OUTPUT_CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
-import { IssueNew, EnvironmentId, UNKNOWN_ID, Issue } from "../../types";
+import { IssueCreate, EnvironmentId, UNKNOWN_ID, Issue } from "../../types";
 import { allowDatabaseAccess, fullDatabasePath } from "../../utils";
 
 const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
@@ -17,7 +17,7 @@ const template: IssueTemplate = {
   type: "bb.database.grant",
   buildIssue: (
     ctx: TemplateContext
-  ): Omit<IssueNew, "projectId" | "creatorId"> => {
+  ): Omit<IssueCreate, "projectId" | "creatorId"> => {
     const payload: any = {};
 
     return {

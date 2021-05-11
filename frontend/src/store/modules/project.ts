@@ -3,13 +3,13 @@ import {
   PrincipalId,
   ProjectId,
   Project,
-  ProjectNew,
+  ProjectCreate,
   ProjectPatch,
   ProjectState,
   ResourceObject,
   unknown,
   ProjectMember,
-  ProjectMemberNew,
+  ProjectMemberCreate,
   ProjectMemberPatch,
   MemberId,
   ResourceIdentifier,
@@ -105,44 +105,44 @@ const state: () => ProjectState = () => ({
 });
 
 const getters = {
-  convert: (
-    state: ProjectState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => (instance: ResourceObject, includedList: ResourceObject[]): Project => {
-    return convert(instance, includedList || [], rootGetters);
-  },
+  convert:
+    (state: ProjectState, getters: any, rootState: any, rootGetters: any) =>
+    (instance: ResourceObject, includedList: ResourceObject[]): Project => {
+      return convert(instance, includedList || [], rootGetters);
+    },
 
-  projectListByUser: (state: ProjectState) => (
-    userId: PrincipalId,
-    rowStatusList?: RowStatus[]
-  ): Project[] => {
-    const result: Project[] = [];
-    for (const [_, project] of state.projectById) {
-      if (
-        (!rowStatusList && project.rowStatus == "NORMAL") ||
-        (rowStatusList && rowStatusList.includes(project.rowStatus))
-      ) {
-        for (const member of project.memberList) {
-          if (member.principal.id == userId) {
-            result.push(project);
-            break;
+  projectListByUser:
+    (state: ProjectState) =>
+    (userId: PrincipalId, rowStatusList?: RowStatus[]): Project[] => {
+      const result: Project[] = [];
+      for (const [_, project] of state.projectById) {
+        if (
+          (!rowStatusList && project.rowStatus == "NORMAL") ||
+          (rowStatusList && rowStatusList.includes(project.rowStatus))
+        ) {
+          for (const member of project.memberList) {
+            if (member.principal.id == userId) {
+              result.push(project);
+              break;
+            }
           }
         }
       }
-    }
 
-    return result;
-  },
+      return result;
+    },
 
-  projectById: (state: ProjectState) => (projectId: ProjectId): Project => {
-    if (projectId == EMPTY_ID) {
-      return empty("PROJECT") as Project;
-    }
+  projectById:
+    (state: ProjectState) =>
+    (projectId: ProjectId): Project => {
+      if (projectId == EMPTY_ID) {
+        return empty("PROJECT") as Project;
+      }
 
-    return state.projectById.get(projectId) || (unknown("PROJECT") as Project);
-  },
+      return (
+        state.projectById.get(projectId) || (unknown("PROJECT") as Project)
+      );
+    },
 };
 
 const actions = {
@@ -191,11 +191,11 @@ const actions = {
     return project;
   },
 
-  async createProject({ commit, rootGetters }: any, newProject: ProjectNew) {
+  async createProject({ commit, rootGetters }: any, newProject: ProjectCreate) {
     const data = (
       await axios.post(`/api/project?include=projectMember`, {
         data: {
-          type: "projectnew",
+          type: "ProjectCreate",
           attributes: newProject,
         },
       })
@@ -247,12 +247,12 @@ const actions = {
       projectMember,
     }: {
       projectId: ProjectId;
-      projectMember: ProjectMemberNew;
+      projectMember: ProjectMemberCreate;
     }
   ) {
     await axios.post(`/api/project/${projectId}/member`, {
       data: {
-        type: "projectmembernew",
+        type: "projectMemberCreate",
         attributes: projectMember,
       },
     });

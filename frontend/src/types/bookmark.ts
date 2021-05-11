@@ -15,7 +15,7 @@ export type Bookmark = {
   link: string;
 };
 
-export type BookmarkNew = {
+export type BookmarkCreate = {
   // Standard fields
   creatorId: PrincipalId;
 

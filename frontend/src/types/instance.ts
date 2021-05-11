@@ -26,7 +26,7 @@ export type Instance = {
   password?: string;
 };
 
-export type InstanceNew = {
+export type InstanceCreate = {
   // Related fields
   environmentId: EnvironmentId;
 

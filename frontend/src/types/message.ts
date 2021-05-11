@@ -134,7 +134,7 @@ export type Message = {
   receiver: Principal;
   payload?: MessagePayload;
 };
-export type MessageNew = Omit<Message, "id" | "createdTs" | "updatedTs">;
+export type MessageCreate = Omit<Message, "id" | "createdTs" | "updatedTs">;
 
 export type MessagePatch = {
   updaterId: PrincipalId;

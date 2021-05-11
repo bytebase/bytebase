@@ -1,5 +1,5 @@
 import { IssueId, PrincipalId, ProjectId } from "./id";
-import { Pipeline, PipelineNew } from "./pipeline";
+import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 
@@ -46,10 +46,10 @@ export type Issue = {
   payload: IssuePayload;
 };
 
-export type IssueNew = {
+export type IssueCreate = {
   // Related fields
   projectId: ProjectId;
-  pipeline: PipelineNew;
+  pipeline: PipelineCreate;
 
   // Standard fields
   creatorId: PrincipalId;

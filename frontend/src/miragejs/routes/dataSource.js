@@ -149,7 +149,9 @@ export default function configureDataSource(route) {
       if (database) {
         const dataSource = schema.dataSources.find(request.params.dataSourceId);
         if (dataSource) {
-          const attrs = this.normalizedRequestAttrs("data-source-member-new");
+          const attrs = this.normalizedRequestAttrs(
+            "data-source-member-create"
+          );
           const newList = dataSource.memberList;
           const member = newList.find(
             (item) => item.principalId == attrs.principalId

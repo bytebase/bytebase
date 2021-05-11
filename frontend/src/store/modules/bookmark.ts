@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   PrincipalId,
   Bookmark,
-  BookmarkNew,
+  BookmarkCreate,
   BookmarkState,
   ResourceObject,
   unknown,
@@ -29,21 +29,20 @@ const state: () => BookmarkState = () => ({
 });
 
 const getters = {
-  bookmarkListByUser: (state: BookmarkState) => (
-    userId: PrincipalId
-  ): Bookmark[] => {
-    return state.bookmarkListByUser.get(userId) || [];
-  },
-  bookmarkByUserAndLink: (state: BookmarkState, getters: any) => (
-    userId: PrincipalId,
-    link: string
-  ): Bookmark => {
-    const list = getters["bookmarkListByUser"](userId);
-    return (
-      list.find((item: Bookmark) => item.link == link) ||
-      (unknown("BOOKMARK") as Bookmark)
-    );
-  },
+  bookmarkListByUser:
+    (state: BookmarkState) =>
+    (userId: PrincipalId): Bookmark[] => {
+      return state.bookmarkListByUser.get(userId) || [];
+    },
+  bookmarkByUserAndLink:
+    (state: BookmarkState, getters: any) =>
+    (userId: PrincipalId, link: string): Bookmark => {
+      const list = getters["bookmarkListByUser"](userId);
+      return (
+        list.find((item: Bookmark) => item.link == link) ||
+        (unknown("BOOKMARK") as Bookmark)
+      );
+    },
 };
 
 const actions = {
@@ -60,7 +59,10 @@ const actions = {
     return bookmarkList;
   },
 
-  async createBookmark({ commit, rootGetters }: any, newBookmark: BookmarkNew) {
+  async createBookmark(
+    { commit, rootGetters }: any,
+    newBookmark: BookmarkCreate
+  ) {
     const createdBookmark = convert(
       (
         await axios.post(`/api/bookmark`, {

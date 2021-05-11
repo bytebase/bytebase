@@ -1,6 +1,13 @@
 <template>
   <div
-    class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0"
+    class="
+      pt-1
+      overflow-hidden
+      grid grid-cols-4
+      gap-x-2 gap-y-4
+      md:inline-flex
+      md:gap-x-0
+    "
   >
     <template
       v-for="(quickAction, index) in effectiveQuickActionList"
@@ -52,7 +59,13 @@
           </svg>
         </router-link>
         <h3
-          class="mt-1 text-center text-base font-normal text-main tracking-tight"
+          class="
+            mt-1
+            text-center text-base
+            font-normal
+            text-main
+            tracking-tight
+          "
         >
           Manage User
         </h3>
@@ -79,7 +92,13 @@
           </svg>
         </button>
         <h3
-          class="mt-1 text-center text-base font-normal text-main tracking-tight"
+          class="
+            mt-1
+            text-center text-base
+            font-normal
+            text-main
+            tracking-tight
+          "
         >
           Query
         </h3>
@@ -106,7 +125,13 @@
           </svg>
         </button>
         <h3
-          class="mt-1 text-center text-base font-normal text-main tracking-tight"
+          class="
+            mt-1
+            text-center text-base
+            font-normal
+            text-main
+            tracking-tight
+          "
         >
           Edit Data
         </h3>
@@ -133,7 +158,13 @@
           </svg>
         </router-link>
         <h3
-          class="mt-1 text-base text-center font-normal text-main tracking-tight"
+          class="
+            mt-1
+            text-base text-center
+            font-normal
+            text-main
+            tracking-tight
+          "
         >
           Create DB
         </h3>
@@ -160,7 +191,13 @@
           </svg>
         </button>
         <h3
-          class="mt-1 text-base text-center font-normal text-main tracking-tight"
+          class="
+            mt-1
+            text-base text-center
+            font-normal
+            text-main
+            tracking-tight
+          "
         >
           Request DB
         </h3>
@@ -302,7 +339,7 @@
     @close="state.showModal = false"
   >
     <template v-if="state.quickActionType == 'quickaction.bb.project.create'">
-      <ProjectNew @dismiss="state.showModal = false" />
+      <ProjectCreate @dismiss="state.showModal = false" />
     </template>
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
@@ -331,7 +368,7 @@
 import { reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
-import ProjectNew from "../components/ProjectNew.vue";
+import ProjectCreate from "../components/ProjectCreate.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
@@ -354,7 +391,7 @@ interface LocalState {
 export default {
   name: "QuickActionPanel",
   components: {
-    ProjectNew,
+    ProjectCreate,
     InstanceForm,
     AlterSchemaPrepForm,
     RequestDatabasePrepForm,
@@ -386,15 +423,13 @@ export default {
       });
     });
 
-    const projectId = computed(
-      (): ProjectId => {
-        if (router.currentRoute.value.name == "workspace.project.detail") {
-          const parts = router.currentRoute.value.path.split("/");
-          return idFromSlug(parts[parts.length - 1]);
-        }
-        return UNKNOWN_ID;
+    const projectId = computed((): ProjectId => {
+      if (router.currentRoute.value.name == "workspace.project.detail") {
+        const parts = router.currentRoute.value.path.split("/");
+        return idFromSlug(parts[parts.length - 1]);
       }
-    );
+      return UNKNOWN_ID;
+    });
 
     const createProject = () => {
       state.modalTitle = "Create project";

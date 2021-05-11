@@ -120,7 +120,7 @@
 import { computed, ComputedRef, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { Principal, PrincipalNew, MemberNew, RoleType } from "../types";
+import { Principal, PrincipalCreate, MemberCreate, RoleType } from "../types";
 import { isValidEmail } from "../utils";
 
 type Invite = {
@@ -219,7 +219,7 @@ export default {
           // Note "principal/createPrincipal" would return the existing principal.
           // This could happen if another client has just created the principal
           // with this email.
-          const newPrincipal: PrincipalNew = {
+          const newPrincipal: PrincipalCreate = {
             creatorId: currentUser.value.id,
             name: invite.email.split("@")[0],
             email: invite.email,
@@ -227,7 +227,7 @@ export default {
           store
             .dispatch("principal/createPrincipal", newPrincipal)
             .then((principal: Principal) => {
-              const newMember: MemberNew = {
+              const newMember: MemberCreate = {
                 creatorId: currentUser.value.id,
                 principalId: principal.id,
                 role: invite.role,

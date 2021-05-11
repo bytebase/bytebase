@@ -92,7 +92,7 @@ import {
   Bookmark,
   UNKNOWN_ID,
   Principal,
-  BookmarkNew,
+  BookmarkCreate,
 } from "../types";
 import { idFromSlug } from "../utils";
 import database from "../store/modules/database";
@@ -187,7 +187,7 @@ export default {
             console.log(error);
           });
       } else {
-        const newBookmark: BookmarkNew = {
+        const newBookmark: BookmarkCreate = {
           creatorId: currentUser.value.id,
           name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,

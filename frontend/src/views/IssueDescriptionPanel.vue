@@ -2,7 +2,7 @@
   <!-- Description Bar -->
   <div class="flex justify-between">
     <div class="textlabel">Description</div>
-    <div v-if="!$props.new" class="space-x-2">
+    <div v-if="create" class="space-x-2">
       <button
         v-if="allowEdit && !state.editing"
         type="button"
@@ -27,7 +27,23 @@
       <button
         v-if="state.editing"
         type="button"
-        class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        class="
+          mt-0.5
+          px-3
+          rounded-sm
+          text-control
+          hover:bg-control-bg-hover
+          disabled:bg-control-bg
+          disabled:opacity-50
+          disabled:cursor-not-allowed
+          text-sm
+          leading-5
+          font-normal
+          focus:ring-control
+          focus:outline-none
+          focus-visible:ring-2
+          focus:ring-offset-2
+        "
         @click.prevent="cancelEdit"
       >
         Cancel
@@ -35,7 +51,25 @@
       <button
         v-if="state.editing"
         type="button"
-        class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        class="
+          mt-0.5
+          px-3
+          border border-control-border
+          rounded-sm
+          text-control
+          bg-control-bg
+          hover:bg-control-bg-hover
+          disabled:bg-control-bg
+          disabled:opacity-50
+          disabled:cursor-not-allowed
+          text-sm
+          leading-5
+          font-normal
+          focus:ring-control
+          focus:outline-none
+          focus-visible:ring-2
+          focus:ring-offset-2
+        "
         :disabled="state.editDescription == issue.description"
         @click.prevent="saveEdit"
       >
@@ -49,8 +83,16 @@
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
     ref="editDescriptionTextArea"
-    :rows="$props.new ? 10 : 5"
-    class="mt-2 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
+    :rows="create ? 10 : 5"
+    class="
+      mt-2
+      w-full
+      resize-none
+      whitespace-pre-wrap
+      border-white
+      focus:border-white
+      outline-none
+    "
     :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
     :style="
       state.editing
@@ -99,7 +141,7 @@ export default {
       required: true,
       type: Object as PropType<Issue>,
     },
-    new: {
+    create: {
       required: true,
       type: Boolean,
     },
@@ -149,7 +191,7 @@ export default {
 
     // Reset the edit state after creating the issue.
     watch(
-      () => props.new,
+      () => props.create,
       (curNew, prevNew) => {
         if (!curNew && prevNew) {
           state.editing = false;

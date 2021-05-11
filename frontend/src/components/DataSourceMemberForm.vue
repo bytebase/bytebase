@@ -119,7 +119,15 @@ input[type="number"] {
           <label for="issue" class="textlabel"> Issue </label>
           <div class="mt-1 relative rounded-md shadow-sm">
             <div
-              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+              class="
+                absolute
+                inset-y-0
+                left-0
+                pl-3
+                flex
+                items-center
+                pointer-events-none
+              "
             >
               <span class="text-accent font-semibold sm:text-sm">issue/</span>
             </div>
@@ -182,7 +190,7 @@ import {
   DataSource,
   DataSourceId,
   DataSourceMember,
-  DataSourceMemberNew,
+  DataSourceMemberCreate,
   EnvironmentId,
   InstanceId,
   PrincipalId,
@@ -203,7 +211,7 @@ interface LocalState {
 }
 
 export default {
-  name: "DataSourceMemberNewForm",
+  name: "DataSourceMemberCreateForm",
   emits: ["submit", "cancel"],
   props: {
     dataSource: {
@@ -340,7 +348,7 @@ export default {
         }
       }
 
-      const newDataSouceMember: DataSourceMemberNew = {
+      const newDataSouceMember: DataSourceMemberCreate = {
         principalId: state.granteeId!,
         issueId: linkedIssue?.id,
       };

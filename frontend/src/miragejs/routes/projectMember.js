@@ -38,7 +38,7 @@ export default function configureProrjectMember(route) {
     }
 
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("project-member-new");
+    const attrs = this.normalizedRequestAttrs("project-member-create");
 
     const member = schema.projectMembers.findBy({
       principalId: attrs.principalId,

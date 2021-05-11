@@ -104,7 +104,7 @@
     :title="'Create data source'"
     @close="state.showCreateModal = false"
   >
-    <DataSourceNewForm
+    <DataSourceCreateForm
       :instanceId="instance.id"
       :database="database"
       @create="doCreate"
@@ -117,11 +117,11 @@
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import DataSourceNewForm from "../components/DataSourceNewForm.vue";
+import DataSourceCreateForm from "../components/DataSourceCreateForm.vue";
 import { BBTableColumn } from "../bbkit/types";
 
 import { databaseSlug, dataSourceSlug, instanceSlug } from "../utils";
-import { Instance, Database, DataSource, DataSourceNew } from "../types";
+import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -152,7 +152,7 @@ interface LocalState {
 
 export default {
   name: "DataSourceTable",
-  components: { DataSourceNewForm },
+  components: { DataSourceCreateForm },
   props: {
     instance: {
       required: true,
@@ -226,7 +226,7 @@ export default {
       return sectionList;
     });
 
-    const doCreate = (newDataSource: DataSourceNew) => {
+    const doCreate = (newDataSource: DataSourceCreate) => {
       store
         .dispatch("dataSource/createDataSource", newDataSource)
         .then((dataSource) => {

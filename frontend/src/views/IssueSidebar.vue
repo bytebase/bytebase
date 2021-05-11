@@ -2,7 +2,7 @@
   <aside>
     <h2 class="sr-only">Details</h2>
     <div class="grid gap-y-6 gap-x-6 grid-cols-3">
-      <template v-if="!$props.new">
+      <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Status
         </h2>
@@ -17,13 +17,13 @@
       </template>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Assignee<span v-if="$props.new" class="text-red-600">*</span>
+        Assignee<span v-if="create" class="text-red-600">*</span>
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2">
         <PrincipalSelect
           :disabled="!allowEditAssignee"
-          :selectedId="$props.new ? issue.assigneeId : issue.assignee?.id"
+          :selectedId="create ? issue.assigneeId : issue.assignee?.id"
           :allowedRoleList="['OWNER', 'DBA']"
           @select-principal-id="
             (principalId) => {
@@ -64,7 +64,14 @@
       </template>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="
+        mt-6
+        border-t border-block-border
+        pt-6
+        grid
+        gap-y-6 gap-x-6
+        grid-cols-3
+      "
     >
       <template v-if="showStageSelect">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -99,7 +106,14 @@
       </router-link>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="
+        mt-6
+        border-t border-block-border
+        pt-6
+        grid
+        gap-y-6 gap-x-6
+        grid-cols-3
+      "
     >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Project
@@ -111,7 +125,7 @@
         {{ projectName(project) }}
       </router-link>
 
-      <template v-if="!$props.new">
+      <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Updated
         </h2>
@@ -144,11 +158,24 @@
       </template>
     </div>
     <div
-      v-if="!$props.new"
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-4 gap-x-6 grid-cols-3"
+      v-if="!create"
+      class="
+        mt-6
+        border-t border-block-border
+        pt-6
+        grid
+        gap-y-4 gap-x-6
+        grid-cols-3
+      "
     >
       <h2
-        class="textlabel flex items-center col-span-1 col-start-1 whitespace-nowrap"
+        class="
+          textlabel
+          flex
+          items-center
+          col-span-1 col-start-1
+          whitespace-nowrap
+        "
       >
         {{
           issue.subscriberList.length +
@@ -211,7 +238,7 @@ import {
   Principal,
   Project,
   Issue,
-  IssueNew,
+  IssueCreate,
   EMPTY_ID,
   Stage,
 } from "../types";
@@ -231,9 +258,9 @@ export default {
   props: {
     issue: {
       required: true,
-      type: Object as PropType<Issue | IssueNew>,
+      type: Object as PropType<Issue | IssueCreate>,
     },
-    new: {
+    create: {
       required: true,
       type: Boolean,
     },
@@ -270,44 +297,38 @@ export default {
       return props.issue.payload[field.id];
     };
 
-    const database = computed(
-      (): Database => {
-        if (props.new) {
-          const databaseId = (props.issue as IssueNew).pipeline?.stageList[0]
-            .taskList[0].databaseId;
-          return store.getters["database/databaseById"](databaseId);
-        }
-        const stage = props.selectedStage;
-        return stage.taskList[0].database;
+    const database = computed((): Database => {
+      if (props.create) {
+        const databaseId = (props.issue as IssueCreate).pipeline?.stageList[0]
+          .taskList[0].databaseId;
+        return store.getters["database/databaseById"](databaseId);
       }
-    );
+      const stage = props.selectedStage;
+      return stage.taskList[0].database;
+    });
 
-    const environment = computed(
-      (): Environment => {
-        if (props.new) {
-          const environmentId = (props.issue as IssueNew).pipeline?.stageList[0]
-            .environmentId;
-          return store.getters["environment/environmentById"](environmentId);
-        }
-        const stage = props.selectedStage;
-        return stage.environment;
+    const environment = computed((): Environment => {
+      if (props.create) {
+        const environmentId = (props.issue as IssueCreate).pipeline
+          ?.stageList[0].environmentId;
+        return store.getters["environment/environmentById"](environmentId);
       }
-    );
+      const stage = props.selectedStage;
+      return stage.environment;
+    });
 
-    const project = computed(
-      (): Project => {
-        if (props.new) {
-          return store.getters["project/projectById"](
-            (props.issue as IssueNew).projectId
-          );
-        }
-        return (props.issue as Issue).project;
+    const project = computed((): Project => {
+      if (props.create) {
+        return store.getters["project/projectById"](
+          (props.issue as IssueCreate).projectId
+        );
       }
-    );
+      return (props.issue as Issue).project;
+    });
 
     const showStageSelect = computed((): boolean => {
       return (
-        !props.new && allTaskList((props.issue as Issue).pipeline).length > 1
+        !props.create && allTaskList((props.issue as Issue).pipeline).length > 1
       );
     });
 
@@ -339,7 +360,7 @@ export default {
       // assignee might not have DBA role in case its role is revoked after
       // being assigned to the issue.
       return (
-        props.new ||
+        props.create ||
         ((props.issue as Issue).status == "OPEN" &&
           (currentUser.value.id == (props.issue as Issue).assignee?.id ||
             isDBAOrOwner(currentUser.value.role)))
@@ -347,7 +368,7 @@ export default {
     });
 
     const allowEditCustomField = (field: InputField) => {
-      return props.allowEdit && (props.new || field.allowEditAfterCreation);
+      return props.allowEdit && (props.create || field.allowEditAfterCreation);
     };
 
     const trySaveCustomField = (field: InputField, value: string | boolean) => {

@@ -14,7 +14,7 @@ import { Model, hasMany, belongsTo } from "miragejs";
 export default {
   // Principal
   principal: Model.extend({}),
-  principalNew: Model,
+  principalCreate: Model,
   principalPatch: Model,
 
   // Workspace
@@ -39,20 +39,20 @@ export default {
   member: Model.extend({
     workspace: belongsTo(),
   }),
-  memberNew: Model,
+  memberCreate: Model,
   memberPatch: Model,
 
   // Bookmark
   bookmark: Model.extend({
     workspace: belongsTo(),
   }),
-  bookmarkNew: Model,
+  bookmarkCreate: Model,
 
   // Activity
   activity: Model.extend({
     workspace: belongsTo(),
   }),
-  activityNew: Model,
+  activityCreate: Model,
   activityPatch: Model,
 
   // Message
@@ -68,7 +68,7 @@ export default {
     projectMember: hasMany(),
     issue: hasMany(),
   }),
-  projectNew: Model,
+  projectCreate: Model,
   projectPatch: Model,
 
   // Project Member
@@ -76,7 +76,7 @@ export default {
     workspace: belongsTo(),
     project: belongsTo(),
   }),
-  projectMemberNew: Model,
+  projectMemberCreate: Model,
   projectMemberPatch: Model,
 
   // Issue
@@ -85,7 +85,7 @@ export default {
     project: belongsTo(),
     pipeline: belongsTo(),
   }),
-  issueNew: Model,
+  issueCreate: Model,
   issuePatch: Model,
   issueStatusPatch: Model,
 
@@ -122,7 +122,7 @@ export default {
     workspace: belongsTo(),
     instance: hasMany(),
   }),
-  environmentNew: Model,
+  environmentCreate: Model,
   environmentPatch: Model,
 
   // Instance
@@ -132,7 +132,7 @@ export default {
     dataSource: hasMany(),
     database: hasMany(),
   }),
-  instanceNew: Model,
+  instanceCreate: Model,
   instancePatch: Model,
 
   // Database
@@ -143,7 +143,7 @@ export default {
     dataSource: hasMany(),
     task: hasMany(),
   }),
-  databaseNew: Model,
+  databaseCreate: Model,
   databasePatch: Model,
 
   // Data Source
@@ -153,12 +153,12 @@ export default {
     database: belongsTo(),
     dataSourceMember: hasMany(),
   }),
-  dataSourceNew: Model,
+  dataSourceCreate: Model,
   dataSourcePatch: Model,
 
   // Data Source Member
   dataSourceMember: Model,
-  dataSourceMemberNew: Model,
+  dataSourceMemberCreate: Model,
 
   // Misc
   batchUpdate: Model,

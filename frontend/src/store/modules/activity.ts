@@ -4,10 +4,9 @@ import {
   IssueId,
   ActivityId,
   Activity,
-  ActivityNew,
+  ActivityCreate,
   ActivityState,
   ResourceObject,
-  PrincipalId,
   ActivityPatch,
 } from "../../types";
 
@@ -32,16 +31,16 @@ const state: () => ActivityState = () => ({
 });
 
 const getters = {
-  activityListByUser: (state: ActivityState) => (
-    userId: PrincipalId
-  ): Activity[] => {
-    return state.activityListByUser.get(userId) || [];
-  },
-  activityListByIssue: (state: ActivityState) => (
-    issueId: IssueId
-  ): Activity[] => {
-    return state.activityListByIssue.get(issueId) || [];
-  },
+  activityListByUser:
+    (state: ActivityState) =>
+    (userId: PrincipalId): Activity[] => {
+      return state.activityListByUser.get(userId) || [];
+    },
+  activityListByIssue:
+    (state: ActivityState) =>
+    (issueId: IssueId): Activity[] => {
+      return state.activityListByIssue.get(issueId) || [];
+    },
 };
 
 const actions = {
@@ -75,13 +74,13 @@ const actions = {
 
   async createActivity(
     { dispatch, rootGetters }: any,
-    newActivity: ActivityNew
+    newActivity: ActivityCreate
   ) {
     const createdActivity: Activity = convert(
       (
         await axios.post(`/api/activity`, {
           data: {
-            type: "activitynew",
+            type: "ActivityCreate",
             attributes: newActivity,
           },
         })

@@ -1,5 +1,5 @@
 <template>
-  <template v-if="$props.new">
+  <template v-if="create">
     <button
       type="button"
       class="btn-primary px-4 py-2"
@@ -55,7 +55,15 @@
         </button>
         <BBContextMenu
           ref="menu"
-          class="origin-top-right absolute w-24 right-0 mt-10 rounded-md shadow-lg"
+          class="
+            origin-top-right
+            absolute
+            w-24
+            right-0
+            mt-10
+            rounded-md
+            shadow-lg
+          "
         >
           <template
             v-for="(transition, index) in applicableIssueStatusTransitionList"
@@ -142,7 +150,7 @@ import {
   CREATOR_APPLICABLE_ACTION_LIST,
   EMPTY_ID,
   Issue,
-  IssueNew,
+  IssueCreate,
   IssueStatusPatch,
   IssueStatusTransition,
   IssueStatusTransitionType,
@@ -167,21 +175,21 @@ interface UpdateStatusModalState {
 export type IssueContext = {
   store: Store<any>;
   currentUser: Principal;
-  new: boolean;
-  issue: Issue | IssueNew;
+  create: boolean;
+  issue: Issue | IssueCreate;
 };
 
 export default {
   name: "IssueStatusTransitionButtonGroup",
   emits: ["create"],
   props: {
-    new: {
+    create: {
       required: true,
       type: Boolean,
     },
     issue: {
       required: true,
-      type: Object as PropType<Issue | IssueNew>,
+      type: Object as PropType<Issue | IssueCreate>,
     },
     issueTemplate: {
       required: true,
@@ -204,16 +212,14 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const issueContext = computed(
-      (): IssueContext => {
-        return {
-          store,
-          currentUser: currentUser.value,
-          new: props.new,
-          issue: props.issue,
-        };
-      }
-    );
+    const issueContext = computed((): IssueContext => {
+      return {
+        store,
+        currentUser: currentUser.value,
+        create: props.create,
+        issue: props.issue,
+      };
+    });
 
     const applicableTaskStatusTransitionList = computed(
       (): TaskStatusTransition[] => {
@@ -401,7 +407,7 @@ export default {
     };
 
     const allowCreate = computed(() => {
-      const newIssue = props.issue as IssueNew;
+      const newIssue = props.issue as IssueCreate;
       if (isEmpty(newIssue.name)) {
         return false;
       }

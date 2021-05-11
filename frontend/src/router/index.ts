@@ -412,7 +412,7 @@ const routes: Array<RouteRecordRaw> = [
               title: () => "Create database",
             },
             components: {
-              content: () => import("../views/DatabaseNew.vue"),
+              content: () => import("../views/DatabaseCreate.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true, leftSidebar: true },

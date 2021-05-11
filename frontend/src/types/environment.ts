@@ -18,7 +18,7 @@ export type Environment = {
   order: number;
 };
 
-export type EnvironmentNew = {
+export type EnvironmentCreate = {
   // Standard fields
   creatorId: PrincipalId;
 

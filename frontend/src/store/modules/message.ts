@@ -3,7 +3,7 @@ import {
   PrincipalId,
   MessageId,
   Message,
-  MessageNew,
+  MessageCreate,
   MessageState,
   ResourceObject,
   MessageStatus,
@@ -39,11 +39,11 @@ const state: () => MessageState = () => ({
 });
 
 const getters = {
-  messageListByUser: (state: MessageState) => (
-    userId: PrincipalId
-  ): Message[] => {
-    return state.messageListByUser.get(userId) || [];
-  },
+  messageListByUser:
+    (state: MessageState) =>
+    (userId: PrincipalId): Message[] => {
+      return state.messageListByUser.get(userId) || [];
+    },
 };
 
 const actions = {

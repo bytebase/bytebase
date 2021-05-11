@@ -5,7 +5,7 @@
         <div class="flex items-center">
           <div>
             <IssueStatusIcon
-              v-if="!$props.new"
+              v-if="!create"
               :issueStatus="issue.status"
               :taskStatus="activeTask(issue.pipeline).status"
             />
@@ -14,14 +14,14 @@
             class="ml-2 my-0.5 w-full text-lg font-bold"
             :disabled="!allowEdit"
             :required="true"
-            :focusOnMount="$props.new"
+            :focusOnMount="$create"
             :bordered="false"
             :value="state.name"
             :placeholder="'Issue name'"
             @end-editing="(text) => trySaveName(text)"
           />
         </div>
-        <div v-if="!$props.new">
+        <div v-if="!create">
           <p class="text-sm text-control-light">
             #{{ issue.id }} opened by
             <router-link
@@ -62,7 +62,7 @@ export default {
       required: true,
       type: Object as PropType<Issue>,
     },
-    new: {
+    create: {
       required: true,
       type: Boolean,
     },

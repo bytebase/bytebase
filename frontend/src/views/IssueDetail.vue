@@ -6,13 +6,33 @@
   >
     <div
       v-if="showCancelBanner"
-      class="h-10 w-full text-2xl font-bold bg-gray-400 text-white flex justify-center items-center"
+      class="
+        h-10
+        w-full
+        text-2xl
+        font-bold
+        bg-gray-400
+        text-white
+        flex
+        justify-center
+        items-center
+      "
     >
       Canceled
     </div>
     <div
       v-if="showSuccessBanner"
-      class="h-10 w-full text-2xl font-bold bg-success text-white flex justify-center items-center"
+      class="
+        h-10
+        w-full
+        text-2xl
+        font-bold
+        bg-success
+        text-white
+        flex
+        justify-center
+        items-center
+      "
     >
       Done
     </div>
@@ -20,12 +40,12 @@
     <div class="bg-white px-4 pb-4">
       <IssueHighlightPanel
         :issue="state.issue"
-        :new="state.new"
+        :create="state.create"
         :allowEdit="allowEditNameAndDescription"
         @update-name="updateName"
       >
         <IssueStatusTransitionButtonGroup
-          :new="state.new"
+          :create="state.create"
           :issue="state.issue"
           :issueTemplate="issueTemplate"
           @create="doCreate"
@@ -77,11 +97,17 @@
       <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
           <div
-            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border"
+            class="
+              py-6
+              lg:pl-4
+              lg:w-96
+              xl:w-112
+              lg:border-l lg:border-block-border
+            "
           >
             <IssueSidebar
               :issue="state.issue"
-              :new="state.new"
+              :create="state.create"
               :selectedStage="selectedStage"
               :inputFieldList="issueTemplate.inputFieldList"
               :allowEdit="allowEditSidebar"
@@ -96,7 +122,7 @@
             <section v-if="showIssueSqlPanel" class="border-b mb-4">
               <IssueSqlPanel
                 :issue="state.issue"
-                :new="state.new"
+                :create="state.create"
                 :rollback="false"
                 :allowEdit="allowEditSql"
                 @update-sql="updateSql"
@@ -105,7 +131,7 @@
             <section v-if="showIssueRollbackSqlPanel" class="border-b mb-4">
               <IssueSqlPanel
                 :issue="state.issue"
-                :new="state.new"
+                :create="state.create"
                 :rollback="true"
                 :allowEdit="allowEditSql"
                 @update-sql="updateRollbackSql"
@@ -113,12 +139,12 @@
             </section>
             <IssueDescriptionPanel
               :issue="state.issue"
-              :new="state.new"
+              :create="state.create"
               :allowEdit="allowEditNameAndDescription"
               @update-description="updateDescription"
             />
             <section
-              v-if="!state.new"
+              v-if="!state.create"
               aria-labelledby="activity-title"
               class="mt-4"
             >
@@ -161,7 +187,7 @@ import IssueStatusTransitionButtonGroup from "../components/IssueStatusTransitio
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import {
   Issue,
-  IssueNew,
+  IssueCreate,
   IssueType,
   IssuePatch,
   PrincipalId,
@@ -184,8 +210,8 @@ interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
   // router.push won't trigger the reload because new and existing issue shares
   // the same component.
-  new: boolean;
-  issue: Issue | IssueNew;
+  create: boolean;
+  issue: Issue | IssueCreate;
 }
 
 export default {
@@ -258,8 +284,9 @@ export default {
     const buildNewIssue = () => {
       const databaseList: Database[] = [];
       if (router.currentRoute.value.query.databaseList) {
-        for (const databaseId of (router.currentRoute.value.query
-          .databaseList as string).split(","))
+        for (const databaseId of (
+          router.currentRoute.value.query.databaseList as string
+        ).split(","))
           databaseList.push(store.getters["database/databaseById"](databaseId));
       }
 
@@ -332,13 +359,13 @@ export default {
     watch(
       () => props.issueSlug,
       (cur, prev) => {
-        state.new = cur.toLowerCase() == "new";
+        state.create = cur.toLowerCase() == "new";
       }
     );
 
     const isNew = props.issueSlug.toLowerCase() == "new";
     const state = reactive<LocalState>({
-      new: isNew,
+      create: isNew,
       issue: isNew
         ? buildNewIssue()
         : cloneDeep(
@@ -347,7 +374,7 @@ export default {
     });
 
     const refreshIssue = () => {
-      state.issue = state.new
+      state.issue = state.create
         ? buildNewIssue()
         : cloneDeep(
             store.getters["issue/issueById"](idFromSlug(props.issueSlug))
@@ -364,8 +391,8 @@ export default {
       newName: string,
       postUpdated: (updatedIssue: Issue) => void
     ) => {
-      if (state.new) {
-        (state.issue as IssueNew).name = newName;
+      if (state.create) {
+        (state.issue as IssueCreate).name = newName;
       } else {
         patchIssue(
           {
@@ -380,8 +407,8 @@ export default {
       newSql: string,
       postUpdated: (updatedIssue: Issue) => void
     ) => {
-      if (state.new) {
-        (state.issue as IssueNew).sql = newSql;
+      if (state.create) {
+        (state.issue as IssueCreate).sql = newSql;
       } else {
         patchIssue(
           {
@@ -396,8 +423,8 @@ export default {
       newSql: string,
       postUpdated: (updatedIssue: Issue) => void
     ) => {
-      if (state.new) {
-        (state.issue as IssueNew).rollbackSql = newSql;
+      if (state.create) {
+        (state.issue as IssueCreate).rollbackSql = newSql;
       } else {
         patchIssue(
           {
@@ -412,8 +439,8 @@ export default {
       newDescription: string,
       postUpdated: (updatedIssue: Issue) => void
     ) => {
-      if (state.new) {
-        (state.issue as IssueNew).description = newDescription;
+      if (state.create) {
+        (state.issue as IssueCreate).description = newDescription;
       } else {
         patchIssue(
           {
@@ -425,8 +452,8 @@ export default {
     };
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
-      if (state.new) {
-        (state.issue as IssueNew).assigneeId = newAssigneeId;
+      if (state.create) {
+        (state.issue as IssueCreate).assigneeId = newAssigneeId;
       } else {
         patchIssue({
           assigneeId: newAssigneeId,
@@ -444,7 +471,7 @@ export default {
       console.log("updateCustomField", field.name, value);
       if (!isEqual(state.issue.payload[field.id], value)) {
         state.issue.payload[field.id] = value;
-        if (!state.new) {
+        if (!state.create) {
           patchIssue({
             payload: state.issue.payload,
           });
@@ -488,24 +515,20 @@ export default {
         });
     };
 
-    const currentPipelineType = computed(
-      (): PipelineType => {
-        return pipelineType((state.issue as Issue).pipeline);
-      }
-    );
+    const currentPipelineType = computed((): PipelineType => {
+      return pipelineType((state.issue as Issue).pipeline);
+    });
 
     console.log(currentPipelineType.value);
 
-    const selectedStage = computed(
-      (): Stage => {
-        const stageSlug = router.currentRoute.value.query.stage as string;
-        if (stageSlug) {
-          const index = indexFromSlug(stageSlug);
-          return (state.issue as Issue).pipeline.stageList[index];
-        }
-        return activeStage((state.issue as Issue).pipeline);
+    const selectedStage = computed((): Stage => {
+      const stageSlug = router.currentRoute.value.query.stage as string;
+      if (stageSlug) {
+        const index = indexFromSlug(stageSlug);
+        return (state.issue as Issue).pipeline.stageList[index];
       }
-    );
+      return activeStage((state.issue as Issue).pipeline);
+    });
 
     const selectStageId = (stageId: StageId) => {
       const stageList = (state.issue as Issue).pipeline.stageList;
@@ -529,7 +552,7 @@ export default {
       // is performing the issue based on the old value.
       // For now, we choose to be on the safe side at the cost of flexibility.
       return (
-        state.new ||
+        state.create ||
         ((state.issue as Issue).status == "OPEN" &&
           currentUser.value.id == (state.issue as Issue).assignee?.id)
       );
@@ -537,7 +560,7 @@ export default {
 
     const allowEditOutput = computed(() => {
       return (
-        state.new ||
+        state.create ||
         ((state.issue as Issue).status == "OPEN" &&
           currentUser.value.id == (state.issue as Issue).assignee?.id)
       );
@@ -545,7 +568,7 @@ export default {
 
     const allowEditNameAndDescription = computed(() => {
       return (
-        state.new ||
+        state.create ||
         ((state.issue as Issue).status == "OPEN" &&
           (currentUser.value.id == (state.issue as Issue).assignee?.id ||
             currentUser.value.id == (state.issue as Issue).creator.id))
@@ -553,23 +576,23 @@ export default {
     });
 
     const allowEditSql = computed(() => {
-      return state.new;
+      return state.create;
     });
 
     const showCancelBanner = computed(() => {
-      return !state.new && (state.issue as Issue).status == "CANCELED";
+      return !state.create && (state.issue as Issue).status == "CANCELED";
     });
 
     const showSuccessBanner = computed(() => {
-      return !state.new && (state.issue as Issue).status == "DONE";
+      return !state.create && (state.issue as Issue).status == "DONE";
     });
 
     const showPipelineFlowBar = computed(() => {
-      return !state.new && currentPipelineType.value != "NO_PIPELINE";
+      return !state.create && currentPipelineType.value != "NO_PIPELINE";
     });
 
     const showIssueOutputPanel = computed(() => {
-      return !state.new && issueTemplate.value.outputFieldList.length > 0;
+      return !state.create && issueTemplate.value.outputFieldList.length > 0;
     });
 
     const showIssueSqlPanel = computed(() => {

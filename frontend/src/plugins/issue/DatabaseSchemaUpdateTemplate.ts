@@ -7,15 +7,21 @@ import {
   IssueContext,
 } from "../types";
 
-import { Database, Stage, StageNew, IssueNew, UNKNOWN_ID } from "../../types";
+import {
+  Database,
+  Stage,
+  StageCreate,
+  IssueCreate,
+  UNKNOWN_ID,
+} from "../../types";
 
 const template: IssueTemplate = {
   type: "bb.database.schema.update",
   buildIssue: (
     ctx: TemplateContext
-  ): Omit<IssueNew, "projectId" | "creatorId"> => {
+  ): Omit<IssueCreate, "projectId" | "creatorId"> => {
     const payload: any = {};
-    const stageList: StageNew[] = [];
+    const stageList: StageCreate[] = [];
     for (let i = 0; i < ctx.databaseList.length; i++) {
       stageList.push({
         name: `[${ctx.databaseList[i].instance.environment.name}] ${ctx.databaseList[i].name}`,

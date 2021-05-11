@@ -39,11 +39,11 @@ export type DataSource = {
   password?: string;
 };
 
-export type DataSourceNew = {
+export type DataSourceCreate = {
   // Related fields
   databaseId: DatabaseId;
   instanceId: InstanceId;
-  memberList: DataSourceMemberNew[];
+  memberList: DataSourceMemberCreate[];
 
   // Standard fields
   creatorId: PrincipalId;
@@ -74,7 +74,7 @@ export type DataSourceMember = {
   issueId?: IssueId;
 };
 
-export type DataSourceMemberNew = {
+export type DataSourceMemberCreate = {
   // Domain specific fields
   principalId: PrincipalId;
   issueId?: IssueId;

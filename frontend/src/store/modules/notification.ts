@@ -1,6 +1,6 @@
 import {
   Notification,
-  NewNotification,
+  NotificationCreate,
   NotificationFilter,
   NotificationState,
 } from "../../types";
@@ -27,11 +27,11 @@ function findNotification(
 const getters = {};
 
 const actions = {
-  pushNotification({ commit }: any, newNotification: NewNotification) {
+  pushNotification({ commit }: any, NotificationCreate: NotificationCreate) {
     const notification: Notification = {
       id: uuidv1(),
       createdTs: Date.now(),
-      ...newNotification,
+      ...NotificationCreate,
     };
     commit("appendNotification", notification);
   },

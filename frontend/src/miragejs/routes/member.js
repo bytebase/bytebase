@@ -11,7 +11,7 @@ export default function configureMember(route) {
 
   route.post("/member", function (schema, request) {
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("member-new");
+    const attrs = this.normalizedRequestAttrs("member-create");
     const member = schema.members.findBy({
       principalId: attrs.principalId,
       workspaceId: WORKSPACE_ID,

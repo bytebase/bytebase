@@ -1,7 +1,7 @@
 <template>
   <div class="flex justify-between">
     <div class="textlabel">{{ rollback ? "Rollback SQL" : "SQL" }}</div>
-    <div v-if="!$props.new" class="space-x-2">
+    <div v-if="!create" class="space-x-2">
       <button
         v-if="allowEdit && !state.editing"
         type="button"
@@ -26,7 +26,23 @@
       <button
         v-if="state.editing"
         type="button"
-        class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        class="
+          mt-0.5
+          px-3
+          rounded-sm
+          text-control
+          hover:bg-control-bg-hover
+          disabled:bg-control-bg
+          disabled:opacity-50
+          disabled:cursor-not-allowed
+          text-sm
+          leading-5
+          font-normal
+          focus:ring-control
+          focus:outline-none
+          focus-visible:ring-2
+          focus:ring-offset-2
+        "
         @click.prevent="cancelEdit"
       >
         Cancel
@@ -34,7 +50,25 @@
       <button
         v-if="state.editing"
         type="button"
-        class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        class="
+          mt-0.5
+          px-3
+          border border-control-border
+          rounded-sm
+          text-control
+          bg-control-bg
+          hover:bg-control-bg-hover
+          disabled:bg-control-bg
+          disabled:opacity-50
+          disabled:cursor-not-allowed
+          text-sm
+          leading-5
+          font-normal
+          focus:ring-control
+          focus:outline-none
+          focus-visible:ring-2
+          focus:ring-offset-2
+        "
         :disabled="!allowSave"
         @click.prevent="saveEdit"
       >
@@ -46,7 +80,15 @@
   <template v-if="state.editing">
     <textarea
       ref="editSqlTextArea"
-      class="whitespace-pre-wrap mt-2 w-full resize-none border-white focus:border-white outline-none"
+      class="
+        whitespace-pre-wrap
+        mt-2
+        w-full
+        resize-none
+        border-white
+        focus:border-white
+        outline-none
+      "
       :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
       placeholder="Add SQL statement..."
       v-model="state.editSql"
@@ -54,7 +96,7 @@
         (e) => {
           sizeToFit(e.target);
           // When creating the issue, we will emit the event on keystroke to update the in-memory state.
-          if ($props.new) {
+          if (create) {
             $emit('update-sql', state.editSql);
           }
         }
@@ -104,7 +146,7 @@ export default {
       required: true,
       type: Object as PropType<Issue>,
     },
-    new: {
+    create: {
       required: true,
       type: Boolean,
     },
@@ -157,7 +199,7 @@ export default {
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
       window.addEventListener("resize", resizeTextAreaHandler);
-      if (props.new) {
+      if (props.create) {
         state.editing = true;
         nextTick(() => {
           sizeToFit(editSqlTextArea.value);
@@ -172,7 +214,7 @@ export default {
 
     // Reset the edit state after creating the issue.
     watch(
-      () => props.new,
+      () => props.create,
       (curNew, prevNew) => {
         if (!curNew && prevNew) {
           state.editing = false;

@@ -41,7 +41,7 @@ export default function configureEnvironment(route) {
       order = list.sort((a, b) => b.order - a.order).models[0].order + 1;
     }
 
-    const attrs = this.normalizedRequestAttrs("environment-new");
+    const attrs = this.normalizedRequestAttrs("environment-create");
     const ts = Date.now();
     const newEnvironment = {
       ...attrs,

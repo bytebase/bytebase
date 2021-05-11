@@ -23,7 +23,7 @@ export type Project = {
   memberList: ProjectMember[];
 };
 
-export type ProjectNew = {
+export type ProjectCreate = {
   // Standard fields
   creatorId: PrincipalId;
 
@@ -60,7 +60,7 @@ export type ProjectMember = {
   principal: Principal;
 };
 
-export type ProjectMemberNew = {
+export type ProjectMemberCreate = {
   // Standard fields
   creatorId: PrincipalId;
 

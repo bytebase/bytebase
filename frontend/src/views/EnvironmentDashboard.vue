@@ -83,7 +83,7 @@ import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentNew, Principal } from "../types";
+import { Environment, EnvironmentCreate, Principal } from "../types";
 import { BBTabItem } from "../bbkit/types";
 
 interface LocalState {
@@ -194,7 +194,7 @@ export default {
       state.showCreateModal = true;
     };
 
-    const doCreate = (newEnvironment: EnvironmentNew) => {
+    const doCreate = (newEnvironment: EnvironmentCreate) => {
       store
         .dispatch("environment/createEnvironment", newEnvironment)
         .then(() => {

@@ -14,7 +14,7 @@ export type Notification = {
 
 // "id" and "createdTs" is auto generated upon the notification store
 // receives.
-export type NewNotification = Omit<Notification, "id" | "createdTs">;
+export type NotificationCreate = Omit<Notification, "id" | "createdTs">;
 
 export type NotificationFilter = {
   module: string;

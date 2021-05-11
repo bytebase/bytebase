@@ -45,7 +45,7 @@ export default function configurInstance(route) {
   });
 
   route.post("/instance", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("instance-new");
+    const attrs = this.normalizedRequestAttrs("instance-create");
     const ts = Date.now();
     const createdInstance = schema.instances.create({
       environmentId: attrs.environmentId,

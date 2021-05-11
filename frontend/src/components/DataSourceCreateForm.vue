@@ -157,17 +157,17 @@
 
 <script lang="ts">
 import { computed, ComputedRef, PropType, reactive } from "vue";
-import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { DataSourceNew, Database, UNKNOWN_ID, Principal } from "../types";
+import DatabaseSelect from "./DatabaseSelect.vue";
+import { DataSourceCreate, Database, UNKNOWN_ID, Principal } from "../types";
 import { useStore } from "vuex";
 
 interface LocalState {
-  dataSource: DataSourceNew;
+  dataSource: DataSourceCreate;
   showPassword: Boolean;
 }
 
 export default {
-  name: "DataSourceNewForm",
+  name: "DataSourceCreateForm",
   emits: ["create", "cancel"],
   props: {
     instanceId: {

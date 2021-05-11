@@ -1,11 +1,11 @@
-import { IssueNew, UNKNOWN_ID } from "../../types";
+import { IssueCreate, UNKNOWN_ID } from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
   type: "bb.general",
   buildIssue: (
     ctx: TemplateContext
-  ): Omit<IssueNew, "projectId" | "creatorId"> => {
+  ): Omit<IssueCreate, "projectId" | "creatorId"> => {
     return {
       name: "",
       type: "bb.general",

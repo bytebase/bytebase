@@ -104,7 +104,15 @@ input[type="number"] {
           </router-link>
           <template v-else>
             <div
-              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+              class="
+                absolute
+                inset-y-0
+                left-0
+                pl-3
+                flex
+                items-center
+                pointer-events-none
+              "
             >
               <span class="text-accent font-semibold sm:text-sm">issue/</span>
             </div>
@@ -167,12 +175,10 @@ import {
   Issue,
   IssueId,
   IssueType,
-  DataSourceNew,
   EnvironmentId,
   InstanceId,
-  PrincipalId,
   ProjectId,
-  DatabaseNew,
+  DatabaseCreate,
 } from "../types";
 import { OutputField, templateForType } from "../plugins";
 import { isEqual } from "lodash";
@@ -187,7 +193,7 @@ interface LocalState {
 }
 
 export default {
-  name: "DatabaseNew",
+  name: "DatabaseCreate",
   props: {},
   components: {
     InstanceSelect,
@@ -359,7 +365,7 @@ export default {
       }
 
       // Create database
-      const newDatabase: DatabaseNew = {
+      const newDatabase: DatabaseCreate = {
         creatorId: currentUser.value.id,
         name: state.databaseName!,
         instanceId: state.instanceId!,

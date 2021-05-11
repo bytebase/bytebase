@@ -50,7 +50,7 @@ export type Activity = {
   payload?: ActionPayloadType;
 };
 
-export type ActivityNew = {
+export type ActivityCreate = {
   // Related fields
   containerId: ContainerId;
 

@@ -2,9 +2,9 @@ import axios from "axios";
 import {
   DataSourceId,
   DataSource,
-  DataSourceNew,
+  DataSourceCreate,
   DataSourceMember,
-  DataSourceMemberNew,
+  DataSourceMemberCreate,
   DataSourceState,
   PrincipalId,
   ResourceObject,
@@ -29,10 +29,12 @@ function convert(
   const updater = rootGetters["principal/principalById"](
     dataSource.attributes.updaterId
   );
-  const databaseId = (dataSource.relationships!.database
-    .data as ResourceIdentifier).id;
-  const instanceId = (dataSource.relationships!.instance
-    .data as ResourceIdentifier).id;
+  const databaseId = (
+    dataSource.relationships!.database.data as ResourceIdentifier
+  ).id;
+  const instanceId = (
+    dataSource.relationships!.instance.data as ResourceIdentifier
+  ).id;
   const memberList = (dataSource.attributes.memberList as []).map(
     (item: any): DataSourceMember => {
       return {
@@ -78,30 +80,27 @@ const state: () => DataSourceState = () => ({
 });
 
 const getters = {
-  convert: (
-    state: DataSourceState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => (dataSource: ResourceObject): DataSource => {
-    // Pass includedList with [] here, otherwise, it may cause cyclic dependency
-    // e.g. Database calls this to convert its dataSourceList, while data source here
-    // also tries to convert its database.
-    return convert(dataSource, [], rootGetters);
-  },
+  convert:
+    (state: DataSourceState, getters: any, rootState: any, rootGetters: any) =>
+    (dataSource: ResourceObject): DataSource => {
+      // Pass includedList with [] here, otherwise, it may cause cyclic dependency
+      // e.g. Database calls this to convert its dataSourceList, while data source here
+      // also tries to convert its database.
+      return convert(dataSource, [], rootGetters);
+    },
 
-  dataSourceById: (state: DataSourceState) => (
-    dataSourceId: DataSourceId
-  ): DataSource => {
-    if (dataSourceId == EMPTY_ID) {
-      return empty("DATA_SOURCE") as DataSource;
-    }
+  dataSourceById:
+    (state: DataSourceState) =>
+    (dataSourceId: DataSourceId): DataSource => {
+      if (dataSourceId == EMPTY_ID) {
+        return empty("DATA_SOURCE") as DataSource;
+      }
 
-    return (
-      state.dataSourceById.get(dataSourceId) ||
-      (unknown("DATA_SOURCE") as DataSource)
-    );
-  },
+      return (
+        state.dataSourceById.get(dataSourceId) ||
+        (unknown("DATA_SOURCE") as DataSource)
+      );
+    },
 };
 
 const actions = {
@@ -129,14 +128,14 @@ const actions = {
 
   async createDataSource(
     { commit, dispatch, rootGetters }: any,
-    newDataSource: DataSourceNew
+    newDataSource: DataSourceCreate
   ) {
     const data = (
       await axios.post(
         `/api/database/${newDataSource.databaseId}/datasource?include=database,instance`,
         {
           data: {
-            type: "dataSourcenew",
+            type: "DataSourceCreate",
             attributes: newDataSource,
           },
         }
@@ -221,7 +220,7 @@ const actions = {
     }: {
       dataSourceId: DataSourceId;
       databaseId: DatabaseId;
-      newDataSourceMember: DataSourceMemberNew;
+      newDataSourceMember: DataSourceMemberCreate;
     }
   ) {
     const data = (

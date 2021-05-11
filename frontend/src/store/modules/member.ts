@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   Member,
   MemberId,
-  MemberNew,
+  MemberCreate,
   MemberPatch,
   MemberState,
   ResourceObject,
@@ -35,16 +35,18 @@ const getters = {
   memberList: (state: MemberState) => (): Member[] => {
     return state.memberList;
   },
-  memberByPrincipalId: (state: MemberState) => (id: PrincipalId): Member => {
-    if (id == EMPTY_ID) {
-      return empty("MEMBER") as Member;
-    }
+  memberByPrincipalId:
+    (state: MemberState) =>
+    (id: PrincipalId): Member => {
+      if (id == EMPTY_ID) {
+        return empty("MEMBER") as Member;
+      }
 
-    return (
-      state.memberList.find((item) => item.principalId == id) ||
-      (unknown("MEMBER") as Member)
-    );
-  },
+      return (
+        state.memberList.find((item) => item.principalId == id) ||
+        (unknown("MEMBER") as Member)
+      );
+    },
 };
 
 const actions = {
@@ -60,12 +62,12 @@ const actions = {
   },
 
   // Returns existing member if the principalId has already been created.
-  async createdMember({ commit, rootGetters }: any, newMember: MemberNew) {
+  async createdMember({ commit, rootGetters }: any, newMember: MemberCreate) {
     const createdMember = convert(
       (
         await axios.post(`/api/member`, {
           data: {
-            type: "membernew",
+            type: "MemberCreate",
             attributes: newMember,
           },
         })

@@ -36,7 +36,7 @@ export type Database = {
   fingerprint: string;
 };
 
-export type DatabaseNew = {
+export type DatabaseCreate = {
   // Related fields
   instanceId: InstanceId;
   projectId: ProjectId;

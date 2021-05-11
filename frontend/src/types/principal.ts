@@ -28,7 +28,7 @@ export type Principal = {
   role: RoleType;
 };
 
-export type PrincipalNew = {
+export type PrincipalCreate = {
   // Standard fields
   creatorId: PrincipalId;
 

@@ -17,7 +17,7 @@ export type Member = {
   principalId: PrincipalId;
 };
 
-export type MemberNew = {
+export type MemberCreate = {
   // Standard fields
   creatorId: PrincipalId;
 

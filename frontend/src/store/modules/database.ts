@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   Database,
-  DatabaseNew,
+  DatabaseCreate,
   DatabaseId,
   Instance,
   InstanceId,
@@ -26,8 +26,9 @@ function convert(
   // We first populate the id for instance, project and dataSourceList.
   // And if we also provide the detail info for those objects in the includedList,
   // then we convert them to the detailed objects.
-  const instanceId = (database.relationships!.instance
-    .data as ResourceIdentifier).id;
+  const instanceId = (
+    database.relationships!.instance.data as ResourceIdentifier
+  ).id;
   let instance: Instance = unknown("INSTANCE") as Instance;
   instance.id = instanceId;
 
@@ -95,91 +96,87 @@ const state: () => DatabaseState = () => ({
 });
 
 const getters = {
-  convert: (
-    state: DatabaseState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => (database: ResourceObject, inlcudedList: ResourceObject[]): Database => {
-    return convert(database, [], rootGetters);
-  },
+  convert:
+    (state: DatabaseState, getters: any, rootState: any, rootGetters: any) =>
+    (database: ResourceObject, inlcudedList: ResourceObject[]): Database => {
+      return convert(database, [], rootGetters);
+    },
 
-  databaseListByInstanceId: (state: DatabaseState) => (
-    instanceId: InstanceId
-  ): Database[] => {
-    return state.databaseListByInstanceId.get(instanceId) || [];
-  },
+  databaseListByInstanceId:
+    (state: DatabaseState) =>
+    (instanceId: InstanceId): Database[] => {
+      return state.databaseListByInstanceId.get(instanceId) || [];
+    },
 
-  databaseListByPrincipalId: (state: DatabaseState) => (
-    userId: PrincipalId
-  ): Database[] => {
-    const list: Database[] = [];
-    for (let [_, databaseList] of state.databaseListByInstanceId) {
-      databaseList.forEach((item: Database) => {
-        for (const member of item.project.memberList) {
-          if (member.principal.id == userId) {
-            list.push(item);
-            break;
+  databaseListByPrincipalId:
+    (state: DatabaseState) =>
+    (userId: PrincipalId): Database[] => {
+      const list: Database[] = [];
+      for (let [_, databaseList] of state.databaseListByInstanceId) {
+        databaseList.forEach((item: Database) => {
+          for (const member of item.project.memberList) {
+            if (member.principal.id == userId) {
+              list.push(item);
+              break;
+            }
           }
-        }
-      });
-    }
-    return list;
-  },
-
-  databaseListByEnvironmentId: (state: DatabaseState) => (
-    environmentId: EnvironmentId
-  ): Database[] => {
-    const list: Database[] = [];
-    for (let [_, databaseList] of state.databaseListByInstanceId) {
-      databaseList.forEach((item: Database) => {
-        if (item.instance.environment.id == environmentId) {
-          list.push(item);
-        }
-      });
-    }
-    return list;
-  },
-
-  databaseListByProjectId: (state: DatabaseState) => (
-    projectId: ProjectId
-  ): Database[] => {
-    const list: Database[] = [];
-    for (let [_, databaseList] of state.databaseListByInstanceId) {
-      databaseList.forEach((item: Database) => {
-        if (item.project.id == projectId) {
-          list.push(item);
-        }
-      });
-    }
-    return list;
-  },
-
-  databaseById: (state: DatabaseState) => (
-    databaseId: DatabaseId,
-    instanceId?: InstanceId
-  ): Database => {
-    if (databaseId == EMPTY_ID) {
-      return empty("DATABASE") as Database;
-    }
-
-    if (instanceId) {
-      const list = state.databaseListByInstanceId.get(instanceId) || [];
-      return (
-        list.find((item) => item.id == databaseId) ||
-        (unknown("DATABASE") as Database)
-      );
-    }
-
-    for (let [_, list] of state.databaseListByInstanceId) {
-      const database = list.find((item) => item.id == databaseId);
-      if (database) {
-        return database;
+        });
       }
-    }
+      return list;
+    },
 
-    return unknown("DATABASE") as Database;
-  },
+  databaseListByEnvironmentId:
+    (state: DatabaseState) =>
+    (environmentId: EnvironmentId): Database[] => {
+      const list: Database[] = [];
+      for (let [_, databaseList] of state.databaseListByInstanceId) {
+        databaseList.forEach((item: Database) => {
+          if (item.instance.environment.id == environmentId) {
+            list.push(item);
+          }
+        });
+      }
+      return list;
+    },
+
+  databaseListByProjectId:
+    (state: DatabaseState) =>
+    (projectId: ProjectId): Database[] => {
+      const list: Database[] = [];
+      for (let [_, databaseList] of state.databaseListByInstanceId) {
+        databaseList.forEach((item: Database) => {
+          if (item.project.id == projectId) {
+            list.push(item);
+          }
+        });
+      }
+      return list;
+    },
+
+  databaseById:
+    (state: DatabaseState) =>
+    (databaseId: DatabaseId, instanceId?: InstanceId): Database => {
+      if (databaseId == EMPTY_ID) {
+        return empty("DATABASE") as Database;
+      }
+
+      if (instanceId) {
+        const list = state.databaseListByInstanceId.get(instanceId) || [];
+        return (
+          list.find((item) => item.id == databaseId) ||
+          (unknown("DATABASE") as Database)
+        );
+      }
+
+      for (let [_, list] of state.databaseListByInstanceId) {
+        const database = list.find((item) => item.id == databaseId);
+        if (database) {
+          return database;
+        }
+      }
+
+      return unknown("DATABASE") as Database;
+    },
 };
 
 const actions = {
@@ -298,13 +295,16 @@ const actions = {
     return database;
   },
 
-  async createDatabase({ commit, rootGetters }: any, newDatabase: DatabaseNew) {
+  async createDatabase(
+    { commit, rootGetters }: any,
+    newDatabase: DatabaseCreate
+  ) {
     const data = (
       await axios.post(
         `/api/database?include=instance,project,project.projectMember`,
         {
           data: {
-            type: "databasenew",
+            type: "DatabaseCreate",
             attributes: newDatabase,
           },
         }

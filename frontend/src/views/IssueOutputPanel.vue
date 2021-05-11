@@ -25,7 +25,21 @@
           <div class="flex flex-row">
             <input
               type="text"
-              class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
+              class="
+                flex-1
+                min-w-0
+                block
+                w-full
+                px-3
+                py-2
+                rounded-l-md
+                border border-r border-control-border
+                focus:mr-0.5
+                focus:ring-control
+                focus:border-control
+                sm:text-sm
+                disabled:bg-gray-50
+              "
               :disabled="!allowEdit"
               :name="field.id"
               :value="fieldValue(field)"
@@ -36,7 +50,24 @@
             <button
               tabindex="-1"
               :disabled="!fieldValue(field)"
-              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
+              class="
+                -ml-px
+                px-2
+                py-2
+                border border-gray-300
+                text-sm
+                font-medium
+                text-control-light
+                disabled:text-gray-300
+                bg-gray-50
+                hover:bg-gray-100
+                disabled:bg-gray-50
+                focus:ring-control
+                focus:outline-none
+                focus-visible:ring-2
+                focus:ring-offset-1
+                disabled:cursor-not-allowed
+              "
               @click.prevent="copyText(field)"
             >
               <svg
@@ -57,7 +88,24 @@
             <button
               tabindex="-1"
               :disabled="!isValidLink(fieldValue(field))"
-              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+              class="
+                -ml-px
+                px-2
+                py-2
+                border border-gray-300
+                text-sm
+                font-medium
+                rounded-r-md
+                text-control-light
+                disabled:text-gray-300
+                bg-gray-50
+                hover:bg-gray-100
+                disabled:bg-gray-50
+                focus:ring-control
+                focus:outline-none
+                focus-visible:ring-2
+                focus:ring-offset-1
+              "
               @click.prevent="goToLink(fieldValue(field))"
             >
               <svg
@@ -152,26 +200,22 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentId = computed(
-      (): EnvironmentId => {
-        return activeEnvironment(props.issue.pipeline).id;
-      }
-    );
+    const environmentId = computed((): EnvironmentId => {
+      return activeEnvironment(props.issue.pipeline).id;
+    });
 
     const fieldValue = (field: OutputField): string => {
       return props.issue.payload[field.id];
     };
 
-    const issueContext = computed(
-      (): IssueContext => {
-        return {
-          store,
-          currentUser: currentUser.value,
-          new: false,
-          issue: props.issue,
-        };
-      }
-    );
+    const issueContext = computed((): IssueContext => {
+      return {
+        store,
+        currentUser: currentUser.value,
+        create: false,
+        issue: props.issue,
+      };
+    });
 
     const allowEditDatabase = computed((): boolean => {
       if (!props.allowEdit) {

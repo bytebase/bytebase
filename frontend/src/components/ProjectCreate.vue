@@ -54,15 +54,15 @@ import { computed, reactive, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
-import { Project, ProjectNew } from "../types";
+import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 
 interface LocalState {
-  project: ProjectNew;
+  project: ProjectCreate;
 }
 
 export default {
-  name: "ProjectNew",
+  name: "ProjectCreate",
   emits: ["dismiss"],
   props: {},
   setup(props, { emit }) {

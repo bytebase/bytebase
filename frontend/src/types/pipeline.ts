@@ -120,9 +120,9 @@ export type Pipeline = {
   status: PipelineStatus;
 };
 
-export type PipelineNew = {
+export type PipelineCreate = {
   // Related fields
-  stageList: StageNew[];
+  stageList: StageCreate[];
 
   // Standard fields
   creatorId: PrincipalId;
@@ -174,9 +174,9 @@ export type Stage = {
   runnable?: StageRunnable;
 };
 
-export type StageNew = {
+export type StageCreate = {
   // Related fields
-  taskList: TaskNew[];
+  taskList: TaskCreate[];
   environmentId: EnvironmentId;
 
   // Domain specific fields
@@ -224,7 +224,7 @@ export type Task = {
   payload?: TaskPayload;
 };
 
-export type TaskNew = {
+export type TaskCreate = {
   // Domain specific fields
   name: string;
   type: TaskType;

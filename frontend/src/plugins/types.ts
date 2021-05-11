@@ -1,5 +1,5 @@
 import { Store } from "vuex";
-import { Environment, Principal, IssueNew, Issue, Database } from "../types";
+import { Environment, Principal, IssueCreate, Issue, Database } from "../types";
 
 // Issue
 // It has to be string type because the id for stage field contain multiple parts.
@@ -26,8 +26,8 @@ export type OutputFieldType = "String" | "Database";
 export type IssueContext = {
   store: Store<any>;
   currentUser: Principal;
-  new: boolean;
-  issue: Issue | IssueNew;
+  create: boolean;
+  issue: Issue | IssueCreate;
 };
 
 export type FieldInfo = {
@@ -92,7 +92,7 @@ export type IssueTemplate = {
   type: string;
   buildIssue: (
     ctx: TemplateContext
-  ) => Omit<IssueNew, "projectId" | "creatorId">;
+  ) => Omit<IssueCreate, "projectId" | "creatorId">;
   inputFieldList: InputField[];
   outputFieldList: OutputField[];
 };

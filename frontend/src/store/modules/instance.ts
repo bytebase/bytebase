@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   InstanceId,
   Instance,
-  InstanceNew,
+  InstanceCreate,
   InstanceState,
   ResourceObject,
   Environment,
@@ -71,53 +71,49 @@ const state: () => InstanceState = () => ({
 });
 
 const getters = {
-  convert: (
-    state: InstanceState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => (instance: ResourceObject): Instance => {
-    return convert(instance, [], rootGetters);
-  },
+  convert:
+    (state: InstanceState, getters: any, rootState: any, rootGetters: any) =>
+    (instance: ResourceObject): Instance => {
+      return convert(instance, [], rootGetters);
+    },
 
-  instanceList: (state: InstanceState) => (
-    rowStatusList?: RowStatus[]
-  ): Instance[] => {
-    const list = [];
-    for (const [_, instance] of state.instanceById) {
-      if (
-        (!rowStatusList && instance.rowStatus == "NORMAL") ||
-        (rowStatusList && rowStatusList.includes(instance.rowStatus))
-      ) {
-        list.push(instance);
+  instanceList:
+    (state: InstanceState) =>
+    (rowStatusList?: RowStatus[]): Instance[] => {
+      const list = [];
+      for (const [_, instance] of state.instanceById) {
+        if (
+          (!rowStatusList && instance.rowStatus == "NORMAL") ||
+          (rowStatusList && rowStatusList.includes(instance.rowStatus))
+        ) {
+          list.push(instance);
+        }
       }
-    }
-    return list.sort((a: Instance, b: Instance) => {
-      return b.createdTs - a.createdTs;
-    });
-  },
+      return list.sort((a: Instance, b: Instance) => {
+        return b.createdTs - a.createdTs;
+      });
+    },
 
-  instanceListByEnvironmentId: (state: InstanceState, getters: any) => (
-    environmentId: EnvironmentId,
-    rowStatusList?: RowStatus[]
-  ): Instance[] => {
-    const list = getters["instanceList"](rowStatusList);
-    return list.filter((item: Instance) => {
-      return item.environment.id == environmentId;
-    });
-  },
+  instanceListByEnvironmentId:
+    (state: InstanceState, getters: any) =>
+    (environmentId: EnvironmentId, rowStatusList?: RowStatus[]): Instance[] => {
+      const list = getters["instanceList"](rowStatusList);
+      return list.filter((item: Instance) => {
+        return item.environment.id == environmentId;
+      });
+    },
 
-  instanceById: (state: InstanceState) => (
-    instanceId: InstanceId
-  ): Instance => {
-    if (instanceId == EMPTY_ID) {
-      return empty("INSTANCE") as Instance;
-    }
+  instanceById:
+    (state: InstanceState) =>
+    (instanceId: InstanceId): Instance => {
+      if (instanceId == EMPTY_ID) {
+        return empty("INSTANCE") as Instance;
+      }
 
-    return (
-      state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
-    );
-  },
+      return (
+        state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
+      );
+    },
 };
 
 const actions = {
@@ -156,11 +152,14 @@ const actions = {
     return instance;
   },
 
-  async createInstance({ commit, rootGetters }: any, newInstance: InstanceNew) {
+  async createInstance(
+    { commit, rootGetters }: any,
+    newInstance: InstanceCreate
+  ) {
     const data = (
       await axios.post(`/api/instance?include=dataSource`, {
         data: {
-          type: "instancenew",
+          type: "InstanceCreate",
           attributes: newInstance,
         },
       })

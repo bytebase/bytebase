@@ -14,7 +14,7 @@ export default function configureBookmark(route) {
 
   route.post("/bookmark", function (schema, request) {
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("bookmark-new");
+    const attrs = this.normalizedRequestAttrs("bookmark-create");
     const newBookmark = {
       ...attrs,
       creatorId: attrs.creatorId,

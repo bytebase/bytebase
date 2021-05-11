@@ -40,7 +40,7 @@ export default function configureIssue(route) {
 
   route.post("/issue", function (schema, request) {
     const ts = Date.now();
-    const { pipeline, ...attrs } = this.normalizedRequestAttrs("issue-new");
+    const { pipeline, ...attrs } = this.normalizedRequestAttrs("issue-create");
 
     let createdPipeline;
     const newPipeline = {

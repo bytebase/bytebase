@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   EnvironmentId,
   Environment,
-  EnvironmentNew,
+  EnvironmentCreate,
   EnvironmentState,
   ResourceObject,
   unknown,
@@ -34,31 +34,31 @@ const state: () => EnvironmentState = () => ({
 });
 
 const getters = {
-  environmentList: (state: EnvironmentState) => (
-    rowStatusList?: RowStatus[]
-  ): Environment[] => {
-    return state.environmentList.filter((environment: Environment) => {
-      return (
-        (!rowStatusList && environment.rowStatus == "NORMAL") ||
-        (rowStatusList && rowStatusList.includes(environment.rowStatus))
-      );
-    });
-  },
+  environmentList:
+    (state: EnvironmentState) =>
+    (rowStatusList?: RowStatus[]): Environment[] => {
+      return state.environmentList.filter((environment: Environment) => {
+        return (
+          (!rowStatusList && environment.rowStatus == "NORMAL") ||
+          (rowStatusList && rowStatusList.includes(environment.rowStatus))
+        );
+      });
+    },
 
-  environmentById: (state: EnvironmentState) => (
-    environmentId: EnvironmentId
-  ): Environment => {
-    if (environmentId == EMPTY_ID) {
-      return empty("ENVIRONMENT") as Environment;
-    }
-
-    for (const environment of state.environmentList) {
-      if (environment.id == environmentId) {
-        return environment;
+  environmentById:
+    (state: EnvironmentState) =>
+    (environmentId: EnvironmentId): Environment => {
+      if (environmentId == EMPTY_ID) {
+        return empty("ENVIRONMENT") as Environment;
       }
-    }
-    return unknown("ENVIRONMENT") as Environment;
-  },
+
+      for (const environment of state.environmentList) {
+        if (environment.id == environmentId) {
+          return environment;
+        }
+      }
+      return unknown("ENVIRONMENT") as Environment;
+    },
 };
 
 const actions = {
@@ -82,7 +82,7 @@ const actions = {
 
   async createEnvironment(
     { commit, rootGetters }: any,
-    newEnvironment: EnvironmentNew
+    newEnvironment: EnvironmentCreate
   ) {
     const createdEnvironment = convert(
       (

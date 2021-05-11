@@ -3,7 +3,7 @@ import {
   PrincipalId,
   IssueId,
   Issue,
-  IssueNew,
+  IssueCreate,
   IssuePatch,
   IssueState,
   ResourceObject,
@@ -95,13 +95,15 @@ const getters = {
     return state.issueListByUser.get(userId) || [];
   },
 
-  issueById: (state: IssueState) => (issueId: IssueId): Issue => {
-    if (issueId == EMPTY_ID) {
-      return empty("ISSUE") as Issue;
-    }
+  issueById:
+    (state: IssueState) =>
+    (issueId: IssueId): Issue => {
+      if (issueId == EMPTY_ID) {
+        return empty("ISSUE") as Issue;
+      }
 
-    return state.issueById.get(issueId) || (unknown("ISSUE") as Issue);
-  },
+      return state.issueById.get(issueId) || (unknown("ISSUE") as Issue);
+    },
 };
 
 const actions = {
@@ -150,13 +152,13 @@ const actions = {
     return issue;
   },
 
-  async createIssue({ commit, rootGetters }: any, newIssue: IssueNew) {
+  async createIssue({ commit, rootGetters }: any, newIssue: IssueCreate) {
     const data = (
       await axios.post(
         `/api/issue?include=project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
-            type: "issuenew",
+            type: "IssueCreate",
             attributes: newIssue,
           },
         }

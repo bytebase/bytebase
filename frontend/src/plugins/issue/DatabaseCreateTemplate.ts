@@ -7,7 +7,13 @@ import {
   IssueContext,
   INPUT_CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
-import { EMPTY_ID, Issue, IssueNew, Pipeline, UNKNOWN_ID } from "../../types";
+import {
+  EMPTY_ID,
+  Issue,
+  IssueCreate,
+  Pipeline,
+  UNKNOWN_ID,
+} from "../../types";
 import { activeEnvironment, fullDatabasePath } from "../../utils";
 
 const INPUT_DATABASE_NAME = INPUT_CUSTOM_FIELD_ID_BEGIN;
@@ -17,7 +23,7 @@ const template: IssueTemplate = {
   type: "bb.database.create",
   buildIssue: (
     ctx: TemplateContext
-  ): Omit<IssueNew, "projectId" | "creatorId"> => {
+  ): Omit<IssueCreate, "projectId" | "creatorId"> => {
     const payload: any = {};
 
     return {
