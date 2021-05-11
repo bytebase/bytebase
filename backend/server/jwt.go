@@ -17,8 +17,8 @@ import (
 
 const (
 	issuer               = "bytebase"
-	accessTokenAudience  = "bb.principal.access"
-	refreshTokenAudience = "bb.principal.refresh"
+	accessTokenAudience  = "bb.user.access"
+	refreshTokenAudience = "bb.user.refresh"
 
 	// Cookie section
 	accessTokenCookieName  = "access-token"
