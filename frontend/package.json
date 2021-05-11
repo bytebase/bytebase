@@ -19,7 +19,7 @@
     "focus-visible": "^5.2.0",
     "highlight.js": "^10.6.0",
     "inter-ui": "^3.15.0",
-    "lodash-es": "^4.17.20",
+    "lodash-es": "^4.17.21",
     "miragejs": "^0.1.41",
     "moment": "^2.29.1",
     "postcss": "^7",
