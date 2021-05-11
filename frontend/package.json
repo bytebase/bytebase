@@ -12,7 +12,6 @@
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
-    "@types/uuid": "^8.3.0",
     "autoprefixer": "^9",
     "axios": "^0.21.1",
     "faker": "^5.1.0",
@@ -33,6 +32,7 @@
     "vuex": "^4.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^8.3.0",
     "@types/faker": "^5.1.7",
     "@types/lodash-es": "^4.17.4",
     "@types/slug": "^0.9.1",
