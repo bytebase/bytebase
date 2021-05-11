@@ -16,7 +16,9 @@ import (
 )
 
 const (
-	issuer = "bytebase"
+	issuer               = "bytebase"
+	accessTokenAudience  = "bb.principal.access"
+	refreshTokenAudience = "bb.principal.refresh"
 
 	accessTokenCookieName  = "access-token"
 	refreshTokenCookieName = "refresh-token"
@@ -80,20 +82,21 @@ func GenerateTokensAndSetCookies(user *api.Principal, c echo.Context) error {
 
 func generateAccessToken(user *api.Principal) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
-	return generateToken(user, expirationTime, []byte(getJWTSecret()))
+	return generateToken(user, accessTokenAudience, expirationTime, []byte(getJWTSecret()))
 }
 
 func generateRefreshToken(user *api.Principal) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
-	return generateToken(user, expirationTime, []byte(getRefreshJWTSecret()))
+	return generateToken(user, refreshTokenAudience, expirationTime, []byte(getRefreshJWTSecret()))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(user *api.Principal, expirationTime time.Time, secret []byte) (string, error) {
+func generateToken(user *api.Principal, aud string, expirationTime time.Time, secret []byte) (string, error) {
 	// Create the JWT claims, which includes the username and expiry time.
 	claims := &Claims{
 		Name: user.Name,
 		StandardClaims: jwt.StandardClaims{
+			Audience: aud,
 			// In JWT, the expiry time is expressed as unix milliseconds.
 			ExpiresAt: expirationTime.Unix(),
 			IssuedAt:  time.Now().Unix(),
