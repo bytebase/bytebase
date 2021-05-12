@@ -105,7 +105,10 @@ axios.interceptors.request.use((request) => {
   }
 
   if (isDev() && request.url!.startsWith("/api")) {
-    console.log("Request", JSON.stringify(request, null, 2));
+    console.log(
+      request.method?.toUpperCase() + " " + request.url + " request",
+      JSON.stringify(request, null, 2)
+    );
   }
 
   return request;
@@ -113,8 +116,14 @@ axios.interceptors.request.use((request) => {
 
 axios.interceptors.response.use(
   (response) => {
-    if (isDev() && !response.config.url!.startsWith("/mock")) {
-      console.log("Response", JSON.stringify(response, null, 2));
+    if (isDev() && response.config.url!.startsWith("/api")) {
+      console.log(
+        response.config.method?.toUpperCase() +
+          " " +
+          response.config.url +
+          " response",
+        JSON.stringify(response.data, null, 2)
+      );
     }
     return response;
   },
