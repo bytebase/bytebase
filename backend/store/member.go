@@ -227,22 +227,22 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 
 // patchMember updates a member by ID. Returns the new state of the member after update.
 func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Member, error) {
-	member := api.Member{}
-	// Update fields, if set.
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.Role; v != nil {
-		member.Role = api.Role(*v)
+		set, args = append(set, "role = ?"), append(args, api.Role(*v))
 	}
+
+	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
 	row, err := tx.QueryContext(ctx, `
 		UPDATE member
-		SET role = ?, updater_id = ?
+		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
 	`,
-		member.Role,
-		patch.UpdaterId,
-		patch.ID,
+		args...,
 	)
 	if err != nil {
 		return nil, FormatError(err)
