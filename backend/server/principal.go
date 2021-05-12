@@ -40,7 +40,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 
 	g.GET("/principal", func(c echo.Context) error {
-		list, err := s.PrincipalService.FindPrincipalList(context.Background(), &api.PrincipalFilter{})
+		list, err := s.PrincipalService.FindPrincipalList(context.Background(), &api.PrincipalFind{})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
@@ -58,10 +58,10 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		principalFilter := &api.PrincipalFilter{
+		principalFind := &api.PrincipalFind{
 			ID: &id,
 		}
-		principal, err := s.PrincipalService.FindPrincipal(context.Background(), principalFilter)
+		principal, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -82,12 +82,14 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		principalPatch := &api.PrincipalPatch{UpdaterId: c.Get(GetPrincipalIdContextKey()).(int)}
+		principalPatch := &api.PrincipalPatch{
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int)}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request").SetInternal(err)
 		}
 
-		principal, err := s.PrincipalService.PatchPrincipalByID(context.Background(), id, principalPatch)
+		principal, err := s.PrincipalService.PatchPrincipalByID(context.Background(), principalPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))

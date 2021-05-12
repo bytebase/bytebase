@@ -45,14 +45,14 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 }
 
 // FindPrincipalList retrieves a list of principals.
-func (s *PrincipalService) FindPrincipalList(ctx context.Context, filter *api.PrincipalFilter) ([]*api.Principal, error) {
+func (s *PrincipalService) FindPrincipalList(ctx context.Context, find *api.PrincipalFind) ([]*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, filter)
+	list, err := findPrincipalList(ctx, tx, find)
 	if err != nil {
 		return []*api.Principal{}, err
 	}
@@ -60,21 +60,21 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context, filter *api.Pr
 	return list, nil
 }
 
-// FindPrincipal retrieves a principal based on filter.
+// FindPrincipal retrieves a principal based on find.
 // Returns ENOTFOUND if no matching record.
 // Returns the first matching one and prints a warning if finding more than 1 matching records.
-func (s *PrincipalService) FindPrincipal(ctx context.Context, filter *api.PrincipalFilter) (*api.Principal, error) {
+func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, filter)
+	list, err := findPrincipalList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal not found: %v", filter)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal not found: %v", find)}
 	} else if len(list) > 1 {
 		s.l.Logf(bytebase.WARN, "found mulitple principals: %d, expect 1", len(list))
 	}
@@ -83,14 +83,14 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, filter *api.Princi
 
 // PatchPrincipalByID updates an existing principal by ID.
 // Returns ENOTFOUND if principal does not exist.
-func (s *PrincipalService) PatchPrincipalByID(ctx context.Context, id int, patch *api.PrincipalPatch) (*api.Principal, error) {
+func (s *PrincipalService) PatchPrincipalByID(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	principal, err := patchPrincipal(ctx, tx, id, patch)
+	principal, err := patchPrincipal(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -152,13 +152,13 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 	return &principal, nil
 }
 
-func findPrincipalList(ctx context.Context, tx *Tx, filter *api.PrincipalFilter) (_ []*api.Principal, err error) {
+func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ []*api.Principal, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := filter.ID; v != nil {
+	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := filter.Email; v != nil {
+	if v := find.Email; v != nil {
 		where, args = append(where, "email = ?"), append(args, *v)
 	}
 
@@ -212,7 +212,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, filter *api.PrincipalFilter)
 }
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
-func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPatch) (*api.Principal, error) {
+func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
 	principal := api.Principal{}
 	// Update fields, if set.
 	if v := patch.Name; v != nil {
@@ -228,7 +228,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 	`,
 		principal.Name,
 		patch.UpdaterId,
-		id,
+		patch.ID,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -255,5 +255,5 @@ func patchPrincipal(ctx context.Context, tx *Tx, id int, patch *api.PrincipalPat
 		return &principal, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal ID not found: %d", id)}
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal ID not found: %d", patch.ID)}
 }

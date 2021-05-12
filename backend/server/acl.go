@@ -25,11 +25,11 @@ func ACLMiddleware(l *bytebase.Logger, m api.MemberService, ce *casbin.Enforcer,
 		principalId := c.Get(GetPrincipalIdContextKey()).(int)
 
 		wsId := api.DEFAULT_WORKPSACE_ID
-		memberFilter := &api.MemberFilter{
+		memberFind := &api.MemberFind{
 			WorkspaceId: &wsId,
 			PrincipalId: &principalId,
 		}
-		member, err := m.FindMember(context.Background(), memberFilter)
+		member, err := m.FindMember(context.Background(), memberFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalId))

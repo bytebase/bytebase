@@ -38,10 +38,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 	g.GET("/member", func(c echo.Context) error {
 		wsId := api.DEFAULT_WORKPSACE_ID
-		memberFilter := &api.MemberFilter{
+		memberFind := &api.MemberFind{
 			WorkspaceId: &wsId,
 		}
-		list, err := s.MemberService.FindMemberList(context.Background(), memberFilter)
+		list, err := s.MemberService.FindMemberList(context.Background(), memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
 		}
@@ -60,13 +60,15 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		memberPatch := &api.MemberPatch{
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			ID:          id,
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
 		}
 
-		member, err := s.MemberService.PatchMemberByID(context.Background(), id, memberPatch)
+		member, err := s.MemberService.PatchMemberByID(context.Background(), memberPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))
@@ -88,9 +90,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		memberDelete := &api.MemberDelete{
+			ID:        id,
 			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
-		err = s.MemberService.DeleteMemberByID(context.Background(), id, memberDelete)
+		err = s.MemberService.DeleteMemberByID(context.Background(), memberDelete)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))

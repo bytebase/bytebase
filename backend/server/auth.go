@@ -19,10 +19,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
 		}
 
-		principalFilter := &api.PrincipalFilter{
+		principalFind := &api.PrincipalFind{
 			Email: &login.Email,
 		}
-		user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFilter)
+		user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Email not found: %s", login.Email))

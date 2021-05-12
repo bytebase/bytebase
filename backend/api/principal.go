@@ -73,7 +73,7 @@ type PrincipalCreate struct {
 	PasswordHash string
 }
 
-type PrincipalFilter struct {
+type PrincipalFind struct {
 	// Standard fields
 	ID *int
 
@@ -83,6 +83,7 @@ type PrincipalFilter struct {
 
 type PrincipalPatch struct {
 	// Standard fields
+	ID int
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
 
@@ -92,7 +93,7 @@ type PrincipalPatch struct {
 
 type PrincipalService interface {
 	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
-	FindPrincipalList(ctx context.Context, filter *PrincipalFilter) ([]*Principal, error)
-	FindPrincipal(ctx context.Context, filter *PrincipalFilter) (*Principal, error)
-	PatchPrincipalByID(ctx context.Context, id int, patch *PrincipalPatch) (*Principal, error)
+	FindPrincipalList(ctx context.Context, find *PrincipalFind) ([]*Principal, error)
+	FindPrincipal(ctx context.Context, find *PrincipalFind) (*Principal, error)
+	PatchPrincipalByID(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
 }

@@ -48,7 +48,7 @@ type MemberCreate struct {
 	PrincipalId int  `jsonapi:"attr,principalId"`
 }
 
-type MemberFilter struct {
+type MemberFind struct {
 	// Standard fields
 	ID          *int
 	WorkspaceId *int
@@ -59,6 +59,8 @@ type MemberFilter struct {
 
 type MemberPatch struct {
 	// Standard fields
+	ID          int
+	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
 
@@ -68,14 +70,15 @@ type MemberPatch struct {
 
 type MemberDelete struct {
 	// Standard fields
+	ID int
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterId int
 }
 
 type MemberService interface {
 	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
-	FindMemberList(ctx context.Context, filter *MemberFilter) ([]*Member, error)
-	FindMember(ctx context.Context, filter *MemberFilter) (*Member, error)
-	PatchMemberByID(ctx context.Context, id int, patch *MemberPatch) (*Member, error)
-	DeleteMemberByID(ctx context.Context, id int, delete *MemberDelete) error
+	FindMemberList(ctx context.Context, find *MemberFind) ([]*Member, error)
+	FindMember(ctx context.Context, find *MemberFind) (*Member, error)
+	PatchMemberByID(ctx context.Context, patch *MemberPatch) (*Member, error)
+	DeleteMemberByID(ctx context.Context, delete *MemberDelete) error
 }

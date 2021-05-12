@@ -44,15 +44,15 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 	return member, nil
 }
 
-// FindMemberList retrieves a list of members based on filter.
-func (s *MemberService) FindMemberList(ctx context.Context, filter *api.MemberFilter) ([]*api.Member, error) {
+// FindMemberList retrieves a list of members based on find.
+func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := findMemberList(ctx, tx, filter)
+	list, err := findMemberList(ctx, tx, find)
 	if err != nil {
 		return []*api.Member{}, err
 	}
@@ -60,21 +60,21 @@ func (s *MemberService) FindMemberList(ctx context.Context, filter *api.MemberFi
 	return list, nil
 }
 
-// FindMember retrieves a single member based on filter.
+// FindMember retrieves a single member based on find.
 // Returns ENOTFOUND if no matching record.
 // Returns the first matching one and prints a warning if finding more than 1 matching records.
-func (s *MemberService) FindMember(ctx context.Context, filter *api.MemberFilter) (*api.Member, error) {
+func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := findMemberList(ctx, tx, filter)
+	list, err := findMemberList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member not found: %v", filter)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member not found: %v", find)}
 	} else if len(list) > 1 {
 		s.l.Logf(bytebase.WARN, "found mulitple members: %d, expect 1", len(list))
 	}
@@ -83,14 +83,14 @@ func (s *MemberService) FindMember(ctx context.Context, filter *api.MemberFilter
 
 // PatchMemberByID updates an existing member by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *MemberService) PatchMemberByID(ctx context.Context, id int, patch *api.MemberPatch) (*api.Member, error) {
+func (s *MemberService) PatchMemberByID(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	member, err := patchMember(ctx, tx, id, patch)
+	member, err := patchMember(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -104,14 +104,14 @@ func (s *MemberService) PatchMemberByID(ctx context.Context, id int, patch *api.
 
 // DeleteMemberByID deletes an existing member by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *MemberService) DeleteMemberByID(ctx context.Context, id int, delete *api.MemberDelete) error {
+func (s *MemberService) DeleteMemberByID(ctx context.Context, delete *api.MemberDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.Rollback()
 
-	err = deleteMember(ctx, tx, id, delete)
+	err = deleteMember(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
@@ -167,16 +167,16 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 	return &member, nil
 }
 
-func findMemberList(ctx context.Context, tx *Tx, filter *api.MemberFilter) (_ []*api.Member, err error) {
+func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api.Member, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := filter.ID; v != nil {
+	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := filter.WorkspaceId; v != nil {
+	if v := find.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}
-	if v := filter.PrincipalId; v != nil {
+	if v := find.PrincipalId; v != nil {
 		where, args = append(where, "principal_id = ?"), append(args, *v)
 	}
 
@@ -226,7 +226,7 @@ func findMemberList(ctx context.Context, tx *Tx, filter *api.MemberFilter) (_ []
 }
 
 // patchMember updates a member by ID. Returns the new state of the member after update.
-func patchMember(ctx context.Context, tx *Tx, id int, patch *api.MemberPatch) (*api.Member, error) {
+func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Member, error) {
 	member := api.Member{}
 	// Update fields, if set.
 	if v := patch.Role; v != nil {
@@ -242,7 +242,7 @@ func patchMember(ctx context.Context, tx *Tx, id int, patch *api.MemberPatch) (*
 	`,
 		member.Role,
 		patch.UpdaterId,
-		id,
+		patch.ID,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -267,20 +267,20 @@ func patchMember(ctx context.Context, tx *Tx, id int, patch *api.MemberPatch) (*
 		return &member, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", id)}
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", patch.ID)}
 }
 
 // deleteMember permanently deletes a member by ID.
-func deleteMember(ctx context.Context, tx *Tx, id int, delete *api.MemberDelete) error {
+func deleteMember(ctx context.Context, tx *Tx, delete *api.MemberDelete) error {
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM member WHERE id = ?`, id)
+	result, err := tx.ExecContext(ctx, `DELETE FROM member WHERE id = ?`, delete.ID)
 	if err != nil {
 		return FormatError(err)
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", id)}
+		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", delete.ID)}
 	}
 
 	return nil

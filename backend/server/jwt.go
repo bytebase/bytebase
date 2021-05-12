@@ -206,10 +206,10 @@ func JWTMiddleware(l *bytebase.Logger, p api.PrincipalService, next echo.Handler
 			}
 
 			// Even if there is no error, we still need to make sure the user still exists.
-			principalFilter := &api.PrincipalFilter{
+			principalFind := &api.PrincipalFind{
 				ID: &principalId,
 			}
-			user, err := p.FindPrincipal(context.Background(), principalFilter)
+			user, err := p.FindPrincipal(context.Background(), principalFind)
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find to refresh expired token. User ID %d", principalId))
