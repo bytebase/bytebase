@@ -11,16 +11,14 @@ export default {
   async setup() {
     const store = useStore();
 
-    // Group the await to prepare the context in one batch.
-    // If we split the await one by one, the execution flow will be interrupted
-    // by router.beforeEach, which will pre-maturely fetches data relying on the
-    // context here.
+    await store.dispatch("member/fetchMemberList");
+    // fetchPrincipalList relies on fetchMemberList to find the role of the principal.
+    await store.dispatch("principal/fetchPrincipalList");
+    // fetchEnvironmentList relies on fetchPrincipalList to convert the creator/updater id to principal.
+    await store.dispatch("environment/fetchEnvironmentList");
+
+    // This fetching group relies on above result.
     await Promise.all([
-      store.dispatch("member/fetchMemberList"),
-      // fetchPrincipalList relies on fetchMemberList to find the role of the principal.
-      store.dispatch("principal/fetchPrincipalList"),
-      // fetchEnvironmentList relies on fetchPrincipalList to convert the creator/updater id to principal.
-      store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
       store.dispatch("instance/fetchInstanceList"),
