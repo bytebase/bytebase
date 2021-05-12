@@ -149,8 +149,7 @@ CREATE TABLE environment (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL UNIQUE,
-    `order` INTEGER NOT NULL,
-    UNIQUE(workspace_id, `order`)
+    `order` INTEGER NOT NULL
 );
 
 INSERT INTO

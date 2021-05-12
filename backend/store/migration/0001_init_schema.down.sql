@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS environment;
+DROP TABLE environment;
 
 DROP TABLE member;
 

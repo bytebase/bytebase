@@ -21,13 +21,6 @@ export const DEFAULT_PROJECT_ID = "1";
 
 export const ALL_DATABASE_NAME = "*";
 
-export type BatchUpdate = {
-  updaterId: PrincipalId;
-  idList: string[];
-  fieldMaskList: string[];
-  rowValueList: any[][];
-};
-
 // RowStatus
 export type RowStatus = "NORMAL" | "ARCHIVED" | "PENDING_DELETE";
 

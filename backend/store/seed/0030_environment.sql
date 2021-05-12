@@ -8,7 +8,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    ('NORMAL', 1, 1001, 1001, 'Sandbox A', 1);
+    ('NORMAL', 1, 1001, 1001, 'Sandbox A', 0);
 
 INSERT INTO
     environment (
@@ -20,7 +20,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    ('NORMAL', 1, 1001, 1001, 'Integration', 2);
+    ('NORMAL', 1, 1001, 1001, 'Integration', 1);
 
 INSERT INTO
     environment (
@@ -32,7 +32,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    ('NORMAL', 1, 1001, 1001, 'Staging', 3);
+    ('NORMAL', 1, 1001, 1001, 'Staging', 2);
 
 INSERT INTO
     environment (
@@ -44,7 +44,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    ('NORMAL', 1, 1001, 1001, 'Prod', 4);
+    ('NORMAL', 1, 1001, 1001, 'Prod', 3);
 
 INSERT INTO
     environment (
@@ -56,4 +56,4 @@ INSERT INTO
         `order`
     )
 VALUES
-    ('ARCHIVED', 1, 1001, 1001, 'Archived Env 1', 5);
+    ('ARCHIVED', 1, 1001, 1001, 'Archived Env 1', 4);

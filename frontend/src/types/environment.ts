@@ -33,4 +33,5 @@ export type EnvironmentPatch = {
 
   // Domain specific fields
   name?: string;
+  order?: number;
 };

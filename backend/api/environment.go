@@ -3,7 +3,7 @@ package api
 import "context"
 
 type Environment struct {
-	ID string `jsonapi:"primary,principal"`
+	ID int `jsonapi:"primary,environment"`
 
 	// Standard fields
 	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`
@@ -15,7 +15,7 @@ type Environment struct {
 
 	// Domain specific fields
 	Name  string `jsonapi:"attr,name"`
-	Order uint   `jsonapi:"attr,order"`
+	Order int    `jsonapi:"attr,order"`
 }
 
 type EnvironmentCreate struct {
@@ -35,14 +35,15 @@ type EnvironmentFind struct {
 
 type EnvironmentPatch struct {
 	// Standard fields
-	ID          int
+	ID          int     `jsonapi:"primary,environmentpatch"`
 	RowStatus   *string `jsonapi:"attr,rowStatus"`
 	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
 
 	// Domain specific fields
-	Name *string `jsonapi:"attr,name"`
+	Name  *string `jsonapi:"attr,name"`
+	Order *int    `jsonapi:"attr,order"`
 }
 
 type EnvironmentDelete struct {

@@ -72,32 +72,36 @@ export default function configureEnvironment(route) {
     return createdEnvironment;
   });
 
-  route.patch("/environment/batch", function (schema, request) {
-    const attrs = this.normalizedRequestAttrs("batch-update");
-    for (let i = 0; i < attrs.idList.length; i++) {
-      const env = schema.environments.find(attrs.idList[i]);
+  route.patch("/environment/reorder", function (schema, request) {
+    const list = JSON.parse(request.requestBody).data;
+    let updaterId;
+    let updated = false;
+    for (let i = 0; i < list.length; i++) {
+      const env = schema.environments.find(list[i].id);
       if (env) {
+        updaterId = list[i].attributes.updaterId;
         const oneUpdate = {
-          updaterId: attrs.updaterId,
+          updaterId: list[i].attributes.updaterId,
+          order: list[i].attributes.order,
         };
-        for (let j = 0; j < attrs.fieldMaskList.length; j++) {
-          oneUpdate[attrs.fieldMaskList[j]] = attrs.rowValueList[i][j];
-        }
         env.update(oneUpdate);
+        updated = true;
       }
     }
 
-    const ts = Date.now();
-    const messageTemplate = {
-      containerId: WORKSPACE_ID,
-      createdTs: ts,
-      updatedTs: ts,
-      type: "bb.message.environment.reorder",
-      status: "DELIVERED",
-      creatorId: attrs.updaterId,
-      workspaceId: WORKSPACE_ID,
-    };
-    postMessageToOwnerAndDBA(schema, attrs.updaterId, messageTemplate);
+    if (updated) {
+      const ts = Date.now();
+      const messageTemplate = {
+        containerId: WORKSPACE_ID,
+        createdTs: ts,
+        updatedTs: ts,
+        type: "bb.message.environment.reorder",
+        status: "DELIVERED",
+        creatorId: updaterId,
+        workspaceId: WORKSPACE_ID,
+      };
+      postMessageToOwnerAndDBA(schema, updaterId, messageTemplate);
+    }
 
     return schema.environments.where((environment) => {
       return environment.workspaceId == WORKSPACE_ID;

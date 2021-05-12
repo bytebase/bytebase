@@ -32,7 +32,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.
 	}
 	defer tx.Rollback()
 
-	environment, err := createEnvironment(ctx, tx, create)
+	environment, err := s.createEnvironment(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 	}
 	defer tx.Rollback()
 
-	list, err := findEnvironmentList(ctx, tx, find)
+	list, err := s.findEnvironmentList(ctx, tx, find)
 	if err != nil {
 		return []*api.Environment{}, err
 	}
@@ -69,7 +69,7 @@ func (s *EnvironmentService) PatchEnvironmentByID(ctx context.Context, patch *ap
 	}
 	defer tx.Rollback()
 
-	environment, err := patchEnvironment(ctx, tx, patch)
+	environment, err := s.patchEnvironment(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -90,7 +90,7 @@ func (s *EnvironmentService) DeleteEnvironmentByID(ctx context.Context, delete *
 	}
 	defer tx.Rollback()
 
-	err = deleteEnvironment(ctx, tx, delete)
+	err = s.deleteEnvironment(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
@@ -103,7 +103,7 @@ func (s *EnvironmentService) DeleteEnvironmentByID(ctx context.Context, delete *
 }
 
 // createEnvironment creates a new environment.
-func createEnvironment(ctx context.Context, tx *Tx, create *api.EnvironmentCreate) (*api.Environment, error) {
+func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, create *api.EnvironmentCreate) (*api.Environment, error) {
 	// The order is the MAX(order) + 1
 	row1, err1 := tx.QueryContext(ctx, `
 		SELECT `+"`order`"+`
@@ -171,7 +171,7 @@ func createEnvironment(ctx context.Context, tx *Tx, create *api.EnvironmentCreat
 	return &environment, nil
 }
 
-func findEnvironmentList(ctx context.Context, tx *Tx, find *api.EnvironmentFind) (_ []*api.Environment, err error) {
+func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, find *api.EnvironmentFind) (_ []*api.Environment, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.WorkspaceId; v != nil {
@@ -226,7 +226,7 @@ func findEnvironmentList(ctx context.Context, tx *Tx, find *api.EnvironmentFind)
 }
 
 // patchEnvironment updates a environment by ID. Returns the new state of the environment after update.
-func patchEnvironment(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) (*api.Environment, error) {
+func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.RowStatus; v != nil {
@@ -234,6 +234,9 @@ func patchEnvironment(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) 
 	}
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
+	}
+	if v := patch.Order; v != nil {
+		set, args = append(set, "`order` = ?"), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -267,7 +270,6 @@ func patchEnvironment(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) 
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &environment, nil
 	}
 
@@ -275,7 +277,7 @@ func patchEnvironment(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) 
 }
 
 // deleteEnvironment permanently deletes a environment by ID.
-func deleteEnvironment(ctx context.Context, tx *Tx, delete *api.EnvironmentDelete) error {
+func (s *EnvironmentService) deleteEnvironment(ctx context.Context, tx *Tx, delete *api.EnvironmentDelete) error {
 	// Remove row from database.
 	result, err := tx.ExecContext(ctx, `DELETE FROM environment WHERE id = ?`, delete.ID)
 	if err != nil {

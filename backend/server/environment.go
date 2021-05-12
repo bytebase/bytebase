@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -56,7 +57,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.PATCH("/environment/:id", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
 		environmentPatch := &api.EnvironmentPatch{
@@ -103,6 +104,41 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
+	g.PATCH("/environment/reorder", func(c echo.Context) error {
+		patchList, err := jsonapi.UnmarshalManyPayload(c.Request().Body, reflect.TypeOf(new(api.EnvironmentPatch)))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment batch update request").SetInternal(err)
+		}
+
+		for _, item := range patchList {
+			environmentPatch, _ := item.(*api.EnvironmentPatch)
+			environmentPatch.WorkspaceId = api.DEFAULT_WORKPSACE_ID
+			environmentPatch.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
+			_, err = s.EnvironmentService.PatchEnvironmentByID(context.Background(), environmentPatch)
+			if err != nil {
+				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", environmentPatch.ID))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", environmentPatch.ID)).SetInternal(err)
+			}
+		}
+
+		wsId := api.DEFAULT_WORKPSACE_ID
+		environmentFind := &api.EnvironmentFind{
+			WorkspaceId: &wsId,
+		}
+		list, err := s.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for batch update").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal environment batch update response").SetInternal(err)
+		}
 		return nil
 	})
 }

@@ -8,7 +8,6 @@ import {
   unknown,
   RowStatus,
   EnvironmentPatch,
-  BatchUpdate,
   PrincipalId,
   empty,
   EMPTY_ID,
@@ -111,18 +110,20 @@ const actions = {
       orderedEnvironmentList: Environment[];
     }
   ) {
-    const batchUpdate: BatchUpdate = {
-      updaterId,
-      idList: orderedEnvironmentList.map((item) => item.id),
-      fieldMaskList: ["order"],
-      rowValueList: orderedEnvironmentList.map((_, index) => [index]),
-    };
-    const environmentList = (
-      await axios.patch(`/api/environment/batch`, {
-        data: {
-          attributes: batchUpdate,
-          type: "batchupdate",
+    const list: any[] = [];
+    orderedEnvironmentList.forEach((item, index) => {
+      list.push({
+        id: item.id,
+        type: "environmentpatch",
+        attributes: {
+          updaterId,
+          order: index,
         },
+      });
+    });
+    const environmentList = (
+      await axios.patch(`/api/environment/reorder`, {
+        data: list,
       })
     ).data.data.map((env: ResourceObject) => {
       return convert(env, rootGetters);

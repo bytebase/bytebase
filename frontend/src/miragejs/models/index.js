@@ -161,8 +161,6 @@ export default {
   dataSourceMemberCreate: Model,
 
   // Misc
-  batchUpdate: Model,
-
   signupInfo: Model,
 
   loginInfo: Model,
