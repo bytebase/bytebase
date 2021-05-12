@@ -2,3 +2,7 @@ p, DBA, /principal, GET
 p, DBA, /principal/{id}, GET
 p, DBA, /principal/{id}, PATCH_SELF
 p, DBA, /member, GET
+p, OWNER, /environment, POST
+p, OWNER, /environment, GET
+p, OWNER, /environment/{id}, PATCH
+p, OWNER, /environment/{id}, DELETE

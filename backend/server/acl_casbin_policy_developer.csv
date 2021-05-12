@@ -2,3 +2,4 @@ p, DEVELOPER, /principal, GET
 p, DEVELOPER, /principal/{id}, GET
 p, DEVELOPER, /principal/{id}, PATCH_SELF
 p, DEVELOPER, /member, GET
+p, OWNER, /environment, GET

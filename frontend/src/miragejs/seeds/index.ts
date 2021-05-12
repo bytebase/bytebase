@@ -41,6 +41,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList1.push(
       server.create("environment", {
+        id: 1001 + i,
         workspace: workspace1,
         creatorId: ws1Owner.id,
         updaterId: ws1Owner.id,
@@ -53,6 +54,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList2.push(
       server.create("environment", {
+        id: 2001 + i,
         workspace: workspace2,
         creatorId: ws2DBA.id,
         updaterId: ws2DBA.id,
@@ -183,8 +185,7 @@ const workspacesSeeder = (server: any) => {
     name: "Hello, World!",
     description:
       "Welcome to Bytebase, this is the issue interface where DBAs and developers collaborate on database management issues such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this issue by clicking the star icon on the top of this page.",
-    sql:
-      "SELECT 'Welcome'\nFROM engineering\nWHERE role IN ('DBA', 'Developer') AND taste = 'Good';",
+    sql: "SELECT 'Welcome'\nFROM engineering\nWHERE role IN ('DBA', 'Developer') AND taste = 'Good';",
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,

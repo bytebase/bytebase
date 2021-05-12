@@ -41,6 +41,7 @@ func (m *Main) Run() error {
 	server := server.NewServer(m.l)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
+	server.EnvironmentService = store.NewEnvironmentService(m.l, db)
 
 	m.server = server
 	if err := server.Run(); err != nil {
