@@ -136,8 +136,9 @@ export default {
 
     const allowEdit = computed(() => {
       return (
-        (state.environment as Environment).rowStatus == "NORMAL" &&
-        isDBAOrOwner(currentUser.value.role)
+        props.create ||
+        ((state.environment as Environment).rowStatus == "NORMAL" &&
+          isDBAOrOwner(currentUser.value.role))
       );
     });
 
