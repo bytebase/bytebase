@@ -19,3 +19,7 @@ func (e RowStatus) String() string {
 	}
 	return ""
 }
+
+type ResourceObject struct {
+	ID int `jsonapi:"primary,resource-object"`
+}
