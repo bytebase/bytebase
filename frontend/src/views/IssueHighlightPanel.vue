@@ -14,7 +14,7 @@
             class="ml-2 my-0.5 w-full text-lg font-bold"
             :disabled="!allowEdit"
             :required="true"
-            :focusOnMount="$create"
+            :focusOnMount="create"
             :bordered="false"
             :value="state.name"
             :placeholder="'Issue name'"

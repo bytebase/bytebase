@@ -60,7 +60,7 @@ export default function configureProject(route) {
 
   route.post("/project", function (schema, request) {
     const ts = Date.now();
-    const attrs = this.normalizedRequestAttrs("project-new");
+    const attrs = this.normalizedRequestAttrs("project-create");
     const newProject = {
       ...attrs,
       creatorId: attrs.creatorId,
