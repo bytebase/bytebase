@@ -1,5 +1,6 @@
 INSERT INTO
     member (
+        id,
         workspace_id,
         creator_id,
         updater_id,
@@ -7,10 +8,11 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (1, 1001, 1001, 'OWNER', 1001);
+    (2001, 1, 1001, 1001, 'OWNER', 1001);
 
 INSERT INTO
     member (
+        id,
         workspace_id,
         creator_id,
         updater_id,
@@ -18,10 +20,11 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (1001, 1001, 1001, 'OWNER', 1001);
+    (2002, 1, 1001, 1001, 'DBA', 1002);
 
 INSERT INTO
     member (
+        id,
         workspace_id,
         creator_id,
         updater_id,
@@ -29,10 +32,11 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (1, 1001, 1001, 'DBA', 1002);
+    (2003, 1, 1001, 1001, 'DEVELOPER', 1003);
 
 INSERT INTO
     member (
+        id,
         workspace_id,
         creator_id,
         updater_id,
@@ -40,10 +44,11 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (1, 1001, 1001, 'DEVELOPER', 1003);
+    (2004, 1, 1001, 1001, 'DEVELOPER', 1005);
 
 INSERT INTO
     member (
+        id,
         workspace_id,
         creator_id,
         updater_id,
@@ -51,10 +56,11 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (1001, 1001, 1001, 'DBA', 1004);
+    (102001, 1001, 1001, 1001, 'OWNER', 1001);
 
 INSERT INTO
     member (
+        id,
         workspace_id,
         creator_id,
         updater_id,
@@ -62,4 +68,4 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (1, 1001, 1001, 'DEVELOPER', 1005);
+    (102002, 1001, 1001, 1001, 'DBA', 1004);

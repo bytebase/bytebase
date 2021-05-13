@@ -13,6 +13,14 @@ import {
 } from "../../types";
 import { databaseSlug, issueSlug } from "../../utils";
 
+const MEMBER_ID_START = 2001;
+const ENVIRONMENT_ID_START = 3001;
+const INSTANCE_ID_START = 4001;
+const PROJECT_ID_START = 5001;
+const PROJECT_MEMBER_ID_START = 6001;
+
+const WORKSPACE_INTERVAL = 100000;
+
 /*
  * Mirage JS guide on Seeds: https://miragejs.com/docs/data-layer/factories#in-development
  */
@@ -41,7 +49,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList1.push(
       server.create("environment", {
-        id: 2001 + i,
+        id: ENVIRONMENT_ID_START + i,
         workspace: workspace1,
         creatorId: ws1Owner.id,
         updaterId: ws1Owner.id,
@@ -54,7 +62,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList2.push(
       server.create("environment", {
-        id: 102001 + i,
+        id: WORKSPACE_INTERVAL + ENVIRONMENT_ID_START + i,
         workspace: workspace2,
         creatorId: ws2DBA.id,
         updaterId: ws2DBA.id,
@@ -68,7 +76,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     projectList1.push(
       server.create("project", {
-        id: 4001 + i,
+        id: PROJECT_ID_START + i,
         workspace: workspace1,
         rowStatus: i < 4 ? "NORMAL" : "ARCHIVED",
         creatorId: ws1Dev1.id,
@@ -77,6 +85,7 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("projectMember", {
+      id: PROJECT_MEMBER_ID_START + i * 2 + 1,
       workspace: workspace1,
       project: projectList1[i],
       creatorId: ws1DBA.id,
@@ -87,6 +96,7 @@ const workspacesSeeder = (server: any) => {
 
     const userId = i % 2 == 0 ? ws1Owner.id : ws1Dev1.id;
     server.create("projectMember", {
+      id: PROJECT_MEMBER_ID_START + i * 2 + 2,
       workspace: workspace1,
       project: projectList1[i],
       creatorId: ws1Owner.id,
@@ -101,6 +111,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 1; i++) {
     projectList2.push(
       server.create("project", {
+        id: WORKSPACE_INTERVAL + PROJECT_ID_START + i,
         workspace: workspace2,
         creatorId: ws2Dev.id,
         updaterId: ws2Dev.id,
@@ -108,6 +119,7 @@ const workspacesSeeder = (server: any) => {
     );
 
     server.create("projectMember", {
+      id: WORKSPACE_INTERVAL + PROJECT_MEMBER_ID_START + i,
       workspace: workspace2,
       project: projectList2[i],
       creatorId: ws2DBA.id,
@@ -126,7 +138,7 @@ const workspacesSeeder = (server: any) => {
     projectList1,
     ws1DBA,
     DEFAULT_PROJECT_ID,
-    2001
+    INSTANCE_ID_START
   );
 
   const instanceList2 = createInstanceList(
@@ -136,7 +148,7 @@ const workspacesSeeder = (server: any) => {
     projectList2,
     ws2DBA,
     "2",
-    102001
+    WORKSPACE_INTERVAL + INSTANCE_ID_START
   );
 
   // Database

@@ -12,11 +12,11 @@ INSERT INTO
     )
 VALUES
     (
-        3001,
+        4001,
         1001,
         1001,
         1,
-        2001,
+        3001,
         'ON - premise MySQL instance',
         'google.com',
         'localhost',
@@ -37,11 +37,11 @@ INSERT INTO
     )
 VALUES
     (
-        3002,
+        4002,
         1001,
         1001,
         1,
-        2002,
+        3002,
         'AWS RDS instance',
         'google.com',
         '127.0.0.1',
@@ -62,11 +62,11 @@ INSERT INTO
     )
 VALUES
     (
-        3003,
+        4003,
         1001,
         1001,
         1,
-        2003,
+        3003,
         'GCP Cloud SQL instance',
         'google.com',
         '13.24.32.122',
@@ -87,11 +87,11 @@ INSERT INTO
     )
 VALUES
     (
-        3004,
+        4004,
         1001,
         1001,
         1,
-        2004,
+        3004,
         'Azure SQL instance',
         'google.com',
         'mydb.com',
@@ -112,11 +112,11 @@ INSERT INTO
     )
 VALUES
     (
-        3005,
+        4005,
         1001,
         1001,
         1,
-        2004,
+        3004,
         'AliCloud RDS instance',
         'google.com',
         'rds.com',

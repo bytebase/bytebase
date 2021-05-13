@@ -8,7 +8,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    (2001, 1, 1001, 1001, 'Sandbox A', 0);
+    (3001, 1, 1001, 1001, 'Sandbox A', 0);
 
 INSERT INTO
     environment (
@@ -20,7 +20,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    (2002, 1, 1001, 1001, 'Integration', 1);
+    (3002, 1, 1001, 1001, 'Integration', 1);
 
 INSERT INTO
     environment (
@@ -32,7 +32,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    (2003, 1, 1001, 1001, 'Staging', 2);
+    (3003, 1, 1001, 1001, 'Staging', 2);
 
 INSERT INTO
     environment (
@@ -44,7 +44,7 @@ INSERT INTO
         `order`
     )
 VALUES
-    (2004, 1, 1001, 1001, 'Prod', 3);
+    (3004, 1, 1001, 1001, 'Prod', 3);
 
 INSERT INTO
     environment (
@@ -58,7 +58,7 @@ INSERT INTO
     )
 VALUES
     (
-        2005,
+        3005,
         'ARCHIVED',
         1,
         1001,

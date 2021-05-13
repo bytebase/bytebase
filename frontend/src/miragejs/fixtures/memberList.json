@@ -11,16 +11,6 @@
   },
   {
     "id": "2",
-    "workspaceId": "101",
-    "updaterId": "1001",
-    "updatedTs": 1614657600000,
-    "creatorId": "1001",
-    "createdTs": 1614614400000,
-    "role": "DEVELOPER",
-    "principalId": "1001"
-  },
-  {
-    "id": "3",
     "workspaceId": "1",
     "updaterId": "1001",
     "updatedTs": 1614744000000,
@@ -30,7 +20,7 @@
     "principalId": "1002"
   },
   {
-    "id": "4",
+    "id": "3",
     "workspaceId": "1",
     "updaterId": "1001",
     "updatedTs": 1609473600000,
@@ -38,6 +28,16 @@
     "createdTs": 1609430400000,
     "role": "DEVELOPER",
     "principalId": "1003"
+  },
+  {
+    "id": "4",
+    "workspaceId": "1",
+    "updaterId": "1001",
+    "updatedTs": 1609646400000,
+    "creatorId": "1001",
+    "createdTs": 1609603200000,
+    "role": "DEVELOPER",
+    "principalId": "1005"
   },
   {
     "id": "5",
@@ -51,12 +51,12 @@
   },
   {
     "id": "6",
-    "workspaceId": "1",
+    "workspaceId": "101",
     "updaterId": "1001",
-    "updatedTs": 1609646400000,
+    "updatedTs": 1614657600000,
     "creatorId": "1001",
-    "createdTs": 1609603200000,
+    "createdTs": 1614614400000,
     "role": "DEVELOPER",
-    "principalId": "1005"
+    "principalId": "1001"
   }
 ]
