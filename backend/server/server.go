@@ -23,6 +23,7 @@ type Server struct {
 	MemberService      api.MemberService
 	EnvironmentService api.EnvironmentService
 	InstanceService    api.InstanceService
+	ProjectService     api.ProjectService
 
 	e *echo.Echo
 }
@@ -109,6 +110,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerMemberRoutes(g)
 	s.registerEnvironmentRoutes(g)
 	s.registerInstanceRoutes(g)
+	s.registerProjectRoutes(g)
 
 	return s
 }

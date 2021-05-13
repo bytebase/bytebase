@@ -15,3 +15,7 @@ p, OWNER, /instance, POST
 p, OWNER, /instance, GET
 p, OWNER, /instance/{id}, GET
 p, OWNER, /instance/{id}, PATCH
+p, OWNER, /project, POST
+p, OWNER, /project, GET
+p, OWNER, /project/{id}, GET
+p, OWNER, /project/{id}, PATCH

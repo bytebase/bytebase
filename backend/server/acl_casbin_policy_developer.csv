@@ -3,5 +3,9 @@ p, DEVELOPER, /principal/{id}, GET
 p, DEVELOPER, /principal/{id}, PATCH_SELF
 p, DEVELOPER, /member, GET
 p, DEVELOPER, /environment, GET
-p, OWNER, /instance, GET
-p, OWNER, /instance/{id}, GET
+p, DEVELOPER, /instance, GET
+p, DEVELOPER, /instance/{id}, GET
+p, DEVELOPER, /project, POST
+p, DEVELOPER, /project, GET
+p, DEVELOPER, /project/{id}, GET
+p, DEVELOPER, /project/{id}, PATCH

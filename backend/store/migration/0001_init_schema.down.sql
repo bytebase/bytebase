@@ -1,4 +1,6 @@
-DROP TABLE IF EXISTS instance;
+DROP TABLE project;
+
+DROP TABLE instance;
 
 DROP TABLE environment;
 

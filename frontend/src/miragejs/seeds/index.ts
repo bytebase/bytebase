@@ -54,7 +54,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList2.push(
       server.create("environment", {
-        id: 12001 + i,
+        id: 102001 + i,
         workspace: workspace2,
         creatorId: ws2DBA.id,
         updaterId: ws2DBA.id,
@@ -68,6 +68,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     projectList1.push(
       server.create("project", {
+        id: 4001 + i,
         workspace: workspace1,
         rowStatus: i < 4 ? "NORMAL" : "ARCHIVED",
         creatorId: ws1Dev1.id,
@@ -135,7 +136,7 @@ const workspacesSeeder = (server: any) => {
     projectList2,
     ws2DBA,
     "2",
-    12001
+    102001
   );
 
   // Database

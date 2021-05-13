@@ -6,7 +6,11 @@ p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
 p, DBA, /environment/{id}, DELETE
-p, OWNER, /instance, POST
-p, OWNER, /instance, GET
-p, OWNER, /instance/{id}, GET
-p, OWNER, /instance/{id}, PATCH
+p, DBA, /instance, POST
+p, DBA, /instance, GET
+p, DBA, /instance/{id}, GET
+p, DBA, /instance/{id}, PATCH
+p, DBA, /project, POST
+p, DBA, /project, GET
+p, DBA, /project/{id}, GET
+p, DBA, /project/{id}, PATCH

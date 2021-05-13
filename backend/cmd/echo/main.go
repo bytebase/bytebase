@@ -43,6 +43,7 @@ func (m *Main) Run() error {
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.EnvironmentService = store.NewEnvironmentService(m.l, db)
 	server.InstanceService = store.NewInstanceService(m.l, db)
+	server.ProjectService = store.NewProjectService(m.l, db)
 
 	m.server = server
 	if err := server.Run(); err != nil {
