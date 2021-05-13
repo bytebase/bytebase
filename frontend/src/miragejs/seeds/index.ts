@@ -77,6 +77,8 @@ const workspacesSeeder = (server: any) => {
     projectList1.push(
       server.create("project", {
         id: PROJECT_ID_START + i,
+        name: "Project " + (i + 1),
+        key: "PRJ" + (i + 1),
         workspace: workspace1,
         rowStatus: i < 4 ? "NORMAL" : "ARCHIVED",
         creatorId: ws1Dev1.id,
@@ -112,6 +114,8 @@ const workspacesSeeder = (server: any) => {
     projectList2.push(
       server.create("project", {
         id: WORKSPACE_INTERVAL + PROJECT_ID_START + i,
+        name: "Project " + (i + 1),
+        key: "PRJ" + (i + 1),
         workspace: workspace2,
         creatorId: ws2Dev.id,
         updaterId: ws2Dev.id,

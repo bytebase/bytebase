@@ -19,11 +19,12 @@ import (
 type Server struct {
 	l *bytebase.Logger
 
-	PrincipalService   api.PrincipalService
-	MemberService      api.MemberService
-	EnvironmentService api.EnvironmentService
-	InstanceService    api.InstanceService
-	ProjectService     api.ProjectService
+	PrincipalService     api.PrincipalService
+	MemberService        api.MemberService
+	EnvironmentService   api.EnvironmentService
+	InstanceService      api.InstanceService
+	ProjectService       api.ProjectService
+	ProjectMemberService api.ProjectMemberService
 
 	e *echo.Echo
 }
@@ -111,6 +112,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerEnvironmentRoutes(g)
 	s.registerInstanceRoutes(g)
 	s.registerProjectRoutes(g)
+	s.registerProjectMemberRoutes(g)
 
 	return s
 }

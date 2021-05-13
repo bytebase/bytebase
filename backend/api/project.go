@@ -3,10 +3,10 @@ package api
 import "context"
 
 type Project struct {
-	ID string `jsonapi:"primary,project"`
+	ID int `jsonapi:"primary,project"`
 
 	// Related fields
-	ProjectMemberList *ResourceObject `jsonapi:"relation,environment"`
+	ProjectMemberList []*ProjectMember `jsonapi:"relation,environment"`
 
 	// Standard fields
 	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`

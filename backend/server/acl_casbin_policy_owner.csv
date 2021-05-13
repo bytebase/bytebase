@@ -19,3 +19,6 @@ p, OWNER, /project, POST
 p, OWNER, /project, GET
 p, OWNER, /project/{id}, GET
 p, OWNER, /project/{id}, PATCH
+p, OWNER, /project/{projectId}/member, POST
+p, OWNER, /project/{projectId}/member/{memberId}, PATCH
+p, OWNER, /project/{projectId}/member/{memberId}, DELETE

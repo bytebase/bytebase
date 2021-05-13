@@ -46,6 +46,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
+		for _, project := range list {
+			projectMemberFind := &api.ProjectMemberFind{
+				ProjectId: &project.ID,
+			}
+			project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(context.Background(), projectMemberFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+			}
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
@@ -68,6 +78,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+		}
+
+		projectMemberFind := &api.ProjectMemberFind{
+			ProjectId: &project.ID,
+		}
+		project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(context.Background(), projectMemberFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

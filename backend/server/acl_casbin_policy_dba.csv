@@ -14,3 +14,6 @@ p, DBA, /project, POST
 p, DBA, /project, GET
 p, DBA, /project/{id}, GET
 p, DBA, /project/{id}, PATCH
+p, DBA, /project/{projectId}/member, POST
+p, DBA, /project/{projectId}/member/{memberId}, PATCH
+p, DBA, /project/{projectId}/member/{memberId}, DELETE

@@ -1,3 +1,5 @@
+DROP TABLE project_member;
+
 DROP TABLE project;
 
 DROP TABLE instance;

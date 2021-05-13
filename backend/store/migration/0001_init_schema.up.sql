@@ -265,3 +265,38 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- Project member table stores the workspace project membership
+CREATE TABLE project_member (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    `role` TEXT NOT NULL CHECK (`role` IN ('OWNER', 'DEVELOPER')),
+    principal_id INTEGER NOT NULL REFERENCES principal (id),
+    UNIQUE(project_id, principal_id)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('project_member', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_project_member_modification_time`
+AFTER
+UPDATE
+    ON `project_member` FOR EACH ROW BEGIN
+UPDATE
+    `project_member`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
