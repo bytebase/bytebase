@@ -158,7 +158,7 @@ const mutations = {
       issueId,
       activityList,
     }: {
-      issueId: PrincipalId;
+      issueId: IssueId;
       activityList: Activity[];
     }
   ) {
