@@ -6,3 +6,7 @@ p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
 p, DBA, /environment/{id}, DELETE
+p, OWNER, /instance, POST
+p, OWNER, /instance, GET
+p, OWNER, /instance/{id}, GET
+p, OWNER, /instance/{id}, PATCH

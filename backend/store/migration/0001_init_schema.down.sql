@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS instance;
+
 DROP TABLE environment;
 
 DROP TABLE member;

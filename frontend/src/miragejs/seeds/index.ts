@@ -41,7 +41,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList1.push(
       server.create("environment", {
-        id: 1001 + i,
+        id: 2001 + i,
         workspace: workspace1,
         creatorId: ws1Owner.id,
         updaterId: ws1Owner.id,
@@ -54,7 +54,7 @@ const workspacesSeeder = (server: any) => {
   for (let i = 0; i < 5; i++) {
     environmentList2.push(
       server.create("environment", {
-        id: 2001 + i,
+        id: 12001 + i,
         workspace: workspace2,
         creatorId: ws2DBA.id,
         updaterId: ws2DBA.id,
@@ -124,7 +124,8 @@ const workspacesSeeder = (server: any) => {
     environmentList1,
     projectList1,
     ws1DBA,
-    DEFAULT_PROJECT_ID
+    DEFAULT_PROJECT_ID,
+    2001
   );
 
   const instanceList2 = createInstanceList(
@@ -133,7 +134,8 @@ const workspacesSeeder = (server: any) => {
     environmentList2,
     projectList2,
     ws2DBA,
-    "2"
+    "2",
+    12001
   );
 
   // Database
@@ -813,7 +815,8 @@ const createInstanceList = (
   enviromentList: { id: string }[],
   projectList: { id: string }[],
   dba: { id: string },
-  defaultProjectId: ProjectId
+  defaultProjectId: ProjectId,
+  startInstanceId: number
 ): Instance[] => {
   const instanceNamelist = [
     "On-premise MySQL instance",
@@ -826,6 +829,7 @@ const createInstanceList = (
   const instanceList = [];
   for (let i = 0; i < 5; i++) {
     const instance = server.create("instance", {
+      id: startInstanceId + i,
       workspaceId: workspaceId,
       name:
         instanceNamelist[Math.floor(Math.random() * instanceNamelist.length)] +
