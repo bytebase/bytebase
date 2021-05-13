@@ -130,14 +130,13 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 	// Insert row into database.
 	row2, err2 := tx.QueryContext(ctx, `
 		INSERT INTO environment (
-			row_status,
 			workspace_id,
 			creator_id,
 			updater_id,
 			name,
 			`+"`order`"+`
 		)
-		VALUES ('NORMAL', ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, row_status, workspace_id, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`"+`
 	`,
 		create.WorkspaceId,

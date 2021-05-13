@@ -1,7 +1,6 @@
 INSERT INTO
     instance (
         id,
-        row_status,
         creator_id,
         updater_id,
         workspace_id,
@@ -14,7 +13,6 @@ INSERT INTO
 VALUES
     (
         3001,
-        'NORMAL',
         1001,
         1001,
         1,
@@ -28,7 +26,6 @@ VALUES
 INSERT INTO
     instance (
         id,
-        row_status,
         creator_id,
         updater_id,
         workspace_id,
@@ -41,7 +38,6 @@ INSERT INTO
 VALUES
     (
         3002,
-        'NORMAL',
         1001,
         1001,
         1,
@@ -55,7 +51,6 @@ VALUES
 INSERT INTO
     instance (
         id,
-        row_status,
         creator_id,
         updater_id,
         workspace_id,
@@ -68,7 +63,6 @@ INSERT INTO
 VALUES
     (
         3003,
-        'NORMAL',
         1001,
         1001,
         1,
@@ -82,7 +76,6 @@ VALUES
 INSERT INTO
     instance (
         id,
-        row_status,
         creator_id,
         updater_id,
         workspace_id,
@@ -95,7 +88,6 @@ INSERT INTO
 VALUES
     (
         3004,
-        'NORMAL',
         1001,
         1001,
         1,
@@ -109,7 +101,6 @@ VALUES
 INSERT INTO
     instance (
         id,
-        row_status,
         creator_id,
         updater_id,
         workspace_id,
@@ -122,7 +113,6 @@ INSERT INTO
 VALUES
     (
         3005,
-        'NORMAL',
         1001,
         1001,
         1,

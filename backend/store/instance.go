@@ -107,7 +107,6 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance (
-			row_status,
 			creator_id,
 			updater_id,
 			workspace_id,
@@ -117,10 +116,9 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 			host,
 			port
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, external_link, host, port
 	`,
-		"NORMAL",
 		create.CreatorId,
 		create.CreatorId,
 		create.WorkspaceId,
@@ -283,20 +281,4 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 	}
 
 	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance ID not found: %d", patch.ID)}
-}
-
-// deleteInstance permanently deletes a instance by ID.
-func deleteInstance(ctx context.Context, tx *Tx, delete *api.InstanceDelete) error {
-	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM instance WHERE id = ?`, delete.ID)
-	if err != nil {
-		return FormatError(err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance ID not found: %d", delete.ID)}
-	}
-
-	return nil
 }

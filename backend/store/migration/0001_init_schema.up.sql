@@ -1,6 +1,9 @@
 -- principal
 CREATE TABLE principal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -62,13 +65,13 @@ VALUES
 -- introduce workspace table at that time.
 CREATE TABLE workspace (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    row_status TEXT NOT NULL CHECK (
-        `row_status` IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
-    ),
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL
 );
@@ -97,16 +100,18 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        row_status,
         slug,
         name
     )
 VALUES
-    (1, 1, 1, 'NORMAL', '', 'Default workspace');
+    (1, 1, 1, '', 'Default workspace');
 
 -- Member table stores the workspace membership
 CREATE TABLE member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
     workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -142,7 +147,7 @@ CREATE TABLE environment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
-    ),
+    ) DEFAULT 'NORMAL',
     workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -175,7 +180,7 @@ CREATE TABLE instance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
-    ),
+    ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
