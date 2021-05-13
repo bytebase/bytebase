@@ -51,7 +51,7 @@ type InstanceFind struct {
 
 type InstancePatch struct {
 	// Standard fields
-	ID          int     `jsonapi:"primary,instancepatch"`
+	ID          int     `jsonapi:"primary,instance-patch"`
 	RowStatus   *string `jsonapi:"attr,rowStatus"`
 	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.

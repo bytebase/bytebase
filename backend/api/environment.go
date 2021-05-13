@@ -35,7 +35,7 @@ type EnvironmentFind struct {
 
 type EnvironmentPatch struct {
 	// Standard fields
-	ID          int     `jsonapi:"primary,environmentpatch"`
+	ID          int     `jsonapi:"primary,environment-patch"`
 	RowStatus   *string `jsonapi:"attr,rowStatus"`
 	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
