@@ -66,13 +66,6 @@ type InstancePatch struct {
 	Password     *string `jsonapi:"attr,password"`
 }
 
-type InstanceDelete struct {
-	// Standard fields
-	ID int
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
-}
-
 type InstanceService interface {
 	CreateInstance(ctx context.Context, create *InstanceCreate) (*Instance, error)
 	FindInstanceList(ctx context.Context, find *InstanceFind) ([]*Instance, error)
