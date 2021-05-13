@@ -40,15 +40,17 @@ export default {
         currentUser.value.id,
         "NORMAL"
       );
-      return projectList.map(
-        (item: Project): BBOutlineItem => {
+      return projectList
+        .map((item: Project): BBOutlineItem => {
           return {
             id: item.id,
             name: projectName(item),
             link: `/project/${projectSlug(item)}`,
           };
-        }
-      );
+        })
+        .sort((a: any, b: any) => {
+          return a.name.localeCompare(b.name);
+        });
     });
 
     return {

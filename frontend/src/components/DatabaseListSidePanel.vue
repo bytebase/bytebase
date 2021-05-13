@@ -52,7 +52,9 @@ export default {
       for (const environment of environmentList.value) {
         envToDbMap.set(environment.id, []);
       }
-      for (const database of databaseList.value) {
+      for (const database of databaseList.value.sort((a: any, b: any) => {
+        return a.name.localeCompare(b.name);
+      })) {
         const dbList = envToDbMap.get(database.instance.environment.id)!;
         // dbList may be undefined if the environment is archived
         if (dbList) {
@@ -68,16 +70,14 @@ export default {
         .filter((environment: Environment) => {
           return envToDbMap.get(environment.id)!.length > 0;
         })
-        .map(
-          (environment: Environment): BBOutlineItem => {
-            return {
-              id: "env." + environment.id,
-              name: environmentName(environment),
-              childList: envToDbMap.get(environment.id),
-              childCollapse: true,
-            };
-          }
-        );
+        .map((environment: Environment): BBOutlineItem => {
+          return {
+            id: "env." + environment.id,
+            name: environmentName(environment),
+            childList: envToDbMap.get(environment.id),
+            childCollapse: true,
+          };
+        });
     });
 
     return {
