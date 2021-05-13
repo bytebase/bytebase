@@ -14,10 +14,10 @@ import {
 import { databaseSlug, issueSlug } from "../../utils";
 
 const MEMBER_ID_START = 2001;
-const ENVIRONMENT_ID_START = 3001;
-const INSTANCE_ID_START = 4001;
-const PROJECT_ID_START = 5001;
-const PROJECT_MEMBER_ID_START = 6001;
+const PROJECT_ID_START = 3001;
+const PROJECT_MEMBER_ID_START = 4001;
+const ENVIRONMENT_ID_START = 5001;
+const INSTANCE_ID_START = 6001;
 
 const WORKSPACE_INTERVAL = 100000;
 

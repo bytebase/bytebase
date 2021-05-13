@@ -176,43 +176,6 @@ WHERE
 
 END;
 
--- Instance table stores the workspace instance
-CREATE TABLE instance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
-    ) DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
-    environment_id INTEGER NOT NULL REFERENCES environment (id),
-    name TEXT NOT NULL,
-    external_link TEXT NOT NULL,
-    host TEXT NOT NULL,
-    port TEXT NOT NULL,
-    UNIQUE(workspace_id, name)
-);
-
-INSERT INTO
-    sqlite_sequence (name, seq)
-VALUES
-    ('instance', 1000);
-
-CREATE TRIGGER IF NOT EXISTS `trigger_update_instance_modification_time`
-AFTER
-UPDATE
-    ON `instance` FOR EACH ROW BEGIN
-UPDATE
-    `instance`
-SET
-    updated_ts = (strftime('%s', 'now'))
-WHERE
-    rowid = old.rowid;
-
-END;
-
 -- Project table stores the workspace project
 CREATE TABLE project (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -294,6 +257,43 @@ UPDATE
     ON `project_member` FOR EACH ROW BEGIN
 UPDATE
     `project_member`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- Instance table stores the workspace instance
+CREATE TABLE instance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    environment_id INTEGER NOT NULL REFERENCES environment (id),
+    name TEXT NOT NULL,
+    external_link TEXT NOT NULL,
+    host TEXT NOT NULL,
+    port TEXT NOT NULL,
+    UNIQUE(workspace_id, name)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('instance', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_instance_modification_time`
+AFTER
+UPDATE
+    ON `instance` FOR EACH ROW BEGIN
+UPDATE
+    `instance`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

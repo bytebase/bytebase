@@ -1,115 +1,106 @@
+-- Project 5001 membership
 INSERT INTO
-    project (
+    project_member (
         id,
         creator_id,
         updater_id,
         workspace_id,
-        name,
-        `key`
+        project_id,
+        `role`,
+        principal_id
     )
 VALUES
     (
-        5001,
+        4001,
         1001,
         1001,
         1,
-        'project 1',
-        'PRJ1'
+        3001,
+        'OWNER',
+        1002
     );
 
 INSERT INTO
-    project (
+    project_member (
         id,
         creator_id,
         updater_id,
         workspace_id,
-        name,
-        `key`
+        project_id,
+        `role`,
+        principal_id
     )
 VALUES
     (
-        5002,
+        4002,
         1001,
         1001,
         1,
-        'project 2',
-        'PRJ2'
+        3001,
+        'DEVELOPER',
+        1001
     );
 
 INSERT INTO
-    project (
+    project_member (
         id,
         creator_id,
         updater_id,
         workspace_id,
-        name,
-        `key`
+        project_id,
+        `role`,
+        principal_id
     )
 VALUES
     (
-        5003,
+        4003,
         1001,
         1001,
         1,
-        'project 3',
-        'PRJ3'
+        3001,
+        'DEVELOPER',
+        1003
     );
 
+-- Project 5002 membership
 INSERT INTO
-    project (
+    project_member (
         id,
         creator_id,
         updater_id,
         workspace_id,
-        name,
-        `key`
+        project_id,
+        `role`,
+        principal_id
     )
 VALUES
     (
-        5004,
+        4004,
         1001,
         1001,
         1,
-        'project 4',
-        'PRJ4'
+        3002,
+        'OWNER',
+        1001
     );
 
 INSERT INTO
-    project (
+    project_member (
         id,
-        row_status,
         creator_id,
         updater_id,
         workspace_id,
-        name,
-        `key`
+        project_id,
+        `role`,
+        principal_id
     )
 VALUES
     (
-        5005,
-        'ARCHIVED',
+        4005,
         1001,
         1001,
         1,
-        'project 5',
-        'PRJ5'
-    );
-
-INSERT INTO
-    project (
-        id,
-        creator_id,
-        updater_id,
-        workspace_id,
-        name,
-        `key`
-    )
-VALUES
-    (
-        5006,
-        1001,
-        1001,
-        1001,
-        'ws2 project 1',
-        'PRJ1'
+        3002,
+        'DEVELOPER',
+        1003
     );
