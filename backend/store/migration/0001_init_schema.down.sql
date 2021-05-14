@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS data_source;
+
+DROP TABLE db;
+
 DROP TABLE instance;
 
 DROP TABLE environment;

@@ -21,10 +21,12 @@ type Server struct {
 
 	PrincipalService     api.PrincipalService
 	MemberService        api.MemberService
-	EnvironmentService   api.EnvironmentService
-	InstanceService      api.InstanceService
 	ProjectService       api.ProjectService
 	ProjectMemberService api.ProjectMemberService
+	EnvironmentService   api.EnvironmentService
+	InstanceService      api.InstanceService
+	DatabaseService      api.DatabaseService
+	DataSourceService    api.DataSourceService
 
 	e *echo.Echo
 }
@@ -109,10 +111,11 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerAuthRoutes(g)
 	s.registerPrincipalRoutes(g)
 	s.registerMemberRoutes(g)
-	s.registerEnvironmentRoutes(g)
-	s.registerInstanceRoutes(g)
 	s.registerProjectRoutes(g)
 	s.registerProjectMemberRoutes(g)
+	s.registerEnvironmentRoutes(g)
+	s.registerInstanceRoutes(g)
+	s.registerDatabaseRoutes(g)
 
 	return s
 }

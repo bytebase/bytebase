@@ -30,6 +30,7 @@ type EnvironmentCreate struct {
 
 type EnvironmentFind struct {
 	// Standard fields
+	ID          *int
 	WorkspaceId *int
 }
 
@@ -56,6 +57,7 @@ type EnvironmentDelete struct {
 type EnvironmentService interface {
 	CreateEnvironment(ctx context.Context, create *EnvironmentCreate) (*Environment, error)
 	FindEnvironmentList(ctx context.Context, find *EnvironmentFind) ([]*Environment, error)
+	FindEnvironment(ctx context.Context, find *EnvironmentFind) (*Environment, error)
 	PatchEnvironmentByID(ctx context.Context, patch *EnvironmentPatch) (*Environment, error)
 	DeleteEnvironmentByID(ctx context.Context, delete *EnvironmentDelete) error
 }

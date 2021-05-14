@@ -3,10 +3,12 @@ package api
 import "context"
 
 type Instance struct {
-	ID string `jsonapi:"primary,instance"`
+	ID int `jsonapi:"primary,instance"`
 
 	// Related fields
-	Environment *ResourceObject `jsonapi:"relation,environment"`
+	EnvironmentId  int
+	Environment    *Environment  `jsonapi:"relation,environment"`
+	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
 
 	// Standard fields
 	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`
@@ -21,8 +23,8 @@ type Instance struct {
 	ExternalLink string `jsonapi:"attr,externalLink"`
 	Host         string `jsonapi:"attr,host"`
 	Port         string `jsonapi:"attr,port"`
-	Username     string `jsonapi:"attr,username"`
-	Password     string `jsonapi:"attr,password"`
+	// Username     string `jsonapi:"attr,username"`
+	// Password     string `jsonapi:"attr,password"`
 }
 
 type InstanceCreate struct {
@@ -51,7 +53,7 @@ type InstanceFind struct {
 
 type InstancePatch struct {
 	// Standard fields
-	ID          int     `jsonapi:"primary,instance-patch"`
+	ID          int     `jsonapi:"primary,instancePatch"`
 	RowStatus   *string `jsonapi:"attr,rowStatus"`
 	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.

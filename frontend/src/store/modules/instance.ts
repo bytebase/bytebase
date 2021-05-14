@@ -187,7 +187,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/instance/${instanceId}?include=dataSource`, {
         data: {
-          type: "instancepatch",
+          type: "instancePatch",
           attributes: instancePatch,
         },
       })

@@ -2,9 +2,6 @@ p, DEVELOPER, /principal, GET
 p, DEVELOPER, /principal/{id}, GET
 p, DEVELOPER, /principal/{id}, PATCH_SELF
 p, DEVELOPER, /member, GET
-p, DEVELOPER, /environment, GET
-p, DEVELOPER, /instance, GET
-p, DEVELOPER, /instance/{id}, GET
 p, DEVELOPER, /project, POST
 p, DEVELOPER, /project, GET
 p, DEVELOPER, /project/{id}, GET
@@ -12,3 +9,10 @@ p, DEVELOPER, /project/{id}, PATCH
 p, DEVELOPER, /project/{projectId}/member, POST
 p, DEVELOPER, /project/{projectId}/member/{memberId}, PATCH
 p, DEVELOPER, /project/{projectId}/member/{memberId}, DELETE
+p, DEVELOPER, /environment, GET
+p, DEVELOPER, /instance, GET
+p, DEVELOPER, /instance/{id}, GET
+p, DEVELOPER, /database, POST
+p, DEVELOPER, /database, GET
+p, DEVELOPER, /database/{id}, GET
+p, DEVELOPER, /database/{id}, PATCH

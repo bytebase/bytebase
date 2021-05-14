@@ -60,6 +60,27 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 	return list, nil
 }
 
+// FindEnvironment retrieves a single environment based on find.
+// Returns ENOTFOUND if no matching record.
+// Returns the first matching one and prints a warning if finding more than 1 matching records.
+func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) (*api.Environment, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := s.findEnvironmentList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("enviornment not found: %v", find)}
+	} else if len(list) > 1 {
+		s.l.Logf(bytebase.WARN, "found mulitple environments: %d, expect 1", len(list))
+	}
+	return list[0], nil
+}
+
 // PatchEnvironmentByID updates an existing environment by ID.
 // Returns ENOTFOUND if environment does not exist.
 func (s *EnvironmentService) PatchEnvironmentByID(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
@@ -173,6 +194,9 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, find *api.EnvironmentFind) (_ []*api.Environment, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
 	if v := find.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}

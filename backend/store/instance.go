@@ -136,7 +136,6 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 
 	row.Next()
 	var instance api.Instance
-	instance.Environment = &api.ResourceObject{}
 	if err := row.Scan(
 		&instance.ID,
 		&instance.RowStatus,
@@ -145,7 +144,7 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 		&instance.UpdaterId,
 		&instance.UpdatedTs,
 		&instance.WorkspaceId,
-		&instance.Environment.ID,
+		&instance.EnvironmentId,
 		&instance.Name,
 		&instance.ExternalLink,
 		&instance.Host,
@@ -194,7 +193,6 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 	list := make([]*api.Instance, 0)
 	for rows.Next() {
 		var instance api.Instance
-		instance.Environment = &api.ResourceObject{}
 		if err := rows.Scan(
 			&instance.ID,
 			&instance.RowStatus,
@@ -203,7 +201,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 			&instance.UpdaterId,
 			&instance.UpdatedTs,
 			&instance.WorkspaceId,
-			&instance.Environment.ID,
+			&instance.EnvironmentId,
 			&instance.Name,
 			&instance.ExternalLink,
 			&instance.Host,
@@ -259,7 +257,6 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 
 	if row.Next() {
 		var instance api.Instance
-		instance.Environment = &api.ResourceObject{}
 		if err := row.Scan(
 			&instance.ID,
 			&instance.RowStatus,
@@ -268,7 +265,7 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 			&instance.UpdaterId,
 			&instance.UpdatedTs,
 			&instance.WorkspaceId,
-			&instance.Environment.ID,
+			&instance.EnvironmentId,
 			&instance.Name,
 			&instance.ExternalLink,
 			&instance.Host,

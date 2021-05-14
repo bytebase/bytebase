@@ -691,6 +691,7 @@ router.beforeEach((to, from, next) => {
           name: "error.404",
           replace: false,
         });
+        throw error;
       });
     return;
   }
@@ -710,6 +711,7 @@ router.beforeEach((to, from, next) => {
           name: "error.404",
           replace: false,
         });
+        throw error;
       });
     return;
   }
@@ -743,6 +745,7 @@ router.beforeEach((to, from, next) => {
                 name: "error.404",
                 replace: false,
               });
+              throw error;
             });
         }
       })
@@ -751,6 +754,7 @@ router.beforeEach((to, from, next) => {
           name: "error.404",
           replace: false,
         });
+        throw error;
       });
     return;
   }
@@ -766,6 +770,7 @@ router.beforeEach((to, from, next) => {
           name: "error.404",
           replace: false,
         });
+        throw error;
       });
     return;
   }
@@ -781,6 +786,7 @@ router.beforeEach((to, from, next) => {
           name: "error.404",
           replace: false,
         });
+        throw error;
       });
     return;
   }

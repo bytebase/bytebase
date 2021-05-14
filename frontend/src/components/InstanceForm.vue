@@ -276,7 +276,6 @@ import { instanceSlug, isDBAOrOwner } from "../utils";
 import {
   Instance,
   InstanceCreate,
-  DataSourceCreate,
   UNKNOWN_ID,
   Principal,
   InstancePatch,

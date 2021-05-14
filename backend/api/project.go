@@ -6,7 +6,7 @@ type Project struct {
 	ID int `jsonapi:"primary,project"`
 
 	// Related fields
-	ProjectMemberList []*ProjectMember `jsonapi:"relation,environment"`
+	ProjectMemberList []*ProjectMember `jsonapi:"relation,project-member-list"`
 
 	// Standard fields
 	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`
