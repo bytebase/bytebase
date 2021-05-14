@@ -166,6 +166,10 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 		where, args = append(where, "instance_id = ?"), append(args, *v)
 	}
 
+	if !find.IncludeAllDatabase {
+		where = append(where, "name != '"+api.ALL_DATABASE_NAME+"'")
+	}
+
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
 		    id,

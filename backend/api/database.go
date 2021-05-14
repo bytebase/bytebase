@@ -2,6 +2,8 @@ package api
 
 import "context"
 
+const ALL_DATABASE_NAME = "*"
+
 type SyncStatus string
 
 const (
@@ -63,9 +65,10 @@ type DatabaseCreate struct {
 
 type DatabaseFind struct {
 	// Standard fields
-	ID          *int
-	WorkspaceId *int
-	InstanceId  *int
+	ID                 *int
+	WorkspaceId        *int
+	InstanceId         *int
+	IncludeAllDatabase bool
 }
 
 type DatabasePatch struct {
