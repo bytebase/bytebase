@@ -61,19 +61,6 @@ func getFileSystem() http.FileSystem {
 func NewServer(logger *bytebase.Logger) *Server {
 	e := echo.New()
 
-	// Middleware
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Skipper: func(c echo.Context) bool {
-			return !strings.HasPrefix(c.Path(), "/api")
-		},
-		Format: `{"time":"${time_rfc3339}",` +
-			`"method":"${method}","uri":"${uri}",` +
-			`"status":${status},"error":"${error}"}` + "\n",
-	}))
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return RecoverMiddleware(logger, next)
-	})
-
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
 	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
 	e.GET("/*", func(c echo.Context) error {
@@ -90,8 +77,25 @@ func NewServer(logger *bytebase.Logger) *Server {
 
 	g := e.Group("/api")
 
+	// Middleware
+	g.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			return !strings.HasPrefix(c.Path(), "/api")
+		},
+		Format: `{"time":"${time_rfc3339}",` +
+			`"method":"${method}","uri":"${uri}",` +
+			`"status":${status},"error":"${error}"}` + "\n",
+	}))
+	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return RecoverMiddleware(logger, next)
+	})
+
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(logger, s.PrincipalService, next)
+	})
+
+	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return RequestMiddleware(logger, next)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)

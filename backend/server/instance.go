@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -29,7 +30,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.AddInstanceRelationship(context.Background(), instance); err != nil {
+		if err := s.AddInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -51,7 +52,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			if err := s.AddInstanceRelationship(context.Background(), instance); err != nil {
+			if err := s.AddInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -69,7 +70,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.FindInstanceById(context.Background(), id)
+		instance, err := s.FindInstanceById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -140,7 +141,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.AddInstanceRelationship(context.Background(), instance); err != nil {
+		if err := s.AddInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -152,7 +153,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindInstanceById(ctx context.Context, id int) (*api.Instance, error) {
+func (s *Server) FindInstanceById(ctx context.Context, id int, incluedList []string) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -164,29 +165,33 @@ func (s *Server) FindInstanceById(ctx context.Context, id int) (*api.Instance, e
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddInstanceRelationship(ctx, instance); err != nil {
+	if err := s.AddInstanceRelationship(ctx, instance, incluedList); err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) AddInstanceRelationship(ctx context.Context, instance *api.Instance) error {
+func (s *Server) AddInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
 	var err error
-	environmentFind := &api.EnvironmentFind{
-		ID: &instance.EnvironmentId,
-	}
-	instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
+	if sort.SearchStrings(includeList, "environment") >= 0 {
+		environmentFind := &api.EnvironmentFind{
+			ID: &instance.EnvironmentId,
+		}
+		instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
+		}
 	}
 
-	dataSourceFind := &api.DataSourceFind{
-		InstanceId: &instance.ID,
-	}
-	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+	if sort.SearchStrings(includeList, "dataSource") >= 0 {
+		dataSourceFind := &api.DataSourceFind{
+			InstanceId: &instance.ID,
+		}
+		instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+		}
 	}
 
 	return nil

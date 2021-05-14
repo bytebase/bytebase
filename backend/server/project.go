@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -27,7 +28,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
-		if err := s.AddProjectRelationship(context.Background(), project); err != nil {
+		if err := s.AddProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -49,7 +50,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, project := range list {
-			if err := s.AddProjectRelationship(context.Background(), project); err != nil {
+			if err := s.AddProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -67,7 +68,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		project, err := s.FindProjectById(context.Background(), id)
+		project, err := s.FindProjectById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -102,7 +103,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.AddProjectRelationship(context.Background(), project); err != nil {
+		if err := s.AddProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -114,7 +115,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindProjectById(ctx context.Context, id int) (*api.Project, error) {
+func (s *Server) FindProjectById(ctx context.Context, id int, includeList []string) (*api.Project, error) {
 	projectFind := &api.ProjectFind{
 		ID: &id,
 	}
@@ -126,21 +127,23 @@ func (s *Server) FindProjectById(ctx context.Context, id int) (*api.Project, err
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddProjectRelationship(ctx, project); err != nil {
+	if err := s.AddProjectRelationship(ctx, project, includeList); err != nil {
 		return nil, err
 	}
 
 	return project, nil
 }
 
-func (s *Server) AddProjectRelationship(ctx context.Context, project *api.Project) error {
+func (s *Server) AddProjectRelationship(ctx context.Context, project *api.Project, includeList []string) error {
 	var err error
-	projectMemberFind := &api.ProjectMemberFind{
-		ProjectId: &project.ID,
-	}
-	project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+	if sort.SearchStrings(includeList, "projectMember") >= 0 {
+		projectMemberFind := &api.ProjectMemberFind{
+			ProjectId: &project.ID,
+		}
+		project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+		}
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -29,7 +30,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
 		}
 
-		if err := s.AddDatabaseRelationship(context.Background(), database); err != nil {
+		if err := s.AddDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -58,7 +59,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		for _, database := range list {
-			if err := s.AddDatabaseRelationship(context.Background(), database); err != nil {
+			if err := s.AddDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -76,7 +77,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.FindDatabaseById(context.Background(), id)
+		database, err := s.FindDatabaseById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -111,7 +112,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.AddDatabaseRelationship(context.Background(), database); err != nil {
+		if err := s.AddDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -123,7 +124,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindDatabaseById(ctx context.Context, id int) (*api.Database, error) {
+func (s *Server) FindDatabaseById(ctx context.Context, id int, includeList []string) (*api.Database, error) {
 	databaseFind := &api.DatabaseFind{
 		ID: &id,
 	}
@@ -135,37 +136,45 @@ func (s *Server) FindDatabaseById(ctx context.Context, id int) (*api.Database, e
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddDatabaseRelationship(ctx, database); err != nil {
+	if err := s.AddDatabaseRelationship(ctx, database, includeList); err != nil {
 		return nil, err
 	}
 
 	return database, nil
 }
 
-func (s *Server) AddDatabaseRelationship(ctx context.Context, database *api.Database) error {
+func (s *Server) AddDatabaseRelationship(ctx context.Context, database *api.Database, includeList []string) error {
 	var err error
-	database.Project, err = s.FindProjectById(context.Background(), database.ProjectId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
+	if sort.SearchStrings(includeList, "project") >= 0 {
+		database.Project, err = s.FindProjectById(context.Background(), database.ProjectId, includeList)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
+		}
 	}
 
-	instanceFind := &api.InstanceFind{
-		ID: &database.InstanceId,
-	}
-	database.Instance, err = s.InstanceService.FindInstance(context.Background(), instanceFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance for database: %v", database.Name)).SetInternal(err)
-	}
-
-	environmentFind := &api.EnvironmentFind{
-		ID: &database.Instance.EnvironmentId,
-	}
-	database.Instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for database: %v", database.Name)).SetInternal(err)
+	if sort.SearchStrings(includeList, "instance") >= 0 {
+		instanceFind := &api.InstanceFind{
+			ID: &database.InstanceId,
+		}
+		database.Instance, err = s.InstanceService.FindInstance(context.Background(), instanceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance for database: %v", database.Name)).SetInternal(err)
+		}
 	}
 
-	database.DataSourceList = []*api.DataSource{}
+	if sort.SearchStrings(includeList, "environment") >= 0 {
+		environmentFind := &api.EnvironmentFind{
+			ID: &database.Instance.EnvironmentId,
+		}
+		database.Instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for database: %v", database.Name)).SetInternal(err)
+		}
+	}
+
+	if sort.SearchStrings(includeList, "dataSource") >= 0 {
+		database.DataSourceList = []*api.DataSource{}
+	}
 
 	return nil
 }
