@@ -74,10 +74,10 @@ export type IssuePatch = {
   // Domain specific fields
   name?: string;
   description?: string;
+  assigneeId?: PrincipalId;
   subscriberIdList?: PrincipalId[];
   sql?: string;
   rollbackSql?: string;
-  assigneeId?: PrincipalId;
   payload?: IssuePayload;
 };
 

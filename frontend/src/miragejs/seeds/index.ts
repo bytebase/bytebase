@@ -195,7 +195,7 @@ const workspacesSeeder = (server: any) => {
     name: `Pipeline hello world`,
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
-    status: "PENDING",
+    status: "OPEN",
     workspace: workspace1,
   });
 
@@ -218,7 +218,7 @@ const workspacesSeeder = (server: any) => {
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     name: environmentList1[3].name,
-    type: "bb.stage.database.create",
+    type: "bb.stage.schema.update",
     status: "PENDING",
     environmentId: environmentList1[3].id,
     pipeline,

@@ -1,0 +1,135 @@
+package api
+
+import "context"
+
+// Issue status
+type IssueStatus string
+
+const (
+	Issue_Open     IssueStatus = "OPEN"
+	Issue_Done     IssueStatus = "DONE"
+	Issue_Canceled IssueStatus = "CANCELED"
+)
+
+func (e IssueStatus) String() string {
+	switch e {
+	case Issue_Open:
+		return "OPEN"
+	case Issue_Done:
+		return "DONE"
+	case Issue_Canceled:
+		return "CANCELED"
+	}
+	return ""
+}
+
+// Issue type
+type IssueType string
+
+const (
+	IssueGeneral              IssueType = "bb.general"
+	IssueDatabaseCreate       IssueType = "bb.database.create"
+	IssueDatabaseGrant        IssueType = "bb.database.grant"
+	IssueDatabaseSchemaUpdate IssueType = "bb.database.schema.update"
+	IssueDataSourceRequest    IssueType = "bb.data-source.request"
+)
+
+func (e IssueType) String() string {
+	switch e {
+	case IssueGeneral:
+		return "bb.general"
+	case IssueDatabaseCreate:
+		return "bb.database.create"
+	case IssueDatabaseGrant:
+		return "bb.database.grant"
+	case IssueDatabaseSchemaUpdate:
+		return "bb.database.schema.update"
+	case IssueDataSourceRequest:
+		return "bb.data-source.request"
+	}
+	return "bb.unknown"
+}
+
+type Issue struct {
+	ID int `jsonapi:"primary,issue"`
+
+	// Standard fields
+	CreatorId   int   `jsonapi:"attr,creatorId"`
+	CreatedTs   int64 `jsonapi:"attr,createdTs"`
+	UpdaterId   int   `jsonapi:"attr,updaterId"`
+	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	WorkspaceId int
+
+	// Related fields
+	ProjectId  int
+	Project    *Project `jsonapi:"relation,project"`
+	PipelineId int
+	// Pipeline   *Pipeline `jsonapi:"relation,Pipeline"`
+
+	// Domain specific fields
+	Name             string      `jsonapi:"attr,name"`
+	Status           IssueStatus `jsonapi:"attr,status"`
+	Type             IssueType   `jsonapi:"attr,type"`
+	Description      string      `jsonapi:"attr,description"`
+	AssigneeId       int         `jsonapi:"attr,assignee"`
+	SubscriberIdList []int       `jsonapi:"attr,subscriberList"`
+	Sql              string      `jsonapi:"attr,sql"`
+	RollbackSql      string      `jsonapi:"attr,rollbackSql"`
+	Payload          string      `jsonapi:"attr,payload"`
+}
+
+type IssueCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorId   int
+	WorkspaceId int
+
+	// Related fields
+	ProjectId  int `jsonapi:"attr,projectId"`
+	PipelineId int `jsonapi:"attr,pipelineId"`
+
+	// Domain specific fields
+	Name             string    `jsonapi:"attr,name"`
+	Type             IssueType `jsonapi:"attr,type"`
+	Description      string    `jsonapi:"attr,description"`
+	AssigneeId       int       `jsonapi:"attr,assignee"`
+	SubscriberLIdist []int     `jsonapi:"attr,subscriberList"`
+	Sql              string    `jsonapi:"attr,sql"`
+	RollbackSql      string    `jsonapi:"attr,rollbackSql"`
+	Payload          string    `jsonapi:"attr,payload"`
+}
+
+type IssueFind struct {
+	ID *int
+
+	// Standard fields
+	WorkspaceId *int
+}
+
+type IssuePatch struct {
+	ID int `jsonapi:"primary,issuePatch"`
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterId   int
+	WorkspaceId int
+
+	// Related fields
+	ProjectId *int `jsonapi:"attr,projectId"`
+
+	// Domain specific fields
+	Name             *string `jsonapi:"attr,name"`
+	Description      *string `jsonapi:"attr,description"`
+	AssigneeId       *int    `jsonapi:"attr,assignee"`
+	SubscriberIdList *[]int  `jsonapi:"attr,subscriberList"`
+	Sql              *string `jsonapi:"attr,sql"`
+	RollbackSql      *string `jsonapi:"attr,rollbackSql"`
+	Payload          *string `jsonapi:"attr,payload"`
+}
+
+type IssueService interface {
+	CreateIssue(ctx context.Context, create *IssueCreate) (*Issue, error)
+	FindIssueList(ctx context.Context, find *IssueFind) ([]*Issue, error)
+	FindIssue(ctx context.Context, find *IssueFind) (*Issue, error)
+	PatchIssueByID(ctx context.Context, patch *IssuePatch) (*Issue, error)
+}

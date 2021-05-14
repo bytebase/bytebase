@@ -1,4 +1,12 @@
-DROP TABLE IF EXISTS data_source;
+DROP TABLE task;
+
+DROP TABLE stage;
+
+DROP TABLE pipeline;
+
+DROP TABLE issue;
+
+DROP TABLE data_source;
 
 DROP TABLE db;
 

@@ -379,3 +379,148 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-----------------------
+-- Pipeline related BEGIN
+-- pipeline table stores the workspace pipeline 
+CREATE TABLE pipeline (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    name TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED'))
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('pipeline', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_pipeline_modification_time`
+AFTER
+UPDATE
+    ON `pipeline` FOR EACH ROW BEGIN
+UPDATE
+    `pipeline`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- stage table stores the stage for the pipeline
+CREATE TABLE stage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
+    environment_id INTEGER NOT NULL REFERENCES environment (id),
+    name TEXT NOT NULL,
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.stage.%')
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('stage', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_stage_modification_time`
+AFTER
+UPDATE
+    ON `stage` FOR EACH ROW BEGIN
+UPDATE
+    `stage`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- task table stores the task for the stage
+CREATE TABLE task (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
+    stage_id INTEGER NOT NULL REFERENCES stage (id),
+    -- Could be empty for tasks like creating database
+    database_id INTEGER REFERENCES db (id),
+    name TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (
+        `status` IN (
+            'PENDING',
+            'RUNNING',
+            'DONE',
+            'FAILED',
+            "SKIPPED"
+        )
+    ),
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
+    `when` TEXT NOT NULL CHECK (`when` IN ('ON_SUCCESS', 'MANUAL')),
+    payload TEXT NOT NULL DEFAULT ''
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('task', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_task_modification_time`
+AFTER
+UPDATE
+    ON `task` FOR EACH ROW BEGIN
+UPDATE
+    `task`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- Pipeline related END
+-----------------------
+-- issue table stores the workspace issue
+-- Each issue links a pipeline driving the resolution.
+CREATE TABLE issue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
+    name TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED')),
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
+    description TEXT NOT NULL,
+    assignee_id INTEGER REFERENCES principal (id),
+    subscriberList TEXT NOT NULL,
+    `sql` TEXT NOT NULL,
+    rollback_sql TEXT NOT NULL,
+    payload TEXT NOT NULL DEFAULT ''
+);

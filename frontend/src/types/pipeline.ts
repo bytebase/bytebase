@@ -216,8 +216,8 @@ export type Task = {
 
   // Domain specific fields
   name: string;
-  type: TaskType;
   status: TaskStatus;
+  type: TaskType;
   when: TaskWhenType;
   // We may get an empty database for tasks like creating database.
   database: Database;
@@ -230,14 +230,6 @@ export type TaskCreate = {
   type: TaskType;
   when: TaskWhenType;
   databaseId?: DatabaseId;
-};
-
-export type TaskPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
-  // Domain specific fields
-  status: TaskStatus;
 };
 
 export type TaskStatusPatch = {
