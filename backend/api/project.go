@@ -5,16 +5,16 @@ import "context"
 type Project struct {
 	ID int `jsonapi:"primary,project"`
 
-	// Related fields
-	ProjectMemberList []*ProjectMember `jsonapi:"relation,project-member-list"`
-
 	// Standard fields
 	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`
+	CreatorId   int       `jsonapi:"attr,creatorId"`
+	CreatedTs   int64     `jsonapi:"attr,createdTs"`
+	UpdaterId   int       `jsonapi:"attr,updaterId"`
+	UpdatedTs   int64     `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+
+	// Related fields
+	ProjectMemberList []*ProjectMember `jsonapi:"relation,projectMember"`
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
@@ -23,9 +23,9 @@ type Project struct {
 
 type ProjectCreate struct {
 	// Standard fields
-	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorId   int
+	WorkspaceId int
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
@@ -33,18 +33,20 @@ type ProjectCreate struct {
 }
 
 type ProjectFind struct {
+	ID *int
+
 	// Standard fields
-	ID          *int
 	WorkspaceId *int
 }
 
 type ProjectPatch struct {
+	ID int `jsonapi:"primary,projectPatch"`
+
 	// Standard fields
-	ID          int     `jsonapi:"primary,project-patch"`
-	RowStatus   *string `jsonapi:"attr,rowStatus"`
-	WorkspaceId int
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterId   int
+	WorkspaceId int
 
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`

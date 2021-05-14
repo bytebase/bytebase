@@ -20,17 +20,17 @@ func (e ProjectRole) String() string {
 }
 
 type ProjectMember struct {
-	ID string `jsonapi:"primary,project-member"`
-
-	// Related fields
-	Project *ResourceObject `jsonapi:"relation,project"`
+	ID int `jsonapi:"primary,projectMember"`
 
 	// Standard fields
-	WorkspaceId int
 	CreatorId   int   `jsonapi:"attr,creatorId"`
 	CreatedTs   int64 `jsonapi:"attr,createdTs"`
 	UpdaterId   int   `jsonapi:"attr,updaterId"`
 	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	WorkspaceId int
+
+	// Related fields
+	Project *ResourceObject `jsonapi:"relation,project"`
 
 	// Domain specific fields
 	Role        string `jsonapi:"attr,role"`
@@ -38,13 +38,13 @@ type ProjectMember struct {
 }
 
 type ProjectMemberCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorId   int
+	WorkspaceId int
+
 	// Related fields
 	ProjectId int
-
-	// Standard fields
-	WorkspaceId int
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
 
 	// Domain specific fields
 	Role        ProjectRole `jsonapi:"attr,role"`
@@ -52,28 +52,31 @@ type ProjectMemberCreate struct {
 }
 
 type ProjectMemberFind struct {
-	// Related fields
-	ProjectId *int `jsonapi:"attr,projectId"`
+	ID *int
 
 	// Standard fields
-	ID          *int
 	WorkspaceId *int
+
+	// Related fields
+	ProjectId *int
 }
 
 type ProjectMemberPatch struct {
+	ID int
+
 	// Standard fields
-	ID          int
-	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterId   int
+	WorkspaceId int
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
 }
 
 type ProjectMemberDelete struct {
-	// Standard fields
 	ID int
+
+	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterId int
 }

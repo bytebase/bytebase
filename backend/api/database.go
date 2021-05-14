@@ -27,19 +27,19 @@ func (e SyncStatus) String() string {
 type Database struct {
 	ID int `jsonapi:"primary,database"`
 
+	// Standard fields
+	CreatorId   int   `jsonapi:"attr,creatorId"`
+	CreatedTs   int64 `jsonapi:"attr,createdTs"`
+	UpdaterId   int   `jsonapi:"attr,updaterId"`
+	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	WorkspaceId int
+
 	// Related fields
 	Project        *Project `jsonapi:"relation,project"`
 	ProjectId      int
 	Instance       *Instance `jsonapi:"relation,instance"`
 	InstanceId     int
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
-
-	// Standard fields
-	WorkspaceId int
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
 	Name                 string     `jsonapi:"attr,name"`
@@ -49,14 +49,14 @@ type Database struct {
 }
 
 type DatabaseCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorId   int
+	WorkspaceId int
+
 	// Related fields
 	ProjectId  int
 	InstanceId int
-
-	// Standard fields
-	WorkspaceId int
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
 
 	// Domain specific fields
 	Name    string `jsonapi:"attr,name"`
@@ -64,22 +64,28 @@ type DatabaseCreate struct {
 }
 
 type DatabaseFind struct {
+	ID *int
+
 	// Standard fields
-	ID                 *int
-	WorkspaceId        *int
-	InstanceId         *int
+	WorkspaceId *int
+
+	// Related fields
+	InstanceId *int
+
+	// Domain specific fields
 	IncludeAllDatabase bool
 }
 
 type DatabasePatch struct {
-	// Related fields
-	ProjectId *int `jsonapi:"attr,project"`
+	ID int `jsonapi:"primary,database-patch"`
 
 	// Standard fields
-	ID          int `jsonapi:"primary,database-patch"`
-	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterId   int
+	WorkspaceId int
+
+	// Related fields
+	ProjectId *int `jsonapi:"attr,project"`
 }
 
 type DatabaseService interface {

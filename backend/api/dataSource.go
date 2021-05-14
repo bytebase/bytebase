@@ -23,18 +23,18 @@ func (e DataSourceType) String() string {
 }
 
 type DataSource struct {
-	ID int `jsonapi:"primary,data-source"`
-
-	// Related fields
-	Instance *ResourceObject `jsonapi:"relation,instance"`
-	Database *ResourceObject `jsonapi:"relation,database"`
+	ID int `jsonapi:"primary,dataSource"`
 
 	// Standard fields
-	WorkspaceId int
 	CreatorId   int   `jsonapi:"attr,creatorId"`
 	CreatedTs   int64 `jsonapi:"attr,createdTs"`
 	UpdaterId   int   `jsonapi:"attr,updaterId"`
 	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	WorkspaceId int
+
+	// Related fields
+	Instance *ResourceObject `jsonapi:"relation,instance"`
+	Database *ResourceObject `jsonapi:"relation,database"`
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`
@@ -44,14 +44,14 @@ type DataSource struct {
 }
 
 type DataSourceCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorId   int
+	WorkspaceId int
+
 	// Related fields
 	InstanceId int
 	DatabaseId int
-
-	// Standard fields
-	WorkspaceId int
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`
@@ -63,17 +63,22 @@ type DataSourceCreate struct {
 type DataSourceFind struct {
 	// Standard fields
 	WorkspaceId *int
-	InstanceId  *int
-	DatabaseId  *int
-	Type        *DataSourceType
+
+	// Related fields
+	InstanceId *int
+	DatabaseId *int
+
+	// Domain specific fields
+	Type *DataSourceType
 }
 
 type DataSourcePatch struct {
+	ID int `jsonapi:"primary,dataSourcePatch"`
+
 	// Standard fields
-	ID          int `jsonapi:"primary,data-source-patch"`
-	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterId   int
+	WorkspaceId int
 
 	// Domain specific fields
 	Username *string `jsonapi:"attr,username"`

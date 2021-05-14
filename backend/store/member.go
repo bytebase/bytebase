@@ -128,18 +128,18 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO member (
-			workspace_id,
 			creator_id,
 			updater_id,
+			workspace_id,
 			role,
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, role, principal_id
 	`,
+		create.CreatorId,
+		create.CreatorId,
 		create.WorkspaceId,
-		create.CreatorId,
-		create.CreatorId,
 		create.Role,
 		create.PrincipalId,
 	)
@@ -153,11 +153,11 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 	var member api.Member
 	if err := row.Scan(
 		&member.ID,
-		&member.WorkspaceId,
 		&member.CreatorId,
 		&member.CreatedTs,
 		&member.UpdaterId,
 		&member.UpdatedTs,
+		&member.WorkspaceId,
 		&member.Role,
 		&member.PrincipalId,
 	); err != nil {
@@ -183,11 +183,11 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
 		    id,
-			workspace_id,
 		    creator_id,
 		    created_ts,
 		    updater_id,
 		    updated_ts,
+			workspace_id,
 		    role,
 		    principal_id
 		FROM member
@@ -205,11 +205,11 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		var member api.Member
 		if err := rows.Scan(
 			&member.ID,
-			&member.WorkspaceId,
 			&member.CreatorId,
 			&member.CreatedTs,
 			&member.UpdaterId,
 			&member.UpdatedTs,
+			&member.WorkspaceId,
 			&member.Role,
 			&member.PrincipalId,
 		); err != nil {
@@ -240,7 +240,7 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, role, principal_id
 	`,
 		args...,
 	)
@@ -253,11 +253,11 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		var member api.Member
 		if err := row.Scan(
 			&member.ID,
-			&member.WorkspaceId,
 			&member.CreatorId,
 			&member.CreatedTs,
 			&member.UpdaterId,
 			&member.UpdatedTs,
+			&member.WorkspaceId,
 			&member.Role,
 			&member.PrincipalId,
 		); err != nil {

@@ -51,7 +51,7 @@ function convert(
   const memberList: ProjectMember[] = [];
   for (const item of includedList || []) {
     if (
-      item.type == "project-member" &&
+      item.type == "projectMember" &&
       (item.relationships!.project.data as ResourceIdentifier).id == project.id
     ) {
       const member = convertMember(item, rootGetters);

@@ -41,7 +41,7 @@ function convert(
 
   for (const item of includedList || []) {
     if (
-      item.type == "data-source" &&
+      item.type == "dataSource" &&
       item.attributes.type == "ADMIN" &&
       (item.relationships!.instance.data as ResourceIdentifier).id ==
         instance.id

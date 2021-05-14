@@ -112,11 +112,11 @@ CREATE TABLE member (
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
     ) DEFAULT 'NORMAL',
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     `role` TEXT NOT NULL CHECK (
         `role` IN ('OWNER', 'DBA', 'DEVELOPER')
     ),
@@ -148,11 +148,11 @@ CREATE TABLE environment (
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
     ) DEFAULT 'NORMAL',
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     name TEXT NOT NULL,
     `order` INTEGER NOT NULL,
     UNIQUE(workspace_id, name)

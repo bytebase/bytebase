@@ -21,5 +21,5 @@ func (e RowStatus) String() string {
 }
 
 type ResourceObject struct {
-	ID int `jsonapi:"primary,resource-object"`
+	ID int `jsonapi:"primary,resourceObject"`
 }

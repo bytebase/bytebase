@@ -128,19 +128,19 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project_member (
-			workspace_id,
 			creator_id,
 			updater_id,
+			workspace_id,
 			project_id,
 			`+"`role`,"+`
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, role, principal_id
 	`,
+		create.CreatorId,
+		create.CreatorId,
 		create.WorkspaceId,
-		create.CreatorId,
-		create.CreatorId,
 		create.ProjectId,
 		create.Role,
 		create.PrincipalId,
@@ -156,11 +156,11 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 	projectMember.Project = &api.ResourceObject{}
 	if err := row.Scan(
 		&projectMember.ID,
-		&projectMember.WorkspaceId,
 		&projectMember.CreatorId,
 		&projectMember.CreatedTs,
 		&projectMember.UpdaterId,
 		&projectMember.UpdatedTs,
+		&projectMember.WorkspaceId,
 		&projectMember.Project.ID,
 		&projectMember.Role,
 		&projectMember.PrincipalId,
@@ -187,11 +187,11 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
 		    id,
-			workspace_id,
 		    creator_id,
 		    created_ts,
 		    updater_id,
 		    updated_ts,
+			workspace_id,
 			project_id,
 		    role,
 		    principal_id
@@ -211,11 +211,11 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 		projectMember.Project = &api.ResourceObject{}
 		if err := rows.Scan(
 			&projectMember.ID,
-			&projectMember.WorkspaceId,
 			&projectMember.CreatorId,
 			&projectMember.CreatedTs,
 			&projectMember.UpdaterId,
 			&projectMember.UpdatedTs,
+			&projectMember.WorkspaceId,
 			&projectMember.Project.ID,
 			&projectMember.Role,
 			&projectMember.PrincipalId,
@@ -247,7 +247,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, role, principal_id
 	`,
 		args...,
 	)
@@ -261,11 +261,11 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		projectMember.Project = &api.ResourceObject{}
 		if err := row.Scan(
 			&projectMember.ID,
-			&projectMember.WorkspaceId,
 			&projectMember.CreatorId,
 			&projectMember.CreatedTs,
 			&projectMember.UpdaterId,
 			&projectMember.UpdatedTs,
+			&projectMember.WorkspaceId,
 			&projectMember.Project.ID,
 			&projectMember.Role,
 			&projectMember.PrincipalId,

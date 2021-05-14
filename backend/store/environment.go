@@ -151,18 +151,18 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 	// Insert row into database.
 	row2, err2 := tx.QueryContext(ctx, `
 		INSERT INTO environment (
-			workspace_id,
 			creator_id,
 			updater_id,
+			workspace_id,
 			name,
 			`+"`order`"+`
 		)
 		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, row_status, workspace_id, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`order`"+`
 	`,
+		create.CreatorId,
+		create.CreatorId,
 		create.WorkspaceId,
-		create.CreatorId,
-		create.CreatorId,
 		create.Name,
 		order+1,
 	)
@@ -177,11 +177,11 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 	if err := row2.Scan(
 		&environment.ID,
 		&environment.RowStatus,
-		&environment.WorkspaceId,
 		&environment.CreatorId,
 		&environment.CreatedTs,
 		&environment.UpdaterId,
 		&environment.UpdatedTs,
+		&environment.WorkspaceId,
 		&environment.Name,
 		&environment.Order,
 	); err != nil {
@@ -205,11 +205,11 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 		SELECT 
 		    id,
 			row_status,
-			workspace_id,
 		    creator_id,
 		    created_ts,
 		    updater_id,
 		    updated_ts,
+			workspace_id,
 		    name,
 		    `+"`order`"+`
 		FROM environment
@@ -228,11 +228,11 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 		if err := rows.Scan(
 			&environment.ID,
 			&environment.RowStatus,
-			&environment.WorkspaceId,
 			&environment.CreatorId,
 			&environment.CreatedTs,
 			&environment.UpdaterId,
 			&environment.UpdatedTs,
+			&environment.WorkspaceId,
 			&environment.Name,
 			&environment.Order,
 		); err != nil {
@@ -269,7 +269,7 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 		UPDATE environment
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, workspace_id, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`order`"+`
 	`,
 		args...,
 	)
@@ -283,11 +283,11 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 		if err := row.Scan(
 			&environment.ID,
 			&environment.RowStatus,
-			&environment.WorkspaceId,
 			&environment.CreatorId,
 			&environment.CreatedTs,
 			&environment.UpdaterId,
 			&environment.UpdatedTs,
+			&environment.WorkspaceId,
 			&environment.Name,
 			&environment.Order,
 		); err != nil {

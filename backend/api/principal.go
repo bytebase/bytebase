@@ -55,7 +55,7 @@ type Principal struct {
 	Type   PrincipalType   `jsonapi:"attr,type"`
 	Name   string          `jsonapi:"attr,name"`
 	Email  string          `jsonapi:"attr,email"`
-	// Not needed to return to the client
+	// No need to return to the client
 	PasswordHash string
 }
 
@@ -74,7 +74,6 @@ type PrincipalCreate struct {
 }
 
 type PrincipalFind struct {
-	// Standard fields
 	ID *int
 
 	// Domain specific fields
@@ -82,8 +81,9 @@ type PrincipalFind struct {
 }
 
 type PrincipalPatch struct {
-	// Standard fields
 	ID int
+
+	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
 

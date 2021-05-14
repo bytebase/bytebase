@@ -26,11 +26,11 @@ type Member struct {
 	ID int `jsonapi:"primary,principal"`
 
 	// Standard fields
-	WorkspaceId int
 	CreatorId   int   `jsonapi:"attr,creatorId"`
 	CreatedTs   int64 `jsonapi:"attr,createdTs"`
 	UpdaterId   int   `jsonapi:"attr,updaterId"`
 	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	WorkspaceId int
 
 	// Domain specific fields
 	Role        Role `jsonapi:"attr,role"`
@@ -39,9 +39,9 @@ type Member struct {
 
 type MemberCreate struct {
 	// Standard fields
-	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorId   int
+	WorkspaceId int
 
 	// Domain specific fields
 	Role        Role `jsonapi:"attr,role"`
@@ -49,8 +49,9 @@ type MemberCreate struct {
 }
 
 type MemberFind struct {
+	ID *int
+
 	// Standard fields
-	ID          *int
 	WorkspaceId *int
 
 	// Domain specific fields
@@ -58,19 +59,21 @@ type MemberFind struct {
 }
 
 type MemberPatch struct {
+	ID int
+
 	// Standard fields
-	ID          int
-	WorkspaceId int
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterId   int
+	WorkspaceId int
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
 }
 
 type MemberDelete struct {
-	// Standard fields
 	ID int
+
+	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterId int
 }

@@ -107,9 +107,9 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db (
-			workspace_id,
 			creator_id,
 			updater_id,
+			workspace_id,
 			instance_id,
 			project_id,
 			name,
@@ -118,7 +118,7 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 			fingerprint
 		)
 		VALUES (?, ?, ?, ?, ?, ?, 'NOT_FOUND', 0, '')
-		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, sync_status, last_successful_sync, fingerprint
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync, fingerprint
 	`,
 		create.WorkspaceId,
 		create.CreatorId,
@@ -137,11 +137,11 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 	var database api.Database
 	if err := row.Scan(
 		&database.ID,
-		&database.WorkspaceId,
 		&database.CreatorId,
 		&database.CreatedTs,
 		&database.UpdaterId,
 		&database.UpdatedTs,
+		&database.WorkspaceId,
 		&database.InstanceId,
 		&database.ProjectId,
 		&database.Name,
@@ -173,11 +173,11 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
 		    id,
-			workspace_id,
 		    creator_id,
 		    created_ts,
 		    updater_id,
 		    updated_ts,
+			workspace_id,
 			instance_id,
 			project_id,
 		    name,
@@ -199,11 +199,11 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 		var database api.Database
 		if err := rows.Scan(
 			&database.ID,
-			&database.WorkspaceId,
 			&database.CreatorId,
 			&database.CreatedTs,
 			&database.UpdaterId,
 			&database.UpdatedTs,
+			&database.WorkspaceId,
 			&database.InstanceId,
 			&database.ProjectId,
 			&database.Name,
@@ -238,7 +238,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, workspace_id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, sync_status, last_successful_sync, fingerprint
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync, fingerprint
 	`,
 		args...,
 	)
@@ -251,11 +251,11 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		var database api.Database
 		if err := row.Scan(
 			&database.ID,
-			&database.WorkspaceId,
 			&database.CreatorId,
 			&database.CreatedTs,
 			&database.UpdaterId,
 			&database.UpdatedTs,
+			&database.WorkspaceId,
 			&database.InstanceId,
 			&database.ProjectId,
 			&database.Name,
