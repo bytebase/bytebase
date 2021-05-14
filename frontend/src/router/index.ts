@@ -589,7 +589,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const loginUser: Principal = store.getters["auth/currentUser"]();
-  if (to.name === "workspace.environment" || to.name === "workspace.instance") {
+  if (to.name === "workspace.instance") {
     if (isDBAOrOwner(loginUser.role)) {
       next();
     } else {
@@ -650,6 +650,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
+    to.name === "workspace.environment" ||
     to.name?.toString().startsWith("setting")
   ) {
     next();
