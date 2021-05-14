@@ -89,7 +89,7 @@ func (db *DB) Open() (err error) {
 
 // seed loads the seed data for testing
 func (db *DB) seed() error {
-	db.l.Log(bytebase.INFO, "Seeding database...")
+	db.l.Info("Seeding database...")
 	names, err := fs.Glob(seedFS, "seed/*.sql")
 	if err != nil {
 		return err
@@ -107,13 +107,13 @@ func (db *DB) seed() error {
 			return fmt.Errorf("seed error: name=%q err=%w", name, err)
 		}
 	}
-	db.l.Log(bytebase.INFO, "Completed database seeding.")
+	db.l.Info("Completed database seeding.")
 	return nil
 }
 
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
-	db.l.Logf(bytebase.INFO, "Seeding %s...", name)
+	db.l.Infof("Seeding %s...", name)
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
@@ -139,11 +139,11 @@ func (db *DB) seedFile(name string) error {
 // is not re-executed. Migrations run in a transaction to prevent partial
 // migrations.
 func (db *DB) migrate() error {
-	db.l.Log(bytebase.INFO, "Apply database migration if needed...")
+	db.l.Info("Apply database migration if needed...")
 
 	source, err := httpfs.New(http.FS(migrationFS), "migration")
 	if err != nil {
-		db.l.Log(bytebase.FATAL, err)
+		db.l.Fatal(err)
 		return err
 	}
 
@@ -152,7 +152,7 @@ func (db *DB) migrate() error {
 		source,
 		"sqlite3://"+db.DSN)
 	if err != nil {
-		db.l.Log(bytebase.FATAL, err)
+		db.l.Fatal(err)
 		return err
 	}
 
@@ -162,18 +162,18 @@ func (db *DB) migrate() error {
 			return err
 		}
 	}
-	db.l.Logf(bytebase.INFO, "Database version before migration down: %v, dirty: %v", v1, dirty1)
+	db.l.Infof("Database version before migration down: %v, dirty: %v", v1, dirty1)
 
 	if err := m.Down(); err != nil {
 		if err == migrate.ErrNoChange {
-			db.l.Log(bytebase.INFO, "No need to migrate down.")
+			db.l.Info("No need to migrate down.")
 		} else {
 			return fmt.Errorf("migrate down error: %w", err)
 		}
 	}
 
 	v2, dirty2, err := m.Version()
-	db.l.Logf(bytebase.INFO, "Database version before migration up: %v, dirty: %v", v2, dirty2)
+	db.l.Infof("Database version before migration up: %v, dirty: %v", v2, dirty2)
 	if err != nil {
 		if err != migrate.ErrNilVersion {
 			return err
@@ -182,7 +182,7 @@ func (db *DB) migrate() error {
 
 	if err := m.Up(); err != nil {
 		if err == migrate.ErrNoChange {
-			db.l.Log(bytebase.INFO, "No need to migrate up.")
+			db.l.Info("No need to migrate up.")
 		} else {
 			return fmt.Errorf("migrate up error: %w", err)
 		}
@@ -194,9 +194,9 @@ func (db *DB) migrate() error {
 			return err
 		}
 	}
-	db.l.Logf(bytebase.INFO, "Database version after migration: %v, dirty: %v", v3, dirty3)
+	db.l.Infof("Database version after migration: %v, dirty: %v", v3, dirty3)
 
-	db.l.Log(bytebase.INFO, "Completed database migration.")
+	db.l.Info("Completed database migration.")
 
 	return nil
 }

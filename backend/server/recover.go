@@ -25,7 +25,7 @@ func RecoverMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFu
 				length := runtime.Stack(stack, ALL_STACK)
 				msg := fmt.Sprintf("[PANIC RECOVER] %v %s\n", err, stack[:length])
 
-				l.Log(bytebase.ERROR, msg)
+				l.Error(msg)
 
 				c.Error(err)
 			}

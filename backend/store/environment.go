@@ -76,7 +76,7 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("enviornment not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Logf(bytebase.WARN, "found mulitple environments: %d, expect 1", len(list))
+		s.l.Warnf("found mulitple environments: %d, expect 1", len(list))
 	}
 	return list[0], nil
 }

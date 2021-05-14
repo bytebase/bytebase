@@ -247,7 +247,7 @@ func JWTMiddleware(l *bytebase.Logger, p api.PrincipalService, next echo.Handler
 
 					// If we have a valid refresh token, we will generate new access token and refresh token
 					if refreshToken != nil && refreshToken.Valid {
-						l.Log(bytebase.INFO, generateReason)
+						l.Info(generateReason)
 						if err := GenerateTokensAndSetCookies(user, c); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalId)).SetInternal(err)
 						}

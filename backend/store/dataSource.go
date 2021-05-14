@@ -76,7 +76,7 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("data source not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Logf(bytebase.WARN, "found mulitple data sources: %d, expect 1", len(list))
+		s.l.Warnf("found mulitple data sources: %d, expect 1", len(list))
 	}
 	return list[0], nil
 }

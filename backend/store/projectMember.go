@@ -76,7 +76,7 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project member not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Logf(bytebase.WARN, "found mulitple project members: %d, expect 1", len(list))
+		s.l.Warnf("found mulitple project members: %d, expect 1", len(list))
 	}
 	return list[0], nil
 }

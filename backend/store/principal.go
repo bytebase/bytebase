@@ -76,7 +76,7 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Logf(bytebase.WARN, "found mulitple principals: %d, expect 1", len(list))
+		s.l.Warnf("found mulitple principals: %d, expect 1", len(list))
 	}
 	return list[0], nil
 }

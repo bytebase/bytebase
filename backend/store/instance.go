@@ -76,7 +76,7 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Logf(bytebase.WARN, "found mulitple instances: %d, expect 1", len(list))
+		s.l.Warnf("found mulitple instances: %d, expect 1", len(list))
 	}
 	return list[0], nil
 }

@@ -58,17 +58,17 @@ func (m *Main) Run() error {
 
 // Close gracefully stops the program.
 func (m *Main) Close() error {
-	m.l.Log(bytebase.INFO, "Trying to stop bytebase...")
+	m.l.Info("Trying to stop bytebase...")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if m.server != nil {
-		m.l.Log(bytebase.INFO, "Trying to gracefully shutdown server...")
+		m.l.Info("Trying to gracefully shutdown server...")
 		m.server.Shutdown(ctx)
 	}
 
 	if m.db != nil {
-		m.l.Log(bytebase.INFO, "Trying to close database connections...")
+		m.l.Info("Trying to close database connections...")
 		if err := m.db.Close(); err != nil {
 			return err
 		}
@@ -104,5 +104,5 @@ func main() {
 	// Wait for CTRL-C.
 	<-ctx.Done()
 
-	m.l.Log(bytebase.INFO, "Bytebase stopped properly.")
+	m.l.Info("Bytebase stopped properly.")
 }
