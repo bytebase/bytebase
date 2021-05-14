@@ -74,7 +74,7 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("enviornment not found: %v", find)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("environment not found: %v", find)}
 	} else if len(list) > 1 {
 		s.l.Warnf("found mulitple environments: %d, expect 1", len(list))
 	}
@@ -100,27 +100,6 @@ func (s *EnvironmentService) PatchEnvironmentByID(ctx context.Context, patch *ap
 	}
 
 	return environment, nil
-}
-
-// DeleteEnvironmentByID deletes an existing environment by ID.
-// Returns ENOTFOUND if environment does not exist.
-func (s *EnvironmentService) DeleteEnvironmentByID(ctx context.Context, delete *api.EnvironmentDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	err = s.deleteEnvironment(ctx, tx, delete)
-	if err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
 }
 
 // createEnvironment creates a new environment.
@@ -297,20 +276,4 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 	}
 
 	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("environment ID not found: %d", patch.ID)}
-}
-
-// deleteEnvironment permanently deletes a environment by ID.
-func (s *EnvironmentService) deleteEnvironment(ctx context.Context, tx *Tx, delete *api.EnvironmentDelete) error {
-	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM environment WHERE id = ?`, delete.ID)
-	if err != nil {
-		return FormatError(err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("environment ID not found: %d", delete.ID)}
-	}
-
-	return nil
 }

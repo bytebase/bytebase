@@ -160,15 +160,6 @@ const actions = {
 
     return updatedEnvironment;
   },
-
-  async deleteEnvironmentById(
-    { commit }: { state: EnvironmentState; commit: any },
-    id: EnvironmentId
-  ) {
-    await axios.delete(`/api/environment/${id}`);
-
-    commit("deleteEnvironmentById", id);
-  },
 };
 
 const mutations = {
@@ -187,16 +178,6 @@ const mutations = {
       }
 
       state.environmentList.sort((a, b) => a.order - b.order);
-    }
-  },
-
-  deleteEnvironmentById(state: EnvironmentState, environmentId: EnvironmentId) {
-    const i = state.environmentList.findIndex(
-      (item: Environment) => item.id == environmentId
-    );
-
-    if (i >= 0) {
-      state.environmentList.splice(i, 1);
     }
   },
 };

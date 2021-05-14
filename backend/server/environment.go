@@ -84,29 +84,6 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/environment/:id", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
-		}
-
-		environmentDelete := &api.EnvironmentDelete{
-			ID:        id,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
-		}
-		err = s.EnvironmentService.DeleteEnvironmentByID(context.Background(), environmentDelete)
-		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete environment ID: %v", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
-		return nil
-	})
-
 	g.PATCH("/environment/reorder", func(c echo.Context) error {
 		patchList, err := jsonapi.UnmarshalManyPayload(c.Request().Body, reflect.TypeOf(new(api.EnvironmentPatch)))
 		if err != nil {

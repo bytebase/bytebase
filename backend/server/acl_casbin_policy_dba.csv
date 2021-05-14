@@ -12,7 +12,6 @@ p, DBA, /project/{projectId}/member/{memberId}, DELETE
 p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
-p, DBA, /environment/{id}, DELETE
 p, DBA, /instance, POST
 p, DBA, /instance, GET
 p, DBA, /instance/{id}, GET
