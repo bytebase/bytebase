@@ -86,6 +86,7 @@ registerStoreWithRoleUtil(store);
 console.log("dev: ", isDev());
 console.log("mode: ", import.meta.env.MODE);
 
+axios.defaults.timeout = 3000;
 axios.interceptors.request.use((request) => {
   if (request.url!.startsWith("/api")) {
     // For demo version, we always use the mock data.
