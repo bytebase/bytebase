@@ -10,9 +10,12 @@
           ><img class="h-12 w-auto" src="../assets/logo.svg" alt="Bytebase"
         /></router-link>
       </div>
-      <div v-if="showDBAItem" class="hidden sm:block">
+      <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-2">
-          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md"
+          <router-link
+            v-if="showDBAItem"
+            to="/instance"
+            class="bar-link px-2 py-2 rounded-md"
             >Instances</router-link
           >
 
