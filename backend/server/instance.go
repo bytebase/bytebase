@@ -37,9 +37,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
-		wsId := api.DEFAULT_WORKPSACE_ID
+		workspaceId := api.DEFAULT_WORKPSACE_ID
 		instanceFind := &api.InstanceFind{
-			WorkspaceId: &wsId,
+			WorkspaceId: &workspaceId,
 		}
 		list, err := s.InstanceService.FindInstanceList(context.Background(), instanceFind)
 		if err != nil {

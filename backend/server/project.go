@@ -37,9 +37,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project", func(c echo.Context) error {
-		wsId := api.DEFAULT_WORKPSACE_ID
+		workspaceId := api.DEFAULT_WORKPSACE_ID
 		projectFind := &api.ProjectFind{
-			WorkspaceId: &wsId,
+			WorkspaceId: &workspaceId,
 		}
 		list, err := s.ProjectService.FindProjectList(context.Background(), projectFind)
 		if err != nil {

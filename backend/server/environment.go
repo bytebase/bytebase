@@ -38,9 +38,9 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 
 	g.GET("/environment", func(c echo.Context) error {
-		wsId := api.DEFAULT_WORKPSACE_ID
+		workspaceId := api.DEFAULT_WORKPSACE_ID
 		environmentFind := &api.EnvironmentFind{
-			WorkspaceId: &wsId,
+			WorkspaceId: &workspaceId,
 		}
 		list, err := s.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
 		if err != nil {
@@ -126,9 +126,9 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			}
 		}
 
-		wsId := api.DEFAULT_WORKPSACE_ID
+		workspaceId := api.DEFAULT_WORKPSACE_ID
 		environmentFind := &api.EnvironmentFind{
-			WorkspaceId: &wsId,
+			WorkspaceId: &workspaceId,
 		}
 		list, err := s.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
 		if err != nil {

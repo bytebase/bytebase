@@ -37,9 +37,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database", func(c echo.Context) error {
-		wsId := api.DEFAULT_WORKPSACE_ID
+		workspaceId := api.DEFAULT_WORKPSACE_ID
 		databaseFind := &api.DatabaseFind{
-			WorkspaceId: &wsId,
+			WorkspaceId: &workspaceId,
 		}
 		if instanceIdStr := c.QueryParam("instance"); instanceIdStr != "" {
 			instanceId, err := strconv.Atoi(instanceIdStr)

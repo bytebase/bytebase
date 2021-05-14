@@ -37,9 +37,9 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 
 	g.GET("/member", func(c echo.Context) error {
-		wsId := api.DEFAULT_WORKPSACE_ID
+		workspaceId := api.DEFAULT_WORKPSACE_ID
 		memberFind := &api.MemberFind{
-			WorkspaceId: &wsId,
+			WorkspaceId: &workspaceId,
 		}
 		list, err := s.MemberService.FindMemberList(context.Background(), memberFind)
 		if err != nil {
