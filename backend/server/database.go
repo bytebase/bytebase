@@ -62,6 +62,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
 			}
 
+			projectMemberFind := &api.ProjectMemberFind{
+				ProjectId: &database.ProjectId,
+			}
+			database.Project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(context.Background(), projectMemberFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", database.Project.Name)).SetInternal(err)
+			}
+
 			instanceFind := &api.InstanceFind{
 				ID: &database.InstanceId,
 			}
@@ -111,6 +119,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		database.Project, err = s.ProjectService.FindProject(context.Background(), projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
+		}
+
+		projectMemberFind := &api.ProjectMemberFind{
+			ProjectId: &database.ProjectId,
+		}
+		database.Project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(context.Background(), projectMemberFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", database.Project.Name)).SetInternal(err)
 		}
 
 		instanceFind := &api.InstanceFind{
