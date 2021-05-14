@@ -18,15 +18,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
-
 		projectCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-
 		project, err := s.ProjectService.CreateProject(context.Background(), projectCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
+		}
+
+		if err := s.AddProjectRelationship(context.Background(), project); err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -47,12 +49,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, project := range list {
-			projectMemberFind := &api.ProjectMemberFind{
-				ProjectId: &project.ID,
-			}
-			project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(context.Background(), projectMemberFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+			if err := s.AddProjectRelationship(context.Background(), project); err != nil {
+				return err
 			}
 		}
 
@@ -69,23 +67,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		projectFind := &api.ProjectFind{
-			ID: &id,
-		}
-		project, err := s.ProjectService.FindProject(context.Background(), projectFind)
+		project, err := s.FindProjectById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
-		}
-
-		projectMemberFind := &api.ProjectMemberFind{
-			ProjectId: &project.ID,
-		}
-		project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(context.Background(), projectMemberFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -118,10 +102,46 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
 
+		if err := s.AddProjectRelationship(context.Background(), project); err != nil {
+			return err
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project ID response: %v", id)).SetInternal(err)
 		}
 		return nil
 	})
+}
+
+func (s *Server) FindProjectById(ctx context.Context, id int) (*api.Project, error) {
+	projectFind := &api.ProjectFind{
+		ID: &id,
+	}
+	project, err := s.ProjectService.FindProject(ctx, projectFind)
+	if err != nil {
+		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+	}
+
+	if err := s.AddProjectRelationship(ctx, project); err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
+func (s *Server) AddProjectRelationship(ctx context.Context, project *api.Project) error {
+	var err error
+	projectMemberFind := &api.ProjectMemberFind{
+		ProjectId: &project.ID,
+	}
+	project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+	}
+
+	return nil
 }

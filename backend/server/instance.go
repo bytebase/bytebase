@@ -29,6 +29,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
+		if err := s.AddInstanceRelationship(context.Background(), instance); err != nil {
+			return err
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create instance response").SetInternal(err)
@@ -47,12 +51,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			environmentFind := &api.EnvironmentFind{
-				ID: &instance.EnvironmentId,
-			}
-			instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
+			if err := s.AddInstanceRelationship(context.Background(), instance); err != nil {
+				return err
 			}
 		}
 
@@ -69,31 +69,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instanceFind := &api.InstanceFind{
-			ID: &id,
-		}
-		instance, err := s.InstanceService.FindInstance(context.Background(), instanceFind)
+		instance, err := s.FindInstanceById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
-		}
-
-		environmentFind := &api.EnvironmentFind{
-			ID: &instance.EnvironmentId,
-		}
-		instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
-		}
-
-		dataSourceFind := &api.DataSourceFind{
-			InstanceId: &instance.ID,
-		}
-		instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -162,20 +140,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		environmentFind := &api.EnvironmentFind{
-			ID: &instance.EnvironmentId,
-		}
-		instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
-		}
-
-		dataSourceFind := &api.DataSourceFind{
-			InstanceId: &instance.ID,
-		}
-		instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+		if err := s.AddInstanceRelationship(context.Background(), instance); err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -184,4 +150,44 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) FindInstanceById(ctx context.Context, id int) (*api.Instance, error) {
+	instanceFind := &api.InstanceFind{
+		ID: &id,
+	}
+	instance, err := s.InstanceService.FindInstance(context.Background(), instanceFind)
+	if err != nil {
+		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+	}
+
+	if err := s.AddInstanceRelationship(ctx, instance); err != nil {
+		return nil, err
+	}
+
+	return instance, nil
+}
+
+func (s *Server) AddInstanceRelationship(ctx context.Context, instance *api.Instance) error {
+	var err error
+	environmentFind := &api.EnvironmentFind{
+		ID: &instance.EnvironmentId,
+	}
+	instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
+	}
+
+	dataSourceFind := &api.DataSourceFind{
+		InstanceId: &instance.ID,
+	}
+	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+	}
+
+	return nil
 }
