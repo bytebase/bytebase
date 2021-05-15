@@ -201,10 +201,10 @@ const workspacesSeeder = (server: any) => {
 
   let issue = server.create("issue", {
     type: "bb.general",
-    name: "Hello, World!",
+    name: "Hello, World! Demo",
     description:
-      "Welcome to Bytebase, this is the issue interface where DBAs and developers collaborate on database management issues such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this issue by clicking the star icon on the top of this page.",
-    sql: "SELECT 'Welcome'\nFROM engineering\nWHERE role IN ('DBA', 'Developer') AND taste = 'Good';",
+      "Welcome to Bytebase, this is the issue interface where leads, developers and DBAs collaborate on database management issues such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this issue by clicking the star icon on the top of this page.",
+    sql: "SELECT 'Welcome'\nFROM engineering\nWHERE role IN (''Tech Lead'', ''Developer'', ''DBA'') AND taste = 'Good';",
     creatorId: ws1Dev1.id,
     updaterId: ws1Dev1.id,
     assigneeId: ws1Owner.id,
