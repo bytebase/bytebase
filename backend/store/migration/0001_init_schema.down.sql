@@ -1,10 +1,10 @@
+DROP TABLE issue;
+
 DROP TABLE task;
 
 DROP TABLE stage;
 
 DROP TABLE pipeline;
-
-DROP TABLE issue;
 
 DROP TABLE data_source;
 
