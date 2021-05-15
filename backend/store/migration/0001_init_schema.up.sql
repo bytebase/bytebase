@@ -519,7 +519,7 @@ CREATE TABLE issue (
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
     description TEXT NOT NULL,
     assignee_id INTEGER REFERENCES principal (id),
-    subscriberList TEXT NOT NULL,
+    subscriber_id_list TEXT NOT NULL,
     `sql` TEXT NOT NULL,
     rollback_sql TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
