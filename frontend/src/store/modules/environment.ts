@@ -33,6 +33,12 @@ const state: () => EnvironmentState = () => ({
 });
 
 const getters = {
+  convert:
+    (state: EnvironmentState, getters: any, rootState: any, rootGetters: any) =>
+    (environment: ResourceObject): Environment => {
+      return convert(environment, rootGetters);
+    },
+
   environmentList:
     (state: EnvironmentState) =>
     (rowStatusList?: RowStatus[]): Environment[] => {

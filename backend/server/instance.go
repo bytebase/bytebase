@@ -174,14 +174,12 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, incluedList []
 
 func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
 	var err error
-	if sort.SearchStrings(includeList, "environment") >= 0 {
-		environmentFind := &api.EnvironmentFind{
-			ID: &instance.EnvironmentId,
-		}
-		instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
-		}
+	environmentFind := &api.EnvironmentFind{
+		ID: &instance.EnvironmentId,
+	}
+	instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
 	}
 
 	if sort.SearchStrings(includeList, "dataSource") >= 0 {

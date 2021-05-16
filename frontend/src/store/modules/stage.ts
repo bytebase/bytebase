@@ -34,10 +34,11 @@ function convertPartial(
   let updater: Principal = unknown("PRINCIPAL") as Principal;
   updater.id = updaterId;
 
-  // We should always have a valid environment
-  const environment: Environment = rootGetters["environment/environmentById"](
-    (stage.relationships!.environment.data as ResourceIdentifier).id
-  );
+  const environmentId = (
+    stage.relationships!.environment.data as ResourceIdentifier
+  ).id;
+  let environment: Environment = unknown("ENVIRONMENT") as Environment;
+  environment.id = environmentId;
 
   const taskList: Task[] = [];
   for (const item of includedList || []) {
@@ -53,6 +54,14 @@ function convertPartial(
       (stage.relationships!.updater.data as ResourceIdentifier).id == item.id
     ) {
       updater = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "environment" &&
+      (stage.relationships!.environment.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      environment = rootGetters["environment/convert"](item, includedList);
     }
 
     if (item.type == "task") {

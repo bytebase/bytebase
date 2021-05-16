@@ -20,15 +20,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Instance {
-  const environment = rootGetters["environment/environmentList"]([
-    "NORMAL",
-    "ARCHIVED",
-  ]).find((env: Environment) => {
-    return (
-      env.id ==
-      (instance.relationships!.environment.data as ResourceIdentifier).id
-    );
-  });
   const creator = rootGetters["principal/principalById"](
     instance.attributes.creatorId
   );
@@ -36,9 +27,14 @@ function convert(
     instance.attributes.updaterId
   );
 
+  const environmentId = (
+    instance.relationships!.environment.data as ResourceIdentifier
+  ).id;
+  let environment: Environment = unknown("ENVIRONMENT") as Environment;
+  environment.id = environmentId;
+
   let username = undefined;
   let password = undefined;
-
   for (const item of includedList || []) {
     if (
       item.type == "dataSource" &&
@@ -47,7 +43,14 @@ function convert(
     ) {
       username = item.attributes.username as string;
       password = item.attributes.password as string;
-      break;
+    }
+
+    if (
+      item.type == "environment" &&
+      (instance.relationships!.environment.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      environment = rootGetters["environment/convert"](item);
     }
   }
 
@@ -72,8 +75,8 @@ const state: () => InstanceState = () => ({
 const getters = {
   convert:
     (state: InstanceState, getters: any, rootState: any, rootGetters: any) =>
-    (instance: ResourceObject): Instance => {
-      return convert(instance, [], rootGetters);
+    (instance: ResourceObject, includedList: ResourceObject[]): Instance => {
+      return convert(instance, includedList, rootGetters);
     },
 
   instanceList:

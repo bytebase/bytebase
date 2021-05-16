@@ -48,7 +48,7 @@ function convert(
 
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
-      instance = rootGetters["instance/convert"](item);
+      instance = rootGetters["instance/convert"](item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
       project = rootGetters["project/convert"](item, includedList);
