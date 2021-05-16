@@ -43,8 +43,7 @@ function convert(
     if (
       item.type == "dataSource" &&
       item.attributes.type == "ADMIN" &&
-      (item.relationships!.instance.data as ResourceIdentifier).id ==
-        instance.id
+      item.attributes.instanceId == instance.id
     ) {
       username = item.attributes.username as string;
       password = item.attributes.password as string;

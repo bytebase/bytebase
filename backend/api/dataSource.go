@@ -33,8 +33,9 @@ type DataSource struct {
 	WorkspaceId int
 
 	// Related fields
-	Instance *ResourceObject `jsonapi:"relation,instance"`
-	Database *ResourceObject `jsonapi:"relation,database"`
+	// Just returns InstanceId and DatabaseId otherwise would cause circular dependency.
+	InstanceId int `jsonapi:"attr,instanceId"`
+	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`

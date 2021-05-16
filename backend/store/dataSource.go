@@ -138,8 +138,6 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create
 
 	row.Next()
 	var dataSource api.DataSource
-	dataSource.Instance = &api.ResourceObject{}
-	dataSource.Database = &api.ResourceObject{}
 	if err := row.Scan(
 		&dataSource.ID,
 		&dataSource.CreatorId,
@@ -147,8 +145,8 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create
 		&dataSource.UpdaterId,
 		&dataSource.UpdatedTs,
 		&dataSource.WorkspaceId,
-		&dataSource.Instance.ID,
-		&dataSource.Database.ID,
+		&dataSource.InstanceId,
+		&dataSource.DatabaseId,
 		&dataSource.Name,
 		&dataSource.Type,
 		&dataSource.Username,
@@ -203,8 +201,6 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 	list := make([]*api.DataSource, 0)
 	for rows.Next() {
 		var dataSource api.DataSource
-		dataSource.Instance = &api.ResourceObject{}
-		dataSource.Database = &api.ResourceObject{}
 		if err := rows.Scan(
 			&dataSource.ID,
 			&dataSource.CreatorId,
@@ -212,8 +208,8 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 			&dataSource.UpdaterId,
 			&dataSource.UpdatedTs,
 			&dataSource.WorkspaceId,
-			&dataSource.Instance.ID,
-			&dataSource.Database.ID,
+			&dataSource.InstanceId,
+			&dataSource.DatabaseId,
 			&dataSource.Name,
 			&dataSource.Type,
 			&dataSource.Username,
@@ -260,8 +256,6 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 
 	if row.Next() {
 		var dataSource api.DataSource
-		dataSource.Instance = &api.ResourceObject{}
-		dataSource.Database = &api.ResourceObject{}
 		if err := row.Scan(
 			&dataSource.ID,
 			&dataSource.CreatorId,
@@ -269,8 +263,8 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 			&dataSource.UpdaterId,
 			&dataSource.UpdatedTs,
 			&dataSource.WorkspaceId,
-			&dataSource.Instance.ID,
-			&dataSource.Database.ID,
+			&dataSource.InstanceId,
+			&dataSource.DatabaseId,
 			&dataSource.Name,
 			&dataSource.Type,
 			&dataSource.Username,
