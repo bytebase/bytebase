@@ -68,7 +68,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
 		}
 
-		member, err := s.MemberService.PatchMemberByID(context.Background(), memberPatch)
+		member, err := s.MemberService.PatchMember(context.Background(), memberPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))
@@ -93,7 +93,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
-		err = s.MemberService.DeleteMemberByID(context.Background(), memberDelete)
+		err = s.MemberService.DeleteMember(context.Background(), memberDelete)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))

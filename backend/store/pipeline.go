@@ -65,9 +65,9 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	return list[0], nil
 }
 
-// PatchPipelineByID updates an existing pipeline by ID.
+// PatchPipeline updates an existing pipeline by ID.
 // Returns ENOTFOUND if pipeline does not exist.
-func (s *PipelineService) PatchPipelineByID(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
+func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

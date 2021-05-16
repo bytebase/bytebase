@@ -97,7 +97,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch issue request").SetInternal(err)
 		}
 
-		issue, err := s.IssueService.PatchIssueByID(context.Background(), issuePatch)
+		issue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))

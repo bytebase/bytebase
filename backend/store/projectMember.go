@@ -81,9 +81,9 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	return list[0], nil
 }
 
-// PatchProjectMemberByID updates an existing projectMember by ID.
+// PatchProjectMember updates an existing projectMember by ID.
 // Returns ENOTFOUND if projectMember does not exist.
-func (s *ProjectMemberService) PatchProjectMemberByID(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
+func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -102,9 +102,9 @@ func (s *ProjectMemberService) PatchProjectMemberByID(ctx context.Context, patch
 	return projectMember, nil
 }
 
-// DeleteProjectMemberByID deletes an existing projectMember by ID.
+// DeleteProjectMember deletes an existing projectMember by ID.
 // Returns ENOTFOUND if projectMember does not exist.
-func (s *ProjectMemberService) DeleteProjectMemberByID(ctx context.Context, delete *api.ProjectMemberDelete) error {
+func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemberDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)

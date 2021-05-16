@@ -81,9 +81,9 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	return list[0], nil
 }
 
-// PatchMemberByID updates an existing member by ID.
+// PatchMember updates an existing member by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *MemberService) PatchMemberByID(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
+func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -102,9 +102,9 @@ func (s *MemberService) PatchMemberByID(ctx context.Context, patch *api.MemberPa
 	return member, nil
 }
 
-// DeleteMemberByID deletes an existing member by ID.
+// DeleteMember deletes an existing member by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *MemberService) DeleteMemberByID(ctx context.Context, delete *api.MemberDelete) error {
+func (s *MemberService) DeleteMember(ctx context.Context, delete *api.MemberDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)

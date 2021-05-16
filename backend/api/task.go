@@ -118,5 +118,5 @@ type TaskService interface {
 	CreateTask(ctx context.Context, create *TaskCreate) (*Task, error)
 	FindTaskList(ctx context.Context, find *TaskFind) ([]*Task, error)
 	FindTask(ctx context.Context, find *TaskFind) (*Task, error)
-	PatchTaskByID(ctx context.Context, patch *TaskPatch) (*Task, error)
+	PatchTask(ctx context.Context, patch *TaskPatch) (*Task, error)
 }

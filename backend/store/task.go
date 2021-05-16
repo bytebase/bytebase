@@ -81,9 +81,9 @@ func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Ta
 	return list[0], nil
 }
 
-// PatchTaskByID updates an existing task by ID.
+// PatchTask updates an existing task by ID.
 // Returns ENOTFOUND if task does not exist.
-func (s *TaskService) PatchTaskByID(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
+func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

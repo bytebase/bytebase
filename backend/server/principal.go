@@ -83,7 +83,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request").SetInternal(err)
 		}
 
-		principal, err := s.PrincipalService.PatchPrincipalByID(context.Background(), principalPatch)
+		principal, err := s.PrincipalService.PatchPrincipal(context.Background(), principalPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))

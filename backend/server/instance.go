@@ -99,7 +99,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var instance *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
-			instance, err = s.InstanceService.PatchInstanceByID(context.Background(), instancePatch)
+			instance, err = s.InstanceService.PatchInstance(context.Background(), instancePatch)
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))

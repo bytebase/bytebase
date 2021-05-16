@@ -69,7 +69,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch environment request").SetInternal(err)
 		}
 
-		environment, err := s.EnvironmentService.PatchEnvironmentByID(context.Background(), environmentPatch)
+		environment, err := s.EnvironmentService.PatchEnvironment(context.Background(), environmentPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", id))
@@ -94,7 +94,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			environmentPatch, _ := item.(*api.EnvironmentPatch)
 			environmentPatch.WorkspaceId = api.DEFAULT_WORKPSACE_ID
 			environmentPatch.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
-			_, err = s.EnvironmentService.PatchEnvironmentByID(context.Background(), environmentPatch)
+			_, err = s.EnvironmentService.PatchEnvironment(context.Background(), environmentPatch)
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", environmentPatch.ID))

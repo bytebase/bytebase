@@ -81,9 +81,9 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	return list[0], nil
 }
 
-// PatchPrincipalByID updates an existing principal by ID.
+// PatchPrincipal updates an existing principal by ID.
 // Returns ENOTFOUND if principal does not exist.
-func (s *PrincipalService) PatchPrincipalByID(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
+func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

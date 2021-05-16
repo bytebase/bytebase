@@ -81,9 +81,9 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	return list[0], nil
 }
 
-// PatchEnvironmentByID updates an existing environment by ID.
+// PatchEnvironment updates an existing environment by ID.
 // Returns ENOTFOUND if environment does not exist.
-func (s *EnvironmentService) PatchEnvironmentByID(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
+func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

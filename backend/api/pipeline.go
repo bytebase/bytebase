@@ -75,5 +75,5 @@ type PipelinePatch struct {
 type PipelineService interface {
 	CreatePipeline(ctx context.Context, create *PipelineCreate) (*Pipeline, error)
 	FindPipeline(ctx context.Context, find *PipelineFind) (*Pipeline, error)
-	PatchPipelineByID(ctx context.Context, patch *PipelinePatch) (*Pipeline, error)
+	PatchPipeline(ctx context.Context, patch *PipelinePatch) (*Pipeline, error)
 }

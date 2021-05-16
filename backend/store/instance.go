@@ -81,9 +81,9 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	return list[0], nil
 }
 
-// PatchInstanceByID updates an existing instance by ID.
+// PatchInstance updates an existing instance by ID.
 // Returns ENOTFOUND if instance does not exist.
-func (s *InstanceService) PatchInstanceByID(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
+func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

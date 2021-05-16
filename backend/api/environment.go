@@ -61,5 +61,5 @@ type EnvironmentService interface {
 	CreateEnvironment(ctx context.Context, create *EnvironmentCreate) (*Environment, error)
 	FindEnvironmentList(ctx context.Context, find *EnvironmentFind) ([]*Environment, error)
 	FindEnvironment(ctx context.Context, find *EnvironmentFind) (*Environment, error)
-	PatchEnvironmentByID(ctx context.Context, patch *EnvironmentPatch) (*Environment, error)
+	PatchEnvironment(ctx context.Context, patch *EnvironmentPatch) (*Environment, error)
 }

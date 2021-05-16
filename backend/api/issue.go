@@ -134,5 +134,5 @@ type IssueService interface {
 	CreateIssue(ctx context.Context, create *IssueCreate) (*Issue, error)
 	FindIssueList(ctx context.Context, find *IssueFind) ([]*Issue, error)
 	FindIssue(ctx context.Context, find *IssueFind) (*Issue, error)
-	PatchIssueByID(ctx context.Context, patch *IssuePatch) (*Issue, error)
+	PatchIssue(ctx context.Context, patch *IssuePatch) (*Issue, error)
 }

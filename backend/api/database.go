@@ -103,5 +103,5 @@ type DatabaseService interface {
 	CreateDatabase(ctx context.Context, create *DatabaseCreate) (*Database, error)
 	FindDatabaseList(ctx context.Context, find *DatabaseFind) ([]*Database, error)
 	FindDatabase(ctx context.Context, find *DatabaseFind) (*Database, error)
-	PatchDatabaseByID(ctx context.Context, patch *DatabasePatch) (*Database, error)
+	PatchDatabase(ctx context.Context, patch *DatabasePatch) (*Database, error)
 }

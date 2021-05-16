@@ -63,7 +63,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)
 		}
 
-		projectMember, err := s.ProjectMemberService.PatchProjectMemberByID(context.Background(), projectMemberPatch)
+		projectMember, err := s.ProjectMemberService.PatchProjectMember(context.Background(), projectMemberPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
@@ -93,7 +93,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
-		err = s.ProjectMemberService.DeleteProjectMemberByID(context.Background(), projectMemberDelete)
+		err = s.ProjectMemberService.DeleteProjectMember(context.Background(), projectMemberDelete)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))

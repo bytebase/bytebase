@@ -81,9 +81,9 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	return list[0], nil
 }
 
-// PatchDatabaseByID updates an existing database by ID.
+// PatchDatabase updates an existing database by ID.
 // Returns ENOTFOUND if database does not exist.
-func (s *DatabaseService) PatchDatabaseByID(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
+func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

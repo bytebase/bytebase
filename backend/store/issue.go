@@ -82,9 +82,9 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	return list[0], nil
 }
 
-// PatchIssueByID updates an existing issue by ID.
+// PatchIssue updates an existing issue by ID.
 // Returns ENOTFOUND if issue does not exist.
-func (s *IssueService) PatchIssueByID(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
+func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

@@ -82,6 +82,6 @@ type MemberService interface {
 	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
 	FindMemberList(ctx context.Context, find *MemberFind) ([]*Member, error)
 	FindMember(ctx context.Context, find *MemberFind) (*Member, error)
-	PatchMemberByID(ctx context.Context, patch *MemberPatch) (*Member, error)
-	DeleteMemberByID(ctx context.Context, delete *MemberDelete) error
+	PatchMember(ctx context.Context, patch *MemberPatch) (*Member, error)
+	DeleteMember(ctx context.Context, delete *MemberDelete) error
 }

@@ -81,9 +81,9 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	return list[0], nil
 }
 
-// PatchProjectByID updates an existing project by ID.
+// PatchProject updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *ProjectService) PatchProjectByID(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
+func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

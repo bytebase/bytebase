@@ -95,5 +95,5 @@ type PrincipalService interface {
 	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
 	FindPrincipalList(ctx context.Context, find *PrincipalFind) ([]*Principal, error)
 	FindPrincipal(ctx context.Context, find *PrincipalFind) (*Principal, error)
-	PatchPrincipalByID(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
+	PatchPrincipal(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
 }

@@ -95,7 +95,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
 		}
 
-		project, err := s.ProjectService.PatchProjectByID(context.Background(), projectPatch)
+		project, err := s.ProjectService.PatchProject(context.Background(), projectPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))

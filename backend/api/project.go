@@ -57,5 +57,5 @@ type ProjectService interface {
 	CreateProject(ctx context.Context, create *ProjectCreate) (*Project, error)
 	FindProjectList(ctx context.Context, find *ProjectFind) ([]*Project, error)
 	FindProject(ctx context.Context, find *ProjectFind) (*Project, error)
-	PatchProjectByID(ctx context.Context, patch *ProjectPatch) (*Project, error)
+	PatchProject(ctx context.Context, patch *ProjectPatch) (*Project, error)
 }

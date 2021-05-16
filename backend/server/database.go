@@ -104,7 +104,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
 		}
 
-		database, err := s.DatabaseService.PatchDatabaseByID(context.Background(), databasePatch)
+		database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))

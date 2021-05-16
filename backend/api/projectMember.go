@@ -84,6 +84,6 @@ type ProjectMemberDelete struct {
 type ProjectMemberService interface {
 	CreateProjectMember(ctx context.Context, create *ProjectMemberCreate) (*ProjectMember, error)
 	FindProjectMemberList(ctx context.Context, find *ProjectMemberFind) ([]*ProjectMember, error)
-	PatchProjectMemberByID(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMember, error)
-	DeleteProjectMemberByID(ctx context.Context, delete *ProjectMemberDelete) error
+	PatchProjectMember(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMember, error)
+	DeleteProjectMember(ctx context.Context, delete *ProjectMemberDelete) error
 }
