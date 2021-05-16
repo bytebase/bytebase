@@ -30,7 +30,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
 		}
 
-		if err := s.AddDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -59,7 +59,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		for _, database := range list {
-			if err := s.AddDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -77,7 +77,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.FindDatabaseById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		database, err := s.ComposeDatabaseById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.AddDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -124,7 +124,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindDatabaseById(ctx context.Context, id int, includeList []string) (*api.Database, error) {
+func (s *Server) ComposeDatabaseById(ctx context.Context, id int, includeList []string) (*api.Database, error) {
 	databaseFind := &api.DatabaseFind{
 		ID: &id,
 	}
@@ -136,17 +136,17 @@ func (s *Server) FindDatabaseById(ctx context.Context, id int, includeList []str
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddDatabaseRelationship(ctx, database, includeList); err != nil {
+	if err := s.ComposeDatabaseRelationship(ctx, database, includeList); err != nil {
 		return nil, err
 	}
 
 	return database, nil
 }
 
-func (s *Server) AddDatabaseRelationship(ctx context.Context, database *api.Database, includeList []string) error {
+func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database, includeList []string) error {
 	var err error
 	if sort.SearchStrings(includeList, "project") >= 0 {
-		database.Project, err = s.FindProjectById(context.Background(), database.ProjectId, includeList)
+		database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
 		}

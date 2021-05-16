@@ -30,7 +30,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.AddInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -52,7 +52,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			if err := s.AddInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -70,7 +70,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.FindInstanceById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		instance, err := s.ComposeInstanceById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.AddInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -153,7 +153,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindInstanceById(ctx context.Context, id int, incluedList []string) (*api.Instance, error) {
+func (s *Server) ComposeInstanceById(ctx context.Context, id int, incluedList []string) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -165,14 +165,14 @@ func (s *Server) FindInstanceById(ctx context.Context, id int, incluedList []str
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddInstanceRelationship(ctx, instance, incluedList); err != nil {
+	if err := s.ComposeInstanceRelationship(ctx, instance, incluedList); err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) AddInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
+func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
 	var err error
 	if sort.SearchStrings(includeList, "environment") >= 0 {
 		environmentFind := &api.EnvironmentFind{

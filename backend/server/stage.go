@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) FindStageListByPipelineId(ctx context.Context, pipelineId int, incluedList []string) ([]*api.Stage, error) {
+func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId int, incluedList []string) ([]*api.Stage, error) {
 	stageFind := &api.StageFind{
 		PipelineId: &pipelineId,
 	}
@@ -19,7 +19,7 @@ func (s *Server) FindStageListByPipelineId(ctx context.Context, pipelineId int, 
 	}
 
 	for _, stage := range stageList {
-		if err := s.AddStageRelationship(ctx, stage, incluedList); err != nil {
+		if err := s.ComposeStageRelationship(ctx, stage, incluedList); err != nil {
 			return nil, err
 		}
 	}
@@ -27,14 +27,14 @@ func (s *Server) FindStageListByPipelineId(ctx context.Context, pipelineId int, 
 	return stageList, nil
 }
 
-func (s *Server) AddStageRelationship(ctx context.Context, stage *api.Stage, includeList []string) error {
+func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage, includeList []string) error {
 	var err error
-	stage.Creator, err = s.FindPrincipalById(context.Background(), stage.CreatorId, includeList)
+	stage.Creator, err = s.ComposePrincipalById(context.Background(), stage.CreatorId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for stage: %v", stage.Name)).SetInternal(err)
 	}
 
-	stage.Updater, err = s.FindPrincipalById(context.Background(), stage.UpdaterId, includeList)
+	stage.Updater, err = s.ComposePrincipalById(context.Background(), stage.UpdaterId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for stage: %v", stage.Name)).SetInternal(err)
 	}
@@ -47,7 +47,7 @@ func (s *Server) AddStageRelationship(ctx context.Context, stage *api.Stage, inc
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for stage: %v", stage.Name)).SetInternal(err)
 	}
 
-	stage.TaskList, err = s.FindTaskListByStageId(context.Background(), stage.ID, includeList)
+	stage.TaskList, err = s.ComposeTaskListByStageId(context.Background(), stage.ID, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task list for stage: %v", stage.Name)).SetInternal(err)
 	}

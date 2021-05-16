@@ -30,7 +30,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
 
-		if err := s.AddIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -52,7 +52,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, issue := range list {
-			if err := s.AddIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -70,7 +70,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		issue, err := s.FindIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch issue ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.AddIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -117,7 +117,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindIssueById(ctx context.Context, id int, incluedList []string) (*api.Issue, error) {
+func (s *Server) ComposeIssueById(ctx context.Context, id int, incluedList []string) (*api.Issue, error) {
 	issueFind := &api.IssueFind{
 		ID: &id,
 	}
@@ -129,41 +129,41 @@ func (s *Server) FindIssueById(ctx context.Context, id int, incluedList []string
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddIssueRelationship(ctx, issue, incluedList); err != nil {
+	if err := s.ComposeIssueRelationship(ctx, issue, incluedList); err != nil {
 		return nil, err
 	}
 
 	return issue, nil
 }
 
-func (s *Server) AddIssueRelationship(ctx context.Context, issue *api.Issue, includeList []string) error {
+func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue, includeList []string) error {
 	var err error
 	if sort.SearchStrings(includeList, "principal") >= 0 {
-		issue.Creator, err = s.FindPrincipalById(context.Background(), issue.CreatorId, includeList)
+		issue.Creator, err = s.ComposePrincipalById(context.Background(), issue.CreatorId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for issue: %v", issue.Name)).SetInternal(err)
 		}
 
-		issue.Updater, err = s.FindPrincipalById(context.Background(), issue.UpdaterId, includeList)
+		issue.Updater, err = s.ComposePrincipalById(context.Background(), issue.UpdaterId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for issue: %v", issue.Name)).SetInternal(err)
 		}
 
-		issue.Assignee, err = s.FindPrincipalById(context.Background(), issue.AssigneeId, includeList)
+		issue.Assignee, err = s.ComposePrincipalById(context.Background(), issue.AssigneeId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch assignee for issue: %v", issue.Name)).SetInternal(err)
 		}
 	}
 
 	if sort.SearchStrings(includeList, "project") >= 0 {
-		issue.Project, err = s.FindProjectById(context.Background(), issue.ProjectId, includeList)
+		issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for issue: %v", issue.Name)).SetInternal(err)
 		}
 	}
 
 	if sort.SearchStrings(includeList, "pipeline") >= 0 {
-		issue.Pipeline, err = s.FindPipelineById(context.Background(), issue.PipelineId, includeList)
+		issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch pipeline for issue: %v", issue.Name)).SetInternal(err)
 		}

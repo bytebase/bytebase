@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) FindTaskListByStageId(ctx context.Context, stageId int, incluedList []string) ([]*api.Task, error) {
+func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incluedList []string) ([]*api.Task, error) {
 	taskFind := &api.TaskFind{
 		StageId: &stageId,
 	}
@@ -19,7 +19,7 @@ func (s *Server) FindTaskListByStageId(ctx context.Context, stageId int, inclued
 	}
 
 	for _, task := range taskList {
-		if err := s.AddTaskRelationship(ctx, task, incluedList); err != nil {
+		if err := s.ComposeTaskRelationship(ctx, task, incluedList); err != nil {
 			return nil, err
 		}
 	}
@@ -27,20 +27,20 @@ func (s *Server) FindTaskListByStageId(ctx context.Context, stageId int, inclued
 	return taskList, nil
 }
 
-func (s *Server) AddTaskRelationship(ctx context.Context, task *api.Task, includeList []string) error {
+func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, includeList []string) error {
 	var err error
 
-	task.Creator, err = s.FindPrincipalById(context.Background(), task.CreatorId, includeList)
+	task.Creator, err = s.ComposePrincipalById(context.Background(), task.CreatorId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for task: %v", task.Name)).SetInternal(err)
 	}
 
-	task.Updater, err = s.FindPrincipalById(context.Background(), task.UpdaterId, includeList)
+	task.Updater, err = s.ComposePrincipalById(context.Background(), task.UpdaterId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for task: %v", task.Name)).SetInternal(err)
 	}
 
-	task.Database, err = s.FindDatabaseById(context.Background(), task.DatabaseId, includeList)
+	task.Database, err = s.ComposeDatabaseById(context.Background(), task.DatabaseId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database for task: %v", task.Name)).SetInternal(err)
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) FindPipelineById(ctx context.Context, id int, incluedList []string) (*api.Pipeline, error) {
+func (s *Server) ComposePipelineById(ctx context.Context, id int, incluedList []string) (*api.Pipeline, error) {
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
@@ -22,27 +22,27 @@ func (s *Server) FindPipelineById(ctx context.Context, id int, incluedList []str
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch pipeline ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.AddPipelineRelationship(ctx, pipeline, incluedList); err != nil {
+	if err := s.ComposePipelineRelationship(ctx, pipeline, incluedList); err != nil {
 		return nil, err
 	}
 
 	return pipeline, nil
 }
 
-func (s *Server) AddPipelineRelationship(ctx context.Context, pipeline *api.Pipeline, includeList []string) error {
+func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.Pipeline, includeList []string) error {
 	var err error
 
-	pipeline.Creator, err = s.FindPrincipalById(context.Background(), pipeline.CreatorId, includeList)
+	pipeline.Creator, err = s.ComposePrincipalById(context.Background(), pipeline.CreatorId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for pipeline: %v", pipeline.Name)).SetInternal(err)
 	}
 
-	pipeline.Updater, err = s.FindPrincipalById(context.Background(), pipeline.UpdaterId, includeList)
+	pipeline.Updater, err = s.ComposePrincipalById(context.Background(), pipeline.UpdaterId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for pipeline: %v", pipeline.Name)).SetInternal(err)
 	}
 
-	pipeline.StageList, err = s.FindStageListByPipelineId(context.Background(), pipeline.ID, includeList)
+	pipeline.StageList, err = s.ComposeStageListByPipelineId(context.Background(), pipeline.ID, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch stage list for pipeline: %v", pipeline.Name)).SetInternal(err)
 	}

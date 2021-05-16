@@ -58,7 +58,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		principal, err := s.FindPrincipalById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		principal, err := s.ComposePrincipalById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) FindPrincipalById(ctx context.Context, id int, incluedList []string) (*api.Principal, error) {
+func (s *Server) ComposePrincipalById(ctx context.Context, id int, incluedList []string) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,
 	}
