@@ -31,6 +31,7 @@ type Server struct {
 	PipelineService      api.PipelineService
 	StageService         api.StageService
 	TaskService          api.TaskService
+	ActivityService      api.ActivityService
 
 	e *echo.Echo
 }
@@ -112,7 +113,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 		e.Logger.Fatal(err)
 	}
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return ACLMiddleware(logger, s.MemberService, ce, next)
+		return ACLMiddleware(logger, s.MemberService, s.ActivityService, ce, next)
 	})
 
 	s.registerDebugRoutes(g)
@@ -125,6 +126,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerInstanceRoutes(g)
 	s.registerDatabaseRoutes(g)
 	s.registerIssueRoutes(g)
+	s.registerActivityRoutes(g)
 
 	return s
 }

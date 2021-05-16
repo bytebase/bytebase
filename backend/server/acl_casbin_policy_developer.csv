@@ -20,3 +20,7 @@ p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET
 p, DEVELOPER, /issue/{id}, PATCH
 p, DEVELOPER, /issue/{id}/status, PATCH
+p, DEVELOPER, /activity, POST
+p, DEVELOPER, /activity, GET
+p, DEVELOPER, /activity/{id}, PATCH_SELF
+p, DEVELOPER, /activity/{id}, DELETE_SELF

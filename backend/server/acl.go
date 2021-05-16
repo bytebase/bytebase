@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func ACLMiddleware(l *bytebase.Logger, m api.MemberService, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
+func ACLMiddleware(l *bytebase.Logger, m api.MemberService, a api.ActivityService, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {
@@ -38,13 +38,36 @@ func ACLMiddleware(l *bytebase.Logger, m api.MemberService, ce *casbin.Enforcer,
 		}
 
 		method := c.Request().Method
-		// If the requests is trying to PATCH herself, we will change the method signature to
-		// PATCH_SELF so that the policy can differentiate between PATCH and PATCH_SELF
-		if method == "PATCH" {
-			pathPrincipalId := c.Param("principalId")
-			if pathPrincipalId != "" {
-				if pathPrincipalId == strconv.Itoa(principalId) {
-					method = "PATCH_SELF"
+		// If the requests is trying to PATCH/DELETE herself, we will change the method signature to
+		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
+		if method == "PATCH" || method == "DELETE" {
+			if strings.HasPrefix(c.Path(), "/api/principal") {
+				pathPrincipalId := c.Param("principalId")
+				if pathPrincipalId != "" {
+					if pathPrincipalId == strconv.Itoa(principalId) {
+						method = method + "_SELF"
+					}
+				}
+			} else if strings.HasPrefix(c.Path(), "/api/activity") {
+				activityIdStr := c.Param("activityId")
+				if activityIdStr != "" {
+					activityId, err := strconv.Atoi(activityIdStr)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s", activityIdStr))
+					}
+					activityFind := &api.ActivityFind{
+						ID: &activityId,
+					}
+					activity, err := a.FindActivity(context.Background(), activityFind)
+					if err != nil {
+						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityId))
+						}
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+					}
+					if activity.CreatorId == principalId {
+						method = method + "_SELF"
+					}
 				}
 			}
 		}

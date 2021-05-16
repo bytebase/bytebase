@@ -33,11 +33,6 @@ export type ActionPayloadType =
 export type Activity = {
   id: ActivityId;
 
-  // Related fields
-  // The object where this activity belongs
-  // e.g if actionType is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-  containerId: ContainerId;
-
   // Standard fields
   creator: Principal;
   createdTs: number;
@@ -45,19 +40,20 @@ export type Activity = {
   updatedTs: number;
 
   // Domain specific fields
+  // The object where this activity belongs
+  // e.g if actionType is "bb.issue.xxx", then this field refers to the corresponding issue's id.
+  containerId: ContainerId;
   actionType: ActionType;
   comment: string;
   payload?: ActionPayloadType;
 };
 
 export type ActivityCreate = {
-  // Related fields
-  containerId: ContainerId;
-
   // Standard fields
   creatorId: PrincipalId;
 
   // Domain specific fields
+  containerId: ContainerId;
   actionType: ActionType;
   comment: string;
   payload?: ActionPayloadType;

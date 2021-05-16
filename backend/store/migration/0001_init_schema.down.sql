@@ -1,3 +1,5 @@
+DROP TABLE activity;
+
 DROP TABLE issue;
 
 DROP TABLE task;

@@ -76,7 +76,7 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("database not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found 5 databases with filter %v, expect 1. ", len(list), find)
+		s.l.Warnf("found %d databases with filter %v, expect 1. ", len(list), find)
 	}
 	return list[0], nil
 }

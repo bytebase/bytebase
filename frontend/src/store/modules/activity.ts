@@ -8,15 +8,42 @@ import {
   ActivityState,
   ResourceObject,
   ActivityPatch,
+  ResourceIdentifier,
+  Principal,
+  unknown,
 } from "../../types";
 
-function convert(activity: ResourceObject, rootGetters: any): Activity {
-  const creator = rootGetters["principal/principalById"](
-    activity.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    activity.attributes.updaterId
-  );
+function convert(
+  activity: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Activity {
+  const creatorId = (activity.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (activity.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (activity.relationships!.creator.data as ResourceIdentifier).id == item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (activity.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+  }
+
   return {
     ...(activity.attributes as Omit<Activity, "id" | "creator" | "updater">),
     id: activity.id,
@@ -48,11 +75,10 @@ const actions = {
     { commit, rootGetters }: any,
     userId: PrincipalId
   ) {
-    const activityList = (await axios.get(`/api/activity`)).data.data.map(
-      (activity: ResourceObject) => {
-        return convert(activity, rootGetters);
-      }
-    );
+    const data = (await axios.get(`/api/activity`)).data;
+    const activityList = data.data.map((activity: ResourceObject) => {
+      return convert(activity, data.included, rootGetters);
+    });
 
     commit("setActivityListForUser", { userId, activityList });
     return activityList;
@@ -62,10 +88,9 @@ const actions = {
     { commit, rootGetters }: any,
     issueId: IssueId
   ) {
-    const activityList = (
-      await axios.get(`/api/activity?container=${issueId}`)
-    ).data.data.map((activity: ResourceObject) => {
-      return convert(activity, rootGetters);
+    const data = (await axios.get(`/api/activity?container=${issueId}`)).data;
+    const activityList = data.data.map((activity: ResourceObject) => {
+      return convert(activity, data.included, rootGetters);
     });
 
     commit("setActivityListForIssue", { issueId, activityList });
@@ -76,15 +101,17 @@ const actions = {
     { dispatch, rootGetters }: any,
     newActivity: ActivityCreate
   ) {
+    const data = (
+      await axios.post(`/api/activity`, {
+        data: {
+          type: "activityCreate",
+          attributes: newActivity,
+        },
+      })
+    ).data;
     const createdActivity: Activity = convert(
-      (
-        await axios.post(`/api/activity`, {
-          data: {
-            type: "ActivityCreate",
-            attributes: newActivity,
-          },
-        })
-      ).data.data,
+      data.data,
+      data.included,
       rootGetters
     );
 
@@ -112,17 +139,15 @@ const actions = {
       comment: updatedComment,
       updaterId,
     };
-    const updatedActivity = convert(
-      (
-        await axios.patch(`/api/activity/${activityId}`, {
-          data: {
-            type: "activitypatch",
-            attributes: activityPatch,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.patch(`/api/activity/${activityId}`, {
+        data: {
+          type: "activityPatch",
+          attributes: activityPatch,
+        },
+      })
+    ).data;
+    const updatedActivity = convert(data.data, data.included, rootGetters);
 
     dispatch("fetchActivityListForIssue", updatedActivity.containerId);
 

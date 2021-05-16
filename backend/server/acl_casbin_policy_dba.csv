@@ -25,3 +25,7 @@ p, DBA, /issue, GET
 p, DBA, /issue/{id}, GET
 p, DBA, /issue/{id}, PATCH
 p, DBA, /issue/{id}/status, PATCH
+p, DBA, /activity, POST
+p, DBA, /activity, GET
+p, DBA, /activity/{id}, PATCH_SELF
+p, DBA, /activity/{id}, DELETE_SELF

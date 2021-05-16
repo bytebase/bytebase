@@ -524,3 +524,58 @@ CREATE TABLE issue (
     rollback_sql TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
 );
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('issue', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_issue_modification_time`
+AFTER
+UPDATE
+    ON `issue` FOR EACH ROW BEGIN
+UPDATE
+    `issue`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- activity table stores the activity for the container such as issue
+CREATE TABLE activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    container_id INTEGER NOT NULL,
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
+    COMMENT TEXT NOT NULL DEFAULT '',
+    payload TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_activity_container_id ON activity(container_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('activity', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_activity_modification_time`
+AFTER
+UPDATE
+    ON `activity` FOR EACH ROW BEGIN
+UPDATE
+    `activity`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;

@@ -29,3 +29,7 @@ p, OWNER, /issue, GET
 p, OWNER, /issue/{id}, GET
 p, OWNER, /issue/{id}, PATCH
 p, OWNER, /issue/{id}/status, PATCH
+p, OWNER, /activity, POST
+p, OWNER, /activity, GET
+p, OWNER, /activity/{id}, PATCH_SELF
+p, OWNER, /activity/{id}, DELETE_SELF
