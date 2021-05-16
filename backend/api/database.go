@@ -31,17 +31,19 @@ type Database struct {
 	ID int `jsonapi:"primary,database"`
 
 	// Standard fields
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	CreatorId   int
+	Creator     *Principal `jsonapi:"relation,creator"`
+	CreatedTs   int64      `jsonapi:"attr,createdTs"`
+	UpdaterId   int
+	Updater     *Principal `jsonapi:"relation,updater"`
+	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 
 	// Related fields
-	Project        *Project `jsonapi:"relation,project"`
 	ProjectId      int
-	Instance       *Instance `jsonapi:"relation,instance"`
+	Project        *Project `jsonapi:"relation,project"`
 	InstanceId     int
+	Instance       *Instance     `jsonapi:"relation,instance"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
 
 	// Domain specific fields

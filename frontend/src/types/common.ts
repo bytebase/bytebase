@@ -125,7 +125,7 @@ export const unknown = (
     createdTs: 0,
     updatedTs: 0,
     role: "DEVELOPER",
-    principalId: UNKNOWN_ID,
+    principal: UNKNOWN_PRINCIPAL,
   };
 
   const UNKNOWN_ENVIRONMENT: Environment = {
@@ -363,7 +363,7 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     role: "DEVELOPER",
-    principalId: EMPTY_ID,
+    principal: EMPTY_PRINCIPAL,
   };
 
   const EMPTY_ENVIRONMENT: Environment = {

@@ -13,6 +13,7 @@ import {
   RowStatus,
   empty,
   EMPTY_ID,
+  Principal,
 } from "../../types";
 
 function convert(
@@ -20,12 +21,15 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Instance {
-  const creator = rootGetters["principal/principalById"](
-    instance.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    instance.attributes.updaterId
-  );
+  const creatorId = (instance.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (instance.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
 
   const environmentId = (
     instance.relationships!.environment.data as ResourceIdentifier
@@ -36,6 +40,20 @@ function convert(
   let username = undefined;
   let password = undefined;
   for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (instance.relationships!.creator.data as ResourceIdentifier).id == item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (instance.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+
     if (
       item.type == "dataSource" &&
       item.attributes.type == "ADMIN" &&
@@ -50,7 +68,7 @@ function convert(
       (instance.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = rootGetters["environment/convert"](item);
+      environment = rootGetters["environment/convert"](item, includedList);
     }
   }
 

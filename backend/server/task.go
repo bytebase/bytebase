@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incluedList []string) ([]*api.Task, error) {
+func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, includeList []string) ([]*api.Task, error) {
 	taskFind := &api.TaskFind{
 		StageId: &stageId,
 	}
@@ -19,7 +19,7 @@ func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incl
 	}
 
 	for _, task := range taskList {
-		if err := s.ComposeTaskRelationship(ctx, task, incluedList); err != nil {
+		if err := s.ComposeTaskRelationship(ctx, task, includeList); err != nil {
 			return nil, err
 		}
 	}

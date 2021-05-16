@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId int, incluedList []string) ([]*api.Stage, error) {
+func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId int, includeList []string) ([]*api.Stage, error) {
 	stageFind := &api.StageFind{
 		PipelineId: &pipelineId,
 	}
@@ -19,7 +19,7 @@ func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId in
 	}
 
 	for _, stage := range stageList {
-		if err := s.ComposeStageRelationship(ctx, stage, incluedList); err != nil {
+		if err := s.ComposeStageRelationship(ctx, stage, includeList); err != nil {
 			return nil, err
 		}
 	}
@@ -39,10 +39,7 @@ func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage,
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for stage: %v", stage.Name)).SetInternal(err)
 	}
 
-	environmentFind := &api.EnvironmentFind{
-		ID: &stage.EnvironmentId,
-	}
-	stage.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
+	stage.Environment, err = s.ComposeEnvironmentById(context.Background(), stage.EnvironmentId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for stage: %v", stage.Name)).SetInternal(err)
 	}

@@ -10,20 +10,62 @@ import {
   unknown,
   empty,
   EMPTY_ID,
+  Principal,
+  ResourceIdentifier,
 } from "../../types";
 
-function convert(member: ResourceObject, rootGetters: any): Member {
-  const creator = rootGetters["principal/principalById"](
-    member.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    member.attributes.updaterId
-  );
+function convert(
+  member: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Member {
+  const creatorId = (member.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (member.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  const principalId = (member.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let principal: Principal = unknown("PRINCIPAL") as Principal;
+  principal.id = principalId;
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (member.relationships!.creator.data as ResourceIdentifier).id == item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (member.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (member.relationships!.principal.data as ResourceIdentifier).id == item.id
+    ) {
+      principal = rootGetters["principal/convert"](item);
+    }
+  }
+
   return {
-    ...(member.attributes as Omit<Member, "id" | "creator" | "updater">),
+    ...(member.attributes as Omit<
+      Member,
+      "id" | "creator" | "updater" | "principal"
+    >),
     id: member.id,
     creator,
     updater,
+    principal,
   };
 }
 
@@ -43,7 +85,7 @@ const getters = {
       }
 
       return (
-        state.memberList.find((item) => item.principalId == id) ||
+        state.memberList.find((item) => item.principal.id == id) ||
         (unknown("MEMBER") as Member)
       );
     },
@@ -51,11 +93,10 @@ const getters = {
 
 const actions = {
   async fetchMemberList({ commit, rootGetters }: any) {
-    const memberList = (await axios.get(`/api/member`)).data.data.map(
-      (member: ResourceObject) => {
-        return convert(member, rootGetters);
-      }
-    );
+    const data = (await axios.get(`/api/member`)).data;
+    const memberList = data.data.map((member: ResourceObject) => {
+      return convert(member, data.included, rootGetters);
+    });
 
     commit("setMemberList", memberList);
     return memberList;
@@ -63,17 +104,15 @@ const actions = {
 
   // Returns existing member if the principalId has already been created.
   async createdMember({ commit, rootGetters }: any, newMember: MemberCreate) {
-    const createdMember = convert(
-      (
-        await axios.post(`/api/member`, {
-          data: {
-            type: "MemberCreate",
-            attributes: newMember,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.post(`/api/member`, {
+        data: {
+          type: "MemberCreate",
+          attributes: newMember,
+        },
+      })
+    ).data;
+    const createdMember = convert(data.data, data.included, rootGetters);
 
     commit("appendMember", createdMember);
 
@@ -84,17 +123,15 @@ const actions = {
     { commit, rootGetters }: any,
     { id, memberPatch }: { id: MemberId; memberPatch: MemberPatch }
   ) {
-    const updatedMember = convert(
-      (
-        await axios.patch(`/api/member/${id}`, {
-          data: {
-            type: "memberpatch",
-            attributes: memberPatch,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.patch(`/api/member/${id}`, {
+        data: {
+          type: "memberpatch",
+          attributes: memberPatch,
+        },
+      })
+    ).data;
+    const updatedMember = convert(data.data, data.included, rootGetters);
 
     commit("replaceMemberInList", updatedMember);
 

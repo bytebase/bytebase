@@ -145,6 +145,17 @@ func (s *Server) ComposeDatabaseById(ctx context.Context, id int, includeList []
 
 func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database, includeList []string) error {
 	var err error
+
+	database.Creator, err = s.ComposePrincipalById(context.Background(), database.CreatorId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for database: %v", database.Name)).SetInternal(err)
+	}
+
+	database.Updater, err = s.ComposePrincipalById(context.Background(), database.UpdaterId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for database: %v", database.Name)).SetInternal(err)
+	}
+
 	if sort.SearchStrings(includeList, "project") >= 0 {
 		database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
 		if err != nil {

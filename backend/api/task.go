@@ -57,10 +57,10 @@ type Task struct {
 
 	// Related fields
 	// Just returns PipelineId and StageId otherwise would cause circular dependency.
-	PipelineId int       `jsonapi:"attr,pipelineId"`
-	StageId    int       `jsonapi:"attr,stageId"`
-	Database   *Database `jsonapi:"relation,database"`
+	PipelineId int `jsonapi:"attr,pipelineId"`
+	StageId    int `jsonapi:"attr,stageId"`
 	DatabaseId int
+	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
 	Name    string     `jsonapi:"attr,name"`

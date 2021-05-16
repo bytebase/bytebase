@@ -39,10 +39,10 @@ type Stage struct {
 
 	// Related fields
 	// Just returns PipelineId otherwise would cause circular dependency.
-	PipelineId    int          `jsonapi:"attr,pipelineId"`
-	Environment   *Environment `jsonapi:"relation,environment"`
+	PipelineId    int `jsonapi:"attr,pipelineId"`
 	EnvironmentId int
-	TaskList      []*Task `jsonapi:"relation,task"`
+	Environment   *Environment `jsonapi:"relation,environment"`
+	TaskList      []*Task      `jsonapi:"relation,task"`
 
 	// Domain specific fields
 	Name string    `jsonapi:"attr,name"`

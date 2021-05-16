@@ -153,7 +153,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeInstanceById(ctx context.Context, id int, incluedList []string) (*api.Instance, error) {
+func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []string) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -165,7 +165,7 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, incluedList []
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.ComposeInstanceRelationship(ctx, instance, incluedList); err != nil {
+	if err := s.ComposeInstanceRelationship(ctx, instance, includeList); err != nil {
 		return nil, err
 	}
 
@@ -174,10 +174,18 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, incluedList []
 
 func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
 	var err error
-	environmentFind := &api.EnvironmentFind{
-		ID: &instance.EnvironmentId,
+
+	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for instance: %v", instance.Name)).SetInternal(err)
 	}
-	instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
+
+	instance.Updater, err = s.ComposePrincipalById(context.Background(), instance.UpdaterId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for instance: %v", instance.Name)).SetInternal(err)
+	}
+
+	instance.Environment, err = s.ComposeEnvironmentById(context.Background(), instance.EnvironmentId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
 	}

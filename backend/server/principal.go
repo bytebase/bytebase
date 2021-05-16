@@ -99,7 +99,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposePrincipalById(ctx context.Context, id int, incluedList []string) (*api.Principal, error) {
+func (s *Server) ComposePrincipalById(ctx context.Context, id int, includeList []string) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,
 	}

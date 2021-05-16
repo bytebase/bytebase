@@ -16,6 +16,7 @@ import {
   RowStatus,
   EMPTY_ID,
   empty,
+  Principal,
 } from "../../types";
 
 function convert(
@@ -23,12 +24,31 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Project {
-  const creator = rootGetters["principal/principalById"](
-    project.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    project.attributes.updaterId
-  );
+  const creatorId = (project.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (project.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (project.relationships!.creator.data as ResourceIdentifier).id == item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (project.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+  }
 
   const attrs = project.attributes as Omit<
     Project,
@@ -55,7 +75,7 @@ function convert(
         .data as ResourceIdentifier[];
       for (const idItem of projectMemberIdList) {
         if (idItem.id == item.id) {
-          const member = convertMember(item, rootGetters);
+          const member = convertMember(item, includedList, rootGetters);
           member.project = projectWithoutMemberList;
           memberList.push(member);
         }
@@ -74,17 +94,52 @@ function convert(
 // an unknown project first.
 function convertMember(
   projectMember: ResourceObject,
+  includedList: ResourceObject[],
   rootGetters: any
 ): ProjectMember {
-  const creator = rootGetters["principal/principalById"](
-    projectMember.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    projectMember.attributes.updaterId
-  );
-  const principal = rootGetters["principal/principalById"](
-    projectMember.attributes.principalId
-  );
+  const creatorId = (
+    projectMember.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (
+    projectMember.relationships!.updater.data as ResourceIdentifier
+  ).id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  const principalId = (
+    projectMember.relationships!.updater.data as ResourceIdentifier
+  ).id;
+  let principal: Principal = unknown("PRINCIPAL") as Principal;
+  principal.id = principalId;
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (projectMember.relationships!.creator.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (projectMember.relationships!.updater.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (projectMember.relationships!.principal.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      principal = rootGetters["principal/convert"](item);
+    }
+  }
 
   const attrs = projectMember.attributes as Omit<
     ProjectMember,

@@ -11,15 +11,45 @@ import {
   PrincipalId,
   empty,
   EMPTY_ID,
+  Principal,
+  ResourceIdentifier,
 } from "../../types";
 
-function convert(environment: ResourceObject, rootGetters: any): Environment {
-  const creator = rootGetters["principal/principalById"](
-    environment.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    environment.attributes.updaterId
-  );
+function convert(
+  environment: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Environment {
+  const creatorId = (
+    environment.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (
+    environment.relationships!.updater.data as ResourceIdentifier
+  ).id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (environment.relationships!.creator.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (environment.relationships!.updater.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+  }
+
   return {
     ...(environment.attributes as Omit<Environment, "id">),
     id: environment.id,
@@ -35,8 +65,11 @@ const state: () => EnvironmentState = () => ({
 const getters = {
   convert:
     (state: EnvironmentState, getters: any, rootState: any, rootGetters: any) =>
-    (environment: ResourceObject): Environment => {
-      return convert(environment, rootGetters);
+    (
+      environment: ResourceObject,
+      inlcudedList: ResourceObject[]
+    ): Environment => {
+      return convert(environment, inlcudedList, rootGetters);
     },
 
   environmentList:
@@ -74,11 +107,10 @@ const actions = {
     const path =
       "/api/environment" +
       (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
-    const environmentList = (await axios.get(path)).data.data.map(
-      (env: ResourceObject) => {
-        return convert(env, rootGetters);
-      }
-    );
+    const data = (await axios.get(path)).data;
+    const environmentList = data.data.map((env: ResourceObject) => {
+      return convert(env, data.included, rootGetters);
+    });
 
     commit("upsertEnvironmentList", environmentList);
 
@@ -89,17 +121,15 @@ const actions = {
     { commit, rootGetters }: any,
     newEnvironment: EnvironmentCreate
   ) {
-    const createdEnvironment = convert(
-      (
-        await axios.post(`/api/environment`, {
-          data: {
-            type: "environment",
-            attributes: newEnvironment,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.post(`/api/environment`, {
+        data: {
+          type: "environment",
+          attributes: newEnvironment,
+        },
+      })
+    ).data;
+    const createdEnvironment = convert(data.data, data.included, rootGetters);
 
     commit("upsertEnvironmentList", [createdEnvironment]);
 
@@ -127,12 +157,13 @@ const actions = {
         },
       });
     });
-    const environmentList = (
+    const data = (
       await axios.patch(`/api/environment/reorder`, {
         data: list,
       })
-    ).data.data.map((env: ResourceObject) => {
-      return convert(env, rootGetters);
+    ).data;
+    const environmentList = data.data.map((env: ResourceObject) => {
+      return convert(env, data.included, rootGetters);
     });
 
     commit("upsertEnvironmentList", environmentList);
@@ -150,17 +181,15 @@ const actions = {
       environmentPatch: EnvironmentPatch;
     }
   ) {
-    const updatedEnvironment = convert(
-      (
-        await axios.patch(`/api/environment/${environmentId}`, {
-          data: {
-            type: "environmentpatch",
-            attributes: environmentPatch,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.patch(`/api/environment/${environmentId}`, {
+        data: {
+          type: "environmentpatch",
+          attributes: environmentPatch,
+        },
+      })
+    ).data;
+    const updatedEnvironment = convert(data.data, data.included, rootGetters);
 
     commit("upsertEnvironmentList", [updatedEnvironment]);
 

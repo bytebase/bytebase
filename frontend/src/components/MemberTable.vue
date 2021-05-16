@@ -44,7 +44,17 @@
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == memberUI.principal.status">
             <span
-              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
+              class="
+                inline-flex
+                items-center
+                px-2
+                py-0.5
+                rounded-lg
+                text-xs
+                font-semibold
+                bg-main
+                text-main-text
+              "
             >
               Invited
             </span>
@@ -63,7 +73,17 @@
                 </router-link>
                 <span
                   v-if="currentUser.id == memberUI.principal.id"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  class="
+                    inline-flex
+                    items-center
+                    px-2
+                    py-0.5
+                    rounded-lg
+                    text-xs
+                    font-semibold
+                    bg-green-100
+                    text-green-800
+                  "
                 >
                   You
                 </span>
@@ -134,14 +154,9 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
-import { Principal, Member, MemberId, RoleType, MemberPatch } from "../types";
+import { MemberId, RoleType, MemberPatch, Member } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
-
-type MemberUI = Member & {
-  principal: Principal;
-  updater: Principal;
-};
 
 interface LocalState {}
 
@@ -168,33 +183,25 @@ export default {
 
     watchEffect(prepareMemberList);
 
-    const dataSource = computed((): BBTableSectionDataSource<MemberUI>[] => {
-      const ownerList: MemberUI[] = [];
-      const dbaList: MemberUI[] = [];
-      const developerList: MemberUI[] = [];
+    const dataSource = computed((): BBTableSectionDataSource<Member>[] => {
+      const ownerList: Member[] = [];
+      const dbaList: Member[] = [];
+      const developerList: Member[] = [];
       for (const member of store.getters["member/memberList"]()) {
-        const memberUI = {
-          ...member,
-          principal: store.getters["principal/principalById"](
-            member.principalId
-          ),
-          updater: store.getters["principal/principalById"](member.updaterId),
-        };
-
-        if (memberUI.role == "OWNER") {
-          ownerList.push(memberUI);
+        if (member.role == "OWNER") {
+          ownerList.push(member);
         }
 
-        if (memberUI.role == "DBA") {
-          dbaList.push(memberUI);
+        if (member.role == "DBA") {
+          dbaList.push(member);
         }
 
-        if (memberUI.role == "DEVELOPER") {
-          developerList.push(memberUI);
+        if (member.role == "DEVELOPER") {
+          developerList.push(member);
         }
       }
 
-      const dataSource: BBTableSectionDataSource<MemberUI>[] = [];
+      const dataSource: BBTableSectionDataSource<Member>[] = [];
       if (hasAdminFeature.value) {
         dataSource.push({
           title: "Owner",

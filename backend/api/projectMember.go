@@ -23,10 +23,12 @@ type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
 
 	// Standard fields
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	CreatorId   int
+	Creator     *Principal `jsonapi:"relation,creator"`
+	CreatedTs   int64      `jsonapi:"attr,createdTs"`
+	UpdaterId   int
+	Updater     *Principal `jsonapi:"relation,updater"`
+	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 
 	// Related fields
@@ -35,7 +37,8 @@ type ProjectMember struct {
 
 	// Domain specific fields
 	Role        string `jsonapi:"attr,role"`
-	PrincipalId int    `jsonapi:"attr,principalId"`
+	PrincipalId int
+	Principal   *Principal `jsonapi:"relation,principal"`
 }
 
 type ProjectMemberCreate struct {

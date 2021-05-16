@@ -135,10 +135,18 @@ func (s *Server) ComposeProjectlById(ctx context.Context, id int, includeList []
 
 func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project, includeList []string) error {
 	var err error
-	projectMemberFind := &api.ProjectMemberFind{
-		ProjectId: &project.ID,
+
+	project.Creator, err = s.ComposePrincipalById(context.Background(), project.CreatorId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for project: %v", project.Name)).SetInternal(err)
 	}
-	project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
+
+	project.Updater, err = s.ComposePrincipalById(context.Background(), project.UpdaterId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for project: %v", project.Name)).SetInternal(err)
+	}
+
+	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectId(ctx, project.ID, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
 	}

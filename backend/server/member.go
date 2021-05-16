@@ -29,6 +29,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create member").SetInternal(err)
 		}
 
+		if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
+			return err
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create member response").SetInternal(err)
@@ -44,6 +48,12 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		list, err := s.MemberService.FindMemberList(context.Background(), memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
+		}
+
+		for _, member := range list {
+			if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
+				return err
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -76,6 +86,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch member ID: %v", id)).SetInternal(err)
 		}
 
+		if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
+			return err
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal member ID response: %v", id)).SetInternal(err)
@@ -105,4 +119,25 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
+}
+
+func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member, includeList []string) error {
+	var err error
+
+	member.Creator, err = s.ComposePrincipalById(context.Background(), member.CreatorId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for member ID: %v", member.ID)).SetInternal(err)
+	}
+
+	member.Updater, err = s.ComposePrincipalById(context.Background(), member.UpdaterId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for member ID: %v", member.ID)).SetInternal(err)
+	}
+
+	member.Principal, err = s.ComposePrincipalById(context.Background(), member.PrincipalId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal for member ID: %v", member.ID)).SetInternal(err)
+	}
+
+	return nil
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) ComposePipelineById(ctx context.Context, id int, incluedList []string) (*api.Pipeline, error) {
+func (s *Server) ComposePipelineById(ctx context.Context, id int, includeList []string) (*api.Pipeline, error) {
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
@@ -22,7 +22,7 @@ func (s *Server) ComposePipelineById(ctx context.Context, id int, incluedList []
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch pipeline ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.ComposePipelineRelationship(ctx, pipeline, incluedList); err != nil {
+	if err := s.ComposePipelineRelationship(ctx, pipeline, includeList); err != nil {
 		return nil, err
 	}
 
