@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase"
@@ -104,6 +105,10 @@ func (s *IssueService) PatchIssueByID(ctx context.Context, patch *api.IssuePatch
 
 // createIssue creates a new issue.
 func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.IssueCreate) (*api.Issue, error) {
+	subscriberIdList := []string{}
+	for _, item := range create.SubscriberIdList {
+		subscriberIdList = append(subscriberIdList, strconv.Itoa(item))
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,
@@ -111,10 +116,17 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			workspace_id,
 			project_id,
 			pipeline_id,
-			name
+			name,
+			`+"`status`,"+`
+			`+"`type`,"+`
+			description,
+			assignee_id,
+			subscriber_id_list,
+			`+"`sql`,"+`
+			rollback_sql
 		)
-		VALUES (?, ?, ?, ?, ?, 'OPEN')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, "+`payload
+		VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -122,6 +134,12 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		create.ProjectId,
 		create.PipelineId,
 		create.Name,
+		create.Type,
+		create.Description,
+		create.AssigneeId,
+		strings.Join(subscriberIdList, ","),
+		create.Sql,
+		create.RollbackSql,
 	)
 
 	if err != nil {
@@ -131,6 +149,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 
 	row.Next()
 	var issue api.Issue
+	var idList string
 	if err := row.Scan(
 		&issue.ID,
 		&issue.CreatorId,
@@ -142,9 +161,24 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		&issue.PipelineId,
 		&issue.Name,
 		&issue.Status,
+		&issue.Type,
+		&issue.Description,
+		&issue.AssigneeId,
+		&idList,
+		&issue.Sql,
+		&issue.RollbackSql,
 		&issue.Payload,
 	); err != nil {
 		return nil, FormatError(err)
+	}
+
+	issue.SubscriberIdList = []int{}
+	for _, item := range strings.Split(idList, ",") {
+		oneId, err := strconv.Atoi(item)
+		if err != nil {
+			s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+		}
+		issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 	}
 
 	return &issue, nil
@@ -171,7 +205,13 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			project_id,
 			pipeline_id,
 		    name,
-		    `+"`status`,"+`
+			`+"`status`,"+`
+			`+"`type`,"+`
+			description,
+			assignee_id,
+			subscriber_id_list,
+			`+"`sql`,"+`
+			rollback_sql,
 			payload
 		FROM issue
 		WHERE `+strings.Join(where, " AND "),
@@ -186,6 +226,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	list := make([]*api.Issue, 0)
 	for rows.Next() {
 		var issue api.Issue
+		var idList string
 		if err := rows.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -197,9 +238,24 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			&issue.PipelineId,
 			&issue.Name,
 			&issue.Status,
+			&issue.Type,
+			&issue.Description,
+			&issue.AssigneeId,
+			&idList,
+			&issue.Sql,
+			&issue.RollbackSql,
 			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+
+		issue.SubscriberIdList = []int{}
+		for _, item := range strings.Split(idList, ",") {
+			oneId, err := strconv.Atoi(item)
+			if err != nil {
+				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+			}
+			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 		}
 
 		list = append(list, &issue)
@@ -226,7 +282,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, "+`payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
 	`,
 		args...,
 	)
@@ -237,6 +293,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 
 	if row.Next() {
 		var issue api.Issue
+		var idList string
 		if err := row.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -248,10 +305,26 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			&issue.PipelineId,
 			&issue.Name,
 			&issue.Status,
+			&issue.Type,
+			&issue.Description,
+			&issue.AssigneeId,
+			&idList,
+			&issue.Sql,
+			&issue.RollbackSql,
 			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
+
+		issue.SubscriberIdList = []int{}
+		for _, item := range strings.Split(idList, ",") {
+			oneId, err := strconv.Atoi(item)
+			if err != nil {
+				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+			}
+			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
+		}
+
 		return &issue, nil
 	}
 

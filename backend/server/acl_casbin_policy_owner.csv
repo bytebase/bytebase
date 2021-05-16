@@ -25,3 +25,7 @@ p, OWNER, /database, POST
 p, OWNER, /database, GET
 p, OWNER, /database/{id}, GET
 p, OWNER, /database/{id}, PATCH
+p, OWNER, /issue, GET
+p, OWNER, /issue/{id}, GET
+p, OWNER, /issue/{id}, PATCH
+p, OWNER, /issue/{id}/status, PATCH

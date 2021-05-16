@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 const ALL_DATABASE_NAME = "*"
 
@@ -74,6 +77,14 @@ type DatabaseFind struct {
 
 	// Domain specific fields
 	IncludeAllDatabase bool
+}
+
+func (find *DatabaseFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type DatabasePatch struct {

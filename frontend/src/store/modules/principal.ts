@@ -35,6 +35,12 @@ const state: () => PrincipalState = () => ({
 });
 
 const getters = {
+  convert:
+    (state: PrincipalState, getters: any, rootState: any, rootGetters: any) =>
+    (principal: ResourceObject, includedList: ResourceObject[]): Principal => {
+      return convert(principal, rootGetters);
+    },
+
   principalList: (state: PrincipalState) => (): Principal[] => {
     return state.principalList;
   },
@@ -69,9 +75,10 @@ const actions = {
     const principalList = userList.map((user) => {
       return convert(user, rootGetters);
     });
+
     commit("setPrincipalList", principalList);
 
-    return userList;
+    return principalList;
   },
 
   async fetchPrincipalById(

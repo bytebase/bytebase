@@ -54,25 +54,28 @@ type Issue struct {
 	ID int `jsonapi:"primary,issue"`
 
 	// Standard fields
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	CreatorId   int
+	Creator     *Principal `jsonapi:"relation,creator"`
+	CreatedTs   int64      `jsonapi:"attr,createdTs"`
+	UpdaterId   int
+	Updater     *Principal `jsonapi:"relation,updater"`
+	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 
 	// Related fields
 	ProjectId  int
 	Project    *Project `jsonapi:"relation,project"`
 	PipelineId int
-	// Pipeline   *Pipeline `jsonapi:"relation,Pipeline"`
+	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 
 	// Domain specific fields
 	Name             string      `jsonapi:"attr,name"`
 	Status           IssueStatus `jsonapi:"attr,status"`
 	Type             IssueType   `jsonapi:"attr,type"`
 	Description      string      `jsonapi:"attr,description"`
-	AssigneeId       int         `jsonapi:"attr,assignee"`
-	SubscriberIdList []int       `jsonapi:"attr,subscriberList"`
+	AssigneeId       int         `jsonapi:"attr,assigneeId"`
+	Assignee         *Principal  `jsonapi:"relation,assignee"`
+	SubscriberIdList []int       `jsonapi:"attr,subscriberIdList"`
 	Sql              string      `jsonapi:"attr,sql"`
 	RollbackSql      string      `jsonapi:"attr,rollbackSql"`
 	Payload          string      `jsonapi:"attr,payload"`
@@ -92,8 +95,8 @@ type IssueCreate struct {
 	Name             string    `jsonapi:"attr,name"`
 	Type             IssueType `jsonapi:"attr,type"`
 	Description      string    `jsonapi:"attr,description"`
-	AssigneeId       int       `jsonapi:"attr,assignee"`
-	SubscriberLIdist []int     `jsonapi:"attr,subscriberList"`
+	AssigneeId       int       `jsonapi:"attr,assigneeId"`
+	SubscriberIdList []int     `jsonapi:"attr,subscriberIdList"`
 	Sql              string    `jsonapi:"attr,sql"`
 	RollbackSql      string    `jsonapi:"attr,rollbackSql"`
 	Payload          string    `jsonapi:"attr,payload"`
@@ -120,8 +123,8 @@ type IssuePatch struct {
 	// Domain specific fields
 	Name             *string `jsonapi:"attr,name"`
 	Description      *string `jsonapi:"attr,description"`
-	AssigneeId       *int    `jsonapi:"attr,assignee"`
-	SubscriberIdList *[]int  `jsonapi:"attr,subscriberList"`
+	AssigneeId       *int    `jsonapi:"attr,assigneeId"`
+	SubscriberIdList *[]int  `jsonapi:"attr,subscriberIdList"`
 	Sql              *string `jsonapi:"attr,sql"`
 	RollbackSql      *string `jsonapi:"attr,rollbackSql"`
 	Payload          *string `jsonapi:"attr,payload"`

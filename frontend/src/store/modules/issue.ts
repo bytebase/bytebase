@@ -23,25 +23,26 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Issue {
-  const creator = rootGetters["principal/principalById"](
-    issue.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    issue.attributes.updaterId
-  );
-
-  let assignee = undefined;
-  if (issue.attributes.assigneeId) {
-    assignee = rootGetters["principal/principalById"](
-      issue.attributes.assigneeId
-    );
-  }
-
   const subscriberList = (issue.attributes.subscriberIdList as Principal[]).map(
     (principalId) => {
       return rootGetters["principal/principalById"](principalId);
     }
   );
+
+  const creatorId = (issue.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (issue.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  const assigneeId = (issue.relationships!.assignee.data as ResourceIdentifier)
+    .id;
+  let assignee: Principal = unknown("PRINCIPAL") as Principal;
+  assignee.id = assigneeId;
 
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
@@ -54,6 +55,27 @@ function convert(
   pipeline.id = pipelineId;
 
   for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (issue.relationships!.creator.data as ResourceIdentifier).id == item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (issue.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (issue.relationships!.assignee.data as ResourceIdentifier).id == item.id
+    ) {
+      assignee = rootGetters["principal/convert"](item);
+    }
+
     if (
       item.type == "project" &&
       (issue.relationships!.project.data as ResourceIdentifier).id == item.id
@@ -113,7 +135,7 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/issue?user=${userId}&include=project,pipeline,pipeline.stage,pipeline.task`
+        `/api/issue?user=${userId}&include=principal,project,pipeline,pipeline.stage,pipeline.task`
       )
     ).data;
     const issueList = data.data.map((issue: ResourceObject) => {
@@ -127,7 +149,7 @@ const actions = {
   async fetchIssueListForProject({ rootGetters }: any, projectId: ProjectId) {
     const data = (
       await axios.get(
-        `/api/issue?project=${projectId}&include=project,pipeline,pipeline.stage,pipeline.task`
+        `/api/issue?project=${projectId}&include=principal,project,pipeline,pipeline.stage,pipeline.task`
       )
     ).data;
     const issueList = data.data.map((issue: ResourceObject) => {
@@ -141,7 +163,7 @@ const actions = {
   async fetchIssueById({ commit, rootGetters }: any, issueId: IssueId) {
     const data = (
       await axios.get(
-        `/api/issue/${issueId}?include=project,pipeline,pipeline.stage,pipeline.task`
+        `/api/issue/${issueId}?include=principal,project,pipeline,pipeline.stage,pipeline.task`
       )
     ).data;
     const issue = convert(data.data, data.included, rootGetters);
@@ -155,7 +177,7 @@ const actions = {
   async createIssue({ commit, rootGetters }: any, newIssue: IssueCreate) {
     const data = (
       await axios.post(
-        `/api/issue?include=project,pipeline,pipeline.stage,pipeline.task`,
+        `/api/issue?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
             type: "IssueCreate",
@@ -186,7 +208,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/issue/${issueId}?include=project,pipeline,pipeline.stage,pipeline.task`,
+        `/api/issue/${issueId}?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
             type: "issuepatch",
@@ -219,7 +241,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/issue/${issueId}/status?include=project,pipeline,pipeline.stage,pipeline.task`,
+        `/api/issue/${issueId}/status?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
             type: "issuestatuspatch",

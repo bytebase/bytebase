@@ -47,6 +47,10 @@ func (m *Main) Run() error {
 	server.InstanceService = store.NewInstanceService(m.l, db)
 	server.DatabaseService = store.NewDatabaseService(m.l, db)
 	server.DataSourceService = store.NewDataSourceService(m.l, db)
+	server.IssueService = store.NewIssueService(m.l, db)
+	server.PipelineService = store.NewPipelineService(m.l, db)
+	server.StageService = store.NewStageService(m.l, db)
+	server.TaskService = store.NewTaskService(m.l, db)
 
 	m.server = server
 	if err := server.Run(); err != nil {

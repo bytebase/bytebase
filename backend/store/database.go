@@ -74,9 +74,9 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project not found: %v", find)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("database not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple projects: %d, expect 1", len(list))
+		s.l.Warnf("found 5 databases with filter %v, expect 1. ", len(list), find)
 	}
 	return list[0], nil
 }
@@ -158,14 +158,15 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *api.DatabaseFind) (_ []*api.Database, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
 	if v := find.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}
-
 	if v := find.InstanceId; v != nil {
 		where, args = append(where, "instance_id = ?"), append(args, *v)
 	}
-
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.ALL_DATABASE_NAME+"'")
 	}

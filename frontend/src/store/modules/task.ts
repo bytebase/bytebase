@@ -14,27 +14,49 @@ import {
   Database,
   empty,
   ResourceIdentifier,
+  Principal,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
 
 function convertPartial(
   task: ResourceObject,
+  includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Task, "pipeline" | "stage"> {
-  const creator = rootGetters["principal/principalById"](
-    task.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    task.attributes.updaterId
-  );
+  const creatorId = (task.relationships!.creator.data as ResourceIdentifier).id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
 
+  const updaterId = (task.relationships!.updater.data as ResourceIdentifier).id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
+
+  const databaseId = (task.relationships!.database.data as ResourceIdentifier)
+    .id;
   let database: Database = empty("DATABASE") as Database;
-  // For create database stage, there is no database id.
-  if (task.relationships!.database.data) {
-    database = rootGetters["database/databaseById"](
-      (task.relationships!.database.data as ResourceIdentifier).id
-    );
+  database.id = databaseId;
+  for (const item of includedList || []) {
+    if (
+      item.type == "principal" &&
+      (task.relationships!.creator.data as ResourceIdentifier).id == item.id
+    ) {
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (task.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "database" &&
+      (task.relationships!.database.data as ResourceIdentifier).id == item.id
+    ) {
+      database = rootGetters["database/convert"](item);
+    }
   }
 
   return {
@@ -50,27 +72,24 @@ function convertPartial(
 }
 
 const getters = {
-  convertPartial: (
-    state: TaskState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => (task: ResourceObject): Task => {
-    // It's only called when pipeline/stage tries to convert itself, so we don't have a issue yet.
-    const pipelineId = task.attributes.pipelineId as PipelineId;
-    let pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
-    pipeline.id = pipelineId;
+  convertPartial:
+    (state: TaskState, getters: any, rootState: any, rootGetters: any) =>
+    (task: ResourceObject, includedList: ResourceObject[]): Task => {
+      // It's only called when pipeline/stage tries to convert itself, so we don't have a issue yet.
+      const pipelineId = task.attributes.pipelineId as PipelineId;
+      let pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
+      pipeline.id = pipelineId;
 
-    const stageId = task.attributes.stageId as StageId;
-    let stage: Stage = unknown("STAGE") as Stage;
-    stage.id = stageId;
+      const stageId = task.attributes.stageId as StageId;
+      let stage: Stage = unknown("STAGE") as Stage;
+      stage.id = stageId;
 
-    return {
-      ...convertPartial(task, rootGetters),
-      pipeline,
-      stage,
-    };
-  },
+      return {
+        ...convertPartial(task, includedList, rootGetters),
+        pipeline,
+        stage,
+      };
+    },
 };
 
 const actions = {

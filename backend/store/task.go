@@ -113,9 +113,9 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			stage_id,
 			database_id,
 			name,
-			`+"`status,`"+`	
-			`+"`type,`"+`
-			`+"`when,`"+`
+			`+"`status`,"+`	
+			`+"`type`,"+`
+			`+"`when`,"+`
 			payload	
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
@@ -190,9 +190,9 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			stage_id,
 			database_id,
 		    name,
-		    `+"`status,`"+`
-			`+"`type,`"+`
-			`+"`when,`"+`
+		    `+"`status`,"+`
+			`+"`type`,"+`
+			`+"`when`,"+`
 			payload
 		FROM task
 		WHERE `+strings.Join(where, " AND "),

@@ -29,18 +29,20 @@ type Stage struct {
 	ID int `jsonapi:"primary,stage"`
 
 	// Standard fields
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	CreatorId   int
+	Creator     *Principal `jsonapi:"relation,creator"`
+	CreatedTs   int64      `jsonapi:"attr,createdTs"`
+	UpdaterId   int
+	Updater     *Principal `jsonapi:"relation,updater"`
+	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 
 	// Related fields
+	// Just returns PipelineId otherwise would cause circular dependency.
+	PipelineId    int          `jsonapi:"attr,pipelineId"`
 	Environment   *Environment `jsonapi:"relation,environment"`
 	EnvironmentId int
-	Pipeline      *Pipeline `jsonapi:"relation,pipeline"`
-	PipelineId    int
-	// TaskList []*Stage `jsonapi:"relation,task"`
+	TaskList      []*Task `jsonapi:"relation,task"`
 
 	// Domain specific fields
 	Name string    `jsonapi:"attr,name"`

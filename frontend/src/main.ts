@@ -83,8 +83,8 @@ app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 
 registerStoreWithRoleUtil(store);
 
-console.log("dev: ", isDev());
-console.log("mode: ", import.meta.env.MODE);
+console.debug("dev: ", isDev());
+console.debug("mode: ", import.meta.env.MODE);
 
 axios.defaults.timeout = 3000;
 axios.interceptors.request.use((request) => {
@@ -103,14 +103,15 @@ axios.interceptors.request.use((request) => {
         !request.url!.startsWith("/api/project") &&
         !request.url!.startsWith("/api/environment") &&
         !request.url!.startsWith("/api/instance") &&
-        !request.url!.startsWith("/api/database"))
+        !request.url!.startsWith("/api/database") &&
+        !request.url!.startsWith("/api/issue"))
     ) {
       request.url = request.url!.replace("/api", "/mock");
     }
   }
 
   if (isDev() && request.url!.startsWith("/api")) {
-    console.log(
+    console.debug(
       request.method?.toUpperCase() + " " + request.url + " request",
       JSON.stringify(request, null, 2)
     );
@@ -122,7 +123,7 @@ axios.interceptors.request.use((request) => {
 axios.interceptors.response.use(
   (response) => {
     if (isDev() && response.config.url!.startsWith("/api")) {
-      console.log(
+      console.debug(
         response.config.method?.toUpperCase() +
           " " +
           response.config.url +

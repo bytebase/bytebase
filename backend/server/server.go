@@ -27,6 +27,10 @@ type Server struct {
 	InstanceService      api.InstanceService
 	DatabaseService      api.DatabaseService
 	DataSourceService    api.DataSourceService
+	IssueService         api.IssueService
+	PipelineService      api.PipelineService
+	StageService         api.StageService
+	TaskService          api.TaskService
 
 	e *echo.Echo
 }
@@ -120,6 +124,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerEnvironmentRoutes(g)
 	s.registerInstanceRoutes(g)
 	s.registerDatabaseRoutes(g)
+	s.registerIssueRoutes(g)
 
 	return s
 }

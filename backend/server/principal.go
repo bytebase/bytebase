@@ -58,15 +58,9 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		principalFind := &api.PrincipalFind{
-			ID: &id,
-		}
-		principal, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+		principal, err := s.FindPrincipalById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal ID: %v", id)).SetInternal(err)
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -103,4 +97,19 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) FindPrincipalById(ctx context.Context, id int, incluedList []string) (*api.Principal, error) {
+	principalFind := &api.PrincipalFind{
+		ID: &id,
+	}
+	principal, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+	if err != nil {
+		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal ID: %v", id)).SetInternal(err)
+	}
+
+	return principal, nil
 }

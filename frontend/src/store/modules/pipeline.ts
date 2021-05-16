@@ -11,6 +11,7 @@ import {
   IssueId,
   unknown,
   Stage,
+  Principal,
 } from "../../types";
 
 const state: () => PipelineState = () => ({});
@@ -20,25 +21,44 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Pipeline {
-  const creator = rootGetters["principal/principalById"](
-    pipeline.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    pipeline.attributes.updaterId
-  );
+  const creatorId = (pipeline.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  let creator: Principal = unknown("PRINCIPAL") as Principal;
+  creator.id = creatorId;
+
+  const updaterId = (pipeline.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  let updater: Principal = unknown("PRINCIPAL") as Principal;
+  updater.id = updaterId;
 
   const stageList: Stage[] = [];
   for (const item of includedList || []) {
     if (
-      item.type == "stage" &&
-      (item.relationships!.pipeline.data as ResourceIdentifier).id ==
-        pipeline.id
+      item.type == "principal" &&
+      (pipeline.relationships!.creator.data as ResourceIdentifier).id == item.id
     ) {
-      const stage: Stage = rootGetters["stage/convertPartial"](
-        item,
-        includedList
-      );
-      stageList.push(stage);
+      creator = rootGetters["principal/convert"](item);
+    }
+
+    if (
+      item.type == "principal" &&
+      (pipeline.relationships!.updater.data as ResourceIdentifier).id == item.id
+    ) {
+      updater = rootGetters["principal/convert"](item);
+    }
+
+    if (item.type == "stage") {
+      const stageIdList = pipeline.relationships!.stage
+        .data as ResourceIdentifier[];
+      for (const idItem of stageIdList) {
+        if (idItem.id == item.id) {
+          const stage: Stage = rootGetters["stage/convertPartial"](
+            item,
+            includedList
+          );
+          stageList.push(stage);
+        }
+      }
     }
   }
 
@@ -66,14 +86,11 @@ function convert(
 }
 
 const getters = {
-  convert: (
-    state: PipelineState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => (pipeline: ResourceObject, includedList: ResourceObject[]): Pipeline => {
-    return convert(pipeline, includedList, rootGetters);
-  },
+  convert:
+    (state: PipelineState, getters: any, rootState: any, rootGetters: any) =>
+    (pipeline: ResourceObject, includedList: ResourceObject[]): Pipeline => {
+      return convert(pipeline, includedList, rootGetters);
+    },
 
   async updatePipelineStatus(
     { dispatch }: any,

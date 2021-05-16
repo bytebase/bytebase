@@ -47,17 +47,18 @@ type Task struct {
 	ID int `jsonapi:"primary,task"`
 
 	// Standard fields
-	CreatorId   int   `jsonapi:"attr,creatorId"`
-	CreatedTs   int64 `jsonapi:"attr,createdTs"`
-	UpdaterId   int   `jsonapi:"attr,updaterId"`
-	UpdatedTs   int64 `jsonapi:"attr,updatedTs"`
+	CreatorId   int
+	Creator     *Principal `jsonapi:"relation,creator"`
+	CreatedTs   int64      `jsonapi:"attr,createdTs"`
+	UpdaterId   int
+	Updater     *Principal `jsonapi:"relation,updater"`
+	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 
 	// Related fields
-	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
-	PipelineId int
-	Stage      *Stage `jsonapi:"relation,stage"`
-	StageId    int
+	// Just returns PipelineId and StageId otherwise would cause circular dependency.
+	PipelineId int       `jsonapi:"attr,pipelineId"`
+	StageId    int       `jsonapi:"attr,stageId"`
 	Database   *Database `jsonapi:"relation,database"`
 	DatabaseId int
 
