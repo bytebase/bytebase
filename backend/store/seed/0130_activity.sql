@@ -36,5 +36,47 @@ VALUES
         1,
         12001,
         'bb.issue.comment.create',
-        'Glad to be here!'
+        'Welcome!'
+    );
+
+INSERT INTO
+    activity (
+        id,
+        creator_id,
+        updater_id,
+        workspace_id,
+        container_id,
+        `type`,
+        `comment`
+    )
+VALUES
+    (
+        13003,
+        1002,
+        1002,
+        1,
+        12001,
+        'bb.issue.comment.create',
+        'Let''s rock!'
+    );
+
+INSERT INTO
+    activity (
+        id,
+        creator_id,
+        updater_id,
+        workspace_id,
+        container_id,
+        `type`,
+        `comment`
+    )
+VALUES
+    (
+        13004,
+        1003,
+        1003,
+        1,
+        12001,
+        'bb.issue.comment.create',
+        'Go fish!'
     );
