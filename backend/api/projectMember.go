@@ -30,7 +30,8 @@ type ProjectMember struct {
 	WorkspaceId int
 
 	// Related fields
-	Project *ResourceObject `jsonapi:"relation,project"`
+	// Just returns ProjectId otherwise would cause circular dependency.
+	ProjectId int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
 	Role        string `jsonapi:"attr,role"`

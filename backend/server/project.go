@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -136,14 +135,12 @@ func (s *Server) ComposeProjectlById(ctx context.Context, id int, includeList []
 
 func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project, includeList []string) error {
 	var err error
-	if sort.SearchStrings(includeList, "projectMember") >= 0 {
-		projectMemberFind := &api.ProjectMemberFind{
-			ProjectId: &project.ID,
-		}
-		project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
-		}
+	projectMemberFind := &api.ProjectMemberFind{
+		ProjectId: &project.ID,
+	}
+	project.ProjectMemberList, err = s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
 	}
 
 	return nil

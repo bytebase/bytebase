@@ -153,22 +153,9 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	if sort.SearchStrings(includeList, "instance") >= 0 {
-		instanceFind := &api.InstanceFind{
-			ID: &database.InstanceId,
-		}
-		database.Instance, err = s.InstanceService.FindInstance(context.Background(), instanceFind)
+		database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance for database: %v", database.Name)).SetInternal(err)
-		}
-	}
-
-	if sort.SearchStrings(includeList, "environment") >= 0 {
-		environmentFind := &api.EnvironmentFind{
-			ID: &database.Instance.EnvironmentId,
-		}
-		database.Instance.Environment, err = s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for database: %v", database.Name)).SetInternal(err)
 		}
 	}
 

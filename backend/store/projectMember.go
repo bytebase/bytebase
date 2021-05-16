@@ -153,7 +153,6 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 
 	row.Next()
 	var projectMember api.ProjectMember
-	projectMember.Project = &api.ResourceObject{}
 	if err := row.Scan(
 		&projectMember.ID,
 		&projectMember.CreatorId,
@@ -161,7 +160,7 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 		&projectMember.UpdaterId,
 		&projectMember.UpdatedTs,
 		&projectMember.WorkspaceId,
-		&projectMember.Project.ID,
+		&projectMember.ProjectId,
 		&projectMember.Role,
 		&projectMember.PrincipalId,
 	); err != nil {
@@ -208,7 +207,6 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	list := make([]*api.ProjectMember, 0)
 	for rows.Next() {
 		var projectMember api.ProjectMember
-		projectMember.Project = &api.ResourceObject{}
 		if err := rows.Scan(
 			&projectMember.ID,
 			&projectMember.CreatorId,
@@ -216,7 +214,7 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			&projectMember.UpdaterId,
 			&projectMember.UpdatedTs,
 			&projectMember.WorkspaceId,
-			&projectMember.Project.ID,
+			&projectMember.ProjectId,
 			&projectMember.Role,
 			&projectMember.PrincipalId,
 		); err != nil {
@@ -258,7 +256,6 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 
 	if row.Next() {
 		var projectMember api.ProjectMember
-		projectMember.Project = &api.ResourceObject{}
 		if err := row.Scan(
 			&projectMember.ID,
 			&projectMember.CreatorId,
@@ -266,7 +263,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 			&projectMember.UpdaterId,
 			&projectMember.UpdatedTs,
 			&projectMember.WorkspaceId,
-			&projectMember.Project.ID,
+			&projectMember.ProjectId,
 			&projectMember.Role,
 			&projectMember.PrincipalId,
 		); err != nil {
