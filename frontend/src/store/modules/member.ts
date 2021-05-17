@@ -28,7 +28,7 @@ function convert(
       Member,
       "id" | "creator" | "updater" | "principal"
     >),
-    id: member.id,
+    id: parseInt(member.id),
     creator,
     updater,
     principal,

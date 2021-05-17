@@ -36,12 +36,12 @@ function convert(
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
   let project: Project = unknown("PROJECT") as Project;
-  project.id = projectId;
+  project.id = parseInt(projectId);
 
   const pipelineId = (issue.relationships!.pipeline.data as ResourceIdentifier)
     .id;
   let pipeline = unknown("PIPELINE") as Pipeline;
-  pipeline.id = pipelineId;
+  pipeline.id = parseInt(pipelineId);
 
   for (const item of includedList || []) {
     if (
@@ -65,7 +65,7 @@ function convert(
       Issue,
       "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
     >),
-    id: issue.id,
+    id: parseInt(issue.id),
     project,
     creator,
     updater,

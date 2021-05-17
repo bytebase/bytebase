@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 )
 
 const SYSTEM_BOT_ID = 1
@@ -69,10 +68,10 @@ type Principal struct {
 // can map directly to the frontend Principal object without any conversion.
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		ID        string          `json:"id"`
-		CreatorId string          `json:"creatorId"`
+		ID        int             `json:"id"`
+		CreatorId int             `json:"creatorId"`
 		CreatedTs int64           `json:"createdTs"`
-		UpdaterId string          `json:"updaterId"`
+		UpdaterId int             `json:"updaterId"`
 		UpdatedTs int64           `json:"updatedTs"`
 		Status    PrincipalStatus `json:"status"`
 		Type      PrincipalType   `json:"type"`
@@ -80,10 +79,10 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		Email     string          `json:"email"`
 		Role      Role            `json:"role"`
 	}{
-		ID:        strconv.Itoa(p.ID),
-		CreatorId: strconv.Itoa(p.CreatorId),
+		ID:        p.ID,
+		CreatorId: p.CreatorId,
 		CreatedTs: p.CreatedTs,
-		UpdaterId: strconv.Itoa(p.UpdaterId),
+		UpdaterId: p.UpdaterId,
 		UpdatedTs: p.UpdatedTs,
 		Status:    p.Status,
 		Type:      p.Type,

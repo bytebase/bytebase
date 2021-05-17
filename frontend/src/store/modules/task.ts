@@ -30,7 +30,7 @@ function convertPartial(
   const databaseId = (task.relationships!.database.data as ResourceIdentifier)
     .id;
   let database: Database = empty("DATABASE") as Database;
-  database.id = databaseId;
+  database.id = parseInt(databaseId);
   for (const item of includedList || []) {
     if (
       item.type == "database" &&
@@ -45,7 +45,7 @@ function convertPartial(
       Task,
       "id" | "creator" | "updater" | "database" | "pipeline" | "stage"
     >),
-    id: task.id,
+    id: parseInt(task.id),
     creator,
     updater,
     database,

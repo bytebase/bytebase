@@ -151,7 +151,7 @@ const workspacesSeeder = (server: any) => {
     environmentList2,
     projectList2,
     ws2DBA,
-    "2",
+    2,
     WORKSPACE_INTERVAL + INSTANCE_ID_START
   );
 

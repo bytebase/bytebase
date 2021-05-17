@@ -44,7 +44,7 @@ import {
 } from "../types";
 
 interface LocalState {
-  selectedId?: string;
+  selectedId?: number;
 }
 
 export default {
@@ -54,7 +54,7 @@ export default {
   props: {
     selectedId: {
       required: true,
-      type: String,
+      type: Number,
     },
     mode: {
       required: true,
@@ -62,15 +62,15 @@ export default {
     },
     environmentId: {
       default: UNKNOWN_ID,
-      type: String as PropType<EnvironmentId>,
+      type: Number as PropType<EnvironmentId>,
     },
     instanceId: {
       default: UNKNOWN_ID,
-      type: String as PropType<InstanceId>,
+      type: Number as PropType<InstanceId>,
     },
     projectId: {
       default: UNKNOWN_ID,
-      type: String as PropType<ProjectId>,
+      type: Number as PropType<ProjectId>,
     },
     disabled: {
       default: false,

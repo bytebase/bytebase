@@ -17,7 +17,7 @@ import { isRelease, randomString } from "../../utils";
 function convert(principal: ResourceObject, rootGetters: any): Principal {
   const member = rootGetters["member/memberByPrincipalId"](principal.id);
   return {
-    id: principal.id,
+    id: parseInt(principal.id),
     creatorId: principal.attributes.creatorId as PrincipalId,
     createdTs: principal.attributes.createdTs as number,
     updaterId: principal.attributes.updaterId as PrincipalId,

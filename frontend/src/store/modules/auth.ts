@@ -113,6 +113,7 @@ const actions = {
 
   async logout({ commit }: any) {
     removeCookie("user");
+    console.log("logout:", getIntCookie("user"));
     commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
     return unknown("PRINCIPAL") as Principal;
   },

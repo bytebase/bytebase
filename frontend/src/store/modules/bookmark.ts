@@ -15,7 +15,7 @@ function convert(bookmark: ResourceObject, rootGetters: any): Bookmark {
 
   return {
     ...(bookmark.attributes as Omit<Bookmark, "id" | "creator" | "updater">),
-    id: bookmark.id,
+    id: parseInt(bookmark.id),
     creator,
     updater,
   };

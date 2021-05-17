@@ -1,38 +1,40 @@
-// These ID format may change in the future, so we encapsulate with a type.
-// Also good for readability.
+// Use number as the ID type, though the ID type could be transparent to the client and just
+// use string, however, that requires server to do string to int conversion since we store
+// ID as auto incremental int in the database.
+export type IdType = number;
 
-export type ExecutionId = string;
+export type ExecutionId = IdType;
 
-export type PrincipalId = string;
+export type PrincipalId = IdType;
 
-export type MemberId = string;
+export type MemberId = IdType;
 
-export type BookmarkId = string;
+export type BookmarkId = IdType;
 
-export type ProjectId = string;
+export type ProjectId = IdType;
 
-export type IssueId = string;
+export type IssueId = IdType;
 
-export type PipelineId = string;
+export type PipelineId = IdType;
 
-export type StageId = string;
+export type StageId = IdType;
 
-export type TaskId = string;
+export type TaskId = IdType;
 
-export type ActivityId = string;
+export type ActivityId = IdType;
 
-export type MessageId = string;
+export type MessageId = IdType;
 
-export type EnvironmentId = string;
+export type EnvironmentId = IdType;
 
-export type InstanceId = string;
+export type InstanceId = IdType;
 
-export type DataSourceId = string;
+export type DataSourceId = IdType;
 
-export type DatabaseId = string;
+export type DatabaseId = IdType;
 
-export type CommandId = string;
-export type CommandRegisterId = string;
+export type CommandId = IdType;
+export type CommandRegisterId = IdType;
 
 // This references to the object id, which can be used as a container.
 // Currently, only issue can be used a container.

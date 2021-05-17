@@ -312,7 +312,7 @@ export default {
           currentUser: currentUser.value,
         }),
         projectId: router.currentRoute.value.query.project
-          ? (router.currentRoute.value.query.project as ProjectId)
+          ? parseInt(router.currentRoute.value.query.project as string)
           : UNKNOWN_ID,
         creatorId: currentUser.value.id,
       };
@@ -337,8 +337,9 @@ export default {
           .rollbacksql as string;
       }
       if (router.currentRoute.value.query.assignee) {
-        newIssue.assigneeId = router.currentRoute.value.query
-          .assignee as PrincipalId;
+        newIssue.assigneeId = parseInt(
+          router.currentRoute.value.query.assignee as string
+        );
       }
 
       for (const field of newIssueTemplate.value.inputFieldList) {

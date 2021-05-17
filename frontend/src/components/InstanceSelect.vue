@@ -37,7 +37,7 @@ import { useStore } from "vuex";
 import { Instance } from "../types";
 
 interface LocalState {
-  selectedId?: string;
+  selectedId?: number;
 }
 
 export default {
@@ -46,10 +46,10 @@ export default {
   components: {},
   props: {
     selectedId: {
-      type: String,
+      type: Number,
     },
     environmentId: {
-      type: String,
+      type: Number,
     },
     disabled: {
       default: false,
@@ -64,9 +64,10 @@ export default {
 
     const instanceList = computed(() => {
       if (props.environmentId) {
-        return store.getters[
-          "instance/instanceListByEnvironmentId"
-        ](props.environmentId, ["NORMAL", "ARCHIVED"]);
+        return store.getters["instance/instanceListByEnvironmentId"](
+          props.environmentId,
+          ["NORMAL", "ARCHIVED"]
+        );
       }
       return store.getters["instance/instanceList"](["NORMAL", "ARCHIVED"]);
     });

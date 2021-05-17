@@ -34,7 +34,7 @@ function convert(
   // Only able to assign an empty member list, otherwise would cause circular dependency.
   // This should be fine as we shouldn't access member via member.project.memberList
   const projectWithoutMemberList: Project = {
-    id: project.id,
+    id: parseInt(project.id),
     rowStatus: attrs.rowStatus,
     name: attrs.name,
     key: attrs.key,
@@ -84,7 +84,7 @@ function convertMember(
   >;
 
   return {
-    id: projectMember.id,
+    id: parseInt(projectMember.id),
     project: unknown("PROJECT") as Project,
     creator,
     updater,

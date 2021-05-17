@@ -28,7 +28,7 @@ function convert(
     instance.relationships!.environment.data as ResourceIdentifier
   ).id;
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
-  environment.id = environmentId;
+  environment.id = parseInt(environmentId);
 
   let username = undefined;
   let password = undefined;
@@ -56,7 +56,7 @@ function convert(
       Instance,
       "id" | "environment" | "creator" | "updater"
     >),
-    id: instance.id,
+    id: parseInt(instance.id),
     creator,
     updater,
     environment,

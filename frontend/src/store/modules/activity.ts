@@ -23,7 +23,7 @@ function convert(
 
   return {
     ...(activity.attributes as Omit<Activity, "id" | "creator" | "updater">),
-    id: activity.id,
+    id: parseInt(activity.id),
     creator,
     updater,
   };

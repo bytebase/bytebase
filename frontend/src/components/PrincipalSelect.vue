@@ -52,7 +52,7 @@ export default {
   emits: ["select-principal-id"],
   props: {
     selectedId: {
-      type: String,
+      type: Number,
     },
     disabled: {
       default: false,

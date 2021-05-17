@@ -31,7 +31,7 @@ function convertPartial(
     stage.relationships!.environment.data as ResourceIdentifier
   ).id;
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
-  environment.id = environmentId;
+  environment.id = parseInt(environmentId);
 
   const taskList: Task[] = [];
   for (const item of includedList || []) {
@@ -62,7 +62,7 @@ function convertPartial(
       Stage,
       "id" | "creator" | "updater" | "database" | "taskList"
     >),
-    id: stage.id,
+    id: parseInt(stage.id),
     creator,
     updater,
     environment,

@@ -172,7 +172,7 @@ export default {
   props: {
     instanceId: {
       required: true,
-      type: String,
+      type: Number,
     },
     // If database is specified, then we just show that database instead of the database select
     database: {

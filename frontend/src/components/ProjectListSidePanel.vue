@@ -43,7 +43,7 @@ export default {
       return projectList
         .map((item: Project): BBOutlineItem => {
           return {
-            id: item.id,
+            id: item.id.toString(),
             name: projectName(item),
             link: `/project/${projectSlug(item)}`,
           };

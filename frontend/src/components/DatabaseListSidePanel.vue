@@ -59,7 +59,7 @@ export default {
         // dbList may be undefined if the environment is archived
         if (dbList) {
           dbList.push({
-            id: database.id,
+            id: database.id.toString(),
             name: database.name,
             link: `/db/${databaseSlug(database)}`,
           });

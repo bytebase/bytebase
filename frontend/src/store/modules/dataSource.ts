@@ -63,7 +63,7 @@ function convert(
       DataSource,
       "id" | "creator" | "updater" | "instanceId" | "database" | "memberList"
     >),
-    id: dataSource.id,
+    id: parseInt(dataSource.id),
     instance,
     database,
     creator,

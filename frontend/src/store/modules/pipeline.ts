@@ -46,7 +46,7 @@ function convert(
       Pipeline,
       "id" | "creator" | "updater" | "stageList"
     >),
-    id: pipeline.id,
+    id: parseInt(pipeline.id),
     creator,
     updater,
     stageList,

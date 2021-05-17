@@ -21,7 +21,7 @@ import { UNKNOWN_ID, Pipeline, StageId } from "../types";
 import { activeStage } from "../utils";
 
 interface LocalState {
-  selectedId: string;
+  selectedId: number;
 }
 
 export default {
@@ -35,7 +35,7 @@ export default {
     },
     selectedId: {
       default: UNKNOWN_ID,
-      type: String,
+      type: Number,
     },
   },
   setup(props, { emit }) {

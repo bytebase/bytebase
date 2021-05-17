@@ -65,7 +65,7 @@ type DatabaseCreate struct {
 
 	// Domain specific fields
 	Name    string `jsonapi:"attr,name"`
-	IssueId string `jsonapi:"attr,issueId"`
+	IssueId int    `jsonapi:"attr,issueId"`
 }
 
 type DatabaseFind struct {

@@ -37,7 +37,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import { Environment, EnvironmentId } from "../types";
 
 interface LocalState {
-  selectedId?: string;
+  selectedId?: Number;
 }
 
 export default {
@@ -46,7 +46,7 @@ export default {
   components: {},
   props: {
     selectedId: {
-      type: String,
+      type: Number,
     },
     selectDefault: {
       default: true,

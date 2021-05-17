@@ -31,7 +31,7 @@ export default {
   components: {},
   props: {
     selectedId: {
-      type: String,
+      type: Number,
     },
   },
   setup(props, ctx) {

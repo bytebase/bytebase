@@ -36,7 +36,7 @@ import { useStore } from "vuex";
 import { Database } from "../types";
 
 interface LocalState {
-  selectedId?: string;
+  selectedId?: number;
 }
 
 export default {
@@ -45,7 +45,7 @@ export default {
   components: {},
   props: {
     selectedId: {
-      type: String,
+      type: Number,
     },
     database: {
       type: Object as PropType<Database>,

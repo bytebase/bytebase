@@ -34,19 +34,19 @@ function convert(
     database.relationships!.instance.data as ResourceIdentifier
   ).id;
   let instance: Instance = unknown("INSTANCE") as Instance;
-  instance.id = instanceId;
+  instance.id = parseInt(instanceId);
 
   const projectId = (database.relationships!.project.data as ResourceIdentifier)
     .id;
   let project: Project = unknown("PROJECT") as Project;
-  project.id = projectId;
+  project.id = parseInt(projectId);
 
   const dataSourceIdList = database.relationships!.dataSource
     .data as ResourceIdentifier[];
   const dataSourceList: DataSource[] = [];
   for (const item of dataSourceIdList) {
     const dataSource = unknown("DATA_SOURCE") as DataSource;
-    dataSource.id = item.id;
+    dataSource.id = parseInt(item.id);
     dataSourceList.push(dataSource);
   }
 
@@ -66,7 +66,7 @@ function convert(
       Database,
       "id" | "creator" | "updater" | "instance" | "project" | "dataSourceList"
     >),
-    id: database.id,
+    id: parseInt(database.id),
     creator,
     updater,
     instance,
@@ -81,7 +81,7 @@ function convert(
         database.id
     ) {
       const i = dataSourceList.findIndex(
-        (dataSource: DataSource) => item.id == dataSource.id
+        (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
         dataSourceList[i] = rootGetters["dataSource/convert"](item);

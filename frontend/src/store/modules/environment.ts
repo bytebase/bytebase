@@ -28,7 +28,7 @@ function convert(
       Environment,
       "id" | "creator" | "updater"
     >),
-    id: environment.id,
+    id: parseInt(environment.id),
     creator,
     updater,
   };

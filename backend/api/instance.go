@@ -34,7 +34,7 @@ type InstanceCreate struct {
 	WorkspaceId int
 
 	// Related fields
-	EnvironmentId string `jsonapi:"attr,environmentId"`
+	EnvironmentId int `jsonapi:"attr,environmentId"`
 
 	// Domain specific fields
 	Name         string `jsonapi:"attr,name"`

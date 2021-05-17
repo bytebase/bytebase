@@ -27,7 +27,7 @@ function convert(message: ResourceObject, rootGetters: any): Message {
       Message,
       "id" | "creator" | "updater" | "receiver"
     >),
-    id: message.id,
+    id: parseInt(message.id),
     creator,
     updater,
     receiver,

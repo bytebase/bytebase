@@ -1,7 +1,12 @@
 <template>
   <nav aria-label="Pipeline">
     <ol
-      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0"
+      class="
+        border-t border-b border-block-border
+        divide-y divide-gray-300
+        lg:flex
+        lg:divide-y-0
+      "
     >
       <li
         v-for="(item, index) in itemList"
@@ -13,7 +18,16 @@
         >
           <span class="pl-4 py-2 flex items-center text-sm font-medium">
             <div
-              class="relative w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+              class="
+                relative
+                w-6
+                h-6
+                flex flex-shrink-0
+                items-center
+                justify-center
+                rounded-full
+                select-none
+              "
               :class="flowItemIconClass(item)"
             >
               <template v-if="item.taskStatus === 'PENDING'">
@@ -54,7 +68,15 @@
               </template>
               <template v-else-if="item.taskStatus == 'FAILED'">
                 <span
-                  class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
+                  class="
+                    h-2.5
+                    w-2.5
+                    rounded-full
+                    text-center
+                    pb-6
+                    font-medium
+                    text-base
+                  "
                   aria-hidden="true"
                   >!</span
                 >
@@ -77,7 +99,13 @@
               </template>
             </div>
             <div
-              class="hidden cursor-pointer hover:underline lg:ml-4 lg:flex lg:flex-col"
+              class="
+                hidden
+                cursor-pointer
+                hover:underline
+                lg:ml-4
+                lg:flex lg:flex-col
+              "
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
@@ -123,11 +151,11 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { useRouter } from "vue-router";
-import { Pipeline, TaskStatus, TaskId, Stage } from "../types";
+import { Pipeline, TaskStatus, TaskId, Stage, StageId } from "../types";
 import { activeTask } from "../utils";
 
 interface FlowItem {
-  stageId: string;
+  stageId: StageId;
   stageName: string;
   taskId: TaskId;
   taskName: string;

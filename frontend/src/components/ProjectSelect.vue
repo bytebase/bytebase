@@ -50,7 +50,7 @@ import { useStore } from "vuex";
 import { Principal, Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 
 interface LocalState {
-  selectedId: string;
+  selectedId: number;
 }
 
 export default {
@@ -60,7 +60,7 @@ export default {
   props: {
     selectedId: {
       default: UNKNOWN_ID,
-      type: String,
+      type: Number,
     },
     disabled: {
       default: false,

@@ -59,7 +59,7 @@ type ActivityCreate struct {
 	WorkspaceId int
 
 	// Domain specific fields
-	ContainerId string       `jsonapi:"attr,containerId"`
+	ContainerId int          `jsonapi:"attr,containerId"`
 	Type        ActivityType `jsonapi:"attr,actionType"`
 	Comment     string       `jsonapi:"attr,comment"`
 	Payload     string       `jsonapi:"attr,payload"`
