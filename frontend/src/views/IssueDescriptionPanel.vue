@@ -2,7 +2,7 @@
   <!-- Description Bar -->
   <div class="flex justify-between">
     <div class="textlabel">Description</div>
-    <div v-if="create" class="space-x-2">
+    <div v-if="!create" class="space-x-2">
       <button
         v-if="allowEdit && !state.editing"
         type="button"
