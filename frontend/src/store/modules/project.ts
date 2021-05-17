@@ -74,49 +74,9 @@ function convertMember(
   includedList: ResourceObject[],
   rootGetters: any
 ): ProjectMember {
-  const creatorId = (
-    projectMember.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (
-    projectMember.relationships!.updater.data as ResourceIdentifier
-  ).id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
-
-  const principalId = (
-    projectMember.relationships!.updater.data as ResourceIdentifier
-  ).id;
-  let principal: Principal = unknown("PRINCIPAL") as Principal;
-  principal.id = principalId;
-
-  for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (projectMember.relationships!.creator.data as ResourceIdentifier).id ==
-        item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (projectMember.relationships!.updater.data as ResourceIdentifier).id ==
-        item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (projectMember.relationships!.principal.data as ResourceIdentifier).id ==
-        item.id
-    ) {
-      principal = rootGetters["principal/convert"](item);
-    }
-  }
+  const creator = projectMember.attributes.creator as Principal;
+  const updater = projectMember.attributes.updater as Principal;
+  const principal = projectMember.attributes.principal as Principal;
 
   const attrs = projectMember.attributes as Omit<
     ProjectMember,
