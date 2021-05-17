@@ -81,7 +81,7 @@ export default {
     const principalList = computed((): Principal[] => {
       const list = store.getters["member/memberList"]().map(
         (member: Member) => {
-          return store.getters["principal/principalById"](member.principalId);
+          return member.principal;
         }
       );
       return list.filter((item: Principal) => {
