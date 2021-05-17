@@ -33,3 +33,6 @@ p, OWNER, /activity, POST
 p, OWNER, /activity, GET
 p, OWNER, /activity/{id}, PATCH_SELF
 p, OWNER, /activity/{id}, DELETE_SELF
+p, OWNER, /bookmark, POST
+p, OWNER, /bookmark, GET
+p, OWNER, /bookmark/{id}, DELETE_SELF

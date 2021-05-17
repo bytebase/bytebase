@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func ACLMiddleware(l *bytebase.Logger, m api.MemberService, a api.ActivityService, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
+func ACLMiddleware(l *bytebase.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {
@@ -29,7 +29,7 @@ func ACLMiddleware(l *bytebase.Logger, m api.MemberService, a api.ActivityServic
 			WorkspaceId: &workspaceId,
 			PrincipalId: &principalId,
 		}
-		member, err := m.FindMember(context.Background(), memberFind)
+		member, err := s.MemberService.FindMember(context.Background(), memberFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalId))
@@ -58,7 +58,7 @@ func ACLMiddleware(l *bytebase.Logger, m api.MemberService, a api.ActivityServic
 					activityFind := &api.ActivityFind{
 						ID: &activityId,
 					}
-					activity, err := a.FindActivity(context.Background(), activityFind)
+					activity, err := s.ActivityService.FindActivity(context.Background(), activityFind)
 					if err != nil {
 						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityId))
@@ -66,6 +66,27 @@ func ACLMiddleware(l *bytebase.Logger, m api.MemberService, a api.ActivityServic
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 					}
 					if activity.CreatorId == principalId {
+						method = method + "_SELF"
+					}
+				}
+			} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
+				bookmarkIdStr := c.Param("bookmarkId")
+				if bookmarkIdStr != "" {
+					bookmarkId, err := strconv.Atoi(bookmarkIdStr)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s", bookmarkIdStr))
+					}
+					bookmarkFind := &api.BookmarkFind{
+						ID: &bookmarkId,
+					}
+					bookmark, err := s.BookmarkService.FindBookmark(context.Background(), bookmarkFind)
+					if err != nil {
+						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Bookmark ID not found: %d", bookmarkId))
+						}
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+					}
+					if bookmark.CreatorId == principalId {
 						method = method + "_SELF"
 					}
 				}

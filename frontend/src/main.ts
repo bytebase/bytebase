@@ -105,7 +105,8 @@ axios.interceptors.request.use((request) => {
         !request.url!.startsWith("/api/instance") &&
         !request.url!.startsWith("/api/database") &&
         !request.url!.startsWith("/api/issue") &&
-        !request.url!.startsWith("/api/activity"))
+        !request.url!.startsWith("/api/activity") &&
+        !request.url!.startsWith("/api/bookmar"))
     ) {
       request.url = request.url!.replace("/api", "/mock");
     }

@@ -249,6 +249,8 @@ func FormatError(err error) error {
 		return bytebase.Errorf(bytebase.ECONFLICT, "email already exists")
 	case "UNIQUE constraint failed: environment.name":
 		return bytebase.Errorf(bytebase.ECONFLICT, "name already exists")
+	case "UNIQUE constraint failed: bookmark.workspace_id, bookmark.creator_id, bookmark.link":
+		return bytebase.Errorf(bytebase.ECONFLICT, "bookmark already exists")
 	default:
 		return err
 	}

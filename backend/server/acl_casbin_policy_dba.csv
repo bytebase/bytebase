@@ -29,3 +29,6 @@ p, DBA, /activity, POST
 p, DBA, /activity, GET
 p, DBA, /activity/{id}, PATCH_SELF
 p, DBA, /activity/{id}, DELETE_SELF
+p, DBA, /bookmark, POST
+p, DBA, /bookmark, GET
+p, DBA, /bookmark/{id}, DELETE_SELF

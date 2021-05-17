@@ -1,3 +1,5 @@
+DROP TABLE bookmark;
+
 DROP TABLE activity;
 
 DROP TABLE issue;

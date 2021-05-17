@@ -579,3 +579,37 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- bookmark table stores the bookmark for the user
+CREATE TABLE bookmark (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
+    name TEXT NOT NULL,
+    link TEXT NOT NULL,
+    UNIQUE(workspace_id, creator_id, link)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('bookmark', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_bookmark_modification_time`
+AFTER
+UPDATE
+    ON `bookmark` FOR EACH ROW BEGIN
+UPDATE
+    `bookmark`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;

@@ -6,18 +6,15 @@ import {
   BookmarkState,
   ResourceObject,
   unknown,
+  Principal,
 } from "../../types";
 
 function convert(bookmark: ResourceObject, rootGetters: any): Bookmark {
-  const creator = rootGetters["principal/principalById"](
-    bookmark.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    bookmark.attributes.updaterId
-  );
+  const creator = bookmark.attributes.creator as Principal;
+  const updater = bookmark.attributes.updater as Principal;
 
   return {
-    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator">),
+    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator" | "updater">),
     id: bookmark.id,
     creator,
     updater,
