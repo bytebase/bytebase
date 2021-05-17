@@ -24,9 +24,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.IssueService.CreateIssue(context.Background(), issueCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Issue name already exists: %s", issueCreate.Name))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
 

@@ -243,7 +243,7 @@ CREATE TABLE project_member (
     project_id INTEGER NOT NULL REFERENCES project (id),
     `role` TEXT NOT NULL CHECK (`role` IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    UNIQUE(project_id, principal_id)
+    UNIQUE(workspace_id, project_id, principal_id)
 );
 
 INSERT INTO
@@ -279,8 +279,7 @@ CREATE TABLE instance (
     name TEXT NOT NULL,
     external_link TEXT NOT NULL,
     host TEXT NOT NULL,
-    port TEXT NOT NULL,
-    UNIQUE(workspace_id, name)
+    port TEXT NOT NULL
 );
 
 INSERT INTO
@@ -321,7 +320,7 @@ CREATE TABLE db (
     ),
     last_successful_sync_ts BIGINT NOT NULL,
     fingerprint TEXT NOT NULL,
-    UNIQUE(instance_id, name)
+    UNIQUE(workspace_id, instance_id, name)
 );
 
 INSERT INTO
@@ -359,7 +358,7 @@ CREATE TABLE data_source (
     `type` TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
     `password` TEXT NOT NULL,
-    UNIQUE(instance_id, name)
+    UNIQUE(workspace_id, instance_id, name)
 );
 
 INSERT INTO
