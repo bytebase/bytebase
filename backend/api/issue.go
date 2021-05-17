@@ -125,8 +125,6 @@ type IssuePatch struct {
 	Description      *string `jsonapi:"attr,description"`
 	AssigneeId       *int    `jsonapi:"attr,assigneeId"`
 	SubscriberIdList *[]int  `jsonapi:"attr,subscriberIdList"`
-	Sql              *string `jsonapi:"attr,sql"`
-	RollbackSql      *string `jsonapi:"attr,rollbackSql"`
 	Payload          *string `jsonapi:"attr,payload"`
 }
 

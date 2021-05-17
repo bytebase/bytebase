@@ -274,6 +274,15 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
+	if v := patch.Description; v != nil {
+		set, args = append(set, "description = ?"), append(args, *v)
+	}
+	if v := patch.AssigneeId; v != nil {
+		set, args = append(set, "assignee_id = ?"), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, "`payload` = ?"), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 

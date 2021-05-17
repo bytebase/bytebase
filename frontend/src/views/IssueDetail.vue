@@ -468,7 +468,7 @@ export default {
     };
 
     const updateCustomField = (field: InputField | OutputField, value: any) => {
-      console.log("updateCustomField", field.name, value);
+      console.debug("updateCustomField", field.name, value);
       if (!isEqual(state.issue.payload[field.id], value)) {
         state.issue.payload[field.id] = value;
         if (!state.create) {
