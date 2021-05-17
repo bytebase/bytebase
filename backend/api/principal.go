@@ -1,6 +1,10 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+	"strconv"
+)
 
 const SYSTEM_BOT_ID = 1
 
@@ -57,6 +61,36 @@ type Principal struct {
 	Email  string          `jsonapi:"attr,email"`
 	// No need to return to the client
 	PasswordHash string
+	// From member
+	Role Role
+}
+
+// Customize the Principal Marshal method so the returned object
+// can map directly to the frontend Principal object without any conversion.
+func (p *Principal) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ID        string          `json:"id"`
+		CreatorId string          `json:"creatorId"`
+		CreatedTs int64           `json:"createdTs"`
+		UpdaterId string          `json:"updaterId"`
+		UpdatedTs int64           `json:"updatedTs"`
+		Status    PrincipalStatus `json:"status"`
+		Type      PrincipalType   `json:"type"`
+		Name      string          `json:"name"`
+		Email     string          `json:"email"`
+		Role      Role            `json:"role"`
+	}{
+		ID:        strconv.Itoa(p.ID),
+		CreatorId: strconv.Itoa(p.CreatorId),
+		CreatedTs: p.CreatedTs,
+		UpdaterId: strconv.Itoa(p.UpdaterId),
+		UpdatedTs: p.UpdatedTs,
+		Status:    p.Status,
+		Type:      p.Type,
+		Name:      p.Name,
+		Email:     p.Email,
+		Role:      p.Role,
+	})
 }
 
 type PrincipalCreate struct {

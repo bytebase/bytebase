@@ -124,7 +124,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member, includeList []string) error {
 	var err error
 
-	member.Creator, err = s.ComposePrincipalById(context.Background(), member.CreatorId, includeList)
+	member.Creator, err = s.ComposePrincipalById(ctx, member.CreatorId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for member ID: %v", member.ID)).SetInternal(err)
 	}

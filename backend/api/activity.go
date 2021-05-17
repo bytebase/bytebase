@@ -34,10 +34,10 @@ type Activity struct {
 
 	// Standard fields
 	CreatorId   int
-	Creator     *Principal `jsonapi:"relation,creator"`
+	Creator     *Principal `jsonapi:"attr,creator"`
 	CreatedTs   int64      `jsonapi:"attr,createdTs"`
 	UpdaterId   int
-	Updater     *Principal `jsonapi:"relation,updater"`
+	Updater     *Principal `jsonapi:"attr,updater"`
 	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 

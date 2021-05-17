@@ -21,15 +21,8 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Instance {
-  const creatorId = (instance.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (instance.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
+  const creator = instance.attributes.creator as Principal;
+  const updater = instance.attributes.updater as Principal;
 
   const environmentId = (
     instance.relationships!.environment.data as ResourceIdentifier
@@ -40,20 +33,6 @@ function convert(
   let username = undefined;
   let password = undefined;
   for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (instance.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (instance.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
     if (
       item.type == "dataSource" &&
       item.attributes.type == "ADMIN" &&

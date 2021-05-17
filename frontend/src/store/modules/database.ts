@@ -24,15 +24,8 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Database {
-  const creatorId = (database.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (database.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
+  const creator = database.attributes.creator as Principal;
+  const updater = database.attributes.updater as Principal;
 
   // We first populate the id for instance, project and dataSourceList.
   // And if we also provide the detail info for those objects in the includedList,
@@ -58,20 +51,6 @@ function convert(
   }
 
   for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (database.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (database.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item, includedList);
     }
@@ -85,9 +64,11 @@ function convert(
   const databaseWithoutDataSourceList = {
     ...(database.attributes as Omit<
       Database,
-      "id" | "instance" | "project" | "dataSourceList"
+      "id" | "creator" | "updater" | "instance" | "project" | "dataSourceList"
     >),
     id: database.id,
+    creator,
+    updater,
     instance,
     project,
     dataSourceList: [],

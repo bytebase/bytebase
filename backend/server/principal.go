@@ -110,6 +110,25 @@ func (s *Server) ComposePrincipalById(ctx context.Context, id int, includeList [
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal ID: %v", id)).SetInternal(err)
 	}
+	workspaceId := api.DEFAULT_WORKPSACE_ID
+	memberFind := &api.MemberFind{
+		WorkspaceId: &workspaceId,
+		PrincipalId: &principal.ID,
+	}
+
+	// We don't store the system bot membership for the workspace, thus returns OWNER role on the fly here.
+	if principal.ID == api.SYSTEM_BOT_ID {
+		principal.Role = api.Owner
+	} else {
+		member, err := s.MemberService.FindMember(ctx, memberFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Membership not found for principal: %v", principal.Name))
+			}
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch membership for principal: %v", principal.Name)).SetInternal(err)
+		}
+		principal.Role = member.Role
+	}
 
 	return principal, nil
 }

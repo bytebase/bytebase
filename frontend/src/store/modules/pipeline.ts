@@ -21,32 +21,11 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Pipeline {
-  const creatorId = (pipeline.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (pipeline.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
+  const creator = pipeline.attributes.creator as Principal;
+  const updater = pipeline.attributes.updater as Principal;
 
   const stageList: Stage[] = [];
   for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (pipeline.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (pipeline.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
     if (item.type == "stage") {
       const stageIdList = pipeline.relationships!.stage
         .data as ResourceIdentifier[];

@@ -16,6 +16,7 @@ import {
   DataSourcePatch,
   EMPTY_ID,
   empty,
+  Principal,
 } from "../../types";
 
 function convert(
@@ -23,12 +24,8 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): DataSource {
-  const creator = rootGetters["principal/principalById"](
-    dataSource.attributes.creatorId
-  );
-  const updater = rootGetters["principal/principalById"](
-    dataSource.attributes.updaterId
-  );
+  const creator = dataSource.attributes.creator as Principal;
+  const updater = dataSource.attributes.updater as Principal;
   const databaseId = (
     dataSource.relationships!.database.data as ResourceIdentifier
   ).id;

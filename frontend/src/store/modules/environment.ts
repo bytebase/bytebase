@@ -20,38 +20,14 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Environment {
-  const creatorId = (
-    environment.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (
-    environment.relationships!.updater.data as ResourceIdentifier
-  ).id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
-
-  for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (environment.relationships!.creator.data as ResourceIdentifier).id ==
-        item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (environment.relationships!.updater.data as ResourceIdentifier).id ==
-        item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-  }
+  const creator = environment.attributes.creator as Principal;
+  const updater = environment.attributes.updater as Principal;
 
   return {
-    ...(environment.attributes as Omit<Environment, "id">),
+    ...(environment.attributes as Omit<
+      Environment,
+      "id" | "creator" | "updater"
+    >),
     id: environment.id,
     creator,
     updater,

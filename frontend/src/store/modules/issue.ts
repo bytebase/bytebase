@@ -29,20 +29,9 @@ function convert(
     }
   );
 
-  const creatorId = (issue.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (issue.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
-
-  const assigneeId = (issue.relationships!.assignee.data as ResourceIdentifier)
-    .id;
-  let assignee: Principal = unknown("PRINCIPAL") as Principal;
-  assignee.id = assigneeId;
+  const creator = issue.attributes.creator as Principal;
+  const updater = issue.attributes.updater as Principal;
+  const assignee = issue.attributes.assignee as Principal;
 
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
@@ -55,27 +44,6 @@ function convert(
   pipeline.id = pipelineId;
 
   for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (issue.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (issue.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (issue.relationships!.assignee.data as ResourceIdentifier).id == item.id
-    ) {
-      assignee = rootGetters["principal/convert"](item);
-    }
-
     if (
       item.type == "project" &&
       (issue.relationships!.project.data as ResourceIdentifier).id == item.id

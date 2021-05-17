@@ -24,33 +24,14 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Task, "pipeline" | "stage"> {
-  const creatorId = (task.relationships!.creator.data as ResourceIdentifier).id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (task.relationships!.updater.data as ResourceIdentifier).id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
+  const creator = task.attributes.creator as Principal;
+  const updater = task.attributes.updater as Principal;
 
   const databaseId = (task.relationships!.database.data as ResourceIdentifier)
     .id;
   let database: Database = empty("DATABASE") as Database;
   database.id = databaseId;
   for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (task.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (task.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
     if (
       item.type == "database" &&
       (task.relationships!.database.data as ResourceIdentifier).id == item.id

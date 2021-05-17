@@ -8,10 +8,10 @@ type Project struct {
 	// Standard fields
 	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorId   int
-	Creator     *Principal `jsonapi:"relation,creator"`
+	Creator     *Principal `jsonapi:"attr,creator"`
 	CreatedTs   int64      `jsonapi:"attr,createdTs"`
 	UpdaterId   int
-	Updater     *Principal `jsonapi:"relation,updater"`
+	Updater     *Principal `jsonapi:"attr,updater"`
 	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
 	WorkspaceId int
 

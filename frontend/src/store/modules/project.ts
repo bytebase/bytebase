@@ -24,31 +24,8 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Project {
-  const creatorId = (project.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (project.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
-
-  for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (project.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (project.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-  }
+  const creator = project.attributes.creator as Principal;
+  const updater = project.attributes.updater as Principal;
 
   const attrs = project.attributes as Omit<
     Project,

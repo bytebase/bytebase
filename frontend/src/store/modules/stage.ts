@@ -24,15 +24,8 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Stage, "pipeline"> {
-  const creatorId = (stage.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (stage.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
+  const creator = stage.attributes.creator as Principal;
+  const updater = stage.attributes.updater as Principal;
 
   const environmentId = (
     stage.relationships!.environment.data as ResourceIdentifier
@@ -42,20 +35,6 @@ function convertPartial(
 
   const taskList: Task[] = [];
   for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (stage.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (stage.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
     if (
       item.type == "environment" &&
       (stage.relationships!.environment.data as ResourceIdentifier).id ==

@@ -19,43 +19,9 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Member {
-  const creatorId = (member.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (member.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
-
-  const principalId = (member.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let principal: Principal = unknown("PRINCIPAL") as Principal;
-  principal.id = principalId;
-
-  for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (member.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (member.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (member.relationships!.principal.data as ResourceIdentifier).id == item.id
-    ) {
-      principal = rootGetters["principal/convert"](item);
-    }
-  }
+  const creator = member.attributes.creator as Principal;
+  const updater = member.attributes.updater as Principal;
+  const principal = member.attributes.principal as Principal;
 
   return {
     ...(member.attributes as Omit<

@@ -18,31 +18,8 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Activity {
-  const creatorId = (activity.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  let creator: Principal = unknown("PRINCIPAL") as Principal;
-  creator.id = creatorId;
-
-  const updaterId = (activity.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  let updater: Principal = unknown("PRINCIPAL") as Principal;
-  updater.id = updaterId;
-
-  for (const item of includedList || []) {
-    if (
-      item.type == "principal" &&
-      (activity.relationships!.creator.data as ResourceIdentifier).id == item.id
-    ) {
-      creator = rootGetters["principal/convert"](item);
-    }
-
-    if (
-      item.type == "principal" &&
-      (activity.relationships!.updater.data as ResourceIdentifier).id == item.id
-    ) {
-      updater = rootGetters["principal/convert"](item);
-    }
-  }
+  const creator = activity.attributes.creator as Principal;
+  const updater = activity.attributes.updater as Principal;
 
   return {
     ...(activity.attributes as Omit<Activity, "id" | "creator" | "updater">),
