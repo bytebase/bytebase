@@ -348,7 +348,7 @@ const actions = {
         `/api/database/${databaseId}?include=instance,project,project.projectMember`,
         {
           data: {
-            type: "databasepatch",
+            type: "databasePatch",
             attributes: {
               updaterId,
               projectId,

@@ -92,7 +92,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/member/${id}`, {
         data: {
-          type: "memberpatch",
+          type: "memberPatch",
           attributes: memberPatch,
         },
       })

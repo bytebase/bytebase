@@ -136,7 +136,7 @@ const actions = {
       (
         await axios.patch(`/api/principal/${principalId}`, {
           data: {
-            type: "principal-patch",
+            type: "principalPatch",
             attributes: principalPatch,
           },
         })

@@ -172,7 +172,7 @@ const actions = {
         `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`,
         {
           data: {
-            type: "data-source-patch",
+            type: "dataSourcePatch",
             attributes: dataSource,
           },
         }

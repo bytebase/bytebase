@@ -258,7 +258,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/project/${projectId}?include=projectMember`, {
         data: {
-          type: "projectpatch",
+          type: "projectPatch",
           attributes: projectPatch,
         },
       })
@@ -311,7 +311,7 @@ const actions = {
   ) {
     await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
       data: {
-        type: "projectmemberpatch",
+        type: "projectMemberPatch",
         attributes: projectMemberPatch,
       },
     });

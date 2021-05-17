@@ -92,7 +92,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
         data: {
-          type: "taskstatuspatch",
+          type: "taskStatusPatch",
           attributes: taskStatusPatch,
         },
       })

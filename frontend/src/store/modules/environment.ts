@@ -126,7 +126,7 @@ const actions = {
     orderedEnvironmentList.forEach((item, index) => {
       list.push({
         id: item.id,
-        type: "environmentpatch",
+        type: "environmentPatch",
         attributes: {
           updaterId,
           order: index,
@@ -160,7 +160,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/environment/${environmentId}`, {
         data: {
-          type: "environmentpatch",
+          type: "environmentPatch",
           attributes: environmentPatch,
         },
       })

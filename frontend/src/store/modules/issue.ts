@@ -179,7 +179,7 @@ const actions = {
         `/api/issue/${issueId}?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
-            type: "issuepatch",
+            type: "issuePatch",
             attributes: issuePatch,
           },
         }
@@ -212,7 +212,7 @@ const actions = {
         `/api/issue/${issueId}/status?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
         {
           data: {
-            type: "issuestatuspatch",
+            type: "issueStatusPatch",
             attributes: issueStatusPatch,
           },
         }

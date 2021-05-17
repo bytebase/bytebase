@@ -72,7 +72,7 @@ const actions = {
       (
         await axios.patch(`/api/message/${messageId}`, {
           data: {
-            type: "messagepatch",
+            type: "messagePatch",
             attributes: messagePatch,
           },
         })
