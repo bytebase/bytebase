@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -132,7 +134,19 @@ func NewServer(logger *bytebase.Logger) *Server {
 }
 
 func (server *Server) Run() error {
-	return server.e.Start(":8080")
+	const port int = 8080
+	var err error
+	for i := 0; i < 3; i++ {
+		if err != nil {
+			server.l.Warnf("Failed to start server at port %d: %v. Retry in 1 second...", port, err)
+			time.Sleep(time.Duration(1) * time.Second)
+		}
+		err = server.e.Start(fmt.Sprintf(":%d", port))
+		if err == nil {
+			return nil
+		}
+	}
+	return err
 }
 
 func (server *Server) Shutdown(ctx context.Context) {
