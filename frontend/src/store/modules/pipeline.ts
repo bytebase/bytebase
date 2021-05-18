@@ -25,11 +25,12 @@ function convert(
   const updater = pipeline.attributes.updater as Principal;
 
   const stageList: Stage[] = [];
-  for (const item of includedList || []) {
-    if (item.type == "stage") {
-      const stageIdList = pipeline.relationships!.stage
-        .data as ResourceIdentifier[];
-      for (const idItem of stageIdList) {
+  const stageIdList = pipeline.relationships!.stage
+    .data as ResourceIdentifier[];
+  // Needs to iterate through stageIdList to maintain the order
+  for (const idItem of stageIdList) {
+    for (const item of includedList || []) {
+      if (item.type == "stage") {
         if (idItem.id == item.id) {
           const stage: Stage = rootGetters["stage/convertPartial"](
             item,

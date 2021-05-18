@@ -34,18 +34,11 @@ function convertPartial(
   environment.id = parseInt(environmentId);
 
   const taskList: Task[] = [];
-  for (const item of includedList || []) {
-    if (
-      item.type == "environment" &&
-      (stage.relationships!.environment.data as ResourceIdentifier).id ==
-        item.id
-    ) {
-      environment = rootGetters["environment/convert"](item, includedList);
-    }
-
-    if (item.type == "task") {
-      const taskIdList = stage.relationships!.task.data as ResourceIdentifier[];
-      for (const idItem of taskIdList) {
+  const taskIdList = stage.relationships!.task.data as ResourceIdentifier[];
+  // Needs to iterate through taskIdList to maintain the order
+  for (const idItem of taskIdList) {
+    for (const item of includedList || []) {
+      if (item.type == "task") {
         if (idItem.id == item.id) {
           const task: Task = rootGetters["task/convertPartial"](
             item,
@@ -54,6 +47,16 @@ function convertPartial(
           taskList.push(task);
         }
       }
+    }
+  }
+
+  for (const item of includedList || []) {
+    if (
+      item.type == "environment" &&
+      (stage.relationships!.environment.data as ResourceIdentifier).id ==
+        item.id
+    ) {
+      environment = rootGetters["environment/convert"](item, includedList);
     }
   }
 
