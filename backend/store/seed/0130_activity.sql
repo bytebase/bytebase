@@ -80,3 +80,23 @@ VALUES
         'bb.issue.comment.create',
         'Go fish!'
     );
+
+-- Activity for issue 012002
+INSERT INTO
+    activity (
+        id,
+        creator_id,
+        updater_id,
+        workspace_id,
+        container_id,
+        `type`
+    )
+VALUES
+    (
+        13005,
+        1,
+        1,
+        1,
+        12002,
+        'bb.issue.create'
+    );
