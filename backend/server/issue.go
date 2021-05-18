@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -112,6 +111,101 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.PATCH("/issue/:issueId/status", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("issueId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		issueStatusPatch := &api.IssueStatusPatch{
+			ID:          id,
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueStatusPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
+		}
+
+		if issueStatusPatch.Status != nil {
+			issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+			if err != nil {
+				return err
+			}
+
+			var pipelineStatus api.PipelineStatus
+			pipelinePatch := &api.PipelinePatch{
+				ID:          issue.PipelineId,
+				WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+				UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			}
+			switch api.IssueStatus(*issueStatusPatch.Status) {
+			case api.Issue_Open:
+				pipelineStatus = api.Pipeline_Open
+			case api.Issue_Done:
+				// Returns error if any of the tasks is not in the end status.
+				for _, stage := range issue.Pipeline.StageList {
+					for _, task := range stage.TaskList {
+						if task.Status.IsEndStatus() {
+							return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v is in %v status.", issue.Name, task.Name, task.Status))
+						}
+					}
+				}
+				pipelineStatus = api.Pipeline_Done
+			case api.Issue_Canceled:
+				// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
+				// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
+				// keep those tasks in the same state before the issue was canceled.
+				for _, stage := range issue.Pipeline.StageList {
+					for _, task := range stage.TaskList {
+						if task.Status == api.TaskRunning {
+							taskStatus := api.TaskCanceled
+							taskPatch := &api.TaskPatch{
+								ID:          id,
+								WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+								UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+								Status:      &taskStatus,
+							}
+							if _, err := s.TaskService.PatchTask(context.Background(), taskPatch); err != nil {
+								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v.", issue.Name, task.Name)).SetInternal(err)
+							}
+						}
+					}
+				}
+				pipelineStatus = api.Pipeline_Canceled
+			}
+
+			pipelinePatch.Status = &pipelineStatus
+			if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue: %v", id)).SetInternal(err)
+			}
+		}
+
+		issueStatus := api.IssueStatus(*issueStatusPatch.Status)
+		issuePatch := &api.IssuePatch{
+			ID:          id,
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			Status:      &issueStatus,
+		}
+		updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue ID: %v", id)).SetInternal(err)
+		}
+
+		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue, c.Get(getIncludeKey()).([]string)); err != nil {
+			return err
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedIssue); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) ComposeIssueById(ctx context.Context, id int, includeList []string) (*api.Issue, error) {
@@ -135,6 +229,7 @@ func (s *Server) ComposeIssueById(ctx context.Context, id int, includeList []str
 
 func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue, includeList []string) error {
 	var err error
+
 	issue.Creator, err = s.ComposePrincipalById(context.Background(), issue.CreatorId, includeList)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for issue: %v", issue.Name)).SetInternal(err)
@@ -150,18 +245,14 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue,
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch assignee for issue: %v", issue.Name)).SetInternal(err)
 	}
 
-	if sort.SearchStrings(includeList, "project") >= 0 {
-		issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId, includeList)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for issue: %v", issue.Name)).SetInternal(err)
-		}
+	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for issue: %v", issue.Name)).SetInternal(err)
 	}
 
-	if sort.SearchStrings(includeList, "pipeline") >= 0 {
-		issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId, includeList)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch pipeline for issue: %v", issue.Name)).SetInternal(err)
-		}
+	issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch pipeline for issue: %v", issue.Name)).SetInternal(err)
 	}
 
 	return nil

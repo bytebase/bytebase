@@ -278,11 +278,6 @@ export default function configureIssue(route) {
     const ts = Date.now();
 
     const pipeline = schema.pipelines.find(issue.pipelineId);
-    // Pipeline and issue status is 1-to-1 mapping, so we just change the pipeline status accordingly.
-    pipeline.update({
-      status: attrs.status,
-    });
-
     const stageList = schema.stages.where({ pipelineId: pipeline.id }).models;
     if (attrs.status == "DONE") {
       // Returns error if any of the tasks is not in the end status.
@@ -293,13 +288,9 @@ export default function configureIssue(route) {
         }).models;
 
         for (let j = 0; j < taskList.length; j++) {
-          if (
-            taskList[j].status != "DONE" &&
-            taskList[j].status != "CANCELED" &&
-            taskList[j].status != "SKIPPED"
-          ) {
+          if (taskList[j].status != "DONE" && taskList[j].status != "SKIPPED") {
             return new Response(
-              404,
+              409,
               {},
               {
                 errors: `Can't resolve issue ${issue.name}. Task ${taskList[j].name} in stage ${stageList[i].name} is in ${taskList[j].status} status`,
@@ -312,32 +303,25 @@ export default function configureIssue(route) {
       pipeline.update({ status: "DONE" });
     }
 
-    // If issue is canceled, we find the current running stages and tasks, mark each of them CANCELED.
-    // We keep PENDING stages and tasks as is since the issue maybe reopened later, and it's better to
+    // If issue is canceled, we find the current running tasks, mark each of them CANCELED.
+    // We keep PENDING tasks as is since the issue maybe reopened later, and it's better to
     // keep them in the state before it was canceled.
     if (attrs.status == "CANCELED") {
-      pipeline.update({ status: "CAMCELED" });
-
       for (let i = 0; i < stageList.length; i++) {
-        if (stageList[i].status == "RUNNING") {
-          schema.stages.find(stageList[i].id).update({
-            status: "CANCELED",
-          });
+        const taskList = schema.tasks.where({
+          issueId: issue.id,
+          stageId: stageList[i].id,
+        }).models;
 
-          const taskList = schema.tasks.where({
-            issueId: issue.id,
-            stageId: stageList[i].id,
-          }).models;
-
-          for (let j = 0; j < taskList.length; j++) {
-            if (taskList[j].status == "RUNNING") {
-              schema.tasks.find(taskList[j].id).update({
-                status: "CANCELED",
-              });
-            }
+        for (let j = 0; j < taskList.length; j++) {
+          if (taskList[j].status == "RUNNING") {
+            schema.tasks.find(taskList[j].id).update({
+              status: "CANCELED",
+            });
           }
         }
       }
+      pipeline.update({ status: "CAMCELED" });
     }
 
     // If issue is opened, we just move the pipeline to the PENDING status.

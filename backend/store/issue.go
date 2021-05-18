@@ -274,6 +274,9 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
+	if v := patch.Status; v != nil {
+		set, args = append(set, "`status` = ?"), append(args, api.IssueStatus(*v))
+	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, "description = ?"), append(args, *v)
 	}

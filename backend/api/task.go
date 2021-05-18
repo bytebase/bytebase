@@ -5,11 +5,12 @@ import "context"
 type TaskStatus string
 
 const (
-	TaskPending TaskStatus = "PENDING"
-	TaskRunning TaskStatus = "RUNNING"
-	TaskDone    TaskStatus = "DONE"
-	TaskFailed  TaskStatus = "FAILED"
-	TaskSkipped TaskStatus = "SKIPPED"
+	TaskPending  TaskStatus = "PENDING"
+	TaskRunning  TaskStatus = "RUNNING"
+	TaskDone     TaskStatus = "DONE"
+	TaskFailed   TaskStatus = "FAILED"
+	TaskCanceled TaskStatus = "CANCELED"
+	TaskSkipped  TaskStatus = "SKIPPED"
 )
 
 func (e TaskStatus) String() string {
@@ -22,10 +23,16 @@ func (e TaskStatus) String() string {
 		return "DONE"
 	case TaskFailed:
 		return "FAILED"
+	case TaskCanceled:
+		return "CANCELED"
 	case TaskSkipped:
 		return "SKIPPED"
 	}
 	return "UNKNOWN"
+}
+
+func (e TaskStatus) IsEndStatus() bool {
+	return e == TaskDone || e == TaskSkipped
 }
 
 type TaskType string

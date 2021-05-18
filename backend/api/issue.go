@@ -121,11 +121,26 @@ type IssuePatch struct {
 	ProjectId *int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Name             *string `jsonapi:"attr,name"`
+	Name *string `jsonapi:"attr,name"`
+	// Status is only set manualy via IssueStatusPatch
+	Status           *IssueStatus
 	Description      *string `jsonapi:"attr,description"`
 	AssigneeId       *int    `jsonapi:"attr,assigneeId"`
 	SubscriberIdList *[]int  `jsonapi:"attr,subscriberIdList"`
 	Payload          *string `jsonapi:"attr,payload"`
+}
+
+type IssueStatusPatch struct {
+	ID int `jsonapi:"primary,issueStatusPatch"`
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterId   int
+	WorkspaceId int
+
+	// Domain specific fields
+	Status  *string `jsonapi:"attr,status"`
+	Comment *string `jsonapi:"attr,comment"`
 }
 
 type IssueService interface {
