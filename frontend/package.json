@@ -26,8 +26,8 @@
     "slug": "^4.0.2",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat",
     "uuid": "^8.3.2",
-    "vue": "^3.0.5",
-    "vue-router": "4",
+    "vue": "^3.0.11",
+    "vue-router": "^4.0.8",
     "vue3-clipboard": "^1.0.0",
     "vuex": "^4.0.0"
   },
