@@ -107,18 +107,37 @@ type TaskFind struct {
 }
 
 type TaskPatch struct {
-	ID int `jsonapi:"primary,environmentPatch"`
+	ID int `jsonapi:"primary,taskPatch"`
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId   int
 	WorkspaceId int
 
+	// Related fields
+	PipelineId int
+
+	// Domain specific fields
+	// Status is only set manualy via TaskStatusPatch
+	Status *TaskStatus `jsonapi:"attr,status"`
+}
+
+type TaskStatusPatch struct {
+	ID int `jsonapi:"primary,taskStatusPatch"`
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterId   int
+	WorkspaceId int
+
+	// Related fields
+	PipelineId int
+
 	// Domain specific fields
 	// This is the container containing the pipeline this task belongs.
-	ContainerId *int
-	Status      *TaskStatus `jsonapi:"attr,status"`
-	Comment     *string     `jsonapi:"attr,comment"`
+	ContainerId *int    `jsonapi:"attr,containerId"`
+	Status      *string `jsonapi:"attr,status"`
+	Comment     *string `jsonapi:"attr,comment"`
 }
 
 type TaskService interface {

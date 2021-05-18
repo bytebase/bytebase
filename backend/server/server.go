@@ -129,6 +129,7 @@ func NewServer(logger *bytebase.Logger) *Server {
 	s.registerInstanceRoutes(g)
 	s.registerDatabaseRoutes(g)
 	s.registerIssueRoutes(g)
+	s.registerTaskRoutes(g)
 	s.registerActivityRoutes(g)
 	s.registerBookmarkRoutes(g)
 

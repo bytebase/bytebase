@@ -27,3 +27,4 @@ p, DEVELOPER, /activity/{id}, DELETE_SELF
 p, DEVELOPER, /bookmark, POST
 p, DEVELOPER, /bookmark, GET
 p, DEVELOPER, /bookmark/{id}, DELETE_SELF
+p, DEVELOPER, /pipeline/{pipelineId}/task/{taskId}/status, PATCH

@@ -240,16 +240,17 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.Status; v != nil {
-		set, args = append(set, "`status = ?"), append(args, api.TaskStatus(*v))
+		set, args = append(set, "`status` = ?"), append(args, api.TaskStatus(*v))
 	}
 
 	args = append(args, patch.ID)
+	args = append(args, patch.PipelineId)
 
 	// Execute update query with RETURNING.
 	row, err := tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
+		WHERE id = ? AND pipeline_id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, `when`, payload"+`
 	`,
 		args...,

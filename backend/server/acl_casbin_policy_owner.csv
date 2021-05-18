@@ -36,3 +36,4 @@ p, OWNER, /activity/{id}, DELETE_SELF
 p, OWNER, /bookmark, POST
 p, OWNER, /bookmark, GET
 p, OWNER, /bookmark/{id}, DELETE_SELF
+p, OWNER, /pipeline/{pipelineId}/task/{taskId}/status, PATCH

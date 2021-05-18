@@ -190,7 +190,13 @@ export type TaskType =
   | "bb.task.approve"
   | "bb.task.database.schema.update";
 
-export type TaskStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
+export type TaskStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "FAILED"
+  | "CANCELED"
+  | "SKIPPED";
 
 export type TaskWhenType = "ON_SUCCESS" | "MANUAL";
 
