@@ -12,7 +12,6 @@ import {
   empty,
   EMPTY_ID,
   Principal,
-  ResourceIdentifier,
 } from "../../types";
 
 function convert(

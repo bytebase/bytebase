@@ -223,16 +223,24 @@ export default {
 
     const state = reactive<LocalState>({
       projectId: router.currentRoute.value.query.project
-        ? (router.currentRoute.value.query.project as ProjectId)
+        ? (parseInt(
+            router.currentRoute.value.query.project as string
+          ) as ProjectId)
         : undefined,
       environmentId: router.currentRoute.value.query.environment
-        ? (router.currentRoute.value.query.environment as EnvironmentId)
+        ? (parseInt(
+            router.currentRoute.value.query.environment as string
+          ) as EnvironmentId)
         : undefined,
       instanceId: router.currentRoute.value.query.instance
-        ? (router.currentRoute.value.query.instance as InstanceId)
+        ? (parseInt(
+            router.currentRoute.value.query.instance as string
+          ) as InstanceId)
         : undefined,
       databaseName: router.currentRoute.value.query.name as string,
-      issueId: router.currentRoute.value.query.issue as IssueId,
+      issueId: parseInt(
+        router.currentRoute.value.query.issue as string
+      ) as IssueId,
       fromIssueType: router.currentRoute.value.query.from as IssueType,
     });
 
@@ -288,7 +296,7 @@ export default {
       state.projectId = projectId;
       const query = cloneDeep(router.currentRoute.value.query);
       if (projectId) {
-        query.projectId = projectId;
+        query.projectId = projectId.toString();
       } else {
         delete query["project"];
       }
@@ -305,7 +313,7 @@ export default {
       state.environmentId = environmentId;
       const query = cloneDeep(router.currentRoute.value.query);
       if (environmentId) {
-        query.environmentId = environmentId;
+        query.environmentId = environmentId.toString();
       } else {
         delete query["instance"];
       }
@@ -322,7 +330,7 @@ export default {
       state.instanceId = instanceId;
       const query = cloneDeep(router.currentRoute.value.query);
       if (instanceId) {
-        query.instance = instanceId;
+        query.instance = instanceId.toString();
       } else {
         delete query["instance"];
       }

@@ -3,11 +3,8 @@ import {
   PrincipalId,
   MessageId,
   Message,
-  MessageCreate,
   MessageState,
   ResourceObject,
-  MessageStatus,
-  MessagePayload,
   MessagePatch,
 } from "../../types";
 

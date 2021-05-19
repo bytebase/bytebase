@@ -135,7 +135,7 @@ export default {
   props: {
     projectId: {
       required: true,
-      type: String as PropType<ProjectId>,
+      type: Number as PropType<ProjectId>,
     },
   },
   components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
