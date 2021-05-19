@@ -16,6 +16,7 @@ p, DEVELOPER, /database, POST
 p, DEVELOPER, /database, GET
 p, DEVELOPER, /database/{id}, GET
 p, DEVELOPER, /database/{id}, PATCH
+p, DEVELOPER, /issue, POST
 p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET
 p, DEVELOPER, /issue/{id}, PATCH
