@@ -39,14 +39,14 @@
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
       <IssueHighlightPanel
-        :issue="state.issue"
+        :issue="issue"
         :create="state.create"
         :allowEdit="allowEditNameAndDescription"
         @update-name="updateName"
       >
         <IssueStatusTransitionButtonGroup
           :create="state.create"
-          :issue="state.issue"
+          :issue="issue"
           :issueTemplate="issueTemplate"
           @create="doCreate"
         />
@@ -62,7 +62,7 @@
         "
       >
         <PipelineSimpleFlow
-          :pipeline="state.issue.pipeline"
+          :pipeline="issue.pipeline"
           :selectedStage="selectedStage"
           @select-stage-id="selectStageId"
         />
@@ -77,7 +77,7 @@
       :class="showPipelineFlowBar ? '' : 'lg:border-t'"
     >
       <IssueOutputPanel
-        :issue="state.issue"
+        :issue="issue"
         :outputFieldList="issueTemplate.outputFieldList"
         :allowEdit="allowEditOutput"
         @update-custom-field="updateCustomField"
@@ -106,7 +106,7 @@
             "
           >
             <IssueSidebar
-              :issue="state.issue"
+              :issue="issue"
               :create="state.create"
               :selectedStage="selectedStage"
               :inputFieldList="issueTemplate.inputFieldList"
@@ -121,7 +121,7 @@
           <div class="w-full py-6 pr-4">
             <section v-if="showIssueSqlPanel" class="border-b mb-4">
               <IssueSqlPanel
-                :issue="state.issue"
+                :issue="issue"
                 :create="state.create"
                 :rollback="false"
                 :allowEdit="allowEditSql"
@@ -130,7 +130,7 @@
             </section>
             <section v-if="showIssueRollbackSqlPanel" class="border-b mb-4">
               <IssueSqlPanel
-                :issue="state.issue"
+                :issue="issue"
                 :create="state.create"
                 :rollback="true"
                 :allowEdit="allowEditSql"
@@ -138,7 +138,7 @@
               />
             </section>
             <IssueDescriptionPanel
-              :issue="state.issue"
+              :issue="issue"
               :create="state.create"
               :allowEdit="allowEditNameAndDescription"
               @update-description="updateDescription"
@@ -149,7 +149,7 @@
               class="mt-4"
             >
               <IssueActivityPanel
-                :issue="state.issue"
+                :issue="issue"
                 :issueTemplate="issueTemplate"
                 @update-subscriber-list="updateSubscriberIdList"
               />
@@ -186,14 +186,13 @@ import IssueSidebar from "../views/IssueSidebar.vue";
 import IssueStatusTransitionButtonGroup from "../components/IssueStatusTransitionButtonGroup.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import {
+  UNKNOWN_ID,
   Issue,
   IssueCreate,
   IssueType,
   IssuePatch,
   PrincipalId,
   Database,
-  UNKNOWN_ID,
-  ProjectId,
   Environment,
   Stage,
   StageId,
@@ -211,7 +210,7 @@ interface LocalState {
   // router.push won't trigger the reload because new and existing issue shares
   // the same component.
   create: boolean;
-  issue: Issue | IssueCreate;
+  newIssue?: IssueCreate;
 }
 
 export default {
@@ -364,28 +363,20 @@ export default {
       }
     );
 
-    const isNew = props.issueSlug.toLowerCase() == "new";
+    const create = props.issueSlug.toLowerCase() == "new";
     const state = reactive<LocalState>({
-      create: isNew,
-      issue: isNew
-        ? buildNewIssue()
-        : cloneDeep(
-            store.getters["issue/issueById"](idFromSlug(props.issueSlug))
-          ),
+      create: create,
+      newIssue: create ? buildNewIssue() : undefined,
     });
 
-    const refreshIssue = () => {
-      state.issue = state.create
-        ? buildNewIssue()
-        : cloneDeep(
-            store.getters["issue/issueById"](idFromSlug(props.issueSlug))
-          );
-    };
-
-    watchEffect(refreshIssue);
+    const issue = computed((): Issue | IssueCreate => {
+      return create
+        ? state.newIssue
+        : store.getters["issue/issueById"](idFromSlug(props.issueSlug));
+    });
 
     const issueTemplate = computed(
-      () => templateForType(state.issue.type) || defaulTemplate()
+      () => templateForType(issue.value.type) || defaulTemplate()
     );
 
     const updateName = (
@@ -393,7 +384,7 @@ export default {
       postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.create) {
-        (state.issue as IssueCreate).name = newName;
+        state.newIssue!.name = newName;
       } else {
         patchIssue(
           {
@@ -409,7 +400,7 @@ export default {
       postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.create) {
-        (state.issue as IssueCreate).sql = newSql;
+        state.newIssue!.sql = newSql;
       } else {
         patchIssue(
           {
@@ -425,7 +416,7 @@ export default {
       postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.create) {
-        (state.issue as IssueCreate).rollbackSql = newSql;
+        state.newIssue!.rollbackSql = newSql;
       } else {
         patchIssue(
           {
@@ -441,7 +432,7 @@ export default {
       postUpdated: (updatedIssue: Issue) => void
     ) => {
       if (state.create) {
-        (state.issue as IssueCreate).description = newDescription;
+        state.newIssue!.description = newDescription;
       } else {
         patchIssue(
           {
@@ -454,7 +445,7 @@ export default {
 
     const updateAssigneeId = (newAssigneeId: PrincipalId) => {
       if (state.create) {
-        (state.issue as IssueCreate).assigneeId = newAssigneeId;
+        state.newIssue!.assigneeId = newAssigneeId;
       } else {
         patchIssue({
           assigneeId: newAssigneeId,
@@ -470,11 +461,14 @@ export default {
 
     const updateCustomField = (field: InputField | OutputField, value: any) => {
       console.debug("updateCustomField", field.name, value);
-      if (!isEqual(state.issue.payload[field.id], value)) {
-        state.issue.payload[field.id] = value;
-        if (!state.create) {
+      if (!isEqual(issue.value.payload[field.id], value)) {
+        if (state.create) {
+          state.newIssue!.payload[field.id] = value;
+        } else {
+          const newPayload = cloneDeep(issue.value.payload);
+          newPayload[field.id] = value;
           patchIssue({
-            payload: state.issue.payload,
+            payload: newPayload,
           });
         }
       }
@@ -482,7 +476,7 @@ export default {
 
     const doCreate = () => {
       store
-        .dispatch("issue/createIssue", state.issue)
+        .dispatch("issue/createIssue", state.newIssue)
         .then((createdIssue) => {
           // Use replace to omit the new issue url in the navigation history.
           router.replace(
@@ -500,7 +494,7 @@ export default {
     ) => {
       store
         .dispatch("issue/patchIssue", {
-          issueId: (state.issue as Issue).id,
+          issueId: (issue.value as Issue).id,
           issuePatch: {
             ...issuePatch,
             updaterId: currentUser.value.id,
@@ -517,22 +511,22 @@ export default {
     };
 
     const currentPipelineType = computed((): PipelineType => {
-      return pipelineType((state.issue as Issue).pipeline);
+      return pipelineType((issue.value as Issue).pipeline);
     });
 
-    console.log(currentPipelineType.value);
+    console.debug(currentPipelineType.value);
 
     const selectedStage = computed((): Stage => {
       const stageSlug = router.currentRoute.value.query.stage as string;
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
-        return (state.issue as Issue).pipeline.stageList[index];
+        return (issue.value as Issue).pipeline.stageList[index];
       }
-      return activeStage((state.issue as Issue).pipeline);
+      return activeStage((issue.value as Issue).pipeline);
     });
 
     const selectStageId = (stageId: StageId) => {
-      const stageList = (state.issue as Issue).pipeline.stageList;
+      const stageList = (issue.value as Issue).pipeline.stageList;
       const index = stageList.findIndex((item) => {
         return item.id == stageId;
       });
@@ -554,25 +548,25 @@ export default {
       // For now, we choose to be on the safe side at the cost of flexibility.
       return (
         state.create ||
-        ((state.issue as Issue).status == "OPEN" &&
-          currentUser.value.id == (state.issue as Issue).assignee?.id)
+        ((issue.value as Issue).status == "OPEN" &&
+          (issue.value as Issue).assignee?.id == currentUser.value.id)
       );
     });
 
     const allowEditOutput = computed(() => {
       return (
         state.create ||
-        ((state.issue as Issue).status == "OPEN" &&
-          currentUser.value.id == (state.issue as Issue).assignee?.id)
+        ((issue.value as Issue).status == "OPEN" &&
+          (issue.value as Issue).assignee?.id == currentUser.value.id)
       );
     });
 
     const allowEditNameAndDescription = computed(() => {
       return (
         state.create ||
-        ((state.issue as Issue).status == "OPEN" &&
-          (currentUser.value.id == (state.issue as Issue).assignee?.id ||
-            currentUser.value.id == (state.issue as Issue).creator.id))
+        ((issue.value as Issue).status == "OPEN" &&
+          ((issue.value as Issue).assignee?.id == currentUser.value.id ||
+            (issue.value as Issue).creator.id == currentUser.value.id))
       );
     });
 
@@ -581,11 +575,11 @@ export default {
     });
 
     const showCancelBanner = computed(() => {
-      return !state.create && (state.issue as Issue).status == "CANCELED";
+      return !state.create && (issue.value as Issue).status == "CANCELED";
     });
 
     const showSuccessBanner = computed(() => {
-      return !state.create && (state.issue as Issue).status == "DONE";
+      return !state.create && (issue.value as Issue).status == "DONE";
     });
 
     const showPipelineFlowBar = computed(() => {
@@ -598,17 +592,18 @@ export default {
 
     const showIssueSqlPanel = computed(() => {
       return (
-        state.issue.type == "bb.general" ||
-        state.issue.type == "bb.database.schema.update"
+        issue.value.type == "bb.general" ||
+        issue.value.type == "bb.database.schema.update"
       );
     });
 
     const showIssueRollbackSqlPanel = computed(() => {
-      return state.issue.type == "bb.database.schema.update";
+      return issue.value.type == "bb.database.schema.update";
     });
 
     return {
       state,
+      issue,
       updateName,
       updateDescription,
       updateSql,
