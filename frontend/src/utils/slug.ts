@@ -7,10 +7,11 @@ import {
   IssueId,
 } from "../types";
 import slug from "slug";
+import { IdType } from "../types/id";
 
-export function idFromSlug(slug: string) {
+export function idFromSlug(slug: string): IdType {
   const parts = slug.split("-");
-  return parts[parts.length - 1];
+  return parseInt(parts[parts.length - 1]);
 }
 
 export function indexFromSlug(slug: string): number {
