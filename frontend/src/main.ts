@@ -138,18 +138,6 @@ axios.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      if (error.response.status == 401) {
-        // Because frontend won't allow visiting unauthorized page and send request
-        // to unauthorized api endpoint (e.g. a Develoepr role requesting DBA endpoint).
-        // So if it's a 401, it's likely the user tries to visit a proper endpoint, however
-        // the jwt token has expired. App.vue has a timer to check if the user is still
-        // considered loggin and will automatically logout if not. But we may still run into
-        // this situation if the frontend code hasn't cleared the cookie determining the logged
-        // state in time. So we force a logout here to catch this case.
-        store.dispatch("auth/logout").then(() => {
-          router.push({ name: "auth.signin" });
-        });
-      }
       if (error.response.data.message) {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
