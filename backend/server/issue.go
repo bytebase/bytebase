@@ -19,8 +19,36 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
-		issueCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		issueCreate.Pipeline.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		issueCreate.Pipeline.WorkspaceId = api.DEFAULT_WORKPSACE_ID
+		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &issueCreate.Pipeline)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create pipeline for issue").SetInternal(err)
+		}
 
+		for _, stageCreate := range issueCreate.Pipeline.StageList {
+			stageCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+			stageCreate.WorkspaceId = api.DEFAULT_WORKPSACE_ID
+			stageCreate.PipelineId = createdPipeline.ID
+			createdStage, err := s.StageService.CreateStage(context.Background(), &stageCreate)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create stage for issue").SetInternal(err)
+			}
+
+			for _, taskCreate := range stageCreate.TaskList {
+				taskCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+				taskCreate.WorkspaceId = api.DEFAULT_WORKPSACE_ID
+				taskCreate.PipelineId = createdPipeline.ID
+				taskCreate.StageId = createdStage.ID
+				_, err := s.TaskService.CreateTask(context.Background(), &taskCreate)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task for issue").SetInternal(err)
+				}
+			}
+		}
+
+		issueCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		issueCreate.PipelineId = createdPipeline.ID
 		issue, err := s.IssueService.CreateIssue(context.Background(), issueCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)

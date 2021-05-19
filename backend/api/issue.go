@@ -93,6 +93,7 @@ type IssueCreate struct {
 	// Related fields
 	ProjectId  int `jsonapi:"attr,projectId"`
 	PipelineId int
+	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
 	Name             string       `jsonapi:"attr,name"`

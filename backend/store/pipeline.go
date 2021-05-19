@@ -96,7 +96,7 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 			name,
 			`+"`status`"+`	
 		)
-		VALUES (?, ?, ?, 'OPEN')
+		VALUES (?, ?, ?, ?, 'OPEN')
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`status`"+`
 	`,
 		create.CreatorId,

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -104,6 +105,10 @@ func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api
 
 // createTask creates a new task.
 func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCreate) (*api.Task, error) {
+	newPayload, err := json.Marshal(create.Payload)
+	if err != nil {
+		return nil, FormatError(err)
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task (
 			creator_id,
@@ -130,7 +135,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		create.Name,
 		create.Type,
 		create.When,
-		create.Payload,
+		newPayload,
 	)
 
 	if err != nil {
@@ -140,6 +145,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 
 	row.Next()
 	var task api.Task
+	var payload string
 	if err := row.Scan(
 		&task.ID,
 		&task.CreatorId,
@@ -154,9 +160,17 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		&task.Status,
 		&task.Type,
 		&task.When,
-		&task.Payload,
+		&payload,
 	); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if payload == "" {
+		task.Payload = api.TaskPayload{}
+	} else {
+		if err := json.Unmarshal([]byte(payload), &task.Payload); err != nil {
+			return nil, FormatError(err)
+		}
 	}
 
 	return &task, nil
@@ -207,6 +221,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	list := make([]*api.Task, 0)
 	for rows.Next() {
 		var task api.Task
+		var payload string
 		if err := rows.Scan(
 			&task.ID,
 			&task.CreatorId,
@@ -221,9 +236,17 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			&task.Status,
 			&task.Type,
 			&task.When,
-			&task.Payload,
+			&payload,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+
+		if payload == "" {
+			task.Payload = api.TaskPayload{}
+		} else {
+			if err := json.Unmarshal([]byte(payload), &task.Payload); err != nil {
+				return nil, FormatError(err)
+			}
 		}
 
 		list = append(list, &task)
@@ -231,7 +254,6 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
 	return list, nil
 }
 
@@ -262,6 +284,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 
 	if row.Next() {
 		var task api.Task
+		var payload string
 		if err := row.Scan(
 			&task.ID,
 			&task.CreatorId,
@@ -276,10 +299,19 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 			&task.Status,
 			&task.Type,
 			&task.When,
-			&task.Payload,
+			&payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
+
+		if payload == "" {
+			task.Payload = api.TaskPayload{}
+		} else {
+			if err := json.Unmarshal([]byte(payload), &task.Payload); err != nil {
+				return nil, FormatError(err)
+			}
+		}
+
 		return &task, nil
 	}
 

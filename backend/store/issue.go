@@ -181,12 +181,14 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 	}
 
 	issue.SubscriberIdList = []int{}
-	for _, item := range strings.Split(idList, ",") {
-		oneId, err := strconv.Atoi(item)
-		if err != nil {
-			s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+	if idList != "" {
+		for _, item := range strings.Split(idList, ",") {
+			oneId, err := strconv.Atoi(item)
+			if err != nil {
+				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+			}
+			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 		}
-		issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 	}
 
 	if payload == "" {
@@ -267,12 +269,14 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		}
 
 		issue.SubscriberIdList = []int{}
-		for _, item := range strings.Split(idList, ",") {
-			oneId, err := strconv.Atoi(item)
-			if err != nil {
-				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+		if idList != "" {
+			for _, item := range strings.Split(idList, ",") {
+				oneId, err := strconv.Atoi(item)
+				if err != nil {
+					s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+				}
+				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 			}
-			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 		}
 
 		if payload == "" {
@@ -359,12 +363,14 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		}
 
 		issue.SubscriberIdList = []int{}
-		for _, item := range strings.Split(idList, ",") {
-			oneId, err := strconv.Atoi(item)
-			if err != nil {
-				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+		if idList != "" {
+			for _, item := range strings.Split(idList, ",") {
+				oneId, err := strconv.Atoi(item)
+				if err != nil {
+					s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+				}
+				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 			}
-			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 		}
 
 		if payload == "" {

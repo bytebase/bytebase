@@ -50,6 +50,9 @@ const (
 	TaskManual    TaskWhen = "MANUAL"
 )
 
+type TaskPayload struct {
+}
+
 type Task struct {
 	ID int `jsonapi:"primary,task"`
 
@@ -70,11 +73,11 @@ type Task struct {
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
-	Name    string     `jsonapi:"attr,name"`
-	Status  TaskStatus `jsonapi:"attr,status"`
-	Type    TaskType   `jsonapi:"attr,type"`
-	When    TaskWhen   `jsonapi:"attr,when"`
-	Payload string     `jsonapi:"attr,payload"`
+	Name    string      `jsonapi:"attr,name"`
+	Status  TaskStatus  `jsonapi:"attr,status"`
+	Type    TaskType    `jsonapi:"attr,type"`
+	When    TaskWhen    `jsonapi:"attr,when"`
+	Payload TaskPayload `jsonapi:"attr,payload"`
 }
 
 type TaskCreate struct {
@@ -84,15 +87,15 @@ type TaskCreate struct {
 	WorkspaceId int
 
 	// Related fields
-	PipelineId int `jsonapi:"relation,pipelineId"`
-	StageId    int `jsonapi:"relation,stageId"`
-	DatabaseId int `jsonapi:"relation,databaseId"`
+	PipelineId int
+	StageId    int
+	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name    string   `jsonapi:"attr,name"`
-	Type    TaskType `jsonapi:"attr,type"`
-	When    TaskWhen `jsonapi:"attr,when"`
-	Payload string   `jsonapi:"attr,payload"`
+	Name    string      `jsonapi:"attr,name"`
+	Type    TaskType    `jsonapi:"attr,type"`
+	When    TaskWhen    `jsonapi:"attr,when"`
+	Payload TaskPayload `jsonapi:"attr,payload"`
 }
 
 type TaskFind struct {

@@ -49,6 +49,9 @@ type PipelineCreate struct {
 	CreatorId   int
 	WorkspaceId int
 
+	// Related fields
+	StageList []StageCreate `jsonapi:"attr,stageList"`
+
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
 }
