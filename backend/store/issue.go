@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -109,6 +110,10 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 	for _, item := range create.SubscriberIdList {
 		subscriberIdList = append(subscriberIdList, strconv.Itoa(item))
 	}
+	newPayload, err := json.Marshal(create.Payload)
+	if err != nil {
+		return nil, FormatError(err)
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,
@@ -123,9 +128,10 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			assignee_id,
 			subscriber_id_list,
 			`+"`sql`,"+`
-			rollback_sql
+			rollback_sql,
+			payload
 		)
-		VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
 	`,
 		create.CreatorId,
@@ -140,6 +146,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		strings.Join(subscriberIdList, ","),
 		create.Sql,
 		create.RollbackSql,
+		newPayload,
 	)
 
 	if err != nil {
@@ -150,6 +157,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 	row.Next()
 	var issue api.Issue
 	var idList string
+	var payload string
 	if err := row.Scan(
 		&issue.ID,
 		&issue.CreatorId,
@@ -167,7 +175,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		&idList,
 		&issue.Sql,
 		&issue.RollbackSql,
-		&issue.Payload,
+		&payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -179,6 +187,14 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
 		}
 		issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
+	}
+
+	if payload == "" {
+		issue.Payload = api.IssuePayload{}
+	} else {
+		if err := json.Unmarshal([]byte(payload), &issue.Payload); err != nil {
+			return nil, FormatError(err)
+		}
 	}
 
 	return &issue, nil
@@ -227,6 +243,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	for rows.Next() {
 		var issue api.Issue
 		var idList string
+		var payload string
 		if err := rows.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -244,7 +261,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			&idList,
 			&issue.Sql,
 			&issue.RollbackSql,
-			&issue.Payload,
+			&payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -256,6 +273,14 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
 			}
 			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
+		}
+
+		if payload == "" {
+			issue.Payload = api.IssuePayload{}
+		} else {
+			if err := json.Unmarshal([]byte(payload), &issue.Payload); err != nil {
+				return nil, FormatError(err)
+			}
 		}
 
 		list = append(list, &issue)
@@ -284,7 +309,11 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		set, args = append(set, "assignee_id = ?"), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, "`payload` = ?"), append(args, *v)
+		payload, err := json.Marshal(*patch.Payload)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		set, args = append(set, "`payload` = ?"), append(args, payload)
 	}
 
 	args = append(args, patch.ID)
@@ -306,6 +335,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if row.Next() {
 		var issue api.Issue
 		var idList string
+		var payload string
 		if err := row.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -323,7 +353,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			&idList,
 			&issue.Sql,
 			&issue.RollbackSql,
-			&issue.Payload,
+			&payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -335,6 +365,14 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
 			}
 			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
+		}
+
+		if payload == "" {
+			issue.Payload = api.IssuePayload{}
+		} else {
+			if err := json.Unmarshal([]byte(payload), &issue.Payload); err != nil {
+				return nil, FormatError(err)
+			}
 		}
 
 		return &issue, nil
