@@ -19,7 +19,7 @@ export function indexFromSlug(slug: string): number {
   return parseInt(parts[parts.length - 1]) - 1;
 }
 
-export function issueSlug(issueName: string, issueId: IssueId) {
+export function issueSlug(issueName: string, issueId: IssueId): string {
   return [slug(issueName), issueId].join("-");
 }
 
@@ -28,7 +28,7 @@ export function environmentSlug(environment: Environment): string {
   return [slug(environment.name), environment.id].join("-");
 }
 
-export function projectSlug(project: Project) {
+export function projectSlug(project: Project): string {
   return [slug(project.name), project.id].join("-");
 }
 
