@@ -27,7 +27,6 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareBookmarkList = () => {
-      console.log("prepareBookmarkList");
       store
         .dispatch("bookmark/fetchBookmarkListByUser", currentUser.value.id)
         .catch((error) => {

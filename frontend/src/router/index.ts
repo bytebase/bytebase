@@ -666,7 +666,7 @@ router.beforeEach((to, from, next) => {
   const dataSourceSlug = routerSlug.dataSourceSlug;
   const principalId = routerSlug.principalId;
 
-  console.log("RouterSlug:", routerSlug);
+  console.debug("RouterSlug:", routerSlug);
 
   if (environmentSlug) {
     if (
