@@ -27,25 +27,25 @@ func (e IssueStatus) String() string {
 type IssueType string
 
 const (
-	IssueGeneral              IssueType = "bb.general"
-	IssueDatabaseCreate       IssueType = "bb.database.create"
-	IssueDatabaseGrant        IssueType = "bb.database.grant"
-	IssueDatabaseSchemaUpdate IssueType = "bb.database.schema.update"
-	IssueDataSourceRequest    IssueType = "bb.data-source.request"
+	IssueGeneral              IssueType = "bb.issue.general"
+	IssueDatabaseCreate       IssueType = "bb.issue.db.create"
+	IssueDatabaseGrant        IssueType = "bb.issue.db.grant"
+	IssueDatabaseSchemaUpdate IssueType = "bb.issue.db.schema.update"
+	IssueDataSourceRequest    IssueType = "bb.issue.data-source.request"
 )
 
 func (e IssueType) String() string {
 	switch e {
 	case IssueGeneral:
-		return "bb.general"
+		return "bb.issue.general"
 	case IssueDatabaseCreate:
-		return "bb.database.create"
+		return "bb.issue.db.create"
 	case IssueDatabaseGrant:
-		return "bb.database.grant"
+		return "bb.issue.db.grant"
 	case IssueDatabaseSchemaUpdate:
-		return "bb.database.schema.update"
+		return "bb.issue.db.schema.update"
 	case IssueDataSourceRequest:
-		return "bb.data-source.request"
+		return "bb.issue.data-source.request"
 	}
 	return "bb.unknown"
 }

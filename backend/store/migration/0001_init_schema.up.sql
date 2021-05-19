@@ -515,7 +515,7 @@ CREATE TABLE issue (
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED')),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.issue.%'),
     description TEXT NOT NULL,
     assignee_id INTEGER REFERENCES principal (id),
     subscriber_id_list TEXT NOT NULL,

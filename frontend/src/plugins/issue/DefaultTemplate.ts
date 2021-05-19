@@ -2,13 +2,13 @@ import { IssueCreate, UNKNOWN_ID } from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
-  type: "bb.general",
+  type: "bb.issue.general",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueCreate, "projectId" | "creatorId"> => {
     return {
       name: "",
-      type: "bb.general",
+      type: "bb.issue.general",
       description: "",
       pipeline: {
         stageList: [

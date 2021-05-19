@@ -200,7 +200,7 @@ const workspacesSeeder = (server: any) => {
   });
 
   let issue = server.create("issue", {
-    type: "bb.general",
+    type: "bb.issue.general",
     name: "Hello, World! Demo",
     description:
       "Welcome to Bytebase, this is the issue interface where leads, developers and DBAs collaborate on database management issues such as: \n\n - Requesting a new database\n - Creating a table\n - Creating an index\n - Adding a column\n - Troubleshooting performance issue\n\nLet's bookmark this issue by clicking the star icon on the top of this page.",
@@ -403,7 +403,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     issue = server.create("issue", {
-      type: "bb.database.create",
+      type: "bb.issue.db.create",
       name: title,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -463,7 +463,7 @@ const workspacesSeeder = (server: any) => {
     });
 
     issue = server.create("issue", {
-      type: "bb.database.grant",
+      type: "bb.issue.db.grant",
       name: title,
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
@@ -597,7 +597,7 @@ const workspacesSeeder = (server: any) => {
 
     issue = server.create("issue", {
       name: data.title,
-      type: "bb.database.schema.update",
+      type: "bb.issue.db.schema.update",
       creatorId: ws1Dev1.id,
       updaterId: ws1Dev1.id,
       assigneeId: ws1Owner.id,
@@ -655,7 +655,7 @@ const workspacesSeeder = (server: any) => {
 
     issue = server.create("issue", {
       name: data.title,
-      type: "bb.database.schema.update",
+      type: "bb.issue.db.schema.update",
       creatorId: ws1Owner.id,
       updaterId: ws1Owner.id,
       assigneeId: ws1DBA.id,
@@ -713,7 +713,7 @@ const workspacesSeeder = (server: any) => {
 
     issue = server.create("issue", {
       name: data.title,
-      type: "bb.database.schema.update",
+      type: "bb.issue.db.schema.update",
       creatorId: ws1Dev2.id,
       updaterId: ws1Dev2.id,
       assigneeId: ws1DBA.id,
@@ -770,7 +770,7 @@ const workspacesSeeder = (server: any) => {
 
   issue = server.create("issue", {
     name: data.title,
-    type: "bb.database.schema.update",
+    type: "bb.issue.db.schema.update",
     creatorId: ws2Dev.id,
     updaterId: ws2Dev.id,
     assigneeId: ws2DBA.id,

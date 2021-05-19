@@ -592,13 +592,13 @@ export default {
 
     const showIssueSqlPanel = computed(() => {
       return (
-        issue.value.type == "bb.general" ||
-        issue.value.type == "bb.database.schema.update"
+        issue.value.type == "bb.issue.general" ||
+        issue.value.type == "bb.issue.db.schema.update"
       );
     });
 
     const showIssueRollbackSqlPanel = computed(() => {
-      return issue.value.type == "bb.database.schema.update";
+      return issue.value.type == "bb.issue.db.schema.update";
     });
 
     return {

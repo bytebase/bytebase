@@ -215,7 +215,7 @@ export default {
             issueSlug: "new",
           },
           query: {
-            template: "bb.database.schema.update",
+            template: "bb.issue.db.schema.update",
             name: `[${database.name}] Alter schema`,
             project: state.project.id,
             databaseList: database.id,

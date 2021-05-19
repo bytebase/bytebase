@@ -3,14 +3,14 @@ import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 
-type IssueTypeGeneral = "bb.general";
+type IssueTypeGeneral = "bb.issue.general";
 
 type IssueTypeDatabase =
-  | "bb.database.create"
-  | "bb.database.grant"
-  | "bb.database.schema.update";
+  | "bb.issue.db.create"
+  | "bb.issue.db.grant"
+  | "bb.issue.db.schema.update";
 
-type IssueTypeDataSource = "bb.data-source.request";
+type IssueTypeDataSource = "bb.issue.data-source.request";
 
 export type IssueType =
   | IssueTypeGeneral

@@ -23,7 +23,7 @@ export default {
       return "OPEN";
     },
     type() {
-      return "bb.database.create";
+      return "bb.issue.db.create";
     },
     description() {
       return faker.fake("{{lorem.paragraphs}}");

@@ -396,7 +396,7 @@ export default {
         .then(() => {
           if (
             transition.to == "DONE" &&
-            props.issueTemplate.type == "bb.database.schema.update"
+            props.issueTemplate.type == "bb.issue.db.schema.update"
           ) {
             store.dispatch("uistate/saveIntroStateByKey", {
               key: "table.create",
