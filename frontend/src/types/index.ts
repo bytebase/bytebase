@@ -9,6 +9,7 @@ export * from "./pipeline";
 export * from "./instance";
 export * from "./database";
 export * from "./dataSource";
+export * from "./sql";
 export * from "./bookmark";
 export * from "./activity";
 export * from "./message";

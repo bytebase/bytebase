@@ -146,12 +146,7 @@ input[type="number"] {
             </p>
           </div>
         </div>
-        <div class="pt-4">
-          <button :disabled="!allowEdit" type="button" class="btn-normal">
-            Test Connection
-          </button>
-        </div>
-        <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+        <div class="pt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-3">
           <div class="sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block"> Username </label>
             <!-- For mysql, username can be empty indicating anonymous user. 
@@ -227,6 +222,30 @@ input[type="number"] {
             />
           </div>
         </div>
+        <div class="pt-8 space-y-2">
+          <div class="flex flex-row space-x-2">
+            <button
+              :disabled="!allowEdit"
+              @click.prevent="testConnection"
+              type="button"
+              class="btn-normal whitespace-nowrap items-center"
+            >
+              Test Connection
+            </button>
+            <div
+              v-if="state.connectionResult == 'OK'"
+              class="flex items-center text-success"
+            >
+              {{ state.connectionResult }}
+            </div>
+          </div>
+          <div
+            v-if="state.connectionResult && state.connectionResult != 'OK'"
+            class="flex items-center text-error"
+          >
+            {{ state.connectionResult }}
+          </div>
+        </div>
       </div>
     </div>
     <!-- Action Button Group -->
@@ -279,12 +298,16 @@ import {
   UNKNOWN_ID,
   Principal,
   InstancePatch,
+  SqlConfig,
+  SqlResultSet,
 } from "../types";
+import { isEmpty } from "lodash";
 
 interface LocalState {
   originalInstance?: Instance;
   instance: Instance | InstanceCreate;
   showPassword: Boolean;
+  connectionResult: string;
 }
 
 export default {
@@ -323,6 +346,7 @@ export default {
             username: "root",
           },
       showPassword: false,
+      connectionResult: "",
     });
 
     const allowCreate = computed(() => {
@@ -426,6 +450,23 @@ export default {
         });
     };
 
+    const testConnection = () => {
+      const sqlConfig: SqlConfig = {
+        dbType: "MYSQL",
+        username: state.instance.username,
+        password: state.instance.password,
+        host: state.instance.host,
+        port: state.instance.port,
+      };
+      store.dispatch("sql/ping", sqlConfig).then((resultSet: SqlResultSet) => {
+        if (isEmpty(resultSet.error)) {
+          state.connectionResult = "OK";
+        } else {
+          state.connectionResult = resultSet.error;
+        }
+      });
+    };
+
     return {
       state,
       allowCreate,
@@ -435,6 +476,7 @@ export default {
       cancel,
       doCreate,
       doUpdate,
+      testConnection,
     };
   },
 };

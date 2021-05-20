@@ -21,8 +21,8 @@ VALUES
         7001,
         'Admin data source',
         'ADMIN',
-        'admin1',
-        'adminpwd1'
+        'root',
+        'root'
     );
 
 INSERT INTO

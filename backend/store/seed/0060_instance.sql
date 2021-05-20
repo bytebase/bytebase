@@ -17,10 +17,10 @@ VALUES
         1001,
         1,
         5001,
-        'ON - premise MySQL instance',
-        'google.com',
+        'On-premise MySQL instance',
         'localhost',
-        '3306'
+        '127.0.0.1',
+        '33060'
     );
 
 INSERT INTO
