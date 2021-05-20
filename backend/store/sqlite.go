@@ -34,9 +34,7 @@ var seedFS embed.FS
 type DB struct {
 	l *bytebase.Logger
 
-	db     *sql.DB
-	ctx    context.Context // background context
-	cancel func()          // cancel background context
+	db *sql.DB
 
 	// Datasource name.
 	DSN string
@@ -53,7 +51,6 @@ func NewDB(logger *bytebase.Logger, dsn string) *DB {
 		DSN: strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
 		Now: time.Now,
 	}
-	db.ctx, db.cancel = context.WithCancel(context.Background())
 	return db
 }
 
@@ -203,9 +200,6 @@ func (db *DB) migrate() error {
 
 // Close closes the database connection.
 func (db *DB) Close() error {
-	// Cancel background context.
-	db.cancel()
-
 	// Close database.
 	if db.db != nil {
 		return db.db.Close()
