@@ -49,6 +49,7 @@ type InstanceFind struct {
 	ID *int
 
 	// Standard fields
+	RowStatus   *RowStatus
 	WorkspaceId *int
 }
 

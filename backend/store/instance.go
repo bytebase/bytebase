@@ -162,6 +162,9 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
 	if v := find.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}

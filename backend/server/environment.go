@@ -46,6 +46,10 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		environmentFind := &api.EnvironmentFind{
 			WorkspaceId: &workspaceId,
 		}
+		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
+			rowStatus := api.RowStatus(rowStatusStr)
+			environmentFind.RowStatus = &rowStatus
+		}
 		list, err := s.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)

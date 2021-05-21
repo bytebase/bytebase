@@ -50,6 +50,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			projectFind.PrincipalId = &userId
 		}
+		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
+			rowStatus := api.RowStatus(rowStatusStr)
+			projectFind.RowStatus = &rowStatus
+		}
 		list, err := s.ProjectService.FindProjectList(context.Background(), projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)

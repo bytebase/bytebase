@@ -38,6 +38,7 @@ type ProjectFind struct {
 	ID *int
 
 	// Standard fields
+	RowStatus   *RowStatus
 	WorkspaceId *int
 
 	// Domain specific fields

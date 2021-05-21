@@ -46,6 +46,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		instanceFind := &api.InstanceFind{
 			WorkspaceId: &workspaceId,
 		}
+		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
+			rowStatus := api.RowStatus(rowStatusStr)
+			instanceFind.RowStatus = &rowStatus
+		}
 		list, err := s.InstanceService.FindInstanceList(context.Background(), instanceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
