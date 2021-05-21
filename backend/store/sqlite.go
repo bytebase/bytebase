@@ -32,9 +32,9 @@ var seedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	l *bytebase.Logger
-
 	db *sql.DB
+
+	l *bytebase.Logger
 
 	// Datasource name.
 	DSN string
@@ -69,7 +69,7 @@ func (db *DB) Open() (err error) {
 	}
 
 	// Connect to the database.
-	if db.db, err = sql.Open("sqlite3", db.DSN); err != nil {
+	if db.db, err = sql.Open("sqlite3_tracing", db.DSN); err != nil {
 		return err
 	}
 

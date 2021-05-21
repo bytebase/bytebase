@@ -3,7 +3,7 @@ tmp_dir = ".air"
 
 [build]
   bin = "./.air/bytebase"
-  cmd = "go build -o ./.air/bytebase ./cmd/echo/"
+  cmd = "go build --tags \"debug sqlite_trace\" -o ./.air/bytebase ./cmd/echo/"
   delay = 1000
   exclude_dir = [".air", "vendor"]
   exclude_file = []
