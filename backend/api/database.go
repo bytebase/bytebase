@@ -76,6 +76,7 @@ type DatabaseFind struct {
 
 	// Related fields
 	InstanceId *int
+	ProjectId  *int
 
 	// Domain specific fields
 	IncludeAllDatabase bool

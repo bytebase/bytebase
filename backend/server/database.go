@@ -53,6 +53,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			databaseFind.InstanceId = &instanceId
 		}
+		projectIdStr := c.QueryParams().Get("project")
+		if projectIdStr != "" {
+			projectId, err := strconv.Atoi(projectIdStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIdStr)).SetInternal(err)
+			}
+			databaseFind.ProjectId = &projectId
+		}
 		list, err := s.DatabaseService.FindDatabaseList(context.Background(), databaseFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
