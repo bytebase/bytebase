@@ -47,11 +47,13 @@ const actions = {
     { commit, rootGetters }: any,
     userId: PrincipalId
   ) {
-    const bookmarkList = (
-      await axios.get(`/api/bookmark?user=${userId}`)
-    ).data.data.map((bookmark: ResourceObject) => {
-      return convert(bookmark, rootGetters);
-    });
+    // API only returns bookmark for the requesting user.
+    // User info is retrieved from the context.
+    const bookmarkList = (await axios.get(`/api/bookmark`)).data.data.map(
+      (bookmark: ResourceObject) => {
+        return convert(bookmark, rootGetters);
+      }
+    );
     commit("setBookmarkListByPrincipalId", { userId, bookmarkList });
     return bookmarkList;
   },
