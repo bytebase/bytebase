@@ -111,6 +111,9 @@ type IssueFind struct {
 
 	// Standard fields
 	WorkspaceId *int
+
+	// Related fields
+	ProjectId *int
 }
 
 type IssuePatch struct {

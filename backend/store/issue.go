@@ -211,6 +211,9 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	if v := find.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}
+	if v := find.ProjectId; v != nil {
+		where, args = append(where, "project_id = ?"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 

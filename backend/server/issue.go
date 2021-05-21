@@ -70,6 +70,14 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issueFind := &api.IssueFind{
 			WorkspaceId: &workspaceId,
 		}
+		projectIdStr := c.QueryParams().Get("project")
+		if projectIdStr != "" {
+			projectId, err := strconv.Atoi(projectIdStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIdStr)).SetInternal(err)
+			}
+			issueFind.ProjectId = &projectId
+		}
 		list, err := s.IssueService.FindIssueList(context.Background(), issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
