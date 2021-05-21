@@ -43,6 +43,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		projectFind := &api.ProjectFind{
 			WorkspaceId: &workspaceId,
 		}
+		if userIdStr := c.QueryParam("user"); userIdStr != "" {
+			userId, err := strconv.Atoi(userIdStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIdStr)).SetInternal(err)
+			}
+			projectFind.PrincipalId = &userId
+		}
 		list, err := s.ProjectService.FindProjectList(context.Background(), projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)

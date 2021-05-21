@@ -39,6 +39,10 @@ type ProjectFind struct {
 
 	// Standard fields
 	WorkspaceId *int
+
+	// Domain specific fields
+	// If present, will only find project containing PrincipalId as a member
+	PrincipalId *int
 }
 
 type ProjectPatch struct {

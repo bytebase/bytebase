@@ -157,6 +157,9 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 	if v := find.WorkspaceId; v != nil {
 		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}
+	if v := find.PrincipalId; v != nil {
+		where, args = append(where, "id IN (SELECT project_id FROM project_member WHERE principal_id = ?)"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
