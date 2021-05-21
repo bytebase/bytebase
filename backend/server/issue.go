@@ -78,6 +78,14 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			issueFind.ProjectId = &projectId
 		}
+		userIdStr := c.QueryParams().Get("user")
+		if userIdStr != "" {
+			userId, err := strconv.Atoi(userIdStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("user query parameter is not a number: %s", userIdStr)).SetInternal(err)
+			}
+			issueFind.PrincipalId = &userId
+		}
 		list, err := s.IssueService.FindIssueList(context.Background(), issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)

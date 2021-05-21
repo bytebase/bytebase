@@ -114,6 +114,11 @@ type IssueFind struct {
 
 	// Related fields
 	ProjectId *int
+
+	// Domain specific fields
+	// Find issue where principalId is either creator or assignee
+	// TODO: Add subscriber support
+	PrincipalId *int
 }
 
 type IssuePatch struct {
