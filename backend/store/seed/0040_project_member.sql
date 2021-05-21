@@ -124,7 +124,7 @@ VALUES
         1,
         3003,
         'OWNER',
-        1003
+        1002
     );
 
 INSERT INTO
