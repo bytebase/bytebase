@@ -10,12 +10,17 @@
         <DataSourceTable :instance="instance" />
       </div>
       <div v-else>
-        <div class="inline-flex items-center mb-4 space-x-2">
-          <div class="text-lg leading-6 font-medium text-main">Databases</div>
-          <BBButtonAdd
-            v-if="instance.rowStatus == 'NORMAL'"
-            @add="tryAddDatabase"
-          />
+        <div class="mb-4 flex items-center justify-between">
+          <div class="inline-flex space-x-2">
+            <div class="text-lg leading-6 font-medium text-main">Databases</div>
+            <BBButtonAdd
+              v-if="instance.rowStatus == 'NORMAL'"
+              @add="tryAddDatabase"
+            />
+          </div>
+          <button type="button" class="btn-normal" @click.prevent="syncSchema">
+            Sync Now
+          </button>
         </div>
         <DatabaseTable :mode="'INSTANCE'" :databaseList="databaseList" />
       </div>
@@ -78,13 +83,11 @@ export default {
       store.getters["plan/feature"]("bb.data-source")
     );
 
-    const instance = computed(
-      (): Instance => {
-        return store.getters["instance/instanceById"](
-          idFromSlug(props.instanceSlug)
-        );
-      }
-    );
+    const instance = computed((): Instance => {
+      return store.getters["instance/instanceById"](
+        idFromSlug(props.instanceSlug)
+      );
+    });
 
     const databaseList = computed(() => {
       return store.getters["database/databaseListByInstanceId"](
@@ -142,6 +145,10 @@ export default {
         });
     };
 
+    const syncSchema = () => {
+      store.dispatch("sql/syncSchema", instance.value.id);
+    };
+
     return {
       hasDataSourceFeature,
       instance,
@@ -149,6 +156,7 @@ export default {
       tryAddDatabase,
       doArchive,
       doRestore,
+      syncSchema,
     };
   },
 };

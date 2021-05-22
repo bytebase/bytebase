@@ -117,12 +117,12 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 			last_successful_sync_ts,
 			fingerprint
 		)
-		VALUES (?, ?, ?, ?, ?, ?, 'NOT_FOUND', 0, '')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync, fingerprint
+		VALUES (?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), '')
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
 	`,
+		create.CreatorId,
+		create.CreatorId,
 		create.WorkspaceId,
-		create.CreatorId,
-		create.CreatorId,
 		create.InstanceId,
 		create.ProjectId,
 		create.Name,
@@ -169,6 +169,9 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 	}
 	if v := find.ProjectId; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
+	}
+	if v := find.Name; v != nil {
+		where, args = append(where, "name = ?"), append(args, *v)
 	}
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.ALL_DATABASE_NAME+"'")
@@ -232,7 +235,13 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.ProjectId; v != nil {
-		set, args = append(set, "name = ?"), append(args, *v)
+		set, args = append(set, "project_id = ?"), append(args, *v)
+	}
+	if v := patch.SyncStatus; v != nil {
+		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
+	}
+	if v := patch.LastSuccessfulSyncTs; v != nil {
+		set, args = append(set, "last_successful_sync_ts = ?"), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -242,7 +251,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync, fingerprint
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
 	`,
 		args...,
 	)

@@ -2,6 +2,8 @@ package api
 
 import "context"
 
+const DEFAULT_PROJECT_ID = 1
+
 type Project struct {
 	ID int `jsonapi:"primary,project"`
 

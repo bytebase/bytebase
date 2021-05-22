@@ -92,10 +92,10 @@ const columnListMap: Map<Mode | "ALL_HIDE_INSTANCE", BBTableColumn[]> = new Map(
       "INSTANCE",
       [
         {
-          title: "Name",
+          title: "Project",
         },
         {
-          title: "Project",
+          title: "Name",
         },
         {
           title: "Sync status",

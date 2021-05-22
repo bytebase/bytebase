@@ -39,3 +39,4 @@ p, OWNER, /bookmark, GET
 p, OWNER, /bookmark/{id}, DELETE_SELF
 p, OWNER, /pipeline/{pipelineId}/task/{taskId}/status, PATCH
 p, OWNER, /sql/ping, POST
+p, OWNER, /sql/syncschema, POST

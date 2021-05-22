@@ -1,7 +1,7 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"sync"
 
@@ -22,6 +22,10 @@ func (e Type) String() string {
 	return ""
 }
 
+type DBSchema struct {
+	Name string
+}
+
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[Type]DriverFunc)
@@ -34,7 +38,9 @@ type DriverConfig struct {
 type DriverFunc func(DriverConfig) Driver
 
 type Driver interface {
-	Open(config ConnectionConfig) (*sql.DB, error)
+	open(config ConnectionConfig) (Driver, error)
+	Ping(ctx context.Context) error
+	SyncSchema(ctx context.Context) ([]*DBSchema, error)
 }
 
 type ConnectionConfig struct {
@@ -60,7 +66,7 @@ func register(dbType Type, f DriverFunc) {
 }
 
 // Open opens a database specified by its database driver type and connection config
-func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig) (*sql.DB, error) {
+func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
@@ -68,5 +74,5 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 		return nil, fmt.Errorf("db: unknown driver %v", dbType)
 	}
 
-	return f(driverConfig).Open(connectionConfig)
+	return f(driverConfig).open(connectionConfig)
 }

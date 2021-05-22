@@ -79,6 +79,7 @@ type DatabaseFind struct {
 	ProjectId  *int
 
 	// Domain specific fields
+	Name               *string
 	IncludeAllDatabase bool
 }
 
@@ -91,7 +92,7 @@ func (find *DatabaseFind) String() string {
 }
 
 type DatabasePatch struct {
-	ID int `jsonapi:"primary,database-patch"`
+	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -99,7 +100,11 @@ type DatabasePatch struct {
 	WorkspaceId int
 
 	// Related fields
-	ProjectId *int `jsonapi:"attr,project"`
+	ProjectId *int `jsonapi:"attr,projectId"`
+
+	// Domain specific fields
+	SyncStatus           *SyncStatus
+	LastSuccessfulSyncTs *int64
 }
 
 type DatabaseService interface {

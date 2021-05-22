@@ -14,6 +14,10 @@ type SqlConfig struct {
 	Password string  `jsonapi:"attr,password"`
 }
 
+type SqlSyncSchema struct {
+	InstanceId int `jsonapi:"attr,instanceId"`
+}
+
 type SqlResultSet struct {
 	Error string `jsonapi:"attr,error"`
 }

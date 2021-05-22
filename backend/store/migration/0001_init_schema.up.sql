@@ -208,7 +208,7 @@ VALUES
         1,
         1,
         'Default',
-        'DFLT'
+        'DEFAULT'
     );
 
 INSERT INTO
