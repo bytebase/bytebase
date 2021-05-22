@@ -31,7 +31,7 @@
             >
             at
             <span href="#" class="font-medium text-control">{{
-              moment(issue.updatedTs).format("LLL")
+              moment(issue.updatedTs * 1000).format("LLL")
             }}</span>
           </p>
         </div>

@@ -17,7 +17,7 @@ export function isRelease() {
 }
 
 export function humanizeTs(ts: number) {
-  const time = moment.utc(ts);
+  const time = moment.utc(ts * 1000);
   if (moment().year() == time.year()) {
     if (moment().dayOfYear() == time.dayOfYear()) {
       return time.local().format("HH:mm");

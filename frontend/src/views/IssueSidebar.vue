@@ -130,14 +130,14 @@
           Updated
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(issue.updatedTs).format("LLL") }}</span
+          {{ moment(issue.updatedTs * 1000).format("LLL") }}</span
         >
 
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Created
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(issue.createdTs).format("LLL") }}</span
+          {{ moment(issue.createdTs * 1000).format("LLL") }}</span
         >
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Creator
