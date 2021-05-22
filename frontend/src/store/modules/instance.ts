@@ -30,18 +30,7 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
-  let username = undefined;
-  let password = undefined;
   for (const item of includedList || []) {
-    if (
-      item.type == "dataSource" &&
-      item.attributes.type == "ADMIN" &&
-      item.attributes.instanceId == instance.id
-    ) {
-      username = item.attributes.username as string;
-      password = item.attributes.password as string;
-    }
-
     if (
       item.type == "environment" &&
       (instance.relationships!.environment.data as ResourceIdentifier).id ==
@@ -60,8 +49,6 @@ function convert(
     creator,
     updater,
     environment,
-    username,
-    password,
   };
 }
 
@@ -137,11 +124,9 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    // Data source contains sensitive info such as username, password so
-    // we only fetch if requesting the specific instance id
-    const data = (
-      await axios.get(`/api/instance/${instanceId}?include=dataSource`)
-    ).data;
+    // secret=true to return username/password when requesting the specific instance id
+    const data = (await axios.get(`/api/instance/${instanceId}?secret=true`))
+      .data;
     const instance = convert(data.data, data.included, rootGetters);
 
     commit("setInstanceById", {
@@ -156,7 +141,7 @@ const actions = {
     newInstance: InstanceCreate
   ) {
     const data = (
-      await axios.post(`/api/instance?include=dataSource`, {
+      await axios.post(`/api/instance?secret=true`, {
         data: {
           type: "InstanceCreate",
           attributes: newInstance,

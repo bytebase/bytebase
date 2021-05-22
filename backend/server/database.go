@@ -172,7 +172,7 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	if sort.SearchStrings(includeList, "instance") >= 0 {
-		database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, includeList)
+		database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, false /*includeSecret*/)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance for database: %v", database.Name)).SetInternal(err)
 		}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -30,7 +29,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance, true /*includeSecret*/); err != nil {
 			return err
 		}
 
@@ -56,7 +55,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeInstanceRelationship(context.Background(), instance, false /*includeSecret*/); err != nil {
 				return err
 			}
 		}
@@ -74,7 +73,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		instance, err := s.ComposeInstanceById(context.Background(), id, true /*includeSecret*/)
 		if err != nil {
 			return err
 		}
@@ -145,7 +144,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance, true /*includeSecret*/); err != nil {
 			return err
 		}
 
@@ -157,7 +156,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []string) (*api.Instance, error) {
+func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeSecret bool) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -169,38 +168,45 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 	}
 
-	if err := s.ComposeInstanceRelationship(ctx, instance, includeList); err != nil {
+	if err := s.ComposeInstanceRelationship(ctx, instance, includeSecret); err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
+func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeSecret bool) error {
 	var err error
 
-	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId, includeList)
+	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId, []string{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for instance: %v", instance.Name)).SetInternal(err)
 	}
 
-	instance.Updater, err = s.ComposePrincipalById(context.Background(), instance.UpdaterId, includeList)
+	instance.Updater, err = s.ComposePrincipalById(context.Background(), instance.UpdaterId, []string{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for instance: %v", instance.Name)).SetInternal(err)
 	}
 
-	instance.Environment, err = s.ComposeEnvironmentById(context.Background(), instance.EnvironmentId, includeList)
+	instance.Environment, err = s.ComposeEnvironmentById(context.Background(), instance.EnvironmentId, []string{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
 	}
 
-	if sort.SearchStrings(includeList, "dataSource") >= 0 {
+	if includeSecret {
 		dataSourceFind := &api.DataSourceFind{
 			InstanceId: &instance.ID,
 		}
 		instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+		}
+		for _, dataSource := range instance.DataSourceList {
+			if dataSource.Type == api.Admin {
+				instance.Username = dataSource.Username
+				instance.Password = dataSource.Password
+				break
+			}
 		}
 	}
 

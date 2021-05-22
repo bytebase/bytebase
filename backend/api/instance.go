@@ -25,6 +25,9 @@ type Instance struct {
 	ExternalLink string `jsonapi:"attr,externalLink"`
 	Host         string `jsonapi:"attr,host"`
 	Port         string `jsonapi:"attr,port"`
+	// Only returns username/password if query parameter 'secret=true'
+	Username string `jsonapi:"attr,username"`
+	Password string `jsonapi:"attr,password"`
 }
 
 type InstanceCreate struct {
