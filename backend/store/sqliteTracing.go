@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	whitelistTables = []string{"project", "environment", "instance", "issue"}
+	blackListTables = []string{"principal", "member", "project_member"}
 )
 
 func traceCallback(info sqlite3.TraceInfo) int {
@@ -34,9 +34,16 @@ func traceCallback(info sqlite3.TraceInfo) int {
 	cleanText := strings.Join(strings.Fields(strings.TrimSpace(strings.Replace(expandedText, "\n", " ", -1))), " ")
 
 	if dbErrText == "" {
+		if cleanText != "BEGIN" && cleanText != "COMMIT" && cleanText != "ROLLBACK" {
+			log := true
+			for _, table := range blackListTables {
+				if strings.Contains(cleanText, fmt.Sprintf("FROM %s ", table)) {
+					log = false
+					break
 
-		for _, table := range whitelistTables {
-			if strings.Contains(cleanText, fmt.Sprintf("FROM %s ", table)) {
+				}
+			}
+			if log {
 				fmt.Printf("%s%s\n",
 					cleanText,
 					dbErrText)
