@@ -7,7 +7,7 @@
     @select-item="
       (principal) => {
         state.selectedId = principal.id;
-        $emit('select-principal-id', principal.id);
+        $emit('select-principal-id', parseInt(principal.id));
       }
     "
   >

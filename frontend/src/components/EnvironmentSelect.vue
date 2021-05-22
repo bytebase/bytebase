@@ -4,7 +4,7 @@
     :disabled="disabled"
     @change="
       (e) => {
-        $emit('select-environment-id', e.target.value);
+        $emit('select-environment-id', parseInt(e.target.value));
       }
     "
   >

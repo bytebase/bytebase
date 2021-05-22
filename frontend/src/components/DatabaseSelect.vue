@@ -5,7 +5,7 @@
     @change="
       (e) => {
         state.selectedId = e.target.value;
-        $emit('select-database-id', e.target.value);
+        $emit('select-database-id', parseInt(e.target.value));
       }
     "
   >

@@ -4,7 +4,7 @@
     :disabled="disabled"
     @change="
       (e) => {
-        $emit('select-project-id', e.target.value);
+        $emit('select-project-id', parseInt(e.target.value));
       }
     "
   >
