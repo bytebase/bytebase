@@ -356,6 +356,12 @@ export default {
       return newIssue;
     };
 
+    const create = props.issueSlug.toLowerCase() == "new";
+    const state = reactive<LocalState>({
+      create: create,
+      newIssue: create ? buildNewIssue() : undefined,
+    });
+
     watch(
       () => props.issueSlug,
       (cur, prev) => {
@@ -363,14 +369,8 @@ export default {
       }
     );
 
-    const create = props.issueSlug.toLowerCase() == "new";
-    const state = reactive<LocalState>({
-      create: create,
-      newIssue: create ? buildNewIssue() : undefined,
-    });
-
     const issue = computed((): Issue | IssueCreate => {
-      return create
+      return state.create
         ? state.newIssue
         : store.getters["issue/issueById"](idFromSlug(props.issueSlug));
     });
