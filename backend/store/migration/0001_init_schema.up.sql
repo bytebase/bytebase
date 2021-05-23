@@ -497,6 +497,39 @@ WHERE
 
 END;
 
+-- task run table stores the task run
+CREATE TABLE task_run (
+    id TEXT PRIMARY KEY,
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    task_id INTEGER NOT NULL REFERENCES task (id),
+    name TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (
+        `status` IN (
+            'PENDING',
+            'RUNNING',
+            'DONE',
+            'FAILED',
+            "CANCELED"
+        )
+    ),
+    `type` TEXT NOT NULL,
+    payload TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_task_run_modification_time`
+AFTER
+UPDATE
+    ON `task_run` FOR EACH ROW BEGIN
+UPDATE
+    `task`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Pipeline related END
 -----------------------
 -- issue table stores the workspace issue

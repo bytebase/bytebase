@@ -50,7 +50,9 @@ const (
 	TaskManual    TaskWhen = "MANUAL"
 )
 
-type TaskPayload struct {
+type TaskDatabaseSchemaUpdatePayload struct {
+	Sql         string
+	RollbackSql string
 }
 
 type Task struct {
@@ -73,11 +75,11 @@ type Task struct {
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
-	Name    string      `jsonapi:"attr,name"`
-	Status  TaskStatus  `jsonapi:"attr,status"`
-	Type    TaskType    `jsonapi:"attr,type"`
-	When    TaskWhen    `jsonapi:"attr,when"`
-	Payload TaskPayload `jsonapi:"attr,payload"`
+	Name    string     `jsonapi:"attr,name"`
+	Status  TaskStatus `jsonapi:"attr,status"`
+	Type    TaskType   `jsonapi:"attr,type"`
+	When    TaskWhen   `jsonapi:"attr,when"`
+	Payload []byte     `jsonapi:"attr,payload"`
 }
 
 type TaskCreate struct {
@@ -92,10 +94,10 @@ type TaskCreate struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name    string      `jsonapi:"attr,name"`
-	Type    TaskType    `jsonapi:"attr,type"`
-	When    TaskWhen    `jsonapi:"attr,when"`
-	Payload TaskPayload `jsonapi:"attr,payload"`
+	Name    string   `jsonapi:"attr,name"`
+	Type    TaskType `jsonapi:"attr,type"`
+	When    TaskWhen `jsonapi:"attr,when"`
+	Payload []byte   `jsonapi:"attr,payload"`
 }
 
 type TaskFind struct {

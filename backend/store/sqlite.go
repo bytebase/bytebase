@@ -32,7 +32,7 @@ var seedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	db *sql.DB
+	Db *sql.DB
 
 	l *bytebase.Logger
 
@@ -69,7 +69,7 @@ func (db *DB) Open() (err error) {
 	}
 
 	// Connect to the database.
-	if db.db, err = sql.Open("sqlite3_tracing", db.DSN); err != nil {
+	if db.Db, err = sql.Open("sqlite3_tracing", db.DSN); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (db *DB) seed() error {
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
 	db.l.Infof("Seeding %s...", name)
-	tx, err := db.db.Begin()
+	tx, err := db.Db.Begin()
 	if err != nil {
 		return err
 	}
@@ -201,8 +201,8 @@ func (db *DB) migrate() error {
 // Close closes the database connection.
 func (db *DB) Close() error {
 	// Close database.
-	if db.db != nil {
-		return db.db.Close()
+	if db.Db != nil {
+		return db.Db.Close()
 	}
 	return nil
 }
@@ -211,7 +211,7 @@ func (db *DB) Close() error {
 // provides a reference to the database and a fixed timestamp at the start of
 // the transaction. The timestamp allows us to mock time during tests as well.
 func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
-	tx, err := db.db.BeginTx(ctx, opts)
+	tx, err := db.Db.BeginTx(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

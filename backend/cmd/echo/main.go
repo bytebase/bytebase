@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/bytebase/bytebase"
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/scheduler"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 )
@@ -17,7 +20,8 @@ import (
 const DSN = "./data/bytebase_dev.db"
 
 type Main struct {
-	l *bytebase.Logger
+	l         *bytebase.Logger
+	scheduler *scheduler.Scheduler
 
 	server *server.Server
 
@@ -38,7 +42,16 @@ func (m *Main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l)
+	s := scheduler.NewScheduler(log.Default(), db.Db)
+	sqlExecutor := scheduler.NewSqlExecutor(log.Default(), db.Db)
+	s.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+	m.scheduler = s
+
+	if err := m.scheduler.Run(); err != nil {
+		return err
+	}
+
+	server := server.NewServer(m.l, m.scheduler)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)

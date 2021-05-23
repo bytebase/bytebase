@@ -5,13 +5,14 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	sqlite3 "github.com/mattn/go-sqlite3"
 )
 
 var (
-	blackListTables = []string{"principal", "member", "project_member"}
+	blackListTables = []string{"principal", "member", "project_member", "task_run"}
 )
 
 func traceCallback(info sqlite3.TraceInfo) int {
@@ -35,22 +36,22 @@ func traceCallback(info sqlite3.TraceInfo) int {
 
 	if dbErrText == "" {
 		if cleanText != "BEGIN" && cleanText != "COMMIT" && cleanText != "ROLLBACK" {
-			log := true
+			shouldLog := true
 			for _, table := range blackListTables {
 				if strings.Contains(cleanText, fmt.Sprintf("FROM %s ", table)) {
-					log = false
+					shouldLog = false
 					break
 
 				}
 			}
-			if log {
-				fmt.Printf("%s%s\n",
+			if shouldLog {
+				log.Printf("[trace.sql]%s%s\n",
 					cleanText,
 					dbErrText)
 			}
 		}
 	} else {
-		fmt.Printf("%s%s\n",
+		log.Printf("[trace.sql]%s%s\n",
 			cleanText,
 			dbErrText)
 	}

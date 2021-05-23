@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/scheduler"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -19,7 +20,8 @@ import (
 )
 
 type Server struct {
-	l *bytebase.Logger
+	l         *bytebase.Logger
+	scheduler *scheduler.Scheduler
 
 	PrincipalService     api.PrincipalService
 	MemberService        api.MemberService
@@ -66,7 +68,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *bytebase.Logger) *Server {
+func NewServer(logger *bytebase.Logger, scheduler *scheduler.Scheduler) *Server {
 	e := echo.New()
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
@@ -79,8 +81,9 @@ func NewServer(logger *bytebase.Logger) *Server {
 	e.GET("/assets/*", echo.WrapHandler(assetHandler))
 
 	s := &Server{
-		l: logger,
-		e: e,
+		l:         logger,
+		scheduler: scheduler,
+		e:         e,
 	}
 
 	g := e.Group("/api")

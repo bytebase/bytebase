@@ -4,6 +4,8 @@ DROP TABLE activity;
 
 DROP TABLE issue;
 
+DROP TABLE task_run;
+
 DROP TABLE task;
 
 DROP TABLE stage;

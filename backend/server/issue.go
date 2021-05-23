@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/scheduler"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -40,6 +42,20 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				taskCreate.WorkspaceId = api.DEFAULT_WORKPSACE_ID
 				taskCreate.PipelineId = createdPipeline.ID
 				taskCreate.StageId = createdStage.ID
+				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+					payload := api.TaskDatabaseSchemaUpdatePayload{}
+					if issueCreate.Sql != "" {
+						payload.Sql = issueCreate.Sql
+					}
+					if issueCreate.RollbackSql != "" {
+						payload.RollbackSql = issueCreate.RollbackSql
+					}
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task for issue").SetInternal(err)
+					}
+					taskCreate.Payload = bytes
+				}
 				_, err := s.TaskService.CreateTask(context.Background(), &taskCreate)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task for issue").SetInternal(err)
@@ -58,6 +74,22 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return err
 		}
 
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				_, err := s.scheduler.Schedule(scheduler.Task{
+					ID:      task.ID,
+					Name:    task.Name,
+					Type:    string(task.Type),
+					Payload: task.Payload,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to schedule task after creating the issue").SetInternal(err)
+				}
+				goto End
+			}
+		}
+
+	End:
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create issue response").SetInternal(err)
