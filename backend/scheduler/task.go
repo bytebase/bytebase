@@ -52,7 +52,6 @@ type TaskRun struct {
 }
 
 type TaskRunCreate struct {
-	ID      TaskRunId
 	TaskId  TaskId
 	Name    string
 	Type    string

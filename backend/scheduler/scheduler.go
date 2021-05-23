@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -81,7 +79,6 @@ func (s *Scheduler) Register(taskType string, executor Executor) {
 
 func (s *Scheduler) Schedule(task Task) (*TaskRun, error) {
 	taskRunCreate := &TaskRunCreate{
-		ID:      uuid.NewV4().String(),
 		TaskId:  task.ID,
 		Name:    task.Name,
 		Type:    task.Type,

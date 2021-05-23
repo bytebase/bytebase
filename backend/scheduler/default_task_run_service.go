@@ -111,17 +111,15 @@ func (s *DefaultTaskRunService) PatchTaskRunStatus(ctx context.Context, patch *T
 func createTaskRun(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task_run (
-			id,
 			task_id,
 			name,
 			`+"`status`,"+`	
 			`+"`type`,"+`
 			payload	
 		)
-		VALUES (?, ?, ?, 'PENDING', ?, ?)
+		VALUES (?, ?, 'PENDING', ?, ?)
 		RETURNING id, created_ts, updated_ts, task_id, name, `+"`status`, `type`, payload"+`
 	`,
-		create.ID,
 		create.TaskId,
 		create.Name,
 		create.Type,
@@ -163,7 +161,7 @@ func findTaskRunList(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (_ []*T
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
-		    id,
+			id,
 		    created_ts,
 		    updated_ts,
 			task_id,

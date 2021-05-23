@@ -499,7 +499,7 @@ END;
 
 -- task run table stores the task run
 CREATE TABLE task_run (
-    id TEXT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     task_id INTEGER NOT NULL REFERENCES task (id),
@@ -516,6 +516,11 @@ CREATE TABLE task_run (
     `type` TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
 );
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('task_run', 1000);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_task_run_modification_time`
 AFTER
