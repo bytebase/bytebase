@@ -657,6 +657,13 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  // We may just change the anchor (e.g. in Issue Detail view), thus we don't need
+  // to fetch the data to verify its existence since we have already verified before.
+  if (to.name == from.name) {
+    next();
+    return;
+  }
+
   const routerSlug = store.getters["router/routeSlug"](to);
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
