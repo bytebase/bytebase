@@ -5,11 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"runtime"
 	"time"
 )
 
 const (
-	interval = time.Duration(1) * time.Second
+	STACK_SIZE = 4 << 10 // 4 KB
+	ALL_STACK  = true
+
+	INTERVAL = time.Duration(1) * time.Second
 )
 
 func NewScheduler(logger *log.Logger, db *sql.DB) *Scheduler {
@@ -30,37 +34,53 @@ type Scheduler struct {
 func (s *Scheduler) Run() error {
 	go func() {
 		for {
-			time.Sleep(interval)
-			status := TaskRunPending
-			taskRunFind := &TaskRunFind{
-				Status: &status,
-			}
-			list, err := s.taskRunService.FindTaskRunList(context.Background(), taskRunFind)
-			if err != nil {
-				s.l.Printf("Failed to retrieve pending tasks: %v\n", err)
-			}
+			time.Sleep(INTERVAL)
 
-			for _, taskRun := range list {
-				executor, ok := s.executors[taskRun.Type]
-				if !ok {
-					s.l.Printf("Unknown task type: %v. Skip.", taskRun.Type)
-					continue
-				}
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err, ok := r.(error)
+						if !ok {
+							err = fmt.Errorf("%v", r)
+						}
+						stack := make([]byte, STACK_SIZE)
+						length := runtime.Stack(stack, ALL_STACK)
+						msg := fmt.Sprintf("[Scheduler PANIC RECOVER] %v %s\n", err, stack[:length])
 
-				s.l.Printf("Try to change task %v(%v) to RUNNING.\n", taskRun.Name, taskRun.ID)
-				if err := s.changeTaskRunStatus(taskRun.ID, TaskRunRunning); err != nil {
-					s.l.Printf("Failed to change task: %v.\n", err)
-					continue
-				}
-
-				if err := executor.Run(context.Background(), *taskRun); err != nil {
-					s.l.Printf("Failed to start executing task %v(%v) to RUNNING: %v.\n", taskRun.Name, taskRun.ID, err)
-					if err := s.changeTaskRunStatus(taskRun.ID, TaskRunFailed); err != nil {
-						s.l.Printf("Failed to change task: %v.\n", err)
+						s.l.Println(msg)
 					}
-					continue
+				}()
+				status := TaskRunPending
+				taskRunFind := &TaskRunFind{
+					Status: &status,
 				}
-			}
+				list, err := s.taskRunService.FindTaskRunList(context.Background(), taskRunFind)
+				if err != nil {
+					s.l.Printf("Failed to retrieve pending tasks: %v\n", err)
+				}
+
+				for _, taskRun := range list {
+					executor, ok := s.executors[taskRun.Type]
+					if !ok {
+						s.l.Printf("Unknown task type: %v. Skip.", taskRun.Type)
+						continue
+					}
+
+					s.l.Printf("Try to change task '%v(%v)' to RUNNING.\n", taskRun.Name, taskRun.ID)
+					if err := s.changeTaskRunStatus(taskRun.ID, TaskRunRunning); err != nil {
+						s.l.Printf("Failed to change task: %v.\n", err)
+						continue
+					}
+
+					if err := executor.Run(context.Background(), *taskRun); err != nil {
+						s.l.Printf("Failed to start executing task '%v(%v)' to RUNNING: %v.\n", taskRun.Name, taskRun.ID, err)
+						if err := s.changeTaskRunStatus(taskRun.ID, TaskRunFailed); err != nil {
+							s.l.Printf("Failed to change task: %v.\n", err)
+						}
+						continue
+					}
+				}
+			}()
 		}
 	}()
 
@@ -100,7 +120,7 @@ func (s *Scheduler) Schedule(task Task) (*TaskRun, error) {
 
 // 	executor, ok := s.executors[taskRun.Type]
 // 	if !ok {
-// 		return TaskRunUnknown, fmt.Errorf("failed to check task status %v(%v): unknown task type: %v", taskRun.Name, taskRunId, taskRun.Type)
+// 		return TaskRunUnknown, fmt.Errorf("failed to check task status '%v(%v)': unknown task type: %v", taskRun.Name, taskRunId, taskRun.Type)
 // 	}
 
 // 	return executor.Status(taskRunId)
@@ -114,7 +134,7 @@ func (s *Scheduler) Schedule(task Task) (*TaskRun, error) {
 
 // 	executor, ok := s.executors[taskRun.Type]
 // 	if !ok {
-// 		return fmt.Errorf("failed to cancel task status %v(%v): unknown task type: %v", taskRun.Name, taskRunId, taskRun.Type)
+// 		return fmt.Errorf("failed to cancel task status '%v(%v)': unknown task type: %v", taskRun.Name, taskRunId, taskRun.Type)
 // 	}
 
 // 	return executor.Cancel(taskRunId)
