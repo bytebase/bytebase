@@ -11,6 +11,5 @@ require (
 	github.com/labstack/echo/v4 v4.2.2
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
-	github.com/satori/go.uuid v1.2.0
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
 )
