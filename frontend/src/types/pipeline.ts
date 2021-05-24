@@ -185,10 +185,7 @@ export type StageCreate = {
 };
 
 // Task
-export type TaskType =
-  | "bb.task.general"
-  | "bb.task.approve"
-  | "bb.task.database.schema.update";
+export type TaskType = "bb.task.approve" | "bb.task.database.schema.update";
 
 export type TaskStatus =
   | "PENDING"

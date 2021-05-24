@@ -19,7 +19,7 @@ const template: IssueTemplate = {
             taskList: [
               {
                 name: "Troubleshoot database",
-                type: "bb.task.general",
+                type: "bb.task.approve",
                 when: "MANUAL",
                 databaseId: UNKNOWN_ID,
               },

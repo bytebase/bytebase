@@ -38,7 +38,6 @@ func (e TaskStatus) IsEndStatus() bool {
 type TaskType string
 
 const (
-	TaskGeneral              TaskType = "bb.task.general"
 	TaskApprove              TaskType = "bb.task.approve"
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
 )
