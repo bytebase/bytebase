@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	blackListTables = []string{"principal", "member", "project_member", "task_run"}
+	blackListTables = []string{"principal", "environment", "member", "project_member", "task_run"}
 )
 
 func traceCallback(info sqlite3.TraceInfo) int {
