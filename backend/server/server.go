@@ -5,13 +5,13 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/scheduler"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -20,8 +20,8 @@ import (
 )
 
 type Server struct {
-	l         *bytebase.Logger
-	scheduler *scheduler.Scheduler
+	l             *bytebase.Logger
+	TaskScheduler *TaskScheduler
 
 	PrincipalService     api.PrincipalService
 	MemberService        api.MemberService
@@ -35,6 +35,7 @@ type Server struct {
 	PipelineService      api.PipelineService
 	StageService         api.StageService
 	TaskService          api.TaskService
+	TaskRunService       api.TaskRunService
 	ActivityService      api.ActivityService
 	BookmarkService      api.BookmarkService
 
@@ -68,7 +69,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *bytebase.Logger, scheduler *scheduler.Scheduler) *Server {
+func NewServer(logger *bytebase.Logger) *Server {
 	e := echo.New()
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
@@ -81,10 +82,14 @@ func NewServer(logger *bytebase.Logger, scheduler *scheduler.Scheduler) *Server 
 	e.GET("/assets/*", echo.WrapHandler(assetHandler))
 
 	s := &Server{
-		l:         logger,
-		scheduler: scheduler,
-		e:         e,
+		l: logger,
+		e: e,
 	}
+
+	scheduler := NewTaskScheduler(log.Default(), s)
+	sqlExecutor := NewSqlTaskExecutor(log.Default())
+	scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+	s.TaskScheduler = scheduler
 
 	g := e.Group("/api")
 
@@ -141,6 +146,10 @@ func NewServer(logger *bytebase.Logger, scheduler *scheduler.Scheduler) *Server 
 }
 
 func (server *Server) Run() error {
+	if err := server.TaskScheduler.Run(); err != nil {
+		return err
+	}
+
 	const port int = 8080
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)

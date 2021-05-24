@@ -69,10 +69,11 @@ type Task struct {
 
 	// Related fields
 	// Just returns PipelineId and StageId otherwise would cause circular dependency.
-	PipelineId int `jsonapi:"attr,pipelineId"`
-	StageId    int `jsonapi:"attr,stageId"`
-	DatabaseId int
-	Database   *Database `jsonapi:"relation,database"`
+	PipelineId  int `jsonapi:"attr,pipelineId"`
+	StageId     int `jsonapi:"attr,stageId"`
+	DatabaseId  int
+	Database    *Database  `jsonapi:"relation,database"`
+	TaskRunList []*TaskRun `jsonapi:"relation,taskRun"`
 
 	// Domain specific fields
 	Name    string     `jsonapi:"attr,name"`
@@ -111,22 +112,6 @@ type TaskFind struct {
 	StageId    *int
 }
 
-type TaskPatch struct {
-	ID int `jsonapi:"primary,taskPatch"`
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
-
-	// Related fields
-	PipelineId int
-
-	// Domain specific fields
-	// Status is only set manualy via TaskStatusPatch
-	Status *TaskStatus `jsonapi:"attr,status"`
-}
-
 type TaskStatusPatch struct {
 	ID int `jsonapi:"primary,taskStatusPatch"`
 
@@ -136,18 +121,18 @@ type TaskStatusPatch struct {
 	WorkspaceId int
 
 	// Related fields
-	PipelineId int
+	TaskRunId *int
 
 	// Domain specific fields
-	// This is the container containing the pipeline this task belongs.
-	ContainerId *int    `jsonapi:"attr,containerId"`
-	Status      *string `jsonapi:"attr,status"`
-	Comment     *string `jsonapi:"attr,comment"`
+	Status TaskStatus `jsonapi:"attr,status"`
+	// If set will also update the corresponding TaskRunStatus
+	TaskRunStatus *TaskRunStatus
+	Comment       *string `jsonapi:"attr,comment"`
 }
 
 type TaskService interface {
 	CreateTask(ctx context.Context, create *TaskCreate) (*Task, error)
 	FindTaskList(ctx context.Context, find *TaskFind) ([]*Task, error)
 	FindTask(ctx context.Context, find *TaskFind) (*Task, error)
-	PatchTask(ctx context.Context, patch *TaskPatch) (*Task, error)
+	PatchTaskStatus(ctx context.Context, patch *TaskStatusPatch) (*Task, error)
 }

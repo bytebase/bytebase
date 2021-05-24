@@ -14,11 +14,6 @@ import (
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
 	g.PATCH("/pipeline/:pipelineId/task/:taskId/status", func(c echo.Context) error {
-		pipelineId, err := strconv.Atoi(c.Param("pipelineId"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineId"))).SetInternal(err)
-		}
-
 		taskId, err := strconv.Atoi(c.Param("taskId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskId"))).SetInternal(err)
@@ -28,21 +23,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			ID:          taskId,
 			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			PipelineId:  pipelineId,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
 		}
 
-		taskStatus := api.TaskStatus(*taskStatusPatch.Status)
-		taskPatch := &api.TaskPatch{
-			ID:          taskId,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			PipelineId:  pipelineId,
-			Status:      &taskStatus,
-		}
-		updatedTask, err := s.TaskService.PatchTask(context.Background(), taskPatch)
+		updatedTask, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task ID not found: %d", taskId))
@@ -98,5 +84,44 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database for task: %v", task.Name)).SetInternal(err)
 	}
 
+	task.TaskRunList, err = s.ComposeTaskRunListByTaskId(context.Background(), task.ID, includeList)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task run list for task: %v", task.Name)).SetInternal(err)
+	}
+
+	return nil
+}
+
+func (s *Server) ChangeTaskStatus(taskRun *api.TaskRun, newStatus api.TaskStatus) error {
+	newTaskRunStatus := api.TaskRunUnknown
+	switch newStatus {
+	case api.TaskPending:
+		newTaskRunStatus = api.TaskRunPending
+	case api.TaskRunning:
+		newTaskRunStatus = api.TaskRunRunning
+	case api.TaskDone:
+		newTaskRunStatus = api.TaskRunDone
+	case api.TaskFailed:
+		newTaskRunStatus = api.TaskRunFailed
+	case api.TaskCanceled:
+		newTaskRunStatus = api.TaskRunCanceled
+	case api.TaskSkipped:
+		newTaskRunStatus = api.TaskRunCanceled
+	}
+	taskStatusPatch := &api.TaskStatusPatch{
+		ID:          taskRun.TaskId,
+		UpdaterId:   taskRun.UpdaterId,
+		WorkspaceId: taskRun.WorkspaceId,
+		Status:      newStatus,
+	}
+
+	if newTaskRunStatus != api.TaskRunUnknown {
+		taskStatusPatch.TaskRunId = &taskRun.ID
+		taskStatusPatch.TaskRunStatus = &newTaskRunStatus
+	}
+	_, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch)
+	if err != nil {
+		return fmt.Errorf("failed to change task %v status: %w", taskRun.TaskId, err)
+	}
 	return nil
 }

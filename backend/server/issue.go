@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/scheduler"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -76,12 +75,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
-				_, err := s.scheduler.Schedule(scheduler.Task{
-					ID:      task.ID,
-					Name:    task.Name,
-					Type:    string(task.Type),
-					Payload: task.Payload,
-				})
+				_, err := s.TaskScheduler.Schedule(*task)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to schedule task after creating the issue").SetInternal(err)
 				}
@@ -235,14 +229,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				for _, stage := range issue.Pipeline.StageList {
 					for _, task := range stage.TaskList {
 						if task.Status == api.TaskRunning {
-							taskStatus := api.TaskCanceled
-							taskPatch := &api.TaskPatch{
+							taskStatusPatch := &api.TaskStatusPatch{
 								ID:          id,
 								WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 								UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-								Status:      &taskStatus,
+								Status:      api.TaskCanceled,
 							}
-							if _, err := s.TaskService.PatchTask(context.Background(), taskPatch); err != nil {
+							if _, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch); err != nil {
 								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v.", issue.Name, task.Name)).SetInternal(err)
 							}
 						}

@@ -1,32 +1,31 @@
-package scheduler
+package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase"
+	"github.com/bytebase/bytebase/api"
 )
 
 var (
-	_ TaskRunService = (*DefaultTaskRunService)(nil)
+	_ api.TaskRunService = (*TaskRunService)(nil)
 )
 
 // TaskRunService represents a service for managing taskRun.
-type DefaultTaskRunService struct {
-	l  *log.Logger
-	db *sql.DB
+type TaskRunService struct {
+	l  *bytebase.Logger
+	db *DB
 }
 
 // newTaskRunService returns a new TaskRunService.
-func newTaskRunService(logger *log.Logger, db *sql.DB) *DefaultTaskRunService {
-	return &DefaultTaskRunService{l: logger, db: db}
+func NewTaskRunService(logger *bytebase.Logger, db *DB) *TaskRunService {
+	return &TaskRunService{l: logger, db: db}
 }
 
 // CreateTaskRun creates a new taskRun.
-func (s *DefaultTaskRunService) CreateTaskRun(ctx context.Context, create *TaskRunCreate) (*TaskRun, error) {
+func (s *TaskRunService) CreateTaskRun(ctx context.Context, create *api.TaskRunCreate) (*api.TaskRun, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func (s *DefaultTaskRunService) CreateTaskRun(ctx context.Context, create *TaskR
 }
 
 // FindTaskRunList retrieves a list of taskRuns based on find.
-func (s *DefaultTaskRunService) FindTaskRunList(ctx context.Context, find *TaskRunFind) ([]*TaskRun, error) {
+func (s *TaskRunService) FindTaskRunList(ctx context.Context, find *api.TaskRunFind) ([]*api.TaskRun, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -55,7 +54,7 @@ func (s *DefaultTaskRunService) FindTaskRunList(ctx context.Context, find *TaskR
 
 	list, err := findTaskRunList(ctx, tx, find)
 	if err != nil {
-		return []*TaskRun{}, err
+		return []*api.TaskRun{}, err
 	}
 
 	return list, nil
@@ -64,7 +63,7 @@ func (s *DefaultTaskRunService) FindTaskRunList(ctx context.Context, find *TaskR
 // FindTaskRun retrieves a single taskRun based on find.
 // Returns ENOTFOUND if no matching record.
 // Returns the first matching one and prints a warning if finding more than 1 matching records.
-func (s *DefaultTaskRunService) FindTaskRun(ctx context.Context, find *TaskRunFind) (*TaskRun, error) {
+func (s *TaskRunService) FindTaskRun(ctx context.Context, find *api.TaskRunFind) (*api.TaskRun, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -77,38 +76,13 @@ func (s *DefaultTaskRunService) FindTaskRun(ctx context.Context, find *TaskRunFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task run not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Printf("found mulitple task runs: %d, expect 1\n", len(list))
+		s.l.Warnf("found mulitple task runs: %d, expect 1\n", len(list))
 	}
 	return list[0], nil
 }
 
-// PatchTaskRunStatus updates an existing taskRun by ID.
-// Returns ENOTFOUND if taskRun does not exist.
-func (s *DefaultTaskRunService) PatchTaskRunStatus(ctx context.Context, patch *TaskRunStatusPatch) (*TaskRun, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	taskRunPatch := &taskRunPatch{
-		ID:     patch.ID,
-		Status: &patch.Status,
-	}
-	taskRun, err := patchTaskRun(ctx, tx, taskRunPatch)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return taskRun, nil
-}
-
 // createTaskRun creates a new taskRun.
-func createTaskRun(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error) {
+func createTaskRun(ctx context.Context, tx *Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task_run (
 			task_id,
@@ -132,7 +106,7 @@ func createTaskRun(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*Tas
 	defer row.Close()
 
 	row.Next()
-	var taskRun TaskRun
+	var taskRun api.TaskRun
 	if err := row.Scan(
 		&taskRun.ID,
 		&taskRun.CreatedTs,
@@ -149,7 +123,7 @@ func createTaskRun(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*Tas
 	return &taskRun, nil
 }
 
-func findTaskRunList(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (_ []*TaskRun, err error) {
+func findTaskRunList(ctx context.Context, tx *Tx, find *api.TaskRunFind) (_ []*api.TaskRun, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -179,9 +153,9 @@ func findTaskRunList(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (_ []*T
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	list := make([]*TaskRun, 0)
+	list := make([]*api.TaskRun, 0)
 	for rows.Next() {
-		var taskRun TaskRun
+		var taskRun api.TaskRun
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatedTs,
@@ -202,55 +176,4 @@ func findTaskRunList(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (_ []*T
 	}
 
 	return list, nil
-}
-
-type taskRunPatch struct {
-	ID TaskRunId
-
-	Status *TaskRunStatus
-}
-
-// patchTaskRun updates a taskRun by ID. Returns the new state of the taskRun after update.
-func patchTaskRun(ctx context.Context, tx *sql.Tx, patch *taskRunPatch) (*TaskRun, error) {
-	// Build UPDATE clause.
-	set, args := []string{}, []interface{}{}
-	if v := patch.Status; v != nil {
-		set, args = append(set, "`status` = ?"), append(args, TaskRunStatus(*v))
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE task_run
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, created_ts, updated_ts, task_id, name, `+"`status`, `type`, payload"+`
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var taskRun TaskRun
-		if err := row.Scan(
-			&taskRun.ID,
-			&taskRun.CreatedTs,
-			&taskRun.UpdatedTs,
-			&taskRun.TaskId,
-			&taskRun.Name,
-			&taskRun.Status,
-			&taskRun.Type,
-			&taskRun.Payload,
-		); err != nil {
-			return nil, err
-		}
-
-		return &taskRun, nil
-	}
-
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task run ID not found: %s", patch.ID)}
 }

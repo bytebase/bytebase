@@ -471,6 +471,7 @@ CREATE TABLE task (
             'RUNNING',
             'DONE',
             'FAILED',
+            "CANCELED",
             "SKIPPED"
         )
     ),
@@ -513,7 +514,7 @@ CREATE TABLE task_run (
             "CANCELED"
         )
     ),
-    `type` TEXT NOT NULL,
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
     payload TEXT NOT NULL DEFAULT ''
 );
 

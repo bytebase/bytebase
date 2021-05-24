@@ -3,15 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/bytebase/bytebase"
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/scheduler"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 )
@@ -20,8 +17,7 @@ import (
 const DSN = "./data/bytebase_dev.db"
 
 type Main struct {
-	l         *bytebase.Logger
-	scheduler *scheduler.Scheduler
+	l *bytebase.Logger
 
 	server *server.Server
 
@@ -42,16 +38,7 @@ func (m *Main) Run() error {
 
 	m.db = db
 
-	s := scheduler.NewScheduler(log.Default(), db.Db)
-	sqlExecutor := scheduler.NewSqlExecutor(log.Default(), db.Db)
-	s.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
-	m.scheduler = s
-
-	if err := m.scheduler.Run(); err != nil {
-		return err
-	}
-
-	server := server.NewServer(m.l, m.scheduler)
+	server := server.NewServer(m.l)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)
@@ -64,6 +51,7 @@ func (m *Main) Run() error {
 	server.PipelineService = store.NewPipelineService(m.l, db)
 	server.StageService = store.NewStageService(m.l, db)
 	server.TaskService = store.NewTaskService(m.l, db)
+	server.TaskRunService = store.NewTaskRunService(m.l, db)
 	server.ActivityService = store.NewActivityService(m.l, db)
 	server.BookmarkService = store.NewBookmarkService(m.l, db)
 
