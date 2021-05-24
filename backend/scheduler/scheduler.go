@@ -72,12 +72,19 @@ func (s *Scheduler) Run() error {
 						continue
 					}
 
-					if err := executor.Run(context.Background(), *taskRun); err != nil {
-						s.l.Printf("Failed to start executing task '%v(%v)' to RUNNING: %v.\n", taskRun.Name, taskRun.ID, err)
-						if err := s.changeTaskRunStatus(taskRun.ID, TaskRunFailed); err != nil {
+					done, err := executor.Run(context.Background(), *taskRun)
+					if done {
+						if err != nil {
+							s.l.Printf("Task failed '%v(%v)': %v.\n", taskRun.Name, taskRun.ID, err)
+							if err := s.changeTaskRunStatus(taskRun.ID, TaskRunFailed); err != nil {
+								s.l.Printf("Failed to change task: %v.\n", err)
+							}
+							continue
+						}
+						s.l.Printf("Task completed '%v(%v)'.\n", taskRun.Name, taskRun.ID)
+						if err := s.changeTaskRunStatus(taskRun.ID, TaskRunDone); err != nil {
 							s.l.Printf("Failed to change task: %v.\n", err)
 						}
-						continue
 					}
 				}
 			}()
