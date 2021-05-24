@@ -30,7 +30,7 @@ func (e TaskRunStatus) String() string {
 }
 
 type TaskRun struct {
-	ID int
+	ID int `jsonapi:"primary,taskRun"`
 
 	// Standard fields
 	CreatorId   int

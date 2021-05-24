@@ -78,6 +78,7 @@ import {
   PrincipalId,
   StageId,
   TaskId,
+  TaskRunId,
 } from "./id";
 import { Principal } from "./principal";
 
@@ -208,6 +209,7 @@ export type Task = {
   id: TaskId;
 
   // Related fields
+  taskRunList: TaskRun[];
   pipeline: Pipeline;
   stage: Stage;
 
@@ -244,4 +246,28 @@ export type TaskStatusPatch = {
   containerId: ContainerId;
   status: TaskStatus;
   comment?: string;
+};
+
+// TaskRun is one run of a particular task
+export type TaskRunStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "FAILED"
+  | "CANCELED";
+
+export type TaskRun = {
+  id: TaskRunId;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  updatedTs: number;
+
+  // Domain specific fields
+  name: string;
+  status: TaskRunStatus;
+  type: TaskType;
+  payload?: TaskPayload;
 };

@@ -1,4 +1,4 @@
--- Activity for issue 012001
+-- Activity for issue 013001
 INSERT INTO
     activity (
         id,
@@ -10,11 +10,11 @@ INSERT INTO
     )
 VALUES
     (
+        14001,
+        1,
+        1,
+        1,
         13001,
-        1,
-        1,
-        1,
-        12001,
         'bb.issue.create'
     );
 
@@ -30,11 +30,11 @@ INSERT INTO
     )
 VALUES
     (
-        13002,
+        14002,
         1001,
         1001,
         1,
-        12001,
+        13001,
         'bb.issue.comment.create',
         'Welcome!'
     );
@@ -51,11 +51,11 @@ INSERT INTO
     )
 VALUES
     (
-        13003,
+        14003,
         1002,
         1002,
         1,
-        12001,
+        13001,
         'bb.issue.comment.create',
         'Let''s rock!'
     );
@@ -72,11 +72,11 @@ INSERT INTO
     )
 VALUES
     (
-        13004,
+        14004,
         1003,
         1003,
         1,
-        12001,
+        13001,
         'bb.issue.comment.create',
         'Go fish!'
     );
@@ -93,10 +93,10 @@ INSERT INTO
     )
 VALUES
     (
-        13005,
+        14005,
         1,
         1,
         1,
-        12002,
+        13002,
         'bb.issue.create'
     );

@@ -92,7 +92,7 @@ func createTaskRun(ctx context.Context, tx *Tx, create *api.TaskRunCreate) (*api
 			payload	
 		)
 		VALUES (?, ?, 'PENDING', ?, ?)
-		RETURNING id, created_ts, updated_ts, task_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, payload"+`
 	`,
 		create.TaskId,
 		create.Name,
@@ -109,7 +109,9 @@ func createTaskRun(ctx context.Context, tx *Tx, create *api.TaskRunCreate) (*api
 	var taskRun api.TaskRun
 	if err := row.Scan(
 		&taskRun.ID,
+		&taskRun.CreatorId,
 		&taskRun.CreatedTs,
+		&taskRun.UpdaterId,
 		&taskRun.UpdatedTs,
 		&taskRun.TaskId,
 		&taskRun.Name,
@@ -136,7 +138,9 @@ func findTaskRunList(ctx context.Context, tx *Tx, find *api.TaskRunFind) (_ []*a
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
 			id,
+			creator_id,
 		    created_ts,
+			updater_id,
 		    updated_ts,
 			task_id,
 			name,
@@ -158,7 +162,9 @@ func findTaskRunList(ctx context.Context, tx *Tx, find *api.TaskRunFind) (_ []*a
 		var taskRun api.TaskRun
 		if err := rows.Scan(
 			&taskRun.ID,
+			&taskRun.CreatorId,
 			&taskRun.CreatedTs,
+			&taskRun.UpdaterId,
 			&taskRun.UpdatedTs,
 			&taskRun.TaskId,
 			&taskRun.Name,

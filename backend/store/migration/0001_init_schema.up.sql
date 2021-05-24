@@ -501,8 +501,11 @@ END;
 -- task run table stores the task run
 CREATE TABLE task_run (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (

@@ -15,9 +15,26 @@ import {
   empty,
   ResourceIdentifier,
   Principal,
+  TaskRun,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
+
+function convertTaskRun(
+  taskRun: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): TaskRun {
+  const creator = taskRun.attributes.creator as Principal;
+  const updater = taskRun.attributes.updater as Principal;
+
+  return {
+    ...(taskRun.attributes as Omit<TaskRun, "id" | "creator" | "updater">),
+    id: parseInt(taskRun.id),
+    creator,
+    updater,
+  };
+}
 
 function convertPartial(
   task: ResourceObject,
@@ -26,6 +43,27 @@ function convertPartial(
 ): Omit<Task, "pipeline" | "stage"> {
   const creator = task.attributes.creator as Principal;
   const updater = task.attributes.updater as Principal;
+
+  const taskRunList: TaskRun[] = [];
+  const taskRunIdList = task.relationships!.taskRun
+    .data as ResourceIdentifier[];
+  // Needs to iterate through taskIdList to maintain the order
+  for (const idItem of taskRunIdList) {
+    for (const item of includedList || []) {
+      if (item.type == "taskRun") {
+        if (idItem.id == item.id) {
+          const taskRun: TaskRun = convertTaskRun(
+            item,
+            includedList,
+            rootGetters
+          );
+          taskRunList.push(taskRun);
+        }
+      }
+    }
+  }
+
+  console.log("taskRunList11", taskRunList);
 
   const databaseId = (task.relationships!.database.data as ResourceIdentifier)
     .id;
@@ -43,12 +81,19 @@ function convertPartial(
   return {
     ...(task.attributes as Omit<
       Task,
-      "id" | "creator" | "updater" | "database" | "pipeline" | "stage"
+      | "id"
+      | "creator"
+      | "updater"
+      | "database"
+      | "taskRunList"
+      | "pipeline"
+      | "stage"
     >),
     id: parseInt(task.id),
     creator,
     updater,
     database,
+    taskRunList,
   };
 }
 

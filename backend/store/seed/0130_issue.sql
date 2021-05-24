@@ -18,7 +18,7 @@ INSERT INTO
     )
 VALUES
     (
-        12001,
+        13001,
         1002,
         1002,
         1,
@@ -34,7 +34,7 @@ VALUES
         ''
     );
 
--- Issue for the multi stage update schema pipeline
+-- Issue for the multi stage add column pipeline
 INSERT INTO
     issue (
         id,
@@ -54,7 +54,7 @@ INSERT INTO
     )
 VALUES
     (
-        12002,
+        13002,
         1003,
         1003,
         1,
@@ -68,4 +68,40 @@ VALUES
         '1001,1002,1003,1004',
         'ALTER TABLE warehouse ' || char(10) || 'ADD COLUMN location VARCHAR(255);',
         'ALTER TABLE warehouse ' || char(10) || 'DROP COLUMN location;'
+    );
+
+-- Issue for the multi stage create table pipeline
+INSERT INTO
+    issue (
+        id,
+        creator_id,
+        updater_id,
+        workspace_id,
+        project_id,
+        pipeline_id,
+        name,
+        `status`,
+        `type`,
+        description,
+        assignee_id,
+        subscriber_id_list,
+        `sql`,
+        rollback_sql
+    )
+VALUES
+    (
+        13003,
+        1003,
+        1003,
+        1,
+        3002,
+        9003,
+        'Create a new table ''tbl1''',
+        'OPEN',
+        'bb.issue.db.schema.update',
+        'Create tbl1.',
+        1001,
+        '1001,1002,1003,1004',
+        'CREATE TABLE tbl1;',
+        'DROP TABLE tbl1;'
     );

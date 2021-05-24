@@ -21,6 +21,8 @@ export type StageId = IdType;
 
 export type TaskId = IdType;
 
+export type TaskRunId = IdType;
+
 export type ActivityId = IdType;
 
 export type MessageId = IdType;
