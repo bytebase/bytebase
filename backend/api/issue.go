@@ -151,8 +151,8 @@ type IssueStatusPatch struct {
 	WorkspaceId int
 
 	// Domain specific fields
-	Status  *string `jsonapi:"attr,status"`
-	Comment *string `jsonapi:"attr,comment"`
+	Status  IssueStatus `jsonapi:"attr,status"`
+	Comment *string     `jsonapi:"attr,comment"`
 }
 
 type IssueService interface {

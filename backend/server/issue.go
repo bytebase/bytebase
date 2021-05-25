@@ -208,65 +208,62 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
 		}
 
-		if issueStatusPatch.Status != nil {
-			issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
-			if err != nil {
-				return err
-			}
-
-			var pipelineStatus api.PipelineStatus
-			pipelinePatch := &api.PipelinePatch{
-				ID:          issue.PipelineId,
-				WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-				UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			}
-			switch api.IssueStatus(*issueStatusPatch.Status) {
-			case api.Issue_Open:
-				pipelineStatus = api.Pipeline_Open
-			case api.Issue_Done:
-				// Returns error if any of the tasks is not in the end status.
-				for _, stage := range issue.Pipeline.StageList {
-					for _, task := range stage.TaskList {
-						if task.Status.IsEndStatus() {
-							return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v is in %v status.", issue.Name, task.Name, task.Status))
-						}
-					}
-				}
-				pipelineStatus = api.Pipeline_Done
-			case api.Issue_Canceled:
-				// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
-				// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
-				// keep those tasks in the same state before the issue was canceled.
-				for _, stage := range issue.Pipeline.StageList {
-					for _, task := range stage.TaskList {
-						if task.Status == api.TaskRunning {
-							taskStatusPatch := &api.TaskStatusPatch{
-								ID:          id,
-								WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-								UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-								Status:      api.TaskCanceled,
-							}
-							if _, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch); err != nil {
-								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v.", issue.Name, task.Name)).SetInternal(err)
-							}
-						}
-					}
-				}
-				pipelineStatus = api.Pipeline_Canceled
-			}
-
-			pipelinePatch.Status = &pipelineStatus
-			if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue: %v", id)).SetInternal(err)
-			}
+		issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		if err != nil {
+			return err
 		}
 
-		issueStatus := api.IssueStatus(*issueStatusPatch.Status)
+		var pipelineStatus api.PipelineStatus
+		pipelinePatch := &api.PipelinePatch{
+			ID:          issue.PipelineId,
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+		}
+		switch issueStatusPatch.Status {
+		case api.Issue_Open:
+			pipelineStatus = api.Pipeline_Open
+		case api.Issue_Done:
+			// Returns error if any of the tasks is not in the end status.
+			for _, stage := range issue.Pipeline.StageList {
+				for _, task := range stage.TaskList {
+					if task.Status.IsEndStatus() {
+						return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v is in %v status.", issue.Name, task.Name, task.Status))
+					}
+				}
+			}
+			pipelineStatus = api.Pipeline_Done
+		case api.Issue_Canceled:
+			// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
+			// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
+			// keep those tasks in the same state before the issue was canceled.
+			for _, stage := range issue.Pipeline.StageList {
+				for _, task := range stage.TaskList {
+					if task.Status == api.TaskRunning {
+						taskStatusPatch := &api.TaskStatusPatch{
+							ID:          id,
+							WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+							UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+							Status:      api.TaskCanceled,
+						}
+						if _, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch); err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v.", issue.Name, task.Name)).SetInternal(err)
+						}
+					}
+				}
+			}
+			pipelineStatus = api.Pipeline_Canceled
+		}
+
+		pipelinePatch.Status = &pipelineStatus
+		if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue: %v", id)).SetInternal(err)
+		}
+
 		issuePatch := &api.IssuePatch{
 			ID:          id,
 			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			Status:      &issueStatus,
+			Status:      &issueStatusPatch.Status,
 		}
 		updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
 		if err != nil {
