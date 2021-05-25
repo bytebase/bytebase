@@ -7,10 +7,10 @@
     <div
       v-if="showCancelBanner"
       class="
-        h-10
+        h-8
         w-full
-        text-2xl
-        font-bold
+        text-base
+        font-medium
         bg-gray-400
         text-white
         flex
@@ -21,12 +21,12 @@
       Canceled
     </div>
     <div
-      v-if="showSuccessBanner"
+      v-else-if="showSuccessBanner"
       class="
-        h-10
+        h-8
         w-full
-        text-2xl
-        font-bold
+        text-base
+        font-medium
         bg-success
         text-white
         flex
@@ -176,6 +176,7 @@ import {
   indexFromSlug,
   activeStage,
   stageSlug,
+  activeTask,
 } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
