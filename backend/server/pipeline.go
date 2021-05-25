@@ -49,3 +49,21 @@ func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.
 
 	return nil
 }
+
+// Try to schedule the next task if needed
+func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) error {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if !task.Status.IsEndStatus() {
+				if task.When == api.TaskOnSuccess {
+					_, err := s.TaskScheduler.Schedule(context.Background(), *task, api.SYSTEM_BOT_ID)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+		}
+	}
+	return nil
+}

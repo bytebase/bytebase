@@ -11,7 +11,8 @@ INSERT INTO
         name,
         `type`,
         `status`,
-        `when`
+        `when`,
+        payload
     )
 VALUES
     (
@@ -22,10 +23,11 @@ VALUES
         9001,
         10001,
         7008,
-        'Waiting approval',
+        'Welcome',
         'bb.task.approve',
         'PENDING',
-        'MANUAL'
+        'MANUAL',
+        '{"Sql":"SELECT ''Welcome Tech Lead, DBA, Developer'';"}'
     );
 
 -- Task for Pipeline 9002 add column
@@ -177,7 +179,7 @@ VALUES
         'Update fakedb1',
         'bb.task.database.schema.update',
         'PENDING',
-        'ON_SUCCESS'
+        'MANUAL'
     );
 
 -- Task for stage 10003 "Integration" to update database 7004 'fakedb2'

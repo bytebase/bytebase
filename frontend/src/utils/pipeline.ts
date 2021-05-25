@@ -127,7 +127,12 @@ export function activeDatabase(pipeline: Pipeline): Database {
   return task.database;
 }
 
-export type TaskStatusTransitionType = "RUN" | "RETRY" | "CANCEL" | "SKIP";
+export type TaskStatusTransitionType =
+  | "RUN"
+  | "APPROVE"
+  | "RETRY"
+  | "CANCEL"
+  | "SKIP";
 
 export interface TaskStatusTransition {
   type: TaskStatusTransitionType;
@@ -146,6 +151,15 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       type: "RUN",
       to: "RUNNING",
       buttonName: "Run",
+      buttonClass: "btn-primary",
+    },
+  ],
+  [
+    "APPROVE",
+    {
+      type: "APPROVE",
+      to: "RUNNING",
+      buttonName: "Approve",
       buttonClass: "btn-primary",
     },
   ],
@@ -179,12 +193,15 @@ const TASK_STATUS_TRANSITION_LIST: Map<
   ],
 ]);
 
+type TaskTransitionStatus = TaskStatus | "PENDING_APPROVAL";
+
 // The transition button is ordered from right to left on the UI
 const APPLICABLE_TASK_TRANSITION_LIST: Map<
-  TaskStatus,
+  TaskTransitionStatus,
   TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", ["RUN", "SKIP"]],
+  ["PENDING_APPROVAL", ["APPROVE", "SKIP"]],
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY", "SKIP"]],
@@ -200,9 +217,13 @@ export function applicableTaskTransition(
     return [];
   }
 
-  const list: TaskStatusTransitionType[] = APPLICABLE_TASK_TRANSITION_LIST.get(
-    task.status
-  )!;
+  const status =
+    task.status == "PENDING" && task.when == "MANUAL"
+      ? "PENDING_APPROVAL"
+      : task.status;
+
+  const list: TaskStatusTransitionType[] =
+    APPLICABLE_TASK_TRANSITION_LIST.get(status)!;
 
   return list.map((type: TaskStatusTransitionType) => {
     return TASK_STATUS_TRANSITION_LIST.get(type)!;

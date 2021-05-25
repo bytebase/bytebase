@@ -16,6 +16,7 @@ import {
   ResourceIdentifier,
   Principal,
   TaskRun,
+  TaskStatusChange,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -137,6 +138,33 @@ const actions = {
         data: {
           type: "taskStatusPatch",
           attributes: taskStatusPatch,
+        },
+      })
+    ).data;
+
+    dispatch("issue/fetchIssueById", issueId, { root: true });
+  },
+
+  async approve(
+    { dispatch }: any,
+    {
+      issueId,
+      pipelineId,
+      taskId,
+      taskStatusChange,
+    }: {
+      issueId: IssueId;
+      pipelineId: PipelineId;
+      taskId: TaskId;
+      taskStatusChange: TaskStatusChange;
+    }
+  ) {
+    // TODO: Returns the updated pipeline and update the issue.
+    const data = (
+      await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/approve`, {
+        data: {
+          type: "taskStatusChange",
+          attributes: taskStatusChange,
         },
       })
     ).data;

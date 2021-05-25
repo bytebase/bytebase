@@ -248,6 +248,16 @@ export type TaskStatusPatch = {
   comment?: string;
 };
 
+export type TaskStatusChange = {
+  // Standard fields
+  updaterId: PrincipalId;
+
+  // Domain specific fields
+  // This is the container containing the pipeline this task belongs.
+  containerId: ContainerId;
+  comment?: string;
+};
+
 // TaskRun is one run of a particular task
 export type TaskRunStatus =
   | "PENDING"

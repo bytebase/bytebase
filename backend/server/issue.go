@@ -73,16 +73,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return err
 		}
 
-		for _, stage := range issue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				_, err := s.TaskScheduler.Schedule(*task)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task after creating the issue: %v", issue.Name)).SetInternal(err)
-				}
-				goto End
-			}
+		if err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task after creating the issue: %v", issue.Name)).SetInternal(err)
 		}
-	End:
 
 		activityCreate := &api.ActivityCreate{
 			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
@@ -226,7 +219,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			// Returns error if any of the tasks is not in the end status.
 			for _, stage := range issue.Pipeline.StageList {
 				for _, task := range stage.TaskList {
-					if task.Status.IsEndStatus() {
+					if !task.Status.IsEndStatus() {
 						return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v is in %v status.", issue.Name, task.Name, task.Status))
 					}
 				}

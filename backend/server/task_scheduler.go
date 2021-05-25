@@ -103,14 +103,16 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 	s.executors[taskType] = executor
 }
 
-func (s *TaskScheduler) Schedule(task api.Task) (*api.TaskRun, error) {
+func (s *TaskScheduler) Schedule(ctx context.Context, task api.Task, creatorId int) (*api.TaskRun, error) {
 	taskRunCreate := &api.TaskRunCreate{
-		TaskId:  task.ID,
-		Name:    fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-		Type:    task.Type,
-		Payload: task.Payload,
+		CreatorId:   creatorId,
+		WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+		TaskId:      task.ID,
+		Name:        fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+		Type:        task.Type,
+		Payload:     task.Payload,
 	}
-	createdTaskRun, err := s.server.TaskRunService.CreateTaskRun(context.Background(), taskRunCreate)
+	createdTaskRun, err := s.server.TaskRunService.CreateTaskRun(ctx, taskRunCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task: %w", err)
 	}

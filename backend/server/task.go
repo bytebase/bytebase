@@ -46,6 +46,35 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.POST("/pipeline/:pipelineId/task/:taskId/approve", func(c echo.Context) error {
+		taskId, err := strconv.Atoi(c.Param("taskId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskId"))).SetInternal(err)
+		}
+
+		task, err := s.ComposeTaskById(context.Background(), taskId, []string{})
+		if err != nil {
+			return err
+		}
+
+		if task.When != api.TaskManual {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task does not require approval: %v", task.Name))
+		}
+
+		if task.Status != api.TaskPending {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task is not waiting for approval: %v", task.Name))
+		}
+
+		_, err = s.TaskScheduler.Schedule(context.Background(), *task, c.Get(GetPrincipalIdContextKey()).(int))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task after approval: %v", task.Name))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
 }
 
 func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, includeList []string) ([]*api.Task, error) {
@@ -64,6 +93,25 @@ func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incl
 	}
 
 	return taskList, nil
+}
+
+func (s *Server) ComposeTaskById(ctx context.Context, id int, includeList []string) (*api.Task, error) {
+	taskFind := &api.TaskFind{
+		ID: &id,
+	}
+	task, err := s.TaskService.FindTask(context.Background(), taskFind)
+	if err != nil {
+		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task ID not found: %d", id))
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task ID: %v", id)).SetInternal(err)
+	}
+
+	if err := s.ComposeTaskRelationship(ctx, task, includeList); err != nil {
+		return nil, err
+	}
+
+	return task, nil
 }
 
 func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, includeList []string) error {

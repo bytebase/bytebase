@@ -50,7 +50,16 @@
           <textarea
             ref="commentTextArea"
             rows="3"
-            class="textarea block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
+            class="
+              textarea
+              block
+              w-full
+              resize-none
+              mt-1
+              text-sm text-control
+              rounded-md
+              whitespace-pre-wrap
+            "
             placeholder="(Optional) Add a note..."
             v-model="state.comment"
             @input="
@@ -157,6 +166,8 @@ export default {
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).type) {
             case "RUN":
+              return "btn-primary";
+            case "APPROVE":
               return "btn-primary";
             case "RETRY":
               return "btn-primary";
