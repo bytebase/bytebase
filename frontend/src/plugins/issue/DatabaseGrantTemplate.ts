@@ -32,8 +32,8 @@ const template: IssueTemplate = {
             environmentId: ctx.environmentList[0].id,
             taskList: [
               {
-                name: "Waiting for approval",
-                type: "bb.task.approve",
+                name: "Request database access",
+                type: "bb.task.general",
                 when: "MANUAL",
                 databaseId: ctx.databaseList[0].id,
               },

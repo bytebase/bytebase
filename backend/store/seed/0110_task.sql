@@ -24,7 +24,7 @@ VALUES
         10001,
         7008,
         'Welcome',
-        'bb.task.approve',
+        'bb.task.general',
         'PENDING',
         'MANUAL',
         '{"Sql":"SELECT ''Welcome Tech Lead, DBA, Developer'';"}'

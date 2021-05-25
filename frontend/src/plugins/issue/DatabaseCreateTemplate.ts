@@ -38,8 +38,8 @@ const template: IssueTemplate = {
             type: "bb.stage.database.create",
             taskList: [
               {
-                name: "Waiting for approval",
-                type: "bb.task.approve",
+                name: "Create database",
+                type: "bb.task.general",
                 when: "MANUAL",
               },
             ],

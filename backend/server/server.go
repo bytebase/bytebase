@@ -87,9 +87,9 @@ func NewServer(logger *bytebase.Logger) *Server {
 	}
 
 	scheduler := NewTaskScheduler(log.Default(), s)
-	approveExecutor := NewApproveTaskExecutor(log.Default())
+	defaultExecutor := NewDefaultTaskExecutor(log.Default())
 	sqlExecutor := NewSqlTaskExecutor(log.Default())
-	scheduler.Register(string(api.TaskApprove), approveExecutor)
+	scheduler.Register(string(api.TaskGeneral), defaultExecutor)
 	scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
 	s.TaskScheduler = scheduler
 
