@@ -77,13 +77,24 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			for _, task := range stage.TaskList {
 				_, err := s.TaskScheduler.Schedule(*task)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to schedule task after creating the issue").SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task after creating the issue: %v", issue.Name)).SetInternal(err)
 				}
 				goto End
 			}
 		}
-
 	End:
+
+		activityCreate := &api.ActivityCreate{
+			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			ContainerId: issue.ID,
+			Type:        api.ActivityIssueCreate,
+		}
+		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating the issue: %v", issue.Name)).SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create issue response").SetInternal(err)
