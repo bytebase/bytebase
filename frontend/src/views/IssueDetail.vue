@@ -36,6 +36,22 @@
     >
       Done
     </div>
+    <div
+      v-else-if="showPendingApproval"
+      class="
+        h-8
+        w-full
+        text-base
+        font-medium
+        bg-accent
+        text-white
+        flex
+        justify-center
+        items-center
+      "
+    >
+      Waiting Approval
+    </div>
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
       <IssueHighlightPanel
@@ -583,6 +599,15 @@ export default {
       return !state.create && (issue.value as Issue).status == "DONE";
     });
 
+    const showPendingApproval = computed(() => {
+      if (state.create) {
+        return false;
+      }
+
+      const task = activeTask((issue.value as Issue).pipeline);
+      return task.status == "PENDING" && task.when == "MANUAL";
+    });
+
     const showPipelineFlowBar = computed(() => {
       return !state.create && currentPipelineType.value != "NO_PIPELINE";
     });
@@ -624,6 +649,7 @@ export default {
       allowEditSql,
       showCancelBanner,
       showSuccessBanner,
+      showPendingApproval,
       showPipelineFlowBar,
       showIssueOutputPanel,
       showIssueSqlPanel,
