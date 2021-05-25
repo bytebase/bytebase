@@ -5,6 +5,8 @@ export {};
 declare module "vue-router" {
   interface RouteMeta {
     title?: (route: RouteLocationNormalized) => string;
-    quickActionListByRole?: Map<RoleType, QuickActionType[]>;
+    quickActionListByRole?: (
+      route: RouteLocationNormalized
+    ) => Map<RoleType, QuickActionType[]>;
   }
 }

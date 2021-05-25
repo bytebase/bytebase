@@ -76,38 +76,40 @@ const routes: Array<RouteRecordRaw> = [
             path: "",
             name: HOME_MODULE,
             meta: {
-              quickActionListByRole: new Map([
-                [
-                  "OWNER",
+              quickActionListByRole: () => {
+                return new Map([
                   [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.create",
-                    "quickaction.bb.database.troubleshoot",
-                    "quickaction.bb.instance.create",
-                    "quickaction.bb.project.create",
-                    "quickaction.bb.user.manage",
+                    "OWNER",
+                    [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.project.create",
+                      "quickaction.bb.user.manage",
+                    ],
                   ],
-                ],
-                [
-                  "DBA",
                   [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.create",
-                    "quickaction.bb.database.troubleshoot",
-                    "quickaction.bb.instance.create",
-                    "quickaction.bb.project.create",
+                    "DBA",
+                    [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.project.create",
+                    ],
                   ],
-                ],
-                [
-                  "DEVELOPER",
                   [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.request",
-                    "quickaction.bb.database.troubleshoot",
-                    "quickaction.bb.project.create",
+                    "DEVELOPER",
+                    [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.request",
+                      "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.project.create",
+                    ],
                   ],
-                ],
-              ]),
+                ]);
+              },
             },
             components: {
               content: Home,
@@ -273,22 +275,24 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.environment",
             meta: {
               title: () => "Environment",
-              quickActionListByRole: new Map([
-                [
-                  "OWNER",
+              quickActionListByRole: () => {
+                return new Map([
                   [
-                    "quickaction.bb.environment.create",
-                    "quickaction.bb.environment.reorder",
+                    "OWNER",
+                    [
+                      "quickaction.bb.environment.create",
+                      "quickaction.bb.environment.reorder",
+                    ],
                   ],
-                ],
-                [
-                  "DBA",
                   [
-                    "quickaction.bb.environment.create",
-                    "quickaction.bb.environment.reorder",
+                    "DBA",
+                    [
+                      "quickaction.bb.environment.create",
+                      "quickaction.bb.environment.reorder",
+                    ],
                   ],
-                ],
-              ]),
+                ]);
+              },
             },
             components: {
               content: () => import("../views/EnvironmentDashboard.vue"),
@@ -319,11 +323,13 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.project",
             meta: {
               title: () => "Project",
-              quickActionListByRole: new Map([
-                ["OWNER", ["quickaction.bb.project.create"]],
-                ["DBA", ["quickaction.bb.project.create"]],
-                ["DEVELOPER", ["quickaction.bb.project.create"]],
-              ]),
+              quickActionListByRole: () => {
+                return new Map([
+                  ["OWNER", ["quickaction.bb.project.create"]],
+                  ["DBA", ["quickaction.bb.project.create"]],
+                  ["DEVELOPER", ["quickaction.bb.project.create"]],
+                ]);
+              },
             },
             components: {
               content: () => import("../views/ProjectDashboard.vue"),
@@ -340,11 +346,21 @@ const routes: Array<RouteRecordRaw> = [
                 return store.getters["project/projectById"](idFromSlug(slug))
                   .name;
               },
-              quickActionListByRole: new Map([
-                ["OWNER", ["quickaction.bb.database.schema.update"]],
-                ["DBA", ["quickaction.bb.database.schema.update"]],
-                ["DEVELOPER", ["quickaction.bb.database.schema.update"]],
-              ]),
+              quickActionListByRole: (route: RouteLocationNormalized) => {
+                const slug = route.params.projectSlug as string;
+                const project = store.getters["project/projectById"](
+                  idFromSlug(slug)
+                );
+
+                if (project.rowStatus == "NORMAL") {
+                  return new Map([
+                    ["OWNER", ["quickaction.bb.database.schema.update"]],
+                    ["DBA", ["quickaction.bb.database.schema.update"]],
+                    ["DEVELOPER", ["quickaction.bb.database.schema.update"]],
+                  ]);
+                }
+                return new Map();
+              },
               allowBookmark: true,
             },
             components: {
@@ -358,10 +374,12 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.instance",
             meta: {
               title: () => "Instance",
-              quickActionListByRole: new Map([
-                ["OWNER", ["quickaction.bb.instance.create"]],
-                ["DBA", ["quickaction.bb.instance.create"]],
-              ]),
+              quickActionListByRole: () => {
+                return new Map([
+                  ["OWNER", ["quickaction.bb.instance.create"]],
+                  ["DBA", ["quickaction.bb.instance.create"]],
+                ]);
+              },
             },
             components: {
               content: () => import("../views/InstanceDashboard.vue"),
@@ -374,30 +392,32 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.database",
             meta: {
               title: () => "Database",
-              quickActionListByRole: new Map([
-                [
-                  "OWNER",
+              quickActionListByRole: () => {
+                return new Map([
                   [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.create",
+                    "OWNER",
+                    [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                    ],
                   ],
-                ],
-                [
-                  "DBA",
                   [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.create",
+                    "DBA",
+                    [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                    ],
                   ],
-                ],
-                [
-                  "DEVELOPER",
                   [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.request",
-                    "quickaction.bb.database.troubleshoot",
+                    "DEVELOPER",
+                    [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.request",
+                      "quickaction.bb.database.troubleshoot",
+                    ],
                   ],
-                ],
-              ]),
+                ]);
+              },
             },
             components: {
               content: () => import("../views/DatabaseDashboard.vue"),

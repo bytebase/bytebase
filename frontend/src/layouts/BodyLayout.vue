@@ -8,13 +8,30 @@
         </div>
         <div
           tabindex="0"
-          class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none"
+          class="
+            relative
+            flex-1 flex flex-col
+            max-w-xs
+            w-full
+            bg-white
+            focus:outline-none
+          "
         >
           <div class="absolute top-0 right-0 -mr-12 pt-2">
             <button
               @click.prevent="state.showMobileOverlay = false"
               type="button"
-              class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              class="
+                ml-1
+                flex
+                items-center
+                justify-center
+                h-10
+                w-10
+                rounded-full
+                focus:outline-none
+                focus:ring-2 focus:ring-inset focus:ring-white
+              "
             >
               <span class="sr-only">Close sidebar</span>
               <!-- Heroicon name: x -->
@@ -119,7 +136,12 @@
         </router-link>
         <div
           v-if="showIntro"
-          class="flex-shrink-0 flex justify-center border-t border-block-border py-2"
+          class="
+            flex-shrink-0 flex
+            justify-center
+            border-t border-block-border
+            py-2
+          "
         >
           <Quickstart />
         </div>
@@ -155,13 +177,31 @@
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">
         <div
-          class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4 py-1.5"
+          class="
+            flex
+            items-center
+            justify-start
+            bg-gray-50
+            border-b border-block-border
+            px-4
+            py-1.5
+          "
         >
           <div>
             <button
               @click.prevent="state.showMobileOverlay = true"
               type="button"
-              class="-mr-3 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
+              class="
+                -mr-3
+                h-12
+                w-12
+                inline-flex
+                items-center
+                justify-center
+                rounded-md
+                text-gray-500
+                hover:text-gray-900
+              "
             >
               <span class="sr-only">Open sidebar</span>
               <!-- Heroicon name: menu -->
@@ -243,19 +283,23 @@ export default {
 
     const quickActionList = computed(() => {
       const role = currentUser.value.role;
-      const listByRole = router.currentRoute.value.meta.quickActionListByRole;
+      const quickActionListFunc =
+        router.currentRoute.value.meta.quickActionListByRole;
+      const listByRole = quickActionListFunc
+        ? quickActionListFunc(router.currentRoute.value)
+        : new Map();
       const list: QuickActionType[] = [];
 
       // We write this way because for free version, the user wears the three role hat,
       // and we want to display all quick actions relevant to those three roles without duplication.
       if (isOwner(role)) {
-        for (const item of listByRole?.get("OWNER") || []) {
+        for (const item of listByRole.get("OWNER") || []) {
           list.push(item);
         }
       }
 
       if (isDBA(role)) {
-        for (const item of listByRole?.get("DBA") || []) {
+        for (const item of listByRole.get("DBA") || []) {
           if (
             !list.find((myItem: QuickActionType) => {
               return item == myItem;
@@ -267,7 +311,7 @@ export default {
       }
 
       if (isDeveloper(role)) {
-        for (const item of listByRole?.get("DEVELOPER") || []) {
+        for (const item of listByRole.get("DEVELOPER") || []) {
           if (
             !list.find((myItem: QuickActionType) => {
               return item == myItem;
