@@ -1,4 +1,4 @@
--- Activity for issue 013001
+-- Activity for issue 13001
 INSERT INTO
     activity (
         id,
@@ -81,7 +81,7 @@ VALUES
         'Go fish!'
     );
 
--- Activity for issue 012002
+-- Activity for issue 13002
 INSERT INTO
     activity (
         id,
@@ -94,9 +94,29 @@ INSERT INTO
 VALUES
     (
         14005,
-        1,
-        1,
+        1003,
+        1003,
         1,
         13002,
+        'bb.issue.create'
+    );
+
+-- Activity for issue 13003
+INSERT INTO
+    activity (
+        id,
+        creator_id,
+        updater_id,
+        workspace_id,
+        container_id,
+        `type`
+    )
+VALUES
+    (
+        14006,
+        1003,
+        1003,
+        1,
+        13003,
         'bb.issue.create'
     );
