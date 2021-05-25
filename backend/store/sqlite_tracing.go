@@ -13,6 +13,7 @@ import (
 
 var (
 	blackListTables = []string{"principal", "environment", "member", "project_member", "task_run"}
+	blackListStmt   = []string{"SELECT"}
 )
 
 func traceCallback(info sqlite3.TraceInfo) int {
@@ -41,9 +42,16 @@ func traceCallback(info sqlite3.TraceInfo) int {
 				if strings.Contains(cleanText, fmt.Sprintf("FROM %s ", table)) {
 					shouldLog = false
 					break
-
 				}
 			}
+
+			for _, stmt := range blackListStmt {
+				if strings.Contains(cleanText, stmt) {
+					shouldLog = false
+					break
+				}
+			}
+
 			if shouldLog {
 				log.Printf("[trace.sql]%s%s\n",
 					cleanText,
