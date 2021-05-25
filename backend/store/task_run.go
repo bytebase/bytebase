@@ -85,15 +85,21 @@ func (s *TaskRunService) FindTaskRun(ctx context.Context, find *api.TaskRunFind)
 func createTaskRun(ctx context.Context, tx *Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task_run (
+			creator_id,
+			updater_id,
+			workspace_id,
 			task_id,
 			name,
 			`+"`status`,"+`	
 			`+"`type`,"+`
 			payload	
 		)
-		VALUES (?, ?, 'PENDING', ?, ?)
+		VALUES (?, ?, ?, ?, ?, 'PENDING', ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, payload"+`
 	`,
+		create.CreatorId,
+		create.CreatorId,
+		create.WorkspaceId,
 		create.TaskId,
 		create.Name,
 		create.Type,
