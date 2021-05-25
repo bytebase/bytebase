@@ -63,8 +63,6 @@ function convertPartial(
     }
   }
 
-  console.log("taskRunList11", taskRunList);
-
   const databaseId = (task.relationships!.database.data as ResourceIdentifier)
     .id;
   let database: Database = empty("DATABASE") as Database;

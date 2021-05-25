@@ -255,6 +255,7 @@ export const unknown = (
     status: "DONE",
     when: "ON_SUCCESS",
     database: UNKNOWN_DATABASE,
+    taskRunList: [],
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -493,6 +494,7 @@ export const empty = (
     status: "DONE",
     when: "ON_SUCCESS",
     database: EMPTY_DATABASE,
+    taskRunList: [],
   };
 
   const EMPTY_ACTIVITY: Activity = {
