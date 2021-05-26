@@ -124,8 +124,8 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    // secret=true to return username/password when requesting the specific instance id
-    const data = (await axios.get(`/api/instance/${instanceId}?secret=true`))
+    // include=secret to return username/password when requesting the specific instance id
+    const data = (await axios.get(`/api/instance/${instanceId}?include=secret`))
       .data;
     const instance = convert(data.data, data.included, rootGetters);
 
@@ -141,7 +141,7 @@ const actions = {
     newInstance: InstanceCreate
   ) {
     const data = (
-      await axios.post(`/api/instance?secret=true`, {
+      await axios.post(`/api/instance?include=secret`, {
         data: {
           type: "InstanceCreate",
           attributes: newInstance,

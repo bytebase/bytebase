@@ -168,7 +168,7 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, false /*includeSecret*/)
+	database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, includeList)
 	if err != nil {
 		return err
 	}

@@ -48,7 +48,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId, true /*includeSecret*/)
+		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId, []string{SECRET_KEY})
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceId))

@@ -19,6 +19,10 @@ import (
 	scas "github.com/qiangmzsx/string-adapter/v2"
 )
 
+const (
+	SECRET_KEY = "secret"
+)
+
 type Server struct {
 	l             *bytebase.Logger
 	TaskScheduler *TaskScheduler

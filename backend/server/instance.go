@@ -29,7 +29,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.ComposeInstanceRelationship(context.Background(), instance, true /*includeSecret*/); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -55,7 +55,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			if err := s.ComposeInstanceRelationship(context.Background(), instance, false /*includeSecret*/); err != nil {
+			if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 				return err
 			}
 		}
@@ -73,7 +73,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), id, true /*includeSecret*/)
+		instance, err := s.ComposeInstanceById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -147,7 +147,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeInstanceRelationship(context.Background(), instance, true /*includeSecret*/); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
@@ -159,7 +159,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeSecret bool) (*api.Instance, error) {
+func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []string) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -168,14 +168,14 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeSecret 
 		return nil, err
 	}
 
-	if err := s.ComposeInstanceRelationship(ctx, instance, includeSecret); err != nil {
+	if err := s.ComposeInstanceRelationship(ctx, instance, includeList); err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeSecret bool) error {
+func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
 	var err error
 
 	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId, []string{})
@@ -193,7 +193,7 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 		return err
 	}
 
-	if includeSecret {
+	if bytebase.FindString(includeList, SECRET_KEY) >= 0 {
 		dataSourceFind := &api.DataSourceFind{
 			InstanceId: &instance.ID,
 		}
