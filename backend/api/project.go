@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 const DEFAULT_PROJECT_ID = 1
 
@@ -46,6 +49,14 @@ type ProjectFind struct {
 	// Domain specific fields
 	// If present, will only find project containing PrincipalId as a member
 	PrincipalId *int
+}
+
+func (find *ProjectFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type ProjectPatch struct {

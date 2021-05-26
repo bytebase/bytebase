@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Instance struct {
 	ID int `jsonapi:"primary,instance"`
@@ -25,7 +28,7 @@ type Instance struct {
 	ExternalLink string `jsonapi:"attr,externalLink"`
 	Host         string `jsonapi:"attr,host"`
 	Port         string `jsonapi:"attr,port"`
-	// Only returns username/password if query parameter 'secret=true'
+	// Only returns username/password if supplying query parameter 'include=secret'
 	Username string `jsonapi:"attr,username"`
 	Password string `jsonapi:"attr,password"`
 }
@@ -54,6 +57,14 @@ type InstanceFind struct {
 	// Standard fields
 	RowStatus   *RowStatus
 	WorkspaceId *int
+}
+
+func (find *InstanceFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type InstancePatch struct {

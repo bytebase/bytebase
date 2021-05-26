@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Pipeline status
 type PipelineStatus string
@@ -61,6 +64,14 @@ type PipelineFind struct {
 
 	// Standard fields
 	WorkspaceId *int
+}
+
+func (find *PipelineFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type PipelinePatch struct {

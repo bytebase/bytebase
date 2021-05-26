@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Bookmark struct {
 	ID int `jsonapi:"primary,bookmark"`
@@ -36,6 +39,14 @@ type BookmarkFind struct {
 	// Standard fields
 	CreatorId   *int
 	WorkspaceId *int
+}
+
+func (find *BookmarkFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type BookmarkDelete struct {

@@ -113,6 +113,14 @@ type PrincipalFind struct {
 	Email *string
 }
 
+func (find *PrincipalFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
+}
+
 type PrincipalPatch struct {
 	ID int
 

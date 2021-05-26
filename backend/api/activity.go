@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Activity type
 type ActivityType string
@@ -73,6 +76,14 @@ type ActivityFind struct {
 
 	// Domain specific fields
 	ContainerId *int
+}
+
+func (find *ActivityFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type ActivityPatch struct {

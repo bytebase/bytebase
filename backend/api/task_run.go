@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type TaskRunStatus string
 
@@ -74,6 +77,14 @@ type TaskRunFind struct {
 
 	// Domain specific fields
 	Status *TaskRunStatus
+}
+
+func (find *TaskRunFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type TaskRunStatusChange struct {

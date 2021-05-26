@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Role string
 
@@ -59,6 +62,14 @@ type MemberFind struct {
 
 	// Domain specific fields
 	PrincipalId *int
+}
+
+func (find *MemberFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type MemberPatch struct {

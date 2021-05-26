@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type ProjectRole string
 
@@ -63,6 +66,14 @@ type ProjectMemberFind struct {
 
 	// Related fields
 	ProjectId *int
+}
+
+func (find *ProjectMemberFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type ProjectMemberPatch struct {

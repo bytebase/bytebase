@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type StageType string
 
@@ -73,6 +76,14 @@ type StageFind struct {
 
 	// Related fields
 	PipelineId *int
+}
+
+func (find *StageFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type StageService interface {

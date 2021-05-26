@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type DataSourceType string
 
@@ -73,6 +76,14 @@ type DataSourceFind struct {
 
 	// Domain specific fields
 	Type *DataSourceType
+}
+
+func (find *DataSourceFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type DataSourcePatch struct {

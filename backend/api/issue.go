@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Issue status
 type IssueStatus string
@@ -119,6 +122,14 @@ type IssueFind struct {
 	// Find issue where principalId is either creator or assignee
 	// TODO: Add subscriber support
 	PrincipalId *int
+}
+
+func (find *IssueFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type IssuePatch struct {

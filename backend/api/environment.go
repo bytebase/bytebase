@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Environment struct {
 	ID int `jsonapi:"primary,environment"`
@@ -36,6 +39,14 @@ type EnvironmentFind struct {
 	// Standard fields
 	RowStatus   *RowStatus
 	WorkspaceId *int
+}
+
+func (find *EnvironmentFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type EnvironmentPatch struct {

@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type TaskStatus string
 
@@ -109,6 +112,14 @@ type TaskFind struct {
 	// Related fields
 	PipelineId *int
 	StageId    *int
+}
+
+func (find *TaskFind) String() string {
+	str, err := json.Marshal(*find)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
 }
 
 type TaskStatusPatch struct {
