@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -164,21 +163,21 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for database: %v", database.Name)).SetInternal(err)
 	}
 
-	if sort.SearchStrings(includeList, "project") >= 0 {
+	if bytebase.FindString(includeList, "project") != "" {
 		database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
 		}
 	}
 
-	if sort.SearchStrings(includeList, "instance") >= 0 {
+	if bytebase.FindString(includeList, "instance") != "" {
 		database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, false /*includeSecret*/)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance for database: %v", database.Name)).SetInternal(err)
 		}
 	}
 
-	if sort.SearchStrings(includeList, "dataSource") >= 0 {
+	if bytebase.FindString(includeList, "dataSource") != "" {
 		database.DataSourceList = []*api.DataSource{}
 	}
 

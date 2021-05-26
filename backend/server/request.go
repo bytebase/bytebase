@@ -1,7 +1,6 @@
 package server
 
 import (
-	"sort"
 	"strings"
 
 	"github.com/bytebase/bytebase"
@@ -19,7 +18,6 @@ func getIncludeKey() string {
 func RequestMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		includeList := (strings.Split(c.QueryParams().Get("include"), ","))
-		sort.Strings(includeList)
 		c.Set(getIncludeKey(), includeList)
 		return next(c)
 	}
