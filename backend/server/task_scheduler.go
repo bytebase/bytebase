@@ -70,7 +70,7 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
-					done, err := executor.Run(context.Background(), *taskRun)
+					done, err := executor.Run(context.Background(), s.server, *taskRun)
 					if done {
 						if err != nil {
 							s.l.Printf("Task failed '%v(%v)': %v.\n", taskRun.Name, taskRun.ID, err)

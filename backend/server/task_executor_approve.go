@@ -17,6 +17,6 @@ type DefaultTaskExecutor struct {
 	l *log.Logger
 }
 
-func (exec *DefaultTaskExecutor) Run(ctx context.Context, taskRun api.TaskRun) (terminated bool, err error) {
+func (exec *DefaultTaskExecutor) Run(ctx context.Context, server *Server, taskRun api.TaskRun) (terminated bool, err error) {
 	return true, nil
 }

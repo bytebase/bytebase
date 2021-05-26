@@ -19,7 +19,7 @@ type SqlTaskExecutor struct {
 	l *log.Logger
 }
 
-func (exec *SqlTaskExecutor) Run(ctx context.Context, taskRun api.TaskRun) (terminated bool, err error) {
+func (exec *SqlTaskExecutor) Run(ctx context.Context, server *Server, taskRun api.TaskRun) (terminated bool, err error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal(taskRun.Payload, payload); err != nil {
 		return true, fmt.Errorf("sql executor: invalid payload: %w", err)
