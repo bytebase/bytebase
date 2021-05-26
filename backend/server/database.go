@@ -163,23 +163,17 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	if bytebase.FindString(includeList, "project") != "" {
-		database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
-		if err != nil {
-			return err
-		}
+	database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
+	if err != nil {
+		return err
 	}
 
-	if bytebase.FindString(includeList, "instance") != "" {
-		database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, false /*includeSecret*/)
-		if err != nil {
-			return err
-		}
+	database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, false /*includeSecret*/)
+	if err != nil {
+		return err
 	}
 
-	if bytebase.FindString(includeList, "dataSource") != "" {
-		database.DataSourceList = []*api.DataSource{}
-	}
+	database.DataSourceList = []*api.DataSource{}
 
 	return nil
 }
