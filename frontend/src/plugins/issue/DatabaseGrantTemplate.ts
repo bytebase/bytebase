@@ -33,8 +33,8 @@ const template: IssueTemplate = {
             taskList: [
               {
                 name: "Request database access",
+                status: "PENDING_APPROVAL",
                 type: "bb.task.general",
-                when: "MANUAL",
                 databaseId: ctx.databaseList[0].id,
               },
             ],

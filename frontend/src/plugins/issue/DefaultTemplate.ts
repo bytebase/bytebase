@@ -19,8 +19,8 @@ const template: IssueTemplate = {
             taskList: [
               {
                 name: "Troubleshoot database",
+                status: "PENDING_APPROVAL",
                 type: "bb.task.general",
-                when: "MANUAL",
                 databaseId: UNKNOWN_ID,
               },
             ],

@@ -61,11 +61,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task ID: %v", taskId)).SetInternal(err)
 		}
 
-		if task.When != api.TaskManual {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task does not require approval: %v", task.Name))
-		}
-
-		if task.Status != api.TaskPending {
+		if task.Status != api.TaskPendingApproval {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task is not waiting for approval: %v", task.Name))
 		}
 

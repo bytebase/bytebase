@@ -605,7 +605,7 @@ export default {
       }
 
       const task = activeTask((issue.value as Issue).pipeline);
-      return task.status == "PENDING" && task.when == "MANUAL";
+      return task.status == "PENDING_APPROVAL";
     });
 
     const showPipelineFlowBar = computed(() => {

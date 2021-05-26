@@ -11,7 +11,6 @@ INSERT INTO
         name,
         `type`,
         `status`,
-        `when`,
         payload
     )
 VALUES
@@ -25,8 +24,7 @@ VALUES
         7008,
         'Welcome',
         'bb.task.general',
-        'PENDING',
-        'MANUAL',
+        'PENDING_APPROVAL',
         '{"Sql":"SELECT ''Welcome Tech Lead, DBA, Developer'';"}'
     );
 
@@ -43,8 +41,7 @@ INSERT INTO
         database_id,
         name,
         `type`,
-        `status`,
-        `when`
+        `status`
     )
 VALUES
     (
@@ -57,8 +54,7 @@ VALUES
         7002,
         'Update fakedb1',
         'bb.task.database.schema.update',
-        'PENDING',
-        'ON_SUCCESS'
+        'PENDING'
     );
 
 -- Task for stage 10003 "Integration" to update database 7004 'fakedb2'
@@ -73,8 +69,7 @@ INSERT INTO
         database_id,
         name,
         `type`,
-        `status`,
-        `when`
+        `status`
     )
 VALUES
     (
@@ -87,8 +82,7 @@ VALUES
         7004,
         'Update fakedb2',
         'bb.task.database.schema.update',
-        'PENDING',
-        'ON_SUCCESS'
+        'PENDING'
     );
 
 -- Task for stage 10004 "Staging" to update database 7006 'fakedb3'
@@ -103,8 +97,7 @@ INSERT INTO
         database_id,
         name,
         `type`,
-        `status`,
-        `when`
+        `status`
     )
 VALUES
     (
@@ -117,8 +110,7 @@ VALUES
         7006,
         'Update fakedb3',
         'bb.task.database.schema.update',
-        'PENDING',
-        'MANUAL'
+        'PENDING_APPROVAL'
     );
 
 -- Task for stage 10005 "Prod" to update database 7008 'fakedb4'
@@ -133,8 +125,7 @@ INSERT INTO
         database_id,
         name,
         `type`,
-        `status`,
-        `when`
+        `status`
     )
 VALUES
     (
@@ -147,8 +138,7 @@ VALUES
         7008,
         'Update fakedb4',
         'bb.task.database.schema.update',
-        'PENDING',
-        'MANUAL'
+        'PENDING_APPROVAL'
     );
 
 -- Task for Pipeline 9003 create table
@@ -164,8 +154,7 @@ INSERT INTO
         database_id,
         name,
         `type`,
-        `status`,
-        `when`
+        `status`
     )
 VALUES
     (
@@ -178,8 +167,7 @@ VALUES
         7002,
         'Update fakedb1',
         'bb.task.database.schema.update',
-        'PENDING',
-        'MANUAL'
+        'PENDING_APPROVAL'
     );
 
 -- Task for stage 10003 "Integration" to update database 7004 'fakedb2'
@@ -194,8 +182,7 @@ INSERT INTO
         database_id,
         name,
         `type`,
-        `status`,
-        `when`
+        `status`
     )
 VALUES
     (
@@ -208,6 +195,5 @@ VALUES
         7004,
         'Update fakedb2',
         'bb.task.database.schema.update',
-        'PENDING',
-        'ON_SUCCESS'
+        'PENDING'
     );

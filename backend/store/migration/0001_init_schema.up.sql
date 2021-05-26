@@ -469,6 +469,7 @@ CREATE TABLE task (
     `status` TEXT NOT NULL CHECK (
         `status` IN (
             'PENDING',
+            'PENDING_APPROVAL',
             'RUNNING',
             'DONE',
             'FAILED',
@@ -477,7 +478,6 @@ CREATE TABLE task (
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
-    `when` TEXT NOT NULL CHECK (`when` IN ('ON_SUCCESS', 'MANUAL')),
     payload TEXT NOT NULL DEFAULT ''
 );
 

@@ -190,13 +190,12 @@ export type TaskType = "bb.task.general" | "bb.task.database.schema.update";
 
 export type TaskStatus =
   | "PENDING"
+  | "PENDING_APPROVAL"
   | "RUNNING"
   | "DONE"
   | "FAILED"
   | "CANCELED"
   | "SKIPPED";
-
-export type TaskWhenType = "ON_SUCCESS" | "MANUAL";
 
 export type DatabaseSchemaUpdateTaskPayload = {
   sql: string;
@@ -223,7 +222,6 @@ export type Task = {
   name: string;
   status: TaskStatus;
   type: TaskType;
-  when: TaskWhenType;
   // We may get an empty database for tasks like creating database.
   database: Database;
   payload?: TaskPayload;
@@ -232,8 +230,8 @@ export type Task = {
 export type TaskCreate = {
   // Domain specific fields
   name: string;
+  status: TaskStatus;
   type: TaskType;
-  when: TaskWhenType;
   databaseId?: DatabaseId;
 };
 

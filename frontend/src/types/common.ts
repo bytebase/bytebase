@@ -254,7 +254,6 @@ export const unknown = (
     name: "<<Unknown task>>",
     type: "bb.task.general",
     status: "DONE",
-    when: "ON_SUCCESS",
     database: UNKNOWN_DATABASE,
     taskRunList: [],
   };
@@ -494,7 +493,6 @@ export const empty = (
     name: "",
     type: "bb.task.general",
     status: "DONE",
-    when: "ON_SUCCESS",
     database: EMPTY_DATABASE,
     taskRunList: [],
   };

@@ -62,7 +62,7 @@ export default function configureTask(route) {
             return item.id > task.id;
           });
 
-          if (followingTask && followingTask.when == "ON_SUCCESS") {
+          if (followingTask && followingTask.status == "PENDING") {
             const payload = {
               taskId: followingTask.id,
               oldStatus: followingTask.status,

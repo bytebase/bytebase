@@ -19,6 +19,8 @@ export type BBTabItem = {
 export type BBStepStatus =
   | "PENDING"
   | "PENDING_ACTIVE"
+  | "PENDING_APPROVAL"
+  | "PENDING_APPROVAL_ACTIVE"
   | "RUNNING"
   | "DONE"
   | "FAILED"

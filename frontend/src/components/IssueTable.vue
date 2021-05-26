@@ -116,6 +116,7 @@ import {
   BBTableColumn,
   BBTableSectionDataSource,
   BBStep,
+  BBStepStatus,
 } from "../bbkit/types";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import {
@@ -240,14 +241,18 @@ export default {
     const taskList = function (issue: Issue): BBStep[] {
       const list: Task[] = allTaskList(issue.pipeline);
       return list.map((task) => {
+        let status: BBStepStatus = task.status;
+        if (status == "PENDING" || status == "PENDING_APPROVAL") {
+          if (activeTask(issue.pipeline).id == task.id) {
+            status =
+              status == "PENDING"
+                ? "PENDING_ACTIVE"
+                : "PENDING_APPROVAL_ACTIVE";
+          }
+        }
         return {
           title: task.name,
-          status:
-            task.status == "PENDING"
-              ? activeTask(issue.pipeline).id == task.id
-                ? "PENDING_ACTIVE"
-                : "PENDING"
-              : task.status,
+          status,
           link: (): string => {
             return `/issue/${issue.id}`;
           },

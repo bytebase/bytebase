@@ -193,11 +193,9 @@ const TASK_STATUS_TRANSITION_LIST: Map<
   ],
 ]);
 
-type TaskTransitionStatus = TaskStatus | "PENDING_APPROVAL";
-
 // The transition button are displayed from left to right on the UI, and the right-most one is the primary button
 const APPLICABLE_TASK_TRANSITION_LIST: Map<
-  TaskTransitionStatus,
+  TaskStatus,
   TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", ["SKIP", "RUN"]],
@@ -217,13 +215,9 @@ export function applicableTaskTransition(
     return [];
   }
 
-  const status =
-    task.status == "PENDING" && task.when == "MANUAL"
-      ? "PENDING_APPROVAL"
-      : task.status;
-
-  const list: TaskStatusTransitionType[] =
-    APPLICABLE_TASK_TRANSITION_LIST.get(status)!;
+  const list: TaskStatusTransitionType[] = APPLICABLE_TASK_TRANSITION_LIST.get(
+    task.status
+  )!;
 
   return list.map((type: TaskStatusTransitionType) => {
     return TASK_STATUS_TRANSITION_LIST.get(type)!;

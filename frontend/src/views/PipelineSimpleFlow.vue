@@ -42,6 +42,22 @@
                   aria-hidden="true"
                 ></span>
               </template>
+              <template v-else-if="item.taskStatus === 'PENDING_APPROVAL'">
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  ></path>
+                </svg>
+              </template>
               <template v-else-if="item.taskStatus == 'RUNNING'">
                 <span
                   class="h-2.5 w-2.5 bg-blue-600 rounded-full"
@@ -199,6 +215,11 @@ export default {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
           return "bg-white border-2 border-control";
+        case "PENDING_APPROVAL":
+          if (activeTask(props.pipeline).id === item.taskId) {
+            return "bg-white border-2 border-blue-600 text-blue-600";
+          }
+          return "bg-white border-2 border-control";
         case "RUNNING":
           return "bg-white border-2 border-blue-600 text-blue-600";
         case "DONE":
@@ -224,6 +245,7 @@ export default {
         case "DONE":
           return textClass + "text-control";
         case "PENDING":
+        case "PENDING_APPROVAL":
           if (activeTask(props.pipeline).id === item.taskId) {
             return textClass + "text-blue-600";
           }

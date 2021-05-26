@@ -30,8 +30,8 @@ const template: IssueTemplate = {
         taskList: [
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
+            status: "PENDING_APPROVAL",
             type: "bb.task.database.schema.update",
-            when: "MANUAL",
             databaseId: ctx.databaseList[i].id,
           },
         ],

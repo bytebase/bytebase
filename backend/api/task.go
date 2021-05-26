@@ -8,18 +8,21 @@ import (
 type TaskStatus string
 
 const (
-	TaskPending  TaskStatus = "PENDING"
-	TaskRunning  TaskStatus = "RUNNING"
-	TaskDone     TaskStatus = "DONE"
-	TaskFailed   TaskStatus = "FAILED"
-	TaskCanceled TaskStatus = "CANCELED"
-	TaskSkipped  TaskStatus = "SKIPPED"
+	TaskPending         TaskStatus = "PENDING"
+	TaskPendingApproval TaskStatus = "PENDING_APPROVAL"
+	TaskRunning         TaskStatus = "RUNNING"
+	TaskDone            TaskStatus = "DONE"
+	TaskFailed          TaskStatus = "FAILED"
+	TaskCanceled        TaskStatus = "CANCELED"
+	TaskSkipped         TaskStatus = "SKIPPED"
 )
 
 func (e TaskStatus) String() string {
 	switch e {
 	case TaskPending:
 		return "PENDING"
+	case TaskPendingApproval:
+		return "PENDING_APPROVAL"
 	case TaskRunning:
 		return "RUNNING"
 	case TaskDone:
@@ -43,13 +46,6 @@ type TaskType string
 const (
 	TaskGeneral              TaskType = "bb.task.general"
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
-)
-
-type TaskWhen string
-
-const (
-	TaskOnSuccess TaskWhen = "ON_SUCCESS"
-	TaskManual    TaskWhen = "MANUAL"
 )
 
 type TaskDatabaseSchemaUpdatePayload struct {
@@ -81,7 +77,6 @@ type Task struct {
 	Name    string     `jsonapi:"attr,name"`
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Type    TaskType   `jsonapi:"attr,type"`
-	When    TaskWhen   `jsonapi:"attr,when"`
 	Payload []byte     `jsonapi:"attr,payload"`
 }
 
@@ -97,10 +92,10 @@ type TaskCreate struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name    string   `jsonapi:"attr,name"`
-	Type    TaskType `jsonapi:"attr,type"`
-	When    TaskWhen `jsonapi:"attr,when"`
-	Payload []byte   `jsonapi:"attr,payload"`
+	Name    string     `jsonapi:"attr,name"`
+	Status  TaskStatus `jsonapi:"attr,status"`
+	Type    TaskType   `jsonapi:"attr,type"`
+	Payload []byte     `jsonapi:"attr,payload"`
 }
 
 type TaskFind struct {
