@@ -141,9 +141,67 @@ input[type="number"] {
               :class="create ? 'max-w-xl' : ''"
             >
               This is the connection used by Bytebase to perform DDL and DML
-              operations. Note, Bytebase does NOT need admin/SUPER privilege.
-              TODO: Add grant statement.
+              operations. We recommend you create a separate user for bytebase
+              to operate. Below is an example to create such an user and grant
+              it with the needed privileges.
             </p>
+            <div class="mt-2 text-sm text-main">
+              <div class="flex flex-row">
+                <span
+                  class="
+                    flex-1
+                    min-w-0
+                    w-full
+                    inline-flex
+                    items-center
+                    px-3
+                    py-2
+                    border border-r border-control-border
+                    bg-gray-50
+                    sm:text-sm
+                  "
+                >
+                  {{ GRANT_STATEMENT }}
+                </span>
+                <button
+                  tabindex="-1"
+                  class="
+                    -ml-px
+                    px-2
+                    py-2
+                    border border-gray-300
+                    text-sm
+                    font-medium
+                    text-control-light
+                    disabled:text-gray-300
+                    bg-gray-50
+                    hover:bg-gray-100
+                    disabled:bg-gray-50
+                    focus:ring-control
+                    focus:outline-none
+                    focus-visible:ring-2
+                    focus:ring-offset-1
+                    disabled:cursor-not-allowed
+                  "
+                  @click.prevent="copyGrantStatement"
+                >
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="pt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-3">
@@ -290,6 +348,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { instanceSlug, isDBAOrOwner } from "../utils";
 import {
@@ -302,6 +361,9 @@ import {
   SqlResultSet,
 } from "../types";
 import { isEmpty } from "lodash";
+
+const GRANT_STATEMENT =
+  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}'; GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, CREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE ON *.* to bytebase@'%';";
 
 interface LocalState {
   originalInstance?: Instance;
@@ -450,6 +512,16 @@ export default {
         });
     };
 
+    const copyGrantStatement = () => {
+      toClipboard(GRANT_STATEMENT).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "INFO",
+          title: `Grant statement copied to clipboard. Paste to your mysql client and run it.`,
+        });
+      });
+    };
+
     const testConnection = () => {
       const sqlConfig: SqlConfig = {
         dbType: "MYSQL",
@@ -468,6 +540,7 @@ export default {
     };
 
     return {
+      GRANT_STATEMENT,
       state,
       allowCreate,
       allowEdit,
@@ -476,6 +549,7 @@ export default {
       cancel,
       doCreate,
       doUpdate,
+      copyGrantStatement,
       testConnection,
     };
   },
