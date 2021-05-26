@@ -358,7 +358,7 @@ CREATE TABLE data_source (
     `type` TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
     `password` TEXT NOT NULL,
-    UNIQUE(workspace_id, instance_id, name)
+    UNIQUE(workspace_id, database_id, name)
 );
 
 INSERT INTO
