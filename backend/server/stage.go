@@ -2,11 +2,8 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId int, includeList []string) ([]*api.Stage, error) {
@@ -15,7 +12,7 @@ func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId in
 	}
 	stageList, err := s.StageService.FindStageList(context.Background(), stageFind)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch stage for pipeline: %v", pipelineId)).SetInternal(err)
+		return nil, err
 	}
 
 	for _, stage := range stageList {
@@ -31,22 +28,22 @@ func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage,
 	var err error
 	stage.Creator, err = s.ComposePrincipalById(context.Background(), stage.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for stage: %v", stage.Name)).SetInternal(err)
+		return err
 	}
 
 	stage.Updater, err = s.ComposePrincipalById(context.Background(), stage.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for stage: %v", stage.Name)).SetInternal(err)
+		return err
 	}
 
 	stage.Environment, err = s.ComposeEnvironmentById(context.Background(), stage.EnvironmentId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for stage: %v", stage.Name)).SetInternal(err)
+		return err
 	}
 
 	stage.TaskList, err = s.ComposeTaskListByStageId(context.Background(), stage.ID, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task list for stage: %v", stage.Name)).SetInternal(err)
+		return err
 	}
 
 	return nil

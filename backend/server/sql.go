@@ -50,7 +50,10 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId, true /*includeSecret*/)
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceId)).SetInternal(err)
 		}
 
 		db, err := db.Open(db.Mysql, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{

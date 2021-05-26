@@ -37,7 +37,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created project membership relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -76,7 +76,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project membership relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -121,12 +121,12 @@ func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projec
 	}
 	projectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project ID: %v", projectId)).SetInternal(err)
+		return nil, err
 	}
 
 	for _, projectMember := range projectMemberList {
 		if err := s.ComposeProjectMemberRelationship(ctx, projectMember, includeList); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project ID: %v", projectId)).SetInternal(err)
+			return nil, err
 		}
 	}
 	return projectMemberList, nil
@@ -137,17 +137,17 @@ func (s *Server) ComposeProjectMemberRelationship(ctx context.Context, projectMe
 
 	projectMember.Creator, err = s.ComposePrincipalById(context.Background(), projectMember.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for project member ID: %v", projectMember.ID)).SetInternal(err)
+		return err
 	}
 
 	projectMember.Updater, err = s.ComposePrincipalById(context.Background(), projectMember.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for project member ID: %v", projectMember.ID)).SetInternal(err)
+		return err
 	}
 
 	projectMember.Principal, err = s.ComposePrincipalById(context.Background(), projectMember.PrincipalId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal for project member ID: %v", projectMember.ID)).SetInternal(err)
+		return err
 	}
 
 	return nil

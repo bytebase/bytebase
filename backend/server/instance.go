@@ -75,7 +75,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), id, true /*includeSecret*/)
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -162,10 +165,7 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeSecret 
 	}
 	instance, err := s.InstanceService.FindInstance(context.Background(), instanceFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		return nil, err
 	}
 
 	if err := s.ComposeInstanceRelationship(ctx, instance, includeSecret); err != nil {
@@ -180,17 +180,17 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 
 	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId, []string{})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for instance: %v", instance.Name)).SetInternal(err)
+		return err
 	}
 
 	instance.Updater, err = s.ComposePrincipalById(context.Background(), instance.UpdaterId, []string{})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for instance: %v", instance.Name)).SetInternal(err)
+		return err
 	}
 
 	instance.Environment, err = s.ComposeEnvironmentById(context.Background(), instance.EnvironmentId, []string{})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment for instance: %v", instance.Name)).SetInternal(err)
+		return err
 	}
 
 	if includeSecret {
@@ -199,7 +199,7 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 		}
 		instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+			return err
 		}
 		for _, dataSource := range instance.DataSourceList {
 			if dataSource.Type == api.Admin {

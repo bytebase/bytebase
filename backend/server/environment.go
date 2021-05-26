@@ -31,7 +31,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created environment relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -57,7 +57,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		for _, environment := range list {
 			if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment relationship: %v", environment.Name)).SetInternal(err)
 			}
 		}
 
@@ -92,7 +92,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated environment relationship: %v", environment.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -105,7 +105,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.PATCH("/environment/reorder", func(c echo.Context) error {
 		patchList, err := jsonapi.UnmarshalManyPayload(c.Request().Body, reflect.TypeOf(new(api.EnvironmentPatch)))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment batch update request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(err)
 		}
 
 		for _, item := range patchList {
@@ -127,18 +127,18 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 		list, err := s.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for batch update").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for reorder").SetInternal(err)
 		}
 
 		for _, environment := range list {
 			if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch reordered environment relationship: %v", environment.Name)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal environment batch update response").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal environment reorder response").SetInternal(err)
 		}
 		return nil
 	})
@@ -150,10 +150,7 @@ func (s *Server) ComposeEnvironmentById(ctx context.Context, id int, includeList
 	}
 	environment, err := s.EnvironmentService.FindEnvironment(context.Background(), environmentFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", id))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment ID: %v", id)).SetInternal(err)
+		return nil, err
 	}
 
 	if err := s.ComposeEnvironmentRelationship(ctx, environment, includeList); err != nil {
@@ -168,12 +165,12 @@ func (s *Server) ComposeEnvironmentRelationship(ctx context.Context, environment
 
 	environment.Creator, err = s.ComposePrincipalById(context.Background(), environment.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for environment: %v", environment.Name)).SetInternal(err)
+		return err
 	}
 
 	environment.Updater, err = s.ComposePrincipalById(context.Background(), environment.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for environment: %v", environment.Name)).SetInternal(err)
+		return err
 	}
 
 	return nil

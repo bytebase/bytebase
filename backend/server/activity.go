@@ -27,12 +27,12 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeActivityRelationship(context.Background(), activity, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created activity relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, activity); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create activity response").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal created activity response").SetInternal(err)
 		}
 		return nil
 	})
@@ -46,7 +46,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		if containerIdStr != "" {
 			containerId, err := strconv.Atoi(containerIdStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("container query parameter is not a number: %s", containerIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter container is not a number: %s", containerIdStr)).SetInternal(err)
 			}
 			activityFind.ContainerId = &containerId
 		}
@@ -57,7 +57,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 
 		for _, activity := range list {
 			if err := s.ComposeActivityRelationship(context.Background(), activity, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch activity relationship: %v", activity.ID)).SetInternal(err)
 			}
 		}
 
@@ -92,7 +92,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeActivityRelationship(context.Background(), activity, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated activity relationship: %v", activity.ID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -131,12 +131,12 @@ func (s *Server) ComposeActivityRelationship(ctx context.Context, activity *api.
 
 	activity.Creator, err = s.ComposePrincipalById(context.Background(), activity.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for activity ID: %v", activity.ID)).SetInternal(err)
+		return err
 	}
 
 	activity.Updater, err = s.ComposePrincipalById(context.Background(), activity.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for activity ID: %v", activity.ID)).SetInternal(err)
+		return err
 	}
 
 	return nil

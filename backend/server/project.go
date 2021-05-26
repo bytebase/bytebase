@@ -28,7 +28,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -61,7 +61,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		for _, project := range list {
 			if err := s.ComposeProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
 			}
 		}
 
@@ -80,7 +80,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		project, err := s.ComposeProjectlById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -114,7 +117,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated project relationship: %v", project.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -131,10 +134,7 @@ func (s *Server) ComposeProjectlById(ctx context.Context, id int, includeList []
 	}
 	project, err := s.ProjectService.FindProject(ctx, projectFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+		return nil, err
 	}
 
 	if err := s.ComposeProjectRelationship(ctx, project, includeList); err != nil {
@@ -149,17 +149,17 @@ func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Pr
 
 	project.Creator, err = s.ComposePrincipalById(context.Background(), project.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for project: %v", project.Name)).SetInternal(err)
+		return err
 	}
 
 	project.Updater, err = s.ComposePrincipalById(context.Background(), project.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for project: %v", project.Name)).SetInternal(err)
+		return err
 	}
 
 	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectId(ctx, project.ID, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member for project: %v", project.Name)).SetInternal(err)
+		return err
 	}
 
 	return nil

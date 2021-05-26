@@ -30,7 +30,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created member relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -52,7 +52,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		for _, member := range list {
 			if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", member.ID)).SetInternal(err)
 			}
 		}
 
@@ -87,7 +87,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated member relationship: %v", member.ID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -126,17 +126,17 @@ func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Memb
 
 	member.Creator, err = s.ComposePrincipalById(ctx, member.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for member ID: %v", member.ID)).SetInternal(err)
+		return err
 	}
 
 	member.Updater, err = s.ComposePrincipalById(context.Background(), member.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for member ID: %v", member.ID)).SetInternal(err)
+		return err
 	}
 
 	member.Principal, err = s.ComposePrincipalById(context.Background(), member.PrincipalId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal for member ID: %v", member.ID)).SetInternal(err)
+		return err
 	}
 
 	return nil

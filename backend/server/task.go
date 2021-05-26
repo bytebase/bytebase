@@ -37,7 +37,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeTaskRelationship(context.Background(), updatedTask, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task relationship: %v", updatedTask.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -55,7 +55,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		task, err := s.ComposeTaskById(context.Background(), taskId, []string{})
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task ID not found: %d", taskId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task ID: %v", taskId)).SetInternal(err)
 		}
 
 		if task.When != api.TaskManual {
@@ -83,7 +86,7 @@ func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incl
 	}
 	taskList, err := s.TaskService.FindTaskList(context.Background(), taskFind)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task for stage: %v", stageId)).SetInternal(err)
+		return nil, err
 	}
 
 	for _, task := range taskList {
@@ -101,10 +104,7 @@ func (s *Server) ComposeTaskById(ctx context.Context, id int, includeList []stri
 	}
 	task, err := s.TaskService.FindTask(context.Background(), taskFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task ID not found: %d", id))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task ID: %v", id)).SetInternal(err)
+		return nil, err
 	}
 
 	if err := s.ComposeTaskRelationship(ctx, task, includeList); err != nil {
@@ -119,22 +119,22 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 
 	task.Creator, err = s.ComposePrincipalById(context.Background(), task.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for task: %v", task.Name)).SetInternal(err)
+		return err
 	}
 
 	task.Updater, err = s.ComposePrincipalById(context.Background(), task.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for task: %v", task.Name)).SetInternal(err)
+		return err
 	}
 
 	task.Database, err = s.ComposeDatabaseById(context.Background(), task.DatabaseId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database for task: %v", task.Name)).SetInternal(err)
+		return err
 	}
 
 	task.TaskRunList, err = s.ComposeTaskRunListByTaskId(context.Background(), task.ID, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task run list for task: %v", task.Name)).SetInternal(err)
+		return err
 	}
 
 	return nil

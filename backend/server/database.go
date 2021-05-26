@@ -30,7 +30,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created database relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -67,7 +67,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		for _, database := range list {
 			if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database relationship: %v", database.Name)).SetInternal(err)
 			}
 		}
 
@@ -86,7 +86,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.ComposeDatabaseById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -120,7 +123,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated database relationship: %v", database.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -137,10 +140,7 @@ func (s *Server) ComposeDatabaseById(ctx context.Context, id int, includeList []
 	}
 	database, err := s.DatabaseService.FindDatabase(context.Background(), databaseFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		return nil, err
 	}
 
 	if err := s.ComposeDatabaseRelationship(ctx, database, includeList); err != nil {
@@ -155,25 +155,25 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 
 	database.Creator, err = s.ComposePrincipalById(context.Background(), database.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for database: %v", database.Name)).SetInternal(err)
+		return err
 	}
 
 	database.Updater, err = s.ComposePrincipalById(context.Background(), database.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for database: %v", database.Name)).SetInternal(err)
+		return err
 	}
 
 	if bytebase.FindString(includeList, "project") != "" {
 		database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for database: %v", database.Name)).SetInternal(err)
+			return err
 		}
 	}
 
 	if bytebase.FindString(includeList, "instance") != "" {
 		database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, false /*includeSecret*/)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance for database: %v", database.Name)).SetInternal(err)
+			return err
 		}
 	}
 

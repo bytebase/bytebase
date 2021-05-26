@@ -142,7 +142,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -203,7 +206,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
-			return err
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
 
 		var pipelineStatus api.PipelineStatus
@@ -284,10 +290,7 @@ func (s *Server) ComposeIssueById(ctx context.Context, id int, includeList []str
 	}
 	issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
+		return nil, err
 	}
 
 	if err := s.ComposeIssueRelationship(ctx, issue, includeList); err != nil {
@@ -302,27 +305,27 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue,
 
 	issue.Creator, err = s.ComposePrincipalById(context.Background(), issue.CreatorId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch creator for issue: %v", issue.Name)).SetInternal(err)
+		return err
 	}
 
 	issue.Updater, err = s.ComposePrincipalById(context.Background(), issue.UpdaterId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updater for issue: %v", issue.Name)).SetInternal(err)
+		return err
 	}
 
 	issue.Assignee, err = s.ComposePrincipalById(context.Background(), issue.AssigneeId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch assignee for issue: %v", issue.Name)).SetInternal(err)
+		return err
 	}
 
 	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project for issue: %v", issue.Name)).SetInternal(err)
+		return err
 	}
 
 	issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId, includeList)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch pipeline for issue: %v", issue.Name)).SetInternal(err)
+		return err
 	}
 
 	return nil
