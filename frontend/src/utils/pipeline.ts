@@ -195,16 +195,16 @@ const TASK_STATUS_TRANSITION_LIST: Map<
 
 type TaskTransitionStatus = TaskStatus | "PENDING_APPROVAL";
 
-// The transition button is ordered from right to left on the UI
+// The transition button are displayed from left to right on the UI, and the right-most one is the primary button
 const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskTransitionStatus,
   TaskStatusTransitionType[]
 > = new Map([
-  ["PENDING", ["RUN", "SKIP"]],
-  ["PENDING_APPROVAL", ["APPROVE", "SKIP"]],
+  ["PENDING", ["SKIP", "RUN"]],
+  ["PENDING_APPROVAL", ["SKIP", "APPROVE"]],
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
-  ["FAILED", ["RETRY", "SKIP"]],
+  ["FAILED", ["SKIP", "RETRY"]],
   ["SKIPPED", []],
 ]);
 

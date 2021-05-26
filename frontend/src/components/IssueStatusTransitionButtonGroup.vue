@@ -15,9 +15,7 @@
       class="flex space-x-2"
     >
       <template
-        v-for="(
-          transition, index
-        ) in applicableTaskStatusTransitionList.reverse()"
+        v-for="(transition, index) in applicableTaskStatusTransitionList"
         :key="index"
       >
         <button
