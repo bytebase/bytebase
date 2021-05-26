@@ -63,7 +63,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			Port:     instance.Port,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to open database").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect instance: %v with user: %v", instance.Name, instance.Username)).SetInternal(err)
 		}
 
 		resultSet := &api.SqlResultSet{}

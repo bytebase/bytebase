@@ -36,7 +36,7 @@ func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
 		protocol = "unix"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/", config.Username, config.Password, protocol, config.Host, config.Port)
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s", config.Username, config.Password, protocol, config.Host, config.Port, config.Database)
 	driver.l.Debug("Opening MySQL driver", zap.String("dsn", dsn))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -88,4 +88,14 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 	}
 
 	return list, err
+}
+
+func (driver *MySQLDriver) Execute(ctx context.Context, sql string) (sql.Result, error) {
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	return tx.ExecContext(ctx, sql)
 }

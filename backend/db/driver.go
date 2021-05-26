@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 
@@ -41,6 +42,7 @@ type Driver interface {
 	open(config ConnectionConfig) (Driver, error)
 	Ping(ctx context.Context) error
 	SyncSchema(ctx context.Context) ([]*DBSchema, error)
+	Execute(ctx context.Context, sql string) (sql.Result, error)
 }
 
 type ConnectionConfig struct {
@@ -48,6 +50,7 @@ type ConnectionConfig struct {
 	Port     string
 	Username string
 	Password string
+	Database string
 }
 
 // Register makes a database driver available by the provided type.
