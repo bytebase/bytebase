@@ -3,6 +3,8 @@ import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, PrincipalId } from "./id";
 import { Principal } from "./principal";
 
+export type EngineType = "MYSQL";
+
 export type Instance = {
   id: InstanceId;
 
@@ -18,6 +20,7 @@ export type Instance = {
 
   // Domain specific fields
   name: string;
+  engine: EngineType;
   externalLink?: string;
   host: string;
   port?: string;

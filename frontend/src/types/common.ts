@@ -171,6 +171,7 @@ export const unknown = (
     createdTs: 0,
     updatedTs: 0,
     name: "<<Unknown instance>>",
+    engine: "MYSQL",
     host: "",
   };
 
@@ -410,6 +411,7 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     name: "",
+    engine: "MYSQL",
     host: "",
   };
 

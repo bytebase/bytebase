@@ -112,12 +112,13 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 			workspace_id,
 			environment_id,
 			name,
+			engine,
 			external_link,
 			host,
 			port
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, external_link, host, port
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, engine, external_link, host, port
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -146,6 +147,7 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 		&instance.WorkspaceId,
 		&instance.EnvironmentId,
 		&instance.Name,
+		&instance.Engine,
 		&instance.ExternalLink,
 		&instance.Host,
 		&instance.Port,
@@ -180,6 +182,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 			workspace_id,
 			environment_id,
 			name,
+			engine,
 			external_link,
 			host,
 			port
@@ -206,6 +209,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 			&instance.WorkspaceId,
 			&instance.EnvironmentId,
 			&instance.Name,
+			&instance.Engine,
 			&instance.ExternalLink,
 			&instance.Host,
 			&instance.Port,
@@ -249,7 +253,7 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, external_link, host, port
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, engine, external_link, host, port
 	`,
 		args...,
 	)
@@ -270,6 +274,7 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 			&instance.WorkspaceId,
 			&instance.EnvironmentId,
 			&instance.Name,
+			&instance.Engine,
 			&instance.ExternalLink,
 			&instance.Host,
 			&instance.Port,

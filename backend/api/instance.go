@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/db"
 )
 
 type Instance struct {
@@ -24,10 +26,11 @@ type Instance struct {
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
 
 	// Domain specific fields
-	Name         string `jsonapi:"attr,name"`
-	ExternalLink string `jsonapi:"attr,externalLink"`
-	Host         string `jsonapi:"attr,host"`
-	Port         string `jsonapi:"attr,port"`
+	Name         string  `jsonapi:"attr,name"`
+	Engine       db.Type `jsonapi:"attr,engine"`
+	ExternalLink string  `jsonapi:"attr,externalLink"`
+	Host         string  `jsonapi:"attr,host"`
+	Port         string  `jsonapi:"attr,port"`
 	// Only returns username/password if supplying query parameter 'include=secret'
 	Username string `jsonapi:"attr,username"`
 	Password string `jsonapi:"attr,password"`
@@ -43,12 +46,13 @@ type InstanceCreate struct {
 	EnvironmentId int `jsonapi:"attr,environmentId"`
 
 	// Domain specific fields
-	Name         string `jsonapi:"attr,name"`
-	ExternalLink string `jsonapi:"attr,externalLink"`
-	Host         string `jsonapi:"attr,host"`
-	Port         string `jsonapi:"attr,port"`
-	Username     string `jsonapi:"attr,username"`
-	Password     string `jsonapi:"attr,password"`
+	Name         string  `jsonapi:"attr,name"`
+	Type         db.Type `jsonapi:"attr,type"`
+	ExternalLink string  `jsonapi:"attr,externalLink"`
+	Host         string  `jsonapi:"attr,host"`
+	Port         string  `jsonapi:"attr,port"`
+	Username     string  `jsonapi:"attr,username"`
+	Password     string  `jsonapi:"attr,password"`
 }
 
 type InstanceFind struct {

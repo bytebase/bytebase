@@ -19,7 +19,7 @@ func (e Type) String() string {
 	case Mysql:
 		return "MYSQL"
 	}
-	return ""
+	return "UNKNOWN"
 }
 
 type DBSchema struct {

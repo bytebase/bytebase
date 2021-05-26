@@ -277,6 +277,7 @@ CREATE TABLE instance (
     workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
+    `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL')),
     external_link TEXT NOT NULL,
     host TEXT NOT NULL,
     port TEXT NOT NULL
