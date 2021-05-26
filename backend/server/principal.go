@@ -45,12 +45,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
 
-		for _, principal := range list {
-			if err := s.ComposePrincipalRelationship(context.Background(), principal, c.Get(getIncludeKey()).([]string)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal relationship: %v", principal.ID)).SetInternal(err)
-			}
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal principal list response").SetInternal(err)
@@ -117,27 +111,5 @@ func (s *Server) ComposePrincipalById(ctx context.Context, id int, includeList [
 		return nil, err
 	}
 
-	s.ComposePrincipalRelationship(ctx, principal, includeList)
-
 	return principal, nil
-}
-
-func (s *Server) ComposePrincipalRelationship(ctx context.Context, principal *api.Principal, includeList []string) error {
-	workspaceId := api.DEFAULT_WORKPSACE_ID
-	memberFind := &api.MemberFind{
-		WorkspaceId: &workspaceId,
-		PrincipalId: &principal.ID,
-	}
-	// We don't store the system bot membership for the workspace, thus returns OWNER role on the fly here.
-	if principal.ID == api.SYSTEM_BOT_ID {
-		principal.Role = api.Owner
-	} else {
-		member, err := s.MemberService.FindMember(ctx, memberFind)
-		if err != nil {
-			return err
-		}
-		principal.Role = member.Role
-	}
-
-	return nil
 }
