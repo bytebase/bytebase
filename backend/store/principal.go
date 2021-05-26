@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // PrincipalService represents a service for managing principal.
 type PrincipalService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewPrincipalService returns a new instance of PrincipalService.
-func NewPrincipalService(logger *bytebase.Logger, db *DB) *PrincipalService {
+func NewPrincipalService(logger *zap.Logger, db *DB) *PrincipalService {
 	return &PrincipalService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("principal not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple principals: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple principals: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

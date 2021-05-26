@@ -8,16 +8,16 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
+	"go.uber.org/zap"
 )
 
 // const DSN = ":memory:"
 const DSN = "./data/bytebase_dev.db"
 
 type Main struct {
-	l *bytebase.Logger
+	l *zap.Logger
 
 	server *server.Server
 
@@ -25,8 +25,13 @@ type Main struct {
 }
 
 func NewMain() *Main {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic("Failed to create logger.")
+	}
+	defer logger.Sync()
 	return &Main{
-		l: bytebase.NewLogger(),
+		l: logger,
 	}
 }
 

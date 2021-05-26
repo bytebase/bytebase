@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // ActivityService represents a service for managing activity.
 type ActivityService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewActivityService returns a new instance of ActivityService.
-func NewActivityService(logger *bytebase.Logger, db *DB) *ActivityService {
+func NewActivityService(logger *zap.Logger, db *DB) *ActivityService {
 	return &ActivityService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("activity not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found %d activities with filter %v, expect 1. ", len(list), find)
+		s.l.Warn(fmt.Sprintf("found %d activities with filter %v, expect 1. ", len(list), find))
 	}
 	return list[0], nil
 }

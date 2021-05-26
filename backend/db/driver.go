@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase"
+	"go.uber.org/zap"
 )
 
 type Type string
@@ -32,7 +32,7 @@ var (
 )
 
 type DriverConfig struct {
-	Logger *bytebase.Logger
+	Logger *zap.Logger
 }
 
 type DriverFunc func(DriverConfig) Driver

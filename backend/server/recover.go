@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/bytebase/bytebase"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 	ALL_STACK  = true
 )
 
-func RecoverMiddleware(l *bytebase.Logger, next echo.HandlerFunc) echo.HandlerFunc {
+func RecoverMiddleware(l *zap.Logger, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		defer func() {
 			if r := recover(); r != nil {

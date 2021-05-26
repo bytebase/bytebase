@@ -5,18 +5,17 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
+	"go.uber.org/zap"
 )
 
 const (
@@ -24,7 +23,7 @@ const (
 )
 
 type Server struct {
-	l             *bytebase.Logger
+	l             *zap.Logger
 	TaskScheduler *TaskScheduler
 
 	PrincipalService     api.PrincipalService
@@ -73,7 +72,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *bytebase.Logger) *Server {
+func NewServer(logger *zap.Logger) *Server {
 	e := echo.New()
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
@@ -90,9 +89,9 @@ func NewServer(logger *bytebase.Logger) *Server {
 		e: e,
 	}
 
-	scheduler := NewTaskScheduler(log.Default(), s)
-	defaultExecutor := NewDefaultTaskExecutor(log.Default())
-	sqlExecutor := NewSqlTaskExecutor(log.Default())
+	scheduler := NewTaskScheduler(logger, s)
+	defaultExecutor := NewDefaultTaskExecutor(logger)
+	sqlExecutor := NewSqlTaskExecutor(logger)
 	scheduler.Register(string(api.TaskGeneral), defaultExecutor)
 	scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
 	s.TaskScheduler = scheduler

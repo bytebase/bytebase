@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
-
 	_ "github.com/go-sql-driver/mysql"
+	"go.uber.org/zap"
 )
 
 var (
@@ -20,7 +19,7 @@ func init() {
 }
 
 type MySQLDriver struct {
-	l *bytebase.Logger
+	l *zap.Logger
 
 	db *sql.DB
 }
@@ -38,7 +37,7 @@ func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
 	}
 
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/", config.Username, config.Password, protocol, config.Host, config.Port)
-	driver.l.Debugf("DSN: %s", dsn)
+	driver.l.Debug("Opening MySQL driver", zap.String("dsn", dsn))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)

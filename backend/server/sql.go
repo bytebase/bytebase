@@ -79,7 +79,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		}
 		for _, schema := range schemaList {
 			databaseFind.Name = &schema.Name
-			s.l.Infof("Schema11 %v", *schema)
+			s.l.Info(fmt.Sprintf("Schema11 %v", *schema))
 			database, err := s.DatabaseService.FindDatabase(context.Background(), databaseFind)
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {

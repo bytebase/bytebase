@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -17,12 +18,12 @@ var (
 
 // IssueService represents a service for managing issue.
 type IssueService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewIssueService returns a new instance of IssueService.
-func NewIssueService(logger *bytebase.Logger, db *DB) *IssueService {
+func NewIssueService(logger *zap.Logger, db *DB) *IssueService {
 	return &IssueService{l: logger, db: db}
 }
 
@@ -78,7 +79,7 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("issue not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple issues: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple issues: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }
@@ -185,7 +186,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		for _, item := range strings.Split(idList, ",") {
 			oneId, err := strconv.Atoi(item)
 			if err != nil {
-				s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+				s.l.Error(fmt.Sprintf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item))
 			}
 			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 		}
@@ -281,7 +282,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			for _, item := range strings.Split(idList, ",") {
 				oneId, err := strconv.Atoi(item)
 				if err != nil {
-					s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+					s.l.Error(fmt.Sprintf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item))
 				}
 				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 			}
@@ -375,7 +376,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			for _, item := range strings.Split(idList, ",") {
 				oneId, err := strconv.Atoi(item)
 				if err != nil {
-					s.l.Errorf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item)
+					s.l.Error(fmt.Sprintf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item))
 				}
 				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 			}

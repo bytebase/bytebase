@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // PipelineService represents a service for managing pipeline.
 type PipelineService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewPipelineService returns a new instance of PipelineService.
-func NewPipelineService(logger *bytebase.Logger, db *DB) *PipelineService {
+func NewPipelineService(logger *zap.Logger, db *DB) *PipelineService {
 	return &PipelineService{l: logger, db: db}
 }
 
@@ -60,7 +61,7 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("pipeline not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple pipelines: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple pipelines: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

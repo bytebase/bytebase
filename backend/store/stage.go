@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // StageService represents a service for managing stage.
 type StageService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewStageService returns a new instance of StageService.
-func NewStageService(logger *bytebase.Logger, db *DB) *StageService {
+func NewStageService(logger *zap.Logger, db *DB) *StageService {
 	return &StageService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("stage not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple stages: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple stages: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

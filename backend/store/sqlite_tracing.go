@@ -5,10 +5,10 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	sqlite3 "github.com/mattn/go-sqlite3"
+	"go.uber.org/zap"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 	blackListStmt   = []string{"SELECT"}
 )
 
-func traceCallback(info sqlite3.TraceInfo) int {
+func traceCallback(info sqlite3.TraceInfo, logger *zap.Logger) int {
 	// Not very readable but may be useful; uncomment next line in case of doubt:
 	//fmt.Printf("Trace: %#v\n", info)
 
@@ -53,27 +53,32 @@ func traceCallback(info sqlite3.TraceInfo) int {
 			}
 
 			if shouldLog {
-				log.Printf("[trace.sql]%s%s\n",
+				logger.Info(fmt.Sprintf("[trace.sql]%s%s\n",
 					cleanText,
-					dbErrText)
+					dbErrText))
 			}
 		}
 	} else {
-		log.Printf("[trace.sql]%s%s\n",
+		logger.Info(fmt.Sprintf("[trace.sql]%s%s\n",
 			cleanText,
-			dbErrText)
+			dbErrText))
 	}
 	return 0
 }
 
 func init() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic("Failed to create logger.")
+	}
+
 	eventMask := sqlite3.TraceStmt | sqlite3.TraceClose
 
 	sql.Register("sqlite3_tracing",
 		&sqlite3.SQLiteDriver{
 			ConnectHook: func(conn *sqlite3.SQLiteConn) error {
 				err := conn.SetTrace(&sqlite3.TraceConfig{
-					Callback:        traceCallback,
+					Callback:        func(info sqlite3.TraceInfo) int { return traceCallback(info, logger) },
 					EventMask:       eventMask,
 					WantExpandedSQL: true,
 				})

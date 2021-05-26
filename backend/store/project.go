@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // ProjectService represents a service for managing project.
 type ProjectService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewProjectService returns a new project of ProjectService.
-func NewProjectService(logger *bytebase.Logger, db *DB) *ProjectService {
+func NewProjectService(logger *zap.Logger, db *DB) *ProjectService {
 	return &ProjectService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple projects: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple projects: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 const (
@@ -158,7 +159,7 @@ func setUserCookie(user *api.Principal, expiration time.Time, c echo.Context) {
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(l *bytebase.Logger, p api.PrincipalService, next echo.HandlerFunc) echo.HandlerFunc {
+func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {

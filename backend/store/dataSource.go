@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // DataSourceService represents a service for managing dataSource.
 type DataSourceService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewDataSourceService returns a new instance of DataSourceService.
-func NewDataSourceService(logger *bytebase.Logger, db *DB) *DataSourceService {
+func NewDataSourceService(logger *zap.Logger, db *DB) *DataSourceService {
 	return &DataSourceService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("data source not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple data sources: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple data sources: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

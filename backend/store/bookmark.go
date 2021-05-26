@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // BookmarkService represents a service for managing bookmark.
 type BookmarkService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewBookmarkService returns a new instance of BookmarkService.
-func NewBookmarkService(logger *bytebase.Logger, db *DB) *BookmarkService {
+func NewBookmarkService(logger *zap.Logger, db *DB) *BookmarkService {
 	return &BookmarkService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("bookmark not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found %d activities with filter %v, expect 1. ", len(list), find)
+		s.l.Warn(fmt.Sprintf("found %d activities with filter %v, expect 1. ", len(list), find))
 	}
 	return list[0], nil
 }

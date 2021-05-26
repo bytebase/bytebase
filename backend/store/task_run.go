@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // TaskRunService represents a service for managing taskRun.
 type TaskRunService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // newTaskRunService returns a new TaskRunService.
-func NewTaskRunService(logger *bytebase.Logger, db *DB) *TaskRunService {
+func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
 	return &TaskRunService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *TaskRunService) FindTaskRun(ctx context.Context, find *api.TaskRunFind)
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task run not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple task runs: %d, expect 1\n", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple task runs: %d, expect 1\n", len(list)))
 	}
 	return list[0], nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // InstanceService represents a service for managing instance.
 type InstanceService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewInstanceService returns a new instance of InstanceService.
-func NewInstanceService(logger *bytebase.Logger, db *DB) *InstanceService {
+func NewInstanceService(logger *zap.Logger, db *DB) *InstanceService {
 	return &InstanceService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple instances: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple instances: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

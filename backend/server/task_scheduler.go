@@ -3,18 +3,18 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"runtime"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 const (
 	INTERVAL = time.Duration(1) * time.Second
 )
 
-func NewTaskScheduler(logger *log.Logger, server *Server) *TaskScheduler {
+func NewTaskScheduler(logger *zap.Logger, server *Server) *TaskScheduler {
 	return &TaskScheduler{
 		l:         logger,
 		executors: make(map[string]TaskExecutor),
@@ -23,7 +23,7 @@ func NewTaskScheduler(logger *log.Logger, server *Server) *TaskScheduler {
 }
 
 type TaskScheduler struct {
-	l         *log.Logger
+	l         *zap.Logger
 	executors map[string]TaskExecutor
 
 	server *Server
@@ -45,7 +45,7 @@ func (s *TaskScheduler) Run() error {
 						length := runtime.Stack(stack, ALL_STACK)
 						msg := fmt.Sprintf("[Scheduler PANIC RECOVER] %v %s\n", err, stack[:length])
 
-						s.l.Println(msg)
+						s.l.Info(msg)
 					}
 				}()
 				status := api.TaskRunPending
@@ -54,35 +54,35 @@ func (s *TaskScheduler) Run() error {
 				}
 				list, err := s.server.TaskRunService.FindTaskRunList(context.Background(), taskRunFind)
 				if err != nil {
-					s.l.Printf("Failed to retrieve pending tasks: %v\n", err)
+					s.l.Info(fmt.Sprintf("Failed to retrieve pending tasks: %v\n", err))
 				}
 
 				for _, taskRun := range list {
 					executor, ok := s.executors[string(taskRun.Type)]
 					if !ok {
-						s.l.Printf("Unknown task type: %v. Skip.", taskRun.Type)
+						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip.", taskRun.Type))
 						continue
 					}
 
-					s.l.Printf("Try to change task '%v(%v)' to RUNNING.\n", taskRun.Name, taskRun.ID)
+					s.l.Info(fmt.Sprintf("Try to change task '%v(%v)' to RUNNING.\n", taskRun.Name, taskRun.ID))
 					if err := s.server.ChangeTaskStatus(taskRun, api.TaskRunning); err != nil {
-						s.l.Printf("Failed to change task: %v.\n", err)
+						s.l.Info(fmt.Sprintf("Failed to change task: %v.\n", err))
 						continue
 					}
 
 					done, err := executor.Run(context.Background(), s.server, *taskRun)
 					if done {
 						if err != nil {
-							s.l.Printf("Task failed '%v(%v)': %v.\n", taskRun.Name, taskRun.ID, err)
+							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v.\n", taskRun.Name, taskRun.ID, err))
 							if err := s.server.ChangeTaskStatus(taskRun, api.TaskFailed); err != nil {
-								s.l.Printf("Failed to change task: %v.\n", err)
+								s.l.Info(fmt.Sprintf("Failed to change task: %v.\n", err))
 							}
 							continue
 						}
 
-						s.l.Printf("Task completed '%v(%v)'.\n", taskRun.Name, taskRun.ID)
+						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'.\n", taskRun.Name, taskRun.ID))
 						if err := s.server.ChangeTaskStatus(taskRun, api.TaskDone); err != nil {
-							s.l.Printf("Failed to change task: %v.\n", err)
+							s.l.Info(fmt.Sprintf("Failed to change task: %v.\n", err))
 						}
 					}
 				}

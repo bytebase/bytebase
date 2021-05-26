@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	_ "github.com/mattn/go-sqlite3"
+	"go.uber.org/zap"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -34,7 +35,7 @@ var seedFS embed.FS
 type DB struct {
 	Db *sql.DB
 
-	l *bytebase.Logger
+	l *zap.Logger
 
 	// Datasource name.
 	DSN string
@@ -45,7 +46,7 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *bytebase.Logger, dsn string) *DB {
+func NewDB(logger *zap.Logger, dsn string) *DB {
 	db := &DB{
 		l:   logger,
 		DSN: strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
@@ -110,7 +111,7 @@ func (db *DB) seed() error {
 
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
-	db.l.Infof("Seeding %s...", name)
+	db.l.Info(fmt.Sprintf("Seeding %s...", name))
 	tx, err := db.Db.Begin()
 	if err != nil {
 		return err
@@ -140,7 +141,7 @@ func (db *DB) migrate() error {
 
 	source, err := httpfs.New(http.FS(migrationFS), "migration")
 	if err != nil {
-		db.l.Fatal(err)
+		db.l.DPanic(err.Error())
 		return err
 	}
 
@@ -149,7 +150,7 @@ func (db *DB) migrate() error {
 		source,
 		"sqlite3://"+db.DSN)
 	if err != nil {
-		db.l.Fatal(err)
+		db.l.DPanic(err.Error())
 		return err
 	}
 
@@ -159,7 +160,7 @@ func (db *DB) migrate() error {
 			return err
 		}
 	}
-	db.l.Infof("Database version before migration down: %v, dirty: %v", v1, dirty1)
+	db.l.Info(fmt.Sprintf("Database version before migration down: %v, dirty: %v", v1, dirty1))
 
 	if err := m.Down(); err != nil {
 		if err == migrate.ErrNoChange {
@@ -170,7 +171,7 @@ func (db *DB) migrate() error {
 	}
 
 	v2, dirty2, err := m.Version()
-	db.l.Infof("Database version before migration up: %v, dirty: %v", v2, dirty2)
+	db.l.Info(fmt.Sprintf("Database version before migration up: %v, dirty: %v", v2, dirty2))
 	if err != nil {
 		if err != migrate.ErrNilVersion {
 			return err
@@ -191,7 +192,7 @@ func (db *DB) migrate() error {
 			return err
 		}
 	}
-	db.l.Infof("Database version after migration: %v, dirty: %v", v3, dirty3)
+	db.l.Info(fmt.Sprintf("Database version after migration: %v, dirty: %v", v3, dirty3))
 
 	db.l.Info("Completed database migration.")
 

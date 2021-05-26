@@ -4,19 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
-func NewSqlTaskExecutor(logger *log.Logger) TaskExecutor {
+func NewSqlTaskExecutor(logger *zap.Logger) TaskExecutor {
 	return &SqlTaskExecutor{
 		l: logger,
 	}
 }
 
 type SqlTaskExecutor struct {
-	l *log.Logger
+	l *zap.Logger
 }
 
 func (exec *SqlTaskExecutor) Run(ctx context.Context, server *Server, taskRun api.TaskRun) (terminated bool, err error) {
@@ -29,7 +29,7 @@ func (exec *SqlTaskExecutor) Run(ctx context.Context, server *Server, taskRun ap
 		return true, fmt.Errorf("sql executor: missing sql statement")
 	}
 
-	exec.l.Printf("sql executor: run %v", payload.Sql)
+	exec.l.Info(fmt.Sprintf("sql executor: run %v", payload.Sql))
 
 	// tx, err := exec.db.BeginTx(ctx, nil)
 	// if err != nil {

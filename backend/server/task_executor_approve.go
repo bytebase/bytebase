@@ -2,19 +2,19 @@ package server
 
 import (
 	"context"
-	"log"
 
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
-func NewDefaultTaskExecutor(logger *log.Logger) TaskExecutor {
+func NewDefaultTaskExecutor(logger *zap.Logger) TaskExecutor {
 	return &DefaultTaskExecutor{
 		l: logger,
 	}
 }
 
 type DefaultTaskExecutor struct {
-	l *log.Logger
+	l *zap.Logger
 }
 
 func (exec *DefaultTaskExecutor) Run(ctx context.Context, server *Server, taskRun api.TaskRun) (terminated bool, err error) {

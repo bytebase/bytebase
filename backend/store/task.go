@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // TaskService represents a service for managing task.
 type TaskService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewTaskService returns a new instance of TaskService.
-func NewTaskService(logger *bytebase.Logger, db *DB) *TaskService {
+func NewTaskService(logger *zap.Logger, db *DB) *TaskService {
 	return &TaskService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Ta
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple tasks: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple tasks: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

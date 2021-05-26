@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // DatabaseService represents a service for managing database.
 type DatabaseService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *bytebase.Logger, db *DB) *DatabaseService {
+func NewDatabaseService(logger *zap.Logger, db *DB) *DatabaseService {
 	return &DatabaseService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("database not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found %d databases with filter %v, expect 1. ", len(list), find)
+		s.l.Warn(fmt.Sprintf("found %d databases with filter %v, expect 1. ", len(list), find))
 	}
 	return list[0], nil
 }

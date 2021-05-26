@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // MemberService represents a service for managing member.
 type MemberService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewMemberService returns a new instance of MemberService.
-func NewMemberService(logger *bytebase.Logger, db *DB) *MemberService {
+func NewMemberService(logger *zap.Logger, db *DB) *MemberService {
 	return &MemberService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple members: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple members: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

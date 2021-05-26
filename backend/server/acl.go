@@ -8,13 +8,14 @@ import (
 	"strings"
 
 	"github.com/casbin/casbin/v2"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/labstack/echo/v4"
 )
 
-func ACLMiddleware(l *bytebase.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
+func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
 		if strings.HasPrefix(c.Path(), "/api/auth") {

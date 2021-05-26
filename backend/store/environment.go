@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // EnvironmentService represents a service for managing environment.
 type EnvironmentService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewEnvironmentService returns a new instance of EnvironmentService.
-func NewEnvironmentService(logger *bytebase.Logger, db *DB) *EnvironmentService {
+func NewEnvironmentService(logger *zap.Logger, db *DB) *EnvironmentService {
 	return &EnvironmentService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("environment not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple environments: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple environments: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

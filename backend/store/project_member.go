@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 
 // ProjectMemberService represents a service for managing projectMember.
 type ProjectMemberService struct {
-	l  *bytebase.Logger
+	l  *zap.Logger
 	db *DB
 }
 
 // NewProjectMemberService returns a new instance of ProjectMemberService.
-func NewProjectMemberService(logger *bytebase.Logger, db *DB) *ProjectMemberService {
+func NewProjectMemberService(logger *zap.Logger, db *DB) *ProjectMemberService {
 	return &ProjectMemberService{l: logger, db: db}
 }
 
@@ -76,7 +77,7 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	} else if len(list) == 0 {
 		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project member not found: %v", find)}
 	} else if len(list) > 1 {
-		s.l.Warnf("found mulitple project members: %d, expect 1", len(list))
+		s.l.Warn(fmt.Sprintf("found mulitple project members: %d, expect 1", len(list)))
 	}
 	return list[0], nil
 }

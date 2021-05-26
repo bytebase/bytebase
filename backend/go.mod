@@ -11,5 +11,7 @@ require (
 	github.com/labstack/echo/v4 v4.2.2
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
+	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
 )
