@@ -117,8 +117,14 @@ func (find *TaskFind) String() string {
 	return string(str)
 }
 
+type TaskApprove struct {
+	// Domain specific fields
+	ContainerId int    `jsonapi:"attr,containerId"`
+	Comment     string `jsonapi:"attr,comment"`
+}
+
 type TaskStatusPatch struct {
-	ID int `jsonapi:"primary,taskStatusPatch"`
+	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -129,10 +135,11 @@ type TaskStatusPatch struct {
 	TaskRunId *int
 
 	// Domain specific fields
-	Status TaskStatus `jsonapi:"attr,status"`
+	Status      TaskStatus `jsonapi:"attr,status"`
+	ContainerId int        `jsonapi:"attr,containerId"`
+	Comment     string     `jsonapi:"attr,comment"`
 	// If set will also update the corresponding TaskRunStatus
 	TaskRunStatus *TaskRunStatus
-	Comment       *string `jsonapi:"attr,comment"`
 }
 
 type TaskService interface {

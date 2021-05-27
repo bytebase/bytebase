@@ -246,7 +246,7 @@ export type TaskStatusPatch = {
   comment?: string;
 };
 
-export type TaskStatusChange = {
+export type TaskApprove = {
   // Standard fields
   updaterId: PrincipalId;
 

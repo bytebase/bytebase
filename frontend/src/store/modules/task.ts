@@ -16,7 +16,7 @@ import {
   ResourceIdentifier,
   Principal,
   TaskRun,
-  TaskStatusChange,
+  TaskApprove,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -151,20 +151,20 @@ const actions = {
       issueId,
       pipelineId,
       taskId,
-      taskStatusChange,
+      taskApprove,
     }: {
       issueId: IssueId;
       pipelineId: PipelineId;
       taskId: TaskId;
-      taskStatusChange: TaskStatusChange;
+      taskApprove: TaskApprove;
     }
   ) {
     // TODO: Returns the updated pipeline and update the issue.
     const data = (
       await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/approve`, {
         data: {
-          type: "taskStatusChange",
-          attributes: taskStatusChange,
+          type: "taskApprove",
+          attributes: taskApprove,
         },
       })
     ).data;

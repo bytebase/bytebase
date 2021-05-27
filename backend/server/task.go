@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -21,11 +22,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		taskStatusPatch := &api.TaskStatusPatch{
 			ID:          taskId,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
+		}
+
+		taskFind := &api.TaskFind{
+			ID: &taskId,
+		}
+		task, err := s.TaskService.FindTask(context.Background(), taskFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status.").SetInternal(err)
 		}
 
 		updatedTask, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch)
@@ -40,6 +52,29 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task relationship: %v", updatedTask.Name)).SetInternal(err)
 		}
 
+		// Create an activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+			TaskId:    taskId,
+			OldStatus: task.Status,
+			NewStatus: taskStatusPatch.Status,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing the task status: %v", task.Name)).SetInternal(err)
+		}
+
+		activityCreate := &api.ActivityCreate{
+			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			ContainerId: taskStatusPatch.ContainerId,
+			Type:        api.ActivityPipelineTaskStatusUpdate,
+			Comment:     taskStatusPatch.Comment,
+			Payload:     payload,
+		}
+		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing the task status: %v", task.Name)).SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedTask); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task status response: %s", updatedTask.Name)).SetInternal(err)
@@ -51,6 +86,11 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		taskId, err := strconv.Atoi(c.Param("taskId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskId"))).SetInternal(err)
+		}
+
+		taskApprove := &api.TaskApprove{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskApprove); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change task status request").SetInternal(err)
 		}
 
 		task, err := s.ComposeTaskById(context.Background(), taskId, []string{})
@@ -68,6 +108,29 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		_, err = s.TaskScheduler.Schedule(context.Background(), *task, c.Get(GetPrincipalIdContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task after approval: %v", task.Name))
+		}
+
+		// Create an activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+			TaskId:    taskId,
+			OldStatus: task.Status,
+			NewStatus: api.TaskRunning,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing the task status: %v", task.Name)).SetInternal(err)
+		}
+
+		activityCreate := &api.ActivityCreate{
+			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			ContainerId: taskApprove.ContainerId,
+			Type:        api.ActivityPipelineTaskStatusUpdate,
+			Comment:     taskApprove.Comment,
+			Payload:     payload,
+		}
+		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing the task status: %v", task.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

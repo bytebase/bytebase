@@ -9,11 +9,11 @@ import (
 type ActivityType string
 
 const (
-	ActivityIssueCreate          ActivityType = "bb.issue.create"
-	ActivityIssueCommentCreate   ActivityType = "bb.issue.comment.create"
-	ActivityIssueFieldUpdate     ActivityType = "bb.issue.field.update"
-	ActivityIssueStatusUpdate    ActivityType = "bb.issue.status.update"
-	ActivityPipelineStatusUpdate ActivityType = "bb.pipeline.task.status.update"
+	ActivityIssueCreate              ActivityType = "bb.issue.create"
+	ActivityIssueCommentCreate       ActivityType = "bb.issue.comment.create"
+	ActivityIssueFieldUpdate         ActivityType = "bb.issue.field.update"
+	ActivityIssueStatusUpdate        ActivityType = "bb.issue.status.update"
+	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 )
 
 func (e ActivityType) String() string {
@@ -26,7 +26,7 @@ func (e ActivityType) String() string {
 		return "bb.issue.field.update"
 	case ActivityIssueStatusUpdate:
 		return "bb.issue.status.update"
-	case ActivityPipelineStatusUpdate:
+	case ActivityPipelineTaskStatusUpdate:
 		return "bb.pipeline.task.status.update"
 	}
 	return "bb.activity.unknown"
@@ -39,6 +39,12 @@ func (e ActivityType) String() string {
 type ActivityIssueStatusUpdatePayload struct {
 	OldStatus IssueStatus `json:"oldStatus,omitempty"`
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
+}
+
+type ActivityPipelineTaskStatusUpdatePayload struct {
+	TaskId    int        `json:"taskId"`
+	OldStatus TaskStatus `json:"oldStatus,omitempty"`
+	NewStatus TaskStatus `json:"newStatus,omitempty"`
 }
 
 type Activity struct {

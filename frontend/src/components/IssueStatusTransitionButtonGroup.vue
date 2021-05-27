@@ -146,7 +146,6 @@ import {
 import {
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
-  EMPTY_ID,
   Issue,
   IssueCreate,
   IssueStatusPatch,
@@ -155,10 +154,10 @@ import {
   ISSUE_STATUS_TRANSITION_LIST,
   Principal,
   TaskId,
-  TaskStatusChange,
+  TaskApprove,
   TaskStatusPatch,
 } from "../types";
-import { OutputField, IssueTemplate } from "../plugins";
+import { IssueTemplate } from "../plugins";
 import { isEmpty } from "lodash";
 
 interface UpdateStatusModalState {
@@ -276,7 +275,7 @@ export default {
       comment?: string
     ) => {
       if (transition.type == "APPROVE") {
-        const taskStatusChange: TaskStatusChange = {
+        const taskApprove: TaskApprove = {
           updaterId: currentUser.value.id,
           containerId: (props.issue as Issue).id,
           comment: comment ? comment.trim() : undefined,
@@ -286,7 +285,7 @@ export default {
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId,
-          taskStatusChange,
+          taskApprove,
         });
       } else {
         const taskStatusPatch: TaskStatusPatch = {

@@ -117,7 +117,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "CANCEL",
       to: "CANCELED",
-      buttonName: "Cancel this issue",
+      buttonName: "Cancel issue",
       buttonClass: "btn-normal",
     },
   ],
