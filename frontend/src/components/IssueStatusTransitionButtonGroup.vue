@@ -56,7 +56,7 @@
           class="
             origin-top-right
             absolute
-            w-24
+            w-42
             right-0
             mt-10
             rounded-md
@@ -383,9 +383,9 @@ export default {
           updateStatusModalState.style = "SUCCESS";
           updateStatusModalState.title = "Resolve issue?";
           break;
-        case "ABORT":
+        case "CANCEL":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Abort issue?";
+          updateStatusModalState.title = "Cancel this entire issue?";
           break;
         case "REOPEN":
           updateStatusModalState.style = "INFO";

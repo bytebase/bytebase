@@ -668,7 +668,7 @@ export default {
             case "DONE":
               return "resolved issue";
             case "CANCELED":
-              return "aborted issue";
+              return "canceled issue";
           }
         }
         case "bb.pipeline.task.status.update": {

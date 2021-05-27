@@ -46,7 +46,7 @@ export default {
           transition = "RESOLVE";
           break;
         case "CANCELED":
-          transition = "ABORT";
+          transition = "CANCEL";
           break;
       }
       emit("start-transition", transition, didChange);

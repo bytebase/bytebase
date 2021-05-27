@@ -90,7 +90,7 @@ export type IssueStatusPatch = {
   comment?: string;
 };
 
-export type IssueStatusTransitionType = "RESOLVE" | "ABORT" | "REOPEN";
+export type IssueStatusTransitionType = "RESOLVE" | "CANCEL" | "REOPEN";
 
 export interface IssueStatusTransition {
   type: IssueStatusTransitionType;
@@ -113,11 +113,11 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     },
   ],
   [
-    "ABORT",
+    "CANCEL",
     {
-      type: "ABORT",
+      type: "CANCEL",
       to: "CANCELED",
-      buttonName: "Abort",
+      buttonName: "Cancel this issue",
       buttonClass: "btn-normal",
     },
   ],
@@ -138,7 +138,7 @@ export const CREATOR_APPLICABLE_ACTION_LIST: Map<
   IssueStatus,
   IssueStatusTransitionType[]
 > = new Map([
-  ["OPEN", ["ABORT"]],
+  ["OPEN", ["CANCEL"]],
   ["DONE", ["REOPEN"]],
   ["CANCELED", ["REOPEN"]],
 ]);
@@ -147,7 +147,7 @@ export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
   IssueStatus,
   IssueStatusTransitionType[]
 > = new Map([
-  ["OPEN", ["RESOLVE", "ABORT"]],
+  ["OPEN", ["RESOLVE", "CANCEL"]],
   ["DONE", ["REOPEN"]],
   ["CANCELED", ["REOPEN"]],
 ]);

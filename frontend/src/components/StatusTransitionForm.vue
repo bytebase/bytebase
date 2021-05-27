@@ -157,7 +157,7 @@ export default {
           switch ((props.transition as IssueStatusTransition).type) {
             case "RESOLVE":
               return "btn-success";
-            case "ABORT":
+            case "CANCEL":
               return "btn-danger";
             case "REOPEN":
               return "btn-primary";
