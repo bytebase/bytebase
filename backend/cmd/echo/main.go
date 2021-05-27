@@ -25,7 +25,7 @@ type Main struct {
 }
 
 func NewMain() *Main {
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic("Failed to create logger.")
 	}

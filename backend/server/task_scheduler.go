@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -41,11 +40,7 @@ func (s *TaskScheduler) Run() error {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						stack := make([]byte, STACK_SIZE)
-						length := runtime.Stack(stack, ALL_STACK)
-						msg := fmt.Sprintf("[Scheduler PANIC RECOVER] %v %s\n", err, stack[:length])
-
-						s.l.Info(msg)
+						s.l.Error("Scheduler PANIC RECOVER", zap.Error(err))
 					}
 				}()
 				status := api.TaskRunPending

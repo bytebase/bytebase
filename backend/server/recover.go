@@ -2,15 +2,9 @@ package server
 
 import (
 	"fmt"
-	"runtime"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
-)
-
-const (
-	STACK_SIZE = 4 << 10 // 4 KB
-	ALL_STACK  = true
 )
 
 func RecoverMiddleware(l *zap.Logger, next echo.HandlerFunc) echo.HandlerFunc {
@@ -21,11 +15,7 @@ func RecoverMiddleware(l *zap.Logger, next echo.HandlerFunc) echo.HandlerFunc {
 				if !ok {
 					err = fmt.Errorf("%v", r)
 				}
-				stack := make([]byte, STACK_SIZE)
-				length := runtime.Stack(stack, ALL_STACK)
-				msg := fmt.Sprintf("[Middleware PANIC RECOVER] %v %s\n", err, stack[:length])
-
-				l.Error(msg)
+				l.Error("Middleware PANIC RECOVER", zap.Error(err))
 
 				c.Error(err)
 			}
