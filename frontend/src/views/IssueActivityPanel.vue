@@ -390,6 +390,7 @@ import {
   EMPTY_ID,
   SYSTEM_BOT_ID,
   IssueStatus,
+  ActionIssueStatusUpdatePayload,
 } from "../types";
 import { findTaskById, sizeToFit, stageName } from "../utils";
 import {
@@ -580,8 +581,7 @@ export default {
           return "created issue";
         case "bb.issue.comment.create":
           return "commented";
-        case "bb.issue.field.update":
-        case "bb.issue.status.update": {
+        case "bb.issue.field.update": {
           const updateInfoList: string[] = [];
           for (const update of (activity.payload as ActionFieldUpdatePayload)
             ?.changeList || []) {
@@ -590,20 +590,6 @@ export default {
             let newValue = undefined;
 
             switch (update.fieldId) {
-              case IssueBuiltinFieldId.STATUS: {
-                const newStatus = update.newValue as IssueStatus;
-                switch (newStatus) {
-                  case "OPEN":
-                    updateInfoList.push(`reopened issue`);
-                    break;
-                  case "DONE":
-                    updateInfoList.push(`resolved issue`);
-                    break;
-                  case "CANCELED":
-                    updateInfoList.push(`aborted issue`);
-                    break;
-                }
-              }
               case IssueBuiltinFieldId.ASSIGNEE: {
                 if (update.oldValue && update.newValue) {
                   const oldName = store.getters["principal/principalById"](
@@ -673,6 +659,17 @@ export default {
             return updateInfoList.join("; ");
           }
           return "updated";
+        }
+        case "bb.issue.status.update": {
+          const update = activity.payload as ActionIssueStatusUpdatePayload;
+          switch (update.newStatus) {
+            case "OPEN":
+              return "reopened issue";
+            case "DONE":
+              return "resolved issue";
+            case "CANCELED":
+              return "aborted issue";
+          }
         }
         case "bb.pipeline.task.status.update": {
           if (props.issue.pipeline.id != EMPTY_ID) {

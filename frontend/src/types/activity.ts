@@ -1,5 +1,6 @@
 import { FieldId } from "../plugins";
 import { ActivityId, ContainerId, PrincipalId, TaskId } from "./id";
+import { IssueStatus } from "./issue";
 import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 
@@ -20,6 +21,11 @@ export type ActionFieldUpdatePayload = {
   }[];
 };
 
+export type ActionIssueStatusUpdatePayload = {
+  oldStatus: IssueStatus;
+  newStatus: IssueStatus;
+};
+
 export type ActionTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
@@ -28,6 +34,7 @@ export type ActionTaskStatusUpdatePayload = {
 
 export type ActionPayloadType =
   | ActionFieldUpdatePayload
+  | ActionIssueStatusUpdatePayload
   | ActionTaskStatusUpdatePayload;
 
 export type Activity = {

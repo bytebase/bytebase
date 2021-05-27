@@ -163,7 +163,7 @@ type IssueStatusPatch struct {
 
 	// Domain specific fields
 	Status  IssueStatus `jsonapi:"attr,status"`
-	Comment *string     `jsonapi:"attr,comment"`
+	Comment string      `jsonapi:"attr,comment"`
 }
 
 type IssueService interface {

@@ -32,6 +32,15 @@ func (e ActivityType) String() string {
 	return "bb.activity.unknown"
 }
 
+// These payload types are only used when marshalling to the json format for saving into the database.
+// So we annotate with json tag using camelCase naming which is consistent with normal
+// json naming convention. More importantly, frontend code can simply use JSON.parse to
+// convert to the expected struct there.
+type ActivityIssueStatusUpdatePayload struct {
+	OldStatus IssueStatus `json:"oldStatus,omitempty"`
+	NewStatus IssueStatus `json:"newStatus,omitempty"`
+}
+
 type Activity struct {
 	ID int `jsonapi:"primary,activity"`
 
@@ -65,7 +74,7 @@ type ActivityCreate struct {
 	ContainerId int          `jsonapi:"attr,containerId"`
 	Type        ActivityType `jsonapi:"attr,actionType"`
 	Comment     string       `jsonapi:"attr,comment"`
-	Payload     string       `jsonapi:"attr,payload"`
+	Payload     []byte       `jsonapi:"attr,payload"`
 }
 
 type ActivityFind struct {

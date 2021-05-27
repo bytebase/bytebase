@@ -240,7 +240,7 @@ export type TaskStatusPatch = {
   updaterId: PrincipalId;
 
   // Domain specific fields
-  // This is the container containing the pipeline this task belongs.
+  // This is the id for the container such as issue containing the pipeline this task belongs.
   containerId: ContainerId;
   status: TaskStatus;
   comment?: string;
@@ -251,7 +251,7 @@ export type TaskStatusChange = {
   updaterId: PrincipalId;
 
   // Domain specific fields
-  // This is the container containing the pipeline this task belongs.
+  // This is the id for the container such as issue containing the pipeline this task belongs.
   containerId: ContainerId;
   comment?: string;
 };

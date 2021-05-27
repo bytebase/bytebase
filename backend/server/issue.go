@@ -272,6 +272,27 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue ID: %v", id)).SetInternal(err)
 		}
 
+		payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+			OldStatus: issue.Status,
+			NewStatus: issueStatusPatch.Status,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing the issue status: %v", issue.Name)).SetInternal(err)
+		}
+
+		activityCreate := &api.ActivityCreate{
+			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			ContainerId: issue.ID,
+			Type:        api.ActivityIssueStatusUpdate,
+			Comment:     issueStatusPatch.Comment,
+			Payload:     payload,
+		}
+		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing the issue status: %v", issue.Name)).SetInternal(err)
+		}
+
 		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
