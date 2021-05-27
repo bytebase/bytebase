@@ -20,7 +20,16 @@
                 <template v-if="activity.actionType == 'bb.issue.create'">
                   <div class="relative pl-0.5">
                     <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
                     >
                       <svg
                         class="w-5 h-5 text-control"
@@ -42,7 +51,16 @@
                 >
                   <div class="relative pl-0.5">
                     <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
                     >
                       <svg
                         class="w-4 h-4 text-control"
@@ -61,7 +79,16 @@
                   <div class="relative">
                     <div class="relative pl-0.5">
                       <div
-                        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+                        class="
+                          w-7
+                          h-7
+                          bg-control-bg
+                          rounded-full
+                          ring-4 ring-white
+                          flex
+                          items-center
+                          justify-center
+                        "
                       >
                         <img
                           class="mt-1"
@@ -86,7 +113,12 @@
                     <div class="text-sm text-control-light">
                       <router-link
                         :to="`/u/${activity.creator.id}`"
-                        class="font-medium text-main whitespace-nowrap hover:underline"
+                        class="
+                          font-medium
+                          text-main
+                          whitespace-nowrap
+                          hover:underline
+                        "
                         >{{ activity.creator.name }}</router-link
                       >
                       <a
@@ -118,14 +150,46 @@
                       >
                         <button
                           type="button"
-                          class="rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                          class="
+                            rounded-sm
+                            text-control
+                            hover:bg-control-bg-hover
+                            disabled:bg-control-bg
+                            disabled:opacity-50
+                            disabled:cursor-not-allowed
+                            px-2
+                            text-xs
+                            leading-5
+                            font-normal
+                            focus:ring-control
+                            focus:outline-none
+                            focus-visible:ring-2
+                            focus:ring-offset-2
+                          "
                           @click.prevent="cancelEditComment"
                         >
                           Cancel
                         </button>
                         <button
                           type="button"
-                          class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                          class="
+                            border border-control-border
+                            rounded-sm
+                            text-control
+                            bg-control-bg
+                            hover:bg-control-bg-hover
+                            disabled:bg-control-bg
+                            disabled:opacity-50
+                            disabled:cursor-not-allowed
+                            px-2
+                            text-xs
+                            leading-5
+                            font-normal
+                            focus:ring-control
+                            focus:outline-none
+                            focus-visible:ring-2
+                            focus:ring-offset-2
+                          "
                           :disabled="!allowUpdateComment"
                           @click.prevent="doUpdateComment"
                         >
@@ -227,7 +291,15 @@
               <div class="relative">
                 <BBAvatar :username="currentUser.name"> </BBAvatar>
                 <span
-                  class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
+                  class="
+                    absolute
+                    -bottom-0.5
+                    -right-1
+                    bg-white
+                    rounded-tl
+                    px-0.5
+                    py-px
+                  "
                 >
                   <!-- Heroicon name: solid/chat-alt -->
                   <svg
