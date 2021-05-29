@@ -13,6 +13,18 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var (
+	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
+		"PENDING":          {"RUNNING", "SKIPPED"},
+		"PENDING_APPROVAL": {"PENDING", "SKIPPED"},
+		"RUNNING":          {"DONE", "FAILED", "CANCELED"},
+		"DONE":             {},
+		"FAILED":           {"RUNNING"},
+		"CANCELED":         {"RUNNING"},
+		"SKIPPED":          {},
+	}
+)
+
 func (s *Server) registerTaskRoutes(g *echo.Group) {
 	g.PATCH("/pipeline/:pipelineId/task/:taskId/status", func(c echo.Context) error {
 		taskId, err := strconv.Atoi(c.Param("taskId"))
@@ -38,6 +50,19 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status.").SetInternal(err)
+		}
+
+		allowTransition := false
+		for _, allowedStatus := range applicableTaskStatusTransition[task.Status] {
+			if allowedStatus == taskStatusPatch.Status {
+				allowTransition = true
+				break
+			}
+		}
+
+		if !allowTransition {
+			return echo.NewHTTPError(http.StatusBadRequest,
+				fmt.Sprintf("Invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]))
 		}
 
 		updatedTask, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch)
@@ -114,7 +139,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
 			TaskId:    taskId,
 			OldStatus: task.Status,
-			NewStatus: api.TaskRunning,
+			NewStatus: api.TaskPending,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing the task status: %v", task.Name)).SetInternal(err)
