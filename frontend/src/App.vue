@@ -21,7 +21,8 @@ import { BBNotificationItem } from "./bbkit/types";
 // Check expiration every 30 sec and logout if expired
 const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
 
-const NOTIFICAITON_DURATION = 8000;
+const NOTIFICAITON_DURATION = 6000;
+const CRITICAL_NOTIFICAITON_DURATION = 10000;
 
 interface LocalState {
   notificationList: BBNotificationItem[];
@@ -71,12 +72,15 @@ export default {
               linkTitle: notification.linkTitle || "",
             });
             // state.notification = notification;
-            // We don't want user to miss "CRITICAL" notification and
-            // thus don't automatically dismiss it.
-            if (notification.style != "CRITICAL" && !notification.manualHide) {
-              setTimeout(() => {
-                removeNotification(notification.id);
-              }, NOTIFICAITON_DURATION);
+            if (!notification.manualHide) {
+              setTimeout(
+                () => {
+                  removeNotification(notification.id);
+                },
+                notification.style == "CRITICAL"
+                  ? CRITICAL_NOTIFICAITON_DURATION
+                  : NOTIFICAITON_DURATION
+              );
             }
           }
         });
