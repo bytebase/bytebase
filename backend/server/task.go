@@ -130,22 +130,17 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task is not waiting for approval: %v", task.Name))
 		}
 
-		_, err = s.TaskScheduler.Schedule(context.Background(), *task, c.Get(GetPrincipalIdContextKey()).(int))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task after approval: %v", task.Name))
-		}
-
-		// Create an activity
+		// Create an approval activity
 		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
 			TaskId:    taskId,
 			OldStatus: task.Status,
 			NewStatus: api.TaskPending,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing the task status: %v", task.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after approving the task: %v", task.Name)).SetInternal(err)
 		}
 
-		activityCreate := &api.ActivityCreate{
+		activityApproval := &api.ActivityCreate{
 			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			ContainerId: taskApprove.ContainerId,
@@ -153,9 +148,38 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			Comment:     taskApprove.Comment,
 			Payload:     payload,
 		}
-		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+		_, err = s.ActivityService.CreateActivity(context.Background(), activityApproval)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing the task status: %v", task.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create approval activity: %v", task.Name)).SetInternal(err)
+		}
+
+		// Schedule the task
+		_, err = s.TaskScheduler.Schedule(context.Background(), *task, c.Get(GetPrincipalIdContextKey()).(int))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task after approval: %v", task.Name))
+		}
+
+		// Create a task running activity
+		payload, err = json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+			TaskId:    taskId,
+			OldStatus: api.TaskPending,
+			NewStatus: api.TaskRunning,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after scheduling the task: %v", task.Name)).SetInternal(err)
+		}
+
+		activityTaskRunning := &api.ActivityCreate{
+			// Task is invoked by the system
+			CreatorId:   api.SYSTEM_BOT_ID,
+			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			ContainerId: taskApprove.ContainerId,
+			Type:        api.ActivityPipelineTaskStatusUpdate,
+			Payload:     payload,
+		}
+		_, err = s.ActivityService.CreateActivity(context.Background(), activityTaskRunning)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after scheduling the task: %v", task.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
