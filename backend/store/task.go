@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -18,11 +19,13 @@ var (
 type TaskService struct {
 	l  *zap.Logger
 	db *DB
+
+	TaskRunService api.TaskRunService
 }
 
 // NewTaskService returns a new instance of TaskService.
-func NewTaskService(logger *zap.Logger, db *DB) *TaskService {
-	return &TaskService{l: logger, db: db}
+func NewTaskService(logger *zap.Logger, db *DB, taskRunService api.TaskRunService) *TaskService {
+	return &TaskService{l: logger, db: db, TaskRunService: taskRunService}
 }
 
 // CreateTask creates a new task.
@@ -71,15 +74,7 @@ func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Ta
 	}
 	defer tx.Rollback()
 
-	list, err := s.findTaskList(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task not found: %v", find)}
-	} else if len(list) > 1 {
-		s.l.Warn(fmt.Sprintf("found mulitple tasks: %d, expect 1", len(list)))
-	}
-	return list[0], nil
+	return s.findTask(ctx, tx, find)
 }
 
 // PatchTaskStatus updates an existing task status and the correspondng task run status atomically.
@@ -140,6 +135,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 
 	row.Next()
 	var task api.Task
+	task.TaskRunList = []*api.TaskRun{}
 	if err := row.Scan(
 		&task.ID,
 		&task.CreatorId,
@@ -161,6 +157,18 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 	return &task, nil
 }
 
+func (s *TaskService) findTask(ctx context.Context, tx *Tx, find *api.TaskFind) (_ *api.Task, err error) {
+	list, err := s.findTaskList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task not found: %v", find)}
+	} else if len(list) > 1 {
+		s.l.Warn(fmt.Sprintf("found mulitple tasks: %d, expect 1", len(list)))
+	}
+	return list[0], nil
+}
+
 func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFind) (_ []*api.Task, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -175,6 +183,9 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	}
 	if v := find.StageId; v != nil {
 		where, args = append(where, "stage_id = ?"), append(args, *v)
+	}
+	if v := find.Status; v != nil {
+		where, args = append(where, "`status` = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -223,6 +234,14 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			return nil, FormatError(err)
 		}
 
+		taskRunFind := &api.TaskRunFind{
+			TaskId: &task.ID,
+		}
+		task.TaskRunList, err = s.TaskRunService.FindTaskRunList(ctx, tx.Tx, taskRunFind)
+		if err != nil {
+			return nil, err
+		}
+
 		list = append(list, &task)
 	}
 	if err := rows.Err(); err != nil {
@@ -236,15 +255,65 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to
 	// arrange code to prevent that opening row interfering with the task run update.
-	if patch.TaskRunId != nil && patch.TaskRunStatus != nil {
-		taskRunStatusPatch := &taskRunStatusPatch{
-			ID:     patch.TaskRunId,
-			TaskId: &patch.ID,
-			Status: *patch.TaskRunStatus,
+	taskFind := &api.TaskFind{
+		ID: &patch.ID,
+	}
+	task, err := s.findTask(ctx, tx, taskFind)
+	if err != nil {
+		return nil, err
+	}
+
+	if !(task.Status == api.TaskPendingApproval && patch.Status == api.TaskPending) {
+		taskRunFind := &api.TaskRunFind{
+			TaskId: &task.ID,
+			StatusList: []api.TaskRunStatus{
+				api.TaskRunRunning,
+			},
+		}
+		taskRun, err := s.TaskRunService.FindTaskRun(ctx, tx.Tx, taskRunFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				if patch.Status != api.TaskRunning {
+					return nil, fmt.Errorf("no applicable running task to change status")
+				}
+			} else {
+				return nil, err
+			}
+		} else if patch.Status == api.TaskRunning {
+			return nil, fmt.Errorf("task is already running: %v", task.Name)
 		}
 
-		if err := patchTaskRunStatus(ctx, tx, taskRunStatusPatch); err != nil {
-			return nil, FormatError(err)
+		if patch.Status == api.TaskRunning {
+			taskRunCreate := &api.TaskRunCreate{
+				CreatorId:   patch.UpdaterId,
+				WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+				TaskId:      task.ID,
+				Name:        fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+				Type:        task.Type,
+				Payload:     task.Payload,
+			}
+			if _, err := s.TaskRunService.CreateTaskRun(ctx, tx.Tx, taskRunCreate); err != nil {
+				return nil, err
+			}
+		} else {
+			taskRunStatusPatch := &api.TaskRunStatusPatch{
+				ID:     &taskRun.ID,
+				TaskId: &patch.ID,
+			}
+			switch patch.Status {
+			case api.TaskDone:
+				taskRunStatusPatch.Status = api.TaskRunDone
+			case api.TaskFailed:
+				taskRunStatusPatch.Status = api.TaskRunFailed
+			case api.TaskPending:
+			case api.TaskPendingApproval:
+			case api.TaskCanceled:
+			case api.TaskSkipped:
+				taskRunStatusPatch.Status = api.TaskRunCanceled
+			}
+			if _, err := s.TaskRunService.PatchTaskRunStatus(ctx, tx.Tx, taskRunStatusPatch); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -288,46 +357,16 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			return nil, FormatError(err)
 		}
 
+		taskRunFind := &api.TaskRunFind{
+			TaskId: &task.ID,
+		}
+		task.TaskRunList, err = s.TaskRunService.FindTaskRunList(ctx, tx.Tx, taskRunFind)
+		if err != nil {
+			return nil, err
+		}
+
 		return &task, nil
 	}
 
 	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task ID not found: %d", patch.ID)}
-}
-
-type taskRunStatusPatch struct {
-	ID *int
-
-	// Related fields
-	TaskId *int
-
-	// Domain specific fields
-	Status api.TaskRunStatus
-}
-
-// patchTaskRun updates a taskRun by ID. Returns the new state of the taskRun after update.
-func patchTaskRunStatus(ctx context.Context, tx *Tx, patch *taskRunStatusPatch) error {
-	// Build UPDATE clause.
-	set, args := []string{}, []interface{}{}
-	set, args = append(set, "`status` = ?"), append(args, patch.Status)
-
-	// Build WHERE clause.
-	where := []string{"1 = 1"}
-	if v := patch.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
-	}
-	if v := patch.TaskId; v != nil {
-		where, args = append(where, "task_id = ?"), append(args, *v)
-	}
-
-	_, err := tx.ExecContext(ctx, `
-		UPDATE task_run
-		SET `+strings.Join(set, ", ")+`
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -238,13 +238,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			for _, stage := range issue.Pipeline.StageList {
 				for _, task := range stage.TaskList {
 					if task.Status == api.TaskRunning {
-						taskStatusPatch := &api.TaskStatusPatch{
-							ID:          id,
-							WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-							UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-							Status:      api.TaskCanceled,
-						}
-						if _, err := s.TaskService.PatchTaskStatus(context.Background(), taskStatusPatch); err != nil {
+						if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, c.Get(GetPrincipalIdContextKey()).(int)); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v.", issue.Name, task.Name)).SetInternal(err)
 						}
 					}

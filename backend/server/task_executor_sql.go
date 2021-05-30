@@ -20,9 +20,9 @@ type SqlTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *SqlTaskExecutor) Run(ctx context.Context, server *Server, taskRun api.TaskRun) (terminated bool, err error) {
+func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
-	if err := json.Unmarshal(taskRun.Payload, payload); err != nil {
+	if err := json.Unmarshal(task.Payload, payload); err != nil {
 		return true, fmt.Errorf("sql executor: invalid payload: %w", err)
 	}
 
@@ -32,8 +32,7 @@ func (exec *SqlTaskExecutor) Run(ctx context.Context, server *Server, taskRun ap
 
 	exec.l.Info(fmt.Sprintf("sql executor: run %v", payload.Sql))
 
-	task, err := server.ComposeTaskById(ctx, taskRun.TaskId, []string{SECRET_KEY})
-	if err != nil {
+	if err := server.ComposeTaskRelationship(ctx, task, []string{}); err != nil {
 		return true, err
 	}
 

@@ -43,42 +43,34 @@ func (s *TaskScheduler) Run() error {
 						s.l.Error("Scheduler PANIC RECOVER", zap.Error(err))
 					}
 				}()
-				status := api.TaskRunPending
-				taskRunFind := &api.TaskRunFind{
-					Status: &status,
+				workspaceId := api.DEFAULT_WORKPSACE_ID
+				status := api.TaskRunning
+				taskFind := &api.TaskFind{
+					WorkspaceId: &workspaceId,
+					Status:      &status,
 				}
-				list, err := s.server.TaskRunService.FindTaskRunList(context.Background(), taskRunFind)
+				list, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {
-					s.l.Info(fmt.Sprintf("Failed to retrieve pending tasks: %v\n", err))
+					s.l.Info(fmt.Sprintf("Failed to retrieve running tasks: %v\n", err))
 				}
 
-				for _, taskRun := range list {
-					executor, ok := s.executors[string(taskRun.Type)]
+				for _, task := range list {
+					executor, ok := s.executors[string(task.Type)]
 					if !ok {
-						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip.", taskRun.Type))
+						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip.", task.Type))
 						continue
 					}
 
-					s.l.Info(fmt.Sprintf("Try to change task '%v(%v)' to RUNNING.\n", taskRun.Name, taskRun.ID))
-					if err := s.server.ChangeTaskStatus(taskRun, api.TaskRunning); err != nil {
-						s.l.Info(fmt.Sprintf("Failed to change task: %v.\n", err))
-						continue
-					}
-
-					done, err := executor.Run(context.Background(), s.server, *taskRun)
+					done, err := executor.RunOnce(context.Background(), s.server, task)
 					if done {
 						if err != nil {
-							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v.\n", taskRun.Name, taskRun.ID, err))
-							if err := s.server.ChangeTaskStatus(taskRun, api.TaskFailed); err != nil {
-								s.l.Info(fmt.Sprintf("Failed to change task: %v.\n", err))
-							}
+							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v.\n", task.Name, task.ID, err))
+							s.server.ChangeTaskStatus(context.Background(), task, api.TaskFailed, api.SYSTEM_BOT_ID)
 							continue
 						}
 
-						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'.\n", taskRun.Name, taskRun.ID))
-						if err := s.server.ChangeTaskStatus(taskRun, api.TaskDone); err != nil {
-							s.l.Info(fmt.Sprintf("Failed to change task: %v.\n", err))
-						}
+						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'.\n", task.Name, task.ID))
+						s.server.ChangeTaskStatus(context.Background(), task, api.TaskDone, api.SYSTEM_BOT_ID)
 					}
 				}
 			}()
@@ -98,19 +90,12 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 	s.executors[taskType] = executor
 }
 
-func (s *TaskScheduler) Schedule(ctx context.Context, task api.Task, creatorId int) (*api.TaskRun, error) {
-	taskRunCreate := &api.TaskRunCreate{
-		CreatorId:   creatorId,
-		WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-		TaskId:      task.ID,
-		Name:        fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-		Type:        task.Type,
-		Payload:     task.Payload,
-	}
-	createdTaskRun, err := s.server.TaskRunService.CreateTaskRun(ctx, taskRunCreate)
+func (s *TaskScheduler) Schedule(ctx context.Context, task *api.Task) (*api.Task, error) {
+	s.l.Info(fmt.Sprintf("Try to change task '%v(%v)' to RUNNING.\n", task.Name, task.ID))
+	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SYSTEM_BOT_ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task: %w", err)
+		return nil, err
 	}
 
-	return createdTaskRun, nil
+	return updatedTask, nil
 }

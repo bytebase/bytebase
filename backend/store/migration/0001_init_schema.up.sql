@@ -596,7 +596,7 @@ CREATE TABLE activity (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     workspace_id INTEGER NOT NULL REFERENCES workspace (id),
-    container_id INTEGER NOT NULL,
+    container_id INTEGER NOT NULL CHECK (container_id != 0),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
     COMMENT TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''

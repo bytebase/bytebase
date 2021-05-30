@@ -107,6 +107,9 @@ type TaskFind struct {
 	// Related fields
 	PipelineId *int
 	StageId    *int
+
+	// Domain specific fields
+	Status *TaskStatus `jsonapi:"attr,status"`
 }
 
 func (find *TaskFind) String() string {
@@ -131,15 +134,10 @@ type TaskStatusPatch struct {
 	UpdaterId   int
 	WorkspaceId int
 
-	// Related fields
-	TaskRunId *int
-
 	// Domain specific fields
 	Status      TaskStatus `jsonapi:"attr,status"`
 	ContainerId int        `jsonapi:"attr,containerId"`
 	Comment     string     `jsonapi:"attr,comment"`
-	// If set will also update the corresponding TaskRunStatus
-	TaskRunStatus *TaskRunStatus
 }
 
 type TaskService interface {

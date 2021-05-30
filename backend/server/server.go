@@ -38,7 +38,6 @@ type Server struct {
 	PipelineService      api.PipelineService
 	StageService         api.StageService
 	TaskService          api.TaskService
-	TaskRunService       api.TaskRunService
 	ActivityService      api.ActivityService
 	BookmarkService      api.BookmarkService
 

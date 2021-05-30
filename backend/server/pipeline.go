@@ -48,7 +48,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPending {
-				_, err := s.TaskScheduler.Schedule(context.Background(), *task, api.SYSTEM_BOT_ID)
+				_, err := s.TaskScheduler.Schedule(context.Background(), task)
 				if err != nil {
 					return err
 				}

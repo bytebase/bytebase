@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 )
 
@@ -76,7 +77,7 @@ type TaskRunFind struct {
 	TaskId *int
 
 	// Domain specific fields
-	Status *TaskRunStatus
+	StatusList []TaskRunStatus
 }
 
 func (find *TaskRunFind) String() string {
@@ -87,15 +88,19 @@ func (find *TaskRunFind) String() string {
 	return string(str)
 }
 
-type TaskRunStatusChange struct {
-	ID int
+type TaskRunStatusPatch struct {
+	ID *int
+
+	// Related fields
+	TaskId *int
 
 	// Domain specific fields
 	Status TaskRunStatus
 }
 
 type TaskRunService interface {
-	CreateTaskRun(ctx context.Context, create *TaskRunCreate) (*TaskRun, error)
-	FindTaskRunList(ctx context.Context, find *TaskRunFind) ([]*TaskRun, error)
-	FindTaskRun(ctx context.Context, find *TaskRunFind) (*TaskRun, error)
+	CreateTaskRun(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
+	FindTaskRunList(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
+	FindTaskRun(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRun, error)
+	PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRun, error)
 }
