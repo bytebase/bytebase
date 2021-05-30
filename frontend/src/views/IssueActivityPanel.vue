@@ -681,6 +681,8 @@ export default {
                 case "PENDING": {
                   if (payload.oldStatus == "RUNNING") {
                     str = `canceled task "${task.name}"`;
+                  } else if (payload.oldStatus == "PENDING_APPROVAL") {
+                    str = `approved task "${task.name}"`;
                   }
                   break;
                 }
