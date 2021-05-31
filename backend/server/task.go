@@ -50,7 +50,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status.").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 
 		updatedTask, err := s.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
@@ -58,16 +58,16 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if bytebase.ErrorCode(err) == bytebase.EINVALID {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task status: %d", taskId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
 
 		if err := s.ComposeTaskRelationship(context.Background(), updatedTask, c.Get(getIncludeKey()).([]string)); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task relationship: %v", updatedTask.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedTask); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task status response: %s", updatedTask.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", updatedTask.Name)).SetInternal(err)
 		}
 		return nil
 	})
@@ -106,22 +106,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if bytebase.ErrorCode(err) == bytebase.EINVALID {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to approve task: %v", task.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to approve task \"%v\"", task.Name)).SetInternal(err)
 		}
 
 		// Schedule the task
 		scheduledTask, err := s.TaskScheduler.Schedule(context.Background(), updatedTask)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task after approval: %v", task.Name))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task \"%v\" after approval", task.Name))
 		}
 
 		if err := s.ComposeTaskRelationship(context.Background(), scheduledTask, c.Get(getIncludeKey()).([]string)); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch approved task relationship: %v", updatedTask.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch approved task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, scheduledTask); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal approved task status response: %s", updatedTask.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal approved task \"%v\" status response", updatedTask.Name)).SetInternal(err)
 		}
 		return nil
 	})
