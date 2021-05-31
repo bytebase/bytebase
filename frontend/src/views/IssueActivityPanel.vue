@@ -17,7 +17,40 @@
                 aria-hidden="true"
               ></span>
               <div class="relative flex items-start">
-                <template v-if="activity.actionType == 'bb.issue.create'">
+                <template v-if="actionIcon(activity) == 'system'">
+                  <div class="relative">
+                    <div class="relative pl-0.5">
+                      <div
+                        class="
+                          w-7
+                          h-7
+                          bg-control-bg
+                          rounded-full
+                          ring-4 ring-white
+                          flex
+                          items-center
+                          justify-center
+                        "
+                      >
+                        <img
+                          class="mt-1"
+                          src="../assets/logo-imageonly.svg"
+                          alt="Bytebase"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="actionIcon(activity) == 'avatar'">
+                  <div class="relative">
+                    <BBAvatar
+                      class="rounded-full ring-4 ring-white"
+                      :username="activity.creator.name"
+                    >
+                    </BBAvatar>
+                  </div>
+                </template>
+                <template v-else-if="actionIcon(activity) == 'create'">
                   <div class="relative pl-0.5">
                     <div
                       class="
@@ -46,9 +79,7 @@
                     </div>
                   </div>
                 </template>
-                <template
-                  v-else-if="activity.actionType == 'bb.issue.field.update'"
-                >
+                <template v-else-if="actionIcon(activity) == 'update'">
                   <div class="relative pl-0.5">
                     <div
                       class="
@@ -75,51 +106,209 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="activity.creator.id == SYSTEM_BOT_ID">
-                  <div class="relative">
-                    <div class="relative pl-0.5">
-                      <div
-                        class="
-                          w-7
-                          h-7
-                          bg-control-bg
-                          rounded-full
-                          ring-4 ring-white
-                          flex
-                          items-center
-                          justify-center
-                        "
+                <template v-else-if="actionIcon(activity) == 'run'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      <svg
+                        class="w-6 h-6 text-control"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        <img
-                          class="mt-1"
-                          src="../assets/logo-imageonly.svg"
-                          alt="Bytebase"
-                        />
-                      </div>
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                        ></path>
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
                     </div>
                   </div>
                 </template>
-                <template v-else>
-                  <div class="relative">
-                    <BBAvatar
-                      class="rounded-full ring-4 ring-white"
-                      :username="activity.creator.name"
+                <template v-else-if="actionIcon(activity) == 'approve'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
                     >
-                    </BBAvatar>
+                      <svg
+                        class="w-5 h-5 text-control"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="actionIcon(activity) == 'cancel'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      <svg
+                        class="w-5 h-5 text-control"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M20 12H4"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="actionIcon(activity) == 'skip'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      <svg
+                        class="w-5 h-5 text-control"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M20 12H4"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="actionIcon(activity) == 'fail'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      <svg
+                        class="w-6 h-6 text-control"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="actionIcon(activity) == 'complete'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-success
+                        rounded-full
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      <svg
+                        class="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M5 13l4 4L19 7"
+                        ></path>
+                      </svg>
+                    </div>
                   </div>
                 </template>
                 <div class="ml-3 min-w-0 flex-1">
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
                       <router-link
-                        :to="`/u/${activity.creator.id}`"
+                        :to="actionSubject(activity).link"
                         class="
                           font-medium
                           text-main
                           whitespace-nowrap
                           hover:underline
                         "
-                        >{{ activity.creator.name }}</router-link
+                        exact-active-class=""
+                        >{{ actionSubject(activity).name }}</router-link
                       >
                       <a
                         :href="'#activity' + activity.id"
@@ -383,27 +572,38 @@ import {
   Issue,
   Activity,
   ActionFieldUpdatePayload,
-  Environment,
   Principal,
   ActionTaskStatusUpdatePayload,
   UNKNOWN_ID,
   EMPTY_ID,
   SYSTEM_BOT_ID,
-  IssueStatus,
   ActionIssueStatusUpdatePayload,
 } from "../types";
-import { findTaskById, sizeToFit, stageName } from "../utils";
-import {
-  IssueTemplate,
-  IssueBuiltinFieldId,
-  fieldInfoFromId,
-} from "../plugins";
+import { findTaskById, issueSlug, sizeToFit, stageSlug } from "../utils";
+import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
   editCommentMode: boolean;
   activeActivity?: Activity;
 }
+
+interface ActionSubject {
+  name: string;
+  link: string;
+}
+
+type ActionIconType =
+  | "avatar"
+  | "system"
+  | "create"
+  | "update"
+  | "run"
+  | "approve"
+  | "cancel"
+  | "skip"
+  | "fail"
+  | "complete";
 
 export default {
   name: "IssueActivityPanel",
@@ -575,6 +775,70 @@ export default {
       });
     };
 
+    const actionIcon = (activity: Activity): ActionIconType => {
+      if (activity.actionType == "bb.issue.create") {
+        return "create";
+      } else if (activity.actionType == "bb.issue.field.update") {
+        return "update";
+      } else if (activity.actionType == "bb.pipeline.task.status.update") {
+        const payload = activity.payload as ActionTaskStatusUpdatePayload;
+        switch (payload.newStatus) {
+          case "PENDING": {
+            if (payload.oldStatus == "RUNNING") {
+              return "cancel";
+            } else if (payload.oldStatus == "PENDING_APPROVAL") {
+              return "approve";
+            }
+          }
+          case "RUNNING": {
+            return "run";
+          }
+          case "SKIPPED": {
+            return "skip";
+          }
+          case "DONE": {
+            return "complete";
+          }
+          case "FAILED": {
+            return "fail";
+          }
+        }
+      }
+
+      return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
+    };
+
+    const actionSubject = (activity: Activity): ActionSubject => {
+      if (activity.creator.id == SYSTEM_BOT_ID) {
+        if (activity.actionType == "bb.pipeline.task.status.update") {
+          if (props.issue.pipeline.id != EMPTY_ID) {
+            const payload = activity.payload as ActionTaskStatusUpdatePayload;
+            const task = findTaskById(props.issue.pipeline, payload.taskId);
+            var link = "";
+            var name = task.name;
+            if (task.id != UNKNOWN_ID) {
+              const stageList = props.issue.pipeline.stageList;
+              const index = stageList.findIndex((item) => {
+                return item.id == task.stage.id;
+              });
+              link = `/issue/${issueSlug(
+                props.issue.name,
+                props.issue.id
+              )}?stage=${stageSlug(stageList[index].name, index)}`;
+            }
+            return {
+              name,
+              link,
+            };
+          }
+        }
+      }
+      return {
+        name: activity.creator.name,
+        link: `/u/${activity.creator.id}`,
+      };
+    };
+
     const actionSentence = (activity: Activity): string => {
       switch (activity.actionType) {
         case "bb.issue.create":
@@ -672,40 +936,30 @@ export default {
           }
         }
         case "bb.pipeline.task.status.update": {
-          if (props.issue.pipeline.id != EMPTY_ID) {
-            const payload = activity.payload as ActionTaskStatusUpdatePayload;
-            const task = findTaskById(props.issue.pipeline, payload.taskId);
-            if (task.id != UNKNOWN_ID) {
-              let str = `changed task "${task.name}" from "${payload.oldStatus}" to "${payload.newStatus}"`;
-              switch (payload.newStatus) {
-                case "PENDING": {
-                  if (payload.oldStatus == "RUNNING") {
-                    str = `canceled task "${task.name}"`;
-                  } else if (payload.oldStatus == "PENDING_APPROVAL") {
-                    str = `approved task "${task.name}"`;
-                  }
-                  break;
-                }
-                case "RUNNING": {
-                  str = `started task "${task.name}"`;
-                  break;
-                }
-                case "SKIPPED": {
-                  str = `skipped task "${task.name}"`;
-                  break;
-                }
-                case "DONE":
-                case "FAILED":
+          const payload = activity.payload as ActionTaskStatusUpdatePayload;
+          switch (payload.newStatus) {
+            case "PENDING": {
+              if (payload.oldStatus == "RUNNING") {
+                return `task canceled`;
+              } else if (payload.oldStatus == "PENDING_APPROVAL") {
+                const task = findTaskById(props.issue.pipeline, payload.taskId);
+                return `approved task "${task.name}"`;
               }
-              if (activity.creator.id == SYSTEM_BOT_ID) {
-                return "automatically " + str;
-              }
-              return str;
+            }
+            case "RUNNING": {
+              return `task started`;
+            }
+            case "SKIPPED": {
+              return `task skipped`;
+            }
+            case "DONE": {
+              return `task completed`;
+            }
+            case "FAILED": {
+              return `task failed`;
             }
           }
-          // This should never happen normally since only issue with pipeline can emit this activity.
-          // Just be defensive here.
-          return "changed task status";
+          return `task changed from "${payload.oldStatus}" to "${payload.newStatus}"`;
         }
       }
     };
@@ -719,6 +973,8 @@ export default {
       editComment,
       editCommentTextArea,
       currentUser,
+      actionIcon,
+      actionSubject,
       actionSentence,
       doCreateComment,
       cancelEditComment,
