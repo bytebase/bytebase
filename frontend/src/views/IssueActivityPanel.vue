@@ -42,12 +42,25 @@
                   </div>
                 </template>
                 <template v-else-if="actionIcon(activity) == 'avatar'">
-                  <div class="relative">
-                    <BBAvatar
-                      class="rounded-full ring-4 ring-white"
-                      :username="activity.creator.name"
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-white
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
                     >
-                    </BBAvatar>
+                      <BBAvatar
+                        :username="activity.creator.name"
+                        :size="'small'"
+                      >
+                      </BBAvatar>
+                    </div>
                   </div>
                 </template>
                 <template v-else-if="actionIcon(activity) == 'create'">
@@ -205,13 +218,13 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'skip'">
+                <template v-else-if="actionIcon(activity) == 'fail'">
                   <div class="relative pl-0.5">
                     <div
                       class="
                         w-7
                         h-7
-                        bg-control-bg
+                        bg-white
                         rounded-full
                         ring-4 ring-white
                         flex
@@ -220,37 +233,7 @@
                       "
                     >
                       <svg
-                        class="w-5 h-5 text-control"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M20 12H4"
-                        ></path>
-                      </svg>
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(activity) == 'fail'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        flex
-                        items-center
-                        justify-center
-                      "
-                    >
-                      <svg
-                        class="w-6 h-6 text-control"
+                        class="w-6 h-6 text-error"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -272,15 +255,16 @@
                       class="
                         w-7
                         h-7
-                        bg-success
+                        bg-white
                         rounded-full
+                        ring-4 ring-white
                         flex
                         items-center
                         justify-center
                       "
                     >
                       <svg
-                        class="w-5 h-5 text-white"
+                        class="w-6 h-6 text-success"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -290,7 +274,7 @@
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M5 13l4 4L19 7"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         ></path>
                       </svg>
                     </div>
@@ -601,7 +585,6 @@ type ActionIconType =
   | "run"
   | "approve"
   | "cancel"
-  | "skip"
   | "fail"
   | "complete";
 
