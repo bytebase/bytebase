@@ -169,12 +169,16 @@ export default {
         switch (status) {
           case "FAILED":
             return 0;
-          case "PENDING":
+          case "PENDING_APPROVAL":
             return 1;
-          case "RUNNING":
+          case "PENDING":
             return 2;
-          case "DONE":
+          case "RUNNING":
             return 3;
+          case "DONE":
+            return 4;
+          case "CANCELED":
+            return 5;
         }
       };
       const aStatusOrder = statusOrder(activeTask(a.pipeline).status);
