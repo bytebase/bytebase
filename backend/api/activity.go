@@ -80,7 +80,7 @@ type ActivityCreate struct {
 	ContainerId int          `jsonapi:"attr,containerId"`
 	Type        ActivityType `jsonapi:"attr,actionType"`
 	Comment     string       `jsonapi:"attr,comment"`
-	Payload     []byte       `jsonapi:"attr,payload"`
+	Payload     string       `jsonapi:"attr,payload"`
 }
 
 type ActivityFind struct {

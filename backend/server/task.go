@@ -248,7 +248,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		ContainerId: issue.ID,
 		Type:        api.ActivityPipelineTaskStatusUpdate,
 		Comment:     taskStatusPatch.Comment,
-		Payload:     payload,
+		Payload:     string(payload),
 	}
 	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
 	if err != nil {

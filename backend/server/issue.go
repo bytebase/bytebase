@@ -280,7 +280,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			ContainerId: issue.ID,
 			Type:        api.ActivityIssueStatusUpdate,
 			Comment:     issueStatusPatch.Comment,
-			Payload:     payload,
+			Payload:     string(payload),
 		}
 		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
 		if err != nil {
