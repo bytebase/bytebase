@@ -72,6 +72,7 @@ export function activeStage(pipeline: Pipeline): Stage {
     for (const task of stage.taskList) {
       if (
         task.status == "PENDING" ||
+        task.status == "PENDING_APPROVAL" ||
         task.status == "RUNNING" ||
         // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
@@ -93,6 +94,7 @@ export function activeTask(pipeline: Pipeline): Task {
     for (const task of stage.taskList) {
       if (
         task.status == "PENDING" ||
+        task.status == "PENDING_APPROVAL" ||
         task.status == "RUNNING" ||
         // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
