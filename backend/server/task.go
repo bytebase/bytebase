@@ -55,7 +55,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		updatedTask, err := s.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.EINVALID {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				return echo.NewHTTPError(http.StatusBadRequest, bytebase.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
@@ -212,7 +212,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 
 	if !allowTransition {
 		return nil, &bytebase.Error{
-			Code:    bytebase.ENOTFOUND,
+			Code:    bytebase.EINVALID,
 			Message: fmt.Sprintf("Invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
