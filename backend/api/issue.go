@@ -119,6 +119,7 @@ type IssueFind struct {
 	ProjectId *int
 
 	// Domain specific fields
+	PipelineId *int
 	// Find issue where principalId is either creator or assignee
 	// TODO: Add subscriber support
 	PrincipalId *int

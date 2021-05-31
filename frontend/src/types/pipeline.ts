@@ -71,7 +71,6 @@
 import { Database } from "./database";
 import { Environment } from "./environment";
 import {
-  ContainerId,
   DatabaseId,
   EnvironmentId,
   PipelineId,
@@ -240,8 +239,6 @@ export type TaskStatusPatch = {
   updaterId: PrincipalId;
 
   // Domain specific fields
-  // This is the id for the container such as issue containing the pipeline this task belongs.
-  containerId: ContainerId;
   status: TaskStatus;
   comment?: string;
 };
@@ -251,8 +248,6 @@ export type TaskApprove = {
   updaterId: PrincipalId;
 
   // Domain specific fields
-  // This is the id for the container such as issue containing the pipeline this task belongs.
-  containerId: ContainerId;
   comment?: string;
 };
 

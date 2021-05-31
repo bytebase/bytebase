@@ -277,7 +277,6 @@ export default {
       if (transition.type == "APPROVE") {
         const taskApprove: TaskApprove = {
           updaterId: currentUser.value.id,
-          containerId: (props.issue as Issue).id,
           comment: comment ? comment.trim() : undefined,
         };
 
@@ -290,7 +289,6 @@ export default {
       } else {
         const taskStatusPatch: TaskStatusPatch = {
           updaterId: currentUser.value.id,
-          containerId: (props.issue as Issue).id,
           status: transition.to,
           comment: comment ? comment.trim() : undefined,
         };

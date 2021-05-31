@@ -122,8 +122,7 @@ func (find *TaskFind) String() string {
 
 type TaskApprove struct {
 	// Domain specific fields
-	ContainerId int    `jsonapi:"attr,containerId"`
-	Comment     string `jsonapi:"attr,comment"`
+	Comment string `jsonapi:"attr,comment"`
 }
 
 type TaskStatusPatch struct {
@@ -135,9 +134,8 @@ type TaskStatusPatch struct {
 	WorkspaceId int
 
 	// Domain specific fields
-	Status      TaskStatus `jsonapi:"attr,status"`
-	ContainerId int        `jsonapi:"attr,containerId"`
-	Comment     string     `jsonapi:"attr,comment"`
+	Status  TaskStatus `jsonapi:"attr,status"`
+	Comment string     `jsonapi:"attr,comment"`
 }
 
 type TaskService interface {
