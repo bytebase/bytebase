@@ -16,7 +16,6 @@ import {
   ResourceIdentifier,
   Principal,
   TaskRun,
-  TaskApprove,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -132,42 +131,12 @@ const actions = {
       taskStatusPatch: TaskStatusPatch;
     }
   ) {
-    // TODO: Returns the updated pipeline and update the issue.
-    const data = (
-      await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
-        data: {
-          type: "taskStatusPatch",
-          attributes: taskStatusPatch,
-        },
-      })
-    ).data;
-
-    dispatch("issue/fetchIssueById", issueId, { root: true });
-  },
-
-  async approve(
-    { dispatch }: any,
-    {
-      issueId,
-      pipelineId,
-      taskId,
-      taskApprove,
-    }: {
-      issueId: IssueId;
-      pipelineId: PipelineId;
-      taskId: TaskId;
-      taskApprove: TaskApprove;
-    }
-  ) {
-    // TODO: Returns the updated pipeline and update the issue.
-    const data = (
-      await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/approve`, {
-        data: {
-          type: "taskApprove",
-          attributes: taskApprove,
-        },
-      })
-    ).data;
+    await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
+      data: {
+        type: "taskStatusPatch",
+        attributes: taskStatusPatch,
+      },
+    });
 
     dispatch("issue/fetchIssueById", issueId, { root: true });
   },

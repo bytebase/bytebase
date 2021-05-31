@@ -242,14 +242,6 @@ export type TaskStatusPatch = {
   comment?: string;
 };
 
-export type TaskApprove = {
-  // Standard fields
-  updaterId: PrincipalId;
-
-  // Domain specific fields
-  comment?: string;
-};
-
 // TaskRun is one run of a particular task
 export type TaskRunStatus =
   | "PENDING"

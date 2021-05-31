@@ -154,7 +154,6 @@ import {
   ISSUE_STATUS_TRANSITION_LIST,
   Principal,
   TaskId,
-  TaskApprove,
   TaskStatusPatch,
 } from "../types";
 import { IssueTemplate } from "../plugins";
@@ -274,32 +273,18 @@ export default {
       taskId: TaskId,
       comment?: string
     ) => {
-      if (transition.type == "APPROVE") {
-        const taskApprove: TaskApprove = {
-          updaterId: currentUser.value.id,
-          comment: comment ? comment.trim() : undefined,
-        };
+      const taskStatusPatch: TaskStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: transition.to,
+        comment: comment ? comment.trim() : undefined,
+      };
 
-        store.dispatch("task/approve", {
-          issueId: (props.issue as Issue).id,
-          pipelineId: (props.issue as Issue).pipeline.id,
-          taskId,
-          taskApprove,
-        });
-      } else {
-        const taskStatusPatch: TaskStatusPatch = {
-          updaterId: currentUser.value.id,
-          status: transition.to,
-          comment: comment ? comment.trim() : undefined,
-        };
-
-        store.dispatch("task/updateStatus", {
-          issueId: (props.issue as Issue).id,
-          pipelineId: (props.issue as Issue).pipeline.id,
-          taskId,
-          taskStatusPatch,
-        });
-      }
+      store.dispatch("task/updateStatus", {
+        issueId: (props.issue as Issue).id,
+        pipelineId: (props.issue as Issue).pipeline.id,
+        taskId,
+        taskStatusPatch,
+      });
     };
 
     const applicableIssueStatusTransitionList = computed(

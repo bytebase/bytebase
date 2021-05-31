@@ -70,60 +70,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-
-	g.POST("/pipeline/:pipelineId/task/:taskId/approve", func(c echo.Context) error {
-		taskId, err := strconv.Atoi(c.Param("taskId"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskId"))).SetInternal(err)
-		}
-
-		taskApprove := &api.TaskApprove{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskApprove); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change task status request").SetInternal(err)
-		}
-
-		taskFind := &api.TaskFind{
-			ID: &taskId,
-		}
-		task, err := s.TaskService.FindTask(context.Background(), taskFind)
-		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task ID not found: %d", taskId))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch task ID: %v", taskId)).SetInternal(err)
-		}
-
-		taskStatusPatch := &api.TaskStatusPatch{
-			ID:          task.ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			Status:      api.TaskPending,
-			Comment:     taskApprove.Comment,
-		}
-		updatedTask, err := s.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
-		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.EINVALID {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to approve task \"%v\"", task.Name)).SetInternal(err)
-		}
-
-		// Schedule the task
-		scheduledTask, err := s.TaskScheduler.Schedule(context.Background(), updatedTask)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to schedule task \"%v\" after approval", task.Name))
-		}
-
-		if err := s.ComposeTaskRelationship(context.Background(), scheduledTask, c.Get(getIncludeKey()).([]string)); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch approved task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, scheduledTask); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal approved task \"%v\" status response", updatedTask.Name)).SetInternal(err)
-		}
-		return nil
-	})
 }
 
 func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, includeList []string) ([]*api.Task, error) {
@@ -252,6 +198,14 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after changing the task status: %v, err: %w", task.Name, err)
+	}
+
+	// Schedule the task if it's being just approved
+	if task.Status == "PENDING_APPROVAL" && updatedTask.Status == "PENDING" {
+		updatedTask, err = s.TaskScheduler.Schedule(context.Background(), updatedTask)
+		if err != nil {
+			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
+		}
 	}
 
 	return updatedTask, nil

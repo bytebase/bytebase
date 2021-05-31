@@ -160,7 +160,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     "APPROVE",
     {
       type: "APPROVE",
-      to: "RUNNING",
+      to: "PENDING",
       buttonName: "Approve",
       buttonClass: "btn-primary",
     },

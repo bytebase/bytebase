@@ -117,11 +117,6 @@ func (find *TaskFind) String() string {
 	return string(str)
 }
 
-type TaskApprove struct {
-	// Domain specific fields
-	Comment string `jsonapi:"attr,comment"`
-}
-
 type TaskStatusPatch struct {
 	ID int
 
