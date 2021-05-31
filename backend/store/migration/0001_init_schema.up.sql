@@ -598,7 +598,7 @@ CREATE TABLE activity (
     workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     container_id INTEGER NOT NULL CHECK (container_id != 0),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
-    COMMENT TEXT NOT NULL DEFAULT '',
+    `comment` TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );
 
