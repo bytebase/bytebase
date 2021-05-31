@@ -180,7 +180,15 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, watch, watchEffect, reactive, ref } from "vue";
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  watch,
+  watchEffect,
+  reactive,
+  ref,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -229,12 +237,20 @@ import {
   IssueTemplate,
 } from "../plugins";
 
+// Normally, we poll issue every 10s to fetch any update from the server side.
+// When issue/task status changes we start the poll from 1s, 2s, 4s, 8s, 10s, 10s...
+// We do this because issue is more likely to change after we change the status (e.g task finishes running)
+const NORMAL_ISSUE_POLL_INTERVAL = 10000;
+const POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL = 1000;
+
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
   // router.push won't trigger the reload because new and existing issue shares
   // the same component.
   create: boolean;
   newIssue?: IssueCreate;
+  // Timer tracking the issue poller, we need this to cancel the outstanding one when needed.
+  pollIssueTimer?: ReturnType<typeof setTimeout>;
 }
 
 export default {
@@ -259,14 +275,6 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
-
-    onMounted(() => {
-      // Always scroll to top, the scrollBehavior doesn't seem to work.
-      // The hypothesis is that because the scroll bar is in the nested
-      // route, thus setting the scrollBehavior in the global router
-      // won't work.
-      document.getElementById("issue-detail-top")!.scrollIntoView();
-    });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -386,10 +394,43 @@ export default {
       newIssue: create ? buildNewIssue() : undefined,
     });
 
+    const pollIssue = (interval: number) => {
+      clearInterval(state.pollIssueTimer);
+      store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
+
+      const actualInterval = Math.min(interval * 2, 10000);
+      state.pollIssueTimer = setTimeout(() => {
+        pollIssue(actualInterval);
+      }, actualInterval);
+    };
+
+    const pollIssueAfterStatusChange = () => {
+      pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
+    };
+
+    onMounted(() => {
+      // Always scroll to top, the scrollBehavior doesn't seem to work.
+      // The hypothesis is that because the scroll bar is in the nested
+      // route, thus setting the scrollBehavior in the global router
+      // won't work.
+      document.getElementById("issue-detail-top")!.scrollIntoView();
+      if (!state.create) {
+        pollIssue(NORMAL_ISSUE_POLL_INTERVAL);
+      }
+    });
+
+    onUnmounted(() => {
+      clearInterval(state.pollIssueTimer);
+    });
+
     watch(
       () => props.issueSlug,
       (cur, prev) => {
+        const oldCreate = state.create;
         state.create = cur.toLowerCase() == "new";
+        if (!state.create && oldCreate) {
+          pollIssue(NORMAL_ISSUE_POLL_INTERVAL);
+        }
       }
     );
 
@@ -534,6 +575,7 @@ export default {
               newState: true,
             });
           }
+          pollIssueAfterStatusChange();
         });
     };
 
@@ -550,12 +592,13 @@ export default {
 
       store
         .dispatch("task/updateStatus", {
-          issueId: (issue.value as Issue).id,
           pipelineId: (issue.value as Issue).pipeline.id,
           taskId,
           taskStatusPatch,
         })
-        .then(() => {});
+        .then(() => {
+          pollIssueAfterStatusChange();
+        });
     };
 
     const patchIssue = (

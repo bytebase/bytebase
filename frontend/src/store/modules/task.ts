@@ -118,27 +118,26 @@ const getters = {
 
 const actions = {
   async updateStatus(
-    { dispatch }: any,
+    { rootGetters }: any,
     {
-      issueId,
       pipelineId,
       taskId,
       taskStatusPatch,
     }: {
-      issueId: IssueId;
       pipelineId: PipelineId;
       taskId: TaskId;
       taskStatusPatch: TaskStatusPatch;
     }
   ) {
-    await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
-      data: {
-        type: "taskStatusPatch",
-        attributes: taskStatusPatch,
-      },
-    });
-
-    dispatch("issue/fetchIssueById", issueId, { root: true });
+    const data = (
+      await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
+        data: {
+          type: "taskStatusPatch",
+          attributes: taskStatusPatch,
+        },
+      })
+    ).data;
+    return convertPartial(data.data, data.included, rootGetters);
   },
 };
 
