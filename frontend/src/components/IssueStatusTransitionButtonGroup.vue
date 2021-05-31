@@ -148,13 +148,11 @@ import {
   CREATOR_APPLICABLE_ACTION_LIST,
   Issue,
   IssueCreate,
-  IssueStatusPatch,
   IssueStatusTransition,
   IssueStatusTransitionType,
   ISSUE_STATUS_TRANSITION_LIST,
   Principal,
   TaskId,
-  TaskStatusPatch,
 } from "../types";
 import { IssueTemplate } from "../plugins";
 import { isEmpty } from "lodash";
@@ -178,7 +176,7 @@ export type IssueContext = {
 
 export default {
   name: "IssueStatusTransitionButtonGroup",
-  emits: ["create"],
+  emits: ["create", "change-issue-status", "change-task-status"],
   props: {
     create: {
       required: true,
@@ -271,20 +269,9 @@ export default {
     const doTaskStatusTransition = (
       transition: TaskStatusTransition,
       taskId: TaskId,
-      comment?: string
+      comment: string
     ) => {
-      const taskStatusPatch: TaskStatusPatch = {
-        updaterId: currentUser.value.id,
-        status: transition.to,
-        comment: comment ? comment.trim() : undefined,
-      };
-
-      store.dispatch("task/updateStatus", {
-        issueId: (props.issue as Issue).id,
-        pipelineId: (props.issue as Issue).pipeline.id,
-        taskId,
-        taskStatusPatch,
-      });
+      emit("change-task-status", taskId, transition.to, comment);
     };
 
     const applicableIssueStatusTransitionList = computed(
@@ -379,30 +366,9 @@ export default {
 
     const doIssueStatusTransition = (
       transition: IssueStatusTransition,
-      comment?: string
+      comment: string
     ) => {
-      const issueStatusPatch: IssueStatusPatch = {
-        updaterId: currentUser.value.id,
-        status: transition.to,
-        comment: comment ? comment.trim() : undefined,
-      };
-
-      store
-        .dispatch("issue/updateIssueStatus", {
-          issueId: (props.issue as Issue).id,
-          issueStatusPatch,
-        })
-        .then(() => {
-          if (
-            transition.to == "DONE" &&
-            props.issueTemplate.type == "bb.issue.db.schema.update"
-          ) {
-            store.dispatch("uistate/saveIntroStateByKey", {
-              key: "table.create",
-              newState: true,
-            });
-          }
-        });
+      emit("change-issue-status", transition.to, comment);
     };
 
     const allowCreate = computed(() => {

@@ -65,6 +65,8 @@
           :issue="issue"
           :issueTemplate="issueTemplate"
           @create="doCreate"
+          @change-issue-status="changeIssueStatus"
+          @change-task-status="changeTaskStatus"
         />
       </IssueHighlightPanel>
     </div>
@@ -213,6 +215,11 @@ import {
   Environment,
   Stage,
   StageId,
+  IssueStatus,
+  TaskId,
+  TaskStatusPatch,
+  TaskStatus,
+  IssueStatusPatch,
 } from "../types";
 import {
   defaulTemplate,
@@ -505,6 +512,52 @@ export default {
         });
     };
 
+    const changeIssueStatus = (newStatus: IssueStatus, comment: string) => {
+      const issueStatusPatch: IssueStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: newStatus,
+        comment: comment,
+      };
+
+      store
+        .dispatch("issue/updateIssueStatus", {
+          issueId: (issue.value as Issue).id,
+          issueStatusPatch,
+        })
+        .then(() => {
+          if (
+            newStatus == "DONE" &&
+            issueTemplate.value.type == "bb.issue.db.schema.update"
+          ) {
+            store.dispatch("uistate/saveIntroStateByKey", {
+              key: "table.create",
+              newState: true,
+            });
+          }
+        });
+    };
+
+    const changeTaskStatus = (
+      taskId: TaskId,
+      newStatus: TaskStatus,
+      comment: string
+    ) => {
+      const taskStatusPatch: TaskStatusPatch = {
+        updaterId: currentUser.value.id,
+        status: newStatus,
+        comment: comment,
+      };
+
+      store
+        .dispatch("task/updateStatus", {
+          issueId: (issue.value as Issue).id,
+          pipelineId: (issue.value as Issue).pipeline.id,
+          taskId,
+          taskStatusPatch,
+        })
+        .then(() => {});
+    };
+
     const patchIssue = (
       issuePatch: Omit<IssuePatch, "updaterId">,
       postUpdated?: (updatedIssue: Issue) => void
@@ -638,6 +691,8 @@ export default {
       updateSubscriberIdList,
       updateCustomField,
       doCreate,
+      changeIssueStatus,
+      changeTaskStatus,
       currentPipelineType,
       currentUser,
       issueTemplate,
