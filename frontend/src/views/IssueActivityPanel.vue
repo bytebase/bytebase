@@ -917,26 +917,36 @@ export default {
         }
         case "bb.pipeline.task.status.update": {
           const payload = activity.payload as ActionTaskStatusUpdatePayload;
+          var str = `task changed`;
           switch (payload.newStatus) {
             case "PENDING": {
               if (payload.oldStatus == "RUNNING") {
-                return `task canceled`;
+                str = `task canceled`;
               } else if (payload.oldStatus == "PENDING_APPROVAL") {
-                const task = findTaskById(props.issue.pipeline, payload.taskId);
-                return `approved task "${task.name}"`;
+                str = `task approved`;
               }
+              break;
             }
             case "RUNNING": {
-              return `task started`;
+              str = `task started`;
+              break;
             }
             case "DONE": {
-              return `task completed`;
+              str = `task completed`;
+              break;
             }
             case "FAILED": {
-              return `task failed`;
+              str = `task failed`;
+              break;
             }
           }
-          return `task changed from "${payload.oldStatus}" to "${payload.newStatus}"`;
+          if (activity.creator.id != SYSTEM_BOT_ID) {
+            // If creator is not the robot, then we reverse the phrase
+            str = str.split(" ").reverse().join(" ");
+            const task = findTaskById(props.issue.pipeline, payload.taskId);
+            str += ` ${task.name}`;
+          }
+          return str;
         }
       }
     };
