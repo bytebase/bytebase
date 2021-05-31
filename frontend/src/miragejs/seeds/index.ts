@@ -570,7 +570,7 @@ const workspacesSeeder = (server: any) => {
     },
     {
       issueStatus: "DONE",
-      taskStatusList: ["DONE", "SKIPPED", "DONE", "DONE"],
+      taskStatusList: ["DONE", "DONE", "DONE"],
     },
     {
       issueStatus: "OPEN",
@@ -578,7 +578,7 @@ const workspacesSeeder = (server: any) => {
     },
     {
       issueStatus: "CANCELED",
-      taskStatusList: ["DONE", "SKIPPED", "DONE", "PENDING"],
+      taskStatusList: ["DONE", "DONE", "PENDING"],
     },
   ];
 

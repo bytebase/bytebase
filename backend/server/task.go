@@ -16,13 +16,12 @@ import (
 
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
-		"PENDING":          {"RUNNING", "SKIPPED"},
+		"PENDING":          {"RUNNING"},
 		"PENDING_APPROVAL": {"PENDING"},
 		"RUNNING":          {"DONE", "FAILED", "CANCELED"},
 		"DONE":             {},
 		"FAILED":           {"RUNNING"},
 		"CANCELED":         {"RUNNING"},
-		"SKIPPED":          {},
 	}
 )
 

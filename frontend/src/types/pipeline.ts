@@ -193,8 +193,7 @@ export type TaskStatus =
   | "RUNNING"
   | "DONE"
   | "FAILED"
-  | "CANCELED"
-  | "SKIPPED";
+  | "CANCELED";
 
 export type DatabaseSchemaUpdateTaskPayload = {
   sql: string;

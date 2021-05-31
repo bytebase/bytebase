@@ -97,22 +97,6 @@
                   >!</span
                 >
               </template>
-              <template v-else-if="item.taskStatus == 'SKIPPED'">
-                <svg
-                  class="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  >
-                  <path
-                    fill-rule="evenodd"
-                    d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                    clip-rule="evenodd"
-                  ></path>
-                </svg>
-              </template>
             </div>
             <div
               class="
@@ -226,8 +210,6 @@ export default {
           return "bg-success text-white";
         case "FAILED":
           return "bg-error text-white";
-        case "SKIPPED":
-          return "bg-white border-2 text-gray-300 border-gray-300";
       }
     };
 
@@ -240,8 +222,6 @@ export default {
         textClass += "underline ";
       }
       switch (item.taskStatus) {
-        case "SKIPPED":
-          return textClass + "text-control";
         case "DONE":
           return textClass + "text-control";
         case "PENDING":

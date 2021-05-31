@@ -175,8 +175,6 @@ export default {
             return 2;
           case "DONE":
             return 3;
-          case "SKIPPED":
-            return 4;
         }
       };
       const aStatusOrder = statusOrder(activeTask(a.pipeline).status);

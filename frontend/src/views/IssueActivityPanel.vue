@@ -793,9 +793,6 @@ export default {
           case "RUNNING": {
             return "run";
           }
-          case "SKIPPED": {
-            return "skip";
-          }
           case "DONE": {
             return "complete";
           }
@@ -948,9 +945,6 @@ export default {
             }
             case "RUNNING": {
               return `task started`;
-            }
-            case "SKIPPED": {
-              return `task skipped`;
             }
             case "DONE": {
               return `task completed`;

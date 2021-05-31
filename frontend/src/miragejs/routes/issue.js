@@ -288,7 +288,7 @@ export default function configureIssue(route) {
         }).models;
 
         for (let j = 0; j < taskList.length; j++) {
-          if (taskList[j].status != "DONE" && taskList[j].status != "SKIPPED") {
+          if (taskList[j].status != "DONE") {
             return new Response(
               409,
               {},

@@ -183,16 +183,6 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       buttonClass: "btn-primary",
     },
   ],
-  [
-    "SKIP",
-    {
-      type: "SKIP",
-      actionName: "Skip",
-      to: "SKIPPED",
-      buttonName: "Skip",
-      buttonClass: "btn-normal",
-    },
-  ],
 ]);
 
 // The transition button are displayed from left to right on the UI, and the right-most one is the primary button
@@ -200,12 +190,11 @@ const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskStatus,
   TaskStatusTransitionType[]
 > = new Map([
-  ["PENDING", ["SKIP", "RUN"]],
-  ["PENDING_APPROVAL", ["SKIP", "APPROVE"]],
+  ["PENDING", ["RUN"]],
+  ["PENDING_APPROVAL", ["APPROVE"]],
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
-  ["FAILED", ["SKIP", "RETRY"]],
-  ["SKIPPED", []],
+  ["FAILED", ["RETRY"]],
 ]);
 
 export function applicableTaskTransition(

@@ -308,7 +308,6 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			case api.TaskPending:
 			case api.TaskPendingApproval:
 			case api.TaskCanceled:
-			case api.TaskSkipped:
 				taskRunStatusPatch.Status = api.TaskRunCanceled
 			}
 			if _, err := s.TaskRunService.PatchTaskRunStatus(ctx, tx.Tx, taskRunStatusPatch); err != nil {

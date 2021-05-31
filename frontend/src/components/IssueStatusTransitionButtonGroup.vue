@@ -337,8 +337,7 @@ export default {
               item == "RESOLVE" &&
               taskList.length > 0 &&
               (currentTask.id != taskList[taskList.length - 1].id ||
-                (currentTask.status != "DONE" &&
-                  currentTask.status != "SKIPPED"))
+                currentTask.status != "DONE")
             ) {
               return false;
             }

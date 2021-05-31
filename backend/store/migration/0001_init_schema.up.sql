@@ -473,8 +473,7 @@ CREATE TABLE task (
             'RUNNING',
             'DONE',
             'FAILED',
-            "CANCELED",
-            "SKIPPED"
+            "CANCELED"
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),

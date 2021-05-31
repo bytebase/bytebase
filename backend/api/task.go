@@ -14,7 +14,6 @@ const (
 	TaskDone            TaskStatus = "DONE"
 	TaskFailed          TaskStatus = "FAILED"
 	TaskCanceled        TaskStatus = "CANCELED"
-	TaskSkipped         TaskStatus = "SKIPPED"
 )
 
 func (e TaskStatus) String() string {
@@ -31,14 +30,12 @@ func (e TaskStatus) String() string {
 		return "FAILED"
 	case TaskCanceled:
 		return "CANCELED"
-	case TaskSkipped:
-		return "SKIPPED"
 	}
 	return "UNKNOWN"
 }
 
 func (e TaskStatus) IsEndStatus() bool {
-	return e == TaskDone || e == TaskSkipped
+	return e == TaskDone
 }
 
 type TaskType string

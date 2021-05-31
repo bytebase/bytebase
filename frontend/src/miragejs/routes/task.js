@@ -49,7 +49,7 @@ export default function configureTask(route) {
           workspaceId: WORKSPACE_ID,
         });
 
-        if (attrs.status == "DONE" || attrs.status == "SKIPPED") {
+        if (attrs.status == "DONE") {
           const followingTask = schema.tasks.findBy((item) => {
             if (item.workspaceId != WORKSPACE_ID) {
               return false;
