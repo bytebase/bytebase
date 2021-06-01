@@ -118,12 +118,14 @@ const getters = {
 
 const actions = {
   async updateStatus(
-    { rootGetters }: any,
+    { dispatch, rootGetters }: any,
     {
+      issueId,
       pipelineId,
       taskId,
       taskStatusPatch,
     }: {
+      issueId: IssueId;
       pipelineId: PipelineId;
       taskId: TaskId;
       taskStatusPatch: TaskStatusPatch;
@@ -137,7 +139,11 @@ const actions = {
         },
       })
     ).data;
-    return convertPartial(data.data, data.included, rootGetters);
+    const task = convertPartial(data.data, data.included, rootGetters);
+
+    dispatch("issue/fetchIssueById", issueId, { root: true });
+
+    return task;
   },
 };
 

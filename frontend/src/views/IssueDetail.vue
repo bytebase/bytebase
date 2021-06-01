@@ -396,16 +396,11 @@ export default {
 
     const pollIssue = (interval: number) => {
       clearInterval(state.pollIssueTimer);
-      store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
 
-      const actualInterval = Math.min(interval * 2, 10000);
       state.pollIssueTimer = setTimeout(() => {
-        pollIssue(actualInterval);
-      }, actualInterval);
-    };
-
-    const pollIssueAfterStatusChange = () => {
-      pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
+        store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
+        pollIssue(Math.min(interval * 2, 10000));
+      }, Math.min(interval, 10000));
     };
 
     onMounted(() => {
@@ -575,7 +570,7 @@ export default {
               newState: true,
             });
           }
-          pollIssueAfterStatusChange();
+          pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
         });
     };
 
@@ -592,12 +587,13 @@ export default {
 
       store
         .dispatch("task/updateStatus", {
+          issueId: (issue.value as Issue).id,
           pipelineId: (issue.value as Issue).pipeline.id,
           taskId,
           taskStatusPatch,
         })
         .then(() => {
-          pollIssueAfterStatusChange();
+          pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
         });
     };
 
@@ -614,6 +610,9 @@ export default {
           },
         })
         .then((updatedIssue) => {
+          // issue/patchIssue already fetches the new issue, so we schedule
+          // the next poll in NORMAL_ISSUE_POLL_INTERVAL
+          pollIssue(NORMAL_ISSUE_POLL_INTERVAL);
           if (postUpdated) {
             postUpdated(updatedIssue);
           }
