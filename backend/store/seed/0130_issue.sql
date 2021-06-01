@@ -12,7 +12,7 @@ INSERT INTO
         description,
         assignee_id,
         subscriber_id_list,
-        `sql`
+        statement
     )
 VALUES
     (
@@ -44,8 +44,8 @@ INSERT INTO
         description,
         assignee_id,
         subscriber_id_list,
-        `sql`,
-        rollback_sql
+        statement,
+        rollback_statement
     )
 VALUES
     (
@@ -78,8 +78,8 @@ INSERT INTO
         description,
         assignee_id,
         subscriber_id_list,
-        `sql`,
-        rollback_sql
+        statement,
+        rollback_statement
     )
 VALUES
     (

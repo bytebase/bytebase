@@ -41,11 +41,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				taskCreate.StageId = createdStage.ID
 				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 					payload := api.TaskDatabaseSchemaUpdatePayload{}
-					if issueCreate.Sql != "" {
-						payload.Sql = issueCreate.Sql
+					if issueCreate.Statement != "" {
+						payload.Sql = issueCreate.Statement
 					}
-					if issueCreate.RollbackSql != "" {
-						payload.RollbackSql = issueCreate.RollbackSql
+					if issueCreate.RollbackStatement != "" {
+						payload.RollbackSql = issueCreate.RollbackStatement
 					}
 					bytes, err := json.Marshal(payload)
 					if err != nil {

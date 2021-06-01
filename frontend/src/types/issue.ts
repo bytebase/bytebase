@@ -41,8 +41,8 @@ export type Issue = {
   description: string;
   assignee?: Principal;
   subscriberList: Principal[];
-  sql?: string;
-  rollbackSql?: string;
+  statement?: string;
+  rollbackStatement?: string;
   payload: IssuePayload;
 };
 
@@ -59,8 +59,8 @@ export type IssueCreate = {
   type: IssueType;
   description: string;
   assigneeId?: PrincipalId;
-  sql?: string;
-  rollbackSql?: string;
+  statement?: string;
+  rollbackStatement?: string;
   payload: IssuePayload;
 };
 

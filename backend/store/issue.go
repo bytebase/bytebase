@@ -127,12 +127,12 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			description,
 			assignee_id,
 			subscriber_id_list,
-			`+"`sql`,"+`
-			rollback_sql,
+			statement,
+			rollback_statement,
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, statement, rollback_statement, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -143,8 +143,8 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		create.Description,
 		create.AssigneeId,
 		strings.Join(subscriberIdList, ","),
-		create.Sql,
-		create.RollbackSql,
+		create.Statement,
+		create.RollbackStatement,
 		newPayload,
 	)
 
@@ -171,8 +171,8 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		&issue.Description,
 		&issue.AssigneeId,
 		&idList,
-		&issue.Sql,
-		&issue.RollbackSql,
+		&issue.Statement,
+		&issue.RollbackStatement,
 		&payload,
 	); err != nil {
 		return nil, FormatError(err)
@@ -233,8 +233,8 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			description,
 			assignee_id,
 			subscriber_id_list,
-			`+"`sql`,"+`
-			rollback_sql,
+			statement,
+			rollback_statement,
 			payload
 		FROM issue
 		WHERE `+strings.Join(where, " AND "),
@@ -265,8 +265,8 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			&issue.Description,
 			&issue.AssigneeId,
 			&idList,
-			&issue.Sql,
-			&issue.RollbackSql,
+			&issue.Statement,
+			&issue.RollbackStatement,
 			&payload,
 		); err != nil {
 			return nil, FormatError(err)
@@ -338,7 +338,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, statement, rollback_statement, payload"+`
 	`,
 		args...,
 	)
@@ -365,8 +365,8 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			&issue.Description,
 			&issue.AssigneeId,
 			&idList,
-			&issue.Sql,
-			&issue.RollbackSql,
+			&issue.Statement,
+			&issue.RollbackStatement,
 			&payload,
 		); err != nil {
 			return nil, FormatError(err)

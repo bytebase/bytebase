@@ -88,16 +88,16 @@ type Issue struct {
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 
 	// Domain specific fields
-	Name             string       `jsonapi:"attr,name"`
-	Status           IssueStatus  `jsonapi:"attr,status"`
-	Type             IssueType    `jsonapi:"attr,type"`
-	Description      string       `jsonapi:"attr,description"`
-	AssigneeId       int          `jsonapi:"attr,assigneeId"`
-	Assignee         *Principal   `jsonapi:"attr,assignee"`
-	SubscriberIdList []int        `jsonapi:"attr,subscriberIdList"`
-	Sql              string       `jsonapi:"attr,sql"`
-	RollbackSql      string       `jsonapi:"attr,rollbackSql"`
-	Payload          IssuePayload `jsonapi:"attr,payload"`
+	Name              string       `jsonapi:"attr,name"`
+	Status            IssueStatus  `jsonapi:"attr,status"`
+	Type              IssueType    `jsonapi:"attr,type"`
+	Description       string       `jsonapi:"attr,description"`
+	AssigneeId        int          `jsonapi:"attr,assigneeId"`
+	Assignee          *Principal   `jsonapi:"attr,assignee"`
+	SubscriberIdList  []int        `jsonapi:"attr,subscriberIdList"`
+	Statement         string       `jsonapi:"attr,statement"`
+	RollbackStatement string       `jsonapi:"attr,rollbackStatement"`
+	Payload           IssuePayload `jsonapi:"attr,payload"`
 }
 
 type IssueCreate struct {
@@ -111,14 +111,14 @@ type IssueCreate struct {
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
-	Name             string       `jsonapi:"attr,name"`
-	Type             IssueType    `jsonapi:"attr,type"`
-	Description      string       `jsonapi:"attr,description"`
-	AssigneeId       int          `jsonapi:"attr,assigneeId"`
-	SubscriberIdList []int        `jsonapi:"attr,subscriberIdList"`
-	Sql              string       `jsonapi:"attr,sql"`
-	RollbackSql      string       `jsonapi:"attr,rollbackSql"`
-	Payload          IssuePayload `jsonapi:"attr,payload"`
+	Name              string       `jsonapi:"attr,name"`
+	Type              IssueType    `jsonapi:"attr,type"`
+	Description       string       `jsonapi:"attr,description"`
+	AssigneeId        int          `jsonapi:"attr,assigneeId"`
+	SubscriberIdList  []int        `jsonapi:"attr,subscriberIdList"`
+	Statement         string       `jsonapi:"attr,statement"`
+	RollbackStatement string       `jsonapi:"attr,rollbackStatement"`
+	Payload           IssuePayload `jsonapi:"attr,payload"`
 }
 
 type IssueFind struct {

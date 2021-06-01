@@ -495,8 +495,8 @@ CREATE TABLE issue (
     description TEXT NOT NULL,
     assignee_id INTEGER REFERENCES principal (id),
     subscriber_id_list TEXT NOT NULL,
-    `sql` TEXT NOT NULL DEFAULT '',
-    rollback_sql TEXT NOT NULL DEFAULT '',
+    statement TEXT NOT NULL DEFAULT '',
+    rollback_statement TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT '{}'
 );
 

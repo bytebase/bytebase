@@ -1,11 +1,13 @@
 <template>
   <div class="flex justify-between">
-    <div class="textlabel">{{ rollback ? "Rollback SQL" : "SQL" }}</div>
+    <div class="textlabel">
+      {{ rollback ? "Rollback SQL" : "SQL" }}
+    </div>
   </div>
   <label class="sr-only">SQL statement</label>
   <template v-if="state.editing">
     <textarea
-      ref="editSqlTextArea"
+      ref="editStatementTextArea"
       class="
         whitespace-pre-wrap
         mt-2
@@ -17,13 +19,13 @@
       "
       :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
       placeholder="Add SQL statement..."
-      v-model="state.editSql"
+      v-model="state.editStatement"
       @input="
         (e) => {
           sizeToFit(e.target);
           // When creating the issue, we will emit the event on keystroke to update the in-memory state.
           if (create) {
-            $emit('update-sql', state.editSql);
+            $emit('update-statement', state.editStatement);
           }
         }
       "
@@ -37,10 +39,13 @@
   <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
   <!-- TODO: There is still flickering between edit/non-edit mode depending on the line height -->
   <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
-    <div v-if="state.editSql" v-highlight class="whitespace-pre-wrap">
-      {{ state.editSql }}
+    <div v-if="state.editStatement" v-highlight class="whitespace-pre-wrap">
+      {{ state.editStatement }}
     </div>
-    <div v-else class="ml-2 text-control-light">Add SQL statement...</div>
+    <div v-else-if="state.create" class="ml-2 text-control-light">
+      {{ rollback ? "Add rollback SQL statement..." : "Add SQL statement..." }}
+    </div>
+    <div v-else class="ml-2 text-control-light">None</div>
   </div>
 </template>
 
@@ -53,19 +58,18 @@ import {
   ref,
   reactive,
   watch,
-  computed,
 } from "vue";
 import { Issue } from "../types";
 import { sizeToFit } from "../utils";
 
 interface LocalState {
   editing: boolean;
-  editSql: string;
+  editStatement: string;
 }
 
 export default {
-  name: "IssueSqlPanel",
-  emits: ["update-sql"],
+  name: "IssueStatementPanel",
+  emits: ["update-statement"],
   props: {
     issue: {
       required: true,
@@ -82,20 +86,20 @@ export default {
   },
   components: {},
   setup(props, { emit }) {
-    const editSqlTextArea = ref();
+    const editStatementTextArea = ref();
 
-    const effectiveSql = (issue: Issue): string => {
-      return (props.rollback ? issue.rollbackSql : issue.sql) || "";
+    const effectiveStatement = (issue: Issue): string => {
+      return (props.rollback ? issue.rollbackStatement : issue.statement) || "";
     };
 
     const state = reactive<LocalState>({
       editing: false,
-      editSql: effectiveSql(props.issue),
+      editStatement: effectiveStatement(props.issue),
     });
 
     const resizeTextAreaHandler = () => {
       if (state.editing) {
-        sizeToFit(editSqlTextArea.value);
+        sizeToFit(editStatementTextArea.value);
       }
     };
 
@@ -104,7 +108,7 @@ export default {
       if (props.create) {
         state.editing = true;
         nextTick(() => {
-          sizeToFit(editSqlTextArea.value);
+          sizeToFit(editStatementTextArea.value);
         });
       }
     });
@@ -124,7 +128,7 @@ export default {
     );
 
     return {
-      editSqlTextArea,
+      editStatementTextArea,
       state,
     };
   },

@@ -137,20 +137,20 @@
           </div>
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
-            <section v-if="showIssueSqlPanel" class="border-b mb-4">
-              <IssueSqlPanel
+            <section v-if="showIssueStatementPanel" class="border-b mb-4">
+              <IssueStatementPanel
                 :issue="issue"
                 :create="state.create"
                 :rollback="false"
-                @update-sql="updateSql"
+                @update-statement="updateStatement"
               />
             </section>
             <section v-if="showIssueRollbackSqlPanel" class="border-b mb-4">
-              <IssueSqlPanel
+              <IssueStatementPanel
                 :issue="issue"
                 :create="state.create"
                 :rollback="true"
-                @update-sql="updateRollbackSql"
+                @update-statement="updateRollbackStatement"
               />
             </section>
             <IssueDescriptionPanel
@@ -204,7 +204,7 @@ import {
 } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
-import IssueSqlPanel from "../views/IssueSqlPanel.vue";
+import IssueStatementPanel from "./IssueStatementPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "../views/IssueActivityPanel.vue";
 import IssueSidebar from "../views/IssueSidebar.vue";
@@ -264,7 +264,7 @@ export default {
   components: {
     IssueHighlightPanel,
     IssueOutputPanel,
-    IssueSqlPanel,
+    IssueStatementPanel,
     IssueDescriptionPanel,
     IssueActivityPanel,
     IssueSidebar,
@@ -361,10 +361,10 @@ export default {
           .description as string;
       }
       if (router.currentRoute.value.query.sql) {
-        newIssue.sql = router.currentRoute.value.query.sql as string;
+        newIssue.statement = router.currentRoute.value.query.sql as string;
       }
       if (router.currentRoute.value.query.rollbacksql) {
-        newIssue.rollbackSql = router.currentRoute.value.query
+        newIssue.rollbackStatement = router.currentRoute.value.query
           .rollbacksql as string;
       }
       if (router.currentRoute.value.query.assignee) {
@@ -457,12 +457,12 @@ export default {
     };
 
     // We only allow updating sql/rollback upon issue creation.
-    const updateSql = (newSql: string) => {
-      state.newIssue!.sql = newSql;
+    const updateStatement = (newStatement: string) => {
+      state.newIssue!.statement = newStatement;
     };
 
-    const updateRollbackSql = (newSql: string) => {
-      state.newIssue!.rollbackSql = newSql;
+    const updateRollbackStatement = (newStatement: string) => {
+      state.newIssue!.rollbackStatement = newStatement;
     };
 
     const updateDescription = (
@@ -689,7 +689,7 @@ export default {
       return !state.create && issueTemplate.value.outputFieldList.length > 0;
     });
 
-    const showIssueSqlPanel = computed(() => {
+    const showIssueStatementPanel = computed(() => {
       return (
         issue.value.type == "bb.issue.general" ||
         issue.value.type == "bb.issue.db.schema.update"
@@ -705,8 +705,8 @@ export default {
       issue,
       updateName,
       updateDescription,
-      updateSql,
-      updateRollbackSql,
+      updateStatement,
+      updateRollbackStatement,
       updateAssigneeId,
       updateSubscriberIdList,
       updateCustomField,
@@ -727,7 +727,7 @@ export default {
       showPendingApproval,
       showPipelineFlowBar,
       showIssueOutputPanel,
-      showIssueSqlPanel,
+      showIssueStatementPanel,
       showIssueRollbackSqlPanel,
     };
   },
