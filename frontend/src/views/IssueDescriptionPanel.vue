@@ -105,6 +105,10 @@
     @input="
       (e) => {
         sizeToFit(e.target);
+        // When creating the issue, we will emit the event on keystroke to update the in-memory state.
+        if (create) {
+          $emit('update-description', state.editDescription);
+        }
       }
     "
     @focus="
@@ -181,7 +185,10 @@ export default {
     onMounted(() => {
       document.addEventListener("keydown", keyboardHandler);
       window.addEventListener("resize", resizeTextAreaHandler);
-      sizeToFit(editDescriptionTextArea.value);
+      if (props.create) {
+        state.editing = true;
+        sizeToFit(editDescriptionTextArea.value);
+      }
     });
 
     onUnmounted(() => {
