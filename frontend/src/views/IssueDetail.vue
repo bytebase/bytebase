@@ -237,11 +237,13 @@ import {
   IssueTemplate,
 } from "../plugins";
 
-// Normally, we poll issue every 10s to fetch any update from the server side.
-// When issue/task status changes we start the poll from 1s, 2s, 4s, 8s, 10s, 10s...
+// Normally, we poll issue every 30s to fetch any update from the server side.
+// When issue/task status changes we start the poll from 1s, 2s, 4s, 8s, 16s, 30s, 30s ... with jitter
 // We do this because issue is more likely to change after we change the status (e.g task finishes running)
-const NORMAL_ISSUE_POLL_INTERVAL = 10000;
+const NORMAL_ISSUE_POLL_INTERVAL = 30000;
 const POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL = 1000;
+// Add jitter to avoid timer from different clients converging to the same polling frequency.
+const POLL_JITTER = 5000;
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -394,13 +396,14 @@ export default {
       newIssue: create ? buildNewIssue() : undefined,
     });
 
+    // pollIssue invalidates the current timer and schedule a new timer in <<interval>> microseconds
     const pollIssue = (interval: number) => {
       clearInterval(state.pollIssueTimer);
 
       state.pollIssueTimer = setTimeout(() => {
         store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
-        pollIssue(Math.min(interval * 2, 10000));
-      }, Math.min(interval, 10000));
+        pollIssue(Math.min(interval * 2, NORMAL_ISSUE_POLL_INTERVAL));
+      }, Math.max(1000, Math.min(interval, NORMAL_ISSUE_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
     onMounted(() => {
