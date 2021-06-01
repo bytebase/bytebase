@@ -47,6 +47,8 @@ type Database struct {
 
 	// Domain specific fields
 	Name                 string     `jsonapi:"attr,name"`
+	CharacterSet         string     `jsonapi:"attr,characterSet"`
+	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
 	Fingerprint          string     `jsonapi:"attr,fingerprint"`
@@ -62,8 +64,10 @@ type DatabaseCreate struct {
 	InstanceId int
 
 	// Domain specific fields
-	Name    string `jsonapi:"attr,name"`
-	IssueId int    `jsonapi:"attr,issueId"`
+	Name         string `jsonapi:"attr,name"`
+	CharacterSet string `jsonapi:"attr,characterSet"`
+	Collation    string `jsonapi:"attr,collation"`
+	IssueId      int    `jsonapi:"attr,issueId"`
 }
 
 type DatabaseFind struct {

@@ -23,6 +23,12 @@
       <BBTableCell v-if="showInstanceColumn" class="w-24">
         {{ instanceName(database.instance) }}
       </BBTableCell>
+      <BBTableCell class="w-8">
+        {{ database.characterSet }}
+      </BBTableCell>
+      <BBTableCell class="w-8">
+        {{ database.collation }}
+      </BBTableCell>
       <BBTableCell class="w-8" v-database-sync-status>
         {{ database.syncStatus }}
       </BBTableCell>
@@ -61,6 +67,12 @@ const columnListMap: Map<Mode | "ALL_HIDE_INSTANCE", BBTableColumn[]> = new Map(
           title: "Instance",
         },
         {
+          title: "Character set",
+        },
+        {
+          title: "Collation",
+        },
+        {
           title: "Sync status",
         },
         {
@@ -81,6 +93,12 @@ const columnListMap: Map<Mode | "ALL_HIDE_INSTANCE", BBTableColumn[]> = new Map(
           title: "Environment",
         },
         {
+          title: "Character set",
+        },
+        {
+          title: "Collation",
+        },
+        {
           title: "Sync status",
         },
         {
@@ -98,6 +116,12 @@ const columnListMap: Map<Mode | "ALL_HIDE_INSTANCE", BBTableColumn[]> = new Map(
           title: "Name",
         },
         {
+          title: "Character set",
+        },
+        {
+          title: "Collation",
+        },
+        {
           title: "Sync status",
         },
         {
@@ -113,6 +137,12 @@ const columnListMap: Map<Mode | "ALL_HIDE_INSTANCE", BBTableColumn[]> = new Map(
         },
         {
           title: "Environment",
+        },
+        {
+          title: "Character set",
+        },
+        {
+          title: "Collation",
         },
         {
           title: "Sync status",

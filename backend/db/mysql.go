@@ -63,7 +63,9 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 
 	rows, err := driver.db.QueryContext(ctx, `
 		SELECT 
-		    SCHEMA_NAME
+		    SCHEMA_NAME,
+			DEFAULT_CHARACTER_SET_NAME,
+			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE `+where,
 	)
@@ -77,6 +79,8 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		var schema DBSchema
 		if err := rows.Scan(
 			&schema.Name,
+			&schema.CharacterSet,
+			&schema.Collation,
 		); err != nil {
 			return nil, err
 		}

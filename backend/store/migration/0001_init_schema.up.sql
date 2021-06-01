@@ -256,6 +256,8 @@ CREATE TABLE db (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
+    character_set TEXT NOT NULL,
+    `collation` TEXT NOT NULL,
     sync_status TEXT NOT NULL CHECK (
         sync_status IN ('OK', 'DRIFTED', 'NOT_FOUND')
     ),

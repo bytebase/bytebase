@@ -7,6 +7,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -19,6 +21,8 @@ VALUES
         6001,
         1,
         '*',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -32,6 +36,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -44,6 +50,8 @@ VALUES
         6002,
         3001,
         'fakedb1',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -58,6 +66,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -70,6 +80,8 @@ VALUES
         6002,
         1,
         '*',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -83,6 +95,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -95,6 +109,8 @@ VALUES
         6002,
         3002,
         'fakedb2',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -109,6 +125,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -121,6 +139,8 @@ VALUES
         6003,
         1,
         '*',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -134,6 +154,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -146,6 +168,8 @@ VALUES
         6003,
         3003,
         'fakedb3',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -160,6 +184,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -172,6 +198,8 @@ VALUES
         6004,
         1,
         '*',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -185,6 +213,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -197,6 +227,8 @@ VALUES
         6004,
         3004,
         'fakedb4',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -211,6 +243,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -223,6 +257,8 @@ VALUES
         6005,
         1,
         '*',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''
@@ -236,6 +272,8 @@ INSERT INTO
         instance_id,
         project_id,
         name,
+        character_set,
+        `collation`,
         sync_status,
         last_successful_sync_ts,
         fingerprint
@@ -248,6 +286,8 @@ VALUES
         6005,
         3005,
         'fakedb5',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
         'OK',
         0,
         ''

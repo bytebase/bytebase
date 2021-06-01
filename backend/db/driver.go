@@ -24,7 +24,9 @@ func (e Type) String() string {
 }
 
 type DBSchema struct {
-	Name string
+	Name         string
+	CharacterSet string
+	Collation    string
 }
 
 var (

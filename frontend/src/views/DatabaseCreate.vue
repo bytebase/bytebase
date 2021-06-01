@@ -77,7 +77,7 @@ input[type="number"] {
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="database" class="textlabel">
+        <label for="name" class="textlabel">
           New database name <span class="text-red-600">*</span>
         </label>
         <input
@@ -89,6 +89,38 @@ input[type="number"] {
           :disabled="!allowEditDatabaseName"
           @input="changeDatabaseName"
           v-model="state.databaseName"
+        />
+      </div>
+
+      <div class="col-span-2 col-start-2 w-64">
+        <label for="charset" class="textlabel">
+          Character set <span class="text-red-600">*</span>
+        </label>
+        <input
+          required
+          id="charset"
+          name="charset"
+          type="text"
+          class="textfield mt-1 w-full"
+          :disabled="!allowEditCharset"
+          @input="changeCharset"
+          v-model="state.characterSet"
+        />
+      </div>
+
+      <div class="col-span-2 col-start-2 w-64">
+        <label for="collation" class="textlabel">
+          Collation <span class="text-red-600">*</span>
+        </label>
+        <input
+          required
+          id="collation"
+          name="collation"
+          type="text"
+          class="textfield mt-1 w-full"
+          :disabled="!allowEditCollation"
+          @input="changeCollation"
+          v-model="state.collation"
         />
       </div>
 
@@ -188,6 +220,8 @@ interface LocalState {
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
   databaseName?: string;
+  characterSet: string;
+  collation: string;
   issueId?: IssueId;
   fromIssueType?: IssueType;
 }
@@ -238,6 +272,11 @@ export default {
           ) as InstanceId)
         : undefined,
       databaseName: router.currentRoute.value.query.name as string,
+      characterSet:
+        (router.currentRoute.value.query.charset as string) || "utf8mb4",
+      collation:
+        (router.currentRoute.value.query.collation as string) ||
+        "utf8mb4_0900_ai_ci",
       issueId: parseInt(
         router.currentRoute.value.query.issue as string
       ) as IssueId,
@@ -267,6 +306,14 @@ export default {
 
     const allowEditDatabaseName = computed(() => {
       return state.fromIssueType != "bb.issue.db.create" || !state.databaseName;
+    });
+
+    const allowEditCharset = computed(() => {
+      return state.fromIssueType != "bb.issue.db.create";
+    });
+
+    const allowEditCollation = computed(() => {
+      return state.fromIssueType != "bb.issue.db.create";
     });
 
     const allowEditIssue = computed(() => {
@@ -353,6 +400,32 @@ export default {
       });
     };
 
+    const changeCharset = () => {
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (!isEmpty(state.characterSet)) {
+        query.charset = state.characterSet;
+      } else {
+        delete query["charset"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query,
+      });
+    };
+
+    const changeCollation = () => {
+      const query = cloneDeep(router.currentRoute.value.query);
+      if (!isEmpty(state.collation)) {
+        query.collation = state.collation;
+      } else {
+        delete query["collation"];
+      }
+      router.replace({
+        name: "workspace.database.create",
+        query,
+      });
+    };
+
     const cancel = () => {
       router.go(-1);
     };
@@ -376,6 +449,8 @@ export default {
       const newDatabase: DatabaseCreate = {
         creatorId: currentUser.value.id,
         name: state.databaseName!,
+        characterSet: state.characterSet,
+        collation: state.collation,
         instanceId: state.instanceId!,
         projectId: state.projectId!,
         issueId: linkedIssue?.id,
@@ -449,6 +524,8 @@ export default {
       allowEditProject,
       allowEditEnvironment,
       allowEditDatabaseName,
+      allowEditCharset,
+      allowEditCollation,
       allowEditIssue,
       instanceLink,
       issueLink,
@@ -456,6 +533,8 @@ export default {
       selectEnvironment,
       selectInstance,
       changeDatabaseName,
+      changeCharset,
+      changeCollation,
       cancel,
       create,
     };

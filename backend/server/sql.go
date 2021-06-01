@@ -77,15 +77,16 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		}
 		for _, schema := range schemaList {
 			databaseFind.Name = &schema.Name
-			s.l.Info(fmt.Sprintf("Schema11 %v", *schema))
 			database, err := s.DatabaseService.FindDatabase(context.Background(), databaseFind)
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 					databaseCreate := &api.DatabaseCreate{
-						CreatorId:  c.Get(GetPrincipalIdContextKey()).(int),
-						ProjectId:  api.DEFAULT_PROJECT_ID,
-						InstanceId: instance.ID,
-						Name:       schema.Name,
+						CreatorId:    c.Get(GetPrincipalIdContextKey()).(int),
+						ProjectId:    api.DEFAULT_PROJECT_ID,
+						InstanceId:   instance.ID,
+						Name:         schema.Name,
+						CharacterSet: schema.CharacterSet,
+						Collation:    schema.Collation,
 					}
 					_, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 					if err != nil {

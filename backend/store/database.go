@@ -113,18 +113,22 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 			instance_id,
 			project_id,
 			name,
+			character_set,
+			collation,
 			sync_status,
 			last_successful_sync_ts,
 			fingerprint
 		)
-		VALUES (?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), '')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), '')
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts, fingerprint
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.InstanceId,
 		create.ProjectId,
 		create.Name,
+		create.CharacterSet,
+		create.Collation,
 	)
 
 	if err != nil {
@@ -143,6 +147,8 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 		&database.InstanceId,
 		&database.ProjectId,
 		&database.Name,
+		&database.CharacterSet,
+		&database.Collation,
 		&database.SyncStatus,
 		&database.LastSuccessfulSyncTs,
 		&database.Fingerprint,
@@ -182,6 +188,8 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			instance_id,
 			project_id,
 		    name,
+			character_set,
+			collation,
 		    sync_status,
 			last_successful_sync_ts,
 			fingerprint
@@ -207,6 +215,8 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.InstanceId,
 			&database.ProjectId,
 			&database.Name,
+			&database.CharacterSet,
+			&database.Collation,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
 			&database.Fingerprint,
@@ -244,7 +254,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts, fingerprint
 	`,
 		args...,
 	)
@@ -264,6 +274,8 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.InstanceId,
 			&database.ProjectId,
 			&database.Name,
+			&database.CharacterSet,
+			&database.Collation,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
 			&database.Fingerprint,

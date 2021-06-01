@@ -31,6 +31,8 @@ export type Database = {
 
   // Domain specific fields
   name: string;
+  characterSet: string;
+  collation: string;
   syncStatus: DatabaseSyncStatus;
   lastSuccessfulSyncTs: number;
   fingerprint: string;
@@ -46,6 +48,8 @@ export type DatabaseCreate = {
 
   // Domain specific fields
   name: string;
+  characterSet: string;
+  collation: string;
   issueId?: IssueId;
 };
 
