@@ -242,21 +242,19 @@ func FormatError(err error) error {
 	switch err.Error() {
 	case "UNIQUE constraint failed: principal.email":
 		return bytebase.Errorf(bytebase.ECONFLICT, "email already exists")
-	case "UNIQUE constraint failed: workspace.slug":
-		return bytebase.Errorf(bytebase.ECONFLICT, "workspace slug already exists")
-	case "UNIQUE constraint failed: member.workspace_id, member.principal_id":
+	case "UNIQUE constraint failed: member.principal_id":
 		return bytebase.Errorf(bytebase.ECONFLICT, "member already exists")
-	case "UNIQUE constraint failed: environment.workspace_id, environment.name":
+	case "UNIQUE constraint failed: environment.name":
 		return bytebase.Errorf(bytebase.ECONFLICT, "environment name already exists")
-	case "UNIQUE constraint failed: project.workspace_id, project.key":
+	case "UNIQUE constraint failed: project.key":
 		return bytebase.Errorf(bytebase.ECONFLICT, "project key already exists")
-	case "UNIQUE constraint failed: project_member.workspace_id, project_member.project_id, project_member.principal_id":
+	case "UNIQUE constraint failed: project_member.project_id, project_member.principal_id":
 		return bytebase.Errorf(bytebase.ECONFLICT, "project member already exists")
-	case "UNIQUE constraint failed: db.workspace_id, db.instance_id, db.name":
+	case "UNIQUE constraint failed: db.instance_id, db.name":
 		return bytebase.Errorf(bytebase.ECONFLICT, "database name already exists")
-	case "UNIQUE constraint failed: data_source.workspace_id, data_source.instance_id, data_source.name":
+	case "UNIQUE constraint failed: data_source.instance_id, data_source.name":
 		return bytebase.Errorf(bytebase.ECONFLICT, "data source name already exists")
-	case "UNIQUE constraint failed: bookmark.workspace_id, bookmark.creator_id, bookmark.link":
+	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
 		return bytebase.Errorf(bytebase.ECONFLICT, "bookmark already exists")
 	default:
 		return err

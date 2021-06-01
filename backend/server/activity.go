@@ -14,7 +14,7 @@ import (
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {
 	g.POST("/activity", func(c echo.Context) error {
-		activityCreate := &api.ActivityCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		activityCreate := &api.ActivityCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create activity request").SetInternal(err)
 		}
@@ -38,10 +38,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.GET("/activity", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		activityFind := &api.ActivityFind{
-			WorkspaceId: &workspaceId,
-		}
+		activityFind := &api.ActivityFind{}
 		containerIdStr := c.QueryParams().Get("container")
 		if containerIdStr != "" {
 			containerId, err := strconv.Atoi(containerIdStr)
@@ -75,9 +72,8 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		activityPatch := &api.ActivityPatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch activity request").SetInternal(err)

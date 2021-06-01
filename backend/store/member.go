@@ -131,16 +131,14 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 		INSERT INTO member (
 			creator_id,
 			updater_id,
-			workspace_id,
 			role,
 			principal_id
 		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, role, principal_id
+		VALUES (?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.Role,
 		create.PrincipalId,
 	)
@@ -158,7 +156,6 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 		&member.CreatedTs,
 		&member.UpdaterId,
 		&member.UpdatedTs,
-		&member.WorkspaceId,
 		&member.Role,
 		&member.PrincipalId,
 	); err != nil {
@@ -174,9 +171,6 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.PrincipalId; v != nil {
 		where, args = append(where, "principal_id = ?"), append(args, *v)
 	}
@@ -188,7 +182,6 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 		    role,
 		    principal_id
 		FROM member
@@ -210,7 +203,6 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 			&member.CreatedTs,
 			&member.UpdaterId,
 			&member.UpdatedTs,
-			&member.WorkspaceId,
 			&member.Role,
 			&member.PrincipalId,
 		); err != nil {
@@ -241,7 +233,7 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
 	`,
 		args...,
 	)
@@ -258,7 +250,6 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 			&member.CreatedTs,
 			&member.UpdaterId,
 			&member.UpdatedTs,
-			&member.WorkspaceId,
 			&member.Role,
 			&member.PrincipalId,
 		); err != nil {

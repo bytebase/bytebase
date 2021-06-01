@@ -20,9 +20,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		projectMemberCreate := &api.ProjectMemberCreate{
-			ProjectId:   projectId,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ProjectId: projectId,
+			CreatorId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project membership request").SetInternal(err)
@@ -59,9 +58,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		projectMemberPatch := &api.ProjectMemberPatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)

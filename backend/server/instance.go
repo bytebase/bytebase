@@ -14,7 +14,7 @@ import (
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.POST("/instance", func(c echo.Context) error {
-		instanceCreate := &api.InstanceCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
 		}
@@ -41,10 +41,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		instanceFind := &api.InstanceFind{
-			WorkspaceId: &workspaceId,
-		}
+		instanceFind := &api.InstanceFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			instanceFind.RowStatus = &rowStatus
@@ -95,9 +92,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instancePatch := &api.InstancePatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
@@ -135,11 +131,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 
 			dataSourcePatch := &api.DataSourcePatch{
-				ID:          adminDataSource.ID,
-				WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-				UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-				Username:    instancePatch.Username,
-				Password:    instancePatch.Password,
+				ID:        adminDataSource.ID,
+				UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+				Username:  instancePatch.Username,
+				Password:  instancePatch.Password,
 			}
 			_, err = s.DataSourceService.PatchDataSource(context.Background(), dataSourcePatch)
 			if err != nil {

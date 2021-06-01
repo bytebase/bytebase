@@ -33,9 +33,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		taskStatusPatch := &api.TaskStatusPatch{
-			ID:          taskId,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
+			ID:        taskId,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
@@ -129,10 +128,9 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 
 func (s *Server) ChangeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updatorId int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
-		ID:          task.ID,
-		UpdaterId:   updatorId,
-		WorkspaceId: task.WorkspaceId,
-		Status:      newStatus,
+		ID:        task.ID,
+		UpdaterId: updatorId,
+		Status:    newStatus,
 	}
 	return s.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 }
@@ -189,7 +187,6 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 
 	activityCreate := &api.ActivityCreate{
 		CreatorId:   taskStatusPatch.UpdaterId,
-		WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 		ContainerId: issue.ID,
 		Type:        api.ActivityPipelineTaskStatusUpdate,
 		Comment:     taskStatusPatch.Comment,

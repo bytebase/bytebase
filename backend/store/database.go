@@ -110,7 +110,6 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 		INSERT INTO db (
 			creator_id,
 			updater_id,
-			workspace_id,
 			instance_id,
 			project_id,
 			name,
@@ -118,12 +117,11 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 			last_successful_sync_ts,
 			fingerprint
 		)
-		VALUES (?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), '')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
+		VALUES (?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), '')
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.InstanceId,
 		create.ProjectId,
 		create.Name,
@@ -142,7 +140,6 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *ap
 		&database.CreatedTs,
 		&database.UpdaterId,
 		&database.UpdatedTs,
-		&database.WorkspaceId,
 		&database.InstanceId,
 		&database.ProjectId,
 		&database.Name,
@@ -161,9 +158,6 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
-	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
 	}
 	if v := find.InstanceId; v != nil {
 		where, args = append(where, "instance_id = ?"), append(args, *v)
@@ -185,7 +179,6 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			instance_id,
 			project_id,
 		    name,
@@ -211,7 +204,6 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.CreatedTs,
 			&database.UpdaterId,
 			&database.UpdatedTs,
-			&database.WorkspaceId,
 			&database.InstanceId,
 			&database.ProjectId,
 			&database.Name,
@@ -252,7 +244,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, sync_status, last_successful_sync_ts, fingerprint
 	`,
 		args...,
 	)
@@ -269,7 +261,6 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.CreatedTs,
 			&database.UpdaterId,
 			&database.UpdatedTs,
-			&database.WorkspaceId,
 			&database.InstanceId,
 			&database.ProjectId,
 			&database.Name,

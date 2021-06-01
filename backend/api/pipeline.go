@@ -30,13 +30,12 @@ type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	StageList []*Stage `jsonapi:"relation,stage"`
@@ -49,8 +48,7 @@ type Pipeline struct {
 type PipelineCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Related fields
 	StageList []StageCreate `jsonapi:"attr,stageList"`
@@ -61,9 +59,6 @@ type PipelineCreate struct {
 
 type PipelineFind struct {
 	ID *int
-
-	// Standard fields
-	WorkspaceId *int
 }
 
 func (find *PipelineFind) String() string {
@@ -79,8 +74,7 @@ type PipelinePatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
+	UpdaterId int
 
 	// Domain specific fields
 	Status *PipelineStatus `jsonapi:"attr,status"`

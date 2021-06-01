@@ -14,7 +14,7 @@ import (
 
 func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	g.POST("/bookmark", func(c echo.Context) error {
-		bookmarkCreate := &api.BookmarkCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		bookmarkCreate := &api.BookmarkCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, bookmarkCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create bookmark request").SetInternal(err)
 		}
@@ -41,11 +41,9 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 
 	g.GET("/bookmark", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
 		creatorId := c.Get(GetPrincipalIdContextKey()).(int)
 		bookmarkFind := &api.BookmarkFind{
-			WorkspaceId: &workspaceId,
-			CreatorId:   &creatorId,
+			CreatorId: &creatorId,
 		}
 		list, err := s.BookmarkService.FindBookmarkList(context.Background(), bookmarkFind)
 		if err != nil {

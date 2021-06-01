@@ -9,13 +9,12 @@ type Bookmark struct {
 	ID int `jsonapi:"primary,bookmark"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
@@ -25,8 +24,7 @@ type Bookmark struct {
 type BookmarkCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
@@ -37,8 +35,7 @@ type BookmarkFind struct {
 	ID *int
 
 	// Standard fields
-	CreatorId   *int
-	WorkspaceId *int
+	CreatorId *int
 }
 
 func (find *BookmarkFind) String() string {

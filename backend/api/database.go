@@ -31,13 +31,12 @@ type Database struct {
 	ID int `jsonapi:"primary,database"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	ProjectId      int
@@ -56,8 +55,7 @@ type Database struct {
 type DatabaseCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Related fields
 	ProjectId  int
@@ -70,9 +68,6 @@ type DatabaseCreate struct {
 
 type DatabaseFind struct {
 	ID *int
-
-	// Standard fields
-	WorkspaceId *int
 
 	// Related fields
 	InstanceId *int
@@ -96,8 +91,7 @@ type DatabasePatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
+	UpdaterId int
 
 	// Related fields
 	ProjectId *int `jsonapi:"attr,projectId"`

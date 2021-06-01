@@ -131,18 +131,16 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 		INSERT INTO activity (
 			creator_id,
 			updater_id,
-			workspace_id,
 			container_id,
 			`+"`type`,"+`
 			comment,
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, container_id, `+"`type`, comment, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, comment, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.ContainerId,
 		create.Type,
 		create.Comment,
@@ -162,7 +160,6 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 		&activity.CreatedTs,
 		&activity.UpdaterId,
 		&activity.UpdatedTs,
-		&activity.WorkspaceId,
 		&activity.ContainerId,
 		&activity.Type,
 		&activity.Comment,
@@ -180,9 +177,6 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.ContainerId; v != nil {
 		where, args = append(where, "container_id = ?"), append(args, *v)
 	}
@@ -194,7 +188,6 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			container_id,
 		    `+"`type`,"+`
 		    comment,
@@ -218,7 +211,6 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 			&activity.CreatedTs,
 			&activity.UpdaterId,
 			&activity.UpdatedTs,
-			&activity.WorkspaceId,
 			&activity.ContainerId,
 			&activity.Type,
 			&activity.Comment,
@@ -251,7 +243,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 		UPDATE activity
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, container_id, `+"`type`, comment, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, comment, payload"+`
 	`,
 		args...,
 	)
@@ -268,7 +260,6 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 			&activity.CreatedTs,
 			&activity.UpdaterId,
 			&activity.UpdatedTs,
-			&activity.WorkspaceId,
 			&activity.ContainerId,
 			&activity.Type,
 			&activity.Comment,

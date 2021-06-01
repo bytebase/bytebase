@@ -14,7 +14,7 @@ import (
 
 func (s *Server) registerMemberRoutes(g *echo.Group) {
 	g.POST("/member", func(c echo.Context) error {
-		memberCreate := &api.MemberCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		memberCreate := &api.MemberCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create member request").SetInternal(err)
 		}
@@ -41,10 +41,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 
 	g.GET("/member", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		memberFind := &api.MemberFind{
-			WorkspaceId: &workspaceId,
-		}
+		memberFind := &api.MemberFind{}
 		list, err := s.MemberService.FindMemberList(context.Background(), memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
@@ -70,9 +67,8 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		memberPatch := &api.MemberPatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)

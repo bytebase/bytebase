@@ -11,14 +11,13 @@ type Instance struct {
 	ID int `jsonapi:"primary,instance"`
 
 	// Standard fields
-	RowStatus   RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	EnvironmentId  int
@@ -39,8 +38,7 @@ type Instance struct {
 type InstanceCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Related fields
 	EnvironmentId int `jsonapi:"attr,environmentId"`
@@ -59,8 +57,7 @@ type InstanceFind struct {
 	ID *int
 
 	// Standard fields
-	RowStatus   *RowStatus
-	WorkspaceId *int
+	RowStatus *RowStatus
 }
 
 func (find *InstanceFind) String() string {
@@ -77,8 +74,7 @@ type InstancePatch struct {
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
+	UpdaterId int
 
 	// Domain specific fields
 	Name         *string `jsonapi:"attr,name"`

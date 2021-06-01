@@ -104,7 +104,6 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		INSERT INTO task (
 			creator_id,
 			updater_id,
-			workspace_id,
 			pipeline_id,
 			stage_id,
 			database_id,
@@ -113,12 +112,11 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			`+"`type`,"+`
 			payload	
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.PipelineId,
 		create.StageId,
 		create.DatabaseId,
@@ -142,7 +140,6 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		&task.CreatedTs,
 		&task.UpdaterId,
 		&task.UpdatedTs,
-		&task.WorkspaceId,
 		&task.PipelineId,
 		&task.StageId,
 		&task.DatabaseId,
@@ -175,9 +172,6 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.PipelineId; v != nil {
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
@@ -195,7 +189,6 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			pipeline_id,
 			stage_id,
 			database_id,
@@ -222,7 +215,6 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			&task.CreatedTs,
 			&task.UpdaterId,
 			&task.UpdatedTs,
-			&task.WorkspaceId,
 			&task.PipelineId,
 			&task.StageId,
 			&task.DatabaseId,
@@ -285,12 +277,11 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 
 		if patch.Status == api.TaskRunning {
 			taskRunCreate := &api.TaskRunCreate{
-				CreatorId:   patch.UpdaterId,
-				WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-				TaskId:      task.ID,
-				Name:        fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-				Type:        task.Type,
-				Payload:     task.Payload,
+				CreatorId: patch.UpdaterId,
+				TaskId:    task.ID,
+				Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+				Type:      task.Type,
+				Payload:   task.Payload,
 			}
 			if _, err := s.TaskRunService.CreateTaskRun(ctx, tx.Tx, taskRunCreate); err != nil {
 				return nil, err
@@ -327,7 +318,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
 		args...,
 	)
@@ -344,7 +335,6 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			&task.CreatedTs,
 			&task.UpdaterId,
 			&task.UpdatedTs,
-			&task.WorkspaceId,
 			&task.PipelineId,
 			&task.StageId,
 			&task.DatabaseId,

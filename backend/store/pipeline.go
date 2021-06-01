@@ -93,16 +93,14 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
-			workspace_id,
 			name,
 			`+"`status`"+`	
 		)
-		VALUES (?, ?, ?, ?, 'OPEN')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`status`"+`
+		VALUES (?, ?, ?, 'OPEN')
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`status`"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.Name,
 	)
 
@@ -119,7 +117,6 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 		&pipeline.CreatedTs,
 		&pipeline.UpdaterId,
 		&pipeline.UpdatedTs,
-		&pipeline.WorkspaceId,
 		&pipeline.Name,
 		&pipeline.Status,
 	); err != nil {
@@ -135,9 +132,6 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
@@ -146,7 +140,6 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 		    name,
 		    `+"`status`"+`
 		FROM pipeline
@@ -168,7 +161,6 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 			&pipeline.CreatedTs,
 			&pipeline.UpdaterId,
 			&pipeline.UpdatedTs,
-			&pipeline.WorkspaceId,
 			&pipeline.Name,
 			&pipeline.Status,
 		); err != nil {
@@ -199,7 +191,7 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.
 		UPDATE pipeline
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`status`"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`status`"+`
 	`,
 		args...,
 	)
@@ -216,7 +208,6 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.
 			&pipeline.CreatedTs,
 			&pipeline.UpdaterId,
 			&pipeline.UpdatedTs,
-			&pipeline.WorkspaceId,
 			&pipeline.Name,
 			&pipeline.Status,
 		); err != nil {

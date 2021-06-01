@@ -14,7 +14,7 @@ import (
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	g.POST("/database", func(c echo.Context) error {
-		databaseCreate := &api.DatabaseCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		databaseCreate := &api.DatabaseCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databaseCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
 		}
@@ -41,10 +41,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		databaseFind := &api.DatabaseFind{
-			WorkspaceId: &workspaceId,
-		}
+		databaseFind := &api.DatabaseFind{}
 		if instanceIdStr := c.QueryParam("instance"); instanceIdStr != "" {
 			instanceId, err := strconv.Atoi(instanceIdStr)
 			if err != nil {
@@ -106,9 +103,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		databasePatch := &api.DatabasePatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databasePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)

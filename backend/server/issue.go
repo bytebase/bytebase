@@ -15,13 +15,12 @@ import (
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
-		issueCreate := &api.IssueCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		issueCreate := &api.IssueCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
 		issueCreate.Pipeline.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		issueCreate.Pipeline.WorkspaceId = api.DEFAULT_WORKPSACE_ID
 		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &issueCreate.Pipeline)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create pipeline for issue").SetInternal(err)
@@ -29,7 +28,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		for _, stageCreate := range issueCreate.Pipeline.StageList {
 			stageCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-			stageCreate.WorkspaceId = api.DEFAULT_WORKPSACE_ID
 			stageCreate.PipelineId = createdPipeline.ID
 			createdStage, err := s.StageService.CreateStage(context.Background(), &stageCreate)
 			if err != nil {
@@ -38,7 +36,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 			for _, taskCreate := range stageCreate.TaskList {
 				taskCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-				taskCreate.WorkspaceId = api.DEFAULT_WORKPSACE_ID
 				taskCreate.PipelineId = createdPipeline.ID
 				taskCreate.StageId = createdStage.ID
 				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
@@ -79,7 +76,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		activityCreate := &api.ActivityCreate{
 			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			ContainerId: issue.ID,
 			Type:        api.ActivityIssueCreate,
 		}
@@ -96,10 +92,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		issueFind := &api.IssueFind{
-			WorkspaceId: &workspaceId,
-		}
+		issueFind := &api.IssueFind{}
 		projectIdStr := c.QueryParams().Get("project")
 		if projectIdStr != "" {
 			projectId, err := strconv.Atoi(projectIdStr)
@@ -162,9 +155,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		issuePatch := &api.IssuePatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch issue request").SetInternal(err)
@@ -196,9 +188,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		issueStatusPatch := &api.IssueStatusPatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
@@ -214,9 +205,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		var pipelineStatus api.PipelineStatus
 		pipelinePatch := &api.PipelinePatch{
-			ID:          issue.PipelineId,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        issue.PipelineId,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		switch issueStatusPatch.Status {
 		case api.Issue_Open:
@@ -253,10 +243,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		issuePatch := &api.IssuePatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
-			Status:      &issueStatusPatch.Status,
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			Status:    &issueStatusPatch.Status,
 		}
 		updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
 		if err != nil {
@@ -276,7 +265,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		activityCreate := &api.ActivityCreate{
 			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			ContainerId: issue.ID,
 			Type:        api.ActivityIssueStatusUpdate,
 			Comment:     issueStatusPatch.Comment,

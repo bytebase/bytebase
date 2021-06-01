@@ -57,56 +57,7 @@ VALUES
         ''
     );
 
--- workspace
--- We only allow a single workspace for on-premise deployment.
--- So theoretically speaking, we don't need to create a workspace table.
--- But we create this table mostly for preparing a future cloud version
--- where we need to support many workspaces and it would be painful to
--- introduce workspace table at that time.
-CREATE TABLE workspace (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
-    ) DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    slug TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL
-);
-
-INSERT INTO
-    sqlite_sequence (name, seq)
-VALUES
-    ('workspace', 1000);
-
-CREATE TRIGGER IF NOT EXISTS `trigger_update_workspace_modification_time`
-AFTER
-UPDATE
-    ON `workspace` FOR EACH ROW BEGIN
-UPDATE
-    `workspace`
-SET
-    updated_ts = (strftime('%s', 'now'))
-WHERE
-    rowid = old.rowid;
-
-END;
-
--- Default workspace for on-premise deployment, id is 1
-INSERT INTO
-    workspace (
-        id,
-        creator_id,
-        updater_id,
-        slug,
-        name
-    )
-VALUES
-    (1, 1, 1, '', 'Default workspace');
-
--- Member table stores the workspace membership
+-- Member
 CREATE TABLE member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -116,12 +67,10 @@ CREATE TABLE member (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     `role` TEXT NOT NULL CHECK (
         `role` IN ('OWNER', 'DBA', 'DEVELOPER')
     ),
-    principal_id INTEGER NOT NULL REFERENCES principal (id),
-    UNIQUE(workspace_id, principal_id)
+    principal_id INTEGER NOT NULL REFERENCES principal (id) UNIQUE
 );
 
 INSERT INTO
@@ -142,7 +91,7 @@ WHERE
 
 END;
 
--- Environment table stores the workspace environment
+-- Environment
 CREATE TABLE environment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -152,10 +101,8 @@ CREATE TABLE environment (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
-    name TEXT NOT NULL,
-    `order` INTEGER NOT NULL,
-    UNIQUE(workspace_id, name)
+    name TEXT NOT NULL UNIQUE,
+    `order` INTEGER NOT NULL
 );
 
 INSERT INTO
@@ -176,7 +123,7 @@ WHERE
 
 END;
 
--- Project table stores the workspace project
+-- Project
 CREATE TABLE project (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -186,10 +133,8 @@ CREATE TABLE project (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     name TEXT NOT NULL,
-    `key` TEXT NOT NULL,
-    UNIQUE(workspace_id, `key`)
+    `key` TEXT NOT NULL UNIQUE
 );
 
 INSERT INTO
@@ -197,13 +142,11 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         name,
         `key`
     )
 VALUES
     (
-        1,
         1,
         1,
         1,
@@ -229,7 +172,7 @@ WHERE
 
 END;
 
--- Project member table stores the workspace project membership
+-- Project member
 CREATE TABLE project_member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -239,11 +182,10 @@ CREATE TABLE project_member (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     `role` TEXT NOT NULL CHECK (`role` IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    UNIQUE(workspace_id, project_id, principal_id)
+    UNIQUE(project_id, principal_id)
 );
 
 INSERT INTO
@@ -264,7 +206,7 @@ WHERE
 
 END;
 
--- Instance table stores the workspace instance
+-- Instance
 CREATE TABLE instance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -274,7 +216,6 @@ CREATE TABLE instance (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
     `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL')),
@@ -312,7 +253,6 @@ CREATE TABLE db (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
@@ -321,7 +261,7 @@ CREATE TABLE db (
     ),
     last_successful_sync_ts BIGINT NOT NULL,
     fingerprint TEXT NOT NULL,
-    UNIQUE(workspace_id, instance_id, name)
+    UNIQUE(instance_id, name)
 );
 
 INSERT INTO
@@ -352,14 +292,13 @@ CREATE TABLE data_source (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
     `type` TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
     `password` TEXT NOT NULL,
-    UNIQUE(workspace_id, database_id, name)
+    UNIQUE(database_id, name)
 );
 
 INSERT INTO
@@ -382,7 +321,7 @@ END;
 
 -----------------------
 -- Pipeline related BEGIN
--- pipeline table stores the workspace pipeline 
+-- pipeline table
 CREATE TABLE pipeline (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -392,7 +331,6 @@ CREATE TABLE pipeline (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED'))
 );
@@ -425,7 +363,6 @@ CREATE TABLE stage (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
@@ -460,7 +397,6 @@ CREATE TABLE task (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     stage_id INTEGER NOT NULL REFERENCES stage (id),
     -- Could be empty for tasks like creating database
@@ -505,7 +441,6 @@ CREATE TABLE task_run (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (
@@ -541,7 +476,7 @@ END;
 
 -- Pipeline related END
 -----------------------
--- issue table stores the workspace issue
+-- issue
 -- Each issue links a pipeline driving the resolution.
 CREATE TABLE issue (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -552,7 +487,6 @@ CREATE TABLE issue (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     name TEXT NOT NULL,
@@ -594,7 +528,6 @@ CREATE TABLE activity (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     container_id INTEGER NOT NULL CHECK (container_id != 0),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
     `comment` TEXT NOT NULL DEFAULT '',
@@ -631,10 +564,9 @@ CREATE TABLE bookmark (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    workspace_id INTEGER NOT NULL REFERENCES workspace (id),
     name TEXT NOT NULL,
     link TEXT NOT NULL,
-    UNIQUE(workspace_id, creator_id, link)
+    UNIQUE(creator_id, link)
 );
 
 INSERT INTO

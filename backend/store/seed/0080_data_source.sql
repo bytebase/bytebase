@@ -3,7 +3,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         instance_id,
         database_id,
         name,
@@ -14,7 +13,6 @@ INSERT INTO
 VALUES
     (
         8001,
-        1,
         1,
         1,
         6001,
@@ -30,7 +28,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         instance_id,
         database_id,
         name,
@@ -41,7 +38,6 @@ INSERT INTO
 VALUES
     (
         8002,
-        1,
         1,
         1,
         6002,
@@ -57,7 +53,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         instance_id,
         database_id,
         name,
@@ -68,7 +63,6 @@ INSERT INTO
 VALUES
     (
         8003,
-        1,
         1,
         1,
         6003,
@@ -84,7 +78,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         instance_id,
         database_id,
         name,
@@ -95,7 +88,6 @@ INSERT INTO
 VALUES
     (
         8004,
-        1,
         1,
         1,
         6004,
@@ -111,7 +103,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         instance_id,
         database_id,
         name,
@@ -122,7 +113,6 @@ INSERT INTO
 VALUES
     (
         8005,
-        1,
         1,
         1,
         6005,

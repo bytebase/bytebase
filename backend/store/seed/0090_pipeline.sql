@@ -4,7 +4,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         name,
         `status`
     )
@@ -13,7 +12,6 @@ VALUES
         9001,
         1001,
         1001,
-        1,
         'Pipeline - Hello world',
         'OPEN'
     );
@@ -24,7 +22,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         name,
         `status`
     )
@@ -33,7 +30,6 @@ VALUES
         9002,
         1003,
         1003,
-        1,
         'Pipeline - Add column ''location'' to table ''warehouse''',
         'OPEN'
     );
@@ -44,7 +40,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        workspace_id,
         name,
         `status`
     )
@@ -53,7 +48,6 @@ VALUES
         9003,
         1003,
         1003,
-        1,
         'Pipeline - Create table ''tbl1''',
         'OPEN'
     );

@@ -110,17 +110,15 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		INSERT INTO project (
 			creator_id,
 			updater_id,
-			workspace_id,
 			environment_id,
 			name,
 			key
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`key`"+`
+		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.Name,
 		create.Key,
 	)
@@ -139,7 +137,6 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		&project.CreatedTs,
 		&project.UpdaterId,
 		&project.UpdatedTs,
-		&project.WorkspaceId,
 		&project.Name,
 		&project.Key,
 	); err != nil {
@@ -158,9 +155,6 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.PrincipalId; v != nil {
 		where, args = append(where, "id IN (SELECT project_id FROM project_member WHERE principal_id = ?)"), append(args, *v)
 	}
@@ -173,7 +167,6 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			name,
 			key
 		FROM project
@@ -196,7 +189,6 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 			&project.CreatedTs,
 			&project.UpdaterId,
 			&project.UpdatedTs,
-			&project.WorkspaceId,
 			&project.Name,
 			&project.Key,
 		); err != nil {
@@ -233,7 +225,7 @@ func patchProject(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*api.Pr
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, `+"`key`"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`"+`
 	`,
 		args...,
 	)
@@ -251,7 +243,6 @@ func patchProject(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*api.Pr
 			&project.CreatedTs,
 			&project.UpdaterId,
 			&project.UpdatedTs,
-			&project.WorkspaceId,
 			&project.Name,
 			&project.Key,
 		); err != nil {

@@ -72,10 +72,8 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			resultSet.Error = err.Error()
 		}
 
-		workspaceId := api.DEFAULT_WORKPSACE_ID
 		databaseFind := &api.DatabaseFind{
-			WorkspaceId: &workspaceId,
-			InstanceId:  &instance.ID,
+			InstanceId: &instance.ID,
 		}
 		for _, schema := range schemaList {
 			databaseFind.Name = &schema.Name
@@ -84,11 +82,10 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 					databaseCreate := &api.DatabaseCreate{
-						CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-						WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-						ProjectId:   api.DEFAULT_PROJECT_ID,
-						InstanceId:  instance.ID,
-						Name:        schema.Name,
+						CreatorId:  c.Get(GetPrincipalIdContextKey()).(int),
+						ProjectId:  api.DEFAULT_PROJECT_ID,
+						InstanceId: instance.ID,
+						Name:       schema.Name,
 					}
 					_, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 					if err != nil {
@@ -105,7 +102,6 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 				ts := time.Now().Unix()
 				databasePatch := &api.DatabasePatch{
 					ID:                   database.ID,
-					WorkspaceId:          api.DEFAULT_WORKPSACE_ID,
 					UpdaterId:            c.Get(GetPrincipalIdContextKey()).(int),
 					SyncStatus:           &syncStatus,
 					LastSuccessfulSyncTs: &ts,

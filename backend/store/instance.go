@@ -110,7 +110,6 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 		INSERT INTO instance (
 			creator_id,
 			updater_id,
-			workspace_id,
 			environment_id,
 			name,
 			engine,
@@ -119,11 +118,10 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 			port
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, engine, external_link, host, port
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, external_link, host, port
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.EnvironmentId,
 		create.Name,
 		create.ExternalLink,
@@ -145,7 +143,6 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 		&instance.CreatedTs,
 		&instance.UpdaterId,
 		&instance.UpdatedTs,
-		&instance.WorkspaceId,
 		&instance.EnvironmentId,
 		&instance.Name,
 		&instance.Engine,
@@ -168,9 +165,6 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
@@ -180,7 +174,6 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			environment_id,
 			name,
 			engine,
@@ -207,7 +200,6 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 			&instance.CreatedTs,
 			&instance.UpdaterId,
 			&instance.UpdatedTs,
-			&instance.WorkspaceId,
 			&instance.EnvironmentId,
 			&instance.Name,
 			&instance.Engine,
@@ -254,7 +246,7 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, workspace_id, environment_id, name, engine, external_link, host, port
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, external_link, host, port
 	`,
 		args...,
 	)
@@ -272,7 +264,6 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 			&instance.CreatedTs,
 			&instance.UpdaterId,
 			&instance.UpdatedTs,
-			&instance.WorkspaceId,
 			&instance.EnvironmentId,
 			&instance.Name,
 			&instance.Engine,

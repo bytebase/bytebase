@@ -88,18 +88,16 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 		INSERT INTO stage (
 			creator_id,
 			updater_id,
-			workspace_id,
 			pipeline_id,
 			environment_id,
 			name,
 			`+"`type`"+`	
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, pipeline_id, environment_id, name, `+"`type`"+`
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name, `+"`type`"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.PipelineId,
 		create.EnvironmentId,
 		create.Name,
@@ -119,7 +117,6 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 		&stage.CreatedTs,
 		&stage.UpdaterId,
 		&stage.UpdatedTs,
-		&stage.WorkspaceId,
 		&stage.PipelineId,
 		&stage.EnvironmentId,
 		&stage.Name,
@@ -137,9 +134,6 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.PipelineId; v != nil {
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
@@ -151,7 +145,6 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			pipeline_id,
 			environment_id,
 		    name,
@@ -175,7 +168,6 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 			&stage.CreatedTs,
 			&stage.UpdaterId,
 			&stage.UpdatedTs,
-			&stage.WorkspaceId,
 			&stage.PipelineId,
 			&stage.EnvironmentId,
 			&stage.Name,

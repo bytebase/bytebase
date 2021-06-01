@@ -119,7 +119,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		INSERT INTO issue (
 			creator_id,
 			updater_id,
-			workspace_id,
 			project_id,
 			pipeline_id,
 			name,
@@ -132,12 +131,11 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			rollback_sql,
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
+		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.ProjectId,
 		create.PipelineId,
 		create.Name,
@@ -165,7 +163,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		&issue.CreatedTs,
 		&issue.UpdaterId,
 		&issue.UpdatedTs,
-		&issue.WorkspaceId,
 		&issue.ProjectId,
 		&issue.PipelineId,
 		&issue.Name,
@@ -209,9 +206,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.PipelineId; v != nil {
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
@@ -231,7 +225,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			project_id,
 			pipeline_id,
 		    name,
@@ -264,7 +257,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			&issue.CreatedTs,
 			&issue.UpdaterId,
 			&issue.UpdatedTs,
-			&issue.WorkspaceId,
 			&issue.ProjectId,
 			&issue.PipelineId,
 			&issue.Name,
@@ -339,7 +331,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, `sql`, rollback_sql, payload"+`
 	`,
 		args...,
 	)
@@ -358,7 +350,6 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			&issue.CreatedTs,
 			&issue.UpdaterId,
 			&issue.UpdatedTs,
-			&issue.WorkspaceId,
 			&issue.ProjectId,
 			&issue.PipelineId,
 			&issue.Name,

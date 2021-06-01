@@ -54,13 +54,12 @@ type Task struct {
 	ID int `jsonapi:"primary,task"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	// Just returns PipelineId and StageId otherwise would cause circular dependency.
@@ -80,8 +79,7 @@ type Task struct {
 type TaskCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Related fields
 	PipelineId int
@@ -97,9 +95,6 @@ type TaskCreate struct {
 
 type TaskFind struct {
 	ID *int
-
-	// Standard fields
-	WorkspaceId *int
 
 	// Related fields
 	PipelineId *int
@@ -122,8 +117,7 @@ type TaskStatusPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
+	UpdaterId int
 
 	// Domain specific fields
 	Status  TaskStatus `jsonapi:"attr,status"`

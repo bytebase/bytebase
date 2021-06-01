@@ -51,14 +51,12 @@ type Activity struct {
 	ID int `jsonapi:"primary,activity"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
-
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 	// Related fields
 	// The object where this activity belongs
 	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
@@ -73,8 +71,7 @@ type Activity struct {
 type ActivityCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Domain specific fields
 	ContainerId int          `jsonapi:"attr,containerId"`
@@ -85,9 +82,6 @@ type ActivityCreate struct {
 
 type ActivityFind struct {
 	ID *int
-
-	// Standard fields
-	WorkspaceId *int
 
 	// Domain specific fields
 	ContainerId *int
@@ -106,8 +100,7 @@ type ActivityPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
+	UpdaterId int
 
 	// Domain specific fields
 	Comment *string `jsonapi:"attr,comment"`

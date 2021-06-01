@@ -77,7 +77,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		memberCreate := &api.MemberCreate{
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
 			CreatorId:   api.SYSTEM_BOT_ID,
 			Role:        api.Developer,
 			PrincipalId: user.ID,

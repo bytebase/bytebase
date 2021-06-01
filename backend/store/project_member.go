@@ -131,17 +131,15 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 		INSERT INTO project_member (
 			creator_id,
 			updater_id,
-			workspace_id,
 			project_id,
 			`+"`role`,"+`
 			principal_id
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, role, principal_id
+		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.ProjectId,
 		create.Role,
 		create.PrincipalId,
@@ -160,7 +158,6 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 		&projectMember.CreatedTs,
 		&projectMember.UpdaterId,
 		&projectMember.UpdatedTs,
-		&projectMember.WorkspaceId,
 		&projectMember.ProjectId,
 		&projectMember.Role,
 		&projectMember.PrincipalId,
@@ -177,9 +174,6 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.ProjectId; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
@@ -191,7 +185,6 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			project_id,
 		    role,
 		    principal_id
@@ -214,7 +207,6 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			&projectMember.CreatedTs,
 			&projectMember.UpdaterId,
 			&projectMember.UpdatedTs,
-			&projectMember.WorkspaceId,
 			&projectMember.ProjectId,
 			&projectMember.Role,
 			&projectMember.PrincipalId,
@@ -246,7 +238,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, project_id, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
 	`,
 		args...,
 	)
@@ -263,7 +255,6 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 			&projectMember.CreatedTs,
 			&projectMember.UpdaterId,
 			&projectMember.UpdatedTs,
-			&projectMember.WorkspaceId,
 			&projectMember.ProjectId,
 			&projectMember.Role,
 			&projectMember.PrincipalId,

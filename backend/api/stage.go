@@ -32,13 +32,12 @@ type Stage struct {
 	ID int `jsonapi:"primary,stage"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	// Just returns PipelineId otherwise would cause circular dependency.
@@ -55,8 +54,7 @@ type Stage struct {
 type StageCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Related fields
 	EnvironmentId int `jsonapi:"attr,environmentId"`
@@ -70,9 +68,6 @@ type StageCreate struct {
 
 type StageFind struct {
 	ID *int
-
-	// Standard fields
-	WorkspaceId *int
 
 	// Related fields
 	PipelineId *int

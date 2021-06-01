@@ -43,11 +43,9 @@ func (s *TaskScheduler) Run() error {
 						s.l.Error("Scheduler PANIC RECOVER", zap.Error(err))
 					}
 				}()
-				workspaceId := api.DEFAULT_WORKPSACE_ID
 				status := api.TaskRunning
 				taskFind := &api.TaskFind{
-					WorkspaceId: &workspaceId,
-					Status:      &status,
+					Status: &status,
 				}
 				list, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {

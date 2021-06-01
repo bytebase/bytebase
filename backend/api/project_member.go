@@ -26,13 +26,12 @@ type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
 
 	// Standard fields
-	CreatorId   int
-	Creator     *Principal `jsonapi:"attr,creator"`
-	CreatedTs   int64      `jsonapi:"attr,createdTs"`
-	UpdaterId   int
-	Updater     *Principal `jsonapi:"attr,updater"`
-	UpdatedTs   int64      `jsonapi:"attr,updatedTs"`
-	WorkspaceId int
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	// Just returns ProjectId otherwise would cause circular dependency.
@@ -47,8 +46,7 @@ type ProjectMember struct {
 type ProjectMemberCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId   int
-	WorkspaceId int
+	CreatorId int
 
 	// Related fields
 	ProjectId int
@@ -60,9 +58,6 @@ type ProjectMemberCreate struct {
 
 type ProjectMemberFind struct {
 	ID *int
-
-	// Standard fields
-	WorkspaceId *int
 
 	// Related fields
 	ProjectId *int
@@ -81,8 +76,7 @@ type ProjectMemberPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId   int
-	WorkspaceId int
+	UpdaterId int
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`

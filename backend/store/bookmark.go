@@ -110,16 +110,14 @@ func createBookmark(ctx context.Context, tx *Tx, create *api.BookmarkCreate) (*a
 		INSERT INTO bookmark (
 			creator_id,
 			updater_id,
-			workspace_id,
 			name,
 			link
 		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, name, link
+		VALUES (?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.Name,
 		create.Link,
 	)
@@ -137,7 +135,6 @@ func createBookmark(ctx context.Context, tx *Tx, create *api.BookmarkCreate) (*a
 		&bookmark.CreatedTs,
 		&bookmark.UpdaterId,
 		&bookmark.UpdatedTs,
-		&bookmark.WorkspaceId,
 		&bookmark.Name,
 		&bookmark.Link,
 	); err != nil {
@@ -156,9 +153,6 @@ func findBookmarkList(ctx context.Context, tx *Tx, find *api.BookmarkFind) (_ []
 	if v := find.CreatorId; v != nil {
 		where, args = append(where, "creator_id = ?"), append(args, *v)
 	}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
@@ -167,7 +161,6 @@ func findBookmarkList(ctx context.Context, tx *Tx, find *api.BookmarkFind) (_ []
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 		    name,
 		    link
 		FROM bookmark
@@ -189,7 +182,6 @@ func findBookmarkList(ctx context.Context, tx *Tx, find *api.BookmarkFind) (_ []
 			&bookmark.CreatedTs,
 			&bookmark.UpdaterId,
 			&bookmark.UpdatedTs,
-			&bookmark.WorkspaceId,
 			&bookmark.Name,
 			&bookmark.Link,
 		); err != nil {

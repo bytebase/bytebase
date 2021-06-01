@@ -25,9 +25,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		// Gets principal id from the context.
 		principalId := c.Get(GetPrincipalIdContextKey()).(int)
 
-		workspaceId := api.DEFAULT_WORKPSACE_ID
 		memberFind := &api.MemberFind{
-			WorkspaceId: &workspaceId,
 			PrincipalId: &principalId,
 		}
 		member, err := s.MemberService.FindMember(context.Background(), memberFind)

@@ -15,7 +15,7 @@ import (
 
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.POST("/environment", func(c echo.Context) error {
-		environmentCreate := &api.EnvironmentCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		environmentCreate := &api.EnvironmentCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, environmentCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create environment request").SetInternal(err)
 		}
@@ -42,10 +42,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 
 	g.GET("/environment", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		environmentFind := &api.EnvironmentFind{
-			WorkspaceId: &workspaceId,
-		}
+		environmentFind := &api.EnvironmentFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			environmentFind.RowStatus = &rowStatus
@@ -75,9 +72,8 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		environmentPatch := &api.EnvironmentPatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, environmentPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch environment request").SetInternal(err)
@@ -110,7 +106,6 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		for _, item := range patchList {
 			environmentPatch, _ := item.(*api.EnvironmentPatch)
-			environmentPatch.WorkspaceId = api.DEFAULT_WORKPSACE_ID
 			environmentPatch.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
 			_, err = s.EnvironmentService.PatchEnvironment(context.Background(), environmentPatch)
 			if err != nil {
@@ -121,10 +116,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			}
 		}
 
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		environmentFind := &api.EnvironmentFind{
-			WorkspaceId: &workspaceId,
-		}
+		environmentFind := &api.EnvironmentFind{}
 		list, err := s.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for reorder").SetInternal(err)

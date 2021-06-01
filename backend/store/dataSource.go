@@ -110,7 +110,6 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create
 		INSERT INTO data_source (
 			creator_id,
 			updater_id,
-			workspace_id,
 			instance_id,
 			database_id,
 			name,
@@ -118,12 +117,11 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create
 			username,
 			password
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, database_id, name, type, username, password
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.InstanceId,
 		create.DatabaseId,
 		create.Name,
@@ -145,7 +143,6 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create
 		&dataSource.CreatedTs,
 		&dataSource.UpdaterId,
 		&dataSource.UpdatedTs,
-		&dataSource.WorkspaceId,
 		&dataSource.InstanceId,
 		&dataSource.DatabaseId,
 		&dataSource.Name,
@@ -162,9 +159,6 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create
 func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find *api.DataSourceFind) (_ []*api.DataSource, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.WorkspaceId; v != nil {
-		where, args = append(where, "workspace_id = ?"), append(args, *v)
-	}
 	if v := find.InstanceId; v != nil {
 		where, args = append(where, "instance_id = ?"), append(args, *v)
 	}
@@ -182,7 +176,6 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			workspace_id,
 			instance_id,
 			database_id,
 		    name,
@@ -208,7 +201,6 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 			&dataSource.CreatedTs,
 			&dataSource.UpdaterId,
 			&dataSource.UpdatedTs,
-			&dataSource.WorkspaceId,
 			&dataSource.InstanceId,
 			&dataSource.DatabaseId,
 			&dataSource.Name,
@@ -246,7 +238,7 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 		UPDATE data_source
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, workspace_id, instance_id, database_id, name, type, username, password
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
 	`,
 		args...,
 	)
@@ -263,7 +255,6 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 			&dataSource.CreatedTs,
 			&dataSource.UpdaterId,
 			&dataSource.UpdatedTs,
-			&dataSource.WorkspaceId,
 			&dataSource.InstanceId,
 			&dataSource.DatabaseId,
 			&dataSource.Name,

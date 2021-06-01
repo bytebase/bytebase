@@ -32,19 +32,17 @@ func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *
 		INSERT INTO task_run (
 			creator_id,
 			updater_id,
-			workspace_id,
 			task_id,
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?, 'RUNNING', ?, ?)
+		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.WorkspaceId,
 		create.TaskId,
 		create.Name,
 		create.Type,

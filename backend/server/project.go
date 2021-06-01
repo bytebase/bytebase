@@ -14,7 +14,7 @@ import (
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.POST("/project", func(c echo.Context) error {
-		projectCreate := &api.ProjectCreate{WorkspaceId: api.DEFAULT_WORKPSACE_ID}
+		projectCreate := &api.ProjectCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
@@ -39,10 +39,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project", func(c echo.Context) error {
-		workspaceId := api.DEFAULT_WORKPSACE_ID
-		projectFind := &api.ProjectFind{
-			WorkspaceId: &workspaceId,
-		}
+		projectFind := &api.ProjectFind{}
 		if userIdStr := c.QueryParam("user"); userIdStr != "" {
 			userId, err := strconv.Atoi(userIdStr)
 			if err != nil {
@@ -100,9 +97,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		projectPatch := &api.ProjectPatch{
-			ID:          id,
-			WorkspaceId: api.DEFAULT_WORKPSACE_ID,
-			UpdaterId:   c.Get(GetPrincipalIdContextKey()).(int),
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
