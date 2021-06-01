@@ -36,6 +36,12 @@ func (e ActivityType) String() string {
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
 // convert to the expected struct there.
+type ActivityIssueFieldUpdatePayload struct {
+	FieldId  IssueFieldId `json:"fieldId"`
+	OldValue string       `json:"oldValue,omitempty"`
+	NewValue string       `json:"newValue,omitempty"`
+}
+
 type ActivityIssueStatusUpdatePayload struct {
 	OldStatus IssueStatus `json:"oldStatus,omitempty"`
 	NewStatus IssueStatus `json:"newStatus,omitempty"`

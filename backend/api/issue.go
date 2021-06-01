@@ -53,6 +53,20 @@ func (e IssueType) String() string {
 	return "bb.unknown"
 }
 
+// It has to be string type because the id for stage field contain multiple parts.
+type IssueFieldId string
+
+const (
+	IssueFieldName           IssueFieldId = "1"
+	IssueFieldStatus         IssueFieldId = "2"
+	IssueFieldAssignee       IssueFieldId = "3"
+	IssueFieldDescription    IssueFieldId = "4"
+	IssueFieldProject        IssueFieldId = "5"
+	IssueFieldSubscriberList IssueFieldId = "6"
+	IssueFieldSql            IssueFieldId = "7"
+	IssueFieldRollbackSql    IssueFieldId = "8"
+)
+
 type IssuePayload struct {
 }
 
@@ -134,9 +148,6 @@ type IssuePatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
-
-	// Related fields
-	ProjectId *int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`

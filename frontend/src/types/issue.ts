@@ -65,9 +65,6 @@ export type IssueCreate = {
 };
 
 export type IssuePatch = {
-  // Related fields
-  projectId?: ProjectId;
-
   // Standard fields
   updaterId: PrincipalId;
 
@@ -76,8 +73,6 @@ export type IssuePatch = {
   description?: string;
   assigneeId?: PrincipalId;
   subscriberIdList?: PrincipalId[];
-  sql?: string;
-  rollbackSql?: string;
   payload?: IssuePayload;
 };
 

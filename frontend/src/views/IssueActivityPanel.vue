@@ -670,14 +670,9 @@ export default {
       );
       return list.filter((activity: Activity) => {
         if (activity.actionType == "bb.issue.field.update") {
-          let containUserVisibleChange = false;
-          for (const update of (activity.payload as ActionFieldUpdatePayload)
-            ?.changeList || []) {
-            if (update.fieldId != IssueBuiltinFieldId.SUBSCRIBER_LIST) {
-              containUserVisibleChange = true;
-              break;
-            }
-          }
+          let containUserVisibleChange =
+            (activity.payload as ActionFieldUpdatePayload).fieldId !=
+            IssueBuiltinFieldId.SUBSCRIBER_LIST;
           return containUserVisibleChange;
         }
         return true;
@@ -826,82 +821,72 @@ export default {
         case "bb.issue.comment.create":
           return "commented";
         case "bb.issue.field.update": {
-          const updateInfoList: string[] = [];
-          for (const update of (activity.payload as ActionFieldUpdatePayload)
-            ?.changeList || []) {
-            let name = "Unknown Field";
-            let oldValue = undefined;
-            let newValue = undefined;
+          const update = activity.payload as ActionFieldUpdatePayload;
 
-            switch (update.fieldId) {
-              case IssueBuiltinFieldId.ASSIGNEE: {
-                if (update.oldValue && update.newValue) {
-                  const oldName = store.getters["principal/principalById"](
-                    update.oldValue
-                  ).name;
+          let name = "Unknown Field";
+          let oldValue = undefined;
+          let newValue = undefined;
 
-                  const newName = store.getters["principal/principalById"](
-                    update.newValue
-                  ).name;
+          switch (update.fieldId) {
+            case IssueBuiltinFieldId.ASSIGNEE: {
+              if (update.oldValue && update.newValue) {
+                const oldName = store.getters["principal/principalById"](
+                  update.oldValue
+                ).name;
 
-                  updateInfoList.push(
-                    `re-assigned issue from ${oldName} to ${newName}`
-                  );
-                } else if (!update.oldValue && update.newValue) {
-                  const newName = store.getters["principal/principalById"](
-                    update.newValue
-                  ).name;
+                const newName = store.getters["principal/principalById"](
+                  update.newValue
+                ).name;
 
-                  updateInfoList.push(`assigned issue to ${newName}`);
-                } else if (update.oldValue && !update.newValue) {
-                  const oldName = store.getters["principal/principalById"](
-                    update.oldValue
-                  ).name;
+                return `reassigned issue from ${oldName} to ${newName}`;
+              } else if (!update.oldValue && update.newValue) {
+                const newName = store.getters["principal/principalById"](
+                  update.newValue
+                ).name;
 
-                  updateInfoList.push(`un-assigned issue from ${oldName}`);
-                }
+                return `assigned issue to ${newName}`;
+              } else if (update.oldValue && !update.newValue) {
+                const oldName = store.getters["principal/principalById"](
+                  update.oldValue
+                ).name;
+
+                return `unassigned issue from ${oldName}`;
+              } else {
+                return `invalid assignee update`;
               }
-              case IssueBuiltinFieldId.SUBSCRIBER_LIST: {
-                continue;
+            }
+            // We don't display subscriber change for now
+            case IssueBuiltinFieldId.SUBSCRIBER_LIST:
+              break;
+            case IssueBuiltinFieldId.DESCRIPTION:
+              // Description could be very long, so we don't display it.
+              return "changed description";
+            case IssueBuiltinFieldId.NAME:
+            case IssueBuiltinFieldId.PROJECT:
+            case IssueBuiltinFieldId.SQL:
+            case IssueBuiltinFieldId.ROLLBACK_SQL: {
+              if (update.fieldId == IssueBuiltinFieldId.NAME) {
+                name = "name";
+              } else if (update.fieldId == IssueBuiltinFieldId.SQL) {
+                name = "SQL";
+              } else if (update.fieldId == IssueBuiltinFieldId.ROLLBACK_SQL) {
+                name = "Rollback SQL";
               }
-              case IssueBuiltinFieldId.NAME:
-              case IssueBuiltinFieldId.DESCRIPTION:
-              case IssueBuiltinFieldId.PROJECT:
-              case IssueBuiltinFieldId.SQL:
-              case IssueBuiltinFieldId.ROLLBACK_SQL: {
-                if (update.fieldId == IssueBuiltinFieldId.NAME) {
-                  name = "name";
-                } else if (update.fieldId == IssueBuiltinFieldId.DESCRIPTION) {
-                  name = "description";
-                  // Description could be very long, so we don't display it.
-                  oldValue = "";
-                  newValue = "";
-                } else if (update.fieldId == IssueBuiltinFieldId.SQL) {
-                  name = "SQL";
-                } else if (update.fieldId == IssueBuiltinFieldId.ROLLBACK_SQL) {
-                  name = "Rollback SQL";
-                }
 
-                oldValue = update.oldValue;
-                newValue = update.newValue;
-                if (oldValue && newValue) {
-                  updateInfoList.push(
-                    `changed ${name} from "${oldValue}" to "${newValue}"`
-                  );
-                } else if (oldValue) {
-                  updateInfoList.push(`unset "${name} from "${oldValue}"`);
-                } else if (newValue) {
-                  updateInfoList.push(`set ${name} to "${newValue}"`);
-                } else {
-                  updateInfoList.push(`changed ${name}`);
-                }
+              oldValue = update.oldValue;
+              newValue = update.newValue;
+              if (oldValue && newValue) {
+                return `changed ${name} from "${oldValue}" to "${newValue}"`;
+              } else if (oldValue) {
+                return `unset "${name} from "${oldValue}"`;
+              } else if (newValue) {
+                return `set ${name} to "${newValue}"`;
+              } else {
+                return `changed ${name} update`;
               }
             }
           }
 
-          if (updateInfoList.length > 0) {
-            return updateInfoList.join("; ");
-          }
           return "updated";
         }
         case "bb.issue.status.update": {

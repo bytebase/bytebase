@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -159,24 +160,107 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch issue request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue request").SetInternal(err)
 		}
 
-		issue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+		issueFind := &api.IssueFind{
+			ID: &id,
+		}
+		issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch issue ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
+		updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue ID: %v", id)).SetInternal(err)
+		}
+
+		payloadList := [][]byte{}
+		if issuePatch.Name != nil && *issuePatch.Name != issue.Name {
+			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
+				FieldId:  api.IssueFieldName,
+				OldValue: issue.Name,
+				NewValue: *issuePatch.Name,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue name: %v", updatedIssue.Name)).SetInternal(err)
+			}
+			payloadList = append(payloadList, payload)
+		}
+		if issuePatch.Description != nil && *issuePatch.Description != issue.Description {
+			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
+				FieldId:  api.IssueFieldDescription,
+				OldValue: issue.Description,
+				NewValue: *issuePatch.Description,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue description: %v", updatedIssue.Name)).SetInternal(err)
+			}
+			payloadList = append(payloadList, payload)
+		}
+		if issuePatch.AssigneeId != nil && *issuePatch.AssigneeId != issue.AssigneeId {
+			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
+				FieldId:  api.IssueFieldAssignee,
+				OldValue: strconv.Itoa(issue.AssigneeId),
+				NewValue: strconv.Itoa(*issuePatch.AssigneeId),
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue assignee: %v", updatedIssue.Name)).SetInternal(err)
+			}
+			payloadList = append(payloadList, payload)
+		}
+		if issuePatch.SubscriberIdList != nil {
+			oldSubscriberIdList := []string{}
+			for _, item := range issue.SubscriberIdList {
+				oldSubscriberIdList = append(oldSubscriberIdList, strconv.Itoa(item))
+			}
+			oldSubscriberIdStr := strings.Join(oldSubscriberIdList, ",")
+
+			newSubscriberIdList := []string{}
+			for _, item := range *issuePatch.SubscriberIdList {
+				newSubscriberIdList = append(newSubscriberIdList, strconv.Itoa(item))
+			}
+			newSubscriberIdStr := strings.Join(newSubscriberIdList, ",")
+
+			if newSubscriberIdStr != oldSubscriberIdStr {
+				payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
+					FieldId:  api.IssueFieldSubscriberList,
+					OldValue: oldSubscriberIdStr,
+					NewValue: newSubscriberIdStr,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue subscribers: %v", updatedIssue.Name)).SetInternal(err)
+				}
+				payloadList = append(payloadList, payload)
+			}
+		}
+
+		for _, payload := range payloadList {
+			_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+				ContainerId: issue.ID,
+				Type:        api.ActivityIssueFieldUpdate,
+				Payload:     string(payload),
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
+			}
+		}
+
+		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue, c.Get(getIncludeKey()).([]string)); err != nil {
 			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedIssue); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update issue response: %v", updatedIssue.Name)).SetInternal(err)
 		}
 		return nil
 	})
