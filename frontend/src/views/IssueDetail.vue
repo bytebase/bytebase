@@ -142,7 +142,6 @@
                 :issue="issue"
                 :create="state.create"
                 :rollback="false"
-                :allowEdit="allowEditSql"
                 @update-sql="updateSql"
               />
             </section>
@@ -151,7 +150,6 @@
                 :issue="issue"
                 :create="state.create"
                 :rollback="true"
-                :allowEdit="allowEditSql"
                 @update-sql="updateRollbackSql"
               />
             </section>
@@ -458,36 +456,13 @@ export default {
       }
     };
 
-    const updateSql = (
-      newSql: string,
-      postUpdated: (updatedIssue: Issue) => void
-    ) => {
-      if (state.create) {
-        state.newIssue!.sql = newSql;
-      } else {
-        patchIssue(
-          {
-            sql: newSql,
-          },
-          postUpdated
-        );
-      }
+    // We only allow updating sql/rollback upon issue creation.
+    const updateSql = (newSql: string) => {
+      state.newIssue!.sql = newSql;
     };
 
-    const updateRollbackSql = (
-      newSql: string,
-      postUpdated: (updatedIssue: Issue) => void
-    ) => {
-      if (state.create) {
-        state.newIssue!.rollbackSql = newSql;
-      } else {
-        patchIssue(
-          {
-            rollbackSql: newSql,
-          },
-          postUpdated
-        );
-      }
+    const updateRollbackSql = (newSql: string) => {
+      state.newIssue!.rollbackSql = newSql;
     };
 
     const updateDescription = (
