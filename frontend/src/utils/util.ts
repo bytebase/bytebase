@@ -30,6 +30,18 @@ export function humanizeTs(ts: number) {
   return time.local().format("MMM D YYYY");
 }
 
+export function bytesToString(size: number) {
+  const unitList = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  for (i = 0; i < unitList.length; i++) {
+    if (size < 1024) {
+      break;
+    }
+    size = size / 1024;
+  }
+  return size.toString() + " " + unitList[i];
+}
+
 export function urlfy(str: string) {
   let result = str.trim();
   if (result.search(/^http[s]?\:\/\//) == -1) {

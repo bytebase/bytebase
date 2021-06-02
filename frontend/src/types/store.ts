@@ -11,6 +11,7 @@ import {
   IssueId,
   ProjectId,
   PrincipalId,
+  DatabaseId,
 } from "./id";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
@@ -20,6 +21,7 @@ import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { Notification } from "./notification";
+import { Table } from "./table";
 
 export interface AuthState {
   currentUser: Principal;
@@ -88,6 +90,10 @@ export interface DatabaseState {
   // follows that hierarchy.
   // If this causes performance issue, we will add caching later (and deal with the consistency)
   databaseListByInstanceId: Map<InstanceId, Database[]>;
+}
+
+export interface TableState {
+  tableListByDatabaseId: Map<DatabaseId, Table[]>;
 }
 
 export interface NotificationState {

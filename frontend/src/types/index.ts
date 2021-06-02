@@ -8,6 +8,7 @@ export * from "./issue";
 export * from "./pipeline";
 export * from "./instance";
 export * from "./database";
+export * from "./table";
 export * from "./dataSource";
 export * from "./sql";
 export * from "./bookmark";

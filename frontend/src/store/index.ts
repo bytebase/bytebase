@@ -10,6 +10,7 @@ import project from "./modules/project";
 import instance from "./modules/instance";
 import dataSource from "./modules/dataSource";
 import database from "./modules/database";
+import table from "./modules/table";
 import sql from "./modules/sql";
 import principal from "./modules/principal";
 import plan from "./modules/plan";
@@ -43,6 +44,7 @@ export const store: Store<any> = createStore({
     instance,
     dataSource,
     database,
+    table,
     sql,
     principal,
     plan,

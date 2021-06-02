@@ -3,7 +3,14 @@
     <main class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
+        class="
+          px-4
+          pb-4
+          border-b border-block-border
+          md:flex
+          md:items-center
+          md:justify-between
+        "
       >
         <div class="flex-1 min-w-0">
           <!-- Summary -->
@@ -11,7 +18,15 @@
             <div>
               <div class="flex items-center">
                 <h1
-                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
+                  class="
+                    pt-2
+                    pb-2.5
+                    text-xl
+                    font-bold
+                    leading-6
+                    text-main
+                    truncate
+                  "
                 >
                   {{ database.name }}
                 </h1>
@@ -19,7 +34,12 @@
             </div>
           </div>
           <dl
-            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+            class="
+              flex flex-col
+              space-y-1
+              md:space-y-0
+              md:flex-row md:flex-wrap
+            "
           >
             <dt class="sr-only">Environment</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -120,6 +140,13 @@
               </dd>
             </div>
           </dl>
+
+          <div class="pt-6">
+            <div class="text-lg leading-6 font-medium text-main mb-4">
+              Tables
+            </div>
+            <TableTable :tableList="tableList" />
+          </div>
 
           <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
           <div v-if="false" class="pt-6">
@@ -280,6 +307,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
+import TableTable from "../components/TableTable.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
@@ -303,6 +331,7 @@ export default {
   components: {
     DataSourceConnectionPanel,
     DataSourceTable,
+    TableTable,
     PrincipalSelect,
     ProjectSelect,
   },
@@ -317,12 +346,27 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const prepareTableList = () => {
+      store.dispatch(
+        "table/fetchTableListByDatabaseId",
+        idFromSlug(props.databaseSlug)
+      );
+    };
+
+    watchEffect(prepareTableList);
+
     const hasDataSourceFeature = computed(() =>
       store.getters["plan/feature"]("bb.data-source")
     );
 
     const database = computed(() => {
       return store.getters["database/databaseById"](
+        idFromSlug(props.databaseSlug)
+      );
+    });
+
+    const tableList = computed(() => {
+      return store.getters["table/tableListByDatabaseId"](
         idFromSlug(props.databaseSlug)
       );
     });
@@ -440,6 +484,7 @@ export default {
     return {
       state,
       database,
+      tableList,
       hasDataSourceFeature,
       isCurrentUserDBAOrOwner,
       allowChangeProject,

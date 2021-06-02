@@ -20,6 +20,7 @@ p, DBA, /database, POST
 p, DBA, /database, GET
 p, DBA, /database/{id}, GET
 p, DBA, /database/{id}, PATCH
+p, DBA, /database/{id}/table, GET
 p, DBA, /issue, POST
 p, DBA, /issue, GET
 p, DBA, /issue/{id}, GET

@@ -35,6 +35,8 @@ export type DataSourceId = IdType;
 
 export type DatabaseId = IdType;
 
+export type TableId = IdType;
+
 export type CommandId = IdType;
 export type CommandRegisterId = IdType;
 
