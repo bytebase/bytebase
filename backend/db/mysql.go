@@ -59,8 +59,58 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		"'sys'",
 	}
 
-	where := fmt.Sprintf("SCHEMA_NAME NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	// Query table info
+	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	tableRows, err := driver.db.QueryContext(ctx, `
+			SELECT
+				TABLE_SCHEMA, 
+				TABLE_NAME,
+				UNIX_TIMESTAMP(CREATE_TIME),
+				IFNULL(UNIX_TIMESTAMP(UPDATE_TIME), 0),
+				ENGINE,
+				TABLE_COLLATION,
+				TABLE_ROWS,
+				DATA_LENGTH,
+				INDEX_LENGTH
+			FROM information_schema.TABLES
+			WHERE `+tableWhere,
+	)
+	if err != nil {
+		return nil, err
+	}
 
+	// dbName -> tableList map
+	tableMap := make(map[string][]DBTable)
+	for tableRows.Next() {
+		var dbName string
+		var table DBTable
+		if err := tableRows.Scan(
+			&dbName,
+			&table.Name,
+			&table.CreatedTs,
+			&table.UpdatedTs,
+			&table.Engine,
+			&table.Collation,
+			&table.RowCount,
+			&table.DataSize,
+			&table.IndexSize,
+		); err != nil {
+			driver.l.Info(fmt.Sprintf("%v", err))
+			return nil, err
+		}
+
+		tableList, ok := tableMap[dbName]
+		if ok {
+			tableMap[dbName] = append(tableList, table)
+		} else {
+			list := make([]DBTable, 0)
+			tableMap[dbName] = append(list, table)
+		}
+	}
+	tableRows.Close()
+
+	// Query db info
+	where := fmt.Sprintf("SCHEMA_NAME NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	rows, err := driver.db.QueryContext(ctx, `
 		SELECT 
 		    SCHEMA_NAME,
@@ -84,6 +134,8 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		); err != nil {
 			return nil, err
 		}
+
+		schema.TableList = tableMap[schema.Name]
 
 		list = append(list, &schema)
 	}

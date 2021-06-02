@@ -51,6 +51,7 @@ func (m *Main) Run() error {
 	server.EnvironmentService = store.NewEnvironmentService(m.l, db)
 	server.InstanceService = store.NewInstanceService(m.l, db)
 	server.DatabaseService = store.NewDatabaseService(m.l, db)
+	server.TableService = store.NewTableService(m.l, db)
 	server.DataSourceService = store.NewDataSourceService(m.l, db)
 	server.IssueService = store.NewIssueService(m.l, db)
 	server.PipelineService = store.NewPipelineService(m.l, db)

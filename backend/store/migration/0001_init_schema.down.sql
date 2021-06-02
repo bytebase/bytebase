@@ -14,6 +14,8 @@ DROP TABLE pipeline;
 
 DROP TABLE data_source;
 
+DROP TABLE db_table;
+
 DROP TABLE db;
 
 DROP TABLE instance;

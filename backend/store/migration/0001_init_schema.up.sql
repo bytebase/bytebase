@@ -242,8 +242,8 @@ WHERE
 
 END;
 
--- db table stores the databases for a particular instance
--- data is sycned periodically from the instance
+-- db stores the databases for a particular instance
+-- data is synced periodically from the instance
 CREATE TABLE db (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -277,6 +277,49 @@ UPDATE
     ON `db` FOR EACH ROW BEGIN
 UPDATE
     `db`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- db_table stores the table for a particular database
+-- data is synced periodically from the instance
+CREATE TABLE db_table (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL REFERENCES db (id),
+    name TEXT NOT NULL,
+    `engine` TEXT NOT NULL,
+    `collation` TEXT NOT NULL,
+    row_count BIGINT NOT NULL,
+    data_size BIGINT NOT NULL,
+    index_size BIGINT NOT NULL,
+    sync_status TEXT NOT NULL CHECK (
+        sync_status IN ('OK', 'DRIFTED', 'NOT_FOUND')
+    ),
+    last_successful_sync_ts BIGINT NOT NULL,
+    UNIQUE(database_id, name)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('db_table', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_db_table_modification_time`
+AFTER
+UPDATE
+    ON `db_table` FOR EACH ROW BEGIN
+UPDATE
+    `db_table`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

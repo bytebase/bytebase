@@ -33,6 +33,7 @@ type Server struct {
 	EnvironmentService   api.EnvironmentService
 	InstanceService      api.InstanceService
 	DatabaseService      api.DatabaseService
+	TableService         api.TableService
 	DataSourceService    api.DataSourceService
 	IssueService         api.IssueService
 	PipelineService      api.PipelineService

@@ -23,10 +23,22 @@ func (e Type) String() string {
 	return "UNKNOWN"
 }
 
+type DBTable struct {
+	Name      string
+	CreatedTs int64
+	UpdatedTs int64
+	Engine    string
+	Collation string
+	RowCount  int64
+	DataSize  int64
+	IndexSize int64
+}
+
 type DBSchema struct {
 	Name         string
 	CharacterSet string
 	Collation    string
+	TableList    []DBTable
 }
 
 var (
