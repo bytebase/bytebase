@@ -16,7 +16,7 @@ const getters = {};
 
 const actions = {
   async ping({ commit }: any, sqlConfig: SqlConfig) {
-    const resultSet = (
+    const data = (
       await axios.post(`/api/sql/ping`, {
         data: {
           type: "sqlConfig",
@@ -25,22 +25,29 @@ const actions = {
       })
     ).data.data;
 
-    return convert(resultSet);
+    return convert(data);
   },
   async syncSchema({ dispatch }: any, instanceId: InstanceId) {
-    await axios.post(`/api/sql/syncschema`, {
-      data: {
-        type: "sqlSyncSchema",
-        attributes: {
-          instanceId,
+    const data = (
+      await axios.post(`/api/sql/syncschema`, {
+        data: {
+          type: "sqlSyncSchema",
+          attributes: {
+            instanceId,
+          },
         },
-      },
-    });
+      })
+    ).data.data;
 
-    // Refresh the corresponding database list.
-    dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
-      root: true,
-    });
+    const resultSet = convert(data);
+    if (!resultSet.error) {
+      // Refresh the corresponding database list.
+      dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
+        root: true,
+      });
+    }
+
+    return resultSet;
   },
 };
 

@@ -59,7 +59,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
-import { Instance } from "../types";
+import { Instance, SqlResultSet } from "../types";
 
 export default {
   name: "InstanceDetail",
@@ -146,7 +146,18 @@ export default {
     };
 
     const syncSchema = () => {
-      store.dispatch("sql/syncSchema", instance.value.id);
+      store
+        .dispatch("sql/syncSchema", instance.value.id)
+        .then((resultSet: SqlResultSet) => {
+          if (resultSet.error) {
+            store.dispatch("notification/pushNotification", {
+              module: "bytebase",
+              style: "CRITICAL",
+              title: `Failed to sync instance '${instance.value.name}'.`,
+              description: resultSet.error,
+            });
+          }
+        });
     };
 
     return {
