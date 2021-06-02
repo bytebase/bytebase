@@ -158,11 +158,13 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 		where, args = append(where, "task_id = ?"), append(args, *v)
 	}
 
-	statusList := []string{}
-	for _, status := range find.StatusList {
-		statusList = append(statusList, fmt.Sprintf("%v", status))
+	if len(find.StatusList) > 0 {
+		statusList := []string{}
+		for _, status := range find.StatusList {
+			statusList = append(statusList, fmt.Sprintf("%v", status))
+		}
+		where, args = append(where, "`status` IN (?)"), append(args, strings.Join(statusList, ", "))
 	}
-	where, args = append(where, "`status` IN (?)"), append(args, strings.Join(statusList, ", "))
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
