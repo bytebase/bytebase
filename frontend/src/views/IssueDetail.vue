@@ -84,6 +84,9 @@
           :selectedStage="selectedStage"
           @select-stage-id="selectStageId"
         />
+        <div class="px-4 py-4 md:flex md:flex-col border-b">
+          <IssueStagePanel :stage="selectedStage" />
+        </div>
       </template>
     </template>
 
@@ -203,6 +206,7 @@ import {
   activeTask,
 } from "../utils";
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
+import IssueStagePanel from "../views/IssueStagePanel.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
 import IssueStatementPanel from "./IssueStatementPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
@@ -263,6 +267,7 @@ export default {
   },
   components: {
     IssueHighlightPanel,
+    IssueStagePanel,
     IssueOutputPanel,
     IssueStatementPanel,
     IssueDescriptionPanel,
