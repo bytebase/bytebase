@@ -100,7 +100,7 @@ export function getIntCookie(name: string): number | undefined {
   const list = document.cookie.split(";");
   for (var i = 0; i < list.length; i++) {
     const parts = list[i].split("=");
-    if (parts[0] == name) {
+    if (parts[0].trim() == name) {
       return parts.length > 1 ? parseInt(parts[1]) : undefined;
     }
   }
@@ -112,7 +112,7 @@ export function getStringCookie(name: string): string {
   const list = document.cookie.split(";");
   for (var i = 0; i < list.length; i++) {
     const parts = list[i].split("=");
-    if (parts[0] == name) {
+    if (parts[0].trim() == name) {
       // For now, just assumes strings are enclosed by quotes
       return parts.length > 1 ? parts[1].slice(1, -1) : "";
     }
@@ -126,7 +126,7 @@ export function removeCookie(name: string) {
   const list = document.cookie.split(";");
   for (var i = 0; i < list.length; i++) {
     const parts = list[i].split("=");
-    if (parts[0] == name) {
+    if (parts[0].trim() == name) {
       newList.push(`${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT`);
     } else {
       newList.push(list[i]);
