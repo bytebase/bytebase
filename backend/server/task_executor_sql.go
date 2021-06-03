@@ -26,11 +26,11 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 		return true, fmt.Errorf("invalid schema update payload: %w", err)
 	}
 
-	if payload.Sql == "" {
+	if payload.Statement == "" {
 		return true, fmt.Errorf("missing sql statement")
 	}
 
-	exec.l.Info(fmt.Sprintf("sql executor: run %v", payload.Sql))
+	exec.l.Info(fmt.Sprintf("sql executor: run %v", payload.Statement))
 
 	if err := server.ComposeTaskRelationship(ctx, task, []string{}); err != nil {
 		return true, err
@@ -48,7 +48,7 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 		return true, fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}
 
-	_, err = db.Execute(ctx, payload.Sql)
+	_, err = db.Execute(ctx, payload.Statement)
 	if err != nil {
 		return true, err
 	}

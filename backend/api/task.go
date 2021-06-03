@@ -45,9 +45,12 @@ const (
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
 )
 
+// These payload types are only used when marshalling to the json format for saving into the database.
+// So we annotate with json tag using camelCase naming which is consistent with normal
+// json naming convention
 type TaskDatabaseSchemaUpdatePayload struct {
-	Sql         string
-	RollbackSql string
+	Statement         string `json:"statement,omitempty"`
+	RollbackStatement string `json:"rollbackStatement,omitempty"`
 }
 
 type Task struct {
