@@ -118,6 +118,18 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 		return err
 	}
 
+	for _, taskRun := range task.TaskRunList {
+		taskRun.Creator, err = s.ComposePrincipalById(context.Background(), taskRun.CreatorId, includeList)
+		if err != nil {
+			return err
+		}
+
+		taskRun.Updater, err = s.ComposePrincipalById(context.Background(), taskRun.UpdaterId, includeList)
+		if err != nil {
+			return err
+		}
+	}
+
 	task.Database, err = s.ComposeDatabaseById(context.Background(), task.DatabaseId, includeList)
 	if err != nil {
 		return err
