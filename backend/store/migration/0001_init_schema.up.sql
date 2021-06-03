@@ -284,9 +284,9 @@ WHERE
 
 END;
 
--- db_table stores the table for a particular database
+-- tbl stores the table for a particular database
 -- data is synced periodically from the instance
-CREATE TABLE db_table (
+CREATE TABLE tbl (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
@@ -312,14 +312,14 @@ CREATE TABLE db_table (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('db_table', 1000);
+    ('tbl', 1000);
 
-CREATE TRIGGER IF NOT EXISTS `trigger_update_db_table_modification_time`
+CREATE TRIGGER IF NOT EXISTS `trigger_update_tbl_modification_time`
 AFTER
 UPDATE
-    ON `db_table` FOR EACH ROW BEGIN
+    ON `tbl` FOR EACH ROW BEGIN
 UPDATE
-    `db_table`
+    `tbl`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

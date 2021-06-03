@@ -107,7 +107,7 @@ func (s *TableService) PatchTable(ctx context.Context, patch *api.TablePatch) (*
 func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.TableCreate) (*api.Table, error) {
 	// Insert row into table.
 	row, err := tx.QueryContext(ctx, `
-		INSERT INTO db_table (
+		INSERT INTO tbl (
 			creator_id,
 			updater_id,
 			database_id,
@@ -192,7 +192,7 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 			index_size,
 		    sync_status,
 			last_successful_sync_ts
-		FROM db_table
+		FROM tbl
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -248,7 +248,7 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 
 	// Execute update query with RETURNING.
 	row, err := tx.QueryContext(ctx, `
-		UPDATE db_table
+		UPDATE tbl
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, row_count, data_size, index_size, sync_status, last_successful_sync_ts
