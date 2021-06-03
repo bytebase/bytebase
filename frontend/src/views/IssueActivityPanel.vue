@@ -283,6 +283,7 @@
                 <div class="ml-3 min-w-0 flex-1">
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
+                      {{ actionSubjectPrefix(activity) }}
                       <router-link
                         :to="actionSubject(activity).link"
                         class="
@@ -783,6 +784,15 @@ export default {
       return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
     };
 
+    const actionSubjectPrefix = (activity: Activity): string => {
+      if (activity.creator.id == SYSTEM_BOT_ID) {
+        if (activity.actionType == "bb.pipeline.task.status.update") {
+          return "Task ";
+        }
+      }
+      return "";
+    };
+
     const actionSubject = (activity: Activity): ActionSubject => {
       if (activity.creator.id == SYSTEM_BOT_ID) {
         if (activity.actionType == "bb.pipeline.task.status.update") {
@@ -902,34 +912,34 @@ export default {
         }
         case "bb.pipeline.task.status.update": {
           const payload = activity.payload as ActionTaskStatusUpdatePayload;
-          var str = `task changed`;
+          var str = `changed`;
           switch (payload.newStatus) {
             case "PENDING": {
               if (payload.oldStatus == "RUNNING") {
-                str = `task canceled`;
+                str = `canceled`;
               } else if (payload.oldStatus == "PENDING_APPROVAL") {
-                str = `task approved`;
+                str = `approved`;
               }
               break;
             }
             case "RUNNING": {
-              str = `task started`;
+              str = `started`;
               break;
             }
             case "DONE": {
-              str = `task completed`;
+              str = `completed`;
               break;
             }
             case "FAILED": {
-              str = `task failed`;
+              str = `failed`;
               break;
             }
           }
           if (activity.creator.id != SYSTEM_BOT_ID) {
-            // If creator is not the robot, then we reverse the phrase
-            str = str.split(" ").reverse().join(" ");
+            // If creator is not the robot (which means we do NOT use task name in the subject),
+            // then we append the task name here.
             const task = findTaskById(props.issue.pipeline, payload.taskId);
-            str += ` ${task.name}`;
+            str += ` task ${task.name}`;
           }
           return str;
         }
@@ -946,6 +956,7 @@ export default {
       editCommentTextArea,
       currentUser,
       actionIcon,
+      actionSubjectPrefix,
       actionSubject,
       actionSentence,
       doCreateComment,
