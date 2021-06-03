@@ -10,7 +10,6 @@ type TaskRunStatus string
 
 const (
 	TaskRunUnknown  TaskRunStatus = "UNKNOWN"
-	TaskRunPending  TaskRunStatus = "PENDING"
 	TaskRunRunning  TaskRunStatus = "RUNNING"
 	TaskRunDone     TaskRunStatus = "DONE"
 	TaskRunFailed   TaskRunStatus = "FAILED"
@@ -19,8 +18,6 @@ const (
 
 func (e TaskRunStatus) String() string {
 	switch e {
-	case TaskRunPending:
-		return "PENDING"
 	case TaskRunRunning:
 		return "RUNNING"
 	case TaskRunDone:

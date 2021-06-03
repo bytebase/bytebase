@@ -490,7 +490,6 @@ CREATE TABLE task_run (
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (
         `status` IN (
-            'PENDING',
             'RUNNING',
             'DONE',
             'FAILED',
