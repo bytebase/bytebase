@@ -7,7 +7,8 @@ INSERT INTO
         task_id,
         name,
         `status`,
-        `type`
+        `type`,
+        error
     )
 VALUES
     (
@@ -17,5 +18,6 @@ VALUES
         11006,
         'UPDATE fakedb1 task run',
         'FAILED',
-        'bb.task.database.schema.update'
+        'bb.task.database.schema.update',
+        'fake execution error'
     );

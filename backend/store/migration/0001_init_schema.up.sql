@@ -497,6 +497,7 @@ CREATE TABLE task_run (
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
+    error TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT '{}'
 );
 

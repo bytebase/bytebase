@@ -8,7 +8,7 @@
     :rowClickable="false"
   >
     <template v-slot:body="{ rowData: taskRun }">
-      <BBTableCell :leftPadding="4" class="table-cell w-24">
+      <BBTableCell :leftPadding="4" class="table-cell w-12">
         <div class="flex flex-row space-x-2">
           <div
             class="
@@ -73,7 +73,10 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell class="table-cell w-16">
+      <BBTableCell class="table-cell w-36">
+        {{ taskRun.error }}
+      </BBTableCell>
+      <BBTableCell class="table-cell w-12">
         <div class="flex flex-row items-center space-x-2">
           <BBAvatar :username="taskRun.creator.name" :size="'small'" />
           <div class="flex flex-col">
@@ -85,10 +88,10 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell class="table-cell w-16">
+      <BBTableCell class="table-cell w-12">
         {{ humanizeTs(taskRun.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="table-cell w-16">
+      <BBTableCell class="table-cell w-12">
         {{ humanizeTs(taskRun.updatedTs) }}
       </BBTableCell>
     </template>
@@ -103,6 +106,9 @@ import { TaskRun, TaskRunStatus } from "../types";
 const columnList: BBTableColumn[] = [
   {
     title: "Status",
+  },
+  {
+    title: "Error",
   },
   {
     title: "Invoker",

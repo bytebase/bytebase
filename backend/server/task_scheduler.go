@@ -63,7 +63,13 @@ func (s *TaskScheduler) Run() error {
 					if done {
 						if err != nil {
 							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v.\n", task.Name, task.ID, err))
-							s.server.ChangeTaskStatus(context.Background(), task, api.TaskFailed, api.SYSTEM_BOT_ID)
+							taskStatusPatch := &api.TaskStatusPatch{
+								ID:        task.ID,
+								UpdaterId: api.SYSTEM_BOT_ID,
+								Status:    api.TaskFailed,
+								Comment:   err.Error(),
+							}
+							s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 							continue
 						}
 

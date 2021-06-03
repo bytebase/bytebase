@@ -48,6 +48,7 @@ type TaskRun struct {
 	Name    string        `jsonapi:"attr,name"`
 	Status  TaskRunStatus `jsonapi:"attr,status"`
 	Type    TaskType      `jsonapi:"attr,type"`
+	Error   string        `jsonapi:"attr,error"`
 	Payload []byte        `jsonapi:"attr,payload"`
 }
 
@@ -91,6 +92,8 @@ type TaskRunStatusPatch struct {
 
 	// Domain specific fields
 	Status TaskRunStatus
+	// If status is FAILED, then we will set the error
+	Error *string
 }
 
 type TaskRunService interface {

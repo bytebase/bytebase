@@ -23,11 +23,11 @@ type SqlTaskExecutor struct {
 func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal(task.Payload, payload); err != nil {
-		return true, fmt.Errorf("sql executor: invalid payload: %w", err)
+		return true, fmt.Errorf("invalid schema update payload: %w", err)
 	}
 
 	if payload.Sql == "" {
-		return true, fmt.Errorf("sql executor: missing sql statement")
+		return true, fmt.Errorf("missing sql statement")
 	}
 
 	exec.l.Info(fmt.Sprintf("sql executor: run %v", payload.Sql))
