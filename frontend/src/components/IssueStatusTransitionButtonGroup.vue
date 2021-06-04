@@ -118,7 +118,7 @@
           } else if (updateStatusModalState.mode == 'TASK') {
             doTaskStatusTransition(
               updateStatusModalState.transition,
-              updateStatusModalState.payload.id,
+              updateStatusModalState.payload,
               comment
             );
           }
@@ -152,6 +152,7 @@ import {
   IssueStatusTransitionType,
   ISSUE_STATUS_TRANSITION_LIST,
   Principal,
+  Task,
   TaskId,
 } from "../types";
 import { IssueTemplate } from "../plugins";
@@ -164,7 +165,7 @@ interface UpdateStatusModalState {
   okText: string;
   title: string;
   transition?: IssueStatusTransition | TaskStatusTransition;
-  payload?: any;
+  payload?: Task;
 }
 
 export type IssueContext = {
@@ -268,10 +269,10 @@ export default {
 
     const doTaskStatusTransition = (
       transition: TaskStatusTransition,
-      taskId: TaskId,
+      task: Task,
       comment: string
     ) => {
-      emit("change-task-status", taskId, transition.to, comment);
+      emit("change-task-status", task, transition.to, comment);
     };
 
     const applicableIssueStatusTransitionList = computed(

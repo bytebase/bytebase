@@ -230,6 +230,7 @@ import {
   TaskStatusPatch,
   TaskStatus,
   IssueStatusPatch,
+  Task,
 } from "../types";
 import {
   defaulTemplate,
@@ -558,10 +559,13 @@ export default {
     };
 
     const changeTaskStatus = (
-      taskId: TaskId,
+      task: Task,
       newStatus: TaskStatus,
       comment: string
     ) => {
+      // Switch to the stage view containing this task
+      selectStageId(task.stage.id);
+
       const taskStatusPatch: TaskStatusPatch = {
         updaterId: currentUser.value.id,
         status: newStatus,
@@ -572,7 +576,7 @@ export default {
         .dispatch("task/updateStatus", {
           issueId: (issue.value as Issue).id,
           pipelineId: (issue.value as Issue).pipeline.id,
-          taskId,
+          taskId: task.id,
           taskStatusPatch,
         })
         .then(() => {
