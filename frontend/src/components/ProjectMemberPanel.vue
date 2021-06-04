@@ -1,7 +1,7 @@
 <template>
   <div>
     <p class="text-lg font-medium leading-7 text-main">Manage members</p>
-    <div v-if="allowAddMember" class="mt-4 w-full flex justify-center">
+    <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
         <div class="space-y-2">
