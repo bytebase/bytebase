@@ -23,16 +23,16 @@
       <BBTableCell v-if="showInstanceColumn" class="w-24">
         {{ instanceName(database.instance) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell v-if="showMiscColumn" class="w-8">
         {{ database.characterSet }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell v-if="showMiscColumn" class="w-8">
         {{ database.collation }}
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ database.syncStatus }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell v-if="showMiscColumn" class="w-16">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
       </BBTableCell>
     </template>
@@ -47,116 +47,166 @@ import { databaseSlug, isDBAOrOwner } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 
-type Mode = "ALL" | "INSTANCE" | "PROJECT";
+type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
-const columnListMap: Map<Mode | "ALL_HIDE_INSTANCE", BBTableColumn[]> = new Map(
+const columnListMap: Map<
+  Mode | "ALL_HIDE_INSTANCE" | "ALL_HIDE_INSTANCE_SHORT",
+  BBTableColumn[]
+> = new Map([
   [
+    "ALL",
     [
-      "ALL",
-      [
-        {
-          title: "Project",
-        },
-        {
-          title: "Name",
-        },
-        {
-          title: "Environment",
-        },
-        {
-          title: "Instance",
-        },
-        {
-          title: "Character set",
-        },
-        {
-          title: "Collation",
-        },
-        {
-          title: "Sync status",
-        },
-        {
-          title: "Last successful sync",
-        },
-      ],
+      {
+        title: "Project",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Instance",
+      },
+      {
+        title: "Character set",
+      },
+      {
+        title: "Collation",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
     ],
+  ],
+  [
+    "ALL_SHORT",
     [
-      "ALL_HIDE_INSTANCE",
-      [
-        {
-          title: "Project",
-        },
-        {
-          title: "Name",
-        },
-        {
-          title: "Environment",
-        },
-        {
-          title: "Character set",
-        },
-        {
-          title: "Collation",
-        },
-        {
-          title: "Sync status",
-        },
-        {
-          title: "Last successful sync",
-        },
-      ],
+      {
+        title: "Project",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Instance",
+      },
+      {
+        title: "Sync status",
+      },
     ],
+  ],
+  [
+    "ALL_HIDE_INSTANCE",
     [
-      "INSTANCE",
-      [
-        {
-          title: "Project",
-        },
-        {
-          title: "Name",
-        },
-        {
-          title: "Character set",
-        },
-        {
-          title: "Collation",
-        },
-        {
-          title: "Sync status",
-        },
-        {
-          title: "Last successful sync",
-        },
-      ],
+      {
+        title: "Project",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Character set",
+      },
+      {
+        title: "Collation",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
     ],
+  ],
+  [
+    "ALL_HIDE_INSTANCE_SHORT",
     [
-      "PROJECT",
-      [
-        {
-          title: "Name",
-        },
-        {
-          title: "Environment",
-        },
-        {
-          title: "Character set",
-        },
-        {
-          title: "Collation",
-        },
-        {
-          title: "Sync status",
-        },
-        {
-          title: "Last successful sync",
-        },
-      ],
+      {
+        title: "Project",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
     ],
-  ]
-);
+  ],
+  [
+    "INSTANCE",
+    [
+      {
+        title: "Project",
+      },
+      {
+        title: "Name",
+      },
+      {
+        title: "Character set",
+      },
+      {
+        title: "Collation",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
+    ],
+  ],
+  [
+    "PROJECT",
+    [
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Character set",
+      },
+      {
+        title: "Collation",
+      },
+      {
+        title: "Sync status",
+      },
+      {
+        title: "Last successful sync",
+      },
+    ],
+  ],
+  [
+    "PROJECT_SHORT",
+    [
+      {
+        title: "Name",
+      },
+      {
+        title: "Environment",
+      },
+      {
+        title: "Sync status",
+      },
+    ],
+  ],
+]);
 
 export default {
   name: "DatabaseTable",
+  emits: ["select-database-id"],
   components: {},
   props: {
     bordered: {
@@ -171,19 +221,23 @@ export default {
       default: true,
       type: Boolean,
     },
+    customClick: {
+      default: false,
+      type: Boolean,
+    },
     databaseList: {
       required: true,
       type: Object as PropType<Database[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props, { emit, attrs }) {
     const store = useStore();
     const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const showProjectColumn = computed(() => {
-      return props.mode != "PROJECT";
+      return props.mode != "PROJECT" && props.mode != "PROJECT_SHORT";
     });
 
     const showEnvironmentColumn = computed(() => {
@@ -191,25 +245,42 @@ export default {
     });
 
     const showInstanceColumn = computed(() => {
-      return props.mode == "ALL" && isDBAOrOwner(currentUser.value.role);
+      return (
+        (props.mode == "ALL" || props.mode == "ALL_SHORT") &&
+        isDBAOrOwner(currentUser.value.role)
+      );
+    });
+
+    const showMiscColumn = computed(() => {
+      return props.mode != "ALL_SHORT" && props.mode != "PROJECT_SHORT";
     });
 
     const columnList = computed(() => {
-      if (props.mode == "ALL" && !showInstanceColumn.value) {
-        return columnListMap.get("ALL_HIDE_INSTANCE");
+      if (
+        (props.mode == "ALL" || props.mode == "ALL_SHORT") &&
+        !showInstanceColumn.value
+      ) {
+        return props.mode == "ALL"
+          ? columnListMap.get("ALL_HIDE_INSTANCE")
+          : columnListMap.get("ALL_HIDE_INSTANCE_SHORT");
       }
       return columnListMap.get(props.mode);
     });
 
     const clickDatabase = function (section: number, row: number) {
       const database = props.databaseList[row];
-      router.push(`/db/${databaseSlug(database)}`);
+      if (props.customClick) {
+        emit("select-database-id", database.id);
+      } else {
+        router.push(`/db/${databaseSlug(database)}`);
+      }
     };
 
     return {
       showProjectColumn,
       showEnvironmentColumn,
       showInstanceColumn,
+      showMiscColumn,
       columnList,
       clickDatabase,
     };
