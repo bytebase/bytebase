@@ -32,7 +32,7 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 
 	exec.l.Info(fmt.Sprintf("sql executor: run %v", payload.Statement))
 
-	if err := server.ComposeTaskRelationship(ctx, task, []string{}); err != nil {
+	if err := server.ComposeTaskRelationship(ctx, task, []string{SECRET_KEY}); err != nil {
 		return true, err
 	}
 
