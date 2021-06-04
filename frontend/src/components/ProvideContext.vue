@@ -21,7 +21,6 @@ export default {
     await Promise.all([
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
-      store.dispatch("instance/fetchInstanceList"),
       store.dispatch("uistate/restoreState"),
     ]);
 
