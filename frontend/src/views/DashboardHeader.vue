@@ -12,6 +12,10 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-2">
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md"
+            >Databases</router-link
+          >
+
           <router-link
             v-if="showDBAItem"
             to="/instance"
@@ -163,12 +167,16 @@
     -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <div v-if="showDBAItem" class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+      <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
+        >Databases</router-link
+      >
+
       <router-link to="/instance" class="bar-link rounded-md block px-3 py-2"
-        >Instance</router-link
+        >Instances</router-link
       >
 
       <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
-        >Environment</router-link
+        >Environments</router-link
       >
 
       <router-link
