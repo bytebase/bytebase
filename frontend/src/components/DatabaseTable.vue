@@ -9,7 +9,7 @@
   >
     <template v-slot:body="{ rowData: database }">
       <BBTableCell v-if="showProjectColumn" :leftPadding="4" class="w-16">
-        {{ database.project.key }}
+        {{ projectName(database.project) }}
       </BBTableCell>
       <BBTableCell
         :leftPadding="showProjectColumn ? undefined : 4"
