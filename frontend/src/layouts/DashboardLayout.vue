@@ -9,9 +9,9 @@
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
-        <ProvideContext>
+        <ProvideDashboardContext>
           <router-view name="body" />
-        </ProvideContext>
+        </ProvideDashboardContext>
       </template>
       <template #fallback>
         <div class="flex flex-row justify-between p-4 space-x-2">
@@ -30,13 +30,13 @@
 
 <script lang="ts">
 import { useStore } from "vuex";
-import ProvideContext from "../components/ProvideContext.vue";
+import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 
 export default {
   name: "DashboardLayout",
-  components: { ProvideContext, DashboardHeader, BannerDemo },
+  components: { ProvideDashboardContext, DashboardHeader, BannerDemo },
   setup(props, ctx) {
     const store = useStore();
 

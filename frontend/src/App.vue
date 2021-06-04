@@ -13,7 +13,7 @@
 import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import ProvideContext from "./components/ProvideContext.vue";
+import ProvideDashboardContext from "./components/ProvideDashboardContext.vue";
 import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
@@ -31,7 +31,7 @@ interface LocalState {
 
 export default {
   name: "App",
-  components: { ProvideContext },
+  components: { ProvideDashboardContext },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
