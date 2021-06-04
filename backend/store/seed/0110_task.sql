@@ -1,4 +1,4 @@
--- Task for Pipeline 9001 "Hello world", Stage 10001 "Prod" to update database 7008 "fakedb4"
+-- Task for Pipeline 9001 "Hello world", Stage 10001 "Prod" to update database 7008 "testdb4"
 INSERT INTO
     task (
         id,
@@ -27,7 +27,7 @@ VALUES
     );
 
 -- Task for Pipeline 9002 add column
--- Task for stage 10002 "Sandbox A" to update database 7002 'fakedb1'
+-- Task for stage 10002 "Sandbox A" to update database 7002 'testdb1'
 INSERT INTO
     task (
         id,
@@ -49,13 +49,13 @@ VALUES
         9002,
         10002,
         7002,
-        'Update fakedb1',
+        'Update testdb1',
         'bb.task.database.schema.update',
         'PENDING',
         '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
     );
 
--- Task for stage 10003 "Integration" to update database 7004 'fakedb2'
+-- Task for stage 10003 "Integration" to update database 7003 'testdb2'
 INSERT INTO
     task (
         id,
@@ -76,14 +76,14 @@ VALUES
         1003,
         9002,
         10003,
-        7004,
-        'Update fakedb2',
+        7003,
+        'Update testdb2',
         'bb.task.database.schema.update',
         'PENDING',
         '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
     );
 
--- Task for stage 10004 "Staging" to update database 7006 'fakedb3'
+-- Task for stage 10004 "Staging" to update database 7006 'testdb3'
 INSERT INTO
     task (
         id,
@@ -105,13 +105,13 @@ VALUES
         9002,
         10004,
         7006,
-        'Update fakedb3',
+        'Update testdb3',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
         '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
     );
 
--- Task for stage 10005 "Prod" to update database 7008 'fakedb4'
+-- Task for stage 10005 "Prod" to update database 7008 'testdb4'
 INSERT INTO
     task (
         id,
@@ -133,14 +133,14 @@ VALUES
         9002,
         10005,
         7008,
-        'Update fakedb4',
+        'Update testdb4',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
         '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
     );
 
 -- Task for Pipeline 9003 create table
--- Task for stage 10006 "Sandbox A" to craete table in database 7002 'fakedb1'
+-- Task for stage 10006 "Sandbox A" to craete table in database 7002 'testdb1'
 INSERT INTO
     task (
         id,
@@ -162,13 +162,13 @@ VALUES
         9003,
         10006,
         7002,
-        'Update fakedb1',
+        'Update testdb1',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"CREATE TABLE tbl1;", "rollbackStatement":"DROP TABLE tbl1;"}'
+        '{"statement":"CREATE TABLE tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE tbl1;"}'
     );
 
--- Task for stage 10003 "Integration" to update database 7004 'fakedb2'
+-- Task for stage 10003 "Integration" to update database 7003 'testdb2'
 INSERT INTO
     task (
         id,
@@ -189,9 +189,9 @@ VALUES
         1003,
         9003,
         10007,
-        7004,
-        'Update fakedb2',
+        7003,
+        'Update testdb2',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"statement":"CREATE TABLE tbl1;", "rollbackStatement":"DROP TABLE tbl1;"}'
+        '{"statement":"CREATE TABLE tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE tbl1;"}'
     );

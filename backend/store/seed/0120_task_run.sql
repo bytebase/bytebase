@@ -13,10 +13,10 @@ INSERT INTO
 VALUES
     (
         12001,
-        1003,
-        1003,
+        1001,
+        1001,
         11006,
-        'UPDATE fakedb1 task run',
+        'UPDATE testdb1 task run',
         'FAILED',
         'bb.task.database.schema.update',
         'fake execution error'

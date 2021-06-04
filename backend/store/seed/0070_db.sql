@@ -47,9 +47,38 @@ VALUES
         7002,
         1001,
         1001,
-        6002,
+        6001,
         3001,
-        'fakedb1',
+        'testdb1',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
+        'OK',
+        0,
+        ''
+    );
+
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts,
+        fingerprint
+    )
+VALUES
+    (
+        7003,
+        1001,
+        1001,
+        6001,
+        3002,
+        'testdb2',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -74,41 +103,12 @@ INSERT INTO
     )
 VALUES
     (
-        7003,
+        7004,
         1001,
         1001,
         6002,
         1,
         '*',
-        'utf8mb4',
-        'utf8mb4_0900_ai_ci',
-        'OK',
-        0,
-        ''
-    );
-
-INSERT INTO
-    db (
-        id,
-        creator_id,
-        updater_id,
-        instance_id,
-        project_id,
-        name,
-        character_set,
-        `collation`,
-        sync_status,
-        last_successful_sync_ts,
-        fingerprint
-    )
-VALUES
-    (
-        7004,
-        1001,
-        1001,
-        6002,
-        3002,
-        'fakedb2',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -167,7 +167,7 @@ VALUES
         1001,
         6003,
         3003,
-        'fakedb3',
+        'testdb3',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -226,7 +226,7 @@ VALUES
         1001,
         6004,
         3004,
-        'fakedb4',
+        'testdb4',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -285,7 +285,7 @@ VALUES
         1001,
         6005,
         3005,
-        'fakedb5',
+        'testdb5',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',

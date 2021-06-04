@@ -94,6 +94,6 @@ VALUES
         'Create tbl1.',
         1001,
         '1001,1002,1003,1004',
-        'CREATE TABLE tbl1;',
+        'CREATE TABLE tbl1 (name TEXT);',
         'DROP TABLE tbl1;'
     );
