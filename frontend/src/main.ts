@@ -32,7 +32,6 @@ import {
   BBTableTabFilter,
   BBTextField,
 } from "./bbkit";
-import databaseSyncStatus from "./directives/database-sync-status";
 import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
@@ -161,7 +160,6 @@ app
   // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
   // to re-render the page and remove the event listener required for
   .directive("highlight", highlight)
-  .directive("database-sync-status", databaseSyncStatus)
   .directive("data-source-type", dataSourceType)
   .use(store)
   .use(router)

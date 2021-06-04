@@ -29,7 +29,7 @@
       <BBTableCell class="w-8">
         {{ database.collation }}
       </BBTableCell>
-      <BBTableCell class="w-8" v-database-sync-status>
+      <BBTableCell class="w-8">
         {{ database.syncStatus }}
       </BBTableCell>
       <BBTableCell class="w-16">

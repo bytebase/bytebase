@@ -113,7 +113,7 @@
                 Sync status
               </dt>
               <dd class="mt-1 text-sm text-main">
-                <span v-database-sync-status>{{ database.syncStatus }}</span>
+                <span>{{ database.syncStatus }}</span>
               </dd>
             </div>
 
