@@ -296,11 +296,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		case api.Issue_Open:
 			pipelineStatus = api.Pipeline_Open
 		case api.Issue_Done:
-			// Returns error if any of the tasks is not in the end status.
+			// Returns error if any of the tasks is not DONE.
 			for _, stage := range issue.Pipeline.StageList {
 				for _, task := range stage.TaskList {
-					if !task.Status.IsEndStatus() {
-						return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v is in %v status.", issue.Name, task.Name, task.Status))
+					if task.Status != api.TaskDone {
+						return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v has not finished", issue.Name, task.Name))
 					}
 				}
 			}
@@ -313,7 +313,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				for _, task := range stage.TaskList {
 					if task.Status == api.TaskRunning {
 						if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, c.Get(GetPrincipalIdContextKey()).(int)); err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v.", issue.Name, task.Name)).SetInternal(err)
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v", issue.Name, task.Name)).SetInternal(err)
 						}
 					}
 				}

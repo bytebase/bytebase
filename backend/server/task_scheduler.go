@@ -43,16 +43,49 @@ func (s *TaskScheduler) Run() error {
 						s.l.Error("Scheduler PANIC RECOVER", zap.Error(err))
 					}
 				}()
-				status := api.TaskRunning
-				taskFind := &api.TaskFind{
-					Status: &status,
+
+				// Inspect all open pipelines and schedule the next PENDING task if applicable
+				pipelineStatus := api.Pipeline_Open
+				pipelineFind := &api.PipelineFind{
+					Status: &pipelineStatus,
 				}
-				list, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
+				pipelineList, err := s.server.PipelineService.FindPipelineList(context.Background(), pipelineFind)
+				if err != nil {
+					s.l.Info(fmt.Sprintf("Failed to retrieve open pipelines: %v\n", err))
+				}
+				for _, pipeline := range pipelineList {
+					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline, []string{}); err != nil {
+						s.l.Info(fmt.Sprintf("Failed to fetch stage info for pipeline: %v. Error: %v", pipeline.Name, err))
+						continue
+					}
+
+					for _, stage := range pipeline.StageList {
+						for _, task := range stage.TaskList {
+							if task.Status != api.TaskDone {
+								if task.Status == api.TaskPending {
+									_, err = s.Schedule(context.Background(), task)
+									if err != nil {
+										s.l.Info(fmt.Sprintf("Failed to schedule next running task: %v. Error: %v", task.Name, err))
+									}
+								}
+								goto PIPELINE_END
+							}
+						}
+					}
+				PIPELINE_END:
+				}
+
+				// Inspect all running tasks
+				taskStatus := api.TaskRunning
+				taskFind := &api.TaskFind{
+					Status: &taskStatus,
+				}
+				taskList, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {
 					s.l.Info(fmt.Sprintf("Failed to retrieve running tasks: %v\n", err))
 				}
 
-				for _, task := range list {
+				for _, task := range taskList {
 					executor, ok := s.executors[string(task.Type)]
 					if !ok {
 						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip.", task.Type))

@@ -34,10 +34,6 @@ func (e TaskStatus) String() string {
 	return "UNKNOWN"
 }
 
-func (e TaskStatus) IsEndStatus() bool {
-	return e == TaskDone
-}
-
 type TaskType string
 
 const (

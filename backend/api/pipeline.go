@@ -59,6 +59,9 @@ type PipelineCreate struct {
 
 type PipelineFind struct {
 	ID *int
+
+	// Domain specific fields
+	Status *PipelineStatus
 }
 
 func (find *PipelineFind) String() string {
@@ -82,6 +85,7 @@ type PipelinePatch struct {
 
 type PipelineService interface {
 	CreatePipeline(ctx context.Context, create *PipelineCreate) (*Pipeline, error)
+	FindPipelineList(ctx context.Context, find *PipelineFind) ([]*Pipeline, error)
 	FindPipeline(ctx context.Context, find *PipelineFind) (*Pipeline, error)
 	PatchPipeline(ctx context.Context, patch *PipelinePatch) (*Pipeline, error)
 }

@@ -45,6 +45,22 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	return pipeline, nil
 }
 
+// FindPipelineList retrieves a list of pipelines based on find.
+func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.PipelineFind) ([]*api.Pipeline, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := s.findPipelineList(ctx, tx, find)
+	if err != nil {
+		return []*api.Pipeline{}, err
+	}
+
+	return list, nil
+}
+
 // FindPipeline retrieves a single pipeline based on find.
 // Returns ENOTFOUND if no matching record.
 // Returns the first matching one and prints a warning if finding more than 1 matching records.
@@ -131,6 +147,9 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.Status; v != nil {
+		where, args = append(where, "`status` = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
