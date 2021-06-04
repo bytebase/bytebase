@@ -82,53 +82,35 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 				return nil
 			}
 
+			// Compare the stored db info with the just synced db schema.
+			// Case 1: If item appears both in the stored db info and the synced db schema, then we UPDATE the corresponding record in the stored db.
+			// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the record in the stored db.
+			// Case 3: Conversely, if item only appears in the stored db, but not in the synced schema, then we MARK the record as NOT_FOUND.
+			//   	   We don't delete the entry because:
+			//   	   1. This entry has already been associated with other entities, we can't simply delete it.
+			//   	   2. The deletion in the schema might be a mistake, so it's better to surface as NOT_FOUND to let user review it.
 			databaseFind := &api.DatabaseFind{
 				InstanceId: &instance.ID,
 			}
-			for _, schema := range schemaList {
-				databaseFind.Name = &schema.Name
-				database, err := s.DatabaseService.FindDatabase(context.Background(), databaseFind)
-				if err != nil {
-					if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-						databaseCreate := &api.DatabaseCreate{
-							CreatorId:    api.SYSTEM_BOT_ID,
-							ProjectId:    api.DEFAULT_PROJECT_ID,
-							InstanceId:   instance.ID,
-							Name:         schema.Name,
-							CharacterSet: schema.CharacterSet,
-							Collation:    schema.Collation,
-						}
-						database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
-						if err != nil {
-							if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-								return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name))
-							}
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)).SetInternal(err)
-						}
+			dbList, err := s.DatabaseService.FindDatabaseList(context.Background(), databaseFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database for instance: %s. Failed to find database list", instance.Name)).SetInternal(err)
+			}
 
-						for _, table := range schema.TableList {
-							tableCreate := &api.TableCreate{
-								CreatorId:  api.SYSTEM_BOT_ID,
-								DatabaseId: database.ID,
-								Name:       table.Name,
-								Engine:     table.Engine,
-								Collation:  table.Collation,
-								RowCount:   table.RowCount,
-								DataSize:   table.DataSize,
-								IndexSize:  table.IndexSize,
-							}
-							if err := createTable(database, tableCreate); err != nil {
-								return err
-							}
-						}
-					} else {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database for instance: %s", instance.Name)).SetInternal(err)
+			for _, schema := range schemaList {
+				var matchedDb *api.Database
+				for _, db := range dbList {
+					if db.Name == schema.Name {
+						matchedDb = db
+						break
 					}
-				} else {
+				}
+				if matchedDb != nil {
+					// Case 1
 					syncStatus := api.OK
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
-						ID:                   database.ID,
+						ID:                   matchedDb.ID,
 						UpdaterId:            api.SYSTEM_BOT_ID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
@@ -179,6 +161,67 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync table for instance: %s, database: %s. Failed to update table: %s", instance.Name, database.Name, table.Name)).SetInternal(err)
 							}
 						}
+					}
+				} else {
+					// Case 2
+					databaseCreate := &api.DatabaseCreate{
+						CreatorId:    api.SYSTEM_BOT_ID,
+						ProjectId:    api.DEFAULT_PROJECT_ID,
+						InstanceId:   instance.ID,
+						Name:         schema.Name,
+						CharacterSet: schema.CharacterSet,
+						Collation:    schema.Collation,
+					}
+					database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
+					if err != nil {
+						if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+							return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name))
+						}
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)).SetInternal(err)
+					}
+
+					for _, table := range schema.TableList {
+						tableCreate := &api.TableCreate{
+							CreatorId:  api.SYSTEM_BOT_ID,
+							DatabaseId: database.ID,
+							Name:       table.Name,
+							Engine:     table.Engine,
+							Collation:  table.Collation,
+							RowCount:   table.RowCount,
+							DataSize:   table.DataSize,
+							IndexSize:  table.IndexSize,
+						}
+						if err := createTable(database, tableCreate); err != nil {
+							return err
+						}
+					}
+				}
+			}
+
+			// Case 3
+			for _, db := range dbList {
+				found := false
+				for _, schema := range schemaList {
+					if db.Name == schema.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					syncStatus := api.NotFound
+					ts := time.Now().Unix()
+					databasePatch := &api.DatabasePatch{
+						ID:                   db.ID,
+						UpdaterId:            api.SYSTEM_BOT_ID,
+						SyncStatus:           &syncStatus,
+						LastSuccessfulSyncTs: &ts,
+					}
+					database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
+					if err != nil {
+						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+							return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name))
+						}
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database for instance: %s. Failed to update database: %s", instance.Name, database.Name)).SetInternal(err)
 					}
 				}
 			}
