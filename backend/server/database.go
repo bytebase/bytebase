@@ -68,8 +68,24 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		}
 
+		filteredList := []*api.Database{}
+		role := c.Get(GetRoleContextKey()).(api.Role)
+		if role == api.Developer {
+			principalId := c.Get(GetPrincipalIdContextKey()).(int)
+			for _, database := range list {
+				for _, projectMember := range database.Project.ProjectMemberList {
+					if projectMember.PrincipalId == principalId {
+						filteredList = append(filteredList, database)
+						break
+					}
+				}
+			}
+		} else {
+			filteredList = list
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, filteredList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database list response").SetInternal(err)
 		}
 		return nil

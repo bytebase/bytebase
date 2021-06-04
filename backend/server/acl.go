@@ -15,6 +15,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	roleContextKey = "role"
+)
+
+func GetRoleContextKey() string {
+	return roleContextKey
+}
+
 func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth end point
@@ -105,6 +113,9 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
 				fmt.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalId, member.Role))
 		}
+
+		// Stores role into context.
+		c.Set(GetRoleContextKey(), member.Role)
 
 		return next(c)
 	}
