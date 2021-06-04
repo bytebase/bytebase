@@ -61,7 +61,10 @@ export default {
 
     const prepareDatabaseList = () => {
       store
-        .dispatch("database/fetchDatabaseListByUser", currentUser.value.id)
+        .dispatch(
+          "database/fetchDatabaseListByPrincipalId",
+          currentUser.value.id
+        )
         .then((list) => {
           state.databaseList = list;
         })

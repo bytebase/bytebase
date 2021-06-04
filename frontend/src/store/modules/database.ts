@@ -222,7 +222,7 @@ const actions = {
     return databaseList;
   },
 
-  async fetchDatabaseListByUser(
+  async fetchDatabaseListByPrincipalId(
     { commit, rootGetters }: any,
     userId: PrincipalId
   ) {
