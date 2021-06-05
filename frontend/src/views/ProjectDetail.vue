@@ -8,7 +8,7 @@
   <BBTableTabFilter
     class="px-1 pb-2 border-b border-block-border"
     :responsive="false"
-    :tabList="['Overview', 'Repository', 'Settings']"
+    :tabList="['Overview', 'Git repository', 'Settings']"
     :selectedIndex="state.selectedIndex"
     @select-index="
       (index) => {
@@ -39,7 +39,9 @@
         />
       </div>
     </div>
-    <template v-else-if="state.selectedIndex == REPO_TAB"> </template>
+    <template v-else-if="state.selectedIndex == REPO_TAB">
+      <RepositorySetupPanel />
+    </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">
         <div class="divide-y divide-block-border space-y-6">
@@ -83,6 +85,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
+import RepositorySetupPanel from "../components/RepositorySetupPanel.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { ProjectPatch, Issue } from "../types";
 
@@ -103,6 +106,7 @@ export default {
     DatabaseTable,
     ProjectGeneralSettingPanel,
     ProjectMemberPanel,
+    RepositorySetupPanel,
     IssueTable,
   },
   props: {
