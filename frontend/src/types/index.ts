@@ -14,6 +14,7 @@ export * from "./sql";
 export * from "./bookmark";
 export * from "./activity";
 export * from "./message";
+export * from "./vcs";
 export * from "./auth";
 export * from "./notification";
 export * from "./plan";

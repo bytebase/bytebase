@@ -50,6 +50,18 @@ export function urlfy(str: string) {
   return result;
 }
 
+export function isUrl(str: string) {
+  let url;
+
+  try {
+    url = new URL(str);
+  } catch (_) {
+    return false;
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
 // Performs inline swap, also handles negative index (counting from the end)
 // array_swap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
 // array_swap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
