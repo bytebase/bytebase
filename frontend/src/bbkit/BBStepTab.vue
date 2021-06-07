@@ -59,9 +59,11 @@
           </div>
         </div>
       </div>
-      <slot v-if="state.currentStep == index" :name="index" />
     </li>
   </ol>
+  <template v-for="(step, index) in stepItemList" :key="index">
+    <slot v-if="state.currentStep == index" :name="index" />
+  </template>
   <div class="pt-4 flex justify-between">
     <button type="button" class="btn-normal" @click.prevent="cancel">
       Cancel
