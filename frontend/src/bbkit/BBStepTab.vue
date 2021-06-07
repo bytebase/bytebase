@@ -93,6 +93,7 @@
       </button>
       <button
         v-if="state.currentStep == stepItemList.length - 1"
+        :disabled="!allowNext"
         type="button"
         class="btn-primary"
         @click.prevent="finish"
@@ -101,6 +102,7 @@
       </button>
       <button
         v-else
+        :disabled="!allowNext"
         type="button"
         class="btn-primary"
         @click.prevent="switchStep(state.currentStep + 1)"
@@ -127,6 +129,10 @@ export default {
     stepItemList: {
       required: true,
       type: Object as PropType<BBStepTabItem[]>,
+    },
+    allowNext: {
+      default: true,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {
