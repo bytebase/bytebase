@@ -1,153 +1,35 @@
 <template>
-  <nav aria-label="Repository setup">
-    <ol class="flex space-y-0 space-x-8">
-      <li v-for="(step, index) in stepList" :key="index" class="flex-1">
-        <!-- Completed Step -->
-        <div
-          class="group flex flex-col pt-4 border-t-4"
-          :class="
-            state.currentStep >= index
-              ? 'border-accent hover:border-accent-hover cursor-pointer'
-              : 'border-control-border'
-          "
-          @click.prevent="
-            () => {
-              if (state.currentStep >= index) {
-                switchStep(index);
-              }
-            }
-          "
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex flex-col">
-              <span
-                class="text-xs font-semibold tracking-wide uppercase"
-                :class="
-                  state.currentStep >= index
-                    ? 'text-accent group-hover:text-accent-hover'
-                    : 'text-control-light'
-                "
-                >Step {{ index + 1 }}</span
-              >
-              <span class="text-sm font-medium">{{ step }}</span>
-            </div>
-            <div
-              v-if="state.currentStep > index"
-              class="
-                flex
-                items-center
-                justify-center
-                w-6
-                h-6
-                bg-accent
-                text-white
-                rounded-full
-                select-none
-              "
-            >
-              <svg
-                class="w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </li>
-    </ol>
-  </nav>
-  <template v-if="state.currentStep == SetupStep.CHOOSE_PROVIDER">
-    choose provider
-  </template>
-  <template v-else-if="state.currentStep == SetupStep.SELECT_REPO">
-    select repo
-  </template>
-  <template v-else-if="state.currentStep == SetupStep.CONFIGURE_DEPLOY">
-    configure deploy
-  </template>
-  <div class="pt-4 flex justify-between">
-    <button type="button" class="btn-normal" @click.prevent="cancel">
-      Cancel
-    </button>
-    <div class="flex flex-row space-x-2">
-      <button
-        v-if="state.currentStep != 0"
-        type="button"
-        class="btn-normal"
-        @click.prevent="switchStep(state.currentStep - 1)"
-      >
-        <svg
-          class="-ml-1 mr-1 h-5 w-5 text-control-light"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          ></path>
-        </svg>
-        <span>Back</span>
-      </button>
-      <button
-        v-if="state.currentStep == stepList.length - 1"
-        type="button"
-        class="btn-primary"
-        @click.prevent="finishSetup"
-      >
-        Finish
-      </button>
-      <button
-        v-else
-        type="button"
-        class="btn-primary"
-        @click.prevent="switchStep(state.currentStep + 1)"
-      >
-        Next
-      </button>
-    </div>
-  </div>
+  <BBStepTab
+    :stepItemList="stepList"
+    @select-step="selectStep"
+    @finish="finishSetup"
+  >
+    <template v-slot:0> choose provider </template>
+    <template v-slot:1> select repo </template>
+    <template v-slot:2> configure deploy </template>
+  </BBStepTab>
 </template>
 
 <script lang="ts">
 import { reactive } from "@vue/reactivity";
-enum SetupStep {
-  CHOOSE_PROVIDER = 0,
-  SELECT_REPO = 1,
-  CONFIGURE_DEPLOY = 2,
-}
+import { BBStepTabItem } from "../bbkit/types";
 
-interface LocalState {
-  currentStep: SetupStep;
-}
+interface LocalState {}
 
-const stepList = [
-  "Choose Git provider",
-  "Select repository",
-  "Configure deploy",
+const stepList: BBStepTabItem[] = [
+  { title: "Choose Git provider" },
+  { title: "Select repository" },
+  { title: "Configure deploy" },
 ];
 
 export default {
   name: "RepositorySetupPanel",
   components: {},
   setup(props, ctx) {
-    const state = reactive<LocalState>({
-      currentStep: SetupStep.CHOOSE_PROVIDER,
-    });
+    const state = reactive<LocalState>({});
 
-    const switchStep = (step: SetupStep) => {
-      state.currentStep = step;
+    const selectStep = (step: number) => {
+      console.log("select step", step);
     };
 
     const finishSetup = () => {
@@ -155,10 +37,9 @@ export default {
     };
 
     return {
-      SetupStep,
       state,
       stepList,
-      switchStep,
+      selectStep,
       finishSetup,
     };
   },

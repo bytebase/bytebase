@@ -10,6 +10,7 @@ import BBOutline from "./BBOutline.vue";
 import BBSwitch from "./BBSwitch.vue";
 import BBSelect from "./BBSelect.vue";
 import BBStepBar from "./BBStepBar.vue";
+import BBStepTab from "./BBStepTab.vue";
 import BBTab from "./BBTab.vue";
 import BBTabPanel from "./BBTabPanel.vue";
 import BBTextField from "./BBTextField.vue";
@@ -33,6 +34,7 @@ export {
   BBOutline,
   BBSelect,
   BBStepBar,
+  BBStepTab,
   BBSwitch,
   BBTab,
   BBTabPanel,

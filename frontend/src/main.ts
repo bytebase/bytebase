@@ -22,6 +22,7 @@ import {
   BBOutline,
   BBSelect,
   BBStepBar,
+  BBStepTab,
   BBSwitch,
   BBTab,
   BBTabPanel,
@@ -175,6 +176,7 @@ app
   .component("BBOutline", BBOutline)
   .component("BBSelect", BBSelect)
   .component("BBStepBar", BBStepBar)
+  .component("BBStepTab", BBStepTab)
   .component("BBSwitch", BBSwitch)
   .component("BBTab", BBTab)
   .component("BBTabPanel", BBTabPanel)

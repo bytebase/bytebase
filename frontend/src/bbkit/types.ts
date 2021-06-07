@@ -33,6 +33,10 @@ export type BBStep = {
   link(): string;
 };
 
+export type BBStepTabItem = {
+  title: string;
+};
+
 export type BBOutlineItem = {
   id: string;
   name: string;
