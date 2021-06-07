@@ -247,6 +247,13 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "version-control",
+                name: "setting.workspace.version-control",
+                meta: { title: () => "Version Control" },
+                component: () => import("../views/SettingWorkspaceVCS.vue"),
+                props: true,
+              },
+              {
                 path: "plan",
                 name: "setting.workspace.plan",
                 meta: { title: () => "Plans" },

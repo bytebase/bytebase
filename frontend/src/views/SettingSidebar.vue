@@ -4,10 +4,28 @@
     <div class="space-y-1">
       <button
         @click.prevent="goBack"
-        class="group flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
+        class="
+          group
+          flex
+          items-center
+          px-2
+          py-2
+          text-base
+          leading-5
+          font-normal
+          rounded-md
+          text-gray-700
+          focus:outline-none
+        "
       >
         <svg
-          class="mr-1 h-6 w-6 text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
+          class="
+            mr-1
+            h-6
+            w-6
+            text-gray-500
+            group-hover:text-gray-500 group-focus:text-gray-600
+          "
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -25,7 +43,18 @@
 
       <div class="mt-8">
         <div
-          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+          class="
+            group
+            flex
+            items-center
+            px-2
+            py-2
+            text-sm
+            leading-5
+            font-medium
+            rounded-md
+            text-gray-700
+          "
         >
           <svg
             class="mr-3 w-5 h-5"
@@ -52,7 +81,18 @@
       </div>
       <div class="mt-8">
         <div
-          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+          class="
+            group
+            flex
+            items-center
+            px-2
+            py-2
+            text-sm
+            leading-5
+            font-medium
+            rounded-md
+            text-gray-700
+          "
         >
           <svg
             class="mr-3 w-5 h-5"
@@ -86,6 +126,12 @@
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Members
+          </router-link>
+          <router-link
+            to="/setting/version-control"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+          >
+            Version Control
           </router-link>
           <router-link
             v-if="false"
