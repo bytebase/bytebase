@@ -65,6 +65,11 @@ const routes: Array<RouteRecordRaw> = [
     ],
   },
   {
+    path: "/oauth/callback",
+    name: "oauth-callback",
+    component: () => import("../views/OAuthCallback.vue"),
+  },
+  {
     path: "/",
     component: DashboardLayout,
     children: [
@@ -672,6 +677,7 @@ router.beforeEach((to, from, next) => {
     to.name === "error.403" ||
     to.name === "error.404" ||
     to.name === "error.500" ||
+    to.name === "oauth-callback" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.project" ||

@@ -252,7 +252,13 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.AccessToken; v != nil {
-		set, args = append(set, "access_token = ?"), append(args, api.Role(*v))
+		set, args = append(set, "access_token = ?"), append(args, *v)
+	}
+	if v := patch.ExpireTs; v != nil {
+		set, args = append(set, "access_token_expiration_ts = ?"), append(args, *v)
+	}
+	if v := patch.RefreshToken; v != nil {
+		set, args = append(set, "refresh_token = ?"), append(args, *v)
 	}
 
 	args = append(args, patch.ID)

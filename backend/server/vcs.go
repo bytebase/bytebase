@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -152,6 +155,100 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
+	g.POST("/vcs/:vcsId/token", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("vcsId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		vcsTokenCreate := &api.VCSTokenCreate{
+			CreatorId: c.Get(GetPrincipalIdContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsTokenCreate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create VCS token request").SetInternal(err)
+		}
+
+		vcsFind := &api.VCSFind{
+			ID: &id,
+		}
+		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs ID: %v", id)).SetInternal(err)
+		}
+
+		oauthToken := &api.OAuthToken{}
+		switch vcs.Type {
+		case "GITLAB_SELF_HOST":
+			url := fmt.Sprintf("%s/oauth/token?client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=%s",
+				vcs.InstanceURL,
+				vcs.ApplicationId,
+				vcs.Secret,
+				vcsTokenCreate.Code,
+				vcsTokenCreate.RedirectUrl,
+			)
+			req, err := http.NewRequest("POST",
+				url, new(bytes.Buffer))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to construct request to fetch token for vcs ID: %v", id)).SetInternal(err)
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+			client := &http.Client{}
+			res, err := client.Do(req)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch token for vcs ID: %v", id)).SetInternal(err)
+			}
+			defer res.Body.Close()
+
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to read token response for vcs ID: %v", id)).SetInternal(err)
+			}
+
+			if err := json.Unmarshal(body, oauthToken); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal token response for vcs ID: %v", id)).SetInternal(err)
+			}
+		}
+
+		vcsPatch := &api.VCSPatch{
+			ID:        id,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+		}
+		if oauthToken.AccessToken != "" {
+			vcsPatch.AccessToken = &oauthToken.AccessToken
+		}
+		// For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
+		// see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+		if oauthToken.ExpiresIn != 0 {
+			ts := oauthToken.CreatedAt + oauthToken.ExpiresIn
+			vcsPatch.ExpireTs = &ts
+		}
+		if oauthToken.RefreshToken != "" {
+			vcsPatch.RefreshToken = &oauthToken.RefreshToken
+		}
+
+		updatedVCS, err := s.VCSService.PatchVCS(context.Background(), vcsPatch)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change VCS ID: %v", id)).SetInternal(err)
+		}
+
+		if err := s.ComposeVCSRelationship(context.Background(), updatedVCS, c.Get(getIncludeKey()).([]string)); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated VCS relationship").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedVCS); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal vcs ID response: %v", id)).SetInternal(err)
+		}
 		return nil
 	})
 }

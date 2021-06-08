@@ -10,6 +10,7 @@ import {
   empty,
   EMPTY_ID,
   Principal,
+  VCSTokenCreate,
 } from "../../types";
 
 function convert(
@@ -116,7 +117,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/vcs/${vcsId}`, {
         data: {
-          type: "vcsPatch",
+          type: "VCSCreate",
           attributes: vcsPatch,
         },
       })
@@ -138,6 +139,28 @@ const actions = {
     await axios.delete(`/api/vcs/${vcsId}`);
 
     commit("deleteVCSById", vcsId);
+  },
+
+  async createVCSToken(
+    { commit, rootGetters }: any,
+    { vcsId, tokenCreate }: { vcsId: VCSId; tokenCreate: VCSTokenCreate }
+  ) {
+    const data = (
+      await axios.post(`/api/vcs/${vcsId}/token`, {
+        data: {
+          type: "VCSTokenCreate",
+          attributes: tokenCreate,
+        },
+      })
+    ).data;
+    const createdVCS = convert(data.data, data.included, rootGetters);
+
+    commit("setVCSById", {
+      vcsId: createdVCS.id,
+      vcs: createdVCS,
+    });
+
+    return createdVCS;
   },
 };
 

@@ -313,7 +313,6 @@ export const unknown = (
     apiURL: "",
     applicationId: "",
     secret: "",
-    accessToken: "",
   };
 
   switch (type) {
@@ -573,7 +572,6 @@ export const empty = (
     apiURL: "",
     applicationId: "",
     secret: "",
-    accessToken: "",
   };
 
   switch (type) {

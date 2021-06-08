@@ -28,7 +28,6 @@ export type VCS = {
   apiURL: string;
   applicationId: string;
   secret: string;
-  accessToken: string;
 };
 
 export type VCSCreate = {
@@ -46,15 +45,17 @@ export type VCSCreate = {
 export type VCSPatch = {
   // Standard fields
   updaterId: PrincipalId;
+};
 
-  // Domain specific fields
-  accessToken: string;
+export type VCSTokenCreate = {
+  code: string;
+  redirectURL: string;
 };
 
 export function isValidApplicationIdOrSecret(str: string): boolean {
   return /^[a-zA-Z0-9_]{64}$/.test(str);
 }
 
-export function redirectURL(vcs: VCS): string {
-  return `https://bytebase.com/auth/${vcs.uuid}/callback`;
+export function redirectURL(): string {
+  return `${window.location.origin}/oauth/callback`;
 }
