@@ -29,7 +29,7 @@
           <router-link
             to="/setting/member"
             class="bar-link px-2 py-2 rounded-md"
-            >Members</router-link
+            >Settings</router-link
           >
         </div>
       </div>
@@ -182,7 +182,7 @@
       <router-link
         to="/setting/member"
         class="bar-link rounded-md block px-3 py-2"
-        >Members</router-link
+        >Settings</router-link
       >
     </div>
   </div>
