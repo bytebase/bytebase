@@ -98,7 +98,7 @@ const getters = {
         ) || ["/", undefined];
         if (profileComponents[1]) {
           return {
-            principalId: profileComponents[1],
+            principalId: parseInt(profileComponents[1]),
           };
         }
       }
