@@ -108,8 +108,6 @@ export default {
 
     const clickInstance = function (section: number, row: number) {
       const instance = props.instanceList[row];
-      console.log("aaa", instance);
-      console.log("slug", instanceSlug(instance));
       router.push(`/instance/${instanceSlug(instance)}`);
     };
 

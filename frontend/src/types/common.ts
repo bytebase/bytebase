@@ -11,6 +11,7 @@ import { Pipeline, Stage, Task } from "./pipeline";
 import { Activity } from "./activity";
 import { Message } from "./message";
 import { Bookmark } from "./bookmark";
+import { VCS } from "./vcs";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -87,7 +88,8 @@ export type ResourceType =
   | "TASK"
   | "ACTIVITY"
   | "MESSAGE"
-  | "BOOKMARK";
+  | "BOOKMARK"
+  | "VCS";
 
 export const unknown = (
   type: ResourceType
@@ -106,7 +108,8 @@ export const unknown = (
   | Task
   | Activity
   | Message
-  | Bookmark => {
+  | Bookmark
+  | VCS => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -297,6 +300,22 @@ export const unknown = (
     link: "",
   };
 
+  const UNKNOWN_VCS: VCS = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    name: "",
+    uuid: "",
+    type: "GITLAB_SELF_HOST",
+    instanceURL: "",
+    apiURL: "",
+    applicationId: "",
+    secret: "",
+    accessToken: "",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -328,6 +347,8 @@ export const unknown = (
       return UNKNOWN_MESSAGE;
     case "BOOKMARK":
       return UNKNOWN_BOOKMARK;
+    case "VCS":
+      return UNKNOWN_VCS;
   }
 };
 
@@ -349,7 +370,8 @@ export const empty = (
   | Task
   | Activity
   | Message
-  | Bookmark => {
+  | Bookmark
+  | VCS => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -538,6 +560,22 @@ export const empty = (
     link: "",
   };
 
+  const EMPTY_VCS: VCS = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    name: "",
+    uuid: "",
+    type: "GITLAB_SELF_HOST",
+    instanceURL: "",
+    apiURL: "",
+    applicationId: "",
+    secret: "",
+    accessToken: "",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -569,5 +607,7 @@ export const empty = (
       return EMPTY_MESSAGE;
     case "BOOKMARK":
       return EMPTY_BOOKMARK;
+    case "VCS":
+      return EMPTY_VCS;
   }
 };

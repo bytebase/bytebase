@@ -13,7 +13,7 @@
     class="mt-2 w-full"
     :placeholder="'https://gitlab.example.com'"
     :value="config.instanceURL"
-    @input="changeUrl($event.target.value)"
+    @input="changeURL($event.target.value)"
   />
   <p v-if="state.showURLError" class="mt-2 text-sm text-error">
     Instance URL must begin with https:// or http://
@@ -24,7 +24,7 @@
 import { onUnmounted, PropType, reactive } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
-import { isUrl } from "../utils";
+import { isURL } from "../utils";
 
 interface LocalState {
   urlValidationTimer?: ReturnType<typeof setTimeout>;
@@ -42,37 +42,37 @@ export default {
   setup(props, ctx) {
     const state = reactive<LocalState>({
       showURLError:
-        !isEmpty(props.config.instanceURL) && !isUrl(props.config.instanceURL),
+        !isEmpty(props.config.instanceURL) && !isURL(props.config.instanceURL),
     });
 
     onUnmounted(() => {
       clearInterval(state.urlValidationTimer);
     });
 
-    const changeUrl = (value: string) => {
+    const changeURL = (value: string) => {
       props.config.instanceURL = value;
 
       clearInterval(state.urlValidationTimer);
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isUrl(props.config.instanceURL)) {
+      if (isURL(props.config.instanceURL)) {
         state.showURLError = false;
       } else {
         state.urlValidationTimer = setTimeout(() => {
           // If error is already displayed, we hide the error only if there is valid input.
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showURLError) {
-            state.showURLError = !isUrl(props.config.instanceURL);
+            state.showURLError = !isURL(props.config.instanceURL);
           } else {
             state.showURLError =
               !isEmpty(props.config.instanceURL) &&
-              !isUrl(props.config.instanceURL);
+              !isURL(props.config.instanceURL);
           }
         }, TEXT_VALIDATION_DELAY);
       }
     };
 
-    return { state, changeUrl };
+    return { state, changeURL };
   },
 };
 </script>

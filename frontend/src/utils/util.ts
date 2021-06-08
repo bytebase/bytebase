@@ -50,7 +50,7 @@ export function urlfy(str: string) {
   return result;
 }
 
-export function isUrl(str: string) {
+export function isURL(str: string) {
   let url;
 
   try {

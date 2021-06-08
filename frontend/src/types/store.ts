@@ -12,6 +12,7 @@ import {
   ProjectId,
   PrincipalId,
   DatabaseId,
+  VCSId,
 } from "./id";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
@@ -22,6 +23,7 @@ import { Principal } from "./principal";
 import { Project } from "./project";
 import { Notification } from "./notification";
 import { Table } from "./table";
+import { VCS } from "./vcs";
 
 export interface AuthState {
   currentUser: Principal;
@@ -94,6 +96,10 @@ export interface DatabaseState {
 
 export interface TableState {
   tableListByDatabaseId: Map<DatabaseId, Table[]>;
+}
+
+export interface VCSState {
+  vcsById: Map<VCSId, VCS>;
 }
 
 export interface NotificationState {

@@ -7,7 +7,7 @@
         type="radio"
         class="btn"
         value="GITLAB_SELF_HOST"
-        v-model="config.vcsType"
+        v-model="config.type"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
@@ -60,7 +60,7 @@ export default {
   },
   setup(props, ctx) {
     const selectGitLabOnPrem = () => {
-      props.config.vcsType = "GITLAB_SELF_HOST";
+      props.config.type = "GITLAB_SELF_HOST";
     };
     return { selectGitLabOnPrem };
   },
