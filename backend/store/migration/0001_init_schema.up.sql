@@ -631,3 +631,48 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- vcs table stores the version control provider config
+CREATE TABLE vcs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    name TEXT NOT NULL,
+    -- Identify the oauth callback endpoint
+    uuid TEXT NOT NULL UNIQUE,
+    `type` TEXT NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
+    instance_url TEXT NOT NULL CHECK (
+        instance_url LIKE 'http:/%'
+        OR instance_url LIKE 'https:/%'
+    ),
+    api_url TEXT NOT NULL CHECK (
+        api_url LIKE 'http:/%'
+        OR api_url LIKE 'https:/%'
+    ),
+    application_id TEXT NOT NULL,
+    secret TEXT NOT NULL,
+    access_token TEXT NOT NULL DEFAULT ''
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('vcs', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_vcs_modification_time`
+AFTER
+UPDATE
+    ON `vcs` FOR EACH ROW BEGIN
+UPDATE
+    `vcs`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;

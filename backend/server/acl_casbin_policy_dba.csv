@@ -36,3 +36,8 @@ p, DBA, /bookmark/{id}, DELETE_SELF
 p, DBA, /pipeline/{pipelineId}/task/{taskId}/status, PATCH
 p, DBA, /sql/ping, POST
 p, DBA, /sql/syncschema, POST
+p, DBA, /vcs, POST
+p, DBA, /vcs, GET
+p, DBA, /vcs/{id}, GET
+p, DBA, /vcs/{id}, PATCH
+p, DBA, /vcs/{id}, DELETE

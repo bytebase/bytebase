@@ -59,6 +59,7 @@ func (m *Main) Run() error {
 	server.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db))
 	server.ActivityService = store.NewActivityService(m.l, db)
 	server.BookmarkService = store.NewBookmarkService(m.l, db)
+	server.VCSService = store.NewVCSService(m.l, db)
 
 	m.server = server
 	if err := server.Run(); err != nil {

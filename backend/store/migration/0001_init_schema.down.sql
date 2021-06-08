@@ -1,3 +1,5 @@
+DROP TABLE vcs;
+
 DROP TABLE bookmark;
 
 DROP TABLE activity;

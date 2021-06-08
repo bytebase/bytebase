@@ -41,6 +41,7 @@ type Server struct {
 	TaskService          api.TaskService
 	ActivityService      api.ActivityService
 	BookmarkService      api.BookmarkService
+	VCSService           api.VCSService
 
 	e *echo.Echo
 }
@@ -146,6 +147,7 @@ func NewServer(logger *zap.Logger) *Server {
 	s.registerActivityRoutes(g)
 	s.registerBookmarkRoutes(g)
 	s.registerSqlRoutes(g)
+	s.registerVCSRoutes(g)
 
 	return s
 }
