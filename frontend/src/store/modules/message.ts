@@ -48,14 +48,14 @@ const actions = {
     { commit, rootGetters }: any,
     userId: PrincipalId
   ) {
-    const messageList = (
-      await axios.get(`/api/message?user=${userId}`)
-    ).data.data.map((message: ResourceObject) => {
-      return convert(message, rootGetters);
-    });
+    // const messageList = (
+    //   await axios.get(`/api/message?user=${userId}`)
+    // ).data.data.map((message: ResourceObject) => {
+    //   return convert(message, rootGetters);
+    // });
 
-    commit("setMessageListByUser", { userId, messageList });
-    return messageList;
+    // commit("setMessageListByUser", { userId, messageList });
+    return [];
   },
 
   async patchMessage(

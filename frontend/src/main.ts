@@ -56,7 +56,7 @@ import {
 } from "./utils";
 
 if (!isRelease()) {
-  makeServer();
+  //makeServer();
 }
 
 const app = createApp(App);
