@@ -55,7 +55,7 @@
                 focus:outline-none
                 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
               "
-              @click.prevent="linkVCS(vcs)"
+              @click.prevent="linkVCS"
             >
               <template v-if="vcs.type.startsWith('GITLAB')">
                 Link this GitLab instance
@@ -69,9 +69,17 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
-import { VCS, redirectURL, oauthStateKey, OAuthState } from "../types";
-import { randomString } from "../utils";
+import { reactive, PropType, onUnmounted } from "vue";
+import { useStore } from "vuex";
+import {
+  VCS,
+  redirectURL,
+  OAuthWindowEvent,
+  OAuthWindowEventPayload,
+  openWindowForVCSOAuth,
+  VCSTokenCreate,
+} from "../types";
+import { isEmpty } from "lodash";
 
 interface LocalState {}
 
@@ -85,25 +93,33 @@ export default {
     },
   },
   setup(props, ctx) {
+    const store = useStore();
     const state = reactive<LocalState>({});
 
-    const linkVCS = (vcs: VCS) => {
-      // Set state in current session to prevent CSRF
-      const state = randomString(40);
-      const oauthState: OAuthState = {
-        resourceType: "VCS",
-        resourceId: vcs.id,
-      };
-      sessionStorage.setItem(oauthStateKey(state), JSON.stringify(oauthState));
+    const eventListener = (event: Event) => {
+      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+      if (isEmpty(payload.error)) {
+        const tokenCreate: VCSTokenCreate = {
+          code: payload.code,
+          redirectURL: redirectURL(),
+        };
+        store.dispatch("vcs/createVCSToken", {
+          vcsId: props.vcs.id,
+          tokenCreate,
+        });
+      } else {
+      }
+    };
 
-      window.open(
-        `${vcs.instanceURL}/oauth/authorize?client_id=${
-          vcs.applicationId
-        }&redirect_uri=${encodeURIComponent(
-          redirectURL()
-        )}&response_type=code&state=${state}`,
-        "_blank"
-      );
+    onUnmounted(() => {
+      window.removeEventListener(OAuthWindowEvent, eventListener);
+    });
+
+    const linkVCS = () => {
+      const newWindow = openWindowForVCSOAuth(props.vcs);
+      if (newWindow) {
+        window.addEventListener(OAuthWindowEvent, eventListener, false);
+      }
     };
 
     return {

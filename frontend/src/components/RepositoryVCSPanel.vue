@@ -16,20 +16,25 @@
 <script lang="ts">
 import { reactive } from "@vue/reactivity";
 import { useStore } from "vuex";
-import { computed, PropType, watchEffect } from "@vue/runtime-core";
-import { ProjectRepoConfig, VCS } from "../types";
+import { computed, onUnmounted, watchEffect } from "@vue/runtime-core";
+import isEmpty from "lodash-es/isEmpty";
+import {
+  OAuthWindowEvent,
+  OAuthWindowEventPayload,
+  openWindowForVCSOAuth,
+  VCS,
+} from "../types";
 
-interface LocalState {}
+interface LocalState {
+  selectedVCS?: VCS;
+}
+
+var newWindow;
 
 export default {
   name: "RepositoryVCSPanel",
   emits: ["select-vcs"],
-  props: {
-    config: {
-      required: true,
-      type: Object as PropType<ProjectRepoConfig>,
-    },
-  },
+  props: {},
   components: {},
   setup(props, { emit }) {
     const store = useStore();
@@ -45,8 +50,29 @@ export default {
       return store.getters["vcs/vcsList"]();
     });
 
+    const eventListener = (event: Event) => {
+      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+      if (isEmpty(payload.error)) {
+        emit("select-vcs", state.selectedVCS);
+      } else {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: payload.error,
+        });
+      }
+    };
+
+    onUnmounted(() => {
+      window.removeEventListener(OAuthWindowEvent, eventListener);
+    });
+
     const selectVCS = (vcs: VCS) => {
-      emit("select-vcs", vcs);
+      state.selectedVCS = vcs;
+      const newWindow = openWindowForVCSOAuth(vcs);
+      if (newWindow) {
+        window.addEventListener(OAuthWindowEvent, eventListener, false);
+      }
     };
 
     return {

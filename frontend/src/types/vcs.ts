@@ -51,10 +51,6 @@ export type VCSTokenCreate = {
   redirectURL: string;
 };
 
-export function isValidApplicationIdOrSecret(str: string): boolean {
+export function isValidVCSApplicationIdOrSecret(str: string): boolean {
   return /^[a-zA-Z0-9_]{64}$/.test(str);
-}
-
-export function redirectURL(): string {
-  return `${window.location.origin}/oauth/callback`;
 }

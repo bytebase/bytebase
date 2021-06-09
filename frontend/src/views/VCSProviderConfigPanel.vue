@@ -29,7 +29,7 @@
 import { onUnmounted, PropType, reactive } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import {
-  isValidApplicationIdOrSecret,
+  isValidVCSApplicationIdOrSecret,
   TEXT_VALIDATION_DELAY,
   VCSConfig,
 } from "../types";
@@ -53,10 +53,10 @@ export default {
     const state = reactive<LocalState>({
       showApplicationIdError:
         !isEmpty(props.config.applicationId) &&
-        !isValidApplicationIdOrSecret(props.config.applicationId),
+        !isValidVCSApplicationIdOrSecret(props.config.applicationId),
       showSecretError:
         !isEmpty(props.config.secret) &&
-        !isValidApplicationIdOrSecret(props.config.secret),
+        !isValidVCSApplicationIdOrSecret(props.config.secret),
     });
 
     onUnmounted(() => {
@@ -70,20 +70,20 @@ export default {
       clearInterval(state.applicationIdValidationTimer);
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidApplicationIdOrSecret(props.config.applicationId)) {
+      if (isValidVCSApplicationIdOrSecret(props.config.applicationId)) {
         state.showApplicationIdError = false;
       } else {
         state.applicationIdValidationTimer = setTimeout(() => {
           // If error is already displayed, we hide the error only if there is valid input.
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showApplicationIdError) {
-            state.showApplicationIdError = !isValidApplicationIdOrSecret(
+            state.showApplicationIdError = !isValidVCSApplicationIdOrSecret(
               props.config.applicationId
             );
           } else {
             state.showApplicationIdError =
-              !isValidApplicationIdOrSecret(props.config.applicationId) &&
-              !isValidApplicationIdOrSecret(props.config.applicationId);
+              !isValidVCSApplicationIdOrSecret(props.config.applicationId) &&
+              !isValidVCSApplicationIdOrSecret(props.config.applicationId);
           }
         }, TEXT_VALIDATION_DELAY);
       }
@@ -95,20 +95,20 @@ export default {
       clearInterval(state.secretValidationTimer);
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidApplicationIdOrSecret(props.config.secret)) {
+      if (isValidVCSApplicationIdOrSecret(props.config.secret)) {
         state.showSecretError = false;
       } else {
         state.secretValidationTimer = setTimeout(() => {
           // If error is already displayed, we hide the error only if there is valid input.
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showSecretError) {
-            state.showSecretError = !isValidApplicationIdOrSecret(
+            state.showSecretError = !isValidVCSApplicationIdOrSecret(
               props.config.secret
             );
           } else {
             state.showSecretError =
               !isEmpty(props.config.secret) &&
-              !isValidApplicationIdOrSecret(props.config.secret);
+              !isValidVCSApplicationIdOrSecret(props.config.secret);
           }
         }, TEXT_VALIDATION_DELAY);
       }

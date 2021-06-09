@@ -32,7 +32,11 @@ import VCSProviderSelectionPanel from "./VCSProviderSelectionPanel.vue";
 import VCSProviderInfoPanel from "./VCSProviderInfoPanel.vue";
 import VCSProviderConfigPanel from "./VCSProviderConfigPanel.vue";
 import VCSCard from "../components/VCSCard.vue";
-import { isValidApplicationIdOrSecret, VCSConfig, VCSCreate } from "../types";
+import {
+  isValidVCSApplicationIdOrSecret,
+  VCSConfig,
+  VCSCreate,
+} from "../types";
 import { isURL } from "../utils";
 import { useStore } from "vuex";
 
@@ -89,8 +93,8 @@ export default {
         return isURL(state.config.instanceURL);
       } else if (state.currentStep == 2) {
         return (
-          isValidApplicationIdOrSecret(state.config.applicationId) &&
-          isValidApplicationIdOrSecret(state.config.secret)
+          isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
+          isValidVCSApplicationIdOrSecret(state.config.secret)
         );
       }
       return true;

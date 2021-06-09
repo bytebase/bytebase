@@ -1,64 +1,70 @@
 <template>
-  <h1>OAuth callback</h1>
+  <div class="p-4">
+    <div>{{ state.message }}</div>
+    <button
+      v-if="state.hasError"
+      type="button"
+      class="btn-normal mt-2"
+      @click.prevent="window.close()"
+    >
+      Close
+    </button>
+  </div>
 </template>
 
 <script lang="ts">
+import { reactive } from "@vue/reactivity";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import {
-  OAuthState,
-  oauthStateKey,
-  redirectURL,
-  VCSTokenCreate,
+  OAuthStateSessionKey,
+  OAuthWindowEvent,
+  OAuthWindowEventPayload,
 } from "../types";
+
+interface LocalState {
+  message: string;
+  hasError: boolean;
+}
+
 export default {
   name: "OAuthCallback",
   components: {},
   props: {},
   setup(props, ctx) {
-    const store = useStore();
     const router = useRouter();
 
-    const item = router.currentRoute.value.query.state
-      ? sessionStorage.getItem(
-          oauthStateKey(router.currentRoute.value.query.state as string)
-        )
-      : undefined;
-    if (!item) {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: `Invalid state passed to the oauth callback`,
-      });
-      router.replace({
-        name: "setting.workspace.version-control",
-      });
+    const state = reactive<LocalState>({
+      message: "",
+      hasError: false,
+    });
+
+    const payload: OAuthWindowEventPayload = {
+      error: "",
+      code: "",
+    };
+    const expectedState = sessionStorage.getItem(OAuthStateSessionKey);
+    if (
+      !expectedState ||
+      expectedState != router.currentRoute.value.query.state
+    ) {
+      state.hasError = true;
+      state.message =
+        "Failed to authorize. Invalid state passed to the oauth callback.";
+      payload.error = state.message;
     } else {
-      const oauthState = JSON.parse(item) as OAuthState;
-      if (
-        !oauthState ||
-        oauthState.resourceType != "VCS" ||
-        !oauthState.resourceId
-      ) {
-        store.dispatch("notification/pushNotification", {
-          module: "bytebase",
-          style: "CRITICAL",
-          title: `Invalid oauth session state`,
-        });
-        router.replace({
-          name: "setting.workspace.version-control",
-        });
-      } else {
-        const tokenCreate: VCSTokenCreate = {
-          code: router.currentRoute.value.query.code as string,
-          redirectURL: redirectURL(),
-        };
-        store.dispatch("vcs/createVCSToken", {
-          vcsId: oauthState.resourceId,
-          tokenCreate,
-        });
-      }
+      state.message =
+        "Successfully authorized. Redirecting back to the application...";
+      payload.code = router.currentRoute.value.query.code as string;
     }
+
+    window.opener.dispatchEvent(
+      new CustomEvent(OAuthWindowEvent, { detail: payload })
+    );
+    window.close();
+
+    return {
+      state,
+    };
   },
 };
 </script>

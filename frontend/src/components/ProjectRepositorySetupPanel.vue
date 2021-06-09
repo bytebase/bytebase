@@ -6,7 +6,6 @@
   >
     <template v-slot:0="{ next }">
       <RepositoryVCSPanel
-        :config="state.config"
         @select-vcs="
           (vcs) => {
             next();
