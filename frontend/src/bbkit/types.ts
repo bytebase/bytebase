@@ -35,6 +35,7 @@ export type BBStep = {
 
 export type BBStepTabItem = {
   title: string;
+  hideNext?: boolean;
 };
 
 export type BBOutlineItem = {
