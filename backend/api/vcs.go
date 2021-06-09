@@ -31,9 +31,7 @@ type VCS struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
-	// Identify oauth callback endpoint
-	Uuid          string  `jsonapi:"attr,uuid"`
+	Name          string  `jsonapi:"attr,name"`
 	Type          VCSType `jsonapi:"attr,type"`
 	InstanceURL   string  `jsonapi:"attr,instanceURL"`
 	ApiURL        string  `jsonapi:"attr,apiURL"`
@@ -59,9 +57,6 @@ type VCSCreate struct {
 
 type VCSFind struct {
 	ID *int
-
-	// Domain specific fields
-	Uuid *string
 }
 
 func (find *VCSFind) String() string {

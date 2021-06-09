@@ -643,8 +643,6 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    -- Identify the oauth callback endpoint
-    uuid TEXT NOT NULL UNIQUE,
     `type` TEXT NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
     instance_url TEXT NOT NULL CHECK (
         instance_url LIKE 'http:/%'

@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -48,14 +47,6 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 
 	g.GET("/vcs", func(c echo.Context) error {
 		vcsFind := &api.VCSFind{}
-		uuidStr := c.QueryParams().Get("uuid")
-		if uuidStr != "" {
-			_, err := uuid.FromString(uuidStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid uuid string: %s", uuidStr)).SetInternal(err)
-			}
-			vcsFind.Uuid = &uuidStr
-		}
 		list, err := s.VCSService.FindVCSList(context.Background(), vcsFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)

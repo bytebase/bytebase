@@ -7,7 +7,6 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
-	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -133,20 +132,18 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 			creator_id,
 			updater_id,
 			name,
-			uuid,
 			`+"`type`,"+`
 			instance_url,
 			api_url,
 			application_id,
 			secret
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, uuid, `+"`type`, instance_url, api_url, application_id, secret, access_token"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret, access_token"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.Name,
-		uuid.NewV4(),
 		create.Type,
 		create.InstanceURL,
 		create.ApiURL,
@@ -168,7 +165,6 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 		&vcs.UpdaterId,
 		&vcs.UpdatedTs,
 		&vcs.Name,
-		&vcs.Uuid,
 		&vcs.Type,
 		&vcs.InstanceURL,
 		&vcs.ApiURL,
@@ -188,9 +184,6 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.Uuid; v != nil {
-		where, args = append(where, "uuid = ?"), append(args, *v)
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
@@ -200,7 +193,6 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 		    updater_id,
 		    updated_ts,
 			name,
-			uuid,
 			`+"`type`,"+`
 			instance_url,
 			api_url,
@@ -227,7 +219,6 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 			&vcs.UpdaterId,
 			&vcs.UpdatedTs,
 			&vcs.Name,
-			&vcs.Uuid,
 			&vcs.Type,
 			&vcs.InstanceURL,
 			&vcs.ApiURL,
@@ -268,7 +259,7 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, uuid, `+"`type`, instance_url, api_url, application_id, secret, access_token"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret, access_token"+`
 	`,
 		args...,
 	)
@@ -286,7 +277,6 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 			&vcs.UpdaterId,
 			&vcs.UpdatedTs,
 			&vcs.Name,
-			&vcs.Uuid,
 			&vcs.Type,
 			&vcs.InstanceURL,
 			&vcs.ApiURL,

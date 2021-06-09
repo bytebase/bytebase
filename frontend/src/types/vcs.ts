@@ -22,7 +22,6 @@ export type VCS = {
 
   // Domain specific fields
   name: string;
-  uuid: string;
   type: VCSType;
   instanceURL: string;
   apiURL: string;
