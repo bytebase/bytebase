@@ -1,5 +1,5 @@
 import { RowStatus } from "./common";
-import { MemberId, PrincipalId, ProjectId } from "./id";
+import { MemberId, PrincipalId, ProjectId, VCSId } from "./id";
 import { Principal } from "./principal";
 
 export type ProjectRoleType = "OWNER" | "DEVELOPER";
@@ -75,4 +75,8 @@ export type ProjectMemberPatch = {
 
   // Domain specific fields
   role: ProjectRoleType;
+};
+
+export type ProjectRepoConfig = {
+  vcsId: VCSId;
 };

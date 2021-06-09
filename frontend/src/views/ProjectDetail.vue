@@ -85,7 +85,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
-import RepositorySetupPanel from "../components/RepositorySetupPanel.vue";
+import RepositorySetupPanel from "../components/ProjectRepositorySetupPanel.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { ProjectPatch, Issue } from "../types";
 
