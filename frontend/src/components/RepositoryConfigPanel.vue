@@ -9,8 +9,8 @@
   <BBTextField
     class="mt-2 w-full"
     :placeholder="'Default branch (normally \'master\' or \'main\')'"
-    :value="config.branch"
-    @input="config.branch = $event.target.value"
+    :value="config.branchFilter"
+    @input="config.branchFilter = $event.target.value"
   />
 </template>
 
