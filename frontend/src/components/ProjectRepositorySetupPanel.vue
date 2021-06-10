@@ -5,16 +5,11 @@
     @finish="finishSetup"
   >
     <template v-slot:0="{ next }">
-      <RepositoryVCSPanel
-        @select-vcs="
-          (vcs) => {
-            next();
-            selectVCS(vcs);
-          }
-        "
-      />
+      <RepositoryVCSPanel :config="state.config" @next="next()" />
     </template>
-    <template v-slot:1> select repo </template>
+    <template v-slot:1="{ next }">
+      <RepositorySelectionPanel :config="state.config" @next="next()" />
+    </template>
     <template v-slot:2> configure deploy </template>
   </BBStepTab>
 </template>
@@ -23,9 +18,9 @@
 import { reactive } from "@vue/reactivity";
 import { BBStepTabItem } from "../bbkit/types";
 import { useStore } from "vuex";
-import { computed, watchEffect } from "@vue/runtime-core";
 import RepositoryVCSPanel from "./RepositoryVCSPanel.vue";
-import { ProjectRepoConfig, UNKNOWN_ID, VCS } from "../types";
+import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
+import { ProjectRepoConfig, Repository, unknown, VCS } from "../types";
 
 interface LocalState {
   config: ProjectRepoConfig;
@@ -33,7 +28,7 @@ interface LocalState {
 
 const stepList: BBStepTabItem[] = [
   { title: "Choose Git provider", hideNext: true },
-  { title: "Select repository" },
+  { title: "Select repository", hideNext: true },
   { title: "Configure deploy" },
 ];
 
@@ -41,28 +36,18 @@ export default {
   name: "ProjectRepositorySetupPanel",
   components: {
     RepositoryVCSPanel,
+    RepositorySelectionPanel,
   },
   setup(props, ctx) {
     const store = useStore();
     const state = reactive<LocalState>({
       config: {
-        vcsId: UNKNOWN_ID,
+        vcs: unknown("VCS") as VCS,
+        code: "",
+        accessToken: "",
+        repository: unknown("REPOSITORY") as Repository,
       },
     });
-
-    const prepareVCSList = () => {
-      store.dispatch("vcs/fetchVCSList");
-    };
-
-    watchEffect(prepareVCSList);
-
-    const vcsList = computed(() => {
-      return store.getters["vcs/vcsList"]();
-    });
-
-    const selectVCS = (vcs: VCS) => {
-      state.config.vcsId = vcs.id;
-    };
 
     const selectStep = (step: number) => {
       console.log("select step", step);
@@ -75,7 +60,6 @@ export default {
     return {
       state,
       stepList,
-      selectVCS,
       selectStep,
       finishSetup,
     };

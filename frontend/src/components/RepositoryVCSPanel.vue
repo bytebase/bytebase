@@ -16,12 +16,19 @@
 <script lang="ts">
 import { reactive } from "@vue/reactivity";
 import { useStore } from "vuex";
-import { computed, onUnmounted, watchEffect } from "@vue/runtime-core";
+import {
+  computed,
+  onUnmounted,
+  PropType,
+  watchEffect,
+} from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import {
   OAuthWindowEvent,
   OAuthWindowEventPayload,
   openWindowForVCSOAuth,
+  ProjectRepoConfig,
+  redirectURL,
   VCS,
 } from "../types";
 
@@ -29,12 +36,15 @@ interface LocalState {
   selectedVCS?: VCS;
 }
 
-var newWindow;
-
 export default {
   name: "RepositoryVCSPanel",
-  emits: ["select-vcs"],
-  props: {},
+  emits: ["next"],
+  props: {
+    config: {
+      required: true,
+      type: Object as PropType<ProjectRepoConfig>,
+    },
+  },
   components: {},
   setup(props, { emit }) {
     const store = useStore();
@@ -53,7 +63,18 @@ export default {
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        emit("select-vcs", state.selectedVCS);
+        props.config.code = payload.code;
+        store
+          .dispatch("gitlab/exchangeToken", {
+            vcs: state.selectedVCS,
+            code: payload.code,
+            redirectURL: redirectURL(),
+          })
+          .then((token: string) => {
+            props.config.vcs = state.selectedVCS!;
+            props.config.accessToken = token;
+            emit("next");
+          });
       } else {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",

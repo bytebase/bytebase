@@ -1,6 +1,8 @@
 import { RowStatus } from "./common";
-import { MemberId, PrincipalId, ProjectId, VCSId } from "./id";
+import { MemberId, PrincipalId, ProjectId } from "./id";
 import { Principal } from "./principal";
+import { Repository } from "./repository";
+import { VCS } from "./vcs";
 
 export type ProjectRoleType = "OWNER" | "DEVELOPER";
 
@@ -78,5 +80,8 @@ export type ProjectMemberPatch = {
 };
 
 export type ProjectRepoConfig = {
-  vcsId: VCSId;
+  vcs: VCS;
+  code: string;
+  accessToken: string;
+  repository: Repository;
 };

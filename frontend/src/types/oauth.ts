@@ -22,7 +22,7 @@ export function openWindowForVCSOAuth(vcs: VCS): Window | null {
       vcs.applicationId
     }&redirect_uri=${encodeURIComponent(
       redirectURL()
-    )}&response_type=code&state=${stateQueryParameter}`,
+    )}&state=${stateQueryParameter}&response_type=code&scope=api`,
     "oauth",
     "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
   );

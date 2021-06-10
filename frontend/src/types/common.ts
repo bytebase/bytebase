@@ -12,6 +12,7 @@ import { Activity } from "./activity";
 import { Message } from "./message";
 import { Bookmark } from "./bookmark";
 import { VCS } from "./vcs";
+import { Repository } from "./repository";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -89,7 +90,8 @@ export type ResourceType =
   | "ACTIVITY"
   | "MESSAGE"
   | "BOOKMARK"
-  | "VCS";
+  | "VCS"
+  | "REPOSITORY";
 
 export const unknown = (
   type: ResourceType
@@ -109,7 +111,8 @@ export const unknown = (
   | Activity
   | Message
   | Bookmark
-  | VCS => {
+  | VCS
+  | Repository => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -314,6 +317,13 @@ export const unknown = (
     secret: "",
   };
 
+  const UNKONWN_REPOSITORY: Repository = {
+    id: UNKNOWN_ID,
+    name: "",
+    fullPath: "",
+    webURL: "",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -347,6 +357,8 @@ export const unknown = (
       return UNKNOWN_BOOKMARK;
     case "VCS":
       return UNKNOWN_VCS;
+    case "REPOSITORY":
+      return UNKONWN_REPOSITORY;
   }
 };
 
@@ -369,7 +381,8 @@ export const empty = (
   | Activity
   | Message
   | Bookmark
-  | VCS => {
+  | VCS
+  | Repository => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -572,6 +585,13 @@ export const empty = (
     secret: "",
   };
 
+  const EMPTY_REPOSITORY: Repository = {
+    id: EMPTY_ID,
+    name: "",
+    fullPath: "",
+    webURL: "",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -605,5 +625,7 @@ export const empty = (
       return EMPTY_BOOKMARK;
     case "VCS":
       return EMPTY_VCS;
+    case "REPOSITORY":
+      return EMPTY_REPOSITORY;
   }
 };
