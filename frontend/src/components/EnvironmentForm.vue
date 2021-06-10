@@ -2,11 +2,11 @@
   <div class="px-4 py-2 space-y-6 divide-y divide-gray-200">
     <div class="grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
-        <label for="name" class="text-lg leading-6 font-medium text-control">
+        <label for="name" class="textlabel">
           Environment Name <span class="text-red-600">*</span>
         </label>
         <BBTextField
-          class="mt-4 w-full"
+          class="mt-2 w-full"
           :disabled="!allowEdit"
           :required="true"
           :value="state.environment.name"
