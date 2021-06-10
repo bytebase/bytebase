@@ -259,6 +259,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "version-control/new",
+                name: "setting.workspace.version-control.create",
+                meta: { title: () => "Add Git Provider" },
+                component: () =>
+                  import("../views/SettingWorkspaceVCSCreate.vue"),
+                props: true,
+              },
+              {
                 path: "plan",
                 name: "setting.workspace.plan",
                 meta: { title: () => "Plans" },

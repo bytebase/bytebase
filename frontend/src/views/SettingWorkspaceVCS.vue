@@ -1,80 +1,48 @@
 <template>
-  <template v-if="vcsList.length > 0">
-    <template v-for="(vcs, index) in vcsList" :key="index">
-      <VCSCard :vcs="vcs" />
-    </template>
-  </template>
-  <template v-else>
-    <BBStepTab
-      :stepItemList="stepList"
-      :allowNext="allowNext"
-      @select-step="selectStep"
-      @finish="finishSetup"
-    >
-      <template v-slot:0>
-        <VCSProviderSelectionPanel :config="state.config" />
+  <div class="space-y-4 divide-y divide-block-border">
+    <div class="flex items-center justify-end">
+      <button
+        type="button"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        @click.prevent="addVCSProvider"
+      >
+        Add a version control provider
+      </button>
+    </div>
+    <div class="pt-4">
+      <template v-if="vcsList.length > 0">
+        <template v-for="(vcs, index) in vcsList" :key="index">
+          <VCSCard :vcs="vcs" />
+        </template>
       </template>
-      <template v-slot:1>
-        <VCSProviderInfoPanel :config="state.config" />
+      <template v-else>
+        <VCSSetupWizard />
       </template>
-      <template v-slot:2>
-        <VCSProviderConfigPanel :config="state.config" />
-      </template>
-    </BBStepTab>
-  </template>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
 import { computed, watchEffect } from "@vue/runtime-core";
 import { reactive } from "@vue/reactivity";
-import { BBStepTabItem } from "../bbkit/types";
-import VCSProviderSelectionPanel from "./VCSProviderSelectionPanel.vue";
-import VCSProviderInfoPanel from "./VCSProviderInfoPanel.vue";
-import VCSProviderConfigPanel from "./VCSProviderConfigPanel.vue";
+import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
-import {
-  isValidVCSApplicationIdOrSecret,
-  VCSConfig,
-  VCSCreate,
-} from "../types";
-import { isURL } from "../utils";
+import VCSSetupWizard from "../components/VCSSetupWizard.vue";
 import { useStore } from "vuex";
 
-const stepList: BBStepTabItem[] = [
-  { title: "Choose Git provider" },
-  { title: "Fill provider basic info" },
-  { title: "Configure settings" },
-];
-
-interface LocalState {
-  config: VCSConfig;
-  currentStep: number;
-}
+interface LocalState {}
 
 export default {
   name: "SettingWorkspaceVCS",
   props: {},
   components: {
-    VCSProviderSelectionPanel,
-    VCSProviderInfoPanel,
-    VCSProviderConfigPanel,
     VCSCard,
+    VCSSetupWizard,
   },
   setup(props, ctx) {
     const store = useStore();
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    const state = reactive<LocalState>({
-      config: {
-        type: "GITLAB_SELF_HOST",
-        name: "",
-        instanceURL: "",
-        applicationId: "",
-        secret: "",
-      },
-      currentStep: 0,
-    });
+    const router = useRouter();
+    const state = reactive<LocalState>({});
 
     const prepareVCSList = () => {
       store.dispatch("vcs/fetchVCSList");
@@ -86,40 +54,16 @@ export default {
       return store.getters["vcs/vcsList"]();
     });
 
-    const allowNext = computed((): boolean => {
-      if (state.currentStep == 0) {
-        return true;
-      } else if (state.currentStep == 1) {
-        return isURL(state.config.instanceURL);
-      } else if (state.currentStep == 2) {
-        return (
-          isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
-          isValidVCSApplicationIdOrSecret(state.config.secret)
-        );
-      }
-      return true;
-    });
-
-    const selectStep = (step: number) => {
-      state.currentStep = step;
-    };
-
-    const finishSetup = () => {
-      console.log("finish", state.config);
-      const vcsCreate: VCSCreate = {
-        creatorId: currentUser.value.id,
-        ...state.config,
-      };
-      store.dispatch("vcs/createVCS", vcsCreate);
+    const addVCSProvider = () => {
+      router.push({
+        name: "setting.workspace.version-control.create",
+      });
     };
 
     return {
-      stepList,
       state,
       vcsList,
-      allowNext,
-      selectStep,
-      finishSetup,
+      addVCSProvider,
     };
   },
 };
