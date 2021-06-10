@@ -72,6 +72,12 @@ const actions = {
         {
           url: `${vcs.instanceURL}/${GITLAB_WEBHOOK_PATH}`,
           push_events: true,
+          // For now, there is no native dry run DDL support in mysql/postgres. One may wonder if we could wrap the DDL
+          // in a transaction and just not commit at the end, unfortunately there are side effects which are hard to control.
+          // See https://www.postgresql.org/message-id/CAMsr%2BYGiYQ7PYvYR2Voio37YdCpp79j5S%2BcmgVJMOLM2LnRQcA%40mail.gmail.com
+          // So we can't possibly display useful info when reviewing a MR, thus we don't enable this event.
+          // Saying that, delivering a souding dry run solution would be great and hopefully we can achieve that one day.
+          // merge_requests_events: true,
           push_events_branch_filter: branchFilter,
           // TODO: Be lax for now
           enable_ssl_verification: false,
