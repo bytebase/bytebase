@@ -176,7 +176,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		oauthToken := &api.OAuthToken{}
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
-			url := fmt.Sprintf("%s/oauth/token?client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=%s",
+			url := fmt.Sprintf("%s/oauth/token?client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&grant_type=authorization_code",
 				vcs.InstanceURL,
 				vcs.ApplicationId,
 				vcs.Secret,
