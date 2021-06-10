@@ -1,7 +1,6 @@
-import { RepositoryId } from "./id";
-
 export type Repository = {
-  id: RepositoryId;
+  // e.g. In GitLab, this is the corresponding project id.
+  externalId: string;
   // e.g. sample-project
   name: string;
   // e.g. bytebase/sample-project

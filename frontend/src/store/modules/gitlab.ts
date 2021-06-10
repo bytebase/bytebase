@@ -2,12 +2,13 @@ import axios from "axios";
 import { Repository, VCS } from "../../types";
 
 const GITLAB_API_PATH = "api/v4";
+const GITLAB_WEBHOOK_PATH = "hook/gitlab";
 
 const getters = {};
 
 function convertGitLabProject(project: any): Repository {
   return {
-    id: project.id,
+    externalId: project.id.toString(),
     name: project.name,
     fullPath: project.path_with_namespace,
     webURL: project.web_url,
@@ -51,6 +52,37 @@ const actions = {
     ).data;
 
     return data.map((item: any) => convertGitLabProject(item));
+  },
+
+  // Create webhook to receive push event
+  async createWebhook(
+    {}: any,
+    {
+      vcs,
+      projectId,
+      branchFilter,
+      token,
+    }: { vcs: VCS; projectId: string; branchFilter: string; token: string }
+  ): Promise<string> {
+    const data = (
+      await axios.post(
+        `${vcs.instanceURL}/${GITLAB_API_PATH}/projects/${projectId}/hooks`,
+        {
+          url: `${vcs.instanceURL}/${GITLAB_WEBHOOK_PATH}`,
+          push_events: true,
+          push_events_branch_filter: branchFilter,
+          // TODO: Be lax for now
+          enable_ssl_verification: false,
+        },
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      )
+    ).data;
+
+    return data.id.toString();
   },
 };
 

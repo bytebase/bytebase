@@ -85,5 +85,5 @@ export type ProjectRepoConfig = {
   accessToken: string;
   repository: Repository;
   baseDirectory: string;
-  branch: string;
+  branchFilter: string;
 };

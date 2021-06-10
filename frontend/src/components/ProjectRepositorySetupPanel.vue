@@ -51,7 +51,7 @@ export default {
         accessToken: "",
         repository: unknown("REPOSITORY") as Repository,
         baseDirectory: "",
-        branch: "",
+        branchFilter: "",
       },
     });
 
@@ -61,6 +61,14 @@ export default {
 
     const finishSetup = () => {
       console.log("finish", state.config);
+      store
+        .dispatch("gitlab/createWebhook", {
+          vcs: state.config.vcs,
+          projectId: state.config.repository.externalId,
+          branchFilter: state.config.branchFilter,
+          token: state.config.accessToken,
+        })
+        .then((createdHook) => {});
     };
 
     return {

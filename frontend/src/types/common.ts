@@ -318,7 +318,7 @@ export const unknown = (
   };
 
   const UNKONWN_REPOSITORY: Repository = {
-    id: UNKNOWN_ID,
+    externalId: UNKNOWN_ID.toString(),
     name: "",
     fullPath: "",
     webURL: "",
@@ -586,7 +586,7 @@ export const empty = (
   };
 
   const EMPTY_REPOSITORY: Repository = {
-    id: EMPTY_ID,
+    externalId: EMPTY_ID.toString(),
     name: "",
     fullPath: "",
     webURL: "",
