@@ -15,7 +15,7 @@
       </label>
     </div>
   </div>
-  <div class="mt-2 relative">
+  <div class="mt-4 relative">
     <div class="absolute inset-0 flex items-center" aria-hidden="true">
       <div class="w-full border-t border-block-border"></div>
     </div>
@@ -25,8 +25,8 @@
       </span>
     </div>
   </div>
-  <div class="space-y-2">
-    <div class="mt-2 flex flex-row space-x-2 items-center text-control">
+  <div class="mt-2 flex flex-row itmes-center space-x-4">
+    <div class="flex flex-row space-x-2 items-center text-control">
       <div class="h-5 w-5">
         <img src="../assets/gitlab-logo.svg" />
       </div>

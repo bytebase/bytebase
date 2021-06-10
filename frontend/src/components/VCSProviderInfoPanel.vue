@@ -1,14 +1,11 @@
 <template>
-  <div class="text-lg leading-6 font-medium text-control">Name</div>
-  <BBTextField
-    class="mt-2 w-full"
-    :placeholder="'GitLab self-host'"
-    :value="config.name"
-    @input="config.name = $event.target.value"
-  />
-  <div class="mt-4 text-lg leading-6 font-medium text-control">
-    GitLab Instance URL <span class="text-red-600">*</span>
+  <div class="textlabel">
+    {{ instanceURLLabel }} <span class="text-red-600">*</span>
   </div>
+  <p class="mt-1 textinfolabel">
+    The VCS instance URL. Make sure this instance and Bytebase are network
+    accessible from each other.
+  </p>
   <BBTextField
     class="mt-2 w-full"
     :placeholder="'https://gitlab.example.com'"
@@ -18,10 +15,21 @@
   <p v-if="state.showURLError" class="mt-2 text-sm text-error">
     Instance URL must begin with https:// or http://
   </p>
+  <div class="mt-4 textlabel">Display Name</div>
+  <p class="mt-1 textinfolabel">
+    An optional display name to help identifying among different configs using
+    the same Git provider.
+  </p>
+  <BBTextField
+    class="mt-2 w-full"
+    :placeholder="namePlaceholder"
+    :value="config.name"
+    @input="config.name = $event.target.value"
+  />
 </template>
 
 <script lang="ts">
-import { onUnmounted, PropType, reactive } from "@vue/runtime-core";
+import { computed, onUnmounted, PropType, reactive } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
 import { isURL } from "../utils";
@@ -49,6 +57,20 @@ export default {
       clearInterval(state.urlValidationTimer);
     });
 
+    const namePlaceholder = computed((): string => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        return "GitLab self-host";
+      }
+      return "";
+    });
+
+    const instanceURLLabel = computed((): string => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        return "GitLab Instance URL";
+      }
+      return "";
+    });
+
     const changeURL = (value: string) => {
       props.config.instanceURL = value;
 
@@ -72,7 +94,7 @@ export default {
       }
     };
 
-    return { state, changeURL };
+    return { state, namePlaceholder, instanceURLLabel, changeURL };
   },
 };
 </script>

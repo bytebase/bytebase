@@ -1,5 +1,5 @@
 <template>
-  <div class="text-lg leading-6 font-medium text-control">
+  <div class="textlabel">
     Application ID <span class="text-red-600">*</span>
   </div>
   <BBTextField
@@ -11,9 +11,7 @@
   <p v-if="state.showApplicationIdError" class="mt-2 text-sm text-error">
     Application ID must be a 64-character alphanumeric string
   </p>
-  <div class="mt-4 text-lg leading-6 font-medium text-control">
-    Secret <span class="text-red-600">*</span>
-  </div>
+  <div class="mt-4 textlabel">Secret <span class="text-red-600">*</span></div>
   <BBTextField
     class="mt-2 w-full"
     :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912ad15f4e2251cc3a'"
