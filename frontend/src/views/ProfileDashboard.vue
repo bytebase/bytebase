@@ -11,7 +11,16 @@
           <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
             <BBAvatar :size="'huge'" :username="principal.name" />
             <div
-              class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
+              class="
+                mt-6
+                sm:flex-1
+                sm:min-w-0
+                sm:flex
+                sm:items-center
+                sm:justify-end
+                sm:space-x-6
+                sm:pb-1
+              "
             >
               <div class="mt-6 flex flex-row justify-stretch space-x-4">
                 <button v-if="false" type="button" class="btn-normal">
@@ -158,7 +167,7 @@ export default {
   name: "ProfileDashboard",
   props: {
     principalId: {
-      type: String,
+      type: Number,
     },
   },
   components: {},

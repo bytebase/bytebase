@@ -218,10 +218,10 @@ export default {
       type: Object as PropType<DataSource>,
     },
     principalId: {
-      type: String,
+      type: Number,
     },
     issueId: {
-      type: String,
+      type: Number,
     },
   },
   components: {
@@ -312,7 +312,7 @@ export default {
       }
     };
 
-    const updateState = (field: string, value: string) => {
+    const updateState = (field: string, value: number) => {
       if (field == "environmentId") {
         state.environmentId = value;
       } else if (field == "instanceId") {
