@@ -5,11 +5,11 @@ INSERT INTO
         updater_id,
         vcs_id,
         project_id,
-        external_id,
-        webhook_id,
         name,
         full_path,
-        web_url
+        web_url,
+        external_id,
+        webhook_id
     )
 VALUES
     (

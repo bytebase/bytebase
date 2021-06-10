@@ -24,6 +24,7 @@ import { Project } from "./project";
 import { Notification } from "./notification";
 import { Table } from "./table";
 import { VCS } from "./vcs";
+import { Repository } from "./repository";
 
 export interface AuthState {
   currentUser: Principal;
@@ -100,6 +101,7 @@ export interface TableState {
 
 export interface VCSState {
   vcsById: Map<VCSId, VCS>;
+  repositoryListByVCSId: Map<VCSId, Repository[]>;
 }
 
 export interface NotificationState {

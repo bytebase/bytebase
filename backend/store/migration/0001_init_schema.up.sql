@@ -691,15 +691,26 @@ CREATE TABLE repo (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
     project_id INTEGER NOT NULL UNIQUE REFERENCES project (id),
-    -- Repo id for the corresponding VCS provider. For GitLab, this is the GitLab project id
-    external_id TEXT NOT NULL,
-    -- Push webhook id for the corresponding VCS provider.
-    webhook_id TEXT NOT NULL,
+    -- Name from the corresponding VCS provider.
+    -- For GitLab, this is the project name. e.g. project 1
     name TEXT NOT NULL,
+    -- Full path from the corresponding VCS provider.
+    -- For GitLab, this is the project full path. e.g. group1/project-1
     full_path TEXT NOT NULL,
+    -- Web url from the corresponding VCS provider.
+    -- For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1
     web_url TEXT NOT NULL,
+    -- Base working directory we are interested.
     base_directory TEXT NOT NULL DEFAULT '',
-    branch_filter TEXT NOT NULL DEFAULT ''
+    -- Branch we are interested.
+    -- For GitLab, this corresponds to webhook's push_events_branch_filter. Wildcard is supported
+    branch_filter TEXT NOT NULL DEFAULT '',
+    -- Repo id from the corresponding VCS provider.
+    -- For GitLab, this is the project id. e.g. 123
+    external_id TEXT NOT NULL,
+    -- Push webhook id from the corresponding VCS provider.
+    -- For GitLab, this is the project webhook id. e.g. 123
+    webhook_id TEXT NOT NULL
 );
 
 INSERT INTO

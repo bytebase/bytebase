@@ -1,7 +1,7 @@
 import { RowStatus } from "./common";
 import { MemberId, PrincipalId, ProjectId } from "./id";
 import { Principal } from "./principal";
-import { Repository } from "./repository";
+import { ExternalRepository, Repository } from "./repository";
 import { VCS } from "./vcs";
 
 export type ProjectRoleType = "OWNER" | "DEVELOPER";
@@ -83,7 +83,7 @@ export type ProjectRepoConfig = {
   vcs: VCS;
   code: string;
   accessToken: string;
-  repository: Repository;
+  repository: ExternalRepository;
   baseDirectory: string;
   branchFilter: string;
 };

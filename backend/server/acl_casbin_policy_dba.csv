@@ -41,3 +41,4 @@ p, DBA, /vcs, GET
 p, DBA, /vcs/{id}, GET
 p, DBA, /vcs/{id}, PATCH
 p, DBA, /vcs/{id}, DELETE
+p, DBA, /vcs/{id}/repository, GET

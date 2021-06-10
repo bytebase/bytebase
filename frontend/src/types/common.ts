@@ -318,6 +318,11 @@ export const unknown = (
   };
 
   const UNKONWN_REPOSITORY: Repository = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
     externalId: UNKNOWN_ID.toString(),
     name: "",
     fullPath: "",
@@ -586,6 +591,11 @@ export const empty = (
   };
 
   const EMPTY_REPOSITORY: Repository = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
     externalId: EMPTY_ID.toString(),
     name: "",
     fullPath: "",

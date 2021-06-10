@@ -39,6 +39,8 @@ export type TableId = IdType;
 
 export type VCSId = IdType;
 
+export type RepositoryId = IdType;
+
 export type CommandId = IdType;
 export type CommandRegisterId = IdType;
 

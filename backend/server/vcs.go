@@ -54,7 +54,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 
 		for _, vcs := range list {
 			if err := s.ComposeVCSRelationship(context.Background(), vcs, c.Get(getIncludeKey()).([]string)); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs relationship: %v", vcs.ID)).SetInternal(err)
 			}
 		}
 
@@ -239,6 +239,33 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedVCS); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal vcs ID response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/vcs/:vcsId/repository", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("vcsId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		repositoryFind := &api.RepositoryFind{
+			VCSId: &id,
+		}
+		list, err := s.RepositoryService.FindRepositoryList(context.Background(), repositoryFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository for vcs ID: %v", id)).SetInternal(err)
+		}
+
+		for _, repository := range list {
+			if err := s.ComposeRepositoryRelationship(context.Background(), repository, c.Get(getIncludeKey()).([]string)); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.ID)).SetInternal(err)
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal repository list response for vcs ID: %v", id)).SetInternal(err)
 		}
 		return nil
 	})

@@ -42,6 +42,7 @@ type Server struct {
 	ActivityService      api.ActivityService
 	BookmarkService      api.BookmarkService
 	VCSService           api.VCSService
+	RepositoryService    api.RepositoryService
 
 	e *echo.Echo
 }

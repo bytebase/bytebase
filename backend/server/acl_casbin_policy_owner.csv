@@ -47,3 +47,4 @@ p, OWNER, /vcs/{id}, GET
 p, OWNER, /vcs/{id}, PATCH
 p, OWNER, /vcs/{id}, DELETE
 p, OWNER, /vcs/{id}/token, POST
+p, OWNER, /vcs/{id}/repository, GET

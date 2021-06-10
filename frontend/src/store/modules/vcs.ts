@@ -11,13 +11,24 @@ import {
   EMPTY_ID,
   Principal,
   VCSTokenCreate,
+  Repository,
 } from "../../types";
 
-function convert(
-  vcs: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
-): VCS {
+function convertRepository(respository: ResourceObject): Repository {
+  const creator = respository.attributes.creator as Principal;
+  const updater = respository.attributes.updater as Principal;
+  return {
+    ...(respository.attributes as Omit<
+      Repository,
+      "id" | "creator" | "updater"
+    >),
+    id: parseInt(respository.id),
+    creator,
+    updater,
+  };
+}
+
+function convert(vcs: ResourceObject): VCS {
   const creator = vcs.attributes.creator as Principal;
   const updater = vcs.attributes.updater as Principal;
   return {
@@ -30,15 +41,10 @@ function convert(
 
 const state: () => VCSState = () => ({
   vcsById: new Map(),
+  repositoryListByVCSId: new Map(),
 });
 
 const getters = {
-  convert:
-    (state: VCSState, getters: any, rootState: any, rootGetters: any) =>
-    (vcs: ResourceObject, includedList: ResourceObject[]): VCS => {
-      return convert(vcs, includedList, rootGetters);
-    },
-
   vcsList: (state: VCSState) => (): VCS[] => {
     const list = [];
     for (const [_, vcs] of state.vcsById) {
@@ -61,11 +67,11 @@ const getters = {
 };
 
 const actions = {
-  async fetchVCSList({ commit, rootGetters }: any) {
+  async fetchVCSList({ commit }: any) {
     const path = "/api/vcs";
     const data = (await axios.get(path)).data;
     const vcsList = data.data.map((vcs: ResourceObject) => {
-      return convert(vcs, data.included, rootGetters);
+      return convert(vcs);
     });
 
     commit("setVCSList", vcsList);
@@ -73,10 +79,10 @@ const actions = {
     return vcsList;
   },
 
-  async fetchVCSById({ commit, rootGetters }: any, vcsId: VCSId) {
+  async fetchVCSById({ commit }: any, vcsId: VCSId) {
     // include=secret to return username/password when requesting the specific vcs id
     const data = (await axios.get(`/api/vcs/${vcsId}`)).data;
-    const vcs = convert(data.data, data.included, rootGetters);
+    const vcs = convert(data.data);
 
     commit("setVCSById", {
       vcsId,
@@ -85,7 +91,7 @@ const actions = {
     return vcs;
   },
 
-  async createVCS({ commit, rootGetters }: any, newVCS: VCSCreate) {
+  async createVCS({ commit }: any, newVCS: VCSCreate) {
     const data = (
       await axios.post(`/api/vcs`, {
         data: {
@@ -94,7 +100,7 @@ const actions = {
         },
       })
     ).data;
-    const createdVCS = convert(data.data, data.included, rootGetters);
+    const createdVCS = convert(data.data);
 
     commit("setVCSById", {
       vcsId: createdVCS.id,
@@ -105,7 +111,7 @@ const actions = {
   },
 
   async patchVCS(
-    { commit, rootGetters }: any,
+    { commit }: any,
     {
       vcsId,
       vcsPatch,
@@ -122,7 +128,7 @@ const actions = {
         },
       })
     ).data;
-    const updatedVCS = convert(data.data, data.included, rootGetters);
+    const updatedVCS = convert(data.data);
 
     commit("setVCSById", {
       vcsId: updatedVCS.id,
@@ -142,7 +148,7 @@ const actions = {
   },
 
   async createVCSToken(
-    { commit, rootGetters }: any,
+    { commit }: any,
     { vcsId, tokenCreate }: { vcsId: VCSId; tokenCreate: VCSTokenCreate }
   ) {
     const data = (
@@ -153,7 +159,7 @@ const actions = {
         },
       })
     ).data;
-    const createdVCS = convert(data.data, data.included, rootGetters);
+    const createdVCS = convert(data.data);
 
     commit("setVCSById", {
       vcsId: createdVCS.id,
@@ -161,6 +167,19 @@ const actions = {
     });
 
     return createdVCS;
+  },
+
+  async fetchRepositoryListByVCS({ commit }: any, vcs: VCS) {
+    const repositoryList = (
+      await axios.get(`/api/vcs/${vcs.id}/repository`)
+    ).data.data.map((repository: ResourceObject) => {
+      return convertRepository(repository);
+    });
+
+    console.log("repo", repositoryList);
+
+    commit("setRepositoryListByVCSId", { vcsId: vcs.id, repositoryList });
+    return repositoryList;
   },
 };
 
@@ -186,6 +205,19 @@ const mutations = {
 
   deleteVCSById(state: VCSState, vcsId: VCSId) {
     state.vcsById.delete(vcsId);
+  },
+
+  setRepositoryListByVCSId(
+    state: VCSState,
+    {
+      vcsId,
+      repositoryList,
+    }: {
+      vcsId: VCSId;
+      repositoryList: Repository[];
+    }
+  ) {
+    state.repositoryListByVCSId.set(vcsId, repositoryList);
   },
 };
 

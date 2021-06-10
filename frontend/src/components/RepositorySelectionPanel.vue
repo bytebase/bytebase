@@ -45,10 +45,10 @@
 import { reactive } from "@vue/reactivity";
 import { useStore } from "vuex";
 import { computed, PropType, watchEffect } from "@vue/runtime-core";
-import { ProjectRepoConfig, Repository } from "../types";
+import { ExternalRepository, ProjectRepoConfig } from "../types";
 
 interface LocalState {
-  repositoryList: Repository[];
+  repositoryList: ExternalRepository[];
   searchText: string;
 }
 
@@ -86,12 +86,12 @@ export default {
       if (state.searchText == "") {
         return state.repositoryList;
       }
-      return state.repositoryList.filter((repository: Repository) => {
+      return state.repositoryList.filter((repository: ExternalRepository) => {
         return repository.fullPath.toLowerCase().includes(state.searchText);
       });
     });
 
-    const selectRepository = (repository: Repository) => {
+    const selectRepository = (repository: ExternalRepository) => {
       props.config.repository = repository;
       emit("next");
     };

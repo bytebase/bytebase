@@ -1,12 +1,12 @@
 import axios from "axios";
-import { Repository, VCS } from "../../types";
+import { ExternalRepository, VCS } from "../../types";
 
 const GITLAB_API_PATH = "api/v4";
 const GITLAB_WEBHOOK_PATH = "hook/gitlab";
 
 const getters = {};
 
-function convertGitLabProject(project: any): Repository {
+function convertGitLabProject(project: any): ExternalRepository {
   return {
     externalId: project.id.toString(),
     name: project.name,
@@ -35,7 +35,7 @@ const actions = {
   async fetchProjectList(
     {}: any,
     { vcs, token }: { vcs: VCS; token: string }
-  ): Promise<Repository[]> {
+  ): Promise<ExternalRepository[]> {
     console.log(
       "req",
       `${vcs.instanceURL}/${GITLAB_API_PATH}/projects?membership=true&simple=true`
