@@ -40,9 +40,11 @@ const actions = {
       "req",
       `${vcs.instanceURL}/${GITLAB_API_PATH}/projects?membership=true&simple=true`
     );
+    // We will use user's token to create webhook in the project, which requires the token owner to
+    // be at least the project maintainer(40)
     const data = (
       await axios.get(
-        `${vcs.instanceURL}/${GITLAB_API_PATH}/projects?membership=true&simple=true`,
+        `${vcs.instanceURL}/${GITLAB_API_PATH}/projects?membership=true&simple=true&min_access_level=40`,
         {
           headers: {
             Authorization: "Bearer " + token,
