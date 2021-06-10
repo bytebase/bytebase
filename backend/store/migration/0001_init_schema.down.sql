@@ -1,3 +1,5 @@
+DROP TABLE repo;
+
 DROP TABLE vcs;
 
 DROP TABLE bookmark;

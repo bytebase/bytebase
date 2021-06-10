@@ -676,3 +676,46 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- repo table stores the repository setting for a project
+-- A vcs is associated with many repositories.
+-- A project can only link one repository (at least for now).
+CREATE TABLE repo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    vcs_id INTEGER NOT NULL REFERENCES vcs (id),
+    project_id INTEGER NOT NULL UNIQUE REFERENCES project (id),
+    -- Repo id for the corresponding VCS provider. For GitLab, this is the GitLab project id
+    external_id TEXT NOT NULL,
+    -- Push webhook id for the corresponding VCS provider.
+    webhook_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    full_path TEXT NOT NULL,
+    web_url TEXT NOT NULL,
+    base_directory TEXT NOT NULL DEFAULT '',
+    branch_filter TEXT NOT NULL DEFAULT ''
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('repo', 1000);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_repo_modification_time`
+AFTER
+UPDATE
+    ON `repo` FOR EACH ROW BEGIN
+UPDATE
+    `repo`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
