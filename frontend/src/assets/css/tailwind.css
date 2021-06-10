@@ -101,7 +101,11 @@
 }
 
 .textlabel {
-  @apply text-sm font-medium text-control-light;
+  @apply text-sm font-medium text-control;
+}
+
+.textinfolabel {
+  @apply text-sm font-normal text-control-light;
 }
 
 .textfield {
