@@ -98,10 +98,8 @@ func NewServer(logger *zap.Logger) *Server {
 	scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
 	s.TaskScheduler = scheduler
 
-	g := e.Group("/api")
-
 	// Middleware
-	g.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			return !strings.HasPrefix(c.Path(), "/api")
 		},
@@ -109,15 +107,15 @@ func NewServer(logger *zap.Logger) *Server {
 			`"method":"${method}","uri":"${uri}",` +
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
-	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return RecoverMiddleware(logger, next)
 	})
 
-	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(logger, s.PrincipalService, next)
 	})
 
-	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return RequestMiddleware(logger, next)
 	})
 
@@ -130,25 +128,29 @@ func NewServer(logger *zap.Logger) *Server {
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return ACLMiddleware(logger, s, ce, next)
 	})
 
-	s.registerDebugRoutes(g)
-	s.registerAuthRoutes(g)
-	s.registerPrincipalRoutes(g)
-	s.registerMemberRoutes(g)
-	s.registerProjectRoutes(g)
-	s.registerProjectMemberRoutes(g)
-	s.registerEnvironmentRoutes(g)
-	s.registerInstanceRoutes(g)
-	s.registerDatabaseRoutes(g)
-	s.registerIssueRoutes(g)
-	s.registerTaskRoutes(g)
-	s.registerActivityRoutes(g)
-	s.registerBookmarkRoutes(g)
-	s.registerSqlRoutes(g)
-	s.registerVCSRoutes(g)
+	webhookGroup := e.Group("/hook")
+	s.registerWebhookRoutes(webhookGroup)
+
+	apiGroup := e.Group("/api")
+	s.registerDebugRoutes(apiGroup)
+	s.registerAuthRoutes(apiGroup)
+	s.registerPrincipalRoutes(apiGroup)
+	s.registerMemberRoutes(apiGroup)
+	s.registerProjectRoutes(apiGroup)
+	s.registerProjectMemberRoutes(apiGroup)
+	s.registerEnvironmentRoutes(apiGroup)
+	s.registerInstanceRoutes(apiGroup)
+	s.registerDatabaseRoutes(apiGroup)
+	s.registerIssueRoutes(apiGroup)
+	s.registerTaskRoutes(apiGroup)
+	s.registerActivityRoutes(apiGroup)
+	s.registerBookmarkRoutes(apiGroup)
+	s.registerSqlRoutes(apiGroup)
+	s.registerVCSRoutes(apiGroup)
 
 	return s
 }
