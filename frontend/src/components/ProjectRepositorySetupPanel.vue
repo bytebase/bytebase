@@ -10,7 +10,9 @@
     <template v-slot:1="{ next }">
       <RepositorySelectionPanel :config="state.config" @next="next()" />
     </template>
-    <template v-slot:2> configure deploy </template>
+    <template v-slot:2>
+      <RepositoryConfigPanel :config="state.config" />
+    </template>
   </BBStepTab>
 </template>
 
@@ -20,6 +22,7 @@ import { BBStepTabItem } from "../bbkit/types";
 import { useStore } from "vuex";
 import RepositoryVCSPanel from "./RepositoryVCSPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
+import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
 import { ProjectRepoConfig, Repository, unknown, VCS } from "../types";
 
 interface LocalState {
@@ -37,6 +40,7 @@ export default {
   components: {
     RepositoryVCSPanel,
     RepositorySelectionPanel,
+    RepositoryConfigPanel,
   },
   setup(props, ctx) {
     const store = useStore();
@@ -46,6 +50,8 @@ export default {
         code: "",
         accessToken: "",
         repository: unknown("REPOSITORY") as Repository,
+        baseDirectory: "",
+        branch: "",
       },
     });
 
@@ -54,7 +60,7 @@ export default {
     };
 
     const finishSetup = () => {
-      console.log("finish");
+      console.log("finish", state.config);
     };
 
     return {
