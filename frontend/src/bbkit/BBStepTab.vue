@@ -61,18 +61,20 @@
       </div>
     </li>
   </ol>
-  <template v-for="(step, index) in stepItemList" :key="index">
-    <slot
-      v-if="state.currentStep == index"
-      :name="index"
-      :next="
-        () => {
-          switchStep(state.currentStep + 1);
-        }
-      "
-    />
-  </template>
-  <div class="pt-4 flex justify-between">
+  <div class="mt-8 mb-4">
+    <template v-for="(step, index) in stepItemList" :key="index">
+      <slot
+        v-if="state.currentStep == index"
+        :name="index"
+        :next="
+          () => {
+            switchStep(state.currentStep + 1);
+          }
+        "
+      />
+    </template>
+  </div>
+  <div class="pt-4 border-t border-block-border flex justify-between">
     <button type="button" class="btn-normal" @click.prevent="cancel">
       Cancel
     </button>
