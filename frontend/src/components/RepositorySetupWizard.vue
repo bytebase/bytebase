@@ -36,7 +36,7 @@ const stepList: BBStepTabItem[] = [
 ];
 
 export default {
-  name: "ProjectRepositorySetupPanel",
+  name: "RepositorySetupWizard",
   components: {
     RepositoryVCSPanel,
     RepositorySelectionPanel,

@@ -40,7 +40,7 @@
       </div>
     </div>
     <template v-else-if="state.selectedIndex == REPO_TAB">
-      <RepositorySetupPanel />
+      <RepositorySetupWizard />
     </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">
@@ -85,7 +85,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
-import RepositorySetupPanel from "../components/ProjectRepositorySetupPanel.vue";
+import RepositorySetupWizard from "../components/RepositorySetupWizard.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { ProjectPatch, Issue } from "../types";
 
@@ -106,7 +106,7 @@ export default {
     DatabaseTable,
     ProjectGeneralSettingPanel,
     ProjectMemberPanel,
-    RepositorySetupPanel,
+    RepositorySetupWizard,
     IssueTable,
   },
   props: {
