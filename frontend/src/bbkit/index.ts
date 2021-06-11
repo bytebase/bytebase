@@ -1,4 +1,5 @@
 import BBAlert from "./BBAlert.vue";
+import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBButtonAdd from "./BBButtonAdd.vue";
 import BBButtonConfirm from "./BBButtonConfirm.vue";
@@ -24,6 +25,7 @@ import {
 
 export {
   BBAlert,
+  BBAttention,
   BBAvatar,
   BBButtonAdd,
   BBButtonConfirm,

@@ -12,6 +12,7 @@ import "./assets/css/tailwind.css";
 import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
+  BBAttention,
   BBAvatar,
   BBButtonAdd,
   BBButtonConfirm,
@@ -167,6 +168,7 @@ app
   .use(router)
   .use(VueClipboard)
   .component("BBAlert", BBAlert)
+  .component("BBAttention", BBAttention)
   .component("BBAvatar", BBAvatar)
   .component("BBButtonAdd", BBButtonAdd)
   .component("BBButtonConfirm", BBButtonConfirm)
