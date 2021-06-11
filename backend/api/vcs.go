@@ -37,7 +37,6 @@ type VCS struct {
 	ApiURL        string  `jsonapi:"attr,apiURL"`
 	ApplicationId string  `jsonapi:"attr,applicationId"`
 	Secret        string  `jsonapi:"attr,secret"`
-	AccessToken   string
 }
 
 type VCSCreate struct {
@@ -73,11 +72,6 @@ type VCSPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
-
-	// Domain specific fields
-	AccessToken  *string
-	ExpireTs     *int64
-	RefreshToken *string
 }
 
 type VCSDelete struct {
@@ -86,16 +80,6 @@ type VCSDelete struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterId int
-}
-
-type VCSTokenCreate struct {
-	// Standard fields
-	CreatorId int
-
-	// Domain specific fields
-	// OAuth code and redirect url are used to exchange for the access token and refresh token
-	Code        string `jsonapi:"attr,code"`
-	RedirectUrl string `jsonapi:"attr,redirectURL"`
 }
 
 type VCSService interface {

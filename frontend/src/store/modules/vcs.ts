@@ -147,28 +147,6 @@ const actions = {
     commit("deleteVCSById", vcsId);
   },
 
-  async createVCSToken(
-    { commit }: any,
-    { vcsId, tokenCreate }: { vcsId: VCSId; tokenCreate: VCSTokenCreate }
-  ) {
-    const data = (
-      await axios.post(`/api/vcs/${vcsId}/token`, {
-        data: {
-          type: "VCSTokenCreate",
-          attributes: tokenCreate,
-        },
-      })
-    ).data;
-    const createdVCS = convert(data.data);
-
-    commit("setVCSById", {
-      vcsId: createdVCS.id,
-      vcs: createdVCS,
-    });
-
-    return createdVCS;
-  },
-
   async fetchRepositoryListByVCS({ commit }: any, vcs: VCS) {
     const repositoryList = (
       await axios.get(`/api/vcs/${vcs.id}/repository`)
