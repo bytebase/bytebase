@@ -109,7 +109,7 @@
           class="btn-primary"
           @click.prevent="finish"
         >
-          Finish
+          {{ finishTitle }}
         </button>
         <button
           v-else-if="!stepItemList[state.currentStep].hideNext"
@@ -146,6 +146,10 @@ export default {
     allowNext: {
       default: true,
       type: Boolean,
+    },
+    finishTitle: {
+      default: "Finish",
+      type: String,
     },
   },
   setup(props, { emit }) {
