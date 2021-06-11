@@ -24,9 +24,10 @@ import {
 } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import {
+  OAuthConfig,
   OAuthWindowEvent,
   OAuthWindowEventPayload,
-  openWindowForVCSOAuth,
+  openWindowForOAuth,
   ProjectRepoConfig,
   redirectURL,
   VCS,
@@ -64,11 +65,16 @@ export default {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         props.config.code = payload.code;
+        const oAuthConfig: OAuthConfig = {
+          endpoint: `${state.selectedVCS!.instanceURL}/oauth/token`,
+          applicationId: state.selectedVCS!.applicationId,
+          secret: state.selectedVCS!.secret,
+          redirectURL: redirectURL(),
+        };
         store
           .dispatch("gitlab/exchangeToken", {
-            vcs: state.selectedVCS,
+            oAuthConfig,
             code: payload.code,
-            redirectURL: redirectURL(),
           })
           .then((token: string) => {
             props.config.vcs = state.selectedVCS!;
@@ -90,7 +96,10 @@ export default {
 
     const selectVCS = (vcs: VCS) => {
       state.selectedVCS = vcs;
-      const newWindow = openWindowForVCSOAuth(vcs);
+      const newWindow = openWindowForOAuth(
+        `${vcs.instanceURL}/oauth/authorize`,
+        vcs.applicationId
+      );
       if (newWindow) {
         window.addEventListener(OAuthWindowEvent, eventListener, false);
       }

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ExternalRepository, VCS } from "../../types";
+import { ExternalRepository, VCS, OAuthConfig } from "../../types";
 
 const GITLAB_API_PATH = "api/v4";
 const GITLAB_WEBHOOK_PATH = "hook/gitlab";
@@ -18,15 +18,21 @@ function convertGitLabProject(project: any): ExternalRepository {
 const actions = {
   async exchangeToken(
     {}: any,
-    { vcs, code, redirectURL }: { vcs: VCS; code: string; redirectURL: string }
+    {
+      oAuthConfig,
+      code,
+    }: {
+      oAuthConfig: OAuthConfig;
+      code: string;
+    }
   ): Promise<string> {
     console.log(
       "req",
-      `${vcs.instanceURL}/oauth/token?client_id=${vcs.applicationId}&client_secret=${vcs.secret}&code=${code}&redirect_uri=${redirectURL}&grant_type=authorization_code`
+      `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
     );
     const data = (
       await axios.post(
-        `${vcs.instanceURL}/oauth/token?client_id=${vcs.applicationId}&client_secret=${vcs.secret}&code=${code}&redirect_uri=${redirectURL}&grant_type=authorization_code`
+        `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
       )
     ).data;
     return data.access_token;

@@ -78,7 +78,7 @@
       </div>
       <BBTextField
         class="mt-2 w-full"
-        :placeholder="'ex. 5333b60a6c9f234272dac2ee6b3422aaf224e0a66def54e0d243b77be7a8edda'"
+        :placeholder="'ex. 5333b60a6c9f234272dac2ee6b3422aaf224e0a66def54e0d243b77bexa8edda'"
         :value="config.applicationId"
         @input="changeApplicatonId($event.target.value)"
       />
@@ -90,7 +90,7 @@
       </div>
       <BBTextField
         class="mt-2 w-full"
-        :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912ad15f4e2251cc3a'"
+        :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a'"
         :value="config.secret"
         @input="changeSecret($event.target.value)"
       />

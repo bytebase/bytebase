@@ -1,5 +1,11 @@
 import { randomString } from "../utils";
-import { VCS } from "./vcs";
+
+export type OAuthConfig = {
+  endpoint: string;
+  applicationId: string;
+  secret: string;
+  redirectURL: string;
+};
 
 export const OAuthStateSessionKey = "oauthstate";
 
@@ -13,14 +19,15 @@ export function redirectURL(): string {
   return `${window.location.origin}/oauth/callback`;
 }
 
-export function openWindowForVCSOAuth(vcs: VCS): Window | null {
+export function openWindowForOAuth(
+  endpoint: string,
+  applicationId: string
+): Window | null {
   const stateQueryParameter = randomString(40);
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   return window.open(
-    `${vcs.instanceURL}/oauth/authorize?client_id=${
-      vcs.applicationId
-    }&redirect_uri=${encodeURIComponent(
+    `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
       redirectURL()
     )}&state=${stateQueryParameter}&response_type=code&scope=api`,
     "oauth",

@@ -1,8 +1,8 @@
 <template>
   <BBStepTab
     :stepItemList="stepList"
-    @select-step="selectStep"
-    @finish="finishSetup"
+    @try-change-step="tryChangeStep"
+    @try-finish="tryFinishSetup"
   >
     <template v-slot:0="{ next }">
       <RepositoryVCSPanel :config="state.config" @next="next()" />
@@ -55,11 +55,11 @@ export default {
       },
     });
 
-    const selectStep = (step: number) => {
-      console.log("select step", step);
+    const tryChangeStep = (oldStep: number, newStep: number) => {
+      console.log("select step", newStep);
     };
 
-    const finishSetup = () => {
+    const tryFinishSetup = (allowFinishCallback: () => void) => {
       console.log("finish", state.config);
       store
         .dispatch("gitlab/createWebhook", {
@@ -68,14 +68,16 @@ export default {
           branchFilter: state.config.branchFilter,
           token: state.config.accessToken,
         })
-        .then((createdHook) => {});
+        .then((createdHook) => {
+          allowFinishCallback();
+        });
     };
 
     return {
       state,
       stepList,
-      selectStep,
-      finishSetup,
+      tryChangeStep,
+      tryFinishSetup,
     };
   },
 };

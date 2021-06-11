@@ -1,5 +1,54 @@
 <template>
   <div class="textlabel">
+    Choose Git provider <span class="text-red-600">*</span>
+  </div>
+  <div class="pt-2 flex flex-row radio-set">
+    <div class="radio space-x-2">
+      <input
+        name="Self-host GitLab"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="GITLAB_SELF_HOST"
+        v-model="config.type"
+      />
+      <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
+      <label class="whitespace-nowrap"
+        >Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
+      </label>
+    </div>
+  </div>
+  <div class="mt-4 relative">
+    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+      <div class="w-full border-t border-block-border"></div>
+    </div>
+    <div class="relative flex justify-start">
+      <span class="pr-2 bg-white text-sm text-control-light">
+        Coming later
+      </span>
+    </div>
+  </div>
+  <div class="mt-2 flex flex-row itmes-center space-x-4 text-sm">
+    <div class="flex flex-row space-x-2 items-center text-control">
+      <div class="h-5 w-5">
+        <img src="../assets/gitlab-logo.svg" />
+      </div>
+      <label class="whitespace-nowrap">GitLab.com </label>
+    </div>
+    <div class="flex flex-row space-x-2 items-center text-control">
+      <div class="h-5 w-5">
+        <img src="../assets/github-logo.svg" />
+      </div>
+      <label class="whitespace-nowrap">GitHub Enterprise </label>
+    </div>
+    <div class="flex flex-row space-x-2 items-center text-control">
+      <div class="h-5 w-5">
+        <img src="../assets/github-logo.svg" />
+      </div>
+      <label class="whitespace-nowrap">GitHub.com </label>
+    </div>
+  </div>
+  <div class="mt-4 pt-6 border-t border-block-border textlabel">
     {{ instanceURLLabel }} <span class="text-red-600">*</span>
   </div>
   <p class="mt-1 textinfolabel">
@@ -15,7 +64,7 @@
   <p v-if="state.showURLError" class="mt-2 text-sm text-error">
     Instance URL must begin with https:// or http://
   </p>
-  <div class="mt-4 textlabel">Display Name</div>
+  <div class="mt-4 textlabel">Display name</div>
   <p class="mt-1 textinfolabel">
     An optional display name to help identifying among different configs using
     the same Git provider.
@@ -40,7 +89,7 @@ interface LocalState {
 }
 
 export default {
-  name: "VCSProviderInfoPanel",
+  name: "VCSProviderBasicInfoPanel",
   props: {
     config: {
       required: true,

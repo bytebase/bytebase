@@ -1,21 +1,21 @@
 <template>
-  <BBAttention :description="attentionText" />
+  <BBAttention v-if="showAttention" :description="attentionText" />
   <BBStepTab
     class="mt-4"
     :stepItemList="stepList"
     :allowNext="allowNext"
-    @select-step="selectStep"
-    @finish="finishSetup"
+    @try-change-step="tryChangeStep"
+    @try-finish="tryFinishSetup"
     @cancel="cancelSetup"
   >
     <template v-slot:0>
-      <VCSProviderSelectionPanel :config="state.config" />
+      <VCSProviderBasicInfoPanel :config="state.config" />
     </template>
     <template v-slot:1>
-      <VCSProviderInfoPanel :config="state.config" />
+      <VCSProviderOAuthPanel :config="state.config" />
     </template>
     <template v-slot:2>
-      <VCSProviderOAuthPanel :config="state.config" />
+      <VCSProviderConfirmPanel :config="state.config" />
     </template>
   </BBStepTab>
 </template>
@@ -24,36 +24,48 @@
 import { computed } from "@vue/runtime-core";
 import { reactive } from "@vue/reactivity";
 import { useRouter } from "vue-router";
+import { useStore } from "vuex";
+import isEmpty from "lodash-es/isEmpty";
 import { BBStepTabItem } from "../bbkit/types";
-import VCSProviderSelectionPanel from "./VCSProviderSelectionPanel.vue";
-import VCSProviderInfoPanel from "./VCSProviderInfoPanel.vue";
+import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
+import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import {
   isValidVCSApplicationIdOrSecret,
   VCSConfig,
   VCSCreate,
+  VCS,
+  openWindowForOAuth,
+  OAuthWindowEventPayload,
+  OAuthWindowEvent,
+  OAuthConfig,
+  redirectURL,
 } from "../types";
 import { isURL } from "../utils";
-import { useStore } from "vuex";
+
+const BASIC_INFO_STEP = 0;
+const OAUTH_INFO_STEP = 1;
+const CONFIRM_STEP = 2;
 
 const stepList: BBStepTabItem[] = [
-  { title: "Choose Git provider" },
   { title: "Basic info" },
   { title: "OAuth application info" },
+  { title: "Confirm" },
 ];
 
 interface LocalState {
   config: VCSConfig;
   currentStep: number;
+  oauthResultCallback?: (success: boolean) => void;
 }
 
 export default {
   name: "VCSSetupWizard",
   props: {},
   components: {
-    VCSProviderSelectionPanel,
-    VCSProviderInfoPanel,
+    VCSProviderBasicInfoPanel,
     VCSProviderOAuthPanel,
+    VCSProviderConfirmPanel,
   },
   setup(props, ctx) {
     const store = useStore();
@@ -64,7 +76,7 @@ export default {
     const state = reactive<LocalState>({
       config: {
         type: "GITLAB_SELF_HOST",
-        name: "",
+        name: "GitLab self-host",
         instanceURL: "",
         applicationId: "",
         secret: "",
@@ -72,12 +84,39 @@ export default {
       currentStep: 0,
     });
 
+    const eventListener = (event: Event) => {
+      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+      if (isEmpty(payload.error)) {
+        if (state.config.type == "GITLAB_SELF_HOST") {
+          const oAuthConfig: OAuthConfig = {
+            endpoint: `${state.config.instanceURL}/oauth/token`,
+            applicationId: state.config.applicationId,
+            secret: state.config.secret,
+            redirectURL: redirectURL(),
+          };
+          store
+            .dispatch("gitlab/exchangeToken", {
+              oAuthConfig,
+              code: payload.code,
+            })
+            .then((token: string) => {
+              state.oauthResultCallback!(true);
+            })
+            .catch((error) => {
+              state.oauthResultCallback!(false);
+            });
+        }
+      } else {
+        state.oauthResultCallback!(false);
+      }
+
+      window.removeEventListener(OAuthWindowEvent, eventListener);
+    };
+
     const allowNext = computed((): boolean => {
-      if (state.currentStep == 0) {
-        return true;
-      } else if (state.currentStep == 1) {
+      if (state.currentStep == BASIC_INFO_STEP) {
         return isURL(state.config.instanceURL);
-      } else if (state.currentStep == 2) {
+      } else if (state.currentStep == OAUTH_INFO_STEP) {
         return (
           isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
           isValidVCSApplicationIdOrSecret(state.config.secret)
@@ -88,26 +127,80 @@ export default {
 
     const attentionText = computed((): string => {
       if (state.config.type == "GITLAB_SELF_HOST") {
-        return "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register a system OAuth application for Bytebase, then provide you that Application ID and Secret to fill in Step 3.";
+        return "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a system OAuth application in GitLab, then provide you that Application ID and Secret to fill in the 'OAuth application info' step.";
       }
       return "";
     });
 
-    const selectStep = (step: number) => {
-      state.currentStep = step;
+    const showAttention = computed((): boolean => {
+      return state.currentStep != CONFIRM_STEP;
+    });
+
+    const tryChangeStep = (
+      oldStep: number,
+      newStep: number,
+      allowChangeCallback: () => void
+    ) => {
+      // If we are trying to move from OAuth step to Confirm step, we first verify
+      // the OAuth info is correct. We achieve this by:
+      // 1. Kicking of the OAuth workflow to verify the current user can login to the GitLab instance and the application id is correct.
+      // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
+      if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
+        const newWindow = openWindowForOAuth(
+          `${state.config.instanceURL}/oauth/authorize`,
+          state.config.applicationId
+        );
+        if (newWindow) {
+          state.oauthResultCallback = (success: boolean) => {
+            if (success) {
+              state.currentStep = newStep;
+              allowChangeCallback();
+              store.dispatch("notification/pushNotification", {
+                module: "bytebase",
+                style: "SUCCESS",
+                title: "Verified OAuth info is correct",
+              });
+            } else {
+              var description = "";
+              if (state.config.type == "GITLAB_SELF_HOST") {
+                // If application id mismatches, the OAuth workflow will stop early.
+                // So the only possibility to reach here is we have a matching application id, while
+                // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
+                description =
+                  "Please make sure Secret matches the one from your GitLab instance Application.";
+              }
+              store.dispatch("notification/pushNotification", {
+                module: "bytebase",
+                style: "CRITICAL",
+                title: "Failed to setup OAuth",
+                description: description,
+              });
+            }
+          };
+          window.addEventListener(OAuthWindowEvent, eventListener, false);
+        }
+      } else {
+        state.currentStep = newStep;
+        allowChangeCallback();
+      }
     };
 
-    const finishSetup = () => {
-      if (state.config.name == "") {
-        if (state.config.type == "GITLAB_SELF_HOST") {
-          state.config.name = state.config.instanceURL;
-        }
-      }
+    const tryFinishSetup = (allowChangeCallback: () => void) => {
       const vcsCreate: VCSCreate = {
         creatorId: currentUser.value.id,
         ...state.config,
       };
-      store.dispatch("vcs/createVCS", vcsCreate);
+      store.dispatch("vcs/createVCS", vcsCreate).then((vcs: VCS) => {
+        allowChangeCallback();
+        router.push({
+          name: "setting.workspace.version-control",
+        });
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: `Successfully added Git provider '${vcs.name}'`,
+        });
+      });
     };
 
     const cancelSetup = () => {
@@ -121,8 +214,9 @@ export default {
       state,
       allowNext,
       attentionText,
-      selectStep,
-      finishSetup,
+      showAttention,
+      tryChangeStep,
+      tryFinishSetup,
       cancelSetup,
     };
   },

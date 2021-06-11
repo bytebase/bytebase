@@ -76,10 +76,10 @@ import {
   redirectURL,
   OAuthWindowEvent,
   OAuthWindowEventPayload,
-  openWindowForVCSOAuth,
+  openWindowForOAuth,
   VCSTokenCreate,
 } from "../types";
-import { isEmpty } from "lodash";
+import isEmpty from "lodash-es/isEmpty";
 
 interface LocalState {}
 
@@ -118,7 +118,10 @@ export default {
     });
 
     const linkVCS = () => {
-      const newWindow = openWindowForVCSOAuth(props.vcs);
+      const newWindow = openWindowForOAuth(
+        `${props.vcs.instanceURL}/oauth/authorize`,
+        props.vcs.applicationId
+      );
       if (newWindow) {
         window.addEventListener(OAuthWindowEvent, eventListener, false);
       }
