@@ -18,11 +18,11 @@ VALUES
         1001,
         16001,
         3001,
+        "project1",
+        "bytebase-test/project1",
+        "http://gitlab.bytebase.com/bytebase-test/project1",
         -- Refers to the bytebase-test/project1
         "7",
         -- Refers to the webhook in bytebase-test/project1
-        "5",
-        "project1",
-        "bytebase-test/project1",
-        "http://gitlab.bytebase.com/bytebase-test/project1"
+        "5"
     );

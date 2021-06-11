@@ -1,5 +1,6 @@
 import { RepositoryId } from "./id";
 import { Principal } from "./principal";
+import { Project } from "./project";
 
 export type Repository = {
   id: RepositoryId;
@@ -9,6 +10,9 @@ export type Repository = {
   createdTs: number;
   updater: Principal;
   updatedTs: number;
+
+  // Related fields
+  project: Project;
 
   // Domain specific fields
   // e.g. In GitLab, this is the corresponding project id.

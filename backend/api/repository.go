@@ -17,8 +17,9 @@ type Repository struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	VCSId     int64
-	ProjectId int64
+	VCSId     int
+	ProjectId int
+	Project   *Project `jsonapi:"relation,project"`
 
 	// Domain specific fields
 	Name          string `jsonapi:"attr,name"`

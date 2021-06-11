@@ -19,5 +19,10 @@ func (s *Server) ComposeRepositoryRelationship(ctx context.Context, repository *
 		return err
 	}
 
+	repository.Project, err = s.ComposeProjectlById(context.Background(), repository.ProjectId, includeList)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

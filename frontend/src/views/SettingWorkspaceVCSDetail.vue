@@ -13,21 +13,6 @@
     </div>
 
     <div>
-      <label for="name" class="textlabel"> Display name </label>
-      <p class="mt-1 textinfolabel">
-        An optional display name to help identifying among different configs
-        using the same Git provider.
-      </p>
-      <input
-        id="name"
-        name="name"
-        type="text"
-        class="textfield mt-1 w-full"
-        v-model="state.name"
-      />
-    </div>
-
-    <div>
       <label for="instanceurl" class="textlabel"> Instance URL </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
@@ -41,6 +26,21 @@
         class="textfield mt-1 w-full"
         disabled="true"
         :value="vcs.instanceURL"
+      />
+    </div>
+
+    <div>
+      <label for="name" class="textlabel"> Display name </label>
+      <p class="mt-1 textinfolabel">
+        An optional display name to help identifying among different configs
+        using the same Git provider.
+      </p>
+      <input
+        id="name"
+        name="name"
+        type="text"
+        class="textfield mt-1 w-full"
+        v-model="state.name"
       />
     </div>
 
@@ -80,22 +80,48 @@
       />
     </div>
 
-    <div class="pt-4 flex border-t justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="cancel"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        :disabled="!allowUpdate"
-        @click.prevent="doUpdate"
-      >
-        Update
-      </button>
+    <div class="pt-4 flex border-t justify-between">
+      <template v-if="repositoryList.length == 0">
+        <BBButtonConfirm
+          :style="'DELETE'"
+          :buttonText="'Delete this Git provider'"
+          :okText="'Delete'"
+          :confirmTitle="`Delete Git provider '${vcs.name}'?`"
+          :requireConfirm="true"
+          @confirm="deleteVCS"
+        />
+      </template>
+      <template v-else>
+        <div class="mt-1 textinfolabel">
+          To delete this provider, unlink all repositories first.
+        </div>
+      </template>
+      <div>
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="cancel"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="!allowUpdate"
+          @click.prevent="doUpdate"
+        >
+          Update
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="py-6">
+    <div class="text-lg leading-6 font-medium text-main">
+      {{ `Linked repositories (${repositoryList.length})` }}
+    </div>
+    <div class="mt-4">
+      <RepositoryTable :repositoryList="repositoryList" />
     </div>
   </div>
 </template>
@@ -104,6 +130,7 @@
 import { reactive, computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import RepositoryTable from "../components/RepositoryTable.vue";
 import isEmpty from "lodash-es/isEmpty";
 import { idFromSlug } from "../utils";
 import {
@@ -131,7 +158,7 @@ export default {
       type: String,
     },
   },
-  components: {},
+  components: { RepositoryTable },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
@@ -278,6 +305,20 @@ export default {
       });
     };
 
+    const deleteVCS = () => {
+      const name = vcs.value.name;
+      store.dispatch("vcs/deleteVCSById", vcs.value.id).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: `Successfully deleted '${name}'`,
+        });
+        router.push({
+          name: "setting.workspace.version-control",
+        });
+      });
+    };
+
     return {
       state,
       vcs,
@@ -286,6 +327,7 @@ export default {
       allowUpdate,
       doUpdate,
       cancel,
+      deleteVCS,
     };
   },
 };

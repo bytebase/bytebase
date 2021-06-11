@@ -5,26 +5,45 @@ import {
   VCSCreate,
   VCSState,
   ResourceObject,
+  ResourceIdentifier,
   unknown,
   VCSPatch,
   empty,
   EMPTY_ID,
   Principal,
-  VCSTokenCreate,
   Repository,
+  Project,
 } from "../../types";
 
-function convertRepository(respository: ResourceObject): Repository {
+function convertRepository(
+  respository: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Repository {
   const creator = respository.attributes.creator as Principal;
   const updater = respository.attributes.updater as Principal;
+
+  const projectId = (
+    respository.relationships!.project.data as ResourceIdentifier
+  ).id;
+  let project: Project = unknown("PROJECT") as Project;
+  project.id = parseInt(projectId);
+
+  for (const item of includedList || []) {
+    if (item.type == "project" && item.id == projectId) {
+      project = rootGetters["project/convert"](item, includedList);
+    }
+  }
+
   return {
     ...(respository.attributes as Omit<
       Repository,
-      "id" | "creator" | "updater"
+      "id" | "creator" | "updater" | "project"
     >),
     id: parseInt(respository.id),
     creator,
     updater,
+    project,
   };
 }
 
@@ -153,14 +172,12 @@ const actions = {
     commit("deleteVCSById", vcsId);
   },
 
-  async fetchRepositoryListByVCS({ commit }: any, vcs: VCS) {
-    const repositoryList = (
-      await axios.get(`/api/vcs/${vcs.id}/repository`)
-    ).data.data.map((repository: ResourceObject) => {
-      return convertRepository(repository);
-    });
+  async fetchRepositoryListByVCS({ commit, rootGetters }: any, vcs: VCS) {
+    const data = (await axios.get(`/api/vcs/${vcs.id}/repository`)).data;
 
-    console.log("repo", repositoryList);
+    const repositoryList = data.data.map((repository: ResourceObject) => {
+      return convertRepository(repository, data.included, rootGetters);
+    });
 
     commit("setRepositoryListByVCSId", { vcsId: vcs.id, repositoryList });
     return repositoryList;
