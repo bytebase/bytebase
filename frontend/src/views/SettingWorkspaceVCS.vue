@@ -6,7 +6,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addVCSProvider"
       >
-        Add a version control provider
+        Add a Git provider
       </button>
     </div>
     <div class="pt-4">

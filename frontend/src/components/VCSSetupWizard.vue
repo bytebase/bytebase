@@ -1,9 +1,12 @@
 <template>
+  <BBAttention :description="attentionText" />
   <BBStepTab
+    class="mt-4"
     :stepItemList="stepList"
     :allowNext="allowNext"
     @select-step="selectStep"
     @finish="finishSetup"
+    @cancel="cancelSetup"
   >
     <template v-slot:0>
       <VCSProviderSelectionPanel :config="state.config" />
@@ -12,7 +15,7 @@
       <VCSProviderInfoPanel :config="state.config" />
     </template>
     <template v-slot:2>
-      <VCSProviderConfigPanel :config="state.config" />
+      <VCSProviderOAuthPanel :config="state.config" />
     </template>
   </BBStepTab>
 </template>
@@ -20,10 +23,11 @@
 <script lang="ts">
 import { computed } from "@vue/runtime-core";
 import { reactive } from "@vue/reactivity";
+import { useRouter } from "vue-router";
 import { BBStepTabItem } from "../bbkit/types";
 import VCSProviderSelectionPanel from "./VCSProviderSelectionPanel.vue";
 import VCSProviderInfoPanel from "./VCSProviderInfoPanel.vue";
-import VCSProviderConfigPanel from "./VCSProviderConfigPanel.vue";
+import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
 import {
   isValidVCSApplicationIdOrSecret,
   VCSConfig,
@@ -34,8 +38,8 @@ import { useStore } from "vuex";
 
 const stepList: BBStepTabItem[] = [
   { title: "Choose Git provider" },
-  { title: "Fill basic info" },
-  { title: "Configure settings" },
+  { title: "Basic info" },
+  { title: "OAuth application info" },
 ];
 
 interface LocalState {
@@ -49,10 +53,11 @@ export default {
   components: {
     VCSProviderSelectionPanel,
     VCSProviderInfoPanel,
-    VCSProviderConfigPanel,
+    VCSProviderOAuthPanel,
   },
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -81,6 +86,13 @@ export default {
       return true;
     });
 
+    const attentionText = computed((): string => {
+      if (state.config.type == "GITLAB_SELF_HOST") {
+        return "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register a system OAuth application for Bytebase, then provide you that Application ID and Secret to fill in Step 3.";
+      }
+      return "";
+    });
+
     const selectStep = (step: number) => {
       state.currentStep = step;
     };
@@ -98,12 +110,20 @@ export default {
       store.dispatch("vcs/createVCS", vcsCreate);
     };
 
+    const cancelSetup = () => {
+      router.push({
+        name: "setting.workspace.version-control",
+      });
+    };
+
     return {
       stepList,
       state,
       allowNext,
+      attentionText,
       selectStep,
       finishSetup,
+      cancelSetup,
     };
   },
 };

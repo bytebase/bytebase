@@ -111,6 +111,8 @@ export default {
       }
     };
 
+    store.dispatch("vcs/fetchRepositoryListByVCS", props.vcs);
+
     onUnmounted(() => {
       window.removeEventListener(OAuthWindowEvent, eventListener);
     });

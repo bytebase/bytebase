@@ -4,7 +4,7 @@
   </div>
   <p class="mt-1 textinfolabel">
     The VCS instance URL. Make sure this instance and Bytebase are network
-    accessible from each other.
+    reachable from each other.
   </p>
   <BBTextField
     class="mt-2 w-full"

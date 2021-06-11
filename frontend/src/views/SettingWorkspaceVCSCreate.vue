@@ -1,13 +1,11 @@
 <template>
   <div class="mt-4 space-y-4 divide-y divide-block-border">
-    <div class="flex items-center justify-begin">
-      <div class="text-sm text-control">
-        To enable GitOps workflow where the database migration scripts are
-        stored in the Git repository and automatically applies DDL changes after
-        scripts being modified in the repository, Bytebase needs to access the
-        corresponding version control system (VCS) instance. Below are the steps
-        to configure OAuth with your VCS to obtain that access.
-      </div>
+    <div class="textinfolabel">
+      Before any project can enable version control workflow to automatically
+      apply DDL on database migration scripts changes in the Git repository,
+      Bytebase first needs to integrate with the corresponding version control
+      system (VCS) by registering as an OAuth application in that VCS. Below are
+      the steps to configure this.
     </div>
     <div class="pt-4">
       <VCSSetupWizard />
