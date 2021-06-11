@@ -167,7 +167,12 @@ interface LocalState {
 
 export default {
   name: "SettingSidebar",
-  props: {},
+  props: {
+    vcsSlug: {
+      default: "",
+      type: String,
+    },
+  },
   components: {},
   setup(props, ctx) {
     const store = useStore();

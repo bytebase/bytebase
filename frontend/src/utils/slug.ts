@@ -4,6 +4,7 @@ import {
   Environment,
   Instance,
   Project,
+  VCS,
   IssueId,
 } from "../types";
 import slug from "slug";
@@ -60,4 +61,8 @@ export function fullDataSourcePath(dataSource: DataSource): string {
   return `/db/${databaseSlug(dataSource.database)}/datasource/${dataSourceSlug(
     dataSource
   )}`;
+}
+
+export function vcsSlug(vcs: VCS): string {
+  return [slug(vcs.name), vcs.id].join("-");
 }

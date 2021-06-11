@@ -1,4 +1,4 @@
-import { CommandId, CommandRegisterId, PrincipalId } from "./id";
+import { CommandId, CommandRegisterId, PrincipalId, VCSId } from "./id";
 import { Principal } from "./principal";
 import { Member } from "./member";
 import { Environment } from "./environment";
@@ -31,13 +31,14 @@ export type RowStatus = "NORMAL" | "ARCHIVED" | "PENDING_DELETE";
 
 // Router
 export type RouterSlug = {
+  principalId?: PrincipalId;
   environmentSlug?: string;
   projectSlug?: string;
   issueSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
   dataSourceSlug?: string;
-  principalId?: PrincipalId;
+  vcsSlug?: string;
 };
 
 // Quick Action Type

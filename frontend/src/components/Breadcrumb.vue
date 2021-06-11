@@ -135,6 +135,7 @@ export default {
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
       const dataSourceSlug = routeSlug.dataSourceSlug;
+      const versionControlSlug = routeSlug.vcsSlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -167,6 +168,11 @@ export default {
             path: `/db/${databaseSlug}`,
           });
         }
+      } else if (versionControlSlug) {
+        list.push({
+          name: "Version Control",
+          path: "/setting/version-control",
+        });
       }
 
       if (currentRoute.value.meta.title) {

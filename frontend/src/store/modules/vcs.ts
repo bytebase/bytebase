@@ -64,6 +64,12 @@ const getters = {
 
       return state.vcsById.get(vcsId) || (unknown("VCS") as VCS);
     },
+
+  repositoryListByVCSId:
+    (state: VCSState) =>
+    (vcsId: VCSId): Repository[] => {
+      return state.repositoryListByVCSId.get(vcsId) || [];
+    },
 };
 
 const actions = {

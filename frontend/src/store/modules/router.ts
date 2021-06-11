@@ -12,6 +12,19 @@ const getters = {
     (state: RouterState) =>
     (currentRoute: RouteLocationNormalized): RouterSlug => {
       {
+        // /u/:principalId
+        // Total 2 elements, 2nd element is the principal id
+        const profileComponents = currentRoute.path.match(
+          "/u/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
+        if (profileComponents[1]) {
+          return {
+            principalId: parseInt(profileComponents[1]),
+          };
+        }
+      }
+
+      {
         // /environment/:environmentSlug
         // Total 2 elements, 2nd element is the issue slug
         const environmentComponents = currentRoute.path.match(
@@ -91,14 +104,14 @@ const getters = {
       }
 
       {
-        // /u/:principalId
-        // Total 2 elements, 2nd element is the principal id
-        const profileComponents = currentRoute.path.match(
-          "/u/([0-9a-zA-Z_-]+)"
+        // /setting/version-control/:vcsId
+        // Total 2 elements, 2nd element is the version control system id
+        const vcsComponents = currentRoute.path.match(
+          "/setting/version-control/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
-        if (profileComponents[1]) {
+        if (vcsComponents[1]) {
           return {
-            principalId: parseInt(profileComponents[1]),
+            vcsSlug: vcsComponents[1],
           };
         }
       }

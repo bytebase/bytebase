@@ -267,6 +267,19 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "version-control/:vcsSlug",
+                name: "setting.workspace.version-control.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.vcsSlug as string;
+                    return store.getters["vcs/vcsById"](idFromSlug(slug)).name;
+                  },
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceVCSDetail.vue"),
+                props: true,
+              },
+              {
                 path: "plan",
                 name: "setting.workspace.plan",
                 meta: { title: () => "Plans" },
@@ -692,7 +705,8 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
     to.name === "workspace.environment" ||
-    to.name?.toString().startsWith("setting")
+    (to.name?.toString().startsWith("setting") &&
+      to.name?.toString() != "setting.workspace.version-control.detail")
   ) {
     next();
     return;
@@ -706,15 +720,32 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = store.getters["router/routeSlug"](to);
+  const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
-  const principalId = routerSlug.principalId;
+  const vcsSlug = routerSlug.vcsSlug;
 
   console.debug("RouterSlug:", routerSlug);
+
+  if (principalId) {
+    store
+      .dispatch("principal/fetchPrincipalById", principalId)
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
 
   if (environmentSlug) {
     if (
@@ -824,9 +855,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (principalId) {
+  if (vcsSlug) {
     store
-      .dispatch("principal/fetchPrincipalById", principalId)
+      .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
       .then(() => {
         next();
       })
