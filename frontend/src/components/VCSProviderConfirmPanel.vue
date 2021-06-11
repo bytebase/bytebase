@@ -10,11 +10,11 @@
     >
       <div class="px-4 py-5 sm:px-6">
         <h3 class="text-lg leading-6 font-medium text-main">
-          Confirm to add this Git provider
+          Confirm the info
         </h3>
         <p class="mt-1 textinfolabel">
-          After creation, this Git provider can be selected under the "Version
-          Control" tab from the project dashboard by the project owner.
+          After creation, this Git provider can be chosen under the project
+          dashboard "Version Control" tab by the project owner.
         </p>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">

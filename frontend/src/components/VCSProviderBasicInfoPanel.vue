@@ -2,7 +2,7 @@
   <div class="textlabel">
     Choose Git provider <span class="text-red-600">*</span>
   </div>
-  <div class="pt-2 flex flex-row radio-set">
+  <div class="pt-4 flex flex-row radio-set">
     <div class="radio space-x-2">
       <input
         name="Self-host GitLab"
@@ -19,16 +19,13 @@
     </div>
   </div>
   <div class="mt-4 relative">
-    <div class="absolute inset-0 flex items-center" aria-hidden="true">
-      <div class="w-full border-t border-block-border"></div>
-    </div>
     <div class="relative flex justify-start">
-      <span class="pr-2 bg-white text-sm text-control-light">
+      <span class="pr-2 bg-white text-xs text-control-light">
         Coming later
       </span>
     </div>
   </div>
-  <div class="mt-2 flex flex-row itmes-center space-x-4 text-sm">
+  <div class="mt-2 flex flex-row itmes-center space-x-4 text-xs">
     <div class="flex flex-row space-x-2 items-center text-control">
       <div class="h-5 w-5">
         <img src="../assets/gitlab-logo.svg" />
@@ -48,7 +45,7 @@
       <label class="whitespace-nowrap">GitHub.com </label>
     </div>
   </div>
-  <div class="mt-4 pt-6 border-t border-block-border textlabel">
+  <div class="mt-6 pt-6 border-t border-block-border textlabel">
     {{ instanceURLLabel }} <span class="text-red-600">*</span>
   </div>
   <p class="mt-1 textinfolabel">
