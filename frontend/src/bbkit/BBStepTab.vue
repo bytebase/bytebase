@@ -62,7 +62,7 @@
         </div>
       </li>
     </ol>
-    <div class="mt-8 mb-4">
+    <div class="mt-4 mb-4">
       <template v-for="(step, index) in stepItemList" :key="index">
         <slot
           v-if="state.currentStep == index"
