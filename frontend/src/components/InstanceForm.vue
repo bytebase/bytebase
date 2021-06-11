@@ -360,7 +360,7 @@ import {
   SqlConfig,
   SqlResultSet,
 } from "../types";
-import { isEmpty } from "lodash";
+import isEmpty from "lodash-es/isEmpty";
 
 const GRANT_STATEMENT =
   "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}'; GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, CREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE ON *.* to bytebase@'%';";

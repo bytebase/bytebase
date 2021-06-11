@@ -156,7 +156,7 @@ import {
   TaskId,
 } from "../types";
 import { IssueTemplate } from "../plugins";
-import { isEmpty } from "lodash";
+import isEmpty from "lodash-es/isEmpty";
 
 interface UpdateStatusModalState {
   mode: "ISSUE" | "TASK";
