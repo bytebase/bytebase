@@ -42,8 +42,10 @@ export type VCSCreate = {
 };
 
 export type VCSPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
+  // Domain specific fields
+  name?: string;
+  applicationId?: string;
+  secret?: string;
 };
 
 export type VCSTokenCreate = {

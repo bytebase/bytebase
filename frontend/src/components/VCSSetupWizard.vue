@@ -57,7 +57,7 @@ const stepList: BBStepTabItem[] = [
 interface LocalState {
   config: VCSConfig;
   currentStep: number;
-  oauthResultCallback?: (success: boolean) => void;
+  oAuthResultCallback?: (success: boolean) => void;
 }
 
 export default {
@@ -101,14 +101,14 @@ export default {
               code: payload.code,
             })
             .then((token: string) => {
-              state.oauthResultCallback!(true);
+              state.oAuthResultCallback!(true);
             })
             .catch((error) => {
-              state.oauthResultCallback!(false);
+              state.oAuthResultCallback!(false);
             });
         }
       } else {
-        state.oauthResultCallback!(false);
+        state.oAuthResultCallback!(false);
       }
 
       window.removeEventListener(OAuthWindowEvent, eventListener);
@@ -152,7 +152,7 @@ export default {
           state.config.applicationId
         );
         if (newWindow) {
-          state.oauthResultCallback = (success: boolean) => {
+          state.oAuthResultCallback = (success: boolean) => {
             if (success) {
               state.currentStep = newStep;
               allowChangeCallback();

@@ -72,6 +72,11 @@ type VCSPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
+
+	// Domain specific fields
+	Name          *string `jsonapi:"attr,name"`
+	ApplicationId *string `jsonapi:"attr,applicationId"`
+	Secret        *string `jsonapi:"attr,secret"`
 }
 
 type VCSDelete struct {

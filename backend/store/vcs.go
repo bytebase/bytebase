@@ -239,6 +239,15 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	if v := patch.Name; v != nil {
+		set, args = append(set, "name = ?"), append(args, *v)
+	}
+	if v := patch.ApplicationId; v != nil {
+		set, args = append(set, "application_id = ?"), append(args, *v)
+	}
+	if v := patch.Secret; v != nil {
+		set, args = append(set, "secret = ?"), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
