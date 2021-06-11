@@ -10,11 +10,11 @@
       </button>
     </div>
     <div class="pt-4">
-      <template v-if="vcsList.length > 0">
+      <div v-if="vcsList.length > 0" class="space-y-6">
         <template v-for="(vcs, index) in vcsList" :key="index">
           <VCSCard :vcs="vcs" />
         </template>
-      </template>
+      </div>
       <template v-else>
         <VCSSetupWizard />
       </template>
