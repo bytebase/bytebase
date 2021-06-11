@@ -12,7 +12,7 @@
           @click.prevent="
             () => {
               if (state.currentStep >= index) {
-                switchStep(index);
+                changeStep(index);
               }
             }
           "
@@ -69,7 +69,7 @@
           :name="index"
           :next="
             () => {
-              switchStep(state.currentStep + 1);
+              changeStep(state.currentStep + 1);
             }
           "
         />
@@ -84,7 +84,7 @@
           v-if="state.currentStep != 0"
           type="button"
           class="btn-normal"
-          @click.prevent="switchStep(state.currentStep - 1)"
+          @click.prevent="changeStep(state.currentStep - 1)"
         >
           <svg
             class="-ml-1 mr-1 h-5 w-5 text-control-light"
@@ -116,7 +116,7 @@
           :disabled="!allowNext"
           type="button"
           class="btn-primary"
-          @click.prevent="switchStep(state.currentStep + 1)"
+          @click.prevent="changeStep(state.currentStep + 1)"
         >
           Next
         </button>
@@ -136,7 +136,8 @@ interface LocalState {
 
 export default {
   name: "BBStepTab",
-  emits: ["select-step", "finish", "cancel"],
+  // For try-change-step and try-finish listener, it needs to call the callback if it determines we can change the step.
+  emits: ["try-change-step", "try-finish", "cancel"],
   props: {
     stepItemList: {
       required: true,
@@ -153,15 +154,19 @@ export default {
       currentStep: 0,
     });
 
-    const switchStep = (step: number) => {
-      state.done = false;
-      state.currentStep = step;
-      emit("select-step", step);
+    const changeStep = (step: number) => {
+      const changeStepCallback = () => {
+        state.done = false;
+        state.currentStep = step;
+      };
+      emit("try-change-step", state.currentStep, step, changeStepCallback);
     };
 
     const finish = () => {
-      state.done = true;
-      emit("finish");
+      const finishCallback = () => {
+        state.done = true;
+      };
+      emit("try-finish", finishCallback);
     };
 
     const cancel = () => {
@@ -170,7 +175,7 @@ export default {
 
     return {
       state,
-      switchStep,
+      changeStep,
       finish,
       cancel,
     };
