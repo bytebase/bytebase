@@ -1,5 +1,13 @@
 <template>
-  <div class="space-y-4 divide-y divide-block-border">
+  <div class="space-y-4">
+    <div class="textinfolabel">
+      Bytebase supports version control workflow where database migration
+      scripts are stored in the version control system (VCS), and changes made
+      to those scripts will automatically trigger the corresponding database
+      change. Bytebase owners manage all the applicable VCSs here, so that
+      project owners can link the projects with their Git repositories from
+      those VCSs.
+    </div>
     <div class="flex items-center justify-end">
       <button
         type="button"
@@ -9,7 +17,7 @@
         Add a Git provider
       </button>
     </div>
-    <div class="pt-4">
+    <div class="pt-4 border-t">
       <div v-if="vcsList.length > 0" class="space-y-6">
         <template v-for="(vcs, index) in vcsList" :key="index">
           <VCSCard :vcs="vcs" />
