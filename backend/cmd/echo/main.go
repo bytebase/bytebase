@@ -60,7 +60,7 @@ func (m *Main) Run() error {
 	server.ActivityService = store.NewActivityService(m.l, db)
 	server.BookmarkService = store.NewBookmarkService(m.l, db)
 	server.VCSService = store.NewVCSService(m.l, db)
-	server.RepositoryService = store.NewRepositoryService(m.l, db)
+	server.RepositoryService = store.NewRepositoryService(m.l, db, server.ProjectService)
 
 	m.server = server
 	if err := server.Run(); err != nil {

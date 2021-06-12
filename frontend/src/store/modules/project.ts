@@ -43,6 +43,7 @@ function convert(
     createdTs: attrs.createdTs,
     updatedTs: attrs.updatedTs,
     memberList: [],
+    workflowType: attrs.workflowType,
   };
 
   const memberList: ProjectMember[] = [];

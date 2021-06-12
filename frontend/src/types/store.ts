@@ -101,7 +101,13 @@ export interface TableState {
 
 export interface VCSState {
   vcsById: Map<VCSId, VCS>;
+}
+
+export interface RepositoryState {
+  // repositoryListByVCSId are used in workspace version control panel, while repositoryByProjectId are used in project version control panel.
+  // Because they are used separately, so we don't need to worry about repository inconsistency issue betweem them.
   repositoryListByVCSId: Map<VCSId, Repository[]>;
+  repositoryByProjectId: Map<ProjectId, Repository>;
 }
 
 export interface NotificationState {

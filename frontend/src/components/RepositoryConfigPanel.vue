@@ -1,23 +1,17 @@
 <template>
-  <div class="text-lg leading-6 font-medium text-control">Base directory</div>
-  <BBTextField
-    class="mt-2 w-full"
-    :value="config.baseDirectory"
-    @input="config.baseDirectory = $event.target.value"
-  />
-  <div class="mt-4 text-lg leading-6 font-medium text-control">Branch</div>
-  <BBTextField
-    class="mt-2 w-full"
-    :placeholder="'Default branch (normally \'master\' or \'main\')'"
-    :value="config.branchFilter"
-    @input="config.branchFilter = $event.target.value"
+  <RepositoryForm
+    :vcsType="config.vcs.type"
+    :vcsName="config.vcs.name"
+    :repositoryInfo="config.repositoryInfo"
+    :repositoryConfig="config.repositoryConfig"
   />
 </template>
 
 <script lang="ts">
 import { reactive } from "@vue/reactivity";
 import { PropType } from "@vue/runtime-core";
-import { ProjectRepoConfig } from "../types";
+import RepositoryForm from "./RepositoryForm.vue";
+import { ProjectRepositoryConfig } from "../types";
 
 interface LocalState {}
 
@@ -27,10 +21,10 @@ export default {
   props: {
     config: {
       required: true,
-      type: Object as PropType<ProjectRepoConfig>,
+      type: Object as PropType<ProjectRepositoryConfig>,
     },
   },
-  components: {},
+  components: { RepositoryForm },
   setup(props, { emit }) {
     const state = reactive<LocalState>({});
 

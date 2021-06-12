@@ -40,7 +40,7 @@
       </div>
     </div>
     <template v-else-if="state.selectedIndex == VERSION_CONTROL_TAB">
-      <ProjectVCSPanel />
+      <ProjectVCSPanel :project="project" />
     </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">

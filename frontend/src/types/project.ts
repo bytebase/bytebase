@@ -1,10 +1,12 @@
 import { RowStatus } from "./common";
 import { MemberId, PrincipalId, ProjectId } from "./id";
 import { Principal } from "./principal";
-import { ExternalRepository, Repository } from "./repository";
+import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 import { VCS } from "./vcs";
 
 export type ProjectRoleType = "OWNER" | "DEVELOPER";
+
+export type ProjectWorkflowType = "UI" | "VCS";
 
 // Project
 export type Project = {
@@ -23,6 +25,7 @@ export type Project = {
   // Returns the member list directly because we need it quite frequently in order
   // to do various access check.
   memberList: ProjectMember[];
+  workflowType: ProjectWorkflowType;
 };
 
 export type ProjectCreate = {
@@ -79,11 +82,10 @@ export type ProjectMemberPatch = {
   role: ProjectRoleType;
 };
 
-export type ProjectRepoConfig = {
+export type ProjectRepositoryConfig = {
   vcs: VCS;
   code: string;
   accessToken: string;
-  repository: ExternalRepository;
-  baseDirectory: string;
-  branchFilter: string;
+  repositoryInfo: ExternalRepositoryInfo;
+  repositoryConfig: RepositoryConfig;
 };

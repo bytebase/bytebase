@@ -15,38 +15,6 @@ import {
   Project,
 } from "../../types";
 
-function convertRepository(
-  respository: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
-): Repository {
-  const creator = respository.attributes.creator as Principal;
-  const updater = respository.attributes.updater as Principal;
-
-  const projectId = (
-    respository.relationships!.project.data as ResourceIdentifier
-  ).id;
-  let project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectId);
-
-  for (const item of includedList || []) {
-    if (item.type == "project" && item.id == projectId) {
-      project = rootGetters["project/convert"](item, includedList);
-    }
-  }
-
-  return {
-    ...(respository.attributes as Omit<
-      Repository,
-      "id" | "creator" | "updater" | "project"
-    >),
-    id: parseInt(respository.id),
-    creator,
-    updater,
-    project,
-  };
-}
-
 function convert(vcs: ResourceObject): VCS {
   const creator = vcs.attributes.creator as Principal;
   const updater = vcs.attributes.updater as Principal;
@@ -64,6 +32,12 @@ const state: () => VCSState = () => ({
 });
 
 const getters = {
+  convert:
+    (state: VCSState, getters: any, rootState: any, rootGetters: any) =>
+    (vcs: ResourceObject): VCS => {
+      return convert(vcs);
+    },
+
   vcsList: (state: VCSState) => (): VCS[] => {
     const list = [];
     for (const [_, vcs] of state.vcsById) {
@@ -82,12 +56,6 @@ const getters = {
       }
 
       return state.vcsById.get(vcsId) || (unknown("VCS") as VCS);
-    },
-
-  repositoryListByVCSId:
-    (state: VCSState) =>
-    (vcsId: VCSId): Repository[] => {
-      return state.repositoryListByVCSId.get(vcsId) || [];
     },
 };
 
@@ -171,17 +139,6 @@ const actions = {
 
     commit("deleteVCSById", vcsId);
   },
-
-  async fetchRepositoryListByVCS({ commit, rootGetters }: any, vcs: VCS) {
-    const data = (await axios.get(`/api/vcs/${vcs.id}/repository`)).data;
-
-    const repositoryList = data.data.map((repository: ResourceObject) => {
-      return convertRepository(repository, data.included, rootGetters);
-    });
-
-    commit("setRepositoryListByVCSId", { vcsId: vcs.id, repositoryList });
-    return repositoryList;
-  },
 };
 
 const mutations = {
@@ -206,19 +163,6 @@ const mutations = {
 
   deleteVCSById(state: VCSState, vcsId: VCSId) {
     state.vcsById.delete(vcsId);
-  },
-
-  setRepositoryListByVCSId(
-    state: VCSState,
-    {
-      vcsId,
-      repositoryList,
-    }: {
-      vcsId: VCSId;
-      repositoryList: Repository[];
-    }
-  ) {
-    state.repositoryListByVCSId.set(vcsId, repositoryList);
   },
 };
 

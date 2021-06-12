@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -91,7 +92,7 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	}
 	defer tx.Rollback()
 
-	project, err := patchProject(ctx, tx, patch)
+	project, err := patchProject(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -101,6 +102,12 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	}
 
 	return project, nil
+}
+
+// PatchProjectWithTx updates an existing project by ID.
+// Returns ENOTFOUND if project does not exist.
+func (s *ProjectService) PatchProjectWithTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+	return patchProject(ctx, tx, patch)
 }
 
 // createProject creates a new project.
@@ -209,7 +216,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 }
 
 // patchProject updates a project by ID. Returns the new state of the project after update.
-func patchProject(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*api.Project, error) {
+func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.RowStatus; v != nil {
@@ -220,6 +227,9 @@ func patchProject(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*api.Pr
 	}
 	if v := patch.Key; v != nil {
 		set, args = append(set, "`key` = ?"), append(args, *v)
+	}
+	if v := patch.WorkflowType; v != nil {
+		set, args = append(set, "`workflow_type` = ?"), append(args, *v)
 	}
 
 	args = append(args, patch.ID)

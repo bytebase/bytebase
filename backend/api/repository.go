@@ -18,6 +18,7 @@ type Repository struct {
 
 	// Related fields
 	VCSId     int
+	VCS       *VCS `jsonapi:"relation,vcs"`
 	ProjectId int
 	Project   *Project `jsonapi:"relation,project"`
 
@@ -28,7 +29,7 @@ type Repository struct {
 	BaseDirectory string `jsonapi:"attr,baseDirectory"`
 	BranchFilter  string `jsonapi:"attr,branchFilter"`
 	ExternalId    string `jsonapi:"attr,externalId"`
-	WebhookId     string `jsonapi:"attr,webhookId"`
+	WebhookId     string
 	// Because we normalize the data, thus we fetch below info from vcs table.
 	VCSName     string  `jsonapi:"attr,vcsName"`
 	VCSType     VCSType `jsonapi:"attr,vcsType"`

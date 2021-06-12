@@ -18,11 +18,13 @@ var (
 type RepositoryService struct {
 	l  *zap.Logger
 	db *DB
+
+	ProjectService api.ProjectService
 }
 
 // NewRepositoryService returns a new instance of RepositoryService.
-func NewRepositoryService(logger *zap.Logger, db *DB) *RepositoryService {
-	return &RepositoryService{l: logger, db: db}
+func NewRepositoryService(logger *zap.Logger, db *DB, projectService api.ProjectService) *RepositoryService {
+	return &RepositoryService{l: logger, db: db, ProjectService: projectService}
 }
 
 // CreateRepository creates a new repository.
@@ -33,7 +35,7 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.Re
 	}
 	defer tx.Rollback()
 
-	repository, err := createRepository(ctx, tx, create)
+	repository, err := s.createRepository(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +127,18 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 }
 
 // createRepository creates a new repository.
-func createRepository(ctx context.Context, tx *Tx, create *api.RepositoryCreate) (*api.Repository, error) {
+func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create *api.RepositoryCreate) (*api.Repository, error) {
+	// Updates the project workflow_type to "VCS"
+	workflowType := api.VCS_WORKFLOW
+	projectPatch := api.ProjectPatch{
+		ID:           create.ProjectId,
+		UpdaterId:    create.CreatorId,
+		WorkflowType: &workflowType,
+	}
+	if _, err := s.ProjectService.PatchProjectWithTx(ctx, tx.Tx, &projectPatch); err != nil {
+		return nil, err
+	}
+
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO repo (
@@ -191,6 +204,12 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.VCSId; v != nil {
+		where, args = append(where, "vcs_id = ?"), append(args, *v)
+	}
+	if v := find.ProjectId; v != nil {
+		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `

@@ -159,6 +159,7 @@ export const unknown = (
     createdTs: 0,
     updatedTs: 0,
     memberList: [],
+    workflowType: "UI",
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -324,11 +325,14 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
+    vcs: UNKNOWN_VCS,
     project: UNKNOWN_PROJECT,
-    externalId: UNKNOWN_ID.toString(),
     name: "",
     fullPath: "",
     webURL: "",
+    baseDirectory: "",
+    branchFilter: "",
+    externalId: UNKNOWN_ID.toString(),
   };
 
   switch (type) {
@@ -433,6 +437,7 @@ export const empty = (
     createdTs: 0,
     updatedTs: 0,
     memberList: [],
+    workflowType: "UI",
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
@@ -598,11 +603,14 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
+    vcs: EMPTY_VCS,
     project: EMPTY_PROJECT,
-    externalId: EMPTY_ID.toString(),
     name: "",
     fullPath: "",
     webURL: "",
+    baseDirectory: "",
+    branchFilter: "",
+    externalId: EMPTY_ID.toString(),
   };
 
   switch (type) {

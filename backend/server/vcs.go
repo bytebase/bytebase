@@ -68,19 +68,12 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		vcsFind := &api.VCSFind{
-			ID: &id,
-		}
-		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
+		vcs, err := s.ComposeVCSById(context.Background(), id, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs ID: %v", id)).SetInternal(err)
-		}
-
-		if err := s.ComposeVCSRelationship(context.Background(), vcs, c.Get(getIncludeKey()).([]string)); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created VCS relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -157,7 +150,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		list, err := s.RepositoryService.FindRepositoryList(context.Background(), repositoryFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository for vcs ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for vcs ID: %v", id)).SetInternal(err)
 		}
 
 		for _, repository := range list {
@@ -172,6 +165,22 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) ComposeVCSById(ctx context.Context, id int, includeList []string) (*api.VCS, error) {
+	vcsFind := &api.VCSFind{
+		ID: &id,
+	}
+	vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.ComposeVCSRelationship(ctx, vcs, includeList); err != nil {
+		return nil, err
+	}
+
+	return vcs, nil
 }
 
 func (s *Server) ComposeVCSRelationship(ctx context.Context, vcs *api.VCS, includeList []string) error {

@@ -1,12 +1,15 @@
 <template>
-  <div class="space-y-2 divide-y divide-block-border">
+  <BBAttention :description="attentionText" />
+  <div class="mt-4 space-y-2">
     <div class="flex justify-end items-center">
       <BBTableSearch
         :placeholder="'Search repository'"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+    <div
+      class="bg-white overflow-hidden rounded-sm border border-control-border"
+    >
       <ul class="divide-y divide-control-border">
         <li
           v-for="(repository, index) in repositoryList"
@@ -14,7 +17,7 @@
           class="block hover:bg-control-bg-hover cursor-pointer"
           @click.prevent="selectRepository(repository)"
         >
-          <div class="flex items-center px-4 py-4 sm:px-6">
+          <div class="flex items-center px-4 py-3">
             <div class="min-w-0 flex-1 flex items-center">
               {{ repository.fullPath }}
             </div>
@@ -45,10 +48,10 @@
 import { reactive } from "@vue/reactivity";
 import { useStore } from "vuex";
 import { computed, PropType, watchEffect } from "@vue/runtime-core";
-import { ExternalRepository, ProjectRepoConfig } from "../types";
+import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 
 interface LocalState {
-  repositoryList: ExternalRepository[];
+  repositoryList: ExternalRepositoryInfo[];
   searchText: string;
 }
 
@@ -58,7 +61,7 @@ export default {
   props: {
     config: {
       required: true,
-      type: Object as PropType<ProjectRepoConfig>,
+      type: Object as PropType<ProjectRepositoryConfig>,
     },
   },
   components: {},
@@ -70,14 +73,16 @@ export default {
     });
 
     const prepareRepositoryList = () => {
-      store
-        .dispatch("gitlab/fetchProjectList", {
-          vcs: props.config.vcs,
-          token: props.config.accessToken,
-        })
-        .then((list) => {
-          state.repositoryList = list;
-        });
+      if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+        store
+          .dispatch("gitlab/fetchProjectList", {
+            vcs: props.config.vcs,
+            token: props.config.accessToken,
+          })
+          .then((list) => {
+            state.repositoryList = list;
+          });
+      }
     };
 
     watchEffect(prepareRepositoryList);
@@ -86,13 +91,22 @@ export default {
       if (state.searchText == "") {
         return state.repositoryList;
       }
-      return state.repositoryList.filter((repository: ExternalRepository) => {
-        return repository.fullPath.toLowerCase().includes(state.searchText);
-      });
+      return state.repositoryList.filter(
+        (repository: ExternalRepositoryInfo) => {
+          return repository.fullPath.toLowerCase().includes(state.searchText);
+        }
+      );
     });
 
-    const selectRepository = (repository: ExternalRepository) => {
-      props.config.repository = repository;
+    const attentionText = computed((): string => {
+      if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+        return "Bytebase only lists GitLab projects where you have at least the maintainer role, which allows to configure the project webhook to observe the code push event.";
+      }
+      return "";
+    });
+
+    const selectRepository = (repository: ExternalRepositoryInfo) => {
+      props.config.repositoryInfo = repository;
       emit("next");
     };
 
@@ -104,6 +118,7 @@ export default {
       state,
       selectRepository,
       repositoryList,
+      attentionText,
       changeSearchText,
     };
   },

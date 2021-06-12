@@ -203,7 +203,7 @@ export default {
     };
 
     const prepareRepositoryList = () => {
-      store.dispatch("vcs/fetchRepositoryListByVCS", vcs.value);
+      store.dispatch("repository/fetchRepositoryListByVCSId", vcs.value.id);
     };
 
     watchEffect(prepareRepositoryList);
@@ -216,7 +216,7 @@ export default {
     });
 
     const repositoryList = computed(() =>
-      store.getters["vcs/repositoryListByVCSId"](vcs.value.id)
+      store.getters["repository/repositoryListByVCSId"](vcs.value.id)
     );
 
     const allowUpdate = computed(() => {

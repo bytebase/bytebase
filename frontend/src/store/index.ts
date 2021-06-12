@@ -20,6 +20,7 @@ import pipeline from "./modules/pipeline";
 import stage from "./modules/stage";
 import task from "./modules/task";
 import vcs from "./modules/vcs";
+import repository from "./modules/repository";
 import gitlab from "./modules/gitlab";
 
 // Following states are persisted in local storage
@@ -56,6 +57,7 @@ export const store: Store<any> = createStore({
     stage,
     task,
     vcs,
+    repository,
     gitlab,
     uistate,
     router,

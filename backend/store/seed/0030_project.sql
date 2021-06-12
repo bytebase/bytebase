@@ -14,7 +14,7 @@ VALUES
         1001,
         'project 1',
         'PRJ1',
-        'UI'
+        'VCS'
     );
 
 INSERT INTO

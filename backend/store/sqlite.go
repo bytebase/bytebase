@@ -256,6 +256,8 @@ func FormatError(err error) error {
 		return bytebase.Errorf(bytebase.ECONFLICT, "data source name already exists")
 	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
 		return bytebase.Errorf(bytebase.ECONFLICT, "bookmark already exists")
+	case "UNIQUE constraint failed: repo.project_id":
+		return bytebase.Errorf(bytebase.ECONFLICT, "project has already linked repository")
 	default:
 		return err
 	}
