@@ -63,7 +63,9 @@ export default {
 
     const clickRepository = function (section: number, row: number) {
       const repository = props.repositoryList[row];
-      router.push(`/project/${projectSlug(repository.project)}`);
+      router.push(
+        `/project/${projectSlug(repository.project)}#version-control`
+      );
     };
 
     return {

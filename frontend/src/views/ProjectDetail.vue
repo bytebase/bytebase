@@ -8,11 +8,11 @@
   <BBTableTabFilter
     class="px-1 pb-2 border-b border-block-border"
     :responsive="false"
-    :tabList="['Overview', 'Version Control', 'Settings']"
+    :tabList="projectTabItemList.map((item) => item.name)"
     :selectedIndex="state.selectedIndex"
     @select-index="
       (index) => {
-        state.selectedIndex = index;
+        selectTab(index);
       }
     "
   />
@@ -78,8 +78,9 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, onMounted, reactive, watchEffect, watch } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -92,6 +93,17 @@ import { ProjectPatch, Issue } from "../types";
 const OVERVIEW_TAB = 0;
 const VERSION_CONTROL_TAB = 1;
 const SETTING_TAB = 2;
+
+type ProjectTabItem = {
+  name: string;
+  hash: string;
+};
+
+const projectTabItemList: ProjectTabItem[] = [
+  { name: "Overview", hash: "overview" },
+  { name: "Version Control", hash: "version-control" },
+  { name: "Settings", hash: "setting" },
+];
 
 interface LocalState {
   selectedIndex: number;
@@ -117,11 +129,42 @@ export default {
   },
   setup(props, { emit }) {
     const store = useStore();
+    const router = useRouter();
+
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
       progressIssueList: [],
       closedIssueList: [],
     });
+
+    const selectProjectTabOnHash = () => {
+      if (router.currentRoute.value.hash) {
+        for (let i = 0; i < projectTabItemList.length; i++) {
+          if (
+            projectTabItemList[i].hash ==
+            router.currentRoute.value.hash.slice(1)
+          ) {
+            selectTab(i);
+            break;
+          }
+        }
+      } else {
+        selectTab(OVERVIEW_TAB);
+      }
+    };
+
+    onMounted(() => {
+      selectProjectTabOnHash();
+    });
+
+    watch(
+      () => router.currentRoute.value.hash,
+      () => {
+        if (router.currentRoute.value.name == "workspace.project.detail") {
+          selectProjectTabOnHash();
+        }
+      }
+    );
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -199,6 +242,14 @@ export default {
         });
     };
 
+    const selectTab = (index: number) => {
+      state.selectedIndex = index;
+      router.replace({
+        name: "workspace.project.detail",
+        hash: "#" + projectTabItemList[index].hash,
+      });
+    };
+
     return {
       OVERVIEW_TAB,
       VERSION_CONTROL_TAB,
@@ -208,6 +259,8 @@ export default {
       databaseList,
       allowArchiveOrRestore,
       archiveOrRestoreProject,
+      selectTab,
+      projectTabItemList,
     };
   },
 };
