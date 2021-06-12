@@ -8,7 +8,7 @@
   <BBTableTabFilter
     class="px-1 pb-2 border-b border-block-border"
     :responsive="false"
-    :tabList="['Overview', 'Git repository', 'Settings']"
+    :tabList="['Overview', 'Version Control', 'Settings']"
     :selectedIndex="state.selectedIndex"
     @select-index="
       (index) => {
@@ -39,8 +39,8 @@
         />
       </div>
     </div>
-    <template v-else-if="state.selectedIndex == REPO_TAB">
-      <RepositorySetupWizard />
+    <template v-else-if="state.selectedIndex == VERSION_CONTROL_TAB">
+      <ProjectVCSPanel />
     </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">
@@ -85,12 +85,12 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
-import RepositorySetupWizard from "../components/RepositorySetupWizard.vue";
+import ProjectVCSPanel from "../components/ProjectVCSPanel.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { ProjectPatch, Issue } from "../types";
 
 const OVERVIEW_TAB = 0;
-const REPO_TAB = 1;
+const VERSION_CONTROL_TAB = 1;
 const SETTING_TAB = 2;
 
 interface LocalState {
@@ -106,7 +106,7 @@ export default {
     DatabaseTable,
     ProjectGeneralSettingPanel,
     ProjectMemberPanel,
-    RepositorySetupWizard,
+    ProjectVCSPanel,
     IssueTable,
   },
   props: {
@@ -201,7 +201,7 @@ export default {
 
     return {
       OVERVIEW_TAB,
-      REPO_TAB,
+      VERSION_CONTROL_TAB,
       SETTING_TAB,
       state,
       project,
