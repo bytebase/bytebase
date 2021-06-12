@@ -134,7 +134,8 @@ CREATE TABLE project (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    `key` TEXT NOT NULL UNIQUE
+    `key` TEXT NOT NULL UNIQUE,
+    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS'))
 );
 
 INSERT INTO
@@ -143,7 +144,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`
+        `key`,
+        workflow_type
     )
 VALUES
     (
@@ -151,7 +153,8 @@ VALUES
         1,
         1,
         'Default',
-        'DEFAULT'
+        'DEFAULT',
+        'UI'
     );
 
 INSERT INTO

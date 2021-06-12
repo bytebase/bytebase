@@ -4,7 +4,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`
+        `key`,
+        workflow_type
     )
 VALUES
     (
@@ -12,7 +13,8 @@ VALUES
         1001,
         1001,
         'project 1',
-        'PRJ1'
+        'PRJ1',
+        'UI'
     );
 
 INSERT INTO
@@ -21,7 +23,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`
+        `key`,
+        workflow_type
     )
 VALUES
     (
@@ -29,7 +32,8 @@ VALUES
         1001,
         1001,
         'project 2',
-        'PRJ2'
+        'PRJ2',
+        'UI'
     );
 
 INSERT INTO
@@ -38,7 +42,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`
+        `key`,
+        workflow_type
     )
 VALUES
     (
@@ -46,7 +51,8 @@ VALUES
         1001,
         1001,
         'project 3',
-        'PRJ3'
+        'PRJ3',
+        'UI'
     );
 
 INSERT INTO
@@ -55,7 +61,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`
+        `key`,
+        workflow_type
     )
 VALUES
     (
@@ -63,7 +70,8 @@ VALUES
         1001,
         1001,
         'project 4',
-        'PRJ4'
+        'PRJ4',
+        'UI'
     );
 
 INSERT INTO
@@ -73,7 +81,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`
+        `key`,
+        workflow_type
     )
 VALUES
     (
@@ -82,5 +91,6 @@ VALUES
         1001,
         1001,
         'project 5',
-        'PRJ5'
+        'PRJ5',
+        'UI'
     );

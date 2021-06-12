@@ -7,6 +7,23 @@ import (
 
 const DEFAULT_PROJECT_ID = 1
 
+type ProjectWorkflowType string
+
+const (
+	UI_WORKFLOW  ProjectWorkflowType = "UI"
+	VCS_WORKFLOW ProjectWorkflowType = "VCS"
+)
+
+func (e ProjectWorkflowType) String() string {
+	switch e {
+	case UI_WORKFLOW:
+		return "UI"
+	case VCS_WORKFLOW:
+		return "VCS"
+	}
+	return ""
+}
+
 type Project struct {
 	ID int `jsonapi:"primary,project"`
 
@@ -23,8 +40,9 @@ type Project struct {
 	ProjectMemberList []*ProjectMember `jsonapi:"relation,projectMember"`
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
-	Key  string `jsonapi:"attr,key"`
+	Name         string              `jsonapi:"attr,name"`
+	Key          string              `jsonapi:"attr,key"`
+	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 }
 
 type ProjectCreate struct {
@@ -65,8 +83,9 @@ type ProjectPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name *string `jsonapi:"attr,name"`
-	Key  *string `jsonapi:"attr,key"`
+	Name         *string              `jsonapi:"attr,name"`
+	Key          *string              `jsonapi:"attr,key"`
+	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
 }
 
 type ProjectService interface {

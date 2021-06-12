@@ -112,10 +112,11 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 			updater_id,
 			environment_id,
 			name,
-			key
+			key,
+			workflow_type
 		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`"+`
+		VALUES (?, ?, ?, ?, ?, 'UI')
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -139,6 +140,7 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		&project.UpdatedTs,
 		&project.Name,
 		&project.Key,
+		&project.WorkflowType,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -168,7 +170,8 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 		    updater_id,
 		    updated_ts,
 			name,
-			key
+			key,
+			workflow_type
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -191,6 +194,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 			&project.UpdatedTs,
 			&project.Name,
 			&project.Key,
+			&project.WorkflowType,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -225,7 +229,7 @@ func patchProject(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*api.Pr
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type"+`
 	`,
 		args...,
 	)
@@ -245,6 +249,7 @@ func patchProject(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*api.Pr
 			&project.UpdatedTs,
 			&project.Name,
 			&project.Key,
+			&project.WorkflowType,
 		); err != nil {
 			return nil, FormatError(err)
 		}
