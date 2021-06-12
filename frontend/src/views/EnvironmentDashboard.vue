@@ -117,6 +117,24 @@ export default {
       reorder: false,
     });
 
+    const selectEnvironmentOnHash = () => {
+      if (environmentList.value.length > 0) {
+        if (router.currentRoute.value.hash) {
+          for (let i = 0; i < environmentList.value.length; i++) {
+            if (
+              environmentList.value[i].id ==
+              router.currentRoute.value.hash.slice(1)
+            ) {
+              selectEnvironment(i);
+              break;
+            }
+          }
+        } else {
+          selectEnvironment(0);
+        }
+      }
+    };
+
     onMounted(() => {
       store.dispatch("command/registerCommand", {
         id: "bb.environment.create",
@@ -133,9 +151,7 @@ export default {
         },
       });
 
-      if (environmentList.value.length > 0) {
-        selectEnvironment(0);
-      }
+      selectEnvironmentOnHash();
 
       if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
         setTimeout(() => {
@@ -158,14 +174,8 @@ export default {
     watch(
       () => router.currentRoute.value.hash,
       () => {
-        for (let i = 0; i < environmentList.value.length; i++) {
-          if (
-            environmentList.value[i].id ==
-            router.currentRoute.value.hash.slice(1)
-          ) {
-            selectEnvironment(i);
-            break;
-          }
+        if (router.currentRoute.value.name == "workspace.environment") {
+          selectEnvironmentOnHash();
         }
       }
     );
