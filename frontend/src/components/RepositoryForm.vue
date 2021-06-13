@@ -97,11 +97,11 @@ export default {
   props: {
     vcsType: {
       required: true,
-      type: Object as PropType<VCSType>,
+      type: String as PropType<VCSType>,
     },
     vcsName: {
       required: true,
-      type: Object as PropType<String>,
+      type: String,
     },
     repositoryInfo: {
       required: true,

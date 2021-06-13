@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
 import { useRouter } from "vue-router";
 import RepositoryForm from "./RepositoryForm.vue";
 import { Repository, ExternalRepositoryInfo, RepositoryConfig } from "../types";
@@ -25,18 +25,22 @@ export default {
   setup(props, ctx) {
     const router = useRouter();
 
-    const repositoryInfo: ExternalRepositoryInfo = {
-      externalId: props.repository.externalId,
-      name: props.repository.name,
-      fullPath: props.repository.fullPath,
-      webURL: props.repository.webURL,
-      defaultBranch: "",
-    };
+    const repositoryInfo = computed((): ExternalRepositoryInfo => {
+      return {
+        externalId: props.repository.externalId,
+        name: props.repository.name,
+        fullPath: props.repository.fullPath,
+        webURL: props.repository.webURL,
+        defaultBranch: "",
+      };
+    });
 
-    const repositoryConfig: RepositoryConfig = {
-      baseDirectory: props.repository.baseDirectory,
-      branchFilter: props.repository.branchFilter,
-    };
+    const repositoryConfig = computed((): RepositoryConfig => {
+      return {
+        baseDirectory: props.repository.baseDirectory,
+        branchFilter: props.repository.branchFilter,
+      };
+    });
 
     return { repositoryInfo, repositoryConfig };
   },
