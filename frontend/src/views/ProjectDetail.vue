@@ -40,7 +40,7 @@
       </div>
     </div>
     <template v-else-if="state.selectedIndex == VERSION_CONTROL_TAB">
-      <ProjectVCSPanel :project="project" />
+      <ProjectVersionControlPanel :project="project" />
     </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
       <div class="max-w-3xl mx-auto space-y-4">
@@ -86,7 +86,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
-import ProjectVCSPanel from "../components/ProjectVCSPanel.vue";
+import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { ProjectPatch, Issue } from "../types";
 
@@ -118,7 +118,7 @@ export default {
     DatabaseTable,
     ProjectGeneralSettingPanel,
     ProjectMemberPanel,
-    ProjectVCSPanel,
+    ProjectVersionControlPanel,
     IssueTable,
   },
   props: {

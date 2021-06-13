@@ -100,7 +100,7 @@ interface LocalState {
 }
 
 export default {
-  name: "ProjectVCSPanel",
+  name: "ProjectVersionControlPanel",
   components: {
     RepositorySetupWizard,
     RepositoryDetail,
