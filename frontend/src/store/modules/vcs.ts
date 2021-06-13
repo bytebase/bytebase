@@ -43,9 +43,7 @@ const getters = {
     for (const [_, vcs] of state.vcsById) {
       list.push(vcs);
     }
-    return list.sort((a: VCS, b: VCS) => {
-      return b.createdTs - a.createdTs;
-    });
+    return list;
   },
 
   vcsById:
@@ -63,9 +61,13 @@ const actions = {
   async fetchVCSList({ commit }: any) {
     const path = "/api/vcs";
     const data = (await axios.get(path)).data;
-    const vcsList = data.data.map((vcs: ResourceObject) => {
-      return convert(vcs);
-    });
+    const vcsList = data.data
+      .map((vcs: ResourceObject) => {
+        return convert(vcs);
+      })
+      .sort((a: VCS, b: VCS) => {
+        return b.createdTs - a.createdTs;
+      });
 
     commit("setVCSList", vcsList);
 
