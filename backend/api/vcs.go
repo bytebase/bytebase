@@ -37,6 +37,10 @@ type VCS struct {
 	ApiURL        string  `jsonapi:"attr,apiURL"`
 	ApplicationId string  `jsonapi:"attr,applicationId"`
 	Secret        string  `jsonapi:"attr,secret"`
+	// These will be exclusively used on the server side (e.g. clean up orphaned webhooks) and we don't return it to the client.
+	AccessToken  string
+	ExpiresTs    int64
+	RefreshToken string
 }
 
 type VCSCreate struct {
@@ -52,6 +56,9 @@ type VCSCreate struct {
 	ApiURL        string
 	ApplicationId string `jsonapi:"attr,applicationId"`
 	Secret        string `jsonapi:"attr,secret"`
+	AccessToken   string `jsonapi:"attr,accessToken"`
+	ExpiresTs     int64  `jsonapi:"attr,expiresTs"`
+	RefreshToken  string `jsonapi:"attr,refreshToken"`
 }
 
 type VCSFind struct {
@@ -77,6 +84,9 @@ type VCSPatch struct {
 	Name          *string `jsonapi:"attr,name"`
 	ApplicationId *string `jsonapi:"attr,applicationId"`
 	Secret        *string `jsonapi:"attr,secret"`
+	AccessToken   *string `jsonapi:"attr,accessToken"`
+	ExpiresTs     *int64  `jsonapi:"attr,expiresTs"`
+	RefreshToken  *string `jsonapi:"attr,refreshToken"`
 }
 
 type VCSDelete struct {

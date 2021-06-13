@@ -1,5 +1,10 @@
 import axios from "axios";
-import { ExternalRepositoryInfo, VCS, OAuthConfig } from "../../types";
+import {
+  ExternalRepositoryInfo,
+  VCS,
+  OAuthConfig,
+  OAuthToken,
+} from "../../types";
 
 const GITLAB_API_PATH = "api/v4";
 const GITLAB_WEBHOOK_PATH = "hook/gitlab";
@@ -26,7 +31,7 @@ const actions = {
       oAuthConfig: OAuthConfig;
       code: string;
     }
-  ): Promise<string> {
+  ): Promise<OAuthToken> {
     console.log(
       "req",
       `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
@@ -36,7 +41,15 @@ const actions = {
         `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
       )
     ).data;
-    return data.access_token;
+
+    const oAuthToken: OAuthToken = {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      // For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
+      // see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+      expiresTs: data.expires_in == 0 ? 0 : data.created_at + data.expires_in,
+    };
+    return oAuthToken;
   },
 
   async fetchProjectList(

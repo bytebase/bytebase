@@ -41,6 +41,7 @@ import {
   OAuthWindowEvent,
   OAuthConfig,
   redirectURL,
+  OAuthToken,
 } from "../types";
 import { isURL } from "../utils";
 
@@ -57,7 +58,7 @@ const stepList: BBStepTabItem[] = [
 interface LocalState {
   config: VCSConfig;
   currentStep: number;
-  oAuthResultCallback?: (success: boolean) => void;
+  oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
 export default {
@@ -81,6 +82,9 @@ export default {
         instanceURL: "",
         applicationId: "",
         secret: "",
+        accessToken: "",
+        expiresTs: 0,
+        refreshToken: "",
       },
       currentStep: 0,
     });
@@ -100,15 +104,15 @@ export default {
               oAuthConfig,
               code: payload.code,
             })
-            .then((token: string) => {
-              state.oAuthResultCallback!(true);
+            .then((token: OAuthToken) => {
+              state.oAuthResultCallback!(token);
             })
             .catch((error) => {
-              state.oAuthResultCallback!(false);
+              state.oAuthResultCallback!(undefined);
             });
         }
       } else {
-        state.oAuthResultCallback!(false);
+        state.oAuthResultCallback!(undefined);
       }
 
       window.removeEventListener(OAuthWindowEvent, eventListener);
@@ -152,9 +156,12 @@ export default {
           state.config.applicationId
         );
         if (newWindow) {
-          state.oAuthResultCallback = (success: boolean) => {
-            if (success) {
+          state.oAuthResultCallback = (token: OAuthToken | undefined) => {
+            if (token) {
               state.currentStep = newStep;
+              state.config.accessToken = token.accessToken;
+              state.config.expiresTs = token.expiresTs;
+              state.config.refreshToken = token.refreshToken;
               allowChangeCallback();
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",

@@ -141,13 +141,14 @@ import {
   OAuthWindowEventPayload,
   OAuthConfig,
   redirectURL,
+  OAuthToken,
 } from "../types";
 
 interface LocalState {
   name: string;
   applicationId: string;
   secret: string;
-  oAuthResultCallback?: (success: boolean) => void;
+  oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
 export default {
@@ -188,15 +189,15 @@ export default {
               oAuthConfig,
               code: payload.code,
             })
-            .then((token: string) => {
-              state.oAuthResultCallback!(true);
+            .then((token: OAuthToken) => {
+              state.oAuthResultCallback!(token);
             })
             .catch((error) => {
-              state.oAuthResultCallback!(false);
+              state.oAuthResultCallback!(undefined);
             });
         }
       } else {
-        state.oAuthResultCallback!(false);
+        state.oAuthResultCallback!(undefined);
       }
 
       window.removeEventListener(OAuthWindowEvent, eventListener);
@@ -237,8 +238,8 @@ export default {
           vcs.value.applicationId
         );
         if (newWindow) {
-          state.oAuthResultCallback = (success: boolean) => {
-            if (success) {
+          state.oAuthResultCallback = (token: OAuthToken | undefined) => {
+            if (token) {
               const vcsPatch: VCSPatch = {};
               if (state.name != vcs.value.name) {
                 vcsPatch.name = state.name;
@@ -249,6 +250,9 @@ export default {
               if (!isEmpty(state.secret)) {
                 vcsPatch.secret = state.secret;
               }
+              vcsPatch.accessToken = token.accessToken;
+              vcsPatch.expiresTs = token.expiresTs;
+              vcsPatch.refreshToken = token.refreshToken;
               store
                 .dispatch("vcs/patchVCS", {
                   vcsId: vcs.value.id,

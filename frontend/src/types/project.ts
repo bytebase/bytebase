@@ -1,5 +1,6 @@
 import { RowStatus } from "./common";
 import { MemberId, PrincipalId, ProjectId } from "./id";
+import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 import { VCS } from "./vcs";
@@ -85,7 +86,7 @@ export type ProjectMemberPatch = {
 export type ProjectRepositoryConfig = {
   vcs: VCS;
   code: string;
-  accessToken: string;
+  token: OAuthToken;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
 };

@@ -656,7 +656,10 @@ CREATE TABLE vcs (
         OR api_url LIKE 'https:/%'
     ),
     application_id TEXT NOT NULL,
-    secret TEXT NOT NULL
+    secret TEXT NOT NULL,
+    access_token TEXT NOT NULL,
+    expires_ts BIGINT NOT NULL,
+    refresh_token TEXT NOT NULL
 );
 
 INSERT INTO

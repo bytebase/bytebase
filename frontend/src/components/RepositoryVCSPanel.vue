@@ -46,6 +46,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 import {
   OAuthConfig,
+  OAuthToken,
   OAuthWindowEvent,
   OAuthWindowEventPayload,
   openWindowForOAuth,
@@ -100,9 +101,9 @@ export default {
             oAuthConfig,
             code: payload.code,
           })
-          .then((token: string) => {
+          .then((token: OAuthToken) => {
             props.config.vcs = state.selectedVCS!;
-            props.config.accessToken = token;
+            props.config.token = token;
             emit("next");
           });
       } else {

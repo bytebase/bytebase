@@ -7,6 +7,12 @@ export type OAuthConfig = {
   redirectURL: string;
 };
 
+export type OAuthToken = {
+  accessToken: string;
+  expiresTs: number;
+  refreshToken: string;
+};
+
 export const OAuthStateSessionKey = "oauthstate";
 
 export const OAuthWindowEvent = "oauthevent";
