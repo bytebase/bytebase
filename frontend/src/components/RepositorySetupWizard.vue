@@ -86,7 +86,6 @@ export default {
           name: "",
           fullPath: "",
           webURL: "",
-          defaultBranch: "",
         },
         repositoryConfig: {
           baseDirectory: "",
@@ -121,9 +120,7 @@ export default {
             fullPath: state.config.repositoryInfo.fullPath,
             webURL: state.config.repositoryInfo.webURL,
             baseDirectory: state.config.repositoryConfig.baseDirectory,
-            branchFilter: isEmpty(state.config.repositoryConfig.branchFilter)
-              ? state.config.repositoryInfo.defaultBranch
-              : state.config.repositoryConfig.branchFilter,
+            branchFilter: state.config.repositoryConfig.branchFilter,
             externalId: state.config.repositoryInfo.externalId,
             webhookId: webhook.id,
             webhookURL: webhook.url,

@@ -75,7 +75,7 @@
         name="branch"
         type="text"
         class="textfield mt-2 w-full"
-        placeholder="'Default branch (normally \'master\' or \'main\')'"
+        placeholder="Default branch (normally 'master' or 'main')"
         v-model="repositoryConfig.branchFilter"
       />
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">

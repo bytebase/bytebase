@@ -59,8 +59,6 @@ export type ExternalRepositoryInfo = {
   fullPath: string;
   // e.g. http://gitlab.bytebase.com/bytebase/sample-project
   webURL: string;
-  // e.g. master
-  defaultBranch: string;
 };
 
 export type WebhookInfo = {

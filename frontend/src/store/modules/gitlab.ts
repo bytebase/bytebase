@@ -19,7 +19,6 @@ function convertGitLabProject(project: any): ExternalRepositoryInfo {
     name: project.name,
     fullPath: project.path_with_namespace,
     webURL: project.web_url,
-    defaultBranch: project.default_branch,
   };
 }
 
