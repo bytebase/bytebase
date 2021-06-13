@@ -77,7 +77,7 @@ export default {
         store
           .dispatch("gitlab/fetchProjectList", {
             vcs: props.config.vcs,
-            token: props.config.accessToken,
+            token: props.config.token.accessToken,
           })
           .then((list) => {
             state.repositoryList = list;

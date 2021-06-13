@@ -42,6 +42,7 @@ export type RepositoryCreate = {
   branchFilter: string;
   externalId: string;
   webhookId: string;
+  webhookURL: string;
 };
 
 export type RepositoryConfig = {
@@ -60,4 +61,9 @@ export type ExternalRepositoryInfo = {
   webURL: string;
   // e.g. master
   defaultBranch: string;
+};
+
+export type WebhookInfo = {
+  id: string;
+  url: string;
 };

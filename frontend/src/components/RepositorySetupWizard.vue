@@ -36,6 +36,7 @@ import {
   RepositoryCreate,
   unknown,
   VCS,
+  WebhookInfo,
 } from "../types";
 import { projectSlug } from "../utils";
 
@@ -75,7 +76,11 @@ export default {
       config: {
         vcs: unknown("VCS") as VCS,
         code: "",
-        accessToken: "",
+        token: {
+          accessToken: "",
+          expiresTs: 0,
+          refreshToken: "",
+        },
         repositoryInfo: {
           externalId: "",
           name: "",
@@ -106,9 +111,9 @@ export default {
           vcs: state.config.vcs,
           projectId: state.config.repositoryInfo.externalId,
           branchFilter: state.config.repositoryConfig.branchFilter,
-          token: state.config.accessToken,
+          token: state.config.token.accessToken,
         })
-        .then((createdWebhookId) => {
+        .then((webhook: WebhookInfo) => {
           const repositoryCreate: RepositoryCreate = {
             vcsId: state.config.vcs.id,
             projectId: props.project.id,
@@ -120,7 +125,8 @@ export default {
               ? state.config.repositoryInfo.defaultBranch
               : state.config.repositoryConfig.branchFilter,
             externalId: state.config.repositoryInfo.externalId,
-            webhookId: createdWebhookId,
+            webhookId: webhook.id,
+            webhookURL: webhook.url,
           };
           store
             .dispatch("repository/createRepository", repositoryCreate)

@@ -713,8 +713,12 @@ CREATE TABLE repo (
     external_id TEXT NOT NULL,
     -- Push webhook id from the corresponding VCS provider.
     -- For GitLab, this is the project webhook id. e.g. 123
-    webhook_id TEXT NOT NULL
+    webhook_id TEXT NOT NULL,
+    -- Webhook URL, we use this to identify the target repository receiving the webhook event
+    webhook_url TEXT NOT NULL UNIQUE
 );
+
+CREATE INDEX idx_repo_webhook_url ON repo(webhook_url);
 
 INSERT INTO
     sqlite_sequence (name, seq)

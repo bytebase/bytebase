@@ -152,10 +152,11 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 			base_directory,
 			branch_filter,
 			external_id,
-			webhook_id
+			webhook_id,
+			webhook_url
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, webhook_id
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, webhook_id, webhook_url
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -168,6 +169,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		create.BranchFilter,
 		create.ExternalId,
 		create.WebhookId,
+		create.WebhookURL,
 	)
 
 	if err != nil {
@@ -192,6 +194,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		&repository.BranchFilter,
 		&repository.ExternalId,
 		&repository.WebhookId,
+		&repository.WebhookURL,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -227,7 +230,8 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			base_directory,
 			branch_filter,
 			external_id,
-			webhook_id
+			webhook_id,
+			webhook_url
 		FROM repo
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -256,6 +260,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			&repository.BranchFilter,
 			&repository.ExternalId,
 			&repository.WebhookId,
+			&repository.WebhookURL,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -287,7 +292,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 		UPDATE repo
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, webhook_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, webhook_id, webhook_url
 	`,
 		args...,
 	)
@@ -313,6 +318,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 			&repository.BranchFilter,
 			&repository.ExternalId,
 			&repository.WebhookId,
+			&repository.WebhookURL,
 		); err != nil {
 			return nil, FormatError(err)
 		}

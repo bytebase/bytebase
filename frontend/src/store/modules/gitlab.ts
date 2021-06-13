@@ -1,9 +1,11 @@
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 import {
   ExternalRepositoryInfo,
   VCS,
   OAuthConfig,
   OAuthToken,
+  WebhookInfo,
 } from "../../types";
 
 const GITLAB_API_PATH = "api/v4";
@@ -85,12 +87,13 @@ const actions = {
       branchFilter,
       token,
     }: { vcs: VCS; projectId: string; branchFilter: string; token: string }
-  ): Promise<string> {
+  ): Promise<WebhookInfo> {
+    const url = `${vcs.instanceURL}/${GITLAB_WEBHOOK_PATH}/${uuidv4()}`;
     const data = (
       await axios.post(
         `${vcs.instanceURL}/${GITLAB_API_PATH}/projects/${projectId}/hooks`,
         {
-          url: `${vcs.instanceURL}/${GITLAB_WEBHOOK_PATH}`,
+          url,
           push_events: true,
           // For now, there is no native dry run DDL support in mysql/postgres. One may wonder if we could wrap the DDL
           // in a transaction and just not commit at the end, unfortunately there are side effects which are hard to control.
@@ -110,7 +113,10 @@ const actions = {
       )
     ).data;
 
-    return data.id.toString();
+    return {
+      id: data.id.toString(),
+      url,
+    };
   },
 };
 

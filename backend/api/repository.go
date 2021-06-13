@@ -30,10 +30,7 @@ type Repository struct {
 	BranchFilter  string `jsonapi:"attr,branchFilter"`
 	ExternalId    string `jsonapi:"attr,externalId"`
 	WebhookId     string
-	// Because we normalize the data, thus we fetch below info from vcs table.
-	VCSName     string  `jsonapi:"attr,vcsName"`
-	VCSType     VCSType `jsonapi:"attr,vcsType"`
-	InstanceURL string  `jsonapi:"attr,instanceURL"`
+	WebhookURL    string
 }
 
 type RepositoryCreate struct {
@@ -53,6 +50,7 @@ type RepositoryCreate struct {
 	BranchFilter  string `jsonapi:"attr,branchFilter"`
 	ExternalId    string `jsonapi:"attr,externalId"`
 	WebhookId     string `jsonapi:"attr,webhookId"`
+	WebhookURL    string `jsonapi:"attr,webhookURL"`
 }
 
 type RepositoryFind struct {
