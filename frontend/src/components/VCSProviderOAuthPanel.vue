@@ -9,21 +9,22 @@
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
         <li>
           1. Login as an Admin user to the GitLab instance. The account must be
-          an Admin of the entire GitLab instance (not just a particular
-          project).
+          an Admin of the entire GitLab instance (it has a wrench icon on the
+          top bar).
+          <img class="w-auto" src="../assets/gitlab_admin_area.png" />
         </li>
         <li>
-          2. Visit the Admin page, then navigate to "Applications" section and
-          click "New application" button.
+          2. Go to the Admin page by clicking the wrench icon, then navigate to
+          "Applications" section and click "New application" button.
           <a
             :href="createAdminApplicationURL"
             target="_blank"
             class="normal-link"
-            >Visit now</a
+            >Direct link</a
           >
         </li>
         <li>
-          3. Create our Bytebase OAuth application with the following info.
+          3. Create your Bytebase OAuth application with the following info.
           <div class="m-4 flex justify-center">
             <dl
               class="
