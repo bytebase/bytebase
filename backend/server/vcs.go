@@ -22,6 +22,8 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create VCS request").SetInternal(err)
 		}
+		// Trim ending "/"
+		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
 		vcsCreate.ApiURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.ApiPath)
 
 		vcs, err := s.VCSService.CreateVCS(context.Background(), vcsCreate)
