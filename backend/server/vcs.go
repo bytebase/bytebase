@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-)
-
-const (
-	apiPath = "api/v4"
 )
 
 func (s *Server) registerVCSRoutes(g *echo.Group) {
@@ -24,7 +22,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create VCS request").SetInternal(err)
 		}
-		vcsCreate.ApiURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, apiPath)
+		vcsCreate.ApiURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.ApiPath)
 
 		vcs, err := s.VCSService.CreateVCS(context.Background(), vcsCreate)
 		if err != nil {

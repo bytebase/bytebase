@@ -114,7 +114,7 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 	}
 	defer tx.Rollback()
 
-	err = deleteRepository(ctx, tx, delete)
+	err = s.deleteRepository(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
@@ -330,16 +330,27 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 }
 
 // deleteRepository permanently deletes a repository by ID.
-func deleteRepository(ctx context.Context, tx *Tx, delete *api.RepositoryDelete) error {
+func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete *api.RepositoryDelete) error {
+	// Updates the project workflow_type to "UI"
+	workflowType := api.UI_WORKFLOW
+	projectPatch := api.ProjectPatch{
+		ID:           delete.ProjectId,
+		UpdaterId:    delete.DeleterId,
+		WorkflowType: &workflowType,
+	}
+	if _, err := s.ProjectService.PatchProjectWithTx(ctx, tx.Tx, &projectPatch); err != nil {
+		return err
+	}
+
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM repo WHERE id = ?`, delete.ID)
+	result, err := tx.ExecContext(ctx, `DELETE FROM repo WHERE project_id = ?`, delete.ProjectId)
 	if err != nil {
 		return FormatError(err)
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("repository ID not found: %d", delete.ID)}
+		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("repository not found for project ID: %d", delete.ProjectId)}
 	}
 
 	return nil

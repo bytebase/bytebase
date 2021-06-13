@@ -13,6 +13,7 @@ p, OWNER, /project/{id}, GET
 p, OWNER, /project/{id}, PATCH
 p, OWNER, /project/{id}/repository, GET
 p, OWNER, /project/{id}/repository, POST
+p, OWNER, /project/{id}/repository, DELETE
 p, OWNER, /project/{projectId}/member, POST
 p, OWNER, /project/{projectId}/member/{memberId}, PATCH
 p, OWNER, /project/{projectId}/member/{memberId}, DELETE

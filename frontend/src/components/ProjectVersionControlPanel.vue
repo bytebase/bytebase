@@ -81,7 +81,7 @@
       </template>
     </template>
     <template v-else-if="project.workflowType == 'VCS'">
-      <RepositoryDetail :repository="repository" />
+      <RepositoryDetail :project="project" :repository="repository" />
     </template>
   </template>
 </template>

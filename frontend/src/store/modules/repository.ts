@@ -140,6 +140,19 @@ const actions = {
 
     return unknown("REPOSITORY") as Repository;
   },
+
+  async deleteRepositoryByProjectId(
+    { dispatch, commit }: any,
+    projectId: ProjectId
+  ) {
+    await axios.delete(`/api/project/${projectId}/repository`);
+    commit("deleteRepositoryByProjectId", projectId);
+
+    // Refetch the project as the project workflow type has been updated to "UI"
+    dispatch("project/fetchProjectById", projectId, {
+      root: true,
+    });
+  },
 };
 
 const mutations = {
@@ -167,6 +180,10 @@ const mutations = {
     }
   ) {
     state.repositoryByProjectId.set(projectId, repository);
+  },
+
+  deleteRepositoryByProjectId(state: RepositoryState, projectId: ProjectId) {
+    state.repositoryByProjectId.delete(projectId);
   },
 };
 

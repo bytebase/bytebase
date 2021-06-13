@@ -82,7 +82,8 @@ type RepositoryPatch struct {
 }
 
 type RepositoryDelete struct {
-	ID int
+	// Related fields
+	ProjectId int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

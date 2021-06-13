@@ -8,6 +8,7 @@ p, DBA, /project/{id}, GET
 p, DBA, /project/{id}, PATCH
 p, DBA, /project/{id}/repository, GET
 p, DBA, /project/{id}/repository, POST
+p, DBA, /project/{id}/repository, DELETE
 p, DBA, /project/{projectId}/member, POST
 p, DBA, /project/{projectId}/member/{memberId}, PATCH
 p, DBA, /project/{projectId}/member/{memberId}, DELETE
