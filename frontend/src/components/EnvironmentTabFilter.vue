@@ -1,5 +1,5 @@
 <template>
-  <BBTableTabFilter
+  <BBTabFilter
     :tabList="tabList"
     :selectedIndex="state.selectedIndex"
     @select-index="

@@ -29,7 +29,7 @@ import {
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
-  BBTableTabFilter,
+  BBTabFilter,
   BBTextField,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
@@ -152,6 +152,6 @@ app
   .component("BBTableCell", BBTableCell)
   .component("BBTableHeaderCell", BBTableHeaderCell)
   .component("BBTableSearch", BBTableSearch)
-  .component("BBTableTabFilter", BBTableTabFilter)
+  .component("BBTabFilter", BBTabFilter)
   .component("BBTextField", BBTextField)
   .mount("#app");

@@ -42,7 +42,7 @@
 import { PropType } from "vue";
 
 export default {
-  name: "BBTableTabFilter",
+  name: "BBTabFilter",
   emits: ["select-index"],
   props: {
     tabList: {

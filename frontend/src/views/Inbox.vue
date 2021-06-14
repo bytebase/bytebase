@@ -1,7 +1,7 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="my-2 space-y-2 divide-y divide-block-border">
-    <BBTableTabFilter
+    <BBTabFilter
       v-if="isCurrentUserDBAOrOwner"
       class="mx-2"
       :tabList="['General', 'Membership']"

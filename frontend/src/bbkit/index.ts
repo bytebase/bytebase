@@ -14,13 +14,13 @@ import BBStepBar from "./BBStepBar.vue";
 import BBStepTab from "./BBStepTab.vue";
 import BBTab from "./BBTab.vue";
 import BBTabPanel from "./BBTabPanel.vue";
+import BBTabFilter from "./BBTabFilter.vue";
 import BBTextField from "./BBTextField.vue";
 import {
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
-  BBTableTabFilter,
 } from "./BBTable";
 
 export {
@@ -40,10 +40,10 @@ export {
   BBSwitch,
   BBTab,
   BBTabPanel,
+  BBTabFilter,
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
-  BBTableTabFilter,
   BBTextField,
 };

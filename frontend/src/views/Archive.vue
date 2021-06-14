@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
-      <BBTableTabFilter
+      <BBTabFilter
         :tabList="tabList"
         :selectedIndex="state.selectedIndex"
         @select-index="

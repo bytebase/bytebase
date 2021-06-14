@@ -5,7 +5,7 @@
   <h1 class="px-4 pb-4 text-xl font-bold leading-6 text-main truncate">
     {{ project.name }}
   </h1>
-  <BBTableTabFilter
+  <BBTabFilter
     class="px-1 pb-2 border-b border-block-border"
     :responsive="false"
     :tabList="projectTabItemList.map((item) => item.name)"
