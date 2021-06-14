@@ -25,7 +25,15 @@ import { computed, reactive, onMounted, onUnmounted, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Database, DatabaseId, Project, ProjectId, UNKNOWN_ID } from "../types";
+import {
+  baseDirectoryWebURL,
+  Database,
+  DatabaseId,
+  Project,
+  ProjectId,
+  Repository,
+  UNKNOWN_ID,
+} from "../types";
 
 interface LocalState {
   project: Project;
@@ -112,18 +120,29 @@ export default {
 
       const database = store.getters["database/databaseById"](databaseId);
 
-      router.push({
-        name: "workspace.issue.detail",
-        params: {
-          issueSlug: "new",
-        },
-        query: {
-          template: "bb.issue.db.schema.update",
-          name: `[${database.name}] Alter schema`,
-          project: state.project.id,
-          databaseList: database.id,
-        },
-      });
+      if (database.project.workflowType == "UI") {
+        router.push({
+          name: "workspace.issue.detail",
+          params: {
+            issueSlug: "new",
+          },
+          query: {
+            template: "bb.issue.db.schema.update",
+            name: `[${database.name}] Alter schema`,
+            project: state.project.id,
+            databaseList: database.id,
+          },
+        });
+      } else if (database.project.workflowType == "VCS") {
+        store
+          .dispatch(
+            "repository/fetchRepositoryByProjectId",
+            database.project.id
+          )
+          .then((repository: Repository) => {
+            window.open(baseDirectoryWebURL(repository), "_blank");
+          });
+      }
     };
 
     const cancel = () => {

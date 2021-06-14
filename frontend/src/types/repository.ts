@@ -1,3 +1,4 @@
+import isEmpty from "lodash-es/isEmpty";
 import { RepositoryId, VCSId, ProjectId } from "./id";
 import { Principal } from "./principal";
 import { Project } from "./project";
@@ -70,3 +71,23 @@ export type WebhookInfo = {
   id: string;
   url: string;
 };
+
+export function baseDirectoryWebURL(repository: Repository): string {
+  if (repository.vcs.type == "GITLAB_SELF_HOST") {
+    // If branchFilter is empty (default branch) or branch filter contains wildcard,
+    // then we can't locate to the exact branch name, thus we will just return the repository web url
+    if (
+      isEmpty(repository.branchFilter) ||
+      repository.branchFilter.includes("*")
+    ) {
+      return repository.webURL;
+    }
+    let url = `${repository.webURL}/-/tree/${repository.branchFilter}`;
+    if (!isEmpty(repository.baseDirectory)) {
+      url += `/${repository.baseDirectory}`;
+    }
+    return url;
+  }
+
+  return repository.webURL;
+}
