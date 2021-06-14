@@ -25,14 +25,12 @@ import { PropType } from "@vue/runtime-core";
 import { BBStepTabItem } from "../bbkit/types";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import isEmpty from "lodash-es/isEmpty";
 import RepositoryVCSPanel from "./RepositoryVCSPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
 import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
 import {
   Project,
   ProjectRepositoryConfig,
-  Repository,
   RepositoryCreate,
   unknown,
   VCS,
@@ -64,6 +62,11 @@ export default {
     RepositoryConfigPanel,
   },
   props: {
+    // If false, then we intend to change the existing linked repository intead of just linking a new repository.
+    create: {
+      type: Boolean,
+      default: false,
+    },
     project: {
       required: true,
       type: Object as PropType<Project>,
@@ -105,33 +108,47 @@ export default {
     };
 
     const tryFinishSetup = (allowFinishCallback: () => void) => {
-      store
-        .dispatch("gitlab/createWebhook", {
-          vcs: state.config.vcs,
-          projectId: state.config.repositoryInfo.externalId,
-          branchFilter: state.config.repositoryConfig.branchFilter,
-          token: state.config.token.accessToken,
-        })
-        .then((webhook: WebhookInfo) => {
-          const repositoryCreate: RepositoryCreate = {
-            vcsId: state.config.vcs.id,
-            projectId: props.project.id,
-            name: state.config.repositoryInfo.name,
-            fullPath: state.config.repositoryInfo.fullPath,
-            webURL: state.config.repositoryInfo.webURL,
-            baseDirectory: state.config.repositoryConfig.baseDirectory,
+      const createFunc = () => {
+        store
+          .dispatch("gitlab/createWebhook", {
+            vcs: state.config.vcs,
+            projectId: state.config.repositoryInfo.externalId,
             branchFilter: state.config.repositoryConfig.branchFilter,
-            externalId: state.config.repositoryInfo.externalId,
-            webhookId: webhook.id,
-            webhookURL: webhook.url,
-          };
-          store
-            .dispatch("repository/createRepository", repositoryCreate)
-            .then(() => {
-              allowFinishCallback();
-              emit("finish");
-            });
-        });
+            token: state.config.token.accessToken,
+          })
+          .then((webhook: WebhookInfo) => {
+            const repositoryCreate: RepositoryCreate = {
+              vcsId: state.config.vcs.id,
+              projectId: props.project.id,
+              name: state.config.repositoryInfo.name,
+              fullPath: state.config.repositoryInfo.fullPath,
+              webURL: state.config.repositoryInfo.webURL,
+              baseDirectory: state.config.repositoryConfig.baseDirectory,
+              branchFilter: state.config.repositoryConfig.branchFilter,
+              externalId: state.config.repositoryInfo.externalId,
+              webhookId: webhook.id,
+              webhookURL: webhook.url,
+            };
+            store
+              .dispatch("repository/createRepository", repositoryCreate)
+              .then(() => {
+                allowFinishCallback();
+                emit("finish");
+              });
+          });
+      };
+      if (props.create) {
+        createFunc();
+      } else {
+        // It's simple to implement change behavior as delete followed by create.
+        // Though the delete can succeed while the create fails, this is rare, and
+        // even it happens, user can still configure it again.
+        store
+          .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
+          .then(() => {
+            createFunc();
+          });
+      }
     };
 
     const cancel = () => {

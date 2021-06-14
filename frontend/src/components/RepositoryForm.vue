@@ -19,25 +19,13 @@
     <div>
       <div class="flex flex-row space-x-2 items-center">
         <label for="repository" class="textlabel"> Repository </label>
-        <button
-          class="ml-1 btn-icon"
-          @click.prevent="window.open(urlfy(repositoryInfo.webURL), '_blank')"
+        <div
+          v-if="!create"
+          class="ml-1 normal-link text-sm"
+          @click.prevent="$emit('change-repository')"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            ></path>
-          </svg>
-        </button>
+          Change
+        </div>
       </div>
       <input
         id="repository"
@@ -66,8 +54,8 @@
     <div>
       <div class="textlabel">Branch</div>
       <div class="mt-1 textinfolabel">
-        The branch where Bytebase will observe the SQL file (.sql) change. If
-        empty, then Bytebase will observe the default branch (normally it's the
+        The branch where Bytebase observes the SQL file (.sql) change. If empty,
+        then Bytebase will observe the default branch (normally it's the
         'master' or 'main' branch).
       </div>
       <input
@@ -94,7 +82,12 @@ interface LocalState {}
 
 export default {
   name: "RepositoryForm",
+  emits: ["change-repository"],
   props: {
+    create: {
+      type: Boolean,
+      default: false,
+    },
     vcsType: {
       required: true,
       type: String as PropType<VCSType>,

@@ -1,5 +1,6 @@
 <template>
   <RepositoryForm
+    :create="true"
     :vcsType="config.vcs.type"
     :vcsName="config.vcs.name"
     :repositoryInfo="config.repositoryInfo"

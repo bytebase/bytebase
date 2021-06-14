@@ -1,7 +1,7 @@
 <template>
   <div class="textlabel">
     Choose the Git provider where your database schema scripts (.sql) are
-    hosted. When you push the scripts change to the Git repository, Bytebase
+    hosted. When you push the changed script to the Git repository, Bytebase
     will automatically applies the script change to the database.
   </div>
   <div class="mt-4 flex flex-wrap">

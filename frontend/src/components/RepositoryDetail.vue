@@ -1,18 +1,24 @@
 <template>
   <div class="text-lg leading-6 font-medium text-main">
-    Version control is enabled
+    Version control is <span class="text-success">enabled</span>
   </div>
-  <div class="mt-1 textinfolabel">
+  <div class="mt-2 textinfolabel">
     Database migration scripts are stored in
     <a class="normal-link" :href="repository.webURL" target="_blank">{{
       repository.fullPath
     }}</a
     >. To make schema changes, a developer would create a migration script under
-    base directory <span class="text-main">/{{ repository.baseDirectory }}</span
-    >. After the script is review approved and merged into the branch matching
-    pattern <span class="text-main">{{ repository.branchFilter }}</span
-    >, Bytebase will automatically kicks off the task to apply the new schema
-    change.
+    base directory
+    <span class="font-medium text-main">/{{ repository.baseDirectory }}</span
+    >. After the script is review approved and merged into the
+    <template v-if="repository.branchFilter"
+      >branch matching pattern
+      <span class="font-medium text-main">{{
+        repository.branchFilter
+      }}</span></template
+    >
+    <span v-else class="font-medium text-main">default branch</span>, Bytebase
+    will automatically kicks off the task to apply the new schema change.
   </div>
   <RepositoryForm
     class="mt-4"
@@ -20,6 +26,7 @@
     :vcsName="repository.vcs.name"
     :repositoryInfo="repositoryInfo"
     :repositoryConfig="state.repositoryConfig"
+    @change-repository="$emit('change-repository')"
   />
   <div class="mt-4 pt-4 flex border-t justify-between">
     <BBButtonConfirm
@@ -62,6 +69,7 @@ interface LocalState {
 
 export default {
   name: "RepositoryDetail",
+  emits: ["change-repository"],
   components: { RepositoryForm },
   props: {
     project: {

@@ -1,6 +1,7 @@
 <template>
-  <template v-if="state.showWizard">
+  <template v-if="state.showWizardForCreate || state.showWizardForChange">
     <RepositorySetupWizard
+      :create="state.showWizardForCreate"
       :project="project"
       @cancel="cancelWizard"
       @finish="finishWizard"
@@ -59,9 +60,9 @@
           <button
             type="button"
             class="btn-primary inline-flex justify-center py-2 px-2"
-            @click.prevent="enterWizard"
+            @click.prevent="enterWizard(true)"
           >
-            Config workflow
+            Configure version control
             <svg
               class="ml-1 w-5 h-5"
               fill="none"
@@ -81,7 +82,11 @@
       </template>
     </template>
     <template v-else-if="project.workflowType == 'VCS'">
-      <RepositoryDetail :project="project" :repository="repository" />
+      <RepositoryDetail
+        :project="project"
+        :repository="repository"
+        @change-repository="enterWizard(false)"
+      />
     </template>
   </template>
 </template>
@@ -96,7 +101,8 @@ import { useStore } from "vuex";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
-  showWizard: boolean;
+  showWizardForCreate: boolean;
+  showWizardForChange: boolean;
 }
 
 export default {
@@ -115,7 +121,8 @@ export default {
     const store = useStore();
     const state = reactive<LocalState>({
       workflowType: props.project.workflowType,
-      showWizard: false,
+      showWizardForCreate: false,
+      showWizardForChange: false,
     });
 
     const prepareRepository = () => {
@@ -137,22 +144,30 @@ export default {
       );
     });
 
-    const enterWizard = () => {
-      state.showWizard = true;
+    const enterWizard = (create: boolean) => {
+      if (create) {
+        state.showWizardForCreate = true;
+      } else {
+        state.showWizardForChange = true;
+      }
     };
 
     const cancelWizard = () => {
       state.workflowType = "UI";
-      state.showWizard = false;
+      state.showWizardForCreate = false;
+      state.showWizardForChange = false;
     };
 
     const finishWizard = () => {
-      state.showWizard = false;
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "SUCCESS",
-        title: `Successfully enabled version control workflow for '${props.project.name}'`,
+        title: state.showWizardForCreate
+          ? `Successfully enabled version control workflow for '${props.project.name}'`
+          : `Successfully changed repository for '${props.project.name}'`,
       });
+      state.showWizardForCreate = false;
+      state.showWizardForChange = false;
     };
 
     return {

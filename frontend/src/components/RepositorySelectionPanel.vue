@@ -100,7 +100,7 @@ export default {
 
     const attentionText = computed((): string => {
       if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-        return "Bytebase only lists GitLab projects where you have at least the maintainer role, which allows to configure the project webhook to observe the code push event.";
+        return "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.";
       }
       return "";
     });
