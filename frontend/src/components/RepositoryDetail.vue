@@ -7,10 +7,10 @@
     <a class="normal-link" :href="repository.webURL" target="_blank">{{
       repository.fullPath
     }}</a
-    >. To make schema changes, a developer would create a migration script and
-    submit for review there. After the script is approved and merged into the
-    branch matching pattern
-    <span class="text-main">{{ repository.branchFilter }}</span
+    >. To make schema changes, a developer would create a migration script under
+    base directory <span class="text-main">/{{ repository.baseDirectory }}</span
+    >. After the script is review approved and merged into the branch matching
+    pattern <span class="text-main">{{ repository.branchFilter }}</span
     >, Bytebase will automatically kicks off the task to apply the new schema
     change.
   </div>
@@ -19,7 +19,7 @@
     :vcsType="repository.vcs.type"
     :vcsName="repository.vcs.name"
     :repositoryInfo="repositoryInfo"
-    :repositoryConfig="repositoryConfig"
+    :repositoryConfig="state.repositoryConfig"
   />
   <div class="mt-4 pt-4 flex border-t justify-between">
     <BBButtonConfirm
@@ -34,13 +34,6 @@
     <div>
       <button
         type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="cancel"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowUpdate"
         @click.prevent="doUpdate"
@@ -52,16 +45,20 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
-import { useRouter } from "vue-router";
+import { computed, PropType, reactive, watch } from "vue";
 import RepositoryForm from "./RepositoryForm.vue";
 import {
   Repository,
+  RepositoryPatch,
   ExternalRepositoryInfo,
   RepositoryConfig,
   Project,
 } from "../types";
 import { useStore } from "vuex";
+
+interface LocalState {
+  repositoryConfig: RepositoryConfig;
+}
 
 export default {
   name: "RepositoryDetail",
@@ -78,7 +75,22 @@ export default {
   },
   setup(props, ctx) {
     const store = useStore();
-    const router = useRouter();
+    const state = reactive<LocalState>({
+      repositoryConfig: {
+        baseDirectory: props.repository.baseDirectory,
+        branchFilter: props.repository.branchFilter,
+      },
+    });
+
+    watch(
+      () => props.repository,
+      (cur, _) => {
+        state.repositoryConfig = {
+          baseDirectory: cur.baseDirectory,
+          branchFilter: cur.branchFilter,
+        };
+      }
+    );
 
     const repositoryInfo = computed((): ExternalRepositoryInfo => {
       return {
@@ -86,39 +98,61 @@ export default {
         name: props.repository.name,
         fullPath: props.repository.fullPath,
         webURL: props.repository.webURL,
-        defaultBranch: "",
-      };
-    });
-
-    const repositoryConfig = computed((): RepositoryConfig => {
-      return {
-        baseDirectory: props.repository.baseDirectory,
-        branchFilter: props.repository.branchFilter,
       };
     });
 
     const allowUpdate = computed(() => {
-      return true;
+      return (
+        props.repository.baseDirectory !=
+          state.repositoryConfig.baseDirectory ||
+        props.repository.branchFilter != state.repositoryConfig.branchFilter
+      );
     });
 
     const restoreToUIWorkflowType = () => {
-      store.dispatch(
-        "repository/deleteRepositoryByProjectId",
-        props.project.id
-      );
+      store
+        .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully restored to UI workflow`,
+          });
+        });
     };
 
-    const doUpdate = () => {};
-
-    const cancel = () => {};
+    const doUpdate = () => {
+      const repositoryPatch: RepositoryPatch = {};
+      if (
+        props.repository.baseDirectory != state.repositoryConfig.baseDirectory
+      ) {
+        repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
+      }
+      if (
+        props.repository.branchFilter != state.repositoryConfig.branchFilter
+      ) {
+        repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
+      }
+      store
+        .dispatch("repository/updateRepositoryByProjectId", {
+          projectId: props.project.id,
+          repositoryPatch,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Successfully updated version control config`,
+          });
+        });
+    };
 
     return {
+      state,
       repositoryInfo,
-      repositoryConfig,
       allowUpdate,
       restoreToUIWorkflowType,
       doUpdate,
-      cancel,
     };
   },
 };

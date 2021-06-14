@@ -11,6 +11,8 @@ import {
   Project,
   ProjectId,
   VCS,
+  ProjectPatch,
+  RepositoryPatch,
 } from "../../types";
 
 function convert(
@@ -139,6 +141,34 @@ const actions = {
     }
 
     return unknown("REPOSITORY") as Repository;
+  },
+
+  async updateRepositoryByProjectId(
+    { commit, rootGetters }: any,
+    {
+      projectId,
+      repositoryPatch,
+    }: {
+      projectId: ProjectId;
+      repositoryPatch: RepositoryPatch;
+    }
+  ) {
+    const data = (
+      await axios.patch(`/api/project/${projectId}/repository`, {
+        data: {
+          type: "repositoryPatch",
+          attributes: repositoryPatch,
+        },
+      })
+    ).data;
+
+    const updatedRepository = convert(data.data, data.included, rootGetters);
+    commit("setRepositoryByProjectId", {
+      projectId,
+      repository: updatedRepository,
+    });
+
+    return updatedRepository;
   },
 
   async deleteRepositoryByProjectId(

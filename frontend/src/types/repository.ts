@@ -45,6 +45,11 @@ export type RepositoryCreate = {
   webhookURL: string;
 };
 
+export type RepositoryPatch = {
+  baseDirectory?: string;
+  branchFilter?: string;
+};
+
 export type RepositoryConfig = {
   baseDirectory: string;
   branchFilter: string;

@@ -70,7 +70,7 @@ func (find *RepositoryFind) String() string {
 }
 
 type RepositoryPatch struct {
-	ID int
+	ID int `jsonapi:"primary,repositoryPatch"`
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -83,6 +83,8 @@ type RepositoryPatch struct {
 
 type RepositoryDelete struct {
 	// Related fields
+	// When deleting the repository, we need to update the correponding project workflow type to "UI",
+	// thus we use ProjectId here.
 	ProjectId int
 
 	// Standard fields
