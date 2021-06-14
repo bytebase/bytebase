@@ -1,0 +1,90 @@
+<template>
+  <div class="max-w-3xl mx-auto space-y-4">
+    <div class="divide-y divide-block-border space-y-6">
+      <ProjectGeneralSettingPanel :project="project" />
+      <ProjectMemberPanel class="pt-4" :project="project" />
+    </div>
+    <template v-if="allowArchiveOrRestore">
+      <template v-if="project.rowStatus == 'NORMAL'">
+        <BBButtonConfirm
+          :style="'ARCHIVE'"
+          :buttonText="'Archive this project'"
+          :okText="'Archive'"
+          :confirmTitle="`Archive project '${project.name}'?`"
+          :confirmDescription="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :requireConfirm="true"
+          @confirm="archiveOrRestoreProject(true)"
+        />
+      </template>
+      <template v-else-if="project.rowStatus == 'ARCHIVED'">
+        <BBButtonConfirm
+          :style="'RESTORE'"
+          :buttonText="'Restore this project'"
+          :okText="'Restore'"
+          :confirmTitle="`Restore project '${project.name}' to normal state?`"
+          :confirmDescription="''"
+          :requireConfirm="true"
+          @confirm="archiveOrRestoreProject(false)"
+        />
+      </template>
+    </template>
+  </div>
+</template>
+
+<script lang="ts">
+import { computed, PropType } from "vue";
+import { useStore } from "vuex";
+import { isProjectOwner } from "../utils";
+import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
+import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
+import { ProjectPatch, Project } from "../types";
+
+export default {
+  name: "ProjectSettingPanel",
+  components: {
+    ProjectGeneralSettingPanel,
+    ProjectMemberPanel,
+  },
+  props: {
+    project: {
+      required: true,
+      type: Object as PropType<Project>,
+    },
+  },
+  setup(props, { emit }) {
+    const store = useStore();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    // Only the project owner can archive/restore the project info.
+    // This means even the workspace owner won't be able to edit it.
+    // There seems to be no good reason that workspace owner needs to archive/restore the project.
+    const allowArchiveOrRestore = computed(() => {
+      for (const member of props.project.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          if (isProjectOwner(member.role)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    const archiveOrRestoreProject = (archive: boolean) => {
+      const projectPatch: ProjectPatch = {
+        updaterId: currentUser.value.id,
+        rowStatus: archive ? "ARCHIVED" : "NORMAL",
+      };
+      store.dispatch("project/patchProject", {
+        projectId: props.project.id,
+        projectPatch,
+      });
+    };
+
+    return {
+      allowArchiveOrRestore,
+      archiveOrRestoreProject,
+    };
+  },
+};
+</script>
