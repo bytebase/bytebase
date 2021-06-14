@@ -92,20 +92,15 @@ export default {
       // we maybe able to let the outside context to provide the database list
       // and we just do a get here.
       if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
-        store
-          .dispatch(
-            "database/fetchDatabaseListByEnvironmentId",
-            props.environmentId
-          )
-          .catch((error) => {
-            console.log(error);
-          });
+        store.dispatch(
+          "database/fetchDatabaseListByEnvironmentId",
+          props.environmentId
+        );
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
-        store
-          .dispatch("database/fetchDatabaseListByInstanceId", props.instanceId)
-          .catch((error) => {
-            console.log(error);
-          });
+        store.dispatch(
+          "database/fetchDatabaseListByInstanceId",
+          props.instanceId
+        );
       } else if (props.mode == "USER") {
         // We assume the database list for the current user should have already been fetched, so we won't do a fetch here.
       }

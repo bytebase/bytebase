@@ -24,12 +24,25 @@
           <router-link :to="intro.link" class="group">
             <span class="flex items-start">
               <span
-                class="flex-shrink-0 relative h-5 w-5 flex items-center justify-center"
+                class="
+                  flex-shrink-0
+                  relative
+                  h-5
+                  w-5
+                  flex
+                  items-center
+                  justify-center
+                "
               >
                 <template v-if="intro.done">
                   <!-- Heroicon name: solid/check-circle -->
                   <svg
-                    class="h-full w-full text-success group-hover:text-success-hover"
+                    class="
+                      h-full
+                      w-full
+                      text-success
+                      group-hover:text-success-hover
+                    "
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -52,12 +65,24 @@
                 </template>
                 <template v-else>
                   <div
-                    class="h-2 w-2 bg-gray-300 rounded-full group-hover:bg-gray-400"
+                    class="
+                      h-2
+                      w-2
+                      bg-gray-300
+                      rounded-full
+                      group-hover:bg-gray-400
+                    "
                   ></div>
                 </template>
               </span>
               <span
-                class="ml-2 text-sm font-medium text-control-light group-hover:text-control-light-hover"
+                class="
+                  ml-2
+                  text-sm
+                  font-medium
+                  text-control-light
+                  group-hover:text-control-light-hover
+                "
                 :class="intro.done ? 'line-through' : ''"
                 >{{ intro.name }}</span
               >
@@ -118,8 +143,7 @@ export default {
       },
       {
         name: "Request a database",
-        link:
-          "/issue/new?template=bb.database.create&description=Estimated QPS: 10",
+        link: "/issue/new?template=bb.database.create&description=Estimated QPS: 10",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.create")
@@ -127,8 +151,7 @@ export default {
       },
       {
         name: "Create a table",
-        link:
-          "/issue/new?template=bb.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
+        link: "/issue/new?template=bb.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
         allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("table.create")
@@ -176,9 +199,6 @@ export default {
               "You can still bring it back later from the top right menu",
             manualHide: true,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

@@ -462,9 +462,6 @@ export default {
             key: "instance.create",
             newState: true,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -506,9 +503,6 @@ export default {
             style: "SUCCESS",
             title: `Successfully updated instance '${instance.name}'.`,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

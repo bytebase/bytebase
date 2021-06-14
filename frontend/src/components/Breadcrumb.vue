@@ -187,28 +187,19 @@ export default {
 
     const toggleBookmark = () => {
       if (isBookmarked.value) {
-        store
-          .dispatch("bookmark/deleteBookmark", bookmark.value)
-          .catch((error) => {
-            console.log(error);
-          });
+        store.dispatch("bookmark/deleteBookmark", bookmark.value);
       } else {
         const newBookmark: BookmarkCreate = {
           creatorId: currentUser.value.id,
           name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,
         };
-        store
-          .dispatch("bookmark/createBookmark", newBookmark)
-          .then(() => {
-            store.dispatch("uistate/saveIntroStateByKey", {
-              key: "bookmark.create",
-              newState: true,
-            });
-          })
-          .catch((error) => {
-            console.log(error);
+        store.dispatch("bookmark/createBookmark", newBookmark).then(() => {
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "bookmark.create",
+            newState: true,
           });
+        });
       }
     };
 

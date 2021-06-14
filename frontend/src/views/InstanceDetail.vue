@@ -119,9 +119,6 @@ export default {
             style: "SUCCESS",
             title: `Successfully archived instance '${updatedInstance.name}'.`,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -139,9 +136,6 @@ export default {
             style: "SUCCESS",
             title: `Successfully restored instance '${updatedInstance.name}'.`,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

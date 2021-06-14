@@ -215,9 +215,6 @@ export default {
             key: "environment.create",
             newState: true,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -267,9 +264,6 @@ export default {
         })
         .then(() => {
           stopReorder();
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

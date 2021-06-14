@@ -24,13 +24,9 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareProjectList = () => {
-      store
-        .dispatch("project/fetchProjectListByUser", {
-          userId: currentUser.value.id,
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("project/fetchProjectListByUser", {
+        userId: currentUser.value.id,
+      });
     };
 
     watchEffect(prepareProjectList);

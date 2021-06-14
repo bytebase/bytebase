@@ -79,9 +79,7 @@ export default {
     });
 
     const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList").catch((error) => {
-        console.error(error);
-      });
+      store.dispatch("instance/fetchInstanceList");
     };
 
     watchEffect(prepareInstanceList);

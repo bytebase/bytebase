@@ -72,27 +72,15 @@ export default {
     const store = useStore();
 
     const prepareList = () => {
-      store
-        .dispatch("project/fetchProjectListByUser", {
-          userId: currentUser.value.id,
-          rowStatusList: ["ARCHIVED"],
-        })
-        .catch((error) => {
-          console.error(error);
-        });
+      store.dispatch("project/fetchProjectListByUser", {
+        userId: currentUser.value.id,
+        rowStatusList: ["ARCHIVED"],
+      });
 
       if (isDBAOrOwner(currentUser.value.role)) {
-        store
-          .dispatch("instance/fetchInstanceList", ["ARCHIVED"])
-          .catch((error) => {
-            console.error(error);
-          });
+        store.dispatch("instance/fetchInstanceList", ["ARCHIVED"]);
 
-        store
-          .dispatch("environment/fetchEnvironmentList", ["ARCHIVED"])
-          .catch((error) => {
-            console.error(error);
-          });
+        store.dispatch("environment/fetchEnvironmentList", ["ARCHIVED"]);
       }
     };
 

@@ -31,14 +31,10 @@ export default {
     });
 
     const prepareDatabaseList = () => {
-      store
-        .dispatch(
-          "database/fetchDatabaseListByPrincipalId",
-          currentUser.value.id
-        )
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch(
+        "database/fetchDatabaseListByPrincipalId",
+        currentUser.value.id
+      );
     };
 
     watchEffect(prepareDatabaseList);

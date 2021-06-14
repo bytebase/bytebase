@@ -3,7 +3,14 @@
     <main class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
+        class="
+          px-4
+          pb-4
+          border-b border-block-border
+          md:flex
+          md:items-center
+          md:justify-between
+        "
       >
         <div class="flex-1 min-w-0">
           <!-- Summary -->
@@ -23,13 +30,26 @@
                 <!-- Padding value is to prevent flickering when switching between edit/non-edit mode -->
                 <h1
                   v-else
-                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
+                  class="
+                    pt-2
+                    pb-2.5
+                    text-xl
+                    font-bold
+                    leading-6
+                    text-main
+                    truncate
+                  "
                 >
                   {{ dataSource.name }}
                 </h1>
               </div>
               <dl
-                class="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:flex-wrap"
+                class="
+                  flex flex-col
+                  space-y-1
+                  sm:space-y-0
+                  sm:flex-row sm:flex-wrap
+                "
               >
                 <dt class="sr-only">Environment</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
@@ -65,7 +85,13 @@
                 <dt class="sr-only">RoleType</dt>
                 <dd
                   v-data-source-type
-                  class="flex items-center text-sm text-control font-medium sm:mr-4"
+                  class="
+                    flex
+                    items-center
+                    text-sm text-control
+                    font-medium
+                    sm:mr-4
+                  "
                 >
                   {{ dataSource.type }}
                 </dd>
@@ -207,11 +233,9 @@ export default {
       (): Principal => store.getters["auth/currentUser"]()
     );
 
-    const dataSource = computed(
-      (): DataSource => {
-        return store.getters["dataSource/dataSourceById"](dataSourceId);
-      }
-    );
+    const dataSource = computed((): DataSource => {
+      return store.getters["dataSource/dataSourceById"](dataSourceId);
+    });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -256,9 +280,6 @@ export default {
         .then(() => {
           state.editingDataSource = undefined;
           state.editing = false;
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -276,9 +297,6 @@ export default {
             title: `Successfully deleted data source '${name}'.`,
           });
           router.push(`/db/${props.dataSourceSlug}`);
-        })
-        .catch((error) => {
-          console.error(error);
         });
     };
 

@@ -236,9 +236,6 @@ export default {
               // This could happen if another client has just created the role mapping with
               // this principal.
               store.dispatch("member/createdMember", newMember);
-            })
-            .catch((error) => {
-              console.error(error);
             });
 
           store.dispatch("uistate/saveIntroStateByKey", {

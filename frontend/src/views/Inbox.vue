@@ -50,7 +50,13 @@
             <div class="flex-1 space-y-1">
               <div class="flex w-full items-center justify-between space-x-2">
                 <h3
-                  class="text-sm font-base text-control-light flex flex-row whitespace-nowrap"
+                  class="
+                    text-sm
+                    font-base
+                    text-control-light
+                    flex flex-row
+                    whitespace-nowrap
+                  "
                 >
                   <router-link
                     :to="`/u/${message.creator.id}`"
@@ -204,9 +210,6 @@ export default {
         .dispatch("message/fetchMessageListByUser", currentUser.value.id)
         .then((list: Message[]) => {
           state.messageList = list;
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

@@ -197,10 +197,8 @@ export default {
             style: "SUCCESS",
             title: `Successfully added ${principal.name} to the project.`,
           });
-        })
-        .catch((err) => {
-          console.error(err);
         });
+
       state.principalId = UNKNOWN_ID;
       state.role = "DEVELOPER";
       state.error = "";

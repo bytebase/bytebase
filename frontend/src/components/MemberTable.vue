@@ -176,9 +176,7 @@ export default {
     const state = reactive<LocalState>({});
 
     const prepareMemberList = () => {
-      store.dispatch("member/fetchMemberList").catch((error) => {
-        console.log(error);
-      });
+      store.dispatch("member/fetchMemberList");
     };
 
     watchEffect(prepareMemberList);
@@ -278,20 +276,14 @@ export default {
         updaterId: currentUser.value.id,
         role,
       };
-      store
-        .dispatch("member/patchMember", {
-          id,
-          memberPatch,
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("member/patchMember", {
+        id,
+        memberPatch,
+      });
     };
 
     const deleteRole = (id: MemberId) => {
-      store.dispatch("member/deleteMemberById", id).catch((error) => {
-        console.log(error);
-      });
+      store.dispatch("member/deleteMemberById", id);
     };
 
     return {

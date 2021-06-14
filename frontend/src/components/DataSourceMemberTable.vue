@@ -51,7 +51,17 @@
                 </router-link>
                 <span
                   v-if="currentUser.id == member.principal.id"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  class="
+                    inline-flex
+                    items-center
+                    px-2
+                    py-0.5
+                    rounded-lg
+                    text-xs
+                    font-semibold
+                    bg-green-100
+                    text-green-800
+                  "
                 >
                   You
                 </span>
@@ -158,9 +168,6 @@ export default {
             style: "INFO",
             title: `Successfully revoked '${member.principal.name}' access from '${props.dataSource.name}'.`,
           });
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

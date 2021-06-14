@@ -526,9 +526,6 @@ export default {
           router.replace(
             `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
           );
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -603,9 +600,6 @@ export default {
           if (postUpdated) {
             postUpdated(updatedIssue);
           }
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

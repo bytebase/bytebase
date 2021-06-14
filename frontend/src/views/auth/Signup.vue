@@ -24,7 +24,21 @@
                 v-model="state.email"
                 required
                 placeholder="jim@example.com"
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm
+                  sm:leading-5
+                "
                 @input="onTextEmail"
               />
             </div>
@@ -44,7 +58,21 @@
                 autocomplete="on"
                 v-model="state.password"
                 required
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm
+                  sm:leading-5
+                "
               />
             </div>
           </div>
@@ -62,7 +90,21 @@
                 type="text"
                 v-model="state.name"
                 placeholder="Jim Gray"
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm
+                  sm:leading-5
+                "
                 @input="onTextName"
               />
             </div>
@@ -162,15 +204,9 @@ export default {
         password: state.password,
         name: state.name,
       };
-      store
-        .dispatch("auth/signup", signupInfo)
-        .then(() => {
-          router.push("/");
-        })
-        .catch((error: Error) => {
-          console.log(error);
-          return;
-        });
+      store.dispatch("auth/signup", signupInfo).then(() => {
+        router.push("/");
+      });
     };
 
     return {

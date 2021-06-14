@@ -52,9 +52,6 @@ export default {
         })
         .then((projectList: Project[]) => {
           state.projectList = projectList;
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

@@ -39,7 +39,21 @@
                 autocomplete="on"
                 v-model="state.password"
                 required
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm
+                  sm:leading-5
+                "
               />
             </div>
           </div>
@@ -57,7 +71,21 @@
                 type="text"
                 v-model="state.name"
                 placeholder="Jim Gray"
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm
+                  sm:leading-5
+                "
               />
             </div>
           </div>
@@ -113,15 +141,9 @@ export default {
         name: state.name,
         token: token,
       };
-      store
-        .dispatch("auth/activate", activateInfo)
-        .then(() => {
-          router.push("/");
-        })
-        .catch((error: Error) => {
-          console.log(error);
-          return;
-        });
+      store.dispatch("auth/activate", activateInfo).then(() => {
+        router.push("/");
+      });
     };
 
     return {

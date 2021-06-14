@@ -43,7 +43,17 @@
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">
             <span
-              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
+              class="
+                inline-flex
+                items-center
+                px-2
+                py-0.5
+                rounded-lg
+                text-xs
+                font-semibold
+                bg-main
+                text-main-text
+              "
             >
               Invited
             </span>
@@ -62,7 +72,17 @@
                 </router-link>
                 <span
                   v-if="currentUser.id == member.principal.id"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  class="
+                    inline-flex
+                    items-center
+                    px-2
+                    py-0.5
+                    rounded-lg
+                    text-xs
+                    font-semibold
+                    bg-green-100
+                    text-green-800
+                  "
                 >
                   You
                 </span>
@@ -241,30 +261,21 @@ export default {
         updaterId: currentUser.value.id,
         role,
       };
-      store
-        .dispatch("project/patchMember", {
-          projectId: props.project.id,
-          memberId: id,
-          projectMemberPatch,
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("project/patchMember", {
+        projectId: props.project.id,
+        memberId: id,
+        projectMemberPatch,
+      });
     };
 
     const deleteRole = (member: ProjectMember) => {
-      store
-        .dispatch("project/deleteMember", member)
-        .then(() => {
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "INFO",
-            title: `Successfully revoked ${member.principal.name} access from the project.`,
-          });
-        })
-        .catch((error) => {
-          console.log(error);
+      store.dispatch("project/deleteMember", member).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "INFO",
+          title: `Successfully revoked ${member.principal.name} access from the project.`,
         });
+      });
     };
 
     return {

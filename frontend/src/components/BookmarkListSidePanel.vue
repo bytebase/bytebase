@@ -27,11 +27,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareBookmarkList = () => {
-      store
-        .dispatch("bookmark/fetchBookmarkListByUser", currentUser.value.id)
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("bookmark/fetchBookmarkListByUser", currentUser.value.id);
     };
 
     watchEffect(prepareBookmarkList);
@@ -41,11 +37,7 @@ export default {
     );
 
     const deleteIndex = (index: number) => {
-      store
-        .dispatch("bookmark/deleteBookmark", bookmarkList.value[index])
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("bookmark/deleteBookmark", bookmarkList.value[index]);
     };
 
     return {

@@ -136,9 +136,6 @@ export default {
           });
           state.name = updatedProject.name;
           state.key = updatedProject.key;
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

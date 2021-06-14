@@ -54,9 +54,6 @@ export default {
         })
         .then((environment) => {
           assignEnvironment(environment);
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -71,9 +68,6 @@ export default {
         .then((environment) => {
           emit("archive", environment);
           assignEnvironment(environment);
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -87,9 +81,6 @@ export default {
         })
         .then((environment) => {
           assignEnvironment(environment);
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

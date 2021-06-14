@@ -109,9 +109,6 @@ export default {
 
           router.push(`/project/${projectSlug(createdProject)}`);
           emit("dismiss");
-        })
-        .catch((err) => {
-          console.error(err);
         });
     };
 

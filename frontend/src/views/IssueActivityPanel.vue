@@ -714,9 +714,6 @@ export default {
             list.push(currentUser.value.id);
             emit("update-subscriber-list", list);
           }
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -738,9 +735,6 @@ export default {
         })
         .then(() => {
           cancelEditComment();
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 
@@ -749,9 +743,7 @@ export default {
     });
 
     const doDeleteComment = (activity: Activity) => {
-      store.dispatch("activity/deleteActivity", activity).catch((error) => {
-        console.log(error);
-      });
+      store.dispatch("activity/deleteActivity", activity);
     };
 
     const actionIcon = (activity: Activity): ActionIconType => {

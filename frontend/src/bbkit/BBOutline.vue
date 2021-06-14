@@ -10,14 +10,33 @@
     <template v-if="allowCollapse && state.hoverTitle">
       <svg
         v-if="collapseState"
-        class="mr-2 h-4 w-4 transform group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
+        class="
+          mr-2
+          h-4
+          w-4
+          transform
+          group-hover:text-gray-400 group-focus:text-gray-400
+          transition-colors
+          ease-in-out
+          duration-150
+        "
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
       </svg>
       <svg
         v-else
-        class="mr-2 h-4 w-4 transform rotate-90 group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
+        class="
+          mr-2
+          h-4
+          w-4
+          transform
+          rotate-90
+          group-hover:text-gray-400 group-focus:text-gray-400
+          transition-colors
+          ease-in-out
+          duration-150
+        "
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
@@ -135,14 +154,10 @@ export default {
       if (props.allowCollapse) {
         if (props.id) {
           const newState = !collapseState.value;
-          store
-            .dispatch("uistate/savecollapseStateByKey", {
-              key: props.id,
-              collapse: newState,
-            })
-            .catch((error) => {
-              console.log(error);
-            });
+          store.dispatch("uistate/savecollapseStateByKey", {
+            key: props.id,
+            collapse: newState,
+          });
         } else {
           state.collapseState = !state.collapseState;
         }

@@ -240,9 +240,6 @@ export default {
               dataSource.database
             )}/datasource/${dataSourceSlug(dataSource)}`
           );
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

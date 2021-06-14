@@ -78,14 +78,10 @@ export default {
     );
 
     const prepareProjectList = () => {
-      store
-        .dispatch("project/fetchProjectListByUser", {
-          userId: currentUser.value.id,
-          rowStatusList: ["NORMAL", "ARCHIVED"],
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("project/fetchProjectListByUser", {
+        userId: currentUser.value.id,
+        rowStatusList: ["NORMAL", "ARCHIVED"],
+      });
     };
 
     watchEffect(prepareProjectList);

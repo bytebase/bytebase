@@ -100,15 +100,9 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const logout = () => {
-      store
-        .dispatch("auth/logout")
-        .then(() => {
-          router.push({ name: "auth.signin" });
-        })
-        .catch((error: Error) => {
-          console.log(error);
-          return;
-        });
+      store.dispatch("auth/logout").then(() => {
+        router.push({ name: "auth.signin" });
+      });
     };
 
     const resetQuickstart = () => {

@@ -432,9 +432,6 @@ export default {
             style: "SUCCESS",
             title: `Successfully transferred '${updatedDatabase.name}' to project '${updatedDatabase.project.name}'.`,
           });
-        })
-        .catch((error) => {
-          console.error(error);
         });
     };
 
@@ -475,9 +472,6 @@ export default {
         })
         .then(() => {
           state.editingDataSource = undefined;
-        })
-        .catch((error) => {
-          console.log(error);
         });
     };
 

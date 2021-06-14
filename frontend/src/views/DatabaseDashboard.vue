@@ -67,9 +67,6 @@ export default {
         )
         .then((list) => {
           state.databaseList = list;
-        })
-        .catch((error) => {
-          console.error(error);
         });
     };
 

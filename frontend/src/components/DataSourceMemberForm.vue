@@ -380,9 +380,6 @@ export default {
               : undefined,
             manualHide: linkedIssue != undefined,
           });
-        })
-        .catch((error) => {
-          console.error(error);
         });
     };
 

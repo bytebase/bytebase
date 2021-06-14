@@ -232,14 +232,10 @@ export default {
         updaterId: currentUser.value.id,
         rowStatus: archive ? "ARCHIVED" : "NORMAL",
       };
-      store
-        .dispatch("project/patchProject", {
-          projectId: project.value.id,
-          projectPatch,
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      store.dispatch("project/patchProject", {
+        projectId: project.value.id,
+        projectPatch,
+      });
     };
 
     const selectTab = (index: number) => {
