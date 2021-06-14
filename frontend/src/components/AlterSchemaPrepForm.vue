@@ -1,5 +1,12 @@
 <template>
   <div class="mx-4 space-y-6 w-160 divide-y divide-block-border">
+    <div
+      v-if="projectId != UNKNOWN_ID && state.project.workflowType == 'VCS'"
+      class="textlabel"
+    >
+      Project has version control enabled and selecting database below will
+      navigate you to the corresponding Git repository to create schema change.
+    </div>
     <DatabaseTable
       :mode="projectId == UNKNOWN_ID ? 'ALL_SHORT' : 'PROJECT_SHORT'"
       :bordered="true"
