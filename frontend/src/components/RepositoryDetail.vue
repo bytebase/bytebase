@@ -9,12 +9,13 @@
     }}</a
     >. To make schema changes, a developer would create a migration script under
     base directory
-    <span class="font-medium text-main">/{{ repository.baseDirectory }}</span
+    <span class="font-medium text-main"
+      >/{{ state.repositoryConfig.baseDirectory }}</span
     >. After the script is review approved and merged into the
-    <template v-if="repository.branchFilter"
+    <template v-if="state.repositoryConfig.branchFilter"
       >branch matching pattern
       <span class="font-medium text-main">{{
-        repository.branchFilter
+        state.repositoryConfig.branchFilter
       }}</span></template
     >
     <span v-else class="font-medium text-main">default branch</span>, Bytebase
