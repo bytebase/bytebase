@@ -441,9 +441,8 @@ export default {
     // 1. Conceptually, data source is the proper place to store connnection info (thinking of DSN)
     // 2. Instance info will sometimes be pulled when fetching other resoures (like database)
     //    in order to display the relevant info. In those cases, we don't want to include sensitive
-    //    info such as username/password there. It's harder to redact this on the instance. e.g.
-    //    In miragejs, there doesn't seem to be way to achieve this. Thus the only option is to
-    //    split those information into a separate resource which won't be pulled together.
+    //    info such as username/password there. It's harder to redact this on the instance. Thus the
+    //    only option is to split those information into a separate resource which won't be pulled together.
     const doCreate = async (newInstance: InstanceCreate) => {
       store
         .dispatch("instance/createInstance", newInstance)

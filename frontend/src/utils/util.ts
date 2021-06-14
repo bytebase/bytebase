@@ -8,10 +8,6 @@ export function isDemo() {
   return import.meta.env.MODE === "demo";
 }
 
-export function isMock() {
-  return import.meta.env.MODE === "mock";
-}
-
 export function isRelease() {
   return import.meta.env.PROD && !isDemo();
 }

@@ -8,8 +8,6 @@ import { store } from "./store";
 import { router } from "./router";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
-// @ts-ignore
-import { makeServer } from "./miragejs/server";
 import {
   BBAlert,
   BBAttention,
@@ -40,7 +38,6 @@ import highlight from "./directives/highlight";
 import {
   isDev,
   isDemo,
-  isMock,
   isRelease,
   humanizeTs,
   sizeToFit,
@@ -56,10 +53,6 @@ import {
   registerStoreWithRoleUtil,
 } from "./utils";
 
-if (!isRelease()) {
-  //makeServer();
-}
-
 const app = createApp(App);
 
 // Allow template to access various function
@@ -69,7 +62,6 @@ app.config.globalProperties.moment = moment;
 app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDev = isDev();
 app.config.globalProperties.isDemo = isDemo();
-app.config.globalProperties.isMock = isMock();
 app.config.globalProperties.isRelease = isRelease();
 app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
@@ -89,33 +81,6 @@ console.debug("mode: ", import.meta.env.MODE);
 
 axios.defaults.timeout = 3000;
 axios.interceptors.request.use((request) => {
-  if (request.url!.startsWith("/api")) {
-    // For demo version, we always use the mock data.
-    // Otherwise, we will gradually move the mock endpoint to the real backend endpoint.
-    if (
-      isDemo() ||
-      isMock() ||
-      (isDev() &&
-        !request.url!.startsWith("/api/ping") &&
-        !request.url!.startsWith("/api/auth/login") &&
-        !request.url!.startsWith("/api/auth/signup") &&
-        !request.url!.startsWith("/api/principal") &&
-        !request.url!.startsWith("/api/member") &&
-        !request.url!.startsWith("/api/project") &&
-        !request.url!.startsWith("/api/environment") &&
-        !request.url!.startsWith("/api/instance") &&
-        !request.url!.startsWith("/api/database") &&
-        !request.url!.startsWith("/api/issue") &&
-        !request.url!.startsWith("/api/pipeline") &&
-        !request.url!.startsWith("/api/activity") &&
-        !request.url!.startsWith("/api/bookmar") &&
-        !request.url!.startsWith("/api/sql") &&
-        !request.url!.startsWith("/api/vcs"))
-    ) {
-      request.url = request.url!.replace("/api", "/mock");
-    }
-  }
-
   if (isDev() && request.url!.startsWith("/api")) {
     console.debug(
       request.method?.toUpperCase() + " " + request.url + " request",
