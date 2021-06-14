@@ -61,7 +61,7 @@ interface LocalState {
 }
 
 export default {
-  name: "RepositoryVCSPanel",
+  name: "RepositoryVCSProviderPanel",
   emits: ["next"],
   props: {
     config: {

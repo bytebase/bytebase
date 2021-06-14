@@ -7,7 +7,7 @@
       @cancel="cancel"
     >
       <template v-slot:0="{ next }">
-        <RepositoryVCSPanel :config="state.config" @next="next()" />
+        <RepositoryVCSProviderPanel :config="state.config" @next="next()" />
       </template>
       <template v-slot:1="{ next }">
         <RepositorySelectionPanel :config="state.config" @next="next()" />
@@ -25,7 +25,7 @@ import { PropType } from "@vue/runtime-core";
 import { BBStepTabItem } from "../bbkit/types";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import RepositoryVCSPanel from "./RepositoryVCSPanel.vue";
+import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
 import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
 import {
@@ -57,7 +57,7 @@ export default {
   name: "RepositorySetupWizard",
   emits: ["cancel", "finish"],
   components: {
-    RepositoryVCSPanel,
+    RepositoryVCSProviderPanel,
     RepositorySelectionPanel,
     RepositoryConfigPanel,
   },
