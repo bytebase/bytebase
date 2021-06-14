@@ -17,7 +17,11 @@
     "
   />
   <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    <div v-if="state.selectedIndex == OVERVIEW_TAB" class="space-y-6">
+    <div
+      v-if="state.selectedIndex == OVERVIEW_TAB"
+      class="space-y-6"
+      id="overview"
+    >
       <div class="space-y-2">
         <p class="text-lg font-medium leading-7 text-main">Databases</p>
         <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" />
@@ -40,10 +44,10 @@
       </div>
     </div>
     <template v-else-if="state.selectedIndex == VERSION_CONTROL_TAB">
-      <ProjectVersionControlPanel :project="project" />
+      <ProjectVersionControlPanel :project="project" id="version-control" />
     </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
-      <div class="max-w-3xl mx-auto space-y-4">
+      <div class="max-w-3xl mx-auto space-y-4" id="setting">
         <div class="divide-y divide-block-border space-y-6">
           <ProjectGeneralSettingPanel :project="project" />
           <ProjectMemberPanel class="pt-4" :project="project" />
