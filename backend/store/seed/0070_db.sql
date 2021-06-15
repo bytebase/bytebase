@@ -457,6 +457,35 @@ VALUES
         1001,
         1001,
         6004,
+        3002,
+        'proddb21',
+        'utf8mb4',
+        'utf8mb4_0900_ai_ci',
+        'OK',
+        0,
+        ''
+    );
+
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts,
+        fingerprint
+    )
+VALUES
+    (
+        7017,
+        1001,
+        1001,
+        6004,
         3003,
         'proddb3',
         'utf8mb4',
@@ -483,7 +512,7 @@ INSERT INTO
     )
 VALUES
     (
-        7017,
+        7018,
         1001,
         1001,
         6005,
