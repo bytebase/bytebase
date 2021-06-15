@@ -147,7 +147,14 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "CRITICAL",
-              title: `Failed to sync instance '${instance.value.name}'.`,
+              title: `Failed to sync schema for instance '${instance.value.name}'.`,
+              description: resultSet.error,
+            });
+          } else {
+            store.dispatch("notification/pushNotification", {
+              module: "bytebase",
+              style: "SUCCESS",
+              title: `Successfully synced schema for instance '${instance.value.name}'.`,
               description: resultSet.error,
             });
           }

@@ -128,7 +128,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 							DatabaseId: &database.ID,
 							Name:       &table.Name,
 						}
-						table, err := s.TableService.FindTable(context.Background(), tableFind)
+						storedTable, err := s.TableService.FindTable(context.Background(), tableFind)
 						if err != nil {
 							if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 								tableCreate := &api.TableCreate{
@@ -144,11 +144,12 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 								if err := createTable(database, tableCreate); err != nil {
 									return err
 								}
+							} else {
+								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync table for instance: %s, database: %s", instance.Name, database.Name)).SetInternal(err)
 							}
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync table for instance: %s, database: %s", instance.Name, database.Name)).SetInternal(err)
 						} else {
 							tablePatch := &api.TablePatch{
-								ID:                   table.ID,
+								ID:                   storedTable.ID,
 								UpdaterId:            api.SYSTEM_BOT_ID,
 								SyncStatus:           &syncStatus,
 								LastSuccessfulSyncTs: &ts,
@@ -156,9 +157,9 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 							_, err := s.TableService.PatchTable(context.Background(), tablePatch)
 							if err != nil {
 								if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-									return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to sync table for instance: %s, database: %s. Table not found: %s", instance.Name, database.Name, table.Name))
+									return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to sync table for instance: %s, database: %s. Table not found: %s", instance.Name, database.Name, storedTable.Name))
 								}
-								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync table for instance: %s, database: %s. Failed to update table: %s", instance.Name, database.Name, table.Name)).SetInternal(err)
+								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync table for instance: %s, database: %s. Failed to update table: %s", instance.Name, database.Name, storedTable.Name)).SetInternal(err)
 							}
 						}
 					}
