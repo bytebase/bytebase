@@ -25,6 +25,7 @@ const (
 type Server struct {
 	l             *zap.Logger
 	TaskScheduler *TaskScheduler
+	SchemaSyncer  *SchemaSyncer
 
 	PrincipalService     api.PrincipalService
 	MemberService        api.MemberService
@@ -98,6 +99,9 @@ func NewServer(logger *zap.Logger) *Server {
 	scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
 	s.TaskScheduler = scheduler
 
+	schemaSyncer := NewSchemaSyncer(logger, s)
+	s.SchemaSyncer = schemaSyncer
+
 	// Middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
@@ -157,6 +161,10 @@ func NewServer(logger *zap.Logger) *Server {
 
 func (server *Server) Run() error {
 	if err := server.TaskScheduler.Run(); err != nil {
+		return err
+	}
+
+	if err := server.SchemaSyncer.Run(); err != nil {
 		return err
 	}
 
