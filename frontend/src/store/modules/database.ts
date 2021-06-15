@@ -97,6 +97,27 @@ function convert(
   };
 }
 
+const databaseSorter = (a: Database, b: Database): number => {
+  let result = a.instance.name.localeCompare(b.instance.name);
+  if (result != 0) {
+    return result;
+  }
+
+  result = a.instance.environment.name.localeCompare(
+    b.instance.environment.name
+  );
+  if (result != 0) {
+    return result;
+  }
+
+  result = a.project.name.localeCompare(b.project.name);
+  if (result != 0) {
+    return result;
+  }
+
+  return a.name.localeCompare(b.name);
+};
+
 const state: () => DatabaseState = () => ({
   databaseListByInstanceId: new Map(),
 });
@@ -198,6 +219,7 @@ const actions = {
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
+    databaseList.sort(databaseSorter);
 
     commit("upsertDatabaseList", { databaseList, instanceId });
 
@@ -216,6 +238,7 @@ const actions = {
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
+    databaseList.sort(databaseSorter);
 
     commit("upsertDatabaseList", { databaseList });
 
@@ -234,6 +257,7 @@ const actions = {
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
+    databaseList.sort(databaseSorter);
 
     commit("upsertDatabaseList", { databaseList });
 
@@ -254,6 +278,7 @@ const actions = {
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
+    databaseList.sort(databaseSorter);
 
     commit("upsertDatabaseList", { databaseList });
 
