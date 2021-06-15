@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	INTERVAL = time.Duration(1) * time.Second
+	TASK_SCHEDULE_INTERVAL = time.Duration(1) * time.Second
 )
 
 func NewTaskScheduler(logger *zap.Logger, server *Server) *TaskScheduler {
@@ -31,8 +31,6 @@ type TaskScheduler struct {
 func (s *TaskScheduler) Run() error {
 	go func() {
 		for {
-			time.Sleep(INTERVAL)
-
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -111,6 +109,8 @@ func (s *TaskScheduler) Run() error {
 					}
 				}
 			}()
+
+			time.Sleep(TASK_SCHEDULE_INTERVAL)
 		}
 	}()
 
