@@ -73,12 +73,14 @@ import { Environment } from "./environment";
 import {
   DatabaseId,
   EnvironmentId,
+  InstanceId,
   PipelineId,
   PrincipalId,
   StageId,
   TaskId,
   TaskRunId,
 } from "./id";
+import { Instance } from "./instance";
 import { Principal } from "./principal";
 
 /*
@@ -220,6 +222,7 @@ export type Task = {
   name: string;
   status: TaskStatus;
   type: TaskType;
+  instance: Instance;
   // We may get an empty database for tasks like creating database.
   database: Database;
   payload?: TaskPayload;
@@ -230,6 +233,7 @@ export type TaskCreate = {
   name: string;
   status: TaskStatus;
   type: TaskType;
+  instanceId: InstanceId;
   databaseId?: DatabaseId;
 };
 

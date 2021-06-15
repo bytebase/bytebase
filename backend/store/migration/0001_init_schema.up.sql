@@ -447,7 +447,8 @@ CREATE TABLE task (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     stage_id INTEGER NOT NULL REFERENCES stage (id),
-    -- Could be empty for tasks like creating database
+    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    -- Could be empty FOR tasks LIKE creating DATABASE
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (

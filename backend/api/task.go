@@ -64,6 +64,8 @@ type Task struct {
 	// Just returns PipelineId and StageId otherwise would cause circular dependency.
 	PipelineId  int `jsonapi:"attr,pipelineId"`
 	StageId     int `jsonapi:"attr,stageId"`
+	InstanceId  int
+	Instance    *Instance `jsonapi:"relation,instance"`
 	DatabaseId  int
 	Database    *Database  `jsonapi:"relation,database"`
 	TaskRunList []*TaskRun `jsonapi:"relation,taskRun"`
@@ -83,6 +85,7 @@ type TaskCreate struct {
 	// Related fields
 	PipelineId int
 	StageId    int
+	InstanceId int `jsonapi:"attr,instanceId"`
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields

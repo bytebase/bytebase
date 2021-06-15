@@ -130,6 +130,11 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 		}
 	}
 
+	task.Instance, err = s.ComposeInstanceById(context.Background(), task.InstanceId, includeList)
+	if err != nil {
+		return err
+	}
+
 	task.Database, err = s.ComposeDatabaseById(context.Background(), task.DatabaseId, includeList)
 	if err != nil {
 		return err

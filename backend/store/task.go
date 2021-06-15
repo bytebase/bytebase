@@ -106,19 +106,21 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			updater_id,
 			pipeline_id,
 			stage_id,
+			instance_id,
 			database_id,
 			name,
 			`+"`status`,"+`	
 			`+"`type`,"+`
 			payload	
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.PipelineId,
 		create.StageId,
+		create.InstanceId,
 		create.DatabaseId,
 		create.Name,
 		create.Status,
@@ -142,6 +144,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		&task.UpdatedTs,
 		&task.PipelineId,
 		&task.StageId,
+		&task.InstanceId,
 		&task.DatabaseId,
 		&task.Name,
 		&task.Status,
@@ -191,6 +194,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		    updated_ts,
 			pipeline_id,
 			stage_id,
+			instance_id,
 			database_id,
 		    name,
 		    `+"`status`,"+`
@@ -217,6 +221,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			&task.UpdatedTs,
 			&task.PipelineId,
 			&task.StageId,
+			&task.InstanceId,
 			&task.DatabaseId,
 			&task.Name,
 			&task.Status,
@@ -319,7 +324,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, database_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
 		args...,
 	)
@@ -338,6 +343,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			&task.UpdatedTs,
 			&task.PipelineId,
 			&task.StageId,
+			&task.InstanceId,
 			&task.DatabaseId,
 			&task.Name,
 			&task.Status,

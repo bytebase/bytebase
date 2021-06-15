@@ -16,6 +16,7 @@ import {
   ResourceIdentifier,
   Principal,
   TaskRun,
+  Instance,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -73,11 +74,22 @@ function convertPartial(
     }
   }
 
+  const instanceId = (task.relationships!.instance.data as ResourceIdentifier)
+    .id;
+  let instance: Instance = empty("INSTANCE") as Instance;
+  instance.id = parseInt(instanceId);
+
   const databaseId = (task.relationships!.database.data as ResourceIdentifier)
     .id;
   let database: Database = empty("DATABASE") as Database;
   database.id = parseInt(databaseId);
   for (const item of includedList || []) {
+    if (
+      item.type == "instance" &&
+      (task.relationships!.instance.data as ResourceIdentifier).id == item.id
+    ) {
+      instance = rootGetters["instance/convert"](item);
+    }
     if (
       item.type == "database" &&
       (task.relationships!.database.data as ResourceIdentifier).id == item.id
@@ -93,6 +105,7 @@ function convertPartial(
       | "creator"
       | "updater"
       | "payload"
+      | "instance"
       | "database"
       | "taskRunList"
       | "pipeline"
@@ -102,6 +115,7 @@ function convertPartial(
     creator,
     updater,
     payload,
+    instance,
     database,
     taskRunList,
   };

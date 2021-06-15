@@ -7,13 +7,7 @@ import {
   IssueContext,
 } from "../types";
 
-import {
-  Database,
-  Stage,
-  StageCreate,
-  IssueCreate,
-  UNKNOWN_ID,
-} from "../../types";
+import { StageCreate, IssueCreate } from "../../types";
 
 const template: IssueTemplate = {
   type: "bb.issue.database.schema.update",
@@ -32,6 +26,7 @@ const template: IssueTemplate = {
             name: `Update ${ctx.databaseList[i].name} schema`,
             status: "PENDING_APPROVAL",
             type: "bb.task.database.schema.update",
+            instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
           },
         ],
