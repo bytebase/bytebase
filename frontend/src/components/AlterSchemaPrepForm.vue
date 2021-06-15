@@ -136,7 +136,7 @@ export default {
           query: {
             template: "bb.issue.database.schema.update",
             name: `[${database.name}] Alter schema`,
-            project: state.project.id,
+            project: database.project.id,
             databaseList: database.id,
           },
         });
