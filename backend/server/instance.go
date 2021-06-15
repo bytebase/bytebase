@@ -189,21 +189,26 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 	}
 
 	if bytebase.FindString(includeList, SECRET_KEY) >= 0 {
-		dataSourceFind := &api.DataSourceFind{
-			InstanceId: &instance.ID,
-		}
-		instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
-		if err != nil {
-			return err
-		}
-		for _, dataSource := range instance.DataSourceList {
-			if dataSource.Type == api.Admin {
-				instance.Username = dataSource.Username
-				instance.Password = dataSource.Password
-				break
-			}
-		}
+		return s.ComposeInstanceSecret(context.Background(), instance)
 	}
 
+	return nil
+}
+
+func (s *Server) ComposeInstanceSecret(ctx context.Context, instance *api.Instance) error {
+	dataSourceFind := &api.DataSourceFind{
+		InstanceId: &instance.ID,
+	}
+	dataSourceList, err := s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
+	if err != nil {
+		return err
+	}
+	for _, dataSource := range dataSourceList {
+		if dataSource.Type == api.Admin {
+			instance.Username = dataSource.Username
+			instance.Password = dataSource.Password
+			break
+		}
+	}
 	return nil
 }

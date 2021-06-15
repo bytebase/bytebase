@@ -51,7 +51,20 @@ func (s *SchemaSyncer) Run() error {
 				}
 
 				for _, instance := range list {
-					s.l.Info("sync instance " + instance.Name)
+					if err := s.server.ComposeInstanceSecret(context.Background(), instance); err != nil {
+						s.l.Error("Failed to sync instance",
+							zap.String("instance_name", instance.Name),
+							zap.String("error", err.Error()))
+						continue
+					}
+					go func(instance *api.Instance) {
+						resultSet := s.server.SyncSchema(instance)
+						if resultSet.Error != "" {
+							s.l.Error("Failed to sync instance",
+								zap.String("instance_name", instance.Name),
+								zap.String("error", resultSet.Error))
+						}
+					}(instance)
 				}
 			}()
 		}

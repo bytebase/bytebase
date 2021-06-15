@@ -20,9 +20,8 @@ type Instance struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentId  int
-	Environment    *Environment  `jsonapi:"relation,environment"`
-	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
+	EnvironmentId int
+	Environment   *Environment `jsonapi:"relation,environment"`
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`
