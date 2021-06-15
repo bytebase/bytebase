@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SCHEMA_SYNC_INTERVAL = time.Duration(1) * time.Second
+	SCHEMA_SYNC_INTERVAL = time.Duration(30) * time.Minute
 )
 
 func NewSchemaSyncer(logger *zap.Logger, server *Server) *SchemaSyncer {
@@ -28,8 +28,6 @@ type SchemaSyncer struct {
 func (s *SchemaSyncer) Run() error {
 	go func() {
 		for {
-			time.Sleep(SCHEMA_SYNC_INTERVAL)
-
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -67,6 +65,8 @@ func (s *SchemaSyncer) Run() error {
 					}(instance)
 				}
 			}()
+
+			time.Sleep(SCHEMA_SYNC_INTERVAL)
 		}
 	}()
 
