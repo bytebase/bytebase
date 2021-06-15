@@ -14,7 +14,7 @@ const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
-  type: "bb.issue.db.grant",
+  type: "bb.issue.database.grant",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueCreate, "projectId" | "creatorId"> => {
@@ -22,7 +22,7 @@ const template: IssueTemplate = {
 
     return {
       name: "Request database access",
-      type: "bb.issue.db.grant",
+      type: "bb.issue.database.grant",
       description: "",
       pipeline: {
         stageList: [

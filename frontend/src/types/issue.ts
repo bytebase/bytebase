@@ -6,9 +6,9 @@ import { Project } from "./project";
 type IssueTypeGeneral = "bb.issue.general";
 
 type IssueTypeDatabase =
-  | "bb.issue.db.create"
-  | "bb.issue.db.grant"
-  | "bb.issue.db.schema.update";
+  | "bb.issue.database.create"
+  | "bb.issue.database.grant"
+  | "bb.issue.database.schema.update";
 
 type IssueTypeDataSource = "bb.issue.data-source.request";
 

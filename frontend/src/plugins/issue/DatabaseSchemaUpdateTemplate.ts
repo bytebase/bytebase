@@ -16,7 +16,7 @@ import {
 } from "../../types";
 
 const template: IssueTemplate = {
-  type: "bb.issue.db.schema.update",
+  type: "bb.issue.database.schema.update",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueCreate, "projectId" | "creatorId"> => {
@@ -39,7 +39,7 @@ const template: IssueTemplate = {
     }
     return {
       name: "Update database schema",
-      type: "bb.issue.db.schema.update",
+      type: "bb.issue.database.schema.update",
       description: "",
       pipeline: {
         stageList,

@@ -544,7 +544,7 @@ export default {
         .then(() => {
           if (
             newStatus == "DONE" &&
-            issueTemplate.value.type == "bb.issue.db.schema.update"
+            issueTemplate.value.type == "bb.issue.database.schema.update"
           ) {
             store.dispatch("uistate/saveIntroStateByKey", {
               key: "table.create",
@@ -695,12 +695,12 @@ export default {
     const showIssueStatementPanel = computed(() => {
       return (
         issue.value.type == "bb.issue.general" ||
-        issue.value.type == "bb.issue.db.schema.update"
+        issue.value.type == "bb.issue.database.schema.update"
       );
     });
 
     const showIssueRollbackSqlPanel = computed(() => {
-      return issue.value.type == "bb.issue.db.schema.update";
+      return issue.value.type == "bb.issue.database.schema.update";
     });
 
     return {

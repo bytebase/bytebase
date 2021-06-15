@@ -31,9 +31,9 @@ type IssueType string
 
 const (
 	IssueGeneral              IssueType = "bb.issue.general"
-	IssueDatabaseCreate       IssueType = "bb.issue.db.create"
-	IssueDatabaseGrant        IssueType = "bb.issue.db.grant"
-	IssueDatabaseSchemaUpdate IssueType = "bb.issue.db.schema.update"
+	IssueDatabaseCreate       IssueType = "bb.issue.database.create"
+	IssueDatabaseGrant        IssueType = "bb.issue.database.grant"
+	IssueDatabaseSchemaUpdate IssueType = "bb.issue.database.schema.update"
 	IssueDataSourceRequest    IssueType = "bb.issue.data-source.request"
 )
 
@@ -42,11 +42,11 @@ func (e IssueType) String() string {
 	case IssueGeneral:
 		return "bb.issue.general"
 	case IssueDatabaseCreate:
-		return "bb.issue.db.create"
+		return "bb.issue.database.create"
 	case IssueDatabaseGrant:
-		return "bb.issue.db.grant"
+		return "bb.issue.database.grant"
 	case IssueDatabaseSchemaUpdate:
-		return "bb.issue.db.schema.update"
+		return "bb.issue.database.schema.update"
 	case IssueDataSourceRequest:
 		return "bb.issue.data-source.request"
 	}

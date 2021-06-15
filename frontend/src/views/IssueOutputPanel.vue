@@ -222,8 +222,8 @@ export default {
         return false;
       }
       return (
-        props.issue.type == "bb.issue.db.create" ||
-        props.issue.type == "bb.issue.db.grant"
+        props.issue.type == "bb.issue.database.create" ||
+        props.issue.type == "bb.issue.database.grant"
       );
     });
 

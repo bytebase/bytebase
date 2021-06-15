@@ -222,7 +222,7 @@ export default {
             issueSlug: "new",
           },
           query: {
-            template: "bb.issue.db.create",
+            template: "bb.issue.database.create",
             name: `[${environment.name}] Request new database '${state.databaseName}'`,
             environment: state.environmentId,
             project: state.projectId,
@@ -239,7 +239,7 @@ export default {
             issueSlug: "new",
           },
           query: {
-            template: "bb.issue.db.grant",
+            template: "bb.issue.database.grant",
             name: `[${environment.name}] Request database '${database.name}' ${
               state.readOnly ? "Read Only access" : "Read & Write access"
             }`,

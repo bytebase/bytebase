@@ -295,29 +295,36 @@ export default {
     // If it's from database request issue, we disallow changing the preset field.
     // This is to prevent accidentally changing the requested field.
     const allowEditProject = computed(() => {
-      return state.fromIssueType != "bb.issue.db.create" || !state.projectId;
+      return (
+        state.fromIssueType != "bb.issue.database.create" || !state.projectId
+      );
     });
 
     const allowEditEnvironment = computed(() => {
       return (
-        state.fromIssueType != "bb.issue.db.create" || !state.environmentId
+        state.fromIssueType != "bb.issue.database.create" ||
+        !state.environmentId
       );
     });
 
     const allowEditDatabaseName = computed(() => {
-      return state.fromIssueType != "bb.issue.db.create" || !state.databaseName;
+      return (
+        state.fromIssueType != "bb.issue.database.create" || !state.databaseName
+      );
     });
 
     const allowEditCharset = computed(() => {
-      return state.fromIssueType != "bb.issue.db.create";
+      return state.fromIssueType != "bb.issue.database.create";
     });
 
     const allowEditCollation = computed(() => {
-      return state.fromIssueType != "bb.issue.db.create";
+      return state.fromIssueType != "bb.issue.database.create";
     });
 
     const allowEditIssue = computed(() => {
-      return state.fromIssueType != "bb.issue.db.create" || !state.issueId;
+      return (
+        state.fromIssueType != "bb.issue.database.create" || !state.issueId
+      );
     });
 
     const instanceLink = computed((): string => {

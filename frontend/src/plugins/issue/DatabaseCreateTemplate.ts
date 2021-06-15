@@ -20,7 +20,7 @@ const INPUT_DATABASE_NAME = INPUT_CUSTOM_FIELD_ID_BEGIN;
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
 
 const template: IssueTemplate = {
-  type: "bb.issue.db.create",
+  type: "bb.issue.database.create",
   buildIssue: (
     ctx: TemplateContext
   ): Omit<IssueCreate, "projectId" | "creatorId"> => {
@@ -28,7 +28,7 @@ const template: IssueTemplate = {
 
     return {
       name: "Request new db",
-      type: "bb.issue.db.create",
+      type: "bb.issue.database.create",
       description: "",
       pipeline: {
         stageList: [
