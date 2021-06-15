@@ -326,8 +326,9 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 								if err := createTable(database, tableCreate); err != nil {
 									return err
 								}
+							} else {
+								return fmt.Errorf("failed to sync table for instance: %s, database: %s. Error %w", instance.Name, database.Name, err)
 							}
-							return fmt.Errorf("failed to sync table for instance: %s, database: %s. Error %w", instance.Name, database.Name, err)
 						} else {
 							tablePatch := &api.TablePatch{
 								ID:                   storedTable.ID,
