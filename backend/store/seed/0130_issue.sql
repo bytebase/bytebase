@@ -48,7 +48,7 @@ VALUES
         13002,
         1003,
         1003,
-        3002,
+        3001,
         9002,
         'Add column ''location'' to table ''warehouse''',
         'OPEN',

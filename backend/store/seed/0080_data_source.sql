@@ -41,11 +41,11 @@ VALUES
         1,
         1,
         6002,
-        7002,
+        7005,
         'Admin data source',
         'ADMIN',
-        'admin2',
-        'adminpwd2'
+        'root',
+        'root'
     );
 
 INSERT INTO
@@ -66,11 +66,11 @@ VALUES
         1,
         1,
         6003,
-        7003,
+        7009,
         'Admin data source',
         'ADMIN',
-        'admin3',
-        'adminpwd3'
+        'root',
+        'root'
     );
 
 INSERT INTO
@@ -91,11 +91,11 @@ VALUES
         1,
         1,
         6004,
-        7004,
+        7013,
         'Admin data source',
         'ADMIN',
-        'admin4',
-        'adminpwd4'
+        'root',
+        'root'
     );
 
 INSERT INTO
@@ -116,7 +116,7 @@ VALUES
         1,
         1,
         6005,
-        7005,
+        7017,
         'Admin data source',
         'ADMIN',
         'admin5',

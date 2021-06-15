@@ -16,7 +16,7 @@ VALUES
         1001,
         1001,
         5001,
-        'On-premise MySQL instance',
+        'MySQL sandbox',
         'MYSQL',
         'localhost',
         '127.0.0.1',
@@ -41,11 +41,11 @@ VALUES
         1001,
         1001,
         5002,
-        'AWS RDS instance',
+        'MySQL integration',
         'MYSQL',
-        'google.com',
+        'localhost',
         '127.0.0.1',
-        ''
+        '33060'
     );
 
 INSERT INTO
@@ -66,11 +66,11 @@ VALUES
         1001,
         1001,
         5003,
-        'GCP Cloud SQL instance',
+        'MySQL staging',
         'MYSQL',
-        'google.com',
-        '13.24.32.122',
-        '15202'
+        'localhost',
+        '127.0.0.1',
+        '33060'
     );
 
 INSERT INTO
@@ -91,11 +91,11 @@ VALUES
         1001,
         1001,
         5004,
-        'Azure SQL instance',
+        'MySQL prod',
         'MYSQL',
-        'google.com',
-        'mydb.com',
-        '1234'
+        'localhost',
+        '127.0.0.1',
+        '33060'
     );
 
 INSERT INTO
@@ -116,9 +116,9 @@ VALUES
         1001,
         1001,
         5004,
-        'AliCloud RDS instance',
+        'AWS RDS prod',
         'MYSQL',
-        'google.com',
+        'aws.com',
         'rds.com',
         '5678'
     );
