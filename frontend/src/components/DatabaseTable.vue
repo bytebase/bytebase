@@ -8,8 +8,12 @@
     @click-row="clickDatabase"
   >
     <template v-slot:body="{ rowData: database }">
-      <BBTableCell v-if="showProjectColumn" :leftPadding="4" class="w-16">
+      <BBTableCell :leftPadding="4" class="w-16">
+        {{ database.name }}
+      </BBTableCell>
+      <BBTableCell v-if="showProjectColumn" class="w-16">
         <div class="flex flex-row space-x-2 items-center">
+          <div>{{ projectName(database.project) }}</div>
           <div class="tooltip-wrapper">
             <svg
               v-if="database.project.workflowType == 'UI'"
@@ -37,14 +41,7 @@
               </svg>
             </template>
           </div>
-          <div>{{ projectName(database.project) }}</div>
         </div>
-      </BBTableCell>
-      <BBTableCell
-        :leftPadding="showProjectColumn ? undefined : 4"
-        class="w-16"
-      >
-        {{ database.name }}
       </BBTableCell>
       <BBTableCell v-if="showEnvironmentColumn" class="w-12">
         {{ environmentName(database.instance.environment) }}
@@ -86,10 +83,10 @@ const columnListMap: Map<
     "ALL",
     [
       {
-        title: "Project",
+        title: "Name",
       },
       {
-        title: "Name",
+        title: "Project",
       },
       {
         title: "Environment",
@@ -115,10 +112,10 @@ const columnListMap: Map<
     "ALL_SHORT",
     [
       {
-        title: "Project",
+        title: "Name",
       },
       {
-        title: "Name",
+        title: "Project",
       },
       {
         title: "Environment",
@@ -135,10 +132,10 @@ const columnListMap: Map<
     "ALL_HIDE_INSTANCE",
     [
       {
-        title: "Project",
+        title: "Name",
       },
       {
-        title: "Name",
+        title: "Project",
       },
       {
         title: "Environment",
@@ -161,10 +158,10 @@ const columnListMap: Map<
     "ALL_HIDE_INSTANCE_SHORT",
     [
       {
-        title: "Project",
+        title: "Name",
       },
       {
-        title: "Name",
+        title: "Project",
       },
       {
         title: "Environment",
@@ -175,10 +172,10 @@ const columnListMap: Map<
     "INSTANCE",
     [
       {
-        title: "Project",
+        title: "Name",
       },
       {
-        title: "Name",
+        title: "Project",
       },
       {
         title: "Character set",
