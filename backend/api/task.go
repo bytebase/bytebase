@@ -72,7 +72,7 @@ type Task struct {
 	Name    string     `jsonapi:"attr,name"`
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Type    TaskType   `jsonapi:"attr,type"`
-	Payload []byte     `jsonapi:"attr,payload"`
+	Payload string     `jsonapi:"attr,payload"`
 }
 
 type TaskCreate struct {
@@ -89,7 +89,7 @@ type TaskCreate struct {
 	Name    string     `jsonapi:"attr,name"`
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Type    TaskType   `jsonapi:"attr,type"`
-	Payload []byte     `jsonapi:"attr,payload"`
+	Payload string     `jsonapi:"attr,payload"`
 }
 
 type TaskFind struct {

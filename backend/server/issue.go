@@ -51,7 +51,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task for issue").SetInternal(err)
 					}
-					taskCreate.Payload = bytes
+					taskCreate.Payload = string(bytes)
 				}
 				_, err := s.TaskService.CreateTask(context.Background(), &taskCreate)
 				if err != nil {

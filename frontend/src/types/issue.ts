@@ -41,8 +41,6 @@ export type Issue = {
   description: string;
   assignee?: Principal;
   subscriberList: Principal[];
-  statement?: string;
-  rollbackStatement?: string;
   payload: IssuePayload;
 };
 

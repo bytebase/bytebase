@@ -140,17 +140,17 @@
           </div>
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
-            <section v-if="showIssueStatementPanel" class="border-b mb-4">
-              <IssueStatementPanel
-                :issue="issue"
+            <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
+              <IssueTaskStatementPanel
+                :statement="selectedStatement"
                 :create="state.create"
                 :rollback="false"
                 @update-statement="updateStatement"
               />
             </section>
             <section v-if="showIssueRollbackSqlPanel" class="border-b mb-4">
-              <IssueStatementPanel
-                :issue="issue"
+              <IssueTaskStatementPanel
+                :statement="selectedRollbackStatement"
                 :create="state.create"
                 :rollback="true"
                 @update-statement="updateRollbackStatement"
@@ -208,7 +208,7 @@ import {
 import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
 import IssueStagePanel from "../views/IssueStagePanel.vue";
 import IssueOutputPanel from "../views/IssueOutputPanel.vue";
-import IssueStatementPanel from "./IssueStatementPanel.vue";
+import IssueTaskStatementPanel from "./IssueTaskStatementPanel.vue";
 import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "../views/IssueActivityPanel.vue";
 import IssueSidebar from "../views/IssueSidebar.vue";
@@ -231,6 +231,7 @@ import {
   TaskStatus,
   IssueStatusPatch,
   Task,
+  DatabaseSchemaUpdateTaskPayload,
 } from "../types";
 import {
   defaulTemplate,
@@ -270,7 +271,7 @@ export default {
     IssueHighlightPanel,
     IssueStagePanel,
     IssueOutputPanel,
-    IssueStatementPanel,
+    IssueTaskStatementPanel,
     IssueDescriptionPanel,
     IssueActivityPanel,
     IssueSidebar,
@@ -632,6 +633,30 @@ export default {
       });
     };
 
+    const selectedTask = computed((): Task => {
+      const stage = selectedStage.value;
+      return stage.taskList[0];
+    });
+
+    const selectedStatement = computed((): string => {
+      if (state.create) {
+        return "";
+      }
+
+      const task = selectedStage.value.taskList[0];
+      return (task.payload as DatabaseSchemaUpdateTaskPayload).statement;
+    });
+
+    const selectedRollbackStatement = computed((): string => {
+      if (state.create) {
+        return "";
+      }
+
+      const task = selectedStage.value.taskList[0];
+      return (task.payload as DatabaseSchemaUpdateTaskPayload)
+        .rollbackStatement;
+    });
+
     const allowEditSidebar = computed(() => {
       // For now, we only allow assignee to update the field when the issue
       // is 'OPEN'. This reduces flexibility as creator must ask assignee to
@@ -692,7 +717,7 @@ export default {
       return !state.create && issueTemplate.value.outputFieldList.length > 0;
     });
 
-    const showIssueStatementPanel = computed(() => {
+    const showIssueTaskStatementPanel = computed(() => {
       return (
         issue.value.type == "bb.issue.general" ||
         issue.value.type == "bb.issue.database.schema.update"
@@ -721,6 +746,8 @@ export default {
       issueTemplate,
       selectedStage,
       selectStageId,
+      selectedStatement,
+      selectedRollbackStatement,
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,
@@ -730,7 +757,7 @@ export default {
       showPendingApproval,
       showPipelineFlowBar,
       showIssueOutputPanel,
-      showIssueStatementPanel,
+      showIssueTaskStatementPanel,
       showIssueRollbackSqlPanel,
     };
   },

@@ -196,8 +196,8 @@ export type TaskStatus =
   | "CANCELED";
 
 export type DatabaseSchemaUpdateTaskPayload = {
-  sql: string;
-  rollbackSql: string;
+  statement: string;
+  rollbackStatement: string;
 };
 
 export type TaskPayload = DatabaseSchemaUpdateTaskPayload;

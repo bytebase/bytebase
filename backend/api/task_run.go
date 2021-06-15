@@ -49,7 +49,7 @@ type TaskRun struct {
 	Status  TaskRunStatus `jsonapi:"attr,status"`
 	Type    TaskType      `jsonapi:"attr,type"`
 	Error   string        `jsonapi:"attr,error"`
-	Payload []byte        `jsonapi:"attr,payload"`
+	Payload string        `jsonapi:"attr,payload"`
 }
 
 type TaskRunCreate struct {
@@ -63,7 +63,7 @@ type TaskRunCreate struct {
 	// Domain specific fields
 	Name    string   `jsonapi:"attr,name"`
 	Type    TaskType `jsonapi:"attr,type"`
-	Payload []byte   `jsonapi:"attr,payload"`
+	Payload string   `jsonapi:"attr,payload"`
 }
 
 type TaskRunFind struct {

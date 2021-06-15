@@ -50,16 +50,7 @@
 </template>
 
 <script lang="ts">
-import {
-  nextTick,
-  onMounted,
-  onUnmounted,
-  PropType,
-  ref,
-  reactive,
-  watch,
-} from "vue";
-import { Issue } from "../types";
+import { nextTick, onMounted, onUnmounted, ref, reactive, watch } from "vue";
 import { sizeToFit } from "../utils";
 
 interface LocalState {
@@ -68,12 +59,12 @@ interface LocalState {
 }
 
 export default {
-  name: "IssueStatementPanel",
+  name: "IssueTaskStatementPanel",
   emits: ["update-statement"],
   props: {
-    issue: {
+    statement: {
       required: true,
-      type: Object as PropType<Issue>,
+      type: String,
     },
     create: {
       required: true,
@@ -88,13 +79,9 @@ export default {
   setup(props, { emit }) {
     const editStatementTextArea = ref();
 
-    const effectiveStatement = (issue: Issue): string => {
-      return (props.rollback ? issue.rollbackStatement : issue.statement) || "";
-    };
-
     const state = reactive<LocalState>({
       editing: false,
-      editStatement: effectiveStatement(props.issue),
+      editStatement: props.statement,
     });
 
     const resizeTextAreaHandler = () => {
@@ -124,6 +111,13 @@ export default {
         if (!curNew && prevNew) {
           state.editing = false;
         }
+      }
+    );
+
+    watch(
+      () => props.statement,
+      (cur, _) => {
+        state.editStatement = cur;
       }
     );
 

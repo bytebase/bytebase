@@ -52,7 +52,7 @@ VALUES
         'Update testdb1',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
+        '{"statement":"ALTER TABLE testdb1.warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE testdb1.warehouse DROP COLUMN location;"}'
     );
 
 -- Task for stage 10003 "Integration" to update database 7003 'testdb2'
@@ -80,7 +80,7 @@ VALUES
         'Update testdb2',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
+        '{"statement":"ALTER TABLE testdb2.warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE testdb2.warehouse DROP COLUMN location;"}'
     );
 
 -- Task for stage 10004 "Staging" to update database 7006 'testdb3'
@@ -108,7 +108,7 @@ VALUES
         'Update testdb3',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
+        '{"statement":"ALTER TABLE testdb3.warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE testdb3.warehouse DROP COLUMN location;"}'
     );
 
 -- Task for stage 10005 "Prod" to update database 7008 'testdb4'
@@ -136,7 +136,7 @@ VALUES
         'Update testdb4',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"ALTER TABLE warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE warehouse DROP COLUMN location;"}'
+        '{"statement":"ALTER TABLE testdb4.warehouse ADD COLUMN location VARCHAR(255);", "rollbackStatement":"ALTER TABLE testdb4.warehouse DROP COLUMN location;"}'
     );
 
 -- Task for Pipeline 9003 create table
@@ -165,7 +165,7 @@ VALUES
         'Update testdb1',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"CREATE TABLE tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE tbl1;"}'
+        '{"statement":"CREATE TABLE testdb1.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb1.tbl1;"}'
     );
 
 -- Task for stage 10003 "Integration" to update database 7003 'testdb2'
@@ -193,5 +193,5 @@ VALUES
         'Update testdb2',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"statement":"CREATE TABLE tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE tbl1;"}'
+        '{"statement":"CREATE TABLE testdb2.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb2.tbl1;"}'
     );

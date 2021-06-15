@@ -22,7 +22,7 @@ type SqlTaskExecutor struct {
 
 func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
-	if err := json.Unmarshal(task.Payload, payload); err != nil {
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, fmt.Errorf("invalid schema update payload: %w", err)
 	}
 
