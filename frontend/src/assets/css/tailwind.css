@@ -116,8 +116,12 @@
   @apply text-main focus:ring-control focus:border-control sm:text-sm border-control-border shadow-sm;
 }
 
-.radio-set {
-  @apply items-center space-x-4;
+.radio-set-row {
+  @apply flex flex-row items-center space-x-4;
+}
+
+.radio-set-col {
+  @apply flex flex-col space-y-2;
 }
 
 .radio {

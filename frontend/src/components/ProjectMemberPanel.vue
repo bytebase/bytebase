@@ -24,7 +24,7 @@
                 "
               />
             </div>
-            <div v-if="hasAdminFeature" class="flex flex-row radio-set">
+            <div v-if="hasAdminFeature" class="radio-set-row">
               <div class="radio">
                 <input
                   :name="`member_role`"

@@ -2,7 +2,7 @@
   <div class="textlabel">
     Choose Git provider <span class="text-red-600">*</span>
   </div>
-  <div class="pt-4 flex flex-row radio-set">
+  <div class="pt-4 radio-set-row">
     <div class="radio space-x-2">
       <input
         name="Self-host GitLab"
