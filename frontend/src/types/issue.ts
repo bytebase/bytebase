@@ -57,8 +57,6 @@ export type IssueCreate = {
   type: IssueType;
   description: string;
   assigneeId?: PrincipalId;
-  statement?: string;
-  rollbackStatement?: string;
   payload: IssuePayload;
 };
 

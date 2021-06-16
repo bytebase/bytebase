@@ -241,6 +241,7 @@ import {
   IssueCreate,
   EMPTY_ID,
   Stage,
+  StageCreate,
 } from "../types";
 import { allTaskList, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
@@ -266,7 +267,7 @@ export default {
     },
     selectedStage: {
       required: true,
-      type: Object as PropType<Stage>,
+      type: Object as PropType<Stage | StageCreate>,
     },
     inputFieldList: {
       required: true,
@@ -299,21 +300,23 @@ export default {
 
     const database = computed((): Database => {
       if (props.create) {
-        const databaseId = (props.issue as IssueCreate).pipeline?.stageList[0]
-          .taskList[0].databaseId;
-        return store.getters["database/databaseById"](databaseId);
+        const stage = props.selectedStage as StageCreate;
+        return store.getters["database/databaseById"](
+          stage.taskList[0].databaseId
+        );
       }
-      const stage = props.selectedStage;
+      const stage = props.selectedStage as Stage;
       return stage.taskList[0].database;
     });
 
     const environment = computed((): Environment => {
       if (props.create) {
-        const environmentId = (props.issue as IssueCreate).pipeline
-          ?.stageList[0].environmentId;
-        return store.getters["environment/environmentById"](environmentId);
+        const stage = props.selectedStage as StageCreate;
+        return store.getters["environment/environmentById"](
+          stage.environmentId
+        );
       }
-      const stage = props.selectedStage;
+      const stage = props.selectedStage as Stage;
       return stage.environment;
     });
 

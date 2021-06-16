@@ -151,7 +151,16 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { useRouter } from "vue-router";
-import { Pipeline, TaskStatus, TaskId, Stage, StageId } from "../types";
+import {
+  Pipeline,
+  TaskStatus,
+  TaskId,
+  Stage,
+  StageId,
+  StageCreate,
+  PipelineCreate,
+  Task,
+} from "../types";
 import { activeTask } from "../utils";
 
 interface FlowItem {
@@ -166,13 +175,17 @@ export default {
   name: "PipelineSimpleFlow",
   emits: ["select-stage-id"],
   props: {
+    create: {
+      required: true,
+      type: Boolean,
+    },
     pipeline: {
       required: true,
-      type: Object as PropType<Pipeline>,
+      type: Object as PropType<Pipeline | PipelineCreate>,
     },
     selectedStage: {
       required: true,
-      type: Object as PropType<Stage>,
+      type: Object as PropType<Stage | StageCreate>,
     },
   },
   components: {},
@@ -180,12 +193,12 @@ export default {
     const router = useRouter();
 
     const itemList = computed<FlowItem[]>(() => {
-      return props.pipeline.stageList.map((stage) => {
+      return props.pipeline.stageList.map((stage, index) => {
         const task = stage.taskList[0];
         return {
-          stageId: stage.id,
+          stageId: props.create ? index : (stage as Stage).id,
           stageName: stage.name,
-          taskId: task.id,
+          taskId: props.create ? index : (task as Task).id,
           taskName: task.name,
           taskStatus: task.status,
         };
@@ -195,12 +208,18 @@ export default {
     const flowItemIconClass = (item: FlowItem) => {
       switch (item.taskStatus) {
         case "PENDING":
-          if (activeTask(props.pipeline).id === item.taskId) {
+          if (
+            !props.create &&
+            activeTask(props.pipeline as Pipeline).id === item.taskId
+          ) {
             return "bg-white border-2 border-blue-600 text-blue-600 ";
           }
           return "bg-white border-2 border-control";
         case "PENDING_APPROVAL":
-          if (activeTask(props.pipeline).id === item.taskId) {
+          if (
+            !props.create &&
+            activeTask(props.pipeline as Pipeline).id === item.taskId
+          ) {
             return "bg-white border-2 border-blue-600 text-blue-600";
           }
           return "bg-white border-2 border-control";
@@ -215,10 +234,17 @@ export default {
 
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
-        activeTask(props.pipeline).id === item.taskId
+        !props.create &&
+        activeTask(props.pipeline as Pipeline).id === item.taskId
           ? "font-bold "
           : "font-normal ";
-      if (item.stageId == props.selectedStage.id) {
+      // For create, since we don't have stage id yet, we just compare name instead.
+      // Not 100% accurate, but should be fine most of the time.
+      if (
+        (props.create &&
+          item.stageName == (props.selectedStage as StageCreate).name) ||
+        (!props.create && item.stageId == (props.selectedStage as Stage).id)
+      ) {
         textClass += "underline ";
       }
       switch (item.taskStatus) {
@@ -226,7 +252,10 @@ export default {
           return textClass + "text-control";
         case "PENDING":
         case "PENDING_APPROVAL":
-          if (activeTask(props.pipeline).id === item.taskId) {
+          if (
+            !props.create &&
+            activeTask(props.pipeline as Pipeline).id === item.taskId
+          ) {
             return textClass + "text-blue-600";
           }
           return textClass + "text-control";

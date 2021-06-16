@@ -80,11 +80,15 @@
         "
       >
         <PipelineSimpleFlow
+          :create="state.create"
           :pipeline="issue.pipeline"
           :selectedStage="selectedStage"
           @select-stage-id="selectStageId"
         />
-        <div class="px-4 py-4 md:flex md:flex-col border-b">
+        <div
+          v-if="!state.create"
+          class="px-4 py-4 md:flex md:flex-col border-b"
+        >
           <IssueStagePanel :stage="selectedStage" />
         </div>
       </template>
@@ -232,6 +236,8 @@ import {
   IssueStatusPatch,
   Task,
   DatabaseSchemaUpdateTaskPayload,
+  StageCreate,
+  TaskCreate,
 } from "../types";
 import {
   defaulTemplate,
@@ -367,13 +373,6 @@ export default {
         newIssue.description = router.currentRoute.value.query
           .description as string;
       }
-      if (router.currentRoute.value.query.sql) {
-        newIssue.statement = router.currentRoute.value.query.sql as string;
-      }
-      if (router.currentRoute.value.query.rollbacksql) {
-        newIssue.rollbackStatement = router.currentRoute.value.query
-          .rollbacksql as string;
-      }
       if (router.currentRoute.value.query.assignee) {
         newIssue.assigneeId = parseInt(
           router.currentRoute.value.query.assignee as string
@@ -463,13 +462,15 @@ export default {
       }
     };
 
-    // We only allow updating sql/rollback upon issue creation.
+    // We only allow updating statement/rollbackStatement upon issue creation.
     const updateStatement = (newStatement: string) => {
-      state.newIssue!.statement = newStatement;
+      const stage = selectedStage.value as StageCreate;
+      stage.taskList[0].statement = newStatement;
     };
 
     const updateRollbackStatement = (newStatement: string) => {
-      state.newIssue!.rollbackStatement = newStatement;
+      const stage = selectedStage.value as StageCreate;
+      stage.taskList[0].rollbackStatement = newStatement;
     };
 
     const updateDescription = (
@@ -605,23 +606,30 @@ export default {
     };
 
     const currentPipelineType = computed((): PipelineType => {
-      return pipelineType((issue.value as Issue).pipeline);
+      return pipelineType(issue.value.pipeline);
     });
 
     console.debug(currentPipelineType.value);
 
-    const selectedStage = computed((): Stage => {
+    const selectedStage = computed((): Stage | StageCreate => {
       const stageSlug = router.currentRoute.value.query.stage as string;
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
-        return (issue.value as Issue).pipeline.stageList[index];
+        return issue.value.pipeline.stageList[index];
+      }
+
+      if (state.create) {
+        return issue.value.pipeline.stageList[0];
       }
       return activeStage((issue.value as Issue).pipeline);
     });
 
     const selectStageId = (stageId: StageId) => {
       const stageList = (issue.value as Issue).pipeline.stageList;
-      const index = stageList.findIndex((item) => {
+      const index = stageList.findIndex((item, index) => {
+        if (state.create) {
+          return index == stageId;
+        }
         return item.id == stageId;
       });
       router.replace({
@@ -633,27 +641,21 @@ export default {
       });
     };
 
-    const selectedTask = computed((): Task => {
-      const stage = selectedStage.value;
-      return stage.taskList[0];
-    });
-
     const selectedStatement = computed((): string => {
-      if (state.create) {
-        return "";
-      }
-
       const task = selectedStage.value.taskList[0];
-      return (task.payload as DatabaseSchemaUpdateTaskPayload).statement;
+      if (state.create) {
+        return (task as TaskCreate).statement;
+      }
+      return ((task as Task).payload as DatabaseSchemaUpdateTaskPayload)
+        .statement;
     });
 
     const selectedRollbackStatement = computed((): string => {
-      if (state.create) {
-        return "";
-      }
-
       const task = selectedStage.value.taskList[0];
-      return (task.payload as DatabaseSchemaUpdateTaskPayload)
+      if (state.create) {
+        return (task as TaskCreate).rollbackStatement;
+      }
+      return ((task as Task).payload as DatabaseSchemaUpdateTaskPayload)
         .rollbackStatement;
     });
 
@@ -710,7 +712,7 @@ export default {
     });
 
     const showPipelineFlowBar = computed(() => {
-      return !state.create && currentPipelineType.value != "NO_PIPELINE";
+      return currentPipelineType.value != "NO_PIPELINE";
     });
 
     const showIssueOutputPanel = computed(() => {

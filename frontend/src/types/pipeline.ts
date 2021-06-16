@@ -235,6 +235,8 @@ export type TaskCreate = {
   type: TaskType;
   instanceId: InstanceId;
   databaseId?: DatabaseId;
+  statement: string;
+  rollbackStatement: string;
 };
 
 export type TaskStatusPatch = {

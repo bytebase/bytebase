@@ -89,10 +89,13 @@ type TaskCreate struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name    string     `jsonapi:"attr,name"`
-	Status  TaskStatus `jsonapi:"attr,status"`
-	Type    TaskType   `jsonapi:"attr,type"`
-	Payload string     `jsonapi:"attr,payload"`
+	Name              string     `jsonapi:"attr,name"`
+	Status            TaskStatus `jsonapi:"attr,status"`
+	Type              TaskType   `jsonapi:"attr,type"`
+	Statement         string     `jsonapi:"attr,statement"`
+	RollbackStatement string     `jsonapi:"attr,rollbackStatement"`
+	// Payload is dirived from Statement, RollbackStatement
+	Payload string
 }
 
 type TaskFind struct {

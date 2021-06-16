@@ -286,7 +286,34 @@ export default {
       return state.selectedDatabaseIdForEnvironment.size > 0;
     });
 
-    const generateMultDb = () => {};
+    const generateMultDb = () => {
+      const databaseIdList: DatabaseId[] = [];
+      for (var i = 0; i < environmentList.value.length; i++) {
+        if (
+          state.selectedDatabaseIdForEnvironment.get(
+            environmentList.value[i].id
+          )
+        ) {
+          databaseIdList.push(
+            state.selectedDatabaseIdForEnvironment.get(
+              environmentList.value[i].id
+            )!
+          );
+        }
+      }
+      router.push({
+        name: "workspace.issue.detail",
+        params: {
+          issueSlug: "new",
+        },
+        query: {
+          template: "bb.issue.database.schema.update",
+          name: `Alter schema`,
+          project: props.projectId,
+          databaseList: databaseIdList.join(","),
+        },
+      });
+    };
 
     const selectDatabaseId = (databaseId: DatabaseId) => {
       emit("dismiss");

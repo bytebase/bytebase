@@ -10,6 +10,7 @@ import {
   UNKNOWN_ID,
   unknown,
   TaskId,
+  PipelineCreate,
 } from "../types";
 
 export type PipelineType =
@@ -18,7 +19,9 @@ export type PipelineType =
   | "MULTI_SINGLE_TASK_STAGE"
   | "MULTI_STAGE";
 
-export function pipelineType(pipeline: Pipeline): PipelineType {
+export function pipelineType(
+  pipeline: Pipeline | PipelineCreate
+): PipelineType {
   if (pipeline.stageList.length == 0) {
     return "NO_PIPELINE";
   } else if (pipeline.stageList.length == 1) {
