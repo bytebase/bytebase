@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-4 space-y-6 w-160 divide-y divide-block-border">
+  <div class="mx-4 space-y-4 w-160">
     <div
       v-if="projectId != UNKNOWN_ID && state.project.workflowType == 'VCS'"
       class="textlabel"
@@ -7,21 +7,177 @@
       Project has version control enabled and selecting database below will
       navigate you to the corresponding Git repository to create schema change.
     </div>
+    <div
+      v-if="projectId != UNKNOWN_ID && state.project.workflowType == 'UI'"
+      class="mt-2 textlabel"
+    >
+      <div class="radio-set-row">
+        <div class="radio">
+          <input
+            tabindex="-1"
+            type="radio"
+            class="btn"
+            value="SINGLE_DB"
+            v-model="state.alterType"
+          />
+          <label class="label"> Alter single database </label>
+        </div>
+        <div class="radio">
+          <input
+            tabindex="-1"
+            type="radio"
+            class="btn"
+            value="MULTI_DB"
+            v-model="state.alterType"
+          />
+          <label class="label"> Alter multiple databases </label>
+        </div>
+      </div>
+    </div>
     <DatabaseTable
+      v-if="
+        projectId == UNKNOWN_ID ||
+        state.project.workflowType == 'VCS' ||
+        state.alterType == 'SINGLE_DB'
+      "
       :mode="projectId == UNKNOWN_ID ? 'ALL_SHORT' : 'PROJECT_SHORT'"
       :bordered="true"
       :customClick="true"
       :databaseList="databaseList"
       @select-database-id="selectDatabaseId"
     />
+    <template
+      v-else-if="projectId != UNKNOWN_ID && state.alterType == 'MULTI_DB'"
+    >
+      <div class="textinfolabel">
+        For each environment, your can select a database to alter its schema or
+        just skip that environment. This allows you to compose a single pipeline
+        to propagate schema changes across the environments.
+      </div>
+      <div class="space-y-4">
+        <div v-for="(environment, index) in environmentList" :key="index">
+          <div class="mb-2">{{ environment.name }}</div>
+          <div class="relative bg-white rounded-md -space-y-px">
+            <template
+              v-for="(database, index) in databaseList.filter(
+                (item) => item.instance.environment.id == environment.id
+              )"
+              :key="index"
+            >
+              <label
+                class="
+                  border-control-border
+                  relative
+                  border
+                  p-3
+                  flex flex-col
+                  md:pl-4
+                  md:pr-6
+                  md:grid md:grid-cols-2
+                "
+                :class="
+                  database.syncStatus == 'OK'
+                    ? 'cursor-pointer'
+                    : 'cursor-not-allowed'
+                "
+              >
+                <div class="radio text-sm">
+                  <input
+                    v-if="database.syncStatus == 'OK'"
+                    type="radio"
+                    class="btn"
+                    :checked="
+                      state.selectedDatabaseIdForEnvironment.get(
+                        environment.id
+                      ) == database.id
+                    "
+                    @change="
+                      selectDatabaseIdForEnvironment(
+                        database.id,
+                        environment.id
+                      )
+                    "
+                  />
+                  <span
+                    class="font-medium"
+                    :class="
+                      database.syncStatus == 'OK'
+                        ? 'ml-2 text-main'
+                        : 'ml-6 text-control-light'
+                    "
+                    >{{ database.name }}</span
+                  >
+                </div>
+                <p
+                  class="
+                    textinfolabel
+                    ml-6
+                    pl-1
+                    text-sm
+                    md:ml-0
+                    md:pl-0
+                    md:text-right
+                  "
+                >
+                  Last sync status:
+                  <span
+                    :class="
+                      database.syncStatus == 'OK'
+                        ? 'textlabel'
+                        : 'text-sm font-medium text-error'
+                    "
+                    >{{ database.syncStatus }}</span
+                  >
+                </p>
+              </label>
+            </template>
+            <label
+              class="
+                border-control-border
+                relative
+                border
+                p-3
+                flex flex-col
+                cursor-pointer
+                md:pl-4
+                md:pr-6
+                md:grid md:grid-cols-3
+              "
+            >
+              <div class="radio space-x-2 text-sm">
+                <input
+                  type="radio"
+                  class="btn"
+                  :checked="
+                    state.selectedDatabaseIdForEnvironment.get(environment.id)
+                      ? 0
+                      : 1
+                  "
+                  @input="clearDatabaseIdForEnvironment(environment.id)"
+                />
+                <span class="ml-3 font-medium text-main">SKIP</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </template>
     <!-- Create button group -->
-    <div class="pt-4 flex justify-end">
+    <div class="pt-4 border-t border-block-border flex justify-end">
       <button
         type="button"
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
       >
         Cancel
+      </button>
+      <button
+        v-if="state.alterType == 'MULTI_DB'"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        :disabled="!allowGenerateMultiDb"
+        @click.prevent="generateMultDb"
+      >
+        Next
       </button>
     </div>
   </div>
@@ -36,14 +192,19 @@ import {
   baseDirectoryWebURL,
   Database,
   DatabaseId,
+  EnvironmentId,
   Project,
   ProjectId,
   Repository,
   UNKNOWN_ID,
 } from "../types";
 
+type AlterType = "SINGLE_DB" | "MULTI_DB";
+
 interface LocalState {
   project: Project;
+  alterType: AlterType;
+  selectedDatabaseIdForEnvironment: Map<EnvironmentId, DatabaseId>;
 }
 
 export default {
@@ -80,13 +241,12 @@ export default {
 
     const state = reactive<LocalState>({
       project: store.getters["project/projectById"](props.projectId),
+      alterType: "SINGLE_DB",
+      selectedDatabaseIdForEnvironment: new Map(),
     });
 
     const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]([
-        "NORMAL",
-        "ARCHIVED",
-      ]);
+      return store.getters["environment/environmentList"](["NORMAL"]);
     });
 
     const databaseList = computed(() => {
@@ -122,6 +282,12 @@ export default {
       });
     });
 
+    const allowGenerateMultiDb = computed(() => {
+      return state.selectedDatabaseIdForEnvironment.size > 0;
+    });
+
+    const generateMultDb = () => {};
+
     const selectDatabaseId = (databaseId: DatabaseId) => {
       emit("dismiss");
 
@@ -152,6 +318,17 @@ export default {
       }
     };
 
+    const selectDatabaseIdForEnvironment = (
+      databaseId: DatabaseId,
+      environmentId: EnvironmentId
+    ) => {
+      state.selectedDatabaseIdForEnvironment.set(environmentId, databaseId);
+    };
+
+    const clearDatabaseIdForEnvironment = (environmentId: EnvironmentId) => {
+      state.selectedDatabaseIdForEnvironment.delete(environmentId);
+    };
+
     const cancel = () => {
       emit("dismiss");
     };
@@ -159,8 +336,13 @@ export default {
     return {
       UNKNOWN_ID,
       state,
+      environmentList,
       databaseList,
+      allowGenerateMultiDb,
+      generateMultDb,
       selectDatabaseId,
+      selectDatabaseIdForEnvironment,
+      clearDatabaseIdForEnvironment,
       cancel,
     };
   },
