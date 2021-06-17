@@ -3,11 +3,23 @@
 -->
 <template>
   <div
-    class="fixed inset-0 w-full h-screen flex items-center justify-center z-50"
+    class="fixed inset-0 w-full h-screen flex items-center justify-center z-40"
     style="background-color: rgba(209, 213, 219, 0.8)"
   >
     <div
-      class="relative max-h-screen w-full max-w-max bg-white shadow-lg rounded-lg p-8 flex space-y-6 divide-y divide-block-border"
+      class="
+        relative
+        max-h-screen
+        w-full
+        max-w-max
+        bg-white
+        shadow-lg
+        rounded-lg
+        p-8
+        flex
+        space-y-6
+        divide-y divide-block-border
+      "
     >
       <div>
         <div class="absolute left-0 top-0 my-4 mx-8 text-xl text-main">

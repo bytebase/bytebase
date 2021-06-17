@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed inset-0 px-4 py-6 pointer-events-none sm:p-6"
+    class="fixed inset-0 px-4 py-6 pointer-events-none sm:p-6 z-50"
     :class="placementClass"
   >
     <template
@@ -27,7 +27,16 @@
         leave-to-class="opacity-0"
       >
         <div
-          class="max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden"
+          class="
+            max-w-sm
+            w-full
+            bg-white
+            shadow-lg
+            rounded-lg
+            pointer-events-auto
+            ring-1 ring-black ring-opacity-5
+            overflow-hidden
+          "
         >
           <div class="p-4">
             <div class="flex items-start">
@@ -107,13 +116,32 @@
                 </p>
                 <div v-if="notification.link" class="mt-2">
                   <button
-                    class="bg-white rounded-md text-sm font-medium text-accent hover:text-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                    class="
+                      bg-white
+                      rounded-md
+                      text-sm
+                      font-medium
+                      text-accent
+                      hover:text-accent-hover
+                      focus:outline-none
+                      focus:ring-2 focus:ring-offset-2 focus:ring-accent
+                    "
                     @click.prevent="viewLink(notification.link)"
                   >
                     {{ notification.linkTitle }}
                   </button>
                   <button
-                    class="ml-6 bg-white rounded-md text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                    class="
+                      ml-6
+                      bg-white
+                      rounded-md
+                      text-sm
+                      font-medium
+                      text-gray-700
+                      hover:text-gray-500
+                      focus:outline-none
+                      focus:ring-2 focus:ring-offset-2 focus:ring-accent
+                    "
                     @click.prevent="$emit('close')"
                   >
                     Dismiss
@@ -122,7 +150,14 @@
               </div>
               <div class="ml-4 flex-shrink-0 flex">
                 <button
-                  class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                  class="
+                    bg-white
+                    rounded-md
+                    inline-flex
+                    text-gray-400
+                    hover:text-gray-500
+                    focus:outline-none
+                  "
                   @click.prevent="$emit('close')"
                 >
                   <span class="sr-only">Close</span>
