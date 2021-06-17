@@ -267,6 +267,7 @@ export const unknown = (
     name: "<<Unknown task>>",
     type: "bb.task.general",
     status: "DONE",
+    instance: UNKNOWN_INSTANCE,
     database: UNKNOWN_DATABASE,
     taskRunList: [],
   };
@@ -545,6 +546,7 @@ export const empty = (
     name: "",
     type: "bb.task.general",
     status: "DONE",
+    instance: EMPTY_INSTANCE,
     database: EMPTY_DATABASE,
     taskRunList: [],
   };
