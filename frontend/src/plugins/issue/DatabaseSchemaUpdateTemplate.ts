@@ -28,6 +28,8 @@ const template: IssueTemplate = {
             type: "bb.task.database.schema.update",
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
+            statement: "",
+            rollbackStatement: "",
           },
         ],
       });
