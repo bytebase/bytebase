@@ -404,6 +404,7 @@ export default {
             creatorId: currentUser.value.id,
             environmentId: UNKNOWN_ID,
             name: "New Instance",
+            engine: "MYSQL",
             host: "127.0.0.1",
             username: "root",
           },

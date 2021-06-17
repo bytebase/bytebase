@@ -124,6 +124,7 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 		create.CreatorId,
 		create.EnvironmentId,
 		create.Name,
+		create.Engine,
 		create.ExternalLink,
 		create.Host,
 		create.Port,

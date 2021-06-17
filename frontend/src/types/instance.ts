@@ -38,6 +38,7 @@ export type InstanceCreate = {
 
   // Domain specific fields
   name: string;
+  engine: EngineType;
   externalLink?: string;
   host: string;
   port?: string;

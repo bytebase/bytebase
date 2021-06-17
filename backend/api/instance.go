@@ -44,7 +44,7 @@ type InstanceCreate struct {
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`
-	Type         db.Type `jsonapi:"attr,type"`
+	Engine       db.Type `jsonapi:"attr,engine"`
 	ExternalLink string  `jsonapi:"attr,externalLink"`
 	Host         string  `jsonapi:"attr,host"`
 	Port         string  `jsonapi:"attr,port"`
