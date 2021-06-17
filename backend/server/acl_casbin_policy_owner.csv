@@ -51,3 +51,5 @@ p, OWNER, /vcs/{id}, GET
 p, OWNER, /vcs/{id}, PATCH
 p, OWNER, /vcs/{id}, DELETE
 p, OWNER, /vcs/{id}/repository, GET
+p, OWNER, /migration/instance/status, POST
+p, OWNER, /migration/instance, POST

@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/db"
 )
 
-type SqlConfig struct {
+type ConnectionInfo struct {
 	DBType   db.Type `jsonapi:"attr,dbType"`
 	Host     string  `jsonapi:"attr,host"`
 	Port     string  `jsonapi:"attr,port"`
@@ -24,5 +24,5 @@ type SqlResultSet struct {
 }
 
 type SqlService interface {
-	Ping(ctx context.Context, config *SqlConfig) (*SqlResultSet, error)
+	Ping(ctx context.Context, config *ConnectionInfo) (*SqlResultSet, error)
 }

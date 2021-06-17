@@ -1,6 +1,6 @@
 export type DBType = "MYSQL";
 
-export type SqlConfig = {
+export type ConnectionInfo = {
   dbType: DBType;
   host: string;
   port?: string;

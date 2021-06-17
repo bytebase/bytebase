@@ -155,6 +155,7 @@ func NewServer(logger *zap.Logger) *Server {
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSqlRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
+	s.registerMigrationRoutes(apiGroup)
 
 	return s
 }

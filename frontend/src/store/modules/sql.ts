@@ -2,7 +2,7 @@ import axios from "axios";
 import {
   ResourceObject,
   SqlResultSet,
-  SqlConfig,
+  ConnectionInfo,
   InstanceId,
 } from "../../types";
 
@@ -12,15 +12,21 @@ function convert(resultSet: ResourceObject): SqlResultSet {
   };
 }
 
-const getters = {};
+const getters = {
+  convert:
+    () =>
+    (resultSet: ResourceObject): SqlResultSet => {
+      return convert(resultSet);
+    },
+};
 
 const actions = {
-  async ping({ commit }: any, sqlConfig: SqlConfig) {
+  async ping({ commit }: any, connectionInfo: ConnectionInfo) {
     const data = (
       await axios.post(`/api/sql/ping`, {
         data: {
-          type: "sqlConfig",
-          attributes: sqlConfig,
+          type: "connectionInfo",
+          attributes: connectionInfo,
         },
       })
     ).data.data;

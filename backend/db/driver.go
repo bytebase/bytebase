@@ -57,6 +57,12 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	SyncSchema(ctx context.Context) ([]*DBSchema, error)
 	Execute(ctx context.Context, sql string) (sql.Result, error)
+
+	// Migration related
+	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
+	NeedsSetupMigration(ctx context.Context) (bool, error)
+	// Create or upgrade migration related tables
+	SetupMigrationIfNeeded(ctx context.Context) error
 }
 
 type ConnectionConfig struct {
@@ -91,5 +97,14 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 		return nil, fmt.Errorf("db: unknown driver %v", dbType)
 	}
 
-	return f(driverConfig).open(connectionConfig)
+	driver, err := f(driverConfig).open(connectionConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := driver.Ping(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return driver, nil
 }

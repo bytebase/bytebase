@@ -3,12 +3,16 @@ package db
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
+
+//go:embed mysql_schema.sql
+var migrationSchema string
 
 var (
 	_ Driver = (*MySQLDriver)(nil)
@@ -36,7 +40,9 @@ func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
 		protocol = "unix"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s", config.Username, config.Password, protocol, config.Host, config.Port, config.Database)
+	params := []string{"multiStatements=true"}
+
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, config.Port, config.Database, strings.Join(params, "&"))
 	driver.l.Debug("Opening MySQL driver", zap.String("dsn", dsn))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -154,4 +160,41 @@ func (driver *MySQLDriver) Execute(ctx context.Context, sql string) (sql.Result,
 	defer tx.Rollback()
 
 	return tx.ExecContext(ctx, sql)
+}
+
+func (driver *MySQLDriver) NeedsSetupMigration(ctx context.Context) (bool, error) {
+	rows, err := driver.db.QueryContext(ctx, `
+		SELECT 
+		    1
+		FROM information_schema.TABLES
+		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'`,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
+	setup, err := driver.NeedsSetupMigration(ctx)
+	if err != nil {
+		return nil
+	}
+
+	if setup {
+		driver.l.Info("Bytebase migration schema not found, creating schema...")
+		if _, err := driver.Execute(ctx, migrationSchema); err != nil {
+			driver.l.Error("Failed to initialize migration schema.", zap.Error(err))
+			return err
+		}
+		driver.l.Info("Successfully created migration schema.")
+	}
+
+	return nil
 }

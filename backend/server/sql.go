@@ -15,16 +15,16 @@ import (
 
 func (s *Server) registerSqlRoutes(g *echo.Group) {
 	g.POST("/sql/ping", func(c echo.Context) error {
-		config := &api.SqlConfig{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
+		connectionInfo := &api.ConnectionInfo{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
 		}
 
-		db, err := db.Open(config.DBType, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
-			Username: config.Username,
-			Password: config.Password,
-			Host:     config.Host,
-			Port:     config.Port,
+		db, err := db.Open(connectionInfo.DBType, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
+			Username: connectionInfo.Username,
+			Password: connectionInfo.Password,
+			Host:     connectionInfo.Host,
+			Port:     connectionInfo.Port,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to open database").SetInternal(err)

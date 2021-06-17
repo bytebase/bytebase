@@ -321,7 +321,7 @@ input[type="number"] {
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           :disabled="!allowCreate"
-          @click.prevent="doCreate(state.instance)"
+          @click.prevent="tryCreate"
         >
           Create
         </button>
@@ -340,6 +340,21 @@ input[type="number"] {
       </div>
     </div>
   </form>
+  <BBAlert
+    v-if="state.showCreateMigrationSchemaModal"
+    :style="'INFO'"
+    :okText="'Create'"
+    :title="'Create migration schema?'"
+    :description="'The migration schema does not exist on this instance and Bytebase needs to create it in order to manage schema migration.'"
+    @ok="
+      () => {
+        state.showCreateMigrationSchemaModal = false;
+        doCreateSchema();
+      }
+    "
+    @cancel="state.showCreateMigrationSchemaModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -357,8 +372,9 @@ import {
   UNKNOWN_ID,
   Principal,
   InstancePatch,
-  SqlConfig,
+  ConnectionInfo,
   SqlResultSet,
+  InstanceMigration,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 
@@ -368,8 +384,9 @@ const GRANT_STATEMENT =
 interface LocalState {
   originalInstance?: Instance;
   instance: Instance | InstanceCreate;
-  showPassword: Boolean;
+  showPassword: boolean;
   connectionResult: string;
+  showCreateMigrationSchemaModal: boolean;
 }
 
 export default {
@@ -410,6 +427,7 @@ export default {
           },
       showPassword: false,
       connectionResult: "",
+      showCreateMigrationSchemaModal: false,
     });
 
     const allowCreate = computed(() => {
@@ -436,6 +454,55 @@ export default {
       emit("dismiss");
     };
 
+    const doCreateSchema = () => {
+      const connectionInfo: ConnectionInfo = {
+        dbType: "MYSQL",
+        username: state.instance.username,
+        password: state.instance.password,
+        host: state.instance.host,
+        port: state.instance.port,
+      };
+      store
+        .dispatch("migration/createkMigrationSetup", connectionInfo)
+        .then((resultSet: SqlResultSet) => {
+          if (resultSet.error) {
+            state.connectionResult = resultSet.error;
+          } else {
+            doCreate();
+          }
+        });
+    };
+
+    // We will first check if migration schema exists on the instance.
+    // If it doesn't, we will ask user to allow Bytebase to create that schema before proceeding to creating the instance.
+    const tryCreate = () => {
+      const connectionInfo: ConnectionInfo = {
+        dbType: "MYSQL",
+        username: state.instance.username,
+        password: state.instance.password,
+        host: state.instance.host,
+        port: state.instance.port,
+      };
+      store
+        .dispatch("migration/checkMigrationSetup", connectionInfo)
+        .then((migration: InstanceMigration) => {
+          switch (migration.status) {
+            case "UNKNOWN": {
+              state.connectionResult = migration.error;
+              break;
+            }
+            case "NOT_EXIST": {
+              state.showCreateMigrationSchemaModal = true;
+              break;
+            }
+            case "OK": {
+              doCreate();
+              break;
+            }
+          }
+        });
+    };
+
     // We will also create the database * denoting all databases
     // and its RW data source. The username, password is actually
     // stored in that data source object instead of in the instance self.
@@ -444,9 +511,9 @@ export default {
     //    in order to display the relevant info. In those cases, we don't want to include sensitive
     //    info such as username/password there. It's harder to redact this on the instance. Thus the
     //    only option is to split those information into a separate resource which won't be pulled together.
-    const doCreate = async (newInstance: InstanceCreate) => {
+    const doCreate = () => {
       store
-        .dispatch("instance/createInstance", newInstance)
+        .dispatch("instance/createInstance", state.instance)
         .then((createdInstance) => {
           emit("dismiss");
 
@@ -517,20 +584,22 @@ export default {
     };
 
     const testConnection = () => {
-      const sqlConfig: SqlConfig = {
+      const connectionInfo: ConnectionInfo = {
         dbType: "MYSQL",
         username: state.instance.username,
         password: state.instance.password,
         host: state.instance.host,
         port: state.instance.port,
       };
-      store.dispatch("sql/ping", sqlConfig).then((resultSet: SqlResultSet) => {
-        if (isEmpty(resultSet.error)) {
-          state.connectionResult = "OK";
-        } else {
-          state.connectionResult = resultSet.error;
-        }
-      });
+      store
+        .dispatch("sql/ping", connectionInfo)
+        .then((resultSet: SqlResultSet) => {
+          if (isEmpty(resultSet.error)) {
+            state.connectionResult = "OK";
+          } else {
+            state.connectionResult = resultSet.error;
+          }
+        });
     };
 
     return {
@@ -541,6 +610,8 @@ export default {
       valueChanged,
       updateInstance,
       cancel,
+      doCreateSchema,
+      tryCreate,
       doCreate,
       doUpdate,
       copyGrantStatement,
