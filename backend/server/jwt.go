@@ -162,7 +162,7 @@ func setUserCookie(user *api.Principal, expiration time.Time, c echo.Context) {
 func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth, webhook end point
-		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/hook") {
+		if strings.HasPrefix(c.Path(), "/api/auth") {
 			return next(c)
 		}
 

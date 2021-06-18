@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -105,7 +106,7 @@ func NewServer(logger *zap.Logger) *Server {
 	// Middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
-			return !strings.HasPrefix(c.Path(), "/api")
+			return !strings.HasPrefix(c.Path(), "/api") && !strings.HasPrefix(c.Path(), "/hook")
 		},
 		Format: `{"time":"${time_rfc3339}",` +
 			`"method":"${method}","uri":"${uri}",` +
@@ -115,12 +116,17 @@ func NewServer(logger *zap.Logger) *Server {
 		return RecoverMiddleware(logger, next)
 	})
 
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	webhookGroup := e.Group("/hook")
+	s.registerWebhookRoutes(webhookGroup)
+
+	apiGroup := e.Group("/api")
+
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(logger, s.PrincipalService, next)
 	})
 
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return RequestMiddleware(logger, next)
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return ApiRequestMiddleware(logger, next)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -132,14 +138,10 @@ func NewServer(logger *zap.Logger) *Server {
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return ACLMiddleware(logger, s, ce, next)
 	})
 
-	webhookGroup := e.Group("/hook")
-	s.registerWebhookRoutes(webhookGroup)
-
-	apiGroup := e.Group("/api")
 	s.registerDebugRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
@@ -156,6 +158,13 @@ func NewServer(logger *zap.Logger) *Server {
 	s.registerSqlRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
 	s.registerMigrationRoutes(apiGroup)
+
+	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+
+	logger.Info(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
 }
