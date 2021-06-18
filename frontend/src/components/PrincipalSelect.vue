@@ -39,7 +39,13 @@
 <script lang="ts">
 import { reactive, computed, watch, PropType } from "vue";
 import { useStore } from "vuex";
-import { Member, Principal, PrincipalId, RoleType } from "../types";
+import {
+  Member,
+  Principal,
+  PrincipalId,
+  RoleType,
+  SYSTEM_BOT_ID,
+} from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
@@ -84,6 +90,11 @@ export default {
           return member.principal;
         }
       );
+      // If system bot is the selected ID (e.g. when issue is created by the bot on observing new sql file),
+      // Then we add system bot to the list so it can display properly.
+      if (props.selectedId == SYSTEM_BOT_ID) {
+        list.unshift(store.getters["principal/principalById"](SYSTEM_BOT_ID));
+      }
       return list.filter((item: Principal) => {
         // The previouly selected item might no longer be applicable.
         // e.g. The select limits to DBA only and the selected principal is no longer a DBA
