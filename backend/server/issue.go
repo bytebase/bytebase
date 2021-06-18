@@ -406,14 +406,6 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to create issue. Error %w", err)
 	}
 
-	if err := s.ComposeIssueRelationship(context.Background(), issue, []string{}); err != nil {
-		return nil, err
-	}
-
-	if err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
-		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
-	}
-
 	activityCreate := &api.ActivityCreate{
 		CreatorId:   creatorId,
 		ContainerId: issue.ID,
@@ -421,7 +413,15 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+	}
+
+	if err := s.ComposeIssueRelationship(context.Background(), issue, []string{}); err != nil {
+		return nil, err
+	}
+
+	if err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
+		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 
 	return issue, nil
