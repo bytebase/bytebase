@@ -38,7 +38,7 @@ import {
   VCS,
   WebhookInfo,
 } from "../types";
-import { projectSlug } from "../utils";
+import { projectSlug, randomString } from "../utils";
 
 const CHOOSE_PROVIDER_STEP = 0;
 const CHOOSE_REPOSITORY_STEP = 1;
@@ -117,13 +117,16 @@ export default {
     };
 
     const tryFinishSetup = (allowFinishCallback: () => void) => {
+      // The secret token to validate the gitlab webhook sender.
+      const secretToken = randomString(16);
       const createFunc = () => {
         store
           .dispatch("gitlab/createWebhook", {
             vcs: state.config.vcs,
             projectId: state.config.repositoryInfo.externalId,
             branchFilter: state.config.repositoryConfig.branchFilter,
-            token: state.config.token.accessToken,
+            secretToken,
+            accessToken: state.config.token.accessToken,
           })
           .then((webhook: WebhookInfo) => {
             const repositoryCreate: RepositoryCreate = {
@@ -137,6 +140,7 @@ export default {
               externalId: state.config.repositoryInfo.externalId,
               webhookId: webhook.id,
               webhookURL: webhook.url,
+              secretToken,
             };
             store
               .dispatch("repository/createRepository", repositoryCreate)

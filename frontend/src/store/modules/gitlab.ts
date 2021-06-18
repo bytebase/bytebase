@@ -84,8 +84,15 @@ const actions = {
       vcs,
       projectId,
       branchFilter,
-      token,
-    }: { vcs: VCS; projectId: string; branchFilter: string; token: string }
+      secretToken,
+      accessToken,
+    }: {
+      vcs: VCS;
+      projectId: string;
+      branchFilter: string;
+      secretToken: string;
+      accessToken: string;
+    }
   ): Promise<WebhookInfo> {
     const url = `${vcs.instanceURL}/${GITLAB_WEBHOOK_PATH}/${uuidv4()}`;
     const data = (
@@ -93,6 +100,7 @@ const actions = {
         `${vcs.instanceURL}/${GITLAB_API_PATH}/projects/${projectId}/hooks`,
         {
           url,
+          token: secretToken,
           push_events: true,
           // For now, there is no native dry run DDL support in mysql/postgres. One may wonder if we could wrap the DDL
           // in a transaction and just not commit at the end, unfortunately there are side effects which are hard to control.
@@ -106,7 +114,7 @@ const actions = {
         },
         {
           headers: {
-            Authorization: "Bearer " + token,
+            Authorization: "Bearer " + accessToken,
           },
         }
       )

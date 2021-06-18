@@ -31,6 +31,7 @@ type Repository struct {
 	ExternalId    string `jsonapi:"attr,externalId"`
 	WebhookId     string
 	WebhookURL    string
+	SecretToken   string
 }
 
 type RepositoryCreate struct {
@@ -51,6 +52,7 @@ type RepositoryCreate struct {
 	ExternalId    string `jsonapi:"attr,externalId"`
 	WebhookId     string `jsonapi:"attr,webhookId"`
 	WebhookURL    string `jsonapi:"attr,webhookURL"`
+	SecretToken   string `jsonapi:"attr,secretToken"`
 }
 
 type RepositoryFind struct {

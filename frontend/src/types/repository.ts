@@ -44,6 +44,7 @@ export type RepositoryCreate = {
   externalId: string;
   webhookId: string;
   webhookURL: string;
+  secretToken: string;
 };
 
 export type RepositoryPatch = {
