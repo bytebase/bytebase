@@ -402,7 +402,9 @@ export default {
 
     // pollIssue invalidates the current timer and schedule a new timer in <<interval>> microseconds
     const pollIssue = (interval: number) => {
-      clearInterval(state.pollIssueTimer);
+      if (state.pollIssueTimer) {
+        clearInterval(state.pollIssueTimer);
+      }
 
       state.pollIssueTimer = setTimeout(() => {
         store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
@@ -422,7 +424,9 @@ export default {
     });
 
     onUnmounted(() => {
-      clearInterval(state.pollIssueTimer);
+      if (state.pollIssueTimer) {
+        clearInterval(state.pollIssueTimer);
+      }
     });
 
     watch(

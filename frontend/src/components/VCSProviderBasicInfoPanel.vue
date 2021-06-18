@@ -100,7 +100,9 @@ export default {
     });
 
     onUnmounted(() => {
-      clearInterval(state.urlValidationTimer);
+      if (state.urlValidationTimer) {
+        clearInterval(state.urlValidationTimer);
+      }
     });
 
     const namePlaceholder = computed((): string => {
@@ -120,7 +122,9 @@ export default {
     const changeURL = (value: string) => {
       props.config.instanceURL = value;
 
-      clearInterval(state.urlValidationTimer);
+      if (state.urlValidationTimer) {
+        clearInterval(state.urlValidationTimer);
+      }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
       if (isURL(props.config.instanceURL)) {

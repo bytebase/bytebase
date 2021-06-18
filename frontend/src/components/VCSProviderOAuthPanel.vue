@@ -138,8 +138,12 @@ export default {
     });
 
     onUnmounted(() => {
-      clearInterval(state.applicationIdValidationTimer);
-      clearInterval(state.secretValidationTimer);
+      if (state.applicationIdValidationTimer) {
+        clearInterval(state.applicationIdValidationTimer);
+      }
+      if (state.secretValidationTimer) {
+        clearInterval(state.secretValidationTimer);
+      }
     });
 
     const createAdminApplicationURL = computed((): string => {
@@ -152,7 +156,9 @@ export default {
     const changeApplicatonId = (value: string) => {
       props.config.applicationId = value;
 
-      clearInterval(state.applicationIdValidationTimer);
+      if (state.applicationIdValidationTimer) {
+        clearInterval(state.applicationIdValidationTimer);
+      }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
       if (isValidVCSApplicationIdOrSecret(props.config.applicationId)) {
@@ -177,7 +183,9 @@ export default {
     const changeSecret = (value: string) => {
       props.config.secret = value;
 
-      clearInterval(state.secretValidationTimer);
+      if (state.secretValidationTimer) {
+        clearInterval(state.secretValidationTimer);
+      }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
       if (isValidVCSApplicationIdOrSecret(props.config.secret)) {
