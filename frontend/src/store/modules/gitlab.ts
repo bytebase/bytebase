@@ -7,6 +7,7 @@ import {
   OAuthToken,
   WebhookInfo,
 } from "../../types";
+import { backendURL } from "../../utils";
 
 const GITLAB_API_PATH = "api/v4";
 const GITLAB_WEBHOOK_PATH = "hook/gitlab";
@@ -94,7 +95,7 @@ const actions = {
       accessToken: string;
     }
   ): Promise<WebhookInfo> {
-    const url = `${vcs.instanceURL}/${GITLAB_WEBHOOK_PATH}/${uuidv4()}`;
+    const url = `${backendURL()}/${GITLAB_WEBHOOK_PATH}/${uuidv4()}`;
     const data = (
       await axios.post(
         `${vcs.instanceURL}/${GITLAB_API_PATH}/projects/${projectId}/hooks`,

@@ -12,7 +12,7 @@ export function isRelease(): boolean {
   return import.meta.env.PROD && !isDemo();
 }
 
-export function backend(): string {
+export function backendURL(): string {
   return import.meta.env.VITE_BACKEND as string;
 }
 

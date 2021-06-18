@@ -39,7 +39,7 @@ import {
   isDev,
   isDemo,
   isRelease,
-  backend,
+  backendURL,
   humanizeTs,
   sizeToFit,
   urlfy,
@@ -80,7 +80,7 @@ registerStoreWithRoleUtil(store);
 console.debug("dev:", isDev());
 console.debug("demo:", isDemo());
 console.debug("release:", isRelease());
-console.debug("backend:", backend());
+console.debug("backend:", backendURL());
 
 axios.defaults.timeout = 3000;
 axios.interceptors.request.use((request) => {
