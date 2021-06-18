@@ -135,7 +135,10 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 		return err
 	}
 
-	task.Database, err = s.ComposeDatabaseById(context.Background(), task.DatabaseId, includeList)
+	databaseFind := &api.DatabaseFind{
+		ID: &task.DatabaseId,
+	}
+	task.Database, err = s.ComposeDatabaseByFind(context.Background(), databaseFind, includeList)
 	if err != nil {
 		return err
 	}

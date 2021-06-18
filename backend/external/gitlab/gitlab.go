@@ -10,13 +10,72 @@ const (
 	ApiPath = "api/v4"
 )
 
+type GitLabWebhookType string
+
+const (
+	WebhookPush GitLabWebhookType = "push"
+)
+
+func (e GitLabWebhookType) String() string {
+	switch e {
+	case WebhookPush:
+		return "push"
+	}
+	return "UNKNOWN"
+}
+
 type WebhookPut struct {
 	URL                    string `json:"url"`
 	PushEventsBranchFilter string `json:"push_events_branch_filter"`
 }
 
+type WebhookProject struct {
+	ID       int    `json:"id"`
+	WebURL   string `json:"web_url"`
+	FullPath string `json:"path_with_namespace"`
+}
+
+type WebhookCommitAuthor struct {
+	Name string `json:"name"`
+}
+
+type WebhookCommit struct {
+	ID           string              `json:"id"`
+	Title        string              `json:"title"`
+	Message      string              `json:"message"`
+	Timestamp    string              `json:"timestamp"`
+	URL          string              `json:"url"`
+	Author       WebhookCommitAuthor `json:"author"`
+	AddedList    []string            `json:"added"`
+	ModifiedList []string            `json:"modified"`
+	RemovedList  []string            `json:"removed"`
+}
+
 type WebhookPushEvent struct {
-	Ref string `json:"ref"`
+	ObjectKind GitLabWebhookType `json:"object_kind"`
+	Ref        string            `json:"ref"`
+	Username   string            `json:"user_name"`
+	Project    WebhookProject    `json:"project"`
+	CommitList []WebhookCommit   `json:"commits"`
+}
+
+func GET(instanceURL string, resourcePath string, token string) (*http.Response, error) {
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
+	req, err := http.NewRequest("GET",
+		url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct GET %v (%w)", url, err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+token)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed GET %v (%w)", url, err)
+	}
+
+	return resp, nil
 }
 
 func PUT(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {

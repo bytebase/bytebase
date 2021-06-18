@@ -217,6 +217,9 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 	if v := find.ProjectId; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
+	if v := find.WebhookEndpointId; v != nil {
+		where, args = append(where, "webhook_endpoint_id = ?"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 

@@ -97,7 +97,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.ComposeDatabaseById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -182,11 +185,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeDatabaseById(ctx context.Context, id int, includeList []string) (*api.Database, error) {
-	databaseFind := &api.DatabaseFind{
-		ID: &id,
-	}
-	database, err := s.DatabaseService.FindDatabase(context.Background(), databaseFind)
+func (s *Server) ComposeDatabaseByFind(ctx context.Context, find *api.DatabaseFind, includeList []string) (*api.Database, error) {
+	database, err := s.DatabaseService.FindDatabase(context.Background(), find)
 	if err != nil {
 		return nil, err
 	}
