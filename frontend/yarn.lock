@@ -471,10 +471,10 @@ emojis-list@^3.0.0:
   resolved "https://registry.yarnpkg.com/emojis-list/-/emojis-list-3.0.0.tgz#5570662046ad29e2e916e71aae260abdff4f6a78"
   integrity sha512-/kyM18EfinwXZbno9FyUGeFh87KC8HRQBQGildHZbEuRyWFOmv1U10o9BBp8XVZDVNNuQKyIGIu5ZYAAXJ0V2Q==
 
-esbuild@^0.9.3:
-  version "0.9.7"
-  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.9.7.tgz#ea0d639cbe4b88ec25fbed4d6ff00c8d788ef70b"
-  integrity sha512-VtUf6aQ89VTmMLKrWHYG50uByMF4JQlVysb8dmg6cOgW8JnFCipmz7p+HNBl+RR3LLCuBxFGVauAe2wfnF9bLg==
+esbuild@^0.12.5:
+  version "0.12.9"
+  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.12.9.tgz#bed4e7087c286cd81d975631f77d47feb1660070"
+  integrity sha512-MWRhAbMOJ9RJygCrt778rz/qNYgA4ZVj6aXnNPxFjs7PmIpb0fuB9Gmg5uWrr6n++XKwwm/RmSz6RR5JL2Ocsw==
 
 escalade@^3.1.1:
   version "3.1.1"
@@ -1048,6 +1048,15 @@ postcss@^8.1.10, postcss@^8.2.1:
     nanoid "^3.1.23"
     source-map "^0.6.1"
 
+postcss@^8.3.0:
+  version "8.3.5"
+  resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.3.5.tgz#982216b113412bc20a86289e91eb994952a5b709"
+  integrity sha512-NxTuJocUhYGsMiMFHDUkmjSKT3EdH4/WbGF6GCi1NDGk+vbcUTun4fpbOqaPtD8IIsztA2ilZm2DhYCuyN58gA==
+  dependencies:
+    colorette "^1.2.2"
+    nanoid "^3.1.23"
+    source-map-js "^0.6.2"
+
 pretty-hrtime@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/pretty-hrtime/-/pretty-hrtime-1.0.3.tgz#b7e3ea42435a4c9b2759d99e0f201eb195802ee1"
@@ -1131,6 +1140,11 @@ slug@^4.0.2:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/slug/-/slug-4.1.0.tgz#f2c3ee98f43983d1ef2a0a517b3d0450b3a18da5"
   integrity sha512-4CbVfau2lVbmoBYn0M+rHA/g90LL/AAJvI/b4tF68A+vs/1EwdWXPn8R35Fuh0kxtfx9hWH4TuZdxbv3a8PRrg==
+
+source-map-js@^0.6.2:
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/source-map-js/-/source-map-js-0.6.2.tgz#0bb5de631b41cfbda6cfba8bd05a80efdfd2385e"
+  integrity sha512-/3GptzWzu0+0MBQFrDKzw/DvvMTUORvgY6k6jd/VS6iCR4RDTKWH6v6WPwQoUO8667uQEf9Oe38DxAYWY5F/Ug==
 
 source-map@^0.6.1:
   version "0.6.1"
@@ -1235,13 +1249,13 @@ uuid@^8.3.2:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
-vite@^2.0.1:
-  version "2.2.4"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-2.2.4.tgz#8f9cc85aacab04c850085894b086c8717f12ed16"
-  integrity sha512-vnIwSNci+phFMp6krhy+FbYzKL0R67Sdt9mVZ96S27AewrApSJjTqncJcalk8sf60BgcbW4+1C6DFIWkxquO9g==
+vite@^2.3.7:
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-2.3.7.tgz#3023892419367465e1af1739578f8663d04243b2"
+  integrity sha512-Y0xRz11MPYu/EAvzN94+FsOZHbSvO6FUvHv127CyG7mV6oDoay2bw+g5y9wW3Blf8OY3chaz3nc/DcRe1IQ3Nw==
   dependencies:
-    esbuild "^0.9.3"
-    postcss "^8.2.1"
+    esbuild "^0.12.5"
+    postcss "^8.3.0"
     resolve "^1.19.0"
     rollup "^2.38.5"
   optionalDependencies:
