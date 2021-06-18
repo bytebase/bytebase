@@ -97,6 +97,28 @@ type VCSDelete struct {
 	DeleterId int
 }
 
+// These payload types are only used when marshalling to the json format for saving into the database.
+// So we annotate with json tag using camelCase naming which is consistent with normal
+// json naming convention
+type VCSFileCommit struct {
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	Message    string `json:"message"`
+	CreatedTs  int64  `json:"createdTs"`
+	URL        string `json:"url"`
+	AuthorName string `json:"authorName"`
+	Added      string `json:"added"`
+}
+
+type VCSPushEvent struct {
+	Ref                string        `json:"ref"`
+	RepositoryID       string        `json:"repoId"`
+	RepositoryURL      string        `json:"repoUrl"`
+	RepositoryFullPath string        `json:"repoFullPath"`
+	AuthorName         string        `json:"authorName"`
+	FileCommit         VCSFileCommit `json:"fileCommit"`
+}
+
 type VCSService interface {
 	CreateVCS(ctx context.Context, create *VCSCreate) (*VCS, error)
 	FindVCSList(ctx context.Context, find *VCSFind) ([]*VCS, error)

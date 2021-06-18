@@ -40,21 +40,19 @@ type WebhookCommitAuthor struct {
 }
 
 type WebhookCommit struct {
-	ID           string              `json:"id"`
-	Title        string              `json:"title"`
-	Message      string              `json:"message"`
-	Timestamp    string              `json:"timestamp"`
-	URL          string              `json:"url"`
-	Author       WebhookCommitAuthor `json:"author"`
-	AddedList    []string            `json:"added"`
-	ModifiedList []string            `json:"modified"`
-	RemovedList  []string            `json:"removed"`
+	ID        string              `json:"id"`
+	Title     string              `json:"title"`
+	Message   string              `json:"message"`
+	Timestamp string              `json:"timestamp"`
+	URL       string              `json:"url"`
+	Author    WebhookCommitAuthor `json:"author"`
+	AddedList []string            `json:"added"`
 }
 
 type WebhookPushEvent struct {
 	ObjectKind GitLabWebhookType `json:"object_kind"`
 	Ref        string            `json:"ref"`
-	Username   string            `json:"user_name"`
+	AuthorName string            `json:"user_name"`
 	Project    WebhookProject    `json:"project"`
 	CommitList []WebhookCommit   `json:"commits"`
 }

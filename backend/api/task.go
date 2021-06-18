@@ -45,8 +45,9 @@ const (
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 type TaskDatabaseSchemaUpdatePayload struct {
-	Statement         string `json:"statement,omitempty"`
-	RollbackStatement string `json:"rollbackStatement,omitempty"`
+	Statement         string       `json:"statement,omitempty"`
+	RollbackStatement string       `json:"rollbackStatement,omitempty"`
+	VCSPushEvent      VCSPushEvent `json:"pushEvent,omitempty"`
 }
 
 type Task struct {
@@ -94,7 +95,8 @@ type TaskCreate struct {
 	Type              TaskType   `jsonapi:"attr,type"`
 	Statement         string     `jsonapi:"attr,statement"`
 	RollbackStatement string     `jsonapi:"attr,rollbackStatement"`
-	// Payload is dirived from Statement, RollbackStatement
+	VCSPushEvent      *VCSPushEvent
+	// Payload is dirived from Statement, RollbackStatement, VCSPushEvent
 	Payload string
 }
 

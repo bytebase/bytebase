@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -118,13 +119,34 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 
 					// Compose the new issue
+					createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+					if err != nil {
+						s.l.Warn("Failed to parse timestamp. Ignored", zap.String("filename", filename), zap.Error(err))
+					}
+					vcsPushEvent := api.VCSPushEvent{
+						Ref:                pushEvent.Ref,
+						RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+						RepositoryURL:      pushEvent.Project.WebURL,
+						RepositoryFullPath: pushEvent.Project.FullPath,
+						AuthorName:         pushEvent.AuthorName,
+						FileCommit: api.VCSFileCommit{
+							ID:         commit.ID,
+							Title:      commit.Title,
+							Message:    commit.Message,
+							CreatedTs:  createdTime.Unix(),
+							URL:        commit.URL,
+							AuthorName: commit.Author.Name,
+							Added:      added,
+						},
+					}
 					task := &api.TaskCreate{
-						InstanceId: database.InstanceId,
-						DatabaseId: database.ID,
-						Name:       description,
-						Status:     "PENDING",
-						Type:       api.TaskDatabaseSchemaUpdate,
-						Statement:  string(b),
+						InstanceId:   database.InstanceId,
+						DatabaseId:   database.ID,
+						Name:         description,
+						Status:       "PENDING",
+						Type:         api.TaskDatabaseSchemaUpdate,
+						Statement:    string(b),
+						VCSPushEvent: &vcsPushEvent,
 					}
 					stage := &api.StageCreate{
 						EnvironmentId: database.Instance.EnvironmentId,
