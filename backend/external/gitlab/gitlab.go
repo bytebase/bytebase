@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ApiPath = "/api/v4"
+	ApiPath = "api/v4"
 )
 
 type WebhookPut struct {
@@ -15,8 +15,12 @@ type WebhookPut struct {
 	PushEventsBranchFilter string `json:"push_events_branch_filter"`
 }
 
+type WebhookPushEvent struct {
+	Ref string `json:"ref"`
+}
+
 func PUT(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s%s%s", instanceURL, ApiPath, resourcePath)
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
 	req, err := http.NewRequest("PUT",
 		url, body)
 	if err != nil {
@@ -35,7 +39,7 @@ func PUT(instanceURL string, resourcePath string, token string, body io.Reader) 
 }
 
 func DELETE(instanceURL string, resourcePath string, token string) (*http.Response, error) {
-	url := fmt.Sprintf("%s%s%s", instanceURL, ApiPath, resourcePath)
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
 	req, err := http.NewRequest("DELETE",
 		url, nil)
 	if err != nil {
