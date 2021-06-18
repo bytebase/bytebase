@@ -111,10 +111,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 	for _, item := range create.SubscriberIdList {
 		subscriberIdList = append(subscriberIdList, strconv.Itoa(item))
 	}
-	newPayload, err := json.Marshal(create.Payload)
-	if err != nil {
-		return nil, FormatError(err)
-	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,
@@ -141,7 +137,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		create.Description,
 		create.AssigneeId,
 		strings.Join(subscriberIdList, ","),
-		newPayload,
+		create.Payload,
 	)
 
 	if err != nil {
@@ -152,7 +148,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 	row.Next()
 	var issue api.Issue
 	var idList string
-	var payload string
 	if err := row.Scan(
 		&issue.ID,
 		&issue.CreatorId,
@@ -167,7 +162,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		&issue.Description,
 		&issue.AssigneeId,
 		&idList,
-		&payload,
+		&issue.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -182,15 +177,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
 		}
 	}
-
-	if payload == "" {
-		issue.Payload = api.IssuePayload{}
-	} else {
-		if err := json.Unmarshal([]byte(payload), &issue.Payload); err != nil {
-			return nil, FormatError(err)
-		}
-	}
-
 	return &issue, nil
 }
 
@@ -242,7 +228,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	for rows.Next() {
 		var issue api.Issue
 		var idList string
-		var payload string
 		if err := rows.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -257,7 +242,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			&issue.Description,
 			&issue.AssigneeId,
 			&idList,
-			&payload,
+			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -270,14 +255,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 					s.l.Error(fmt.Sprintf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item))
 				}
 				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
-			}
-		}
-
-		if payload == "" {
-			issue.Payload = api.IssuePayload{}
-		} else {
-			if err := json.Unmarshal([]byte(payload), &issue.Payload); err != nil {
-				return nil, FormatError(err)
 			}
 		}
 
@@ -340,7 +317,6 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if row.Next() {
 		var issue api.Issue
 		var idList string
-		var payload string
 		if err := row.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -355,7 +331,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			&issue.Description,
 			&issue.AssigneeId,
 			&idList,
-			&payload,
+			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -368,14 +344,6 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 					s.l.Error(fmt.Sprintf("Issue Id %d contains invalid subscriber id: %s", issue.ID, item))
 				}
 				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
-			}
-		}
-
-		if payload == "" {
-			issue.Payload = api.IssuePayload{}
-		} else {
-			if err := json.Unmarshal([]byte(payload), &issue.Payload); err != nil {
-				return nil, FormatError(err)
 			}
 		}
 
