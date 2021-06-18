@@ -1,5 +1,4 @@
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
 import {
   ExternalRepositoryInfo,
   VCS,
@@ -83,6 +82,7 @@ const actions = {
     {}: any,
     {
       vcs,
+      webhookEndpointId,
       projectId,
       branchFilter,
       secretToken,
@@ -91,11 +91,12 @@ const actions = {
       vcs: VCS;
       projectId: string;
       branchFilter: string;
+      webhookEndpointId: string;
       secretToken: string;
       accessToken: string;
     }
   ): Promise<WebhookInfo> {
-    const url = `${backendURL()}/${GITLAB_WEBHOOK_PATH}/${uuidv4()}`;
+    const url = `${backendURL()}/${GITLAB_WEBHOOK_PATH}/${webhookEndpointId}`;
     const data = (
       await axios.post(
         `${vcs.instanceURL}/${GITLAB_API_PATH}/projects/${projectId}/hooks`,
@@ -123,7 +124,6 @@ const actions = {
 
     return {
       id: data.id.toString(),
-      url,
     };
   },
 };

@@ -26,6 +26,7 @@ import { computed, PropType } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
+import { v4 as uuidv4 } from "uuid";
 import { BBStepTabItem } from "../bbkit/types";
 import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
@@ -119,10 +120,12 @@ export default {
     const tryFinishSetup = (allowFinishCallback: () => void) => {
       // The secret token to validate the gitlab webhook sender.
       const secretToken = randomString(16);
+      const webhookEndpointId = uuidv4();
       const createFunc = () => {
         store
           .dispatch("gitlab/createWebhook", {
             vcs: state.config.vcs,
+            webhookEndpointId,
             projectId: state.config.repositoryInfo.externalId,
             branchFilter: state.config.repositoryConfig.branchFilter,
             secretToken,
@@ -138,8 +141,8 @@ export default {
               baseDirectory: state.config.repositoryConfig.baseDirectory,
               branchFilter: state.config.repositoryConfig.branchFilter,
               externalId: state.config.repositoryInfo.externalId,
-              webhookId: webhook.id,
-              webhookURL: webhook.url,
+              externalWebhookId: webhook.id,
+              webhookEndpointId,
               secretToken,
             };
             store

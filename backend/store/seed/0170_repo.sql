@@ -11,8 +11,8 @@ INSERT INTO
         base_directory,
         branch_filter,
         external_id,
-        webhook_id,
-        webhook_url,
+        external_webhook_id,
+        webhook_endpoint_id,
         secret_token
     )
 VALUES
@@ -31,6 +31,6 @@ VALUES
         "7",
         -- Refers to the webhook in bytebase-test/project1
         "5",
-        "http://gitlab.bytebase.com/hook/gitlab/8368dde4-e352-4696-9fef-26bd3af6ec40",
+        "8368dde4-e352-4696-9fef-26bd3af6ec40",
         "VFN2lgKDRLWjJ25B"
     );

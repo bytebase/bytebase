@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -181,6 +182,8 @@ func (server *Server) Run() error {
 	const port int = 8080
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
+
+	os.Setenv("HOSTNAME", fmt.Sprintf("http://localhost:%d", port))
 	return server.e.Start(fmt.Sprintf(":%d", port))
 }
 

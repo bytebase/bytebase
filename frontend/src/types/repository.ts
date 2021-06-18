@@ -42,8 +42,8 @@ export type RepositoryCreate = {
   baseDirectory: string;
   branchFilter: string;
   externalId: string;
-  webhookId: string;
-  webhookURL: string;
+  externalWebhookId: string;
+  webhookEndpointId: string;
   secretToken: string;
 };
 
@@ -70,7 +70,6 @@ export type ExternalRepositoryInfo = {
 
 export type WebhookInfo = {
   id: string;
-  url: string;
 };
 
 export function baseDirectoryWebURL(repository: Repository): string {
