@@ -2,6 +2,7 @@
   <div>
     <BBStepTab
       :stepItemList="stepList"
+      :allowNext="allowNext"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
       @cancel="cancel"
@@ -21,10 +22,11 @@
 
 <script lang="ts">
 import { reactive } from "@vue/reactivity";
-import { PropType } from "@vue/runtime-core";
-import { BBStepTabItem } from "../bbkit/types";
+import { computed, PropType } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import isEmpty from "lodash-es/isEmpty";
+import { BBStepTabItem } from "../bbkit/types";
 import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
 import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
@@ -98,6 +100,13 @@ export default {
       currentStep: CHOOSE_PROVIDER_STEP,
     });
 
+    const allowNext = computed((): boolean => {
+      if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
+        return !isEmpty(state.config.repositoryConfig.branchFilter);
+      }
+      return true;
+    });
+
     const tryChangeStep = (
       oldStep: number,
       newStep: number,
@@ -165,6 +174,7 @@ export default {
     return {
       state,
       stepList,
+      allowNext,
       tryChangeStep,
       tryFinishSetup,
       cancel,

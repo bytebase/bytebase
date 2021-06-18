@@ -52,18 +52,16 @@
       />
     </div>
     <div>
-      <div class="textlabel">Branch</div>
+      <div class="textlabel">Branch <span class="text-red-600">*</span></div>
       <div class="mt-1 textinfolabel">
-        The branch where Bytebase observes the SQL file (.sql) change. If empty,
-        then Bytebase will observe the default branch (normally it's the
-        'master' or 'main' branch).
+        The branch where Bytebase observes the SQL file (.sql) change.
       </div>
       <input
         id="branch"
         name="branch"
         type="text"
         class="textfield mt-2 w-full"
-        placeholder="Default branch (normally 'master' or 'main')"
+        placeholder="e.g. master"
         v-model="repositoryConfig.branchFilter"
       />
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">

@@ -712,7 +712,7 @@ CREATE TABLE repo (
     base_directory TEXT NOT NULL DEFAULT '',
     -- Branch we are interested.
     -- For GitLab, this corresponds to webhook's push_events_branch_filter. Wildcard is supported
-    branch_filter TEXT NOT NULL DEFAULT '',
+    branch_filter TEXT NOT NULL CHECK (trim(branch_filter) != ''),
     -- Repo id from the corresponding VCS provider.
     -- For GitLab, this is the project id. e.g. 123
     external_id TEXT NOT NULL,

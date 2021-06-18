@@ -25,7 +25,7 @@ VALUES
         "bytebase-test/project1",
         "http://gitlab.bytebase.com/bytebase-test/project1",
         "bytebase",
-        "feature/*",
+        "master",
         -- Refers to the bytebase-test/project1
         "7",
         -- Refers to the webhook in bytebase-test/project1

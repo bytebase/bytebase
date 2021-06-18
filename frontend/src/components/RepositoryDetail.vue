@@ -54,6 +54,7 @@
 
 <script lang="ts">
 import { computed, PropType, reactive, watch } from "vue";
+import isEmpty from "lodash-es/isEmpty";
 import RepositoryForm from "./RepositoryForm.vue";
 import {
   Repository,
@@ -112,9 +113,10 @@ export default {
 
     const allowUpdate = computed(() => {
       return (
-        props.repository.baseDirectory !=
+        !isEmpty(state.repositoryConfig.branchFilter) &&
+        (props.repository.baseDirectory !=
           state.repositoryConfig.baseDirectory ||
-        props.repository.branchFilter != state.repositoryConfig.branchFilter
+          props.repository.branchFilter != state.repositoryConfig.branchFilter)
       );
     });
 
