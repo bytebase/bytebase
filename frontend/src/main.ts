@@ -39,6 +39,7 @@ import {
   isDev,
   isDemo,
   isRelease,
+  backend,
   humanizeTs,
   sizeToFit,
   urlfy,
@@ -76,8 +77,10 @@ app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 
 registerStoreWithRoleUtil(store);
 
-console.debug("dev: ", isDev());
-console.debug("mode: ", import.meta.env.MODE);
+console.debug("dev:", isDev());
+console.debug("demo:", isDemo());
+console.debug("release:", isRelease());
+console.debug("backend:", backend());
 
 axios.defaults.timeout = 3000;
 axios.interceptors.request.use((request) => {

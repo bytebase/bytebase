@@ -1,18 +1,22 @@
 import moment from "moment";
 
-export function isDev() {
+export function isDev(): boolean {
   return import.meta.env.DEV;
 }
 
-export function isDemo() {
+export function isDemo(): boolean {
   return import.meta.env.MODE === "demo";
 }
 
-export function isRelease() {
+export function isRelease(): boolean {
   return import.meta.env.PROD && !isDemo();
 }
 
-export function humanizeTs(ts: number) {
+export function backend(): string {
+  return import.meta.env.VITE_BACKEND as string;
+}
+
+export function humanizeTs(ts: number): string {
   const time = moment.utc(ts * 1000);
   if (moment().year() == time.year()) {
     if (moment().dayOfYear() == time.dayOfYear()) {
@@ -26,7 +30,7 @@ export function humanizeTs(ts: number) {
   return time.local().format("MMM D YYYY");
 }
 
-export function bytesToString(size: number) {
+export function bytesToString(size: number): string {
   const unitList = ["B", "KB", "MB", "GB", "TB"];
   let i = 0;
   for (i = 0; i < unitList.length; i++) {
@@ -38,7 +42,7 @@ export function bytesToString(size: number) {
   return size.toString() + " " + unitList[i];
 }
 
-export function urlfy(str: string) {
+export function urlfy(str: string): string {
   let result = str.trim();
   if (result.search(/^http[s]?\:\/\//) == -1) {
     result = "http://" + result;
@@ -46,7 +50,7 @@ export function urlfy(str: string) {
   return result;
 }
 
-export function isURL(str: string) {
+export function isURL(str: string): boolean {
   let url;
 
   try {
