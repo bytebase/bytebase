@@ -21,68 +21,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
-		issueCreate.Pipeline.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &issueCreate.Pipeline)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create pipeline for issue").SetInternal(err)
-		}
-
-		for _, stageCreate := range issueCreate.Pipeline.StageList {
-			stageCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-			stageCreate.PipelineId = createdPipeline.ID
-			createdStage, err := s.StageService.CreateStage(context.Background(), &stageCreate)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create stage for issue").SetInternal(err)
-			}
-
-			for _, taskCreate := range stageCreate.TaskList {
-				taskCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-				taskCreate.PipelineId = createdPipeline.ID
-				taskCreate.StageId = createdStage.ID
-				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-					payload := api.TaskDatabaseSchemaUpdatePayload{}
-					if taskCreate.Statement != "" {
-						payload.Statement = taskCreate.Statement
-					}
-					if taskCreate.RollbackStatement != "" {
-						payload.RollbackStatement = taskCreate.RollbackStatement
-					}
-					bytes, err := json.Marshal(payload)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task for issue").SetInternal(err)
-					}
-					taskCreate.Payload = string(bytes)
-				}
-				_, err := s.TaskService.CreateTask(context.Background(), &taskCreate)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task for issue").SetInternal(err)
-				}
-			}
-		}
-
-		issueCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		issueCreate.PipelineId = createdPipeline.ID
-		issue, err := s.IssueService.CreateIssue(context.Background(), issueCreate)
+		issue, err := s.CreateIssue(context.Background(), issueCreate, c.Get(GetPrincipalIdContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
-		}
-
-		if err := s.ComposeIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
-			return err
-		}
-
-		if err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task after creating the issue: %v", issue.Name)).SetInternal(err)
-		}
-
-		activityCreate := &api.ActivityCreate{
-			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-			ContainerId: issue.ID,
-			Type:        api.ActivityIssueCreate,
-		}
-		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating the issue: %v", issue.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -416,4 +357,72 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue,
 	}
 
 	return nil
+}
+
+func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorId int) (*api.Issue, error) {
+	issueCreate.Pipeline.CreatorId = creatorId
+	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pipeline for issue. Error %w", err)
+	}
+
+	for _, stageCreate := range issueCreate.Pipeline.StageList {
+		stageCreate.CreatorId = creatorId
+		stageCreate.PipelineId = createdPipeline.ID
+		createdStage, err := s.StageService.CreateStage(context.Background(), &stageCreate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create stage for issue. Error %w", err)
+		}
+
+		for _, taskCreate := range stageCreate.TaskList {
+			taskCreate.CreatorId = creatorId
+			taskCreate.PipelineId = createdPipeline.ID
+			taskCreate.StageId = createdStage.ID
+			if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+				payload := api.TaskDatabaseSchemaUpdatePayload{}
+				if taskCreate.Statement != "" {
+					payload.Statement = taskCreate.Statement
+				}
+				if taskCreate.RollbackStatement != "" {
+					payload.RollbackStatement = taskCreate.RollbackStatement
+				}
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
+				}
+				taskCreate.Payload = string(bytes)
+			}
+			_, err := s.TaskService.CreateTask(context.Background(), &taskCreate)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
+			}
+		}
+	}
+
+	issueCreate.CreatorId = creatorId
+	issueCreate.PipelineId = createdPipeline.ID
+	issue, err := s.IssueService.CreateIssue(context.Background(), issueCreate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create issue. Error %w", err)
+	}
+
+	if err := s.ComposeIssueRelationship(context.Background(), issue, []string{}); err != nil {
+		return nil, err
+	}
+
+	if err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
+		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorId:   creatorId,
+		ContainerId: issue.ID,
+		Type:        api.ActivityIssueCreate,
+	}
+	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+	}
+
+	return issue, nil
 }
