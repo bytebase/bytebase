@@ -92,7 +92,7 @@ export function isValidEmail(email: string) {
 
 export function randomString(n?: number): string {
   if (!n) {
-    n = 10;
+    n = 16;
   }
   var result = "";
   var characters =
