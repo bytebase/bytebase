@@ -143,17 +143,6 @@ export type PipelineStatusPatch = {
 };
 
 // Stage
-export type StageType =
-  | "bb.stage.general"
-  | "bb.stage.database.create"
-  | "bb.stage.database.grant"
-  | "bb.stage.schema.update";
-
-export type StageRunnable = {
-  auto: boolean;
-  run: () => void;
-};
-
 // The database belongs to an instance which in turns belongs to an environment.
 // THus stage can access both instance and environment info.
 export type Stage = {
@@ -172,8 +161,6 @@ export type Stage = {
 
   // Domain specific fields
   name: string;
-  type: StageType;
-  runnable?: StageRunnable;
 };
 
 export type StageCreate = {
@@ -183,7 +170,6 @@ export type StageCreate = {
 
   // Domain specific fields
   name: string;
-  type: StageType;
 };
 
 // Task

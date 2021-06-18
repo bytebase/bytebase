@@ -413,8 +413,7 @@ CREATE TABLE stage (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    name TEXT NOT NULL,
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.stage.%')
+    name TEXT NOT NULL
 );
 
 INSERT INTO

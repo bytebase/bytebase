@@ -6,8 +6,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -16,8 +15,7 @@ VALUES
         1001,
         9001,
         5004,
-        'Prod',
-        'bb.stage.schema.update'
+        'Prod'
     );
 
 -- Stage for Pipeline 9002 add column
@@ -28,8 +26,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -38,8 +35,7 @@ VALUES
         1003,
         9002,
         5001,
-        'Sandbox A',
-        'bb.stage.schema.update'
+        'Sandbox A'
     );
 
 INSERT INTO
@@ -49,8 +45,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -59,8 +54,7 @@ VALUES
         1003,
         9002,
         5002,
-        'Integration',
-        'bb.stage.schema.update'
+        'Integration'
     );
 
 INSERT INTO
@@ -70,8 +64,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -80,8 +73,7 @@ VALUES
         1003,
         9002,
         5003,
-        'Staging',
-        'bb.stage.schema.update'
+        'Staging'
     );
 
 INSERT INTO
@@ -91,8 +83,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -101,8 +92,7 @@ VALUES
         1003,
         9002,
         5004,
-        'Prod',
-        'bb.stage.schema.update'
+        'Prod'
     );
 
 -- Stage for Pipeline 9003 create table
@@ -113,8 +103,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -123,8 +112,7 @@ VALUES
         1003,
         9003,
         5001,
-        'Sandbox A',
-        'bb.stage.schema.update'
+        'Sandbox A'
     );
 
 INSERT INTO
@@ -134,8 +122,7 @@ INSERT INTO
         updater_id,
         pipeline_id,
         environment_id,
-        name,
-        `type`
+        name
     )
 VALUES
     (
@@ -144,6 +131,5 @@ VALUES
         1003,
         9003,
         5002,
-        'Integration',
-        'bb.stage.schema.update'
+        'Integration'
     );

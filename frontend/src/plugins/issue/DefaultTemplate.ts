@@ -15,13 +15,15 @@ const template: IssueTemplate = {
           {
             name: "Troubleshoot database",
             environmentId: ctx.environmentList[0].id,
-            type: "bb.stage.general",
             taskList: [
               {
                 name: "Troubleshoot database",
                 status: "PENDING_APPROVAL",
                 type: "bb.task.general",
+                instanceId: UNKNOWN_ID,
                 databaseId: UNKNOWN_ID,
+                statement: "",
+                rollbackStatement: "",
               },
             ],
           },

@@ -19,7 +19,6 @@ const template: IssueTemplate = {
     for (let i = 0; i < ctx.databaseList.length; i++) {
       stageList.push({
         name: `[${ctx.databaseList[i].instance.environment.name}] ${ctx.databaseList[i].name}`,
-        type: "bb.stage.schema.update",
         environmentId: ctx.environmentList[i].id,
         taskList: [
           {

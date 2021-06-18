@@ -251,7 +251,6 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     name: "<<Unknown stage>>",
-    type: "bb.stage.general",
     environment: UNKNOWN_ENVIRONMENT,
     taskList: [],
   };
@@ -530,7 +529,6 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     name: "",
-    type: "bb.stage.general",
     environment: EMPTY_ENVIRONMENT,
     taskList: [],
   };

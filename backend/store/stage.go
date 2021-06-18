@@ -90,18 +90,16 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 			updater_id,
 			pipeline_id,
 			environment_id,
-			name,
-			`+"`type`"+`	
+			name
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name, `+"`type`"+`
+		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name`+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.PipelineId,
 		create.EnvironmentId,
 		create.Name,
-		create.Type,
 	)
 
 	if err != nil {
@@ -120,7 +118,6 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 		&stage.PipelineId,
 		&stage.EnvironmentId,
 		&stage.Name,
-		&stage.Type,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -147,8 +144,7 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 		    updated_ts,
 			pipeline_id,
 			environment_id,
-		    name,
-		    `+"`type`"+`
+		    name
 		FROM stage
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -171,7 +167,6 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 			&stage.PipelineId,
 			&stage.EnvironmentId,
 			&stage.Name,
-			&stage.Type,
 		); err != nil {
 			return nil, FormatError(err)
 		}

@@ -5,29 +5,6 @@ import (
 	"encoding/json"
 )
 
-type StageType string
-
-const (
-	StageGeneral              StageType = "bb.stage.general"
-	StageDatabaseCreate       StageType = "bb.stage.database.create"
-	StageDatabaseGrant        StageType = "bb.stage.database.grant"
-	StageDatabaseSchemaUpdate StageType = "bb.stage.database.schema.update"
-)
-
-func (e StageType) String() string {
-	switch e {
-	case StageGeneral:
-		return "bb.stage.general"
-	case StageDatabaseCreate:
-		return "bb.stage.database.create"
-	case StageDatabaseGrant:
-		return "bb.stage.database.grant"
-	case StageDatabaseSchemaUpdate:
-		return "bb.stage.database.schema.update"
-	}
-	return "bb.stage.unknown"
-}
-
 type Stage struct {
 	ID int `jsonapi:"primary,stage"`
 
@@ -47,8 +24,7 @@ type Stage struct {
 	TaskList      []*Task      `jsonapi:"relation,task"`
 
 	// Domain specific fields
-	Name string    `jsonapi:"attr,name"`
-	Type StageType `jsonapi:"attr,type"`
+	Name string `jsonapi:"attr,name"`
 }
 
 type StageCreate struct {
@@ -62,8 +38,7 @@ type StageCreate struct {
 	TaskList      []TaskCreate `jsonapi:"attr,taskList"`
 
 	// Domain specific fields
-	Name string    `jsonapi:"attr,name"`
-	Type StageType `jsonapi:"attr,type"`
+	Name string `jsonapi:"attr,name"`
 }
 
 type StageFind struct {
