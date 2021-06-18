@@ -38,6 +38,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		s.l.Info((fmt.Sprintf("Push event: %+v", *pushEvent)))
 
+		// This shouldn't happen as we only setup webhook to receive push event, just in case.
+		if pushEvent.ObjectKind != gitlab.WebhookPush {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type. Expect push, got %s", pushEvent.ObjectKind))
+		}
+
 		webhookEndpointId := c.Param("id")
 		repositoryFind := &api.RepositoryFind{
 			WebhookEndpointId: &webhookEndpointId,
