@@ -133,3 +133,23 @@ VALUES
         5002,
         'Integration'
     );
+
+-- Stage for Pipeline 9004 simulating webhook push event
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        10008,
+        1,
+        1,
+        9004,
+        5003,
+        'Staging'
+    );

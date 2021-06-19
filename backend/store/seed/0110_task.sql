@@ -209,3 +209,33 @@ VALUES
         'PENDING',
         '{"statement":"CREATE TABLE integrationdb1.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE integrationdb1.tbl1;"}'
     );
+
+-- Task for stage 10008 "Staging" to update database 7010 'stagingdb1' to simulate webhook push event
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        11008,
+        1,
+        1,
+        9004,
+        10008,
+        6003,
+        7010,
+        'create todo table',
+        'bb.task.database.schema.update',
+        'PENDING',
+        '{"statement":"CREATE TABLE todo (\n  id INTEGER PRIMARY KEY AUTO_INCREMENT,\n  title TEXT\n)\n","pushEvent":{"ref":"refs/heads/master","repoId":"7","repoUrl":"http://gitlab.bytebase.com/bytebase-test/project1","repoFullPath":"bytebase-test/project1","authorName":"tianzhou","fileCommit":{"id":"e3b3f33a455a7e3cd999b44fa9cb8ddb633e1d29","title":"Create todo table to staging db1","message":"Create todo table to staging db1","createdTs":1624006500,"url":"http://gitlab.bytebase.com/bytebase-test/project1/-/commit/e3b3f33a455a7e3cd999b44fa9cb8ddb633e1d29","authorName":"tianzhou","added":"bytebase/20210618164921_stagingdb1_create_todo_table.sql"}}}'
+    );

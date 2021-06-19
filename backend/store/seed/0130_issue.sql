@@ -87,3 +87,33 @@ VALUES
         1001,
         '1001,1002,1003,1004'
     );
+
+-- Issue for simulating webhook push event
+INSERT INTO
+    issue (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        pipeline_id,
+        name,
+        `status`,
+        `type`,
+        description,
+        assignee_id,
+        subscriber_id_list
+    )
+VALUES
+    (
+        13004,
+        1,
+        1,
+        3001,
+        9004,
+        'Create todo table to stagingdb1',
+        'OPEN',
+        'bb.issue.database.schema.update',
+        'Create todo table to stagingdb1',
+        1,
+        ''
+    );

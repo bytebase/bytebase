@@ -51,3 +51,21 @@ VALUES
         'Pipeline - Create table ''tbl1''',
         'OPEN'
     );
+
+-- A pipeline simulating webhook push event
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `status`
+    )
+VALUES
+    (
+        9004,
+        1,
+        1,
+        'Pipeline - Create todo table to staging db1',
+        'OPEN'
+    );

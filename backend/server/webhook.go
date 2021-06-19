@@ -156,11 +156,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					stage := &api.StageCreate{
 						EnvironmentId: database.Instance.EnvironmentId,
 						TaskList:      []api.TaskCreate{*task},
-						Name:          fmt.Sprintf("Update %s schema", database.Name),
+						Name:          database.Instance.Environment.Name,
 					}
 					pipeline := &api.PipelineCreate{
 						StageList: []api.StageCreate{*stage},
-						Name:      commit.Title,
+						Name:      fmt.Sprintf("Pipeline - %s", commit.Title),
 					}
 					issueCreate := &api.IssueCreate{
 						ProjectId:   database.ProjectId,
