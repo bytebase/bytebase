@@ -141,6 +141,7 @@ import {
   activeTask,
   allTaskList,
   applicableTaskTransition,
+  isDBAOrOwner,
   TaskStatusTransition,
 } from "../utils";
 import {
@@ -152,6 +153,7 @@ import {
   IssueStatusTransitionType,
   ISSUE_STATUS_TRANSITION_LIST,
   Principal,
+  SYSTEM_BOT_ID,
   Task,
   TaskId,
 } from "../types";
@@ -226,7 +228,12 @@ export default {
           case "OPEN": {
             let list: TaskStatusTransition[] = [];
 
-            if (currentUser.value.id === (props.issue as Issue).assignee?.id) {
+            // Allow assignee, or assignee is the system bot and current user is DBA or owner
+            if (
+              currentUser.value.id === (props.issue as Issue).assignee?.id ||
+              ((props.issue as Issue).assignee?.id == SYSTEM_BOT_ID &&
+                isDBAOrOwner(currentUser.value.role))
+            ) {
               list = applicableTaskTransition((props.issue as Issue).pipeline);
             }
 
@@ -278,7 +285,12 @@ export default {
     const applicableIssueStatusTransitionList = computed(
       (): IssueStatusTransition[] => {
         const list: IssueStatusTransitionType[] = [];
-        if (currentUser.value.id === (props.issue as Issue).assignee?.id) {
+        // Allow assignee, or assignee is the system bot and current user is DBA or owner
+        if (
+          currentUser.value.id === (props.issue as Issue).assignee?.id ||
+          ((props.issue as Issue).assignee?.id == SYSTEM_BOT_ID &&
+            isDBAOrOwner(currentUser.value.role))
+        ) {
           list.push(
             ...ASSIGNEE_APPLICABLE_ACTION_LIST.get(
               (props.issue as Issue).status
