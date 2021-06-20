@@ -68,7 +68,9 @@ export type IssuePatch = {
   name?: string;
   description?: string;
   assigneeId?: PrincipalId;
-  subscriberIdList?: PrincipalId[];
+  // This is a list of PrincipalId separated by `,`.
+  // This is a hack because server uses google/jsonapi which doesn't support unmarshalling slice of int
+  subscriberIdListStr?: string;
   payload?: IssuePayload;
 };
 

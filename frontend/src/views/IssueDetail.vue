@@ -508,7 +508,7 @@ export default {
 
     const updateSubscriberIdList = (newSubscriberIdList: PrincipalId[]) => {
       patchIssue({
-        subscriberIdList: newSubscriberIdList,
+        subscriberIdListStr: newSubscriberIdList.join(","),
       });
     };
 

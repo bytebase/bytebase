@@ -283,12 +283,8 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if v := patch.AssigneeId; v != nil {
 		set, args = append(set, "assignee_id = ?"), append(args, *v)
 	}
-	if v := patch.SubscriberIdList; v != nil {
-		subscriberIdList := []string{}
-		for _, item := range *patch.SubscriberIdList {
-			subscriberIdList = append(subscriberIdList, strconv.Itoa(item))
-		}
-		set, args = append(set, "subscriber_id_list = ?"), append(args, strings.Join(subscriberIdList, ","))
+	if v := patch.SubscriberIdListStr; v != nil {
+		set, args = append(set, "subscriber_id_list = ?"), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
 		payload, err := json.Marshal(*patch.Payload)

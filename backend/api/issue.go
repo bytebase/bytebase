@@ -145,11 +145,14 @@ type IssuePatch struct {
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
 	// Status is only set manualy via IssueStatusPatch
-	Status           *IssueStatus
-	Description      *string `jsonapi:"attr,description"`
-	AssigneeId       *int    `jsonapi:"attr,assigneeId"`
-	SubscriberIdList *[]int  `jsonapi:"attr,subscriberIdList"`
-	Payload          *string `jsonapi:"attr,payload"`
+	Status      *IssueStatus
+	Description *string `jsonapi:"attr,description"`
+	AssigneeId  *int    `jsonapi:"attr,assigneeId"`
+	// We expect a list of PrincipalId separated by `,`.
+	// This is a hack because google/jsonapi doesn't support unmarshaling int slice.
+	// The community has a outstanding PR to support this: https://github.com/google/jsonapi/pull/129
+	SubscriberIdListStr *string `jsonapi:"attr,subscriberIdListStr"`
+	Payload             *string `jsonapi:"attr,payload"`
 }
 
 type IssueStatusPatch struct {

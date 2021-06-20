@@ -157,24 +157,18 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			payloadList = append(payloadList, payload)
 		}
-		if issuePatch.SubscriberIdList != nil {
+		if issuePatch.SubscriberIdListStr != nil {
 			oldSubscriberIdList := []string{}
 			for _, item := range issue.SubscriberIdList {
 				oldSubscriberIdList = append(oldSubscriberIdList, strconv.Itoa(item))
 			}
 			oldSubscriberIdStr := strings.Join(oldSubscriberIdList, ",")
 
-			newSubscriberIdList := []string{}
-			for _, item := range *issuePatch.SubscriberIdList {
-				newSubscriberIdList = append(newSubscriberIdList, strconv.Itoa(item))
-			}
-			newSubscriberIdStr := strings.Join(newSubscriberIdList, ",")
-
-			if newSubscriberIdStr != oldSubscriberIdStr {
+			if *issuePatch.SubscriberIdListStr != oldSubscriberIdStr {
 				payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
 					FieldId:  api.IssueFieldSubscriberList,
 					OldValue: oldSubscriberIdStr,
-					NewValue: newSubscriberIdStr,
+					NewValue: *issuePatch.SubscriberIdListStr,
 				})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue subscribers: %v", updatedIssue.Name)).SetInternal(err)
