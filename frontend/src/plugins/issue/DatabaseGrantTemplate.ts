@@ -28,14 +28,16 @@ const template: IssueTemplate = {
         stageList: [
           {
             name: "Request database access",
-            type: "bb.stage.database.grant",
             environmentId: ctx.environmentList[0].id,
             taskList: [
               {
                 name: "Request database access",
                 status: "PENDING_APPROVAL",
                 type: "bb.task.general",
+                instanceId: ctx.databaseList[0].instance.id,
                 databaseId: ctx.databaseList[0].id,
+                statement: "",
+                rollbackStatement: "",
               },
             ],
           },

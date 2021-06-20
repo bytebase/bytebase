@@ -35,12 +35,14 @@ const template: IssueTemplate = {
           {
             name: "Create database",
             environmentId: ctx.environmentList[0].id,
-            type: "bb.stage.database.create",
             taskList: [
               {
                 name: "Create database",
                 status: "PENDING_APPROVAL",
                 type: "bb.task.general",
+                instanceId: ctx.databaseList[0].instance.id,
+                statement: "",
+                rollbackStatement: "",
               },
             ],
           },
