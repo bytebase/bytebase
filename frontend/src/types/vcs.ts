@@ -63,6 +63,26 @@ export type VCSTokenCreate = {
   redirectURL: string;
 };
 
+export type VCSFileCommit = {
+  id: string;
+  title: string;
+  message: string;
+  createdTs: number;
+  url: string;
+  authorName: string;
+  added: string;
+};
+
+export type VCSPushEvent = {
+  vcsType: VCSType;
+  ref: string;
+  repoId: string;
+  repoUrl: string;
+  repoFullPath: string;
+  authorName: string;
+  fileCommit: VCSFileCommit;
+};
+
 export function isValidVCSApplicationIdOrSecret(str: string): boolean {
   return /^[a-zA-Z0-9_]{64}$/.test(str);
 }

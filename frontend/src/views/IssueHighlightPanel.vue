@@ -30,24 +30,53 @@
               >{{ issue.creator.name }}</router-link
             >
             at
-            <span href="#" class="font-medium text-control">{{
-              moment(issue.updatedTs * 1000).format("LLL")
-            }}</span>
+            {{ moment(issue.updatedTs * 1000).format("LLL") }}
+          </p>
+          <p
+            v-if="pushEvent"
+            class="
+              mt-1
+              text-sm text-control-light
+              flex flex-row
+              items-center
+              space-x-1
+            "
+          >
+            <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
+              <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
+            </template>
+            <a :href="vcsBranchURL" target="_blank" class="normal-link">
+              {{ `${vcsBranch}@${pushEvent.repoFullPath}` }}
+            </a>
+            <span>
+              commit
+              <a
+                :href="pushEvent.fileCommit.url"
+                target="_blank"
+                class="normal-link"
+              >
+                {{ pushEvent.fileCommit.id.substring(0, 7) }}:
+              </a>
+              <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
+              by
+              {{ pushEvent.authorName }} at
+              {{ moment(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}
+            </span>
           </p>
         </div>
       </div>
     </div>
-    <div class="mt-6 flex space-x-3 md:mt-0 md:ml-4">
+    <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
       <slot />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { reactive, watch, PropType } from "vue";
+import { reactive, watch, PropType, computed } from "vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import { activeTask } from "../utils";
-import { Issue } from "../types";
+import { DatabaseSchemaUpdateTaskPayload, Issue, VCSPushEvent } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -85,6 +114,46 @@ export default {
       }
     );
 
+    const task = activeTask(props.issue.pipeline);
+    console.log("payload", task.payload);
+
+    const pushEvent = computed((): VCSPushEvent | undefined => {
+      if (props.issue.type == "bb.issue.database.schema.update") {
+        const payload = activeTask(props.issue.pipeline)
+          .payload as DatabaseSchemaUpdateTaskPayload;
+        return payload?.pushEvent;
+      }
+      return undefined;
+    });
+
+    const vcsType = computed((): string => {
+      if (pushEvent.value) {
+        if (pushEvent.value.vcsType.startsWith("GITLAB")) {
+          return "GitLab";
+        }
+      }
+      return "";
+    });
+
+    const vcsBranch = computed((): string => {
+      if (pushEvent.value) {
+        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+          const parts = pushEvent.value.ref.split("/");
+          return parts[parts.length - 1];
+        }
+      }
+      return "";
+    });
+
+    const vcsBranchURL = computed((): string => {
+      if (pushEvent.value) {
+        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+          return `${pushEvent.value.repoUrl}/-/tree/${vcsBranch.value}`;
+        }
+      }
+      return "";
+    });
+
     const trySaveName = (text: string) => {
       state.name = text;
       if (text != props.issue.name) {
@@ -92,7 +161,15 @@ export default {
       }
     };
 
-    return { state, activeTask, trySaveName };
+    return {
+      state,
+      activeTask,
+      pushEvent,
+      vcsType,
+      vcsBranch,
+      vcsBranchURL,
+      trySaveName,
+    };
   },
 };
 </script>

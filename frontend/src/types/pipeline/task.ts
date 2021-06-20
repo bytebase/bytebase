@@ -2,6 +2,7 @@ import { Database } from "../database";
 import { DatabaseId, InstanceId, PrincipalId, TaskId, TaskRunId } from "../id";
 import { Instance } from "../instance";
 import { Principal } from "../principal";
+import { VCSPushEvent } from "../vcs";
 import { Pipeline } from "./pipeline";
 import { Stage } from "./stage";
 
@@ -18,6 +19,7 @@ export type TaskStatus =
 export type DatabaseSchemaUpdateTaskPayload = {
   statement: string;
   rollbackStatement: string;
+  pushEvent?: VCSPushEvent;
 };
 
 export type TaskPayload = DatabaseSchemaUpdateTaskPayload;
