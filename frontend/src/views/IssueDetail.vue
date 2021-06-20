@@ -152,7 +152,10 @@
                 @update-statement="updateStatement"
               />
             </section>
-            <section v-if="showIssueRollbackSqlPanel" class="border-b mb-4">
+            <section
+              v-if="showIssueTaskRollbackStatementPanel"
+              class="border-b mb-4"
+            >
               <IssueTaskStatementPanel
                 :statement="selectedRollbackStatement"
                 :create="state.create"
@@ -734,8 +737,10 @@ export default {
       );
     });
 
-    const showIssueRollbackSqlPanel = computed(() => {
-      return issue.value.type == "bb.issue.database.schema.update";
+    const showIssueTaskRollbackStatementPanel = computed(() => {
+      // TODO: disable it for now
+      return false;
+      //return issue.value.type == "bb.issue.database.schema.update";
     });
 
     return {
@@ -768,7 +773,7 @@ export default {
       showPipelineFlowBar,
       showIssueOutputPanel,
       showIssueTaskStatementPanel,
-      showIssueRollbackSqlPanel,
+      showIssueTaskRollbackStatementPanel,
     };
   },
 };
