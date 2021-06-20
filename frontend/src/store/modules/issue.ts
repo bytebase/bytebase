@@ -149,7 +149,11 @@ const actions = {
         {
           data: {
             type: "IssueCreate",
-            attributes: newIssue,
+            attributes: {
+              ...newIssue,
+              // Server expects payload as string, so we stringify first.
+              payload: JSON.stringify(newIssue.payload),
+            },
           },
         }
       )
