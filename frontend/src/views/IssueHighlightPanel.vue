@@ -114,9 +114,6 @@ export default {
       }
     );
 
-    const task = activeTask(props.issue.pipeline);
-    console.log("payload", task.payload);
-
     const pushEvent = computed((): VCSPushEvent | undefined => {
       if (props.issue.type == "bb.issue.database.schema.update") {
         const payload = activeTask(props.issue.pipeline)
