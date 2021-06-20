@@ -650,8 +650,10 @@ export default {
       if (state.create) {
         return (task as TaskCreate).statement;
       }
-      return ((task as Task).payload as DatabaseSchemaUpdateTaskPayload)
-        .statement;
+      return (
+        ((task as Task).payload as DatabaseSchemaUpdateTaskPayload).statement ||
+        ""
+      );
     });
 
     const selectedRollbackStatement = computed((): string => {
@@ -659,8 +661,10 @@ export default {
       if (state.create) {
         return (task as TaskCreate).rollbackStatement;
       }
-      return ((task as Task).payload as DatabaseSchemaUpdateTaskPayload)
-        .rollbackStatement;
+      return (
+        ((task as Task).payload as DatabaseSchemaUpdateTaskPayload)
+          .rollbackStatement || ""
+      );
     });
 
     const allowEditSidebar = computed(() => {
