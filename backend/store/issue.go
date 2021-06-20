@@ -193,9 +193,18 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 	if v := find.PrincipalId; v != nil {
-		where = append(where, "(creator_id = ? OR assignee_id = ?)")
+		where = append(where, "(creator_id = ? OR assignee_id = ? OR subscriber_id_list = ? OR subscriber_id_list LIKE ? OR subscriber_id_list LIKE ? OR subscriber_id_list LIKE ?)")
 		args = append(args, *v)
 		args = append(args, *v)
+		// For subscriber_id_list search, there are 4 possible patterns
+		// 1. There is just 1 id.
+		args = append(args, *v)
+		// 2. id is the first element
+		args = append(args, fmt.Sprintf("%d,%%", *v))
+		// 3. id is in the middle
+		args = append(args, fmt.Sprintf("%%,%d,%%", *v))
+		// 4. id is the last element
+		args = append(args, fmt.Sprintf("%%,%d", *v))
 	}
 
 	rows, err := tx.QueryContext(ctx, `
