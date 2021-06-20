@@ -65,9 +65,6 @@ export type ActivityCreate = {
 };
 
 export type ActivityPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   comment: string;
 };

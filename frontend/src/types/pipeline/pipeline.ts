@@ -53,9 +53,6 @@ export type PipelineCreate = {
 };
 
 export type PipelineStatusPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   status: PipelineStatus;
   comment?: string;

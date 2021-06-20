@@ -27,9 +27,6 @@ export type MemberCreate = {
 };
 
 export type MemberPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   role: RoleType;
 };

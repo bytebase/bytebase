@@ -109,16 +109,13 @@ const actions = {
     {
       activityId,
       updatedComment,
-      updaterId,
     }: {
       activityId: ActivityId;
       updatedComment: string;
-      updaterId: PrincipalId;
     }
   ) {
     const activityPatch: ActivityPatch = {
       comment: updatedComment,
-      updaterId,
     };
     const data = (
       await axios.patch(`/api/activity/${activityId}`, {

@@ -273,7 +273,6 @@ export default {
 
     const changeRole = (id: MemberId, role: RoleType) => {
       const memberPatch: MemberPatch = {
-        updaterId: currentUser.value.id,
         role,
       };
       store.dispatch("member/patchMember", {

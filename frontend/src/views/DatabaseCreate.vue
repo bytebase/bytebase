@@ -497,7 +497,6 @@ export default {
                 issueId: linkedIssue.id,
                 issuePatch: {
                   payload,
-                  updaterId: currentUser.value.id,
                 },
               });
             }

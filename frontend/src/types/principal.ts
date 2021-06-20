@@ -38,9 +38,6 @@ export type PrincipalCreate = {
 };
 
 export type PrincipalPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   name?: string;
 };

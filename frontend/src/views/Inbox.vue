@@ -355,7 +355,6 @@ export default {
         store.dispatch("message/patchMessage", {
           messageId: message.id,
           messagePatch: {
-            updaterId: currentUser.value.id,
             status: "CONSUMED",
           },
         });
@@ -374,7 +373,6 @@ export default {
           store.dispatch("message/patchMessage", {
             messageId: item.id,
             messagePatch: {
-              updaterId: currentUser.value.id,
               status: "CONSUMED",
             },
           });

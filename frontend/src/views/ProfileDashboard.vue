@@ -230,7 +230,6 @@ export default {
     const editUser = () => {
       const clone = cloneDeep(principal.value);
       state.editingPrincipal = {
-        updaterId: currentUser.value.id,
         name: clone.name,
       };
       state.editing = true;

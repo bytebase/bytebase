@@ -113,13 +113,7 @@ const actions = {
 
   async reorderEnvironmentList(
     { commit, rootGetters }: any,
-    {
-      updaterId,
-      orderedEnvironmentList,
-    }: {
-      updaterId: PrincipalId;
-      orderedEnvironmentList: Environment[];
-    }
+    orderedEnvironmentList: Environment[]
   ) {
     const list: any[] = [];
     orderedEnvironmentList.forEach((item, index) => {
@@ -127,7 +121,6 @@ const actions = {
         id: item.id,
         type: "environmentPatch",
         attributes: {
-          updaterId,
           order: index,
         },
       });

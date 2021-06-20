@@ -137,6 +137,5 @@ export type Message = {
 export type MessageCreate = Omit<Message, "id" | "createdTs" | "updatedTs">;
 
 export type MessagePatch = {
-  updaterId: PrincipalId;
   status: MessageStatus;
 };

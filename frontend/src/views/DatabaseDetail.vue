@@ -424,7 +424,6 @@ export default {
           instanceId: database.value.instance.id,
           databaseId: database.value.id,
           projectId: newProjectId,
-          updaterId: currentUser.value.id,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {
@@ -460,7 +459,6 @@ export default {
 
     const saveEditDataSource = () => {
       const dataSourcePatch: DataSourcePatch = {
-        updaterId: currentUser.value.id,
         username: state.editingDataSource?.username,
         password: state.editingDataSource?.password,
       };

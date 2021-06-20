@@ -40,7 +40,6 @@ export type ProjectCreate = {
 
 export type ProjectPatch = {
   // Standard fields
-  updaterId: PrincipalId;
   rowStatus?: RowStatus;
 
   // Domain specific fields
@@ -76,9 +75,6 @@ export type ProjectMemberCreate = {
 };
 
 export type ProjectMemberPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   role: ProjectRoleType;
 };

@@ -56,7 +56,4 @@ export type DatabaseCreate = {
 export type DatabasePatch = {
   // Related fields
   projectId: ProjectId;
-
-  // Standard fields
-  updaterId: PrincipalId;
 };

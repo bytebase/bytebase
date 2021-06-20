@@ -258,10 +258,10 @@ export default {
 
     const doReorder = () => {
       store
-        .dispatch("environment/reorderEnvironmentList", {
-          updaterId: currentUser.value.id,
-          orderedEnvironmentList: state.reorderedEnvironmentList,
-        })
+        .dispatch(
+          "environment/reorderEnvironmentList",
+          state.reorderedEnvironmentList
+        )
         .then(() => {
           stopReorder();
         });

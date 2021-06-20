@@ -339,12 +339,10 @@ const actions = {
       instanceId,
       databaseId,
       projectId,
-      updaterId,
     }: {
       instanceId: InstanceId;
       databaseId: DatabaseId;
       projectId: ProjectId;
-      updaterId: PrincipalId;
     }
   ) {
     const data = (
@@ -354,7 +352,6 @@ const actions = {
           data: {
             type: "databasePatch",
             attributes: {
-              updaterId,
               projectId,
             },
           },

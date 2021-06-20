@@ -56,9 +56,6 @@ export type DataSourceCreate = {
 };
 
 export type DataSourcePatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   name?: string;
   username?: string;

@@ -540,7 +540,6 @@ export default {
 
     const changeIssueStatus = (newStatus: IssueStatus, comment: string) => {
       const issueStatusPatch: IssueStatusPatch = {
-        updaterId: currentUser.value.id,
         status: newStatus,
         comment: comment,
       };
@@ -573,7 +572,6 @@ export default {
       selectStageId(task.stage.id);
 
       const taskStatusPatch: TaskStatusPatch = {
-        updaterId: currentUser.value.id,
         status: newStatus,
         comment: comment,
       };
@@ -591,16 +589,13 @@ export default {
     };
 
     const patchIssue = (
-      issuePatch: Omit<IssuePatch, "updaterId">,
+      issuePatch: IssuePatch,
       postUpdated?: (updatedIssue: Issue) => void
     ) => {
       store
         .dispatch("issue/patchIssue", {
           issueId: (issue.value as Issue).id,
-          issuePatch: {
-            ...issuePatch,
-            updaterId: currentUser.value.id,
-          },
+          issuePatch,
         })
         .then((updatedIssue) => {
           // issue/patchIssue already fetches the new issue, so we schedule

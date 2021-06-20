@@ -533,9 +533,7 @@ export default {
     };
 
     const doUpdate = () => {
-      const patchedInstance: InstancePatch = {
-        updaterId: currentUser.value.id,
-      };
+      const patchedInstance: InstancePatch = {};
       if (state.instance.name != state.originalInstance!.name) {
         patchedInstance.name = state.instance.name;
       }

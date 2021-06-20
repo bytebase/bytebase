@@ -266,7 +266,6 @@ export default {
 
     const saveEdit = () => {
       const dataSourcePatch: DataSourcePatch = {
-        updaterId: currentUser.value.id,
         name: state.editingDataSource?.name,
         username: state.editingDataSource?.username,
         password: state.editingDataSource?.password,

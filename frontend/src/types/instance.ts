@@ -49,7 +49,6 @@ export type InstanceCreate = {
 
 export type InstancePatch = {
   // Standard fields
-  updaterId: PrincipalId;
   rowStatus?: RowStatus;
 
   // Domain specific fields

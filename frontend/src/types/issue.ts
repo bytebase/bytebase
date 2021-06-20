@@ -61,9 +61,6 @@ export type IssueCreate = {
 };
 
 export type IssuePatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   name?: string;
   description?: string;
@@ -75,9 +72,6 @@ export type IssuePatch = {
 };
 
 export type IssueStatusPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   status: IssueStatus;
   comment?: string;

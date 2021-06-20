@@ -72,7 +72,6 @@ export default {
 
     const archiveOrRestoreProject = (archive: boolean) => {
       const projectPatch: ProjectPatch = {
-        updaterId: currentUser.value.id,
         rowStatus: archive ? "ARCHIVED" : "NORMAL",
       };
       store.dispatch("project/patchProject", {

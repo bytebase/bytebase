@@ -28,7 +28,6 @@ export type EnvironmentCreate = {
 
 export type EnvironmentPatch = {
   // Standard fields
-  updaterId: PrincipalId;
   rowStatus?: RowStatus;
 
   // Domain specific fields

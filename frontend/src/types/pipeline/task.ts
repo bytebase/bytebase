@@ -60,9 +60,6 @@ export type TaskCreate = {
 };
 
 export type TaskStatusPatch = {
-  // Standard fields
-  updaterId: PrincipalId;
-
   // Domain specific fields
   status: TaskStatus;
   comment?: string;
