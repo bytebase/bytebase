@@ -28,7 +28,6 @@ const template: IssueTemplate = {
             ],
           },
         ],
-        creatorId: ctx.currentUser.id,
         name: "Create database pipeline",
       },
       payload: {},

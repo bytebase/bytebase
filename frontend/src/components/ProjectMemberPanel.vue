@@ -179,7 +179,6 @@ export default {
     const addMember = () => {
       // If admin feature is NOT enabled, then we set every member to OWNER role.
       const projectMember: ProjectMemberCreate = {
-        creatorId: currentUser.value.id,
         principalId: state.principalId,
         role: hasAdminFeature.value ? state.role : "OWNER",
       };

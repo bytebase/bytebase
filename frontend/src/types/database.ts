@@ -43,9 +43,6 @@ export type DatabaseCreate = {
   instanceId: InstanceId;
   projectId: ProjectId;
 
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   characterSet: string;

@@ -34,9 +34,6 @@ export type VCS = {
 };
 
 export type VCSCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   type: VCSType;

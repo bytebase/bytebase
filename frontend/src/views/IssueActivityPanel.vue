@@ -563,6 +563,7 @@ import {
   EMPTY_ID,
   SYSTEM_BOT_ID,
   ActionIssueStatusUpdatePayload,
+  ActivityCreate,
 } from "../types";
 import { findTaskById, issueSlug, sizeToFit, stageSlug } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
@@ -687,34 +688,32 @@ export default {
     };
 
     const doCreateComment = () => {
-      store
-        .dispatch("activity/createActivity", {
-          actionType: "bb.issue.comment.create",
-          containerId: props.issue.id,
-          creatorId: currentUser.value.id,
-          comment: newComment.value,
-        })
-        .then(() => {
-          newComment.value = "";
-          nextTick(() => sizeToFit(newCommentTextArea.value));
+      const createActivity: ActivityCreate = {
+        actionType: "bb.issue.comment.create",
+        containerId: props.issue.id,
+        comment: newComment.value,
+      };
+      store.dispatch("activity/createActivity", createActivity).then(() => {
+        newComment.value = "";
+        nextTick(() => sizeToFit(newCommentTextArea.value));
 
-          // Because the user just added a comment and we assume she is interested in this
-          // issue, and we add her to the subscriber list if she is not there
-          let isSubscribed = false;
-          for (const principal of props.issue.subscriberList) {
-            if (principal.id == currentUser.value.id) {
-              isSubscribed = true;
-              break;
-            }
+        // Because the user just added a comment and we assume she is interested in this
+        // issue, and we add her to the subscriber list if she is not there
+        let isSubscribed = false;
+        for (const principal of props.issue.subscriberList) {
+          if (principal.id == currentUser.value.id) {
+            isSubscribed = true;
+            break;
           }
-          if (!isSubscribed) {
-            const list = props.issue.subscriberList.map((item: Principal) => {
-              return item.id;
-            });
-            list.push(currentUser.value.id);
-            emit("update-subscriber-list", list);
-          }
-        });
+        }
+        if (!isSubscribed) {
+          const list = props.issue.subscriberList.map((item: Principal) => {
+            return item.id;
+          });
+          list.push(currentUser.value.id);
+          emit("update-subscriber-list", list);
+        }
+      });
     };
 
     const onUpdateComment = (activity: Activity) => {

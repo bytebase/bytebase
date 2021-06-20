@@ -42,7 +42,6 @@ const template: IssueTemplate = {
             ],
           },
         ],
-        creatorId: ctx.currentUser.id,
         name: "Request database access",
       },
       payload,

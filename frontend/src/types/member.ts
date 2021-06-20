@@ -18,9 +18,6 @@ export type Member = {
 };
 
 export type MemberCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   principalId: PrincipalId;
   role: RoleType;

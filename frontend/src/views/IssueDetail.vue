@@ -328,7 +328,7 @@ export default {
 
     watchEffect(refreshTemplate);
 
-    const buildNewIssue = () => {
+    const buildNewIssue = (): IssueCreate => {
       const databaseList: Database[] = [];
       if (router.currentRoute.value.query.databaseList) {
         for (const databaseId of (
@@ -352,7 +352,7 @@ export default {
         environmentList.push(...store.getters["environment/environmentList"]());
       }
 
-      const newIssue = {
+      const newIssue: IssueCreate = {
         ...newIssueTemplate.value.buildIssue({
           environmentList,
           databaseList,
@@ -361,7 +361,6 @@ export default {
         projectId: router.currentRoute.value.query.project
           ? parseInt(router.currentRoute.value.query.project as string)
           : UNKNOWN_ID,
-        creatorId: currentUser.value.id,
       };
 
       // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.

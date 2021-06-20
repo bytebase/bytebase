@@ -16,9 +16,6 @@ export type Bookmark = {
 };
 
 export type BookmarkCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   link: string;

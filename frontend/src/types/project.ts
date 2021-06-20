@@ -30,9 +30,6 @@ export type Project = {
 };
 
 export type ProjectCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   key: string;
@@ -66,9 +63,6 @@ export type ProjectMember = {
 };
 
 export type ProjectMemberCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   principalId: PrincipalId;
   role: ProjectRoleType;

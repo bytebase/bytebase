@@ -39,7 +39,6 @@ const template: IssueTemplate = {
       description: "",
       pipeline: {
         stageList,
-        creatorId: ctx.currentUser.id,
         name: "Update database schema pipeline",
       },
       payload,

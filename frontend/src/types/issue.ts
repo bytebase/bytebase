@@ -49,9 +49,6 @@ export type IssueCreate = {
   projectId: ProjectId;
   pipeline: PipelineCreate;
 
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   type: IssueType;

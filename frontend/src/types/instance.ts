@@ -33,9 +33,6 @@ export type InstanceCreate = {
   // Related fields
   environmentId: EnvironmentId;
 
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   engine: EngineType;

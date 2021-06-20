@@ -189,7 +189,6 @@ export default {
 
     const state = reactive<LocalState>({
       dataSource: {
-        creatorId: currentUser.value.id,
         name: "New data source",
         type: "RO",
         databaseId: props.database ? props.database.id : UNKNOWN_ID,

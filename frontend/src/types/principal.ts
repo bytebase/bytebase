@@ -29,9 +29,6 @@ export type Principal = {
 };
 
 export type PrincipalCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   email: string;

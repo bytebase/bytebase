@@ -69,13 +69,10 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
     const state = reactive<LocalState>({
       project: {
         name: "New Project",
         key: randomString(3).toUpperCase(),
-        creatorId: currentUser.value.id,
       },
     });
 

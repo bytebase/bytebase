@@ -45,9 +45,6 @@ export type DataSourceCreate = {
   instanceId: InstanceId;
   memberList: DataSourceMemberCreate[];
 
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
   type: DataSourceType;

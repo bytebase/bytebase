@@ -190,7 +190,6 @@ export default {
         store.dispatch("bookmark/deleteBookmark", bookmark.value);
       } else {
         const newBookmark: BookmarkCreate = {
-          creatorId: currentUser.value.id,
           name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,
         };

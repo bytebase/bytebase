@@ -195,7 +195,6 @@ export default {
 
     const tryFinishSetup = (allowChangeCallback: () => void) => {
       const vcsCreate: VCSCreate = {
-        creatorId: currentUser.value.id,
         ...state.config,
       };
       store.dispatch("vcs/createVCS", vcsCreate).then((vcs: VCS) => {

@@ -54,9 +54,6 @@ export type Activity = {
 };
 
 export type ActivityCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   containerId: ContainerId;
   actionType: ActionType;

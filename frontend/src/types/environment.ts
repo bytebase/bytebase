@@ -19,9 +19,6 @@ export type Environment = {
 };
 
 export type EnvironmentCreate = {
-  // Standard fields
-  creatorId: PrincipalId;
-
   // Domain specific fields
   name: string;
 };

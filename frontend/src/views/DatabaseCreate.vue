@@ -239,8 +239,6 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.code == "Escape") {
         cancel();
@@ -454,7 +452,6 @@ export default {
 
       // Create database
       const newDatabase: DatabaseCreate = {
-        creatorId: currentUser.value.id,
         name: state.databaseName!,
         characterSet: state.characterSet,
         collation: state.collation,
