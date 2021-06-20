@@ -121,6 +121,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						s.l.Warn("Failed to parse timestamp. Ignored", zap.String("filename", filename), zap.Error(err))
 					}
 					vcsPushEvent := api.VCSPushEvent{
+						VCSType:            repository.VCS.Type,
 						Ref:                pushEvent.Ref,
 						RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
 						RepositoryURL:      pushEvent.Project.WebURL,
