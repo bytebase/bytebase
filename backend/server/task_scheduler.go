@@ -86,14 +86,14 @@ func (s *TaskScheduler) Run() error {
 				for _, task := range taskList {
 					executor, ok := s.executors[string(task.Type)]
 					if !ok {
-						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip.", task.Type))
+						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip", task.Type))
 						continue
 					}
 
 					done, err := executor.RunOnce(context.Background(), s.server, task)
 					if done {
 						if err != nil {
-							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v.\n", task.Name, task.ID, err))
+							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v\n", task.Name, task.ID, err))
 							taskStatusPatch := &api.TaskStatusPatch{
 								ID:        task.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
@@ -104,7 +104,7 @@ func (s *TaskScheduler) Run() error {
 							continue
 						}
 
-						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'.\n", task.Name, task.ID))
+						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'\n", task.Name, task.ID))
 						s.server.ChangeTaskStatus(context.Background(), task, api.TaskDone, api.SYSTEM_BOT_ID)
 					}
 				}
@@ -128,7 +128,7 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 }
 
 func (s *TaskScheduler) Schedule(ctx context.Context, task *api.Task) (*api.Task, error) {
-	s.l.Info(fmt.Sprintf("Try to change task '%v(%v)' to RUNNING.\n", task.Name, task.ID))
+	s.l.Info(fmt.Sprintf("Try to change task '%v(%v)' to RUNNING\n", task.Name, task.ID))
 	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SYSTEM_BOT_ID)
 	if err != nil {
 		return nil, err
