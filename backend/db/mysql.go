@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:embed mysql_schema.sql
+//go:embed mysql_migration_schema.sql
 var migrationSchema string
 
 var (
