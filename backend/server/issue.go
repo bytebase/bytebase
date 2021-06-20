@@ -387,7 +387,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 					payload.RollbackStatement = taskCreate.RollbackStatement
 				}
 				if taskCreate.VCSPushEvent != nil {
-					payload.VCSPushEvent = *taskCreate.VCSPushEvent
+					payload.VCSPushEvent = taskCreate.VCSPushEvent
 				}
 				bytes, err := json.Marshal(payload)
 				if err != nil {

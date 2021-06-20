@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/db"
 	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -40,7 +41,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type. Expect push, got %s", pushEvent.ObjectKind))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
 
 		webhookEndpointId := c.Param("id")
@@ -64,7 +65,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if strconv.Itoa(pushEvent.Project.ID) != repository.ExternalId {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch. Expect %s, got %d", repository.ExternalId, pushEvent.Project.ID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repository.ExternalId))
 		}
 
 		createdMessageList := []string{}
@@ -72,19 +73,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			for _, added := range commit.AddedList {
 				if strings.HasPrefix(added, repository.BaseDirectory) && filepath.Ext(added) == ".sql" {
 					filename := filepath.Base(added)
-
-					// We expect filename in the {{version}}_{{dbname}}[_{{description}}]
-					// The description part is optional
-					parts := strings.Split(strings.TrimSuffix(filename, filepath.Ext(added)), "_")
-					if len(parts) < 2 {
-						s.l.Warn("Added SQL file name does not conform to the expected format. Ignored", zap.String("filename", filename))
+					mi, err := db.ParseMigrationInfo(filename)
+					if err != nil {
+						s.l.Warn("invalid migration filename. Ignored", zap.Error(err))
 						continue
-					}
-					//version := parts[0]
-					dbName := parts[1]
-					description := ""
-					if len(parts) > 2 {
-						description = strings.Join(parts[2:], " ")
 					}
 
 					// Retrieve sql by reading the file content
@@ -107,12 +99,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					// Find matching database
 					databaseFind := &api.DatabaseFind{
 						ProjectId: &repository.ProjectId,
-						Name:      &dbName,
+						Name:      &mi.Database,
 					}
 					database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind, []string{})
 					if err != nil {
 						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s. Ignored", repository.ProjectId, dbName),
+							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s. Ignored", repository.ProjectId, mi.Database),
 								zap.Int("project_id", repository.ProjectId),
 								zap.String("filename", filename),
 							)
@@ -147,7 +139,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					task := &api.TaskCreate{
 						InstanceId:   database.InstanceId,
 						DatabaseId:   database.ID,
-						Name:         description,
+						Name:         mi.Description,
 						Status:       "PENDING",
 						Type:         api.TaskDatabaseSchemaUpdate,
 						Statement:    string(b),

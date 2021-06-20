@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
@@ -152,14 +153,15 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 	return list, err
 }
 
-func (driver *MySQLDriver) Execute(ctx context.Context, sql string) (sql.Result, error) {
+func (driver *MySQLDriver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback()
 
-	return tx.ExecContext(ctx, sql)
+	_, err = tx.ExecContext(ctx, statement)
+	return err
 }
 
 func (driver *MySQLDriver) NeedsSetupMigration(ctx context.Context) (bool, error) {
@@ -189,12 +191,213 @@ func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 	if setup {
 		driver.l.Info("Bytebase migration schema not found, creating schema...")
-		if _, err := driver.Execute(ctx, migrationSchema); err != nil {
+		if err := driver.Execute(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.", zap.Error(err))
-			return err
+			return formatError(err)
 		}
 		driver.l.Info("Successfully created migration schema.")
 	}
 
 	return nil
+}
+
+func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error {
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	startedTs := time.Now().Unix()
+
+	// Phase 1 - Precheck before executing migration
+	// Check if the same migration version has alraedy been applied
+	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Version)
+	if err != nil {
+		return err
+	}
+	if duplicate {
+		return fmt.Errorf("%s has already applied version %s", m.Database, m.Version)
+	}
+
+	// Check if there is any higher version already been applied
+	version, err := checkOutofOrderVersion(ctx, tx, m.Namespace, m.Version)
+	if err != nil {
+		return err
+	}
+	if version != nil {
+		return fmt.Errorf("%s has already applied version %s which is higher than %s", m.Database, *version, m.Version)
+	}
+
+	// If the migration type is not baseline, then we can only proceed if there is existing baseline
+	// This check is also wrapped in transaction to avoid edge case where two baselings are running concurrently.
+	if m.Type != Baseline {
+		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
+		if err != nil {
+			return err
+		}
+
+		if !hasBaseline {
+			return fmt.Errorf("%s has not created migration baseline yet", m.Database)
+		}
+	}
+
+	sequence, err := findNextSequence(ctx, tx, m.Namespace, m.Type == Baseline)
+	if err != nil {
+		return err
+	}
+
+	// Phase 2 - Executing migration unless it's baselining and has empty statement
+	// Baseline can have empty statement
+	if !(m.Type == Baseline && statement == "") {
+		_, err = tx.ExecContext(ctx, statement)
+		if err != nil {
+			return formatError(err)
+		}
+	}
+
+	// Phase 3 - Record migration
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO bytebase.migration_history (
+			created_by,
+			updated_by,
+			namespace,
+			sequence,
+			`+"`type`,"+`
+			version,
+			description,
+			statement,
+			execution_duration
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		m.Creator,
+		m.Creator,
+		m.Namespace,
+		sequence,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		time.Now().Unix()-startedTs,
+	)
+
+	if err != nil {
+		return formatError(err)
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, error) {
+	args := []interface{}{namespace}
+	row, err := tx.QueryContext(ctx, `
+		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND `+"`type` = 'BASELINE'"+`
+	`,
+		args...,
+	)
+
+	if err != nil {
+		return false, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, version string) (bool, error) {
+	args := []interface{}{namespace, version}
+	row, err := tx.QueryContext(ctx, `
+		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND version = ?
+	`,
+		args...,
+	)
+
+	if err != nil {
+		return false, err
+	}
+	defer row.Close()
+
+	if row.Next() {
+		return true, nil
+	}
+	return false, nil
+}
+
+func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, version string) (*string, error) {
+	args := []interface{}{namespace, version}
+	row, err := tx.QueryContext(ctx, `
+		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND STRCMP(?, version) = -1
+	`,
+		args...,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	defer row.Close()
+
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
+}
+
+func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
+	args := []interface{}{namespace}
+	row, err := tx.QueryContext(ctx, `
+		SELECT MAX(sequence) + 1 FROM bytebase.migration_history WHERE namespace = ?
+	`,
+		args...,
+	)
+
+	if err != nil {
+		return -1, err
+	}
+	defer row.Close()
+
+	var sequence sql.NullInt32
+	row.Next()
+	if err := row.Scan(&sequence); err != nil {
+		return -1, err
+	}
+
+	if !sequence.Valid {
+		// Returns 1 if we are creating the first baseline
+		if baseline {
+			return 1, nil
+		}
+
+		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
+		return -1, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for '%s', do you forget to baselining?", namespace)
+	}
+
+	return int(sequence.Int32), nil
+}
+
+func formatError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_version") {
+		return fmt.Errorf("version has already been applied")
+	} else if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_sequence") {
+		return fmt.Errorf("concurrent migration")
+	}
+
+	return err
 }

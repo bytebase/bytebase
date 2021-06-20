@@ -2,8 +2,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -52,17 +52,87 @@ type DriverConfig struct {
 
 type DriverFunc func(DriverConfig) Driver
 
+type MigrationType string
+
+const (
+	Baseline MigrationType = "BASELINE"
+	Sql      MigrationType = "SQL"
+)
+
+func (e MigrationType) String() string {
+	switch e {
+	case Baseline:
+		return "BASELINE"
+	case Sql:
+		return "SQL"
+	}
+	return "UNKNOWN"
+}
+
+type MigrationInfo struct {
+	Version     string
+	Namespace   string
+	Database    string
+	Type        MigrationType
+	Description string
+	Creator     string
+}
+
+// Expected filename example, {{version}} can be arbitrary string without "_"
+// - {{version}}_db1 (a normal migration without description)
+// - {{version}}_db1_create_t1 (a normal migration with "create t1" as description)
+// - {{version}}_db1_baseline  (a baseline migration without description)
+// - {{version}}_db1_baseline_create_t1  (a baseline migration with "create t1" as description)
+func ParseMigrationInfo(filename string) (*MigrationInfo, error) {
+	parts := strings.Split(strings.TrimSuffix(filename, ".sql"), "_")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid filename format, got %v, want {{version}}_{{dbname}}[_{{type}}][_{{description}}].sql", filename)
+	}
+	mi := &MigrationInfo{
+		Version:   parts[0],
+		Namespace: parts[1],
+		Database:  parts[1],
+	}
+
+	migrationType := Sql
+	description := ""
+	if len(parts) > 2 {
+		if parts[2] == "baseline" {
+			migrationType = Baseline
+			if len(parts) > 3 {
+				description = strings.Join(parts[3:], " ")
+			}
+		} else {
+			description = strings.Join(parts[2:], " ")
+		}
+	}
+	if description == "" {
+		if migrationType == Baseline {
+			description = fmt.Sprintf("Create %s baseline", mi.Database)
+		} else {
+			description = fmt.Sprintf("Create %s migration", mi.Database)
+		}
+	}
+	mi.Type = migrationType
+	// Capitalize first letter
+	mi.Description = strings.ToUpper(description[:1]) + description[1:]
+
+	return mi, nil
+}
+
 type Driver interface {
 	open(config ConnectionConfig) (Driver, error)
 	Ping(ctx context.Context) error
 	SyncSchema(ctx context.Context) ([]*DBSchema, error)
-	Execute(ctx context.Context, sql string) (sql.Result, error)
+	Execute(ctx context.Context, statement string) error
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
 	NeedsSetupMigration(ctx context.Context) (bool, error)
 	// Create or upgrade migration related tables
 	SetupMigrationIfNeeded(ctx context.Context) error
+	// Execute migration will apply the statement and record the migration history on success.
+	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error
 }
 
 type ConnectionConfig struct {
