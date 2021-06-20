@@ -228,76 +228,14 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
 
-		var pipelineStatus api.PipelineStatus
-		pipelinePatch := &api.PipelinePatch{
-			ID:        issue.PipelineId,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
-		}
-		switch issueStatusPatch.Status {
-		case api.Issue_Open:
-			pipelineStatus = api.Pipeline_Open
-		case api.Issue_Done:
-			// Returns error if any of the tasks is not DONE.
-			for _, stage := range issue.Pipeline.StageList {
-				for _, task := range stage.TaskList {
-					if task.Status != api.TaskDone {
-						return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Failed to resolve issue: %v. Task %v has not finished", issue.Name, task.Name))
-					}
-				}
-			}
-			pipelineStatus = api.Pipeline_Done
-		case api.Issue_Canceled:
-			// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
-			// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
-			// keep those tasks in the same state before the issue was canceled.
-			for _, stage := range issue.Pipeline.StageList {
-				for _, task := range stage.TaskList {
-					if task.Status == api.TaskRunning {
-						if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, c.Get(GetPrincipalIdContextKey()).(int)); err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to cancel issue: %v. Failed to cancel task: %v", issue.Name, task.Name)).SetInternal(err)
-						}
-					}
-				}
-			}
-			pipelineStatus = api.Pipeline_Canceled
-		}
-
-		pipelinePatch.Status = &pipelineStatus
-		if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue: %v", id)).SetInternal(err)
-		}
-
-		issuePatch := &api.IssuePatch{
-			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
-			Status:    &issueStatusPatch.Status,
-		}
-		updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+		updatedIssue, err := s.ChangeIssueStatus(context.Background(), issue, issueStatusPatch.Status, issueStatusPatch.UpdaterId, issueStatusPatch.Comment)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
+				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
+			} else if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+				return echo.NewHTTPError(http.StatusConflict).SetInternal(err)
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue ID: %v", id)).SetInternal(err)
-		}
-
-		payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-			OldStatus: issue.Status,
-			NewStatus: issueStatusPatch.Status,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing the issue status: %v", issue.Name)).SetInternal(err)
-		}
-
-		activityCreate := &api.ActivityCreate{
-			CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-			ContainerId: issue.ID,
-			Type:        api.ActivityIssueStatusUpdate,
-			Comment:     issueStatusPatch.Comment,
-			Payload:     string(payload),
-		}
-		_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing the issue status: %v", issue.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
 		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue, c.Get(getIncludeKey()).([]string)); err != nil {
@@ -428,4 +366,80 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	return issue, nil
+}
+
+func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updatorId int, comment string) (*api.Issue, error) {
+	var pipelineStatus api.PipelineStatus
+	switch newStatus {
+	case api.Issue_Open:
+		pipelineStatus = api.Pipeline_Open
+	case api.Issue_Done:
+		// Returns error if any of the tasks is not DONE.
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				if task.Status != api.TaskDone {
+					return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
+				}
+			}
+		}
+		pipelineStatus = api.Pipeline_Done
+	case api.Issue_Canceled:
+		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
+		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
+		// keep those tasks in the same state before the issue was canceled.
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				if task.Status == api.TaskRunning {
+					if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, updatorId); err != nil {
+						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
+					}
+				}
+			}
+		}
+		pipelineStatus = api.Pipeline_Canceled
+	}
+
+	pipelinePatch := &api.PipelinePatch{
+		ID:        issue.PipelineId,
+		UpdaterId: updatorId,
+		Status:    &pipelineStatus,
+	}
+	if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
+		return nil, fmt.Errorf("failed to update issue status: %v, failed to update pipeline status: %w", issue.Name, err)
+	}
+
+	issuePatch := &api.IssuePatch{
+		ID:        issue.ID,
+		UpdaterId: updatorId,
+		Status:    &newStatus,
+	}
+	updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+	if err != nil {
+		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			return nil, fmt.Errorf("failed to update issue status: %v, error: %w", issue.Name, err)
+		}
+		return nil, fmt.Errorf("failed update issue status: %v, error: %w", issue.Name, err)
+	}
+
+	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+		OldStatus: issue.Status,
+		NewStatus: newStatus,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal activity after changing the issue status: %v, error: %w", issue.Name, err)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorId:   updatorId,
+		ContainerId: issue.ID,
+		Type:        api.ActivityIssueStatusUpdate,
+		Comment:     comment,
+		Payload:     string(payload),
+	}
+	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create activity after changing the issue status: %v, error: %w", issue.Name, err)
+	}
+
+	return updatedIssue, nil
 }

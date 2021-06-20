@@ -49,11 +49,11 @@ func (s *TaskScheduler) Run() error {
 				}
 				pipelineList, err := s.server.PipelineService.FindPipelineList(context.Background(), pipelineFind)
 				if err != nil {
-					s.l.Info(fmt.Sprintf("Failed to retrieve open pipelines: %v\n", err))
+					s.l.Error(fmt.Sprintf("Failed to retrieve open pipelines: %v\n", err))
 				}
 				for _, pipeline := range pipelineList {
 					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline, []string{}); err != nil {
-						s.l.Info(fmt.Sprintf("Failed to fetch stage info for pipeline: %v. Error: %v", pipeline.Name, err))
+						s.l.Error(fmt.Sprintf("Failed to fetch stage info for pipeline: %v. Error: %v", pipeline.Name, err))
 						continue
 					}
 
@@ -63,7 +63,7 @@ func (s *TaskScheduler) Run() error {
 								if task.Status == api.TaskPending {
 									_, err = s.Schedule(context.Background(), task)
 									if err != nil {
-										s.l.Info(fmt.Sprintf("Failed to schedule next running task: %v. Error: %v", task.Name, err))
+										s.l.Error(fmt.Sprintf("Failed to schedule next running task: %v. Error: %v", task.Name, err))
 									}
 								}
 								goto PIPELINE_END
@@ -80,13 +80,13 @@ func (s *TaskScheduler) Run() error {
 				}
 				taskList, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {
-					s.l.Info(fmt.Sprintf("Failed to retrieve running tasks: %v\n", err))
+					s.l.Error(fmt.Sprintf("Failed to retrieve running tasks: %v\n", err))
 				}
 
 				for _, task := range taskList {
 					executor, ok := s.executors[string(task.Type)]
 					if !ok {
-						s.l.Info(fmt.Sprintf("Unknown task type: %v. Skip", task.Type))
+						s.l.Error(fmt.Sprintf("Unknown task type: %v. Skip", task.Type))
 						continue
 					}
 
@@ -105,7 +105,14 @@ func (s *TaskScheduler) Run() error {
 						}
 
 						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'\n", task.Name, task.ID))
-						s.server.ChangeTaskStatus(context.Background(), task, api.TaskDone, api.SYSTEM_BOT_ID)
+						_, err = s.server.ChangeTaskStatus(context.Background(), task, api.TaskDone, api.SYSTEM_BOT_ID)
+						if err != nil {
+							s.l.Error("Failed to mark task as DONE",
+								zap.Error(err),
+								zap.Int("task_id", task.ID),
+								zap.String("task_name", task.Name),
+							)
+						}
 					}
 				}
 			}()

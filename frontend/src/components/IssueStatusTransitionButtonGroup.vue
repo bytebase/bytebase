@@ -317,7 +317,7 @@ export default {
             }
 
             const taskList = allTaskList(pipeline);
-            // Don't display the Resolve action if the last task is NOT in end status.
+            // Don't display the Resolve action if the last task is NOT in DONE status.
             if (
               item == "RESOLVE" &&
               taskList.length > 0 &&
