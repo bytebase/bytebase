@@ -16,12 +16,12 @@ import (
 
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
-		"PENDING":          {"RUNNING"},
-		"PENDING_APPROVAL": {"PENDING"},
-		"RUNNING":          {"DONE", "FAILED", "CANCELED"},
-		"DONE":             {},
-		"FAILED":           {"RUNNING"},
-		"CANCELED":         {"RUNNING"},
+		api.TaskPending:         {api.TaskRunning},
+		api.TaskPendingApproval: {api.TaskPending},
+		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
+		api.TaskDone:            {},
+		api.TaskFailed:          {api.TaskRunning},
+		api.TaskCanceled:        {api.TaskRunning},
 	}
 )
 
@@ -220,7 +220,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 
 	// Schedule the task if it's being just approved
-	if task.Status == "PENDING_APPROVAL" && updatedTask.Status == "PENDING" {
+	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
 		updatedTask, err = s.TaskScheduler.Schedule(context.Background(), updatedTask)
 		if err != nil {
 			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
