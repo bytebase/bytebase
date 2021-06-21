@@ -6,7 +6,7 @@
       to those scripts will automatically trigger the corresponding database
       change. Bytebase owners manage all the applicable VCSs here, so that
       project owners can link the projects with their Git repositories from
-      those VCSs.
+      these VCSs.
     </div>
     <div class="flex items-center justify-end">
       <button
