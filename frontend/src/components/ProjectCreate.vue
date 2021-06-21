@@ -98,6 +98,11 @@ export default {
       store
         .dispatch("project/createProject", state.project)
         .then((createdProject: Project) => {
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "project.create",
+            newState: true,
+          });
+
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",

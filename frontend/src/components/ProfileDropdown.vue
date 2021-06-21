@@ -121,11 +121,15 @@ export default {
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
+        key: "project.create",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
         key: "database.create",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "table.create",
+        key: "schema.update",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {

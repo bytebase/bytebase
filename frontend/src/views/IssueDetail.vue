@@ -554,7 +554,7 @@ export default {
             issueTemplate.value.type == "bb.issue.database.schema.update"
           ) {
             store.dispatch("uistate/saveIntroStateByKey", {
-              key: "table.create",
+              key: "schema.update",
               newState: true,
             });
           }

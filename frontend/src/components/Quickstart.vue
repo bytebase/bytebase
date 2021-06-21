@@ -97,12 +97,12 @@
 <script lang="ts">
 import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
-import { isDeveloper } from "../utils";
+import { isDBAOrOwner } from "../utils";
 
 type IntroItem = {
   name: string;
   link: string;
-  allowDeveloper: boolean;
+  dbaAndOwnerOnly: boolean;
   done: ComputedRef<boolean>;
 };
 
@@ -118,9 +118,9 @@ export default {
 
     const introList: IntroItem[] = reactive([
       {
-        name: "Bookmark a issue",
+        name: "Bookmark an issue",
         link: "/issue/hello-world-1",
-        allowDeveloper: true,
+        dbaAndOwnerOnly: false,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("bookmark.create");
         }),
@@ -128,7 +128,7 @@ export default {
       {
         name: "Add an environment",
         link: "/environment",
-        allowDeveloper: false,
+        dbaAndOwnerOnly: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("environment.create");
         }),
@@ -136,43 +136,51 @@ export default {
       {
         name: "Add an instance",
         link: "/instance",
-        allowDeveloper: false,
+        dbaAndOwnerOnly: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.create");
         }),
       },
       {
-        name: "Request a database",
-        link: "/issue/new?template=bb.database.create&description=Estimated QPS: 10",
-        allowDeveloper: true,
+        name: "Create a project",
+        link: "/project",
+        dbaAndOwnerOnly: false,
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("project.create");
+        }),
+      },
+      {
+        name: "Create a database",
+        link: "/db/new",
+        dbaAndOwnerOnly: store.getters["plan/feature"]("bb.dba-workflow"),
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.create")
         ),
       },
       {
-        name: "Create a table",
-        link: "/issue/new?template=bb.database.schema.update&name=Create employee table&description=Stores employee basic info&sql=CREATE TABLE employee (\n  id INT NOT NULL,\n  name TEXT,\n  age INT,\n  PRIMARY KEY (name)\n);&rollbacksql=DROP TABLE employee;",
-        allowDeveloper: true,
+        name: "Alter schema",
+        link: "/",
+        dbaAndOwnerOnly: false,
         done: computed(() =>
-          store.getters["uistate/introStateByKey"]("table.create")
+          store.getters["uistate/introStateByKey"]("schema.update")
         ),
       },
-      {
-        name: "Invite a member",
-        link: "/setting/member",
-        allowDeveloper: false,
-        done: computed(() =>
-          store.getters["uistate/introStateByKey"]("member.invite")
-        ),
-      },
+      // {
+      //   name: "Invite a member",
+      //   link: "/setting/member",
+      //   dbaAndOwnerOnly: true,
+      //   done: computed(() =>
+      //     store.getters["uistate/introStateByKey"]("member.invite")
+      //   ),
+      // },
     ]);
 
     const devIntroList: IntroItem[] = introList.filter(
-      (item) => item.allowDeveloper
+      (item) => !item.dbaAndOwnerOnly
     );
 
     const effectiveList = computed(() => {
-      return isDeveloper(currentUser.value.role) ? devIntroList : introList;
+      return isDBAOrOwner(currentUser.value.role) ? introList : devIntroList;
     });
 
     const isTaskActive = (index: number): boolean => {
