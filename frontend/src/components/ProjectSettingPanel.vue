@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
-      <ProjectGeneralSettingPanel :project="project" />
+      <ProjectGeneralSettingPanel :project="project" :allowEdit="allowEdit" />
       <ProjectMemberPanel class="pt-4" :project="project" />
     </div>
     <template v-if="allowArchiveOrRestore">
@@ -49,6 +49,10 @@ export default {
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    allowEdit: {
+      default: true,
+      type: Boolean,
     },
   },
   setup(props, { emit }) {

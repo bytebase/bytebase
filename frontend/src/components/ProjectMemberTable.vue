@@ -232,6 +232,10 @@ export default {
           ];
     });
 
+    // To prevent user accidentally removing roles and lock the project permanently, we take following measures:
+    // 1. Disallow removing the last OWNER.
+    // 2. Allow workspace OWNER to change roles. This helps when the project OWNER is no longer available and
+    //    other project members can ask the workspace OWNER to assign new project OWNER.
     const allowChangeRole = (role: ProjectRoleType) => {
       if (props.project.rowStatus == "ARCHIVED") {
         return false;

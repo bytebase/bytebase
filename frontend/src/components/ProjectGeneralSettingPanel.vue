@@ -57,7 +57,6 @@ import isEmpty from "lodash-es/isEmpty";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import { Project, ProjectPatch } from "../types";
-import { isProjectOwner } from "../utils";
 
 interface LocalState {
   name: string;
@@ -72,33 +71,17 @@ export default {
       required: true,
       type: Object as PropType<Project>,
     },
+    allowEdit: {
+      default: true,
+      type: Boolean,
+    },
   },
   setup(props, ctx) {
     const store = useStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
     const state = reactive<LocalState>({
       name: props.project.name,
       key: props.project.key,
-    });
-
-    // Only the project owner can edit the project info.
-    // This means even the workspace owner won't be able to edit it.
-    // There seems to be no good reason that workspace owner needs to mess up with the project name or key.
-    const allowEdit = computed(() => {
-      if (props.project.rowStatus == "ARCHIVED") {
-        return false;
-      }
-
-      for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
-            return true;
-          }
-        }
-      }
-      return false;
     });
 
     const allowSave = computed((): boolean => {
@@ -140,7 +123,6 @@ export default {
 
     return {
       state,
-      allowEdit,
       allowSave,
       save,
     };

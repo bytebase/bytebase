@@ -115,7 +115,6 @@ import RepositorySetupWizard from "./RepositorySetupWizard.vue";
 import RepositoryDetail from "./RepositoryDetail.vue";
 import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
 import { useStore } from "vuex";
-import { isProjectOwner } from "../utils";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -134,11 +133,13 @@ export default {
       required: true,
       type: Object as PropType<Project>,
     },
+    allowEdit: {
+      default: true,
+      type: Boolean,
+    },
   },
   async setup(props) {
     const store = useStore();
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const state = reactive<LocalState>({
       workflowType: props.project.workflowType,
@@ -158,24 +159,6 @@ export default {
         state.workflowType = cur.workflowType;
       }
     );
-
-    // Only the project owner can edit the project info.
-    // This means even the workspace owner won't be able to edit it.
-    // There seems to be no good reason that workspace owner needs to mess up with the project name or key.
-    const allowEdit = computed(() => {
-      if (props.project.rowStatus == "ARCHIVED") {
-        return false;
-      }
-
-      for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    });
 
     const repository = computed((): Repository => {
       return store.getters["repository/repositoryByProjectId"](
@@ -212,7 +195,6 @@ export default {
     return {
       state,
       UNKNOWN_ID,
-      allowEdit,
       repository,
       enterWizard,
       cancelWizard,

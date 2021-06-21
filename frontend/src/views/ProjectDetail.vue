@@ -18,13 +18,21 @@
   />
   <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
     <template v-if="state.selectedIndex == OVERVIEW_TAB">
-      <ProjectOverviewPanel :project="project" id="overview" />
+      <ProjectOverviewPanel id="overview" :project="project" />
     </template>
     <template v-else-if="state.selectedIndex == VERSION_CONTROL_TAB">
-      <ProjectVersionControlPanel :project="project" id="version-control" />
+      <ProjectVersionControlPanel
+        id="version-control"
+        :project="project"
+        :allowEdit="allowEdit"
+      />
     </template>
     <template v-else-if="state.selectedIndex == SETTING_TAB">
-      <ProjectSettingPanel :project="project" id="setting" />
+      <ProjectSettingPanel
+        id="setting"
+        :project="project"
+        :allowEdit="allowEdit"
+      />
     </template>
   </div>
 </template>
@@ -33,7 +41,7 @@
 import { computed, onMounted, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
@@ -76,6 +84,8 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
     });
@@ -115,6 +125,25 @@ export default {
       );
     });
 
+    // Only the project owner can edit the project general info and configure version control.
+    // This means even the workspace owner won't be able to edit it.
+    // On the other hand, we allow workspace owner to change project membership in case
+    // project is locked somehow. See the relevant method in ProjectMemberTable for more info.
+    const allowEdit = computed(() => {
+      if (project.value.rowStatus == "ARCHIVED") {
+        return false;
+      }
+
+      for (const member of project.value.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          if (isProjectOwner(member.role)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
     const selectTab = (index: number) => {
       state.selectedIndex = index;
       router.replace({
@@ -129,6 +158,7 @@ export default {
       SETTING_TAB,
       state,
       project,
+      allowEdit,
       selectTab,
       projectTabItemList,
     };
