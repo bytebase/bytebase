@@ -269,7 +269,8 @@ export default {
     };
 
     const showUpgradeInfo = computed(() => {
-      return !hasAdminFeature.value && isOwner(currentUser.value.role);
+      return false;
+      // return !hasAdminFeature.value && isOwner(currentUser.value.role);
     });
 
     const changeRole = (id: MemberId, role: RoleType) => {
