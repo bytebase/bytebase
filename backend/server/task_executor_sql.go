@@ -23,6 +23,18 @@ type SqlTaskExecutor struct {
 }
 
 func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = fmt.Errorf("%v", r)
+			}
+			exec.l.Error("SqlTaskExecutor PANIC RECOVER", zap.Error(panicErr))
+			terminated = true
+			err = fmt.Errorf("encounter internal error when executing sql")
+		}
+	}()
+
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, fmt.Errorf("invalid schema update payload: %w", err)
