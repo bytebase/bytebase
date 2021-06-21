@@ -14,7 +14,7 @@
       </svg>
       Home
     </router-link>
-    <router-link
+    <!-- <router-link
       to="/inbox"
       class="outline-item group flex items-center px-2 py-2"
     >
@@ -40,7 +40,7 @@
         ></path>
       </svg>
       Inbox
-    </router-link>
+    </router-link> -->
     <div>
       <BookmarkListSidePanel />
     </div>
