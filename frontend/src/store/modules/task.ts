@@ -79,10 +79,7 @@ function convertPartial(
   let instance: Instance = empty("INSTANCE") as Instance;
   instance.id = parseInt(instanceId);
 
-  const databaseId = (task.relationships!.database.data as ResourceIdentifier)
-    .id;
-  let database: Database = empty("DATABASE") as Database;
-  database.id = parseInt(databaseId);
+  let database = undefined;
   for (const item of includedList || []) {
     if (
       item.type == "instance" &&
@@ -92,7 +89,8 @@ function convertPartial(
     }
     if (
       item.type == "database" &&
-      (task.relationships!.database.data as ResourceIdentifier).id == item.id
+      // Tasks like creating database may not have database.
+      (task.relationships!.database.data as ResourceIdentifier)?.id == item.id
     ) {
       database = rootGetters["database/convert"](item);
     }

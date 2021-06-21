@@ -124,10 +124,10 @@ export function activeEnvironment(pipeline: Pipeline): Environment {
   return stage.environment;
 }
 
-export function activeDatabase(pipeline: Pipeline): Database {
+export function activeDatabase(pipeline: Pipeline): Database | undefined {
   const task = activeTask(pipeline);
   if (task.id == EMPTY_ID) {
-    return empty("DATABASE") as Database;
+    return undefined;
   }
   return task.database;
 }

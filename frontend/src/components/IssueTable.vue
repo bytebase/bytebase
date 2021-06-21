@@ -233,7 +233,7 @@ export default {
     };
 
     const activeDatabaseName = function (issue: Issue) {
-      return activeDatabase(issue.pipeline).name;
+      return activeDatabase(issue.pipeline)?.name;
     };
 
     const router = useRouter();

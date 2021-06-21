@@ -66,7 +66,7 @@ const template: IssueTemplate = {
       type: "Database",
       resolved: (ctx: IssueContext): boolean => {
         const issue = ctx.issue as Issue;
-        const database = issue.pipeline.stageList[0].taskList[0].database;
+        const database = issue.pipeline.stageList[0].taskList[0].database!;
         const creator = (ctx.issue as Issue).creator;
         const type = ctx.issue.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";
         return allowDatabaseAccess(database, creator, type);
@@ -76,7 +76,7 @@ const template: IssueTemplate = {
         const queryParamList: string[] = [];
 
         const issue = ctx.issue as Issue;
-        const database = issue.pipeline.stageList[0].taskList[0].database;
+        const database = issue.pipeline.stageList[0].taskList[0].database!;
         const readOnly = issue.payload[INPUT_READ_ONLY_FIELD_ID];
         let dataSourceId;
         for (const dataSource of database.dataSourceList) {
@@ -104,7 +104,7 @@ const template: IssueTemplate = {
       },
       viewLink: (ctx: IssueContext): string => {
         const issue = ctx.issue as Issue;
-        const database = issue.pipeline.stageList[0].taskList[0].database;
+        const database = issue.pipeline.stageList[0].taskList[0].database!;
         if (database.id != UNKNOWN_ID) {
           return fullDatabasePath(database);
         }

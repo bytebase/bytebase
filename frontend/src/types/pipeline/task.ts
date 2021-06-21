@@ -1,5 +1,5 @@
 import { Database } from "../database";
-import { DatabaseId, InstanceId, PrincipalId, TaskId, TaskRunId } from "../id";
+import { DatabaseId, InstanceId, TaskId, TaskRunId } from "../id";
 import { Instance } from "../instance";
 import { Principal } from "../principal";
 import { VCSPushEvent } from "../vcs";
@@ -43,8 +43,8 @@ export type Task = {
   status: TaskStatus;
   type: TaskType;
   instance: Instance;
-  // We may get an empty database for tasks like creating database.
-  database: Database;
+  // Tasks like creating database may not have database.
+  database?: Database;
   payload?: TaskPayload;
 };
 

@@ -86,7 +86,7 @@
         </div>
       </template>
 
-      <template v-if="database.id != EMPTY_ID">
+      <template v-if="database">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Database
         </h2>
@@ -327,12 +327,15 @@ export default {
       return stage.taskList[0].instance;
     });
 
-    const database = computed((): Database => {
+    const database = computed((): Database | undefined => {
       if (props.create) {
         const stage = props.selectedStage as StageCreate;
-        return store.getters["database/databaseById"](
-          stage.taskList[0].databaseId
-        );
+        if (stage.taskList[0].databaseId) {
+          return store.getters["database/databaseById"](
+            stage.taskList[0].databaseId
+          );
+        }
+        return undefined;
       }
       const stage = props.selectedStage as Stage;
       return stage.taskList[0].database;
