@@ -80,6 +80,7 @@
           >
             <a
               href="https://github.com/bytebase/bytebase/discussions"
+              target="_blank"
               class="flex-shrink-0 text-main group block"
             >
               <div class="flex items-center">
@@ -148,6 +149,7 @@
         <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
           <a
             href="https://github.com/bytebase/bytebase/discussions"
+            target="_blank"
             class="flex-shrink-0 w-full text-main group block"
           >
             <div class="flex items-center py-1">
