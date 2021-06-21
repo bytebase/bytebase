@@ -118,7 +118,9 @@ const actions = {
     const list: any[] = [];
     orderedEnvironmentList.forEach((item, index) => {
       list.push({
-        id: item.id,
+        // Server uses google/jsonapi which expects a string type for the special id field.
+        // Aftewards, server will automatically serialize into int as declared by the EnvironmentPatch interface.
+        id: item.id.toString(),
         type: "environmentPatch",
         attributes: {
           order: index,
