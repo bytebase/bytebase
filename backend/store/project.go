@@ -117,12 +117,11 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		INSERT INTO project (
 			creator_id,
 			updater_id,
-			environment_id,
 			name,
 			key,
 			workflow_type
 		)
-		VALUES (?, ?, ?, ?, ?, 'UI')
+		VALUES (?, ?, ?, ?, 'UI')
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type"+`
 	`,
 		create.CreatorId,
