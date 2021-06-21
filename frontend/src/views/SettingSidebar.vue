@@ -128,6 +128,7 @@
             Members
           </router-link>
           <router-link
+            v-if="showOwnerItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
@@ -159,7 +160,7 @@
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { isDBAOrOwner } from "../utils";
+import { isOwner } from "../utils";
 
 interface LocalState {
   collapseState: boolean;
@@ -184,6 +185,10 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const showOwnerItem = computed((): boolean => {
+      return isOwner(currentUser.value.role);
+    });
+
     const goBack = () => {
       router.push(store.getters["router/backPath"]());
     };
@@ -202,6 +207,7 @@ export default {
     return {
       state,
       integrationList,
+      showOwnerItem,
       goBack,
       toggleCollapse,
     };

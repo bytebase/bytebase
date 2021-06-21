@@ -642,7 +642,10 @@ router.beforeEach((to, from, next) => {
   }
 
   const loginUser: Principal = store.getters["auth/currentUser"]();
-  if (to.name === "workspace.instance") {
+  if (
+    to.name === "workspace.instance" ||
+    to.name?.toString().startsWith("setting.workspace.version-control")
+  ) {
     if (isDBAOrOwner(loginUser.role)) {
       next();
     } else {
