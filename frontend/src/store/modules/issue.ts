@@ -23,15 +23,10 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Issue {
-  const subscriberList = (issue.attributes.subscriberIdList as Principal[]).map(
-    (principalId) => {
-      return rootGetters["principal/principalById"](principalId);
-    }
-  );
-
   const creator = issue.attributes.creator as Principal;
   const updater = issue.attributes.updater as Principal;
   const assignee = issue.attributes.assignee as Principal;
+  const subscriberList = issue.attributes.subscriberList as Principal[];
 
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;

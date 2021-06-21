@@ -91,8 +91,9 @@ type Issue struct {
 	Description      string      `jsonapi:"attr,description"`
 	AssigneeId       int         `jsonapi:"attr,assigneeId"`
 	Assignee         *Principal  `jsonapi:"attr,assignee"`
-	SubscriberIdList []int       `jsonapi:"attr,subscriberIdList"`
-	Payload          string      `jsonapi:"attr,payload"`
+	SubscriberIdList []int
+	SubscriberList   []*Principal `jsonapi:"attr,subscriberList"`
+	Payload          string       `jsonapi:"attr,payload"`
 }
 
 type IssueCreate struct {

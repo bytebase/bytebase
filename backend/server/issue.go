@@ -278,6 +278,16 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue,
 		return err
 	}
 
+	subscriberList := []*api.Principal{}
+	for _, subscriberId := range issue.SubscriberIdList {
+		oneSubscriber, err := s.ComposePrincipalById(context.Background(), subscriberId, includeList)
+		if err != nil {
+			return err
+		}
+		subscriberList = append(subscriberList, oneSubscriber)
+	}
+	issue.SubscriberList = subscriberList
+
 	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId, includeList)
 	if err != nil {
 		return err
