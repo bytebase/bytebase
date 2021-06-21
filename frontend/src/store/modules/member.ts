@@ -11,6 +11,7 @@ import {
   empty,
   EMPTY_ID,
   Principal,
+  RoleType,
 } from "../../types";
 
 function convert(
@@ -21,6 +22,7 @@ function convert(
   const creator = member.attributes.creator as Principal;
   const updater = member.attributes.updater as Principal;
   const principal = member.attributes.principal as Principal;
+  principal.role = member.attributes.role as RoleType;
 
   return {
     ...(member.attributes as Omit<
