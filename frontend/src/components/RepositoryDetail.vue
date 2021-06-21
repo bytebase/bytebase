@@ -23,13 +23,14 @@
   </div>
   <RepositoryForm
     class="mt-4"
+    :allowEdit="allowEdit"
     :vcsType="repository.vcs.type"
     :vcsName="repository.vcs.name"
     :repositoryInfo="repositoryInfo"
     :repositoryConfig="state.repositoryConfig"
     @change-repository="$emit('change-repository')"
   />
-  <div class="mt-4 pt-4 flex border-t justify-between">
+  <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
     <BBButtonConfirm
       :style="'RESTORE'"
       :buttonText="'Restore to UI workflow'"
@@ -81,6 +82,10 @@ export default {
     repository: {
       required: true,
       type: Object as PropType<Repository>,
+    },
+    allowEdit: {
+      default: true,
+      type: Boolean,
     },
   },
   setup(props, ctx) {

@@ -48,6 +48,7 @@
         name="basedirectory"
         type="text"
         class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
         v-model="repositoryConfig.baseDirectory"
       />
     </div>
@@ -62,6 +63,7 @@
         type="text"
         class="textfield mt-2 w-full"
         placeholder="e.g. master"
+        :disabled="!allowEdit"
         v-model="repositoryConfig.branchFilter"
       />
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">
@@ -82,6 +84,10 @@ export default {
   name: "RepositoryForm",
   emits: ["change-repository"],
   props: {
+    allowEdit: {
+      default: true,
+      type: Boolean,
+    },
     create: {
       type: Boolean,
       default: false,
