@@ -95,6 +95,18 @@
         {{ database.id == EMPTY_ID ? "N/A" : database.name }}
       </router-link>
 
+      <template v-if="showInstance">
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Instance
+        </h2>
+        <router-link
+          :to="`/instance/${instanceSlug(instance)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ instanceName(instance) }}
+        </router-link>
+      </template>
+
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Environment
       </h2>
@@ -243,6 +255,7 @@ import {
   EMPTY_ID,
   Stage,
   StageCreate,
+  Instance,
 } from "../types";
 import { allTaskList, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
@@ -300,6 +313,17 @@ export default {
       return props.issue.payload[field.id];
     };
 
+    const instance = computed((): Instance => {
+      if (props.create) {
+        const stage = props.selectedStage as StageCreate;
+        return store.getters["instance/instanceById"](
+          stage.taskList[0].instanceId
+        );
+      }
+      const stage = props.selectedStage as Stage;
+      return stage.taskList[0].instance;
+    });
+
     const database = computed((): Database => {
       if (props.create) {
         const stage = props.selectedStage as StageCreate;
@@ -335,6 +359,10 @@ export default {
       return (
         !props.create && allTaskList((props.issue as Issue).pipeline).length > 1
       );
+    });
+
+    const showInstance = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const isCurrentUserSubscribed = computed((): boolean => {
@@ -409,8 +437,10 @@ export default {
       state,
       fieldValue,
       environment,
+      instance,
       database,
       project,
+      showInstance,
       showStageSelect,
       isCurrentUserSubscribed,
       subscriberList,
