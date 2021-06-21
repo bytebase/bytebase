@@ -385,11 +385,16 @@ const routes: Array<RouteRecordRaw> = [
                   idFromSlug(slug)
                 );
 
+                const actionList: string[] = [
+                  "quickaction.bb.database.schema.update",
+                  "quickaction.bb.database.create",
+                ];
+
                 if (project.rowStatus == "NORMAL") {
                   return new Map([
-                    ["OWNER", ["quickaction.bb.database.schema.update"]],
-                    ["DBA", ["quickaction.bb.database.schema.update"]],
-                    ["DEVELOPER", ["quickaction.bb.database.schema.update"]],
+                    ["OWNER", actionList],
+                    ["DBA", actionList],
+                    ["DEVELOPER", actionList],
                   ]);
                 }
                 return new Map();

@@ -141,7 +141,7 @@
         v-if="quickAction == 'quickaction.bb.database.create'"
         class="flex flex-col items-center w-28"
       >
-        <router-link to="/db/new" class="btn-icon-primary p-3">
+        <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
           <svg
             class="w-6 h-6"
             fill="none"
@@ -156,7 +156,7 @@
               d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
             ></path>
           </svg>
-        </router-link>
+        </button>
         <h3
           class="
             mt-1
@@ -357,6 +357,14 @@
       />
     </template>
     <template
+      v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
+    >
+      <CreateDatabasePrepForm
+        :projectId="projectId"
+        @dismiss="state.showModal = false"
+      />
+    </template>
+    <template
       v-else-if="state.quickActionType == 'quickaction.bb.database.request'"
     >
       <RequestDatabasePrepForm @dismiss="state.showModal = false" />
@@ -371,6 +379,7 @@ import { useStore } from "vuex";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
+import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import { ProjectId, QuickActionType, UNKNOWN_ID } from "../types";
 import { idFromSlug } from "../utils";
@@ -394,6 +403,7 @@ export default {
     ProjectCreate,
     InstanceForm,
     AlterSchemaPrepForm,
+    CreateDatabasePrepForm,
     RequestDatabasePrepForm,
   },
   props: {
@@ -452,6 +462,13 @@ export default {
       state.showModal = true;
     };
 
+    const createDatabase = () => {
+      state.modalTitle = "Create database";
+      state.modalSubtitle = "";
+      state.quickActionType = "quickaction.bb.database.create";
+      state.showModal = true;
+    };
+
     const requestDatabase = () => {
       state.modalTitle = "Request database";
       state.modalSubtitle = "";
@@ -474,6 +491,7 @@ export default {
       createProject,
       createInstance,
       alterSchema,
+      createDatabase,
       requestDatabase,
       createEnvironment,
       reorderEnvironment,

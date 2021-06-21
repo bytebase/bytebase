@@ -151,7 +151,7 @@ export default {
       },
       {
         name: "Create a database",
-        link: "/db/new",
+        link: "/db",
         dbaAndOwnerOnly: store.getters["plan/feature"]("bb.dba-workflow"),
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.create")
@@ -159,7 +159,7 @@ export default {
       },
       {
         name: "Alter schema",
-        link: "/",
+        link: "/db",
         dbaAndOwnerOnly: false,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("schema.update")
