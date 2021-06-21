@@ -1,11 +1,12 @@
 <template>
-  <BBAvatar :username="principal.name" :size="size" />
+  <BBAvatar :username="username" :size="size" />
 </template>
 
 <script lang="ts">
-import { PropType } from "@vue/runtime-core";
+import { computed, PropType } from "@vue/runtime-core";
 import { BBAvatarSizeType } from "../bbkit/types";
-import { Principal } from "../types";
+import { Principal, UNKNOWN_ID } from "../types";
+
 export default {
   name: "PrincipalAvatar",
   props: {
@@ -19,7 +20,13 @@ export default {
     },
   },
   setup(props, ctx) {
-    return {};
+    const username = computed((): string => {
+      if (props.principal.id == UNKNOWN_ID) {
+        return "?";
+      }
+      return props.principal.name;
+    });
+    return { username };
   },
 };
 </script>

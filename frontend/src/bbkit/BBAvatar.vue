@@ -71,6 +71,10 @@ export default {
   },
   setup(props, ctx) {
     const initials = computed(() => {
+      if (props.username == "?") {
+        return "?";
+      }
+
       let parts = props.username.split(/[ -]/);
       let initials = "";
       for (var i = 0; i < parts.length; i++) {
