@@ -63,7 +63,7 @@
             </span>
           </template>
           <template v-else>
-            <BBAvatar :username="memberUI.principal.name" />
+            <PrincipalAvatar :principal="memberUI.principal" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
@@ -154,6 +154,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
@@ -162,7 +163,7 @@ interface LocalState {}
 
 export default {
   name: "MemberTable",
-  components: { RoleSelect },
+  components: { RoleSelect, PrincipalAvatar },
   props: {},
   setup(props, ctx) {
     const store = useStore();

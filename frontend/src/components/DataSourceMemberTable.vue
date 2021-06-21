@@ -41,7 +41,7 @@
       <template v-slot:body="{ rowData: member }">
         <BBTableCell :leftPadding="4" class="table-cell">
           <div class="flex flex-row items-center space-x-2">
-            <BBAvatar :username="member.principal.name" />
+            <PrincipalAvatar :principal="member.principal" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
@@ -112,6 +112,7 @@
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 
 const columnList = [
@@ -134,7 +135,7 @@ interface LocalState {
 
 export default {
   name: "DataSourceMemberTable",
-  components: { DataSourceMemberForm },
+  components: { DataSourceMemberForm, PrincipalAvatar },
   props: {
     dataSource: {
       required: true,

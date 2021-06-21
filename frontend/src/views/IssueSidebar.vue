@@ -145,7 +145,7 @@
         <ul class="col-span-2">
           <li class="flex justify-start items-center space-x-2">
             <div class="flex-shrink-0">
-              <BBAvatar :size="'small'" :username="issue.creator.name" />
+              <PrincipalAvatar :principal="issue.creator" :size="'SMALL'" />
             </div>
             <router-link
               :to="`/u/${issue.creator.id}`"
@@ -186,7 +186,7 @@
         <div class="flex space-x-1">
           <template v-for="(subscriber, index) in subscriberList" :key="index">
             <router-link :to="`/u/${subscriber.id}`" class="hover:opacity-75">
-              <BBAvatar :size="'small'" :username="subscriber.name" />
+              <PrincipalAvatar :principal="subscriber" :size="'SMALL'" />
             </router-link>
           </template>
         </div>
@@ -228,6 +228,7 @@ import isEqual from "lodash-es/isEqual";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import PrincipalSelect from "../components/PrincipalSelect.vue";
 import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
@@ -282,6 +283,7 @@ export default {
     DatabaseSelect,
     ProjectSelect,
     EnvironmentSelect,
+    PrincipalAvatar,
     PrincipalSelect,
     StageSelect,
     IssueStatusIcon,

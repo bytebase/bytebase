@@ -78,7 +78,7 @@
       </BBTableCell>
       <BBTableCell class="table-cell w-12">
         <div class="flex flex-row items-center space-x-2">
-          <BBAvatar :username="taskRun.creator.name" :size="'small'" />
+          <PrincipalAvatar :principal="taskRun.creator" :size="'SMALL'" />
           <div class="flex flex-col">
             <div class="flex flex-row items-center space-x-2">
               <router-link :to="`/u/${taskRun.creator.id}`"
@@ -100,6 +100,7 @@
 
 <script lang="ts">
 import { PropType } from "vue";
+import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { TaskRun, TaskRunStatus } from "../types";
 
@@ -123,7 +124,7 @@ const columnList: BBTableColumn[] = [
 
 export default {
   name: "TaskRunTable",
-  components: {},
+  components: { PrincipalAvatar },
   props: {
     taskRunList: {
       required: true,

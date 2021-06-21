@@ -9,7 +9,7 @@
         <div class="h-32 w-full bg-accent lg:h-48"></div>
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
-            <BBAvatar :size="'huge'" :username="principal.name" />
+            <PrincipalAvatar :principal="principal" :size="'HUGE'" />
             <div
               class="
                 mt-6
@@ -154,6 +154,7 @@
 <script lang="ts">
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { Principal, PrincipalPatch } from "../types";
@@ -170,7 +171,7 @@ export default {
       type: Number,
     },
   },
-  components: {},
+  components: { PrincipalAvatar },
   setup(props, ctx) {
     const editNameTextField = ref();
 

@@ -55,11 +55,10 @@
                         justify-center
                       "
                     >
-                      <BBAvatar
-                        :username="activity.creator.name"
-                        :size="'small'"
-                      >
-                      </BBAvatar>
+                      <PrincipalAvatar
+                        :principal="activity.creator"
+                        :size="'SMALL'"
+                      />
                     </div>
                   </div>
                 </template>
@@ -463,7 +462,7 @@
           <div class="flex">
             <div class="flex-shrink-0">
               <div class="relative">
-                <BBAvatar :username="currentUser.name"> </BBAvatar>
+                <PrincipalAvatar :principal="currentUser" />
                 <span
                   class="
                     absolute
@@ -553,6 +552,7 @@ import {
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   Issue,
   Activity,
@@ -603,7 +603,7 @@ export default {
       type: Object as PropType<IssueTemplate>,
     },
   },
-  components: {},
+  components: { PrincipalAvatar },
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

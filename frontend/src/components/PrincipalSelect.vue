@@ -17,7 +17,7 @@
           The specific value and breakpoint is to make it align with other select in the issue sidebar.
           -->
       <span class="flex lg:40 xl:w-44 items-center space-x-2">
-        <BBAvatar :size="'small'" :username="item.name" />
+        <PrincipalAvatar :principal="item" :size="'SMALL'" />
         <span class="truncate">{{ item.name }}</span>
       </span>
     </template>
@@ -39,6 +39,7 @@
 <script lang="ts">
 import { reactive, computed, watch, PropType } from "vue";
 import { useStore } from "vuex";
+import PrincipalAvatar from "./PrincipalAvatar.vue";
 import {
   Member,
   Principal,
@@ -56,6 +57,7 @@ interface LocalState {
 export default {
   name: "PrincipalSelect",
   emits: ["select-principal-id"],
+  components: { PrincipalAvatar },
   props: {
     selectedId: {
       type: Number,

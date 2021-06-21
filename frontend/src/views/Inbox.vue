@@ -46,7 +46,7 @@
           @click.prevent="clickMessage(message)"
         >
           <div class="flex space-x-3">
-            <BBAvatar :size="'small'" :username="message.creator.name" />
+            <PrincipalAvatar :principal="message.creator" :size="'SMALL'" />
             <div class="flex-1 space-y-1">
               <div class="flex w-full items-center justify-between space-x-2">
                 <h3
@@ -165,6 +165,7 @@
 <script lang="ts">
 import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   MemberMessagePayload,
   Message,
@@ -192,7 +193,7 @@ interface LocalState {
 
 export default {
   name: "Inbox",
-  components: {},
+  components: { PrincipalAvatar },
   setup(props, ctx) {
     const store = useStore();
 

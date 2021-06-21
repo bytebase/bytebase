@@ -96,7 +96,7 @@
       <BBTableCell class="hidden sm:table-cell">
         <div class="flex flex-row items-center">
           <BBAvatar
-            :size="'small'"
+            :size="'SMALL'"
             :username="issue.assignee ? issue.assignee.name : 'Unassigned'"
           />
           <span class="ml-2">{{

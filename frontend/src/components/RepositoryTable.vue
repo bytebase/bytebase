@@ -16,7 +16,7 @@
       </BBTableCell>
       <BBTableCell class="w-16">
         <div class="flex flex-row items-center">
-          <BBAvatar :size="'small'" :username="repository.creator.name" />
+          <PrincipalAvatar :principal="repository.creator" :size="'SMALL'" />
           <span class="ml-2">{{ repository.creator.name }}</span>
         </div>
       </BBTableCell>
@@ -30,6 +30,7 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
+import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { projectSlug } from "../utils";
 import { Repository } from "../types";
@@ -51,7 +52,7 @@ const columnList: BBTableColumn[] = [
 
 export default {
   name: "RepositoryTable",
-  components: {},
+  components: { PrincipalAvatar },
   props: {
     repositoryList: {
       required: true,

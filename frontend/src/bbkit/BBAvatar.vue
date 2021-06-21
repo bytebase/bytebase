@@ -15,6 +15,7 @@
 import { computed, PropType } from "vue";
 
 import { hashCode } from "./BBUtil";
+import { BBAvatarSizeType } from "./types";
 
 const BACKGROUND_COLOR_LIST: string[] = [
   "#64748B",
@@ -35,20 +36,18 @@ const BACKGROUND_COLOR_LIST: string[] = [
   "#F43F5E",
 ];
 
-type SizeType = "small" | "normal" | "large" | "huge";
-
-const sizeClassMap: Map<SizeType, string> = new Map([
-  ["small", "w-6 h-6 font-medium"],
-  ["normal", "w-8 h-8 font-medium"],
-  ["large", "w-24 h-24 font-medium"],
-  ["huge", "w-36 h-36 font-medium"],
+const sizeClassMap: Map<BBAvatarSizeType, string> = new Map([
+  ["SMALL", "w-6 h-6 font-medium"],
+  ["NORMAL", "w-8 h-8 font-medium"],
+  ["LARGE", "w-24 h-24 font-medium"],
+  ["HUGE", "w-36 h-36 font-medium"],
 ]);
 
-const fontStyleClassMap: Map<SizeType, string> = new Map([
-  ["small", "0.675rem"], // customized font size
-  ["normal", "0.875rem"], // text-sm
-  ["large", "2.25rem"], // text-4xl
-  ["huge", "3rem"], // text-5xl
+const fontStyleClassMap: Map<BBAvatarSizeType, string> = new Map([
+  ["SMALL", "0.675rem"], // customized font size
+  ["NORMAL", "0.875rem"], // text-sm
+  ["LARGE", "2.25rem"], // text-4xl
+  ["HUGE", "3rem"], // text-5xl
 ]);
 
 export default {
@@ -59,8 +58,8 @@ export default {
       default: "",
     },
     size: {
-      type: String as PropType<SizeType>,
-      default: "normal",
+      type: String as PropType<BBAvatarSizeType>,
+      default: "NORMAL",
     },
     rounded: {
       type: Boolean,

@@ -9,7 +9,7 @@
       aria-label="User menu"
       aria-haspopup="true"
     >
-      <BBAvatar :username="currentUser.name"> </BBAvatar>
+      <PrincipalAvatar :principal="currentUser" />
     </button>
     <BBContextMenu
       ref="menu"
@@ -89,9 +89,11 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import PrincipalAvatar from "./PrincipalAvatar.vue";
 
 export default {
   name: "ProfileDropdown",
+  components: { PrincipalAvatar },
   props: {},
   setup(props, ctx) {
     const store = useStore();

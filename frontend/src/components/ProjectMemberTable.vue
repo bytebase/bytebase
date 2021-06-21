@@ -62,7 +62,7 @@
             </span>
           </template>
           <template v-else>
-            <BBAvatar :username="member.principal.name" />
+            <PrincipalAvatar :principal="member.principal" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
@@ -133,12 +133,12 @@
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import ProjectRoleSelect from "../components/ProjectRoleSelect.vue";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   Project,
   ProjectMember,
   ProjectRoleType,
   MemberId,
-  RoleType,
   ProjectMemberPatch,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
@@ -148,7 +148,7 @@ interface LocalState {}
 
 export default {
   name: "ProjectMemberTable",
-  components: { ProjectRoleSelect },
+  components: { ProjectRoleSelect, PrincipalAvatar },
   props: {
     project: {
       required: true,
