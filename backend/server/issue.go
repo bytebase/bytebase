@@ -320,11 +320,36 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.CreatorId = creatorId
 			taskCreate.PipelineId = createdPipeline.ID
 			taskCreate.StageId = createdStage.ID
-			if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-				payload := api.TaskDatabaseSchemaUpdatePayload{}
-				if taskCreate.Statement != "" {
-					payload.Statement = taskCreate.Statement
+			if taskCreate.Type == api.TaskDatabaseCreate {
+				payload := api.TaskDatabaseCreatePayload{}
+				if taskCreate.Statement == "" {
+					return nil, fmt.Errorf("failed to create database creation task, sql statement missing")
 				}
+				if taskCreate.DatabaseName == "" {
+					return nil, fmt.Errorf("failed to create database creation task, database name missing")
+				}
+				if taskCreate.CharacterSet == "" {
+					return nil, fmt.Errorf("failed to create database creation task, character set missing")
+				}
+				if taskCreate.Collation == "" {
+					return nil, fmt.Errorf("failed to create database creation task, collation missing")
+				}
+				payload.Statement = taskCreate.Statement
+				payload.DatabaseName = taskCreate.DatabaseName
+				payload.CharacterSet = taskCreate.CharacterSet
+				payload.Collation = taskCreate.Collation
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+				}
+				taskCreate.Payload = string(bytes)
+			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+				payload := api.TaskDatabaseSchemaUpdatePayload{}
+				if taskCreate.Statement == "" {
+					return nil, fmt.Errorf("failed to create schema update task, sql statement missing")
+				}
+				payload.Statement = taskCreate.Statement
+
 				if taskCreate.RollbackStatement != "" {
 					payload.RollbackStatement = taskCreate.RollbackStatement
 				}
@@ -333,7 +358,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				}
 				bytes, err := json.Marshal(payload)
 				if err != nil {
-					return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
+					return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
 				}
 				taskCreate.Payload = string(bytes)
 			}

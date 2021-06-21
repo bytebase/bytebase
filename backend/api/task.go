@@ -38,12 +38,20 @@ type TaskType string
 
 const (
 	TaskGeneral              TaskType = "bb.task.general"
+	TaskDatabaseCreate       TaskType = "bb.task.database.create"
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
+type TaskDatabaseCreatePayload struct {
+	Statement    string `json:"statement,omitempty"`
+	DatabaseName string `json:"databaseName,omitempty"`
+	CharacterSet string `json:"character,omitempty"`
+	Collation    string `json:"collation,omitempty"`
+}
+
 type TaskDatabaseSchemaUpdatePayload struct {
 	Statement         string        `json:"statement,omitempty"`
 	RollbackStatement string        `json:"rollbackStatement,omitempty"`
@@ -92,14 +100,17 @@ type TaskCreate struct {
 	DatabaseId *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name              string     `jsonapi:"attr,name"`
-	Status            TaskStatus `jsonapi:"attr,status"`
-	Type              TaskType   `jsonapi:"attr,type"`
-	Statement         string     `jsonapi:"attr,statement"`
-	RollbackStatement string     `jsonapi:"attr,rollbackStatement"`
+	Name   string     `jsonapi:"attr,name"`
+	Status TaskStatus `jsonapi:"attr,status"`
+	Type   TaskType   `jsonapi:"attr,type"`
+	// Payload is dirived from fields below it
+	Payload           string
+	Statement         string `jsonapi:"attr,statement"`
+	RollbackStatement string `jsonapi:"attr,rollbackStatement"`
+	DatabaseName      string `jsonapi:"attr,databaseName"`
+	CharacterSet      string `jsonapi:"attr,characterSet"`
+	Collation         string `jsonapi:"attr,collation"`
 	VCSPushEvent      *VCSPushEvent
-	// Payload is dirived from Statement, RollbackStatement, VCSPushEvent
-	Payload string
 }
 
 type TaskFind struct {

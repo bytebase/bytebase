@@ -37,7 +37,7 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, fmt.Errorf("invalid schema update payload: %w", err)
+		return true, fmt.Errorf("invalid database schema update payload: %w", err)
 	}
 
 	mi := &db.MigrationInfo{

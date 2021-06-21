@@ -6,7 +6,10 @@ import { VCSPushEvent } from "../vcs";
 import { Pipeline } from "./pipeline";
 import { Stage } from "./stage";
 
-export type TaskType = "bb.task.general" | "bb.task.database.schema.update";
+export type TaskType =
+  | "bb.task.general"
+  | "bb.task.database.create"
+  | "bb.task.database.schema.update";
 
 export type TaskStatus =
   | "PENDING"
@@ -16,13 +19,27 @@ export type TaskStatus =
   | "FAILED"
   | "CANCELED";
 
-export type DatabaseSchemaUpdateTaskPayload = {
+export type TaskGeneralPayload = {
+  statement: string;
+};
+
+export type TaskDatabaseCreatePayload = {
+  statement: string;
+  databaseName: string;
+  characterSet: string;
+  collation: string;
+};
+
+export type TaskDatabaseSchemaUpdatePayload = {
   statement: string;
   rollbackStatement: string;
   pushEvent?: VCSPushEvent;
 };
 
-export type TaskPayload = DatabaseSchemaUpdateTaskPayload;
+export type TaskPayload =
+  | TaskGeneralPayload
+  | TaskDatabaseCreatePayload
+  | TaskDatabaseSchemaUpdatePayload;
 
 export type Task = {
   id: TaskId;
@@ -57,6 +74,9 @@ export type TaskCreate = {
   databaseId?: DatabaseId;
   statement: string;
   rollbackStatement: string;
+  databaseName?: string;
+  characterSet?: string;
+  collation?: string;
 };
 
 export type TaskStatusPatch = {

@@ -76,7 +76,7 @@
 import { reactive, watch, PropType, computed } from "vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import { activeTask } from "../utils";
-import { DatabaseSchemaUpdateTaskPayload, Issue, VCSPushEvent } from "../types";
+import { TaskDatabaseSchemaUpdatePayload, Issue, VCSPushEvent } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -117,7 +117,7 @@ export default {
     const pushEvent = computed((): VCSPushEvent | undefined => {
       if (props.issue.type == "bb.issue.database.schema.update") {
         const payload = activeTask(props.issue.pipeline)
-          .payload as DatabaseSchemaUpdateTaskPayload;
+          .payload as TaskDatabaseSchemaUpdatePayload;
         return payload?.pushEvent;
       }
       return undefined;

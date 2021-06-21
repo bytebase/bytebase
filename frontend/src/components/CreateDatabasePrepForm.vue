@@ -222,7 +222,7 @@ export default {
     const create = async () => {
       const newIssue: IssueCreate = {
         name: `Create database ${state.databaseName}`,
-        type: "bb.issue.database.schema.update",
+        type: "bb.issue.database.create",
         description: "",
         assigneeId: SYSTEM_BOT_ID,
         projectId: state.projectId!,
@@ -235,10 +235,13 @@ export default {
                 {
                   name: `Create database ${state.databaseName}`,
                   status: "PENDING",
-                  type: "bb.task.database.schema.update",
+                  type: "bb.task.database.create",
                   instanceId: state.instanceId!,
                   statement: `CREATE DATABASE \`${state.databaseName}\`\nCHARACTER SET ${state.characterSet} COLLATE ${state.collation}`,
                   rollbackStatement: "",
+                  databaseName: state.databaseName,
+                  characterSet: state.characterSet,
+                  collation: state.collation,
                 },
               ],
             },

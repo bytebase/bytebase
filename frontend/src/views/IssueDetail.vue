@@ -238,9 +238,11 @@ import {
   TaskStatus,
   IssueStatusPatch,
   Task,
-  DatabaseSchemaUpdateTaskPayload,
+  TaskDatabaseSchemaUpdatePayload,
   StageCreate,
   TaskCreate,
+  TaskDatabaseCreatePayload,
+  TaskGeneralPayload,
 } from "../types";
 import {
   defaulTemplate,
@@ -305,7 +307,7 @@ export default {
         } else {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
-            style: "CRITICAL",
+            style: "WARN",
             title: `Unknown template '${issueType}'.`,
             description: "Fallback to the default template",
           });
@@ -647,10 +649,20 @@ export default {
       if (state.create) {
         return (task as TaskCreate).statement;
       }
-      return (
-        ((task as Task).payload as DatabaseSchemaUpdateTaskPayload).statement ||
-        ""
-      );
+      switch (task.type) {
+        case "bb.task.general":
+          return ((task as Task).payload as TaskGeneralPayload).statement || "";
+        case "bb.task.database.create":
+          return (
+            ((task as Task).payload as TaskDatabaseCreatePayload).statement ||
+            ""
+          );
+        case "bb.task.database.schema.update":
+          return (
+            ((task as Task).payload as TaskDatabaseSchemaUpdatePayload)
+              .statement || ""
+          );
+      }
     });
 
     const selectedRollbackStatement = computed((): string => {
@@ -659,7 +671,7 @@ export default {
         return (task as TaskCreate).rollbackStatement;
       }
       return (
-        ((task as Task).payload as DatabaseSchemaUpdateTaskPayload)
+        ((task as Task).payload as TaskDatabaseSchemaUpdatePayload)
           .rollbackStatement || ""
       );
     });
@@ -727,6 +739,7 @@ export default {
     const showIssueTaskStatementPanel = computed(() => {
       return (
         issue.value.type == "bb.issue.general" ||
+        issue.value.type == "bb.issue.database.create" ||
         issue.value.type == "bb.issue.database.schema.update"
       );
     });
