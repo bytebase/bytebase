@@ -1,32 +1,38 @@
 <template>
   <div class="mx-4 space-y-4 w-160">
-    <div v-if="projectId == UNKNOWN_ID" class="flex flex-row space-x-2">
-      <svg
-        class="w-8 h-8 text-control -mt-1.5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-        ></path>
-      </svg>
-      <p class="textlabel">
-        indicates the project has enabled version control. Selecting database
-        belonging to such project will navigate you to the corresponding Git
-        repository to create schema change.
-      </p>
-    </div>
-    <div v-else-if="state.project.workflowType == 'VCS'" class="textlabel">
-      This project has version control enabled and selecting database below will
-      navigate you to the corresponding Git repository to create schema change.
-    </div>
+    <template v-if="projectId">
+      <div v-if="state.project.workflowType == 'VCS'" class="textlabel">
+        This project has version control enabled and selecting database below
+        will navigate you to the corresponding Git repository to create schema
+        change.
+      </div>
+    </template>
+    <template v-else>
+      <div class="flex flex-row space-x-2">
+        <svg
+          class="w-8 h-8 text-control -mt-1.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+          ></path>
+        </svg>
+        <p class="textlabel">
+          indicates the project has enabled version control. Selecting database
+          belonging to such project will navigate you to the corresponding Git
+          repository to create schema change.
+        </p>
+      </div>
+    </template>
+
     <div
-      v-if="projectId != UNKNOWN_ID && state.project.workflowType == 'UI'"
+      v-if="projectId && state.project.workflowType == 'UI'"
       class="mt-2 textlabel"
     >
       <div class="radio-set-row">
@@ -52,25 +58,12 @@
         </div>
       </div>
     </div>
-    <DatabaseTable
-      v-if="
-        projectId == UNKNOWN_ID ||
-        state.project.workflowType == 'VCS' ||
-        state.alterType == 'SINGLE_DB'
-      "
-      :mode="projectId == UNKNOWN_ID ? 'ALL_SHORT' : 'PROJECT_SHORT'"
-      :bordered="true"
-      :customClick="true"
-      :databaseList="databaseList"
-      @select-database-id="selectDatabaseId"
-    />
-    <template
-      v-else-if="projectId != UNKNOWN_ID && state.alterType == 'MULTI_DB'"
-    >
+
+    <template v-if="projectId && state.alterType == 'MULTI_DB'">
       <div class="textinfolabel">
         For each environment, your can select a database to alter its schema or
         just skip that environment. This allows you to compose a single pipeline
-        to propagate schema changes across the environments.
+        to propagate schema changes across multiple environments.
       </div>
       <div class="space-y-4">
         <div v-for="(environment, index) in environmentList" :key="index">
@@ -180,6 +173,15 @@
         </div>
       </div>
     </template>
+    <template v-else>
+      <DatabaseTable
+        :mode="projectId ? 'PROJECT_SHORT' : 'ALL_SHORT'"
+        :bordered="true"
+        :customClick="true"
+        :databaseList="databaseList"
+        @select-database-id="selectDatabaseId"
+      />
+    </template>
     <!-- Create button group -->
     <div class="pt-4 border-t border-block-border flex justify-end">
       <button
@@ -214,13 +216,12 @@ import {
   Project,
   ProjectId,
   Repository,
-  UNKNOWN_ID,
 } from "../types";
 
 type AlterType = "SINGLE_DB" | "MULTI_DB";
 
 interface LocalState {
-  project: Project;
+  project?: Project;
   alterType: AlterType;
   selectedDatabaseIdForEnvironment: Map<EnvironmentId, DatabaseId>;
 }
@@ -230,7 +231,6 @@ export default {
   emits: ["dismiss"],
   props: {
     projectId: {
-      required: true,
       type: Number as PropType<ProjectId>,
     },
   },
@@ -258,7 +258,9 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      project: store.getters["project/projectById"](props.projectId),
+      project: props.projectId
+        ? store.getters["project/projectById"](props.projectId)
+        : undefined,
       alterType: "SINGLE_DB",
       selectedDatabaseIdForEnvironment: new Map(),
     });
@@ -269,13 +271,13 @@ export default {
 
     const databaseList = computed(() => {
       var list;
-      if (props.projectId == UNKNOWN_ID) {
-        list = store.getters["database/databaseListByPrincipalId"](
-          currentUser.value.id
-        );
-      } else {
+      if (props.projectId) {
         list = store.getters["database/databaseListByProjectId"](
           props.projectId
+        );
+      } else {
+        list = store.getters["database/databaseListByPrincipalId"](
+          currentUser.value.id
         );
       }
 
@@ -379,7 +381,6 @@ export default {
     };
 
     return {
-      UNKNOWN_ID,
       state,
       environmentList,
       databaseList,

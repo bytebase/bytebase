@@ -433,12 +433,12 @@ export default {
       });
     });
 
-    const projectId = computed((): ProjectId => {
+    const projectId = computed((): ProjectId | undefined => {
       if (router.currentRoute.value.name == "workspace.project.detail") {
         const parts = router.currentRoute.value.path.split("/");
         return idFromSlug(parts[parts.length - 1]);
       }
-      return UNKNOWN_ID;
+      return undefined;
     });
 
     const createProject = () => {
