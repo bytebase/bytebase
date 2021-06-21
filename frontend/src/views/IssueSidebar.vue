@@ -85,15 +85,18 @@
           />
         </div>
       </template>
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Database
-      </h2>
-      <router-link
-        :to="`/db/${databaseSlug(database)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ database.id == EMPTY_ID ? "N/A" : database.name }}
-      </router-link>
+
+      <template v-if="database.id != EMPTY_ID">
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          Database
+        </h2>
+        <router-link
+          :to="`/db/${databaseSlug(database)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ database.name }}
+        </router-link>
+      </template>
 
       <template v-if="showInstance">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
