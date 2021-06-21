@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -100,7 +101,37 @@ func (s *TaskService) PatchTaskStatus(ctx context.Context, patch *api.TaskStatus
 
 // createTask creates a new task.
 func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCreate) (*api.Task, error) {
-	row, err := tx.QueryContext(ctx, `
+	var row *sql.Rows
+	var err error
+
+	if create.DatabaseId == nil {
+		row, err = tx.QueryContext(ctx, `
+		INSERT INTO task (
+			creator_id,
+			updater_id,
+			pipeline_id,
+			stage_id,
+			instance_id,
+			name,
+			`+"`status`,"+`	
+			`+"`type`,"+`
+			payload	
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+	`,
+			create.CreatorId,
+			create.CreatorId,
+			create.PipelineId,
+			create.StageId,
+			create.InstanceId,
+			create.Name,
+			create.Status,
+			create.Type,
+			create.Payload,
+		)
+	} else {
+		row, err = tx.QueryContext(ctx, `
 		INSERT INTO task (
 			creator_id,
 			updater_id,
@@ -116,17 +147,18 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.PipelineId,
-		create.StageId,
-		create.InstanceId,
-		create.DatabaseId,
-		create.Name,
-		create.Status,
-		create.Type,
-		create.Payload,
-	)
+			create.CreatorId,
+			create.CreatorId,
+			create.PipelineId,
+			create.StageId,
+			create.InstanceId,
+			create.DatabaseId,
+			create.Name,
+			create.Status,
+			create.Type,
+			create.Payload,
+		)
+	}
 
 	if err != nil {
 		return nil, FormatError(err)
@@ -135,6 +167,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 
 	row.Next()
 	var task api.Task
+	var databaseId sql.NullInt32
 	task.TaskRunList = []*api.TaskRun{}
 	if err := row.Scan(
 		&task.ID,
@@ -145,13 +178,18 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		&task.PipelineId,
 		&task.StageId,
 		&task.InstanceId,
-		&task.DatabaseId,
+		&databaseId,
 		&task.Name,
 		&task.Status,
 		&task.Type,
 		&task.Payload,
 	); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if databaseId.Valid {
+		val := int(databaseId.Int32)
+		task.DatabaseId = &val
 	}
 
 	return &task, nil

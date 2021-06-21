@@ -63,13 +63,17 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 		return true, err
 	}
 
-	instance := task.Database.Instance
+	instance := task.Instance
+	databaseName := ""
+	if task.Database != nil {
+		databaseName = task.Database.Name
+	}
 	driver, err := db.Open(instance.Engine, db.DriverConfig{Logger: exec.l}, db.ConnectionConfig{
 		Username: instance.Username,
 		Password: instance.Password,
 		Host:     instance.Host,
 		Port:     instance.Port,
-		Database: task.Database.Name,
+		Database: databaseName,
 	})
 	if err != nil {
 		return true, fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
@@ -77,7 +81,8 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 
 	if payload.VCSPushEvent == nil {
 		exec.l.Debug("Start executing sql...",
-			zap.String("database", task.Database.Name),
+			zap.String("instance", instance.Name),
+			zap.String("database", databaseName),
 			zap.String("sql", sql),
 		)
 
@@ -86,7 +91,8 @@ func (exec *SqlTaskExecutor) RunOnce(ctx context.Context, server *Server, task *
 		}
 	} else {
 		exec.l.Debug("Start sql migration...",
-			zap.String("database", task.Database.Name),
+			zap.String("instance", instance.Name),
+			zap.String("database", databaseName),
 			zap.String("type", mi.Type.String()),
 			zap.String("sql", sql),
 		)

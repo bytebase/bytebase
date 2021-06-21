@@ -137,9 +137,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							Added:      added,
 						},
 					}
+					databaseID := database.ID
 					task := &api.TaskCreate{
 						InstanceId:   database.InstanceId,
-						DatabaseId:   database.ID,
+						DatabaseId:   &databaseID,
 						Name:         mi.Description,
 						Status:       "PENDING",
 						Type:         api.TaskDatabaseSchemaUpdate,
