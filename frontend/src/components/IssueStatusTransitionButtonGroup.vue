@@ -394,6 +394,24 @@ export default {
         return false;
       }
 
+      if (
+        newIssue.type == "bb.issue.database.create" ||
+        newIssue.type == "bb.issue.database.schema.update"
+      ) {
+        for (const stage of newIssue.pipeline.stageList) {
+          for (const task of stage.taskList) {
+            if (
+              task.type == "bb.task.database.create" ||
+              task.type == "bb.task.database.schema.update"
+            ) {
+              if (isEmpty(task.statement)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+
       for (const field of props.issueTemplate.inputFieldList) {
         if (
           field.type != "Boolean" && // Switch is boolean value which always is present

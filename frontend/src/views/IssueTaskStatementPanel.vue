@@ -2,6 +2,7 @@
   <div class="flex justify-between">
     <div class="textlabel">
       {{ rollback ? "Rollback SQL" : "SQL" }}
+      <span v-if="create && !rollback" class="text-red-600">*</span>
     </div>
   </div>
   <label class="sr-only">SQL statement</label>
@@ -18,7 +19,11 @@
         outline-none
       "
       :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
-      placeholder="Add SQL statement..."
+      :placeholder="
+        create && rollback
+          ? 'Add SQL statement...'
+          : '(Required) Add SQL statement...'
+      "
       v-model="state.editStatement"
       @input="
         (e) => {
