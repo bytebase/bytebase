@@ -9,10 +9,10 @@
         >
           <div class="h-0.5 w-full bg-gray-300"></div>
         </div>
-        <router-link
-          :to="step.link()"
+        <div
           class="relative w-6 h-6 flex items-center justify-center rounded-full"
           :class="stepClass(step.status)"
+          @click.stop.prevent="$emit('click-step', step)"
         >
           <template v-if="step.status == `PENDING`">
             <span
@@ -119,7 +119,7 @@
             </svg>
           </template>
           <span class="sr-only">{{ step.title }}</span>
-        </router-link>
+        </div>
       </li>
     </ol>
   </nav>
@@ -131,6 +131,7 @@ import { BBStep, BBStepStatus } from "./types";
 
 export default {
   name: "BBStepBar",
+  emits: ["click-step"],
   props: {
     stepList: {
       required: true,
@@ -141,23 +142,23 @@ export default {
     const stepClass = (status: BBStepStatus) => {
       switch (status) {
         case "PENDING":
-          return "bg-white border-2 border-control";
+          return "bg-white border-2 border-control hover:border-control-hover";
         case "PENDING_ACTIVE":
-          return "bg-white border-2 border-blue-600 text-blue-600";
+          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
         case "PENDING_APPROVAL":
-          return "bg-white border-2 border-control";
+          return "bg-white border-2 border-control hover:border-control-hover";
         case "PENDING_APPROVAL_ACTIVE":
-          return "bg-white border-2 border-blue-600 text-blue-600";
+          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
         case "RUNNING":
-          return "bg-white border-2 border-blue-600 text-blue-600";
+          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
         case "DONE":
-          return "bg-success text-white";
+          return "bg-success hover:bg-success-hover text-white";
         case "FAILED":
-          return "bg-error text-white hover:text-white";
+          return "bg-error hover:bg-error-hover text-white";
         case "CANCELED":
-          return "bg-white border-2 text-gray-400 border-gray-400";
+          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
         case "SKIPPED":
-          return "bg-white border-2 text-gray-300 border-gray-300";
+          return "bg-white border-2 text-gray-300 border-gray-300 hover:text-gray-400 hover:border-gray-400";
       }
     };
 

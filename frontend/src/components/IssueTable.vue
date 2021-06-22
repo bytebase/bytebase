@@ -88,7 +88,14 @@
         {{ activeDatabaseName(issue) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
-        <BBStepBar :stepList="taskList(issue)" />
+        <BBStepBar
+          :stepList="taskStepList(issue)"
+          @click-step="
+            (step) => {
+              clickIssueStep(issue, step);
+            }
+          "
+        />
       </BBTableCell>
       <BBTableCell class="hidden md:table-cell">
         {{ humanizeTs(issue.updatedTs) }}
@@ -125,6 +132,7 @@ import {
   activeDatabase,
   activeTask,
   allTaskList,
+  stageSlug,
 } from "../utils";
 import { Issue, EMPTY_ID, Task } from "../types";
 
@@ -238,7 +246,7 @@ export default {
 
     const router = useRouter();
 
-    const taskList = function (issue: Issue): BBStep[] {
+    const taskStepList = function (issue: Issue): BBStep[] {
       const list: Task[] = allTaskList(issue.pipeline);
       return list.map((task) => {
         let status: BBStepStatus = task.status;
@@ -253,16 +261,29 @@ export default {
         return {
           title: task.name,
           status,
-          link: (): string => {
-            return `/issue/${issue.id}`;
-          },
+          payload: task,
         };
       });
     };
 
-    const clickIssue = function (section: number, row: number) {
+    const clickIssue = (section: number, row: number) => {
       const issue = props.issueSectionList[section].list[row];
       router.push(`/issue/${issueSlug(issue.name, issue.id)}`);
+    };
+
+    const clickIssueStep = (issue: Issue, step: BBStep) => {
+      const task = step.payload as Task;
+      const stageIndex = issue.pipeline.stageList.findIndex((item, index) => {
+        return item.id == task.stage.id;
+      });
+
+      router.push({
+        name: "workspace.issue.detail",
+        params: {
+          issueSlug: issueSlug(issue.name, issue.id),
+        },
+        query: { stage: stageSlug(task.stage.name, stageIndex) },
+      });
     };
 
     return {
@@ -270,9 +291,10 @@ export default {
       columnList: columnListMap.get(props.mode),
       activeEnvironmentName,
       activeDatabaseName,
-      taskList,
+      taskStepList,
       activeTask,
       clickIssue,
+      clickIssueStep,
     };
   },
 };

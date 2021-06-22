@@ -30,7 +30,7 @@ export type BBStepStatus =
 export type BBStep = {
   title: string;
   status: BBStepStatus;
-  link(): string;
+  payload: any;
 };
 
 export type BBStepTabItem = {
