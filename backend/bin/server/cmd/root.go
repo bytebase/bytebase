@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/server"
@@ -18,13 +19,21 @@ import (
 
 var (
 	// Used for flags.
-	host string
-	port int
+	mode    string
+	host    string
+	dataDir string
+	port    int
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase server",
 		Run: func(cmd *cobra.Command, args []string) {
+			if mode != "release" && mode != "dev" {
+				fmt.Fprintln(os.Stderr, fmt.Errorf("invalid --mode %s, expect \"release\" | \"dev\"", mode))
+				os.Exit(1)
+			}
+			// Trim trailing / in case user supplies
+			dataDir = strings.TrimRight(dataDir, "/")
 			start()
 		},
 	}
@@ -36,18 +45,24 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringVar(&mode, "mode", "release", "mode which Bytebase is running under. release | dev")
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running. e.g. 8080")
+	rootCmd.PersistentFlags().StringVar(&dataDir, "data", "./data", "directory where Bytebase stores data.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
 
 // -----------------------------------Main Entry Point---------------------------------------------
-
-// const DSN = ":memory:"
-const DSN = "./data/bytebase_dev.db"
+type profile struct {
+	mode      string
+	logConfig zap.Config
+	dsn       string
+}
 
 type main struct {
+	profile *profile
+
 	l *zap.Logger
 
 	server *server.Server
@@ -64,6 +79,7 @@ func start() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
+		m.l.Info("SIGINT received.")
 		if err := m.Close(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -87,18 +103,40 @@ func start() {
 }
 
 func newMain() *main {
-	logger, err := zap.NewDevelopment()
+	var activeProfile = map[string]profile{
+		"dev": {
+			mode:      "dev",
+			logConfig: zap.NewDevelopmentConfig(),
+			dsn:       fmt.Sprintf("%s/bytebase_dev.db", dataDir),
+		},
+		"release": {
+			mode:      "release",
+			logConfig: zap.NewProductionConfig(),
+			dsn:       fmt.Sprintf("%s/bytebase.db", dataDir),
+		},
+	}[mode]
+
+	fmt.Println("-----Config BEGIN-----")
+	fmt.Printf("mode=%s\n", activeProfile.mode)
+	fmt.Printf("host=%s\n", host)
+	fmt.Printf("port=%d\n", port)
+	fmt.Printf("data=%s\n", activeProfile.dsn)
+	fmt.Println("-----Config END-------")
+
+	logger, err := activeProfile.logConfig.Build()
 	if err != nil {
-		panic("Failed to create logger.")
+		panic(fmt.Errorf("failed to create logger. %w", err))
 	}
+
 	defer logger.Sync()
 	return &main{
-		l: logger,
+		profile: &activeProfile,
+		l:       logger,
 	}
 }
 
 func (m *main) Run() error {
-	db := store.NewDB(m.l, DSN)
+	db := store.NewDB(m.l, m.profile.dsn)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
