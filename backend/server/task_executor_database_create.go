@@ -10,24 +10,24 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewCreateDatabaseTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &SqlTaskExecutor{
+func NewDatabaseCreateTaskExecutor(logger *zap.Logger) TaskExecutor {
+	return &SchemaUpdateTaskExecutor{
 		l: logger,
 	}
 }
 
-type CreateDatabaseTaskExecutor struct {
+type DatabaseCreateTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *CreateDatabaseTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
+func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
 			if !ok {
 				panicErr = fmt.Errorf("%v", r)
 			}
-			exec.l.Error("CreateDatabaseTaskExecutor PANIC RECOVER", zap.Error(panicErr))
+			exec.l.Error("DatabaseCreateTaskExecutor PANIC RECOVER", zap.Error(panicErr))
 			terminated = true
 			err = fmt.Errorf("encounter internal error when creating database")
 		}
