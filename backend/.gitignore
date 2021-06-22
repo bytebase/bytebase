@@ -22,3 +22,6 @@ dist
 
 # Dev database
 data
+
+# Release folder
+release
