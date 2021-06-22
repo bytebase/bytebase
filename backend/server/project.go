@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
@@ -239,7 +238,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case "GITLAB_SELF_HOST":
 				webhookPut := gitlab.WebhookPut{
-					URL:                    fmt.Sprintf("%s/%s/%s", os.Getenv("HOSTNAME"), gitLabWebhookPath, updatedRepository.WebhookEndpointId),
+					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepository.WebhookEndpointId),
 					PushEventsBranchFilter: *repositoryPatch.BranchFilter,
 				}
 				json, err := json.Marshal(webhookPut)

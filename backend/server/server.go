@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -25,7 +24,6 @@ const (
 )
 
 type Server struct {
-	l             *zap.Logger
 	TaskScheduler *TaskScheduler
 	SchemaSyncer  *SchemaSyncer
 
@@ -48,6 +46,10 @@ type Server struct {
 	RepositoryService    api.RepositoryService
 
 	e *echo.Echo
+
+	l    *zap.Logger
+	host string
+	port int
 }
 
 //go:embed dist
@@ -77,7 +79,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger) *Server {
+func NewServer(logger *zap.Logger, host string, port int) *Server {
 	e := echo.New()
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
@@ -90,8 +92,10 @@ func NewServer(logger *zap.Logger) *Server {
 	e.GET("/assets/*", echo.WrapHandler(assetHandler))
 
 	s := &Server{
-		l: logger,
-		e: e,
+		l:    logger,
+		e:    e,
+		host: host,
+		port: port,
 	}
 
 	scheduler := NewTaskScheduler(logger, s)
@@ -181,12 +185,10 @@ func (server *Server) Run() error {
 		return err
 	}
 
-	const port int = 8080
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	os.Setenv("HOSTNAME", fmt.Sprintf("http://localhost:%d", port))
-	return server.e.Start(fmt.Sprintf(":%d", port))
+	return server.e.Start(fmt.Sprintf(":%d", server.port))
 }
 
 func (server *Server) Shutdown(ctx context.Context) {
