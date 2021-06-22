@@ -1,8 +1,6 @@
 import { createApp } from "vue";
 import axios from "axios";
 import moment from "moment";
-// @ts-ignore
-import VueClipboard from "vue3-clipboard";
 import App from "./App.vue";
 import { store } from "./store";
 import { router } from "./router";
@@ -134,7 +132,6 @@ app
   .directive("data-source-type", dataSourceType)
   .use(store)
   .use(router)
-  .use(VueClipboard)
   .component("BBAlert", BBAlert)
   .component("BBAttention", BBAttention)
   .component("BBAvatar", BBAvatar)
