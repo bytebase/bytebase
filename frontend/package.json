@@ -13,7 +13,6 @@
     "@tailwindcss/typography": "^0.4.0",
     "autoprefixer": "^10.2.6",
     "axios": "^0.21.1",
-    "faker": "^5.1.0",
     "highlight.js": "^10.6.0",
     "inter-ui": "^3.15.0",
     "lodash-es": "^4.17.21",
@@ -27,7 +26,6 @@
     "vuex": "^4.0.0"
   },
   "devDependencies": {
-    "@types/faker": "^5.1.7",
     "@types/lodash-es": "^4.17.4",
     "@types/slug": "^0.9.1",
     "@types/uuid": "^8.3.0",

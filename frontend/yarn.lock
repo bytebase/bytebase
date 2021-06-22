@@ -88,11 +88,6 @@
     lodash.merge "^4.6.2"
     lodash.uniq "^4.5.0"
 
-"@types/faker@^5.1.7":
-  version "5.5.6"
-  resolved "https://registry.yarnpkg.com/@types/faker/-/faker-5.5.6.tgz#039b700a9d8ad9150ecc842bf5e717e2027b6f75"
-  integrity sha512-UCRj0kLg4sXs2XFVm48OU/wIjyJZkpRkwxhRGVQb5l5GmemkeW22WTz9iiDhYPBUqTzDsIWzhFRuF/4DD5+q2Q==
-
 "@types/lodash-es@^4.17.4":
   version "4.17.4"
   resolved "https://registry.yarnpkg.com/@types/lodash-es/-/lodash-es-4.17.4.tgz#b2e440d2bf8a93584a9fd798452ec497986c9b97"
@@ -533,11 +528,6 @@ estree-walker@^2.0.1:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/estree-walker/-/estree-walker-2.0.2.tgz#52f010178c2a4c117a7757cfe942adb7d2da4cac"
   integrity sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==
-
-faker@^5.1.0:
-  version "5.5.3"
-  resolved "https://registry.yarnpkg.com/faker/-/faker-5.5.3.tgz#c57974ee484431b25205c2c8dc09fda861e51e0e"
-  integrity sha512-wLTv2a28wjUyWkbnX7u/ABZBkUkIF2fCd73V6P2oFqEGEktDfzWx4UxrSqtPRw0xPRAcjeAOIiJWqZm3pP4u3g==
 
 fast-glob@^3.2.5:
   version "3.2.5"
