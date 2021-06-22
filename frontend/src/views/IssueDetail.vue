@@ -423,7 +423,15 @@ export default {
       // won't work.
       document.getElementById("issue-detail-top")!.scrollIntoView();
       if (!state.create) {
-        pollIssue(NORMAL_ISSUE_POLL_INTERVAL);
+        let interval = NORMAL_ISSUE_POLL_INTERVAL;
+        // If we just created the database create issue, we will poll fast since it should return result soon.
+        if (
+          issue.value.type == "bb.issue.database.create" &&
+          Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000
+        ) {
+          interval = POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL;
+        }
+        pollIssue(interval);
       }
     });
 
