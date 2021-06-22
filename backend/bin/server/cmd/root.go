@@ -28,8 +28,8 @@ var (
 		Use:   "bytebase",
 		Short: "Bytebase server",
 		Run: func(cmd *cobra.Command, args []string) {
-			if mode != "release" && mode != "dev" {
-				fmt.Fprintln(os.Stderr, fmt.Errorf("invalid --mode %s, expect \"release\" | \"dev\"", mode))
+			if mode != "release" && mode != "dev" && mode != "demo" {
+				fmt.Fprintln(os.Stderr, fmt.Errorf("invalid --mode %s, expect \"release\" | \"dev\" | \"demo\"", mode))
 				os.Exit(1)
 			}
 			// Trim trailing / in case user supplies
@@ -45,7 +45,7 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&mode, "mode", "release", "mode which Bytebase is running under. release | dev")
+	rootCmd.PersistentFlags().StringVar(&mode, "mode", "release", "mode which Bytebase is running under. release | dev | demo")
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running. e.g. 8080")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", "./data", "directory where Bytebase stores data.")
@@ -113,6 +113,11 @@ func newMain() *main {
 			mode:      "release",
 			logConfig: zap.NewProductionConfig(),
 			dsn:       fmt.Sprintf("%s/bytebase.db", dataDir),
+		},
+		"demo": {
+			mode:      "demo",
+			logConfig: zap.NewProductionConfig(),
+			dsn:       fmt.Sprintf("%s/bytebase_demo.db", dataDir),
 		},
 	}[mode]
 
