@@ -1,6 +1,6 @@
 {
   "name": "bytebase",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite --mode dev",
