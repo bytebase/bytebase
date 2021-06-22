@@ -9,8 +9,8 @@ INSERT INTO
 VALUES
     (
         5001,
-        1001,
-        1001,
+        101,
+        101,
         'Sandbox A',
         0
     );
@@ -26,8 +26,8 @@ INSERT INTO
 VALUES
     (
         5002,
-        1001,
-        1001,
+        101,
+        101,
         'Integration',
         1
     );
@@ -43,8 +43,8 @@ INSERT INTO
 VALUES
     (
         5003,
-        1001,
-        1001,
+        101,
+        101,
         'Staging',
         2
     );
@@ -60,8 +60,8 @@ INSERT INTO
 VALUES
     (
         5004,
-        1001,
-        1001,
+        101,
+        101,
         'Prod',
         3
     );
@@ -79,8 +79,8 @@ VALUES
     (
         5005,
         'ARCHIVED',
-        1001,
-        1001,
+        101,
+        101,
         'Archived Env 1',
         4
     );

@@ -16,8 +16,8 @@ INSERT INTO
 VALUES
     (
         16001,
-        1001,
-        1001,
+        101,
+        101,
         'GitLab Bytebase',
         'GITLAB_SELF_HOST',
         'http://gitlab.bytebase.com',
@@ -47,8 +47,8 @@ INSERT INTO
 VALUES
     (
         16002,
-        1001,
-        1001,
+        101,
+        101,
         'GitLab Bytebase2',
         'GITLAB_SELF_HOST',
         'http://gitlab.bytebase.com',

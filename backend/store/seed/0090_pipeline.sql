@@ -10,8 +10,8 @@ INSERT INTO
 VALUES
     (
         9001,
-        1001,
-        1001,
+        101,
+        101,
         'Pipeline - Hello world',
         'OPEN'
     );
@@ -28,8 +28,8 @@ INSERT INTO
 VALUES
     (
         9002,
-        1003,
-        1003,
+        103,
+        103,
         'Pipeline - Add column ''location'' to table ''warehouse''',
         'OPEN'
     );
@@ -46,8 +46,8 @@ INSERT INTO
 VALUES
     (
         9003,
-        1003,
-        1003,
+        103,
+        103,
         'Pipeline - Create table ''tbl1''',
         'OPEN'
     );

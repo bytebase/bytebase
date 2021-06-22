@@ -11,11 +11,11 @@ INSERT INTO
 VALUES
     (
         4001,
-        1001,
-        1001,
+        101,
+        101,
         3001,
         'OWNER',
-        1002
+        102
     );
 
 INSERT INTO
@@ -30,11 +30,11 @@ INSERT INTO
 VALUES
     (
         4002,
-        1001,
-        1001,
+        101,
+        101,
         3001,
         'DEVELOPER',
-        1001
+        101
     );
 
 INSERT INTO
@@ -49,11 +49,11 @@ INSERT INTO
 VALUES
     (
         4003,
-        1001,
-        1001,
+        101,
+        101,
         3001,
         'DEVELOPER',
-        1003
+        103
     );
 
 -- Project 3002 membership
@@ -69,11 +69,11 @@ INSERT INTO
 VALUES
     (
         4004,
-        1001,
-        1001,
+        101,
+        101,
         3002,
         'OWNER',
-        1003
+        103
     );
 
 INSERT INTO
@@ -88,11 +88,11 @@ INSERT INTO
 VALUES
     (
         4005,
-        1001,
-        1001,
+        101,
+        101,
         3002,
         'DEVELOPER',
-        1002
+        102
     );
 
 -- Project 3003 membership
@@ -108,11 +108,11 @@ INSERT INTO
 VALUES
     (
         4006,
-        1001,
-        1001,
+        101,
+        101,
         3003,
         'OWNER',
-        1002
+        102
     );
 
 INSERT INTO
@@ -127,11 +127,11 @@ INSERT INTO
 VALUES
     (
         4007,
-        1001,
-        1001,
+        101,
+        101,
         3003,
         'DEVELOPER',
-        1001
+        101
     );
 
 -- Project 3004 membership
@@ -147,11 +147,11 @@ INSERT INTO
 VALUES
     (
         4008,
-        1001,
-        1001,
+        101,
+        101,
         3004,
         'OWNER',
-        1002
+        102
     );
 
 INSERT INTO
@@ -166,11 +166,11 @@ INSERT INTO
 VALUES
     (
         4009,
-        1001,
-        1001,
+        101,
+        101,
         3004,
         'DEVELOPER',
-        1001
+        101
     );
 
 -- Project 3005 membership
@@ -186,11 +186,11 @@ INSERT INTO
 VALUES
     (
         4010,
-        1001,
-        1001,
+        101,
+        101,
         3005,
         'OWNER',
-        1001
+        101
     );
 
 INSERT INTO
@@ -205,9 +205,9 @@ INSERT INTO
 VALUES
     (
         4011,
-        1001,
-        1001,
+        101,
+        101,
         3005,
         'DEVELOPER',
-        1003
+        103
     );

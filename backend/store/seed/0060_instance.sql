@@ -13,8 +13,8 @@ INSERT INTO
 VALUES
     (
         6001,
-        1001,
-        1001,
+        101,
+        101,
         5001,
         'MySQL sandbox',
         'MYSQL',
@@ -38,8 +38,8 @@ INSERT INTO
 VALUES
     (
         6002,
-        1001,
-        1001,
+        101,
+        101,
         5002,
         'MySQL integration',
         'MYSQL',
@@ -63,8 +63,8 @@ INSERT INTO
 VALUES
     (
         6003,
-        1001,
-        1001,
+        101,
+        101,
         5003,
         'MySQL staging',
         'MYSQL',
@@ -88,8 +88,8 @@ INSERT INTO
 VALUES
     (
         6004,
-        1001,
-        1001,
+        101,
+        101,
         5004,
         'MySQL prod',
         'MYSQL',
@@ -113,8 +113,8 @@ INSERT INTO
 VALUES
     (
         6005,
-        1001,
-        1001,
+        101,
+        101,
         5004,
         'AWS RDS prod',
         'MYSQL',

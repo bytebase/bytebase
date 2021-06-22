@@ -13,8 +13,8 @@ INSERT INTO
 VALUES
     (
         12001,
-        1001,
-        1001,
+        101,
+        101,
         11006,
         'UPDATE testdb1 task run',
         'FAILED',

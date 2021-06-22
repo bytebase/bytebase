@@ -28,8 +28,8 @@ INSERT INTO
 VALUES
     (
         14002,
-        1001,
-        1001,
+        101,
+        101,
         13001,
         'bb.issue.comment.create',
         'Welcome!'
@@ -47,8 +47,8 @@ INSERT INTO
 VALUES
     (
         14003,
-        1002,
-        1002,
+        102,
+        102,
         13001,
         'bb.issue.comment.create',
         'Let''s rock!'
@@ -66,8 +66,8 @@ INSERT INTO
 VALUES
     (
         14004,
-        1003,
-        1003,
+        103,
+        103,
         13001,
         'bb.issue.comment.create',
         'Go fish!'
@@ -85,8 +85,8 @@ INSERT INTO
 VALUES
     (
         14005,
-        1003,
-        1003,
+        103,
+        103,
         13002,
         'bb.issue.create'
     );
@@ -103,8 +103,8 @@ INSERT INTO
 VALUES
     (
         14006,
-        1003,
-        1003,
+        103,
+        103,
         13003,
         'bb.issue.create'
     );

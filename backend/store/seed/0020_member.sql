@@ -7,7 +7,7 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (2001, 1001, 1001, 'OWNER', 1001);
+    (2001, 101, 101, 'OWNER', 101);
 
 INSERT INTO
     member (
@@ -18,7 +18,7 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (2002, 1001, 1001, 'DBA', 1002);
+    (2002, 101, 101, 'DBA', 102);
 
 INSERT INTO
     member (
@@ -29,7 +29,7 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (2003, 1001, 1001, 'DEVELOPER', 1003);
+    (2003, 101, 101, 'DEVELOPER', 103);
 
 INSERT INTO
     member (
@@ -40,4 +40,4 @@ INSERT INTO
         principal_id
     )
 VALUES
-    (2004, 1001, 1001, 'DEVELOPER', 1004);
+    (2004, 101, 101, 'DEVELOPER', 104);

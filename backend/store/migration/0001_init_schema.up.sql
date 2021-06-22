@@ -18,7 +18,7 @@ CREATE TABLE principal (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('principal', 1000);
+    ('principal', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_principal_modification_time`
 AFTER
@@ -76,7 +76,7 @@ CREATE TABLE member (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('member', 1000);
+    ('member', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_member_modification_time`
 AFTER
@@ -108,7 +108,7 @@ CREATE TABLE environment (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('environment', 1000);
+    ('environment', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_environment_modification_time`
 AFTER
@@ -160,7 +160,7 @@ VALUES
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('project', 1000);
+    ('project', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_project_modification_time`
 AFTER
@@ -194,7 +194,7 @@ CREATE TABLE project_member (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('project_member', 1000);
+    ('project_member', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_project_member_modification_time`
 AFTER
@@ -230,7 +230,7 @@ CREATE TABLE instance (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('instance', 1000);
+    ('instance', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_instance_modification_time`
 AFTER
@@ -272,7 +272,7 @@ CREATE TABLE db (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('db', 1000);
+    ('db', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_db_modification_time`
 AFTER
@@ -315,7 +315,7 @@ CREATE TABLE tbl (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('tbl', 1000);
+    ('tbl', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_tbl_modification_time`
 AFTER
@@ -352,7 +352,7 @@ CREATE TABLE data_source (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('data_source', 1000);
+    ('data_source', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_data_source_modification_time`
 AFTER
@@ -386,7 +386,7 @@ CREATE TABLE pipeline (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('pipeline', 1000);
+    ('pipeline', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_pipeline_modification_time`
 AFTER
@@ -419,7 +419,7 @@ CREATE TABLE stage (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('stage', 1000);
+    ('stage', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_stage_modification_time`
 AFTER
@@ -467,7 +467,7 @@ CREATE TABLE task (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('task', 1000);
+    ('task', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_task_modification_time`
 AFTER
@@ -507,7 +507,7 @@ CREATE TABLE task_run (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('task_run', 1000);
+    ('task_run', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_task_run_modification_time`
 AFTER
@@ -549,7 +549,7 @@ CREATE TABLE issue (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('issue', 1000);
+    ('issue', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_issue_modification_time`
 AFTER
@@ -585,7 +585,7 @@ CREATE INDEX idx_activity_container_id ON activity(container_id);
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('activity', 1000);
+    ('activity', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_activity_modification_time`
 AFTER
@@ -618,7 +618,7 @@ CREATE TABLE bookmark (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('bookmark', 1000);
+    ('bookmark', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_bookmark_modification_time`
 AFTER
@@ -669,7 +669,7 @@ CREATE TABLE vcs (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('vcs', 1000);
+    ('vcs', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_vcs_modification_time`
 AFTER
@@ -727,7 +727,7 @@ CREATE TABLE repo (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('repo', 1000);
+    ('repo', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_repo_modification_time`
 AFTER
