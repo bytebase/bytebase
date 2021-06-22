@@ -109,7 +109,9 @@
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
-              <span class="text-xs">{{ item.stageName }}</span>
+              <span class="text-xs">
+                {{ item.stageName }}
+              </span>
               <span class="text-sm">{{ item.taskName }}</span>
             </div>
             <div
@@ -117,8 +119,30 @@
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
-              <span class="col-span-1 text-sm w-32">{{ item.stageName }}</span>
+              <span class="col-span-1 text-sm w-32">{{ item.stageName }} </span>
               <span class="col-span-1 text-sm">{{ item.taskName }}</span>
+            </div>
+            <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
+              <span class="tooltip">Missing SQL statement</span>
+              <span
+                v-if="!item.valid"
+                class="
+                  ml-2
+                  w-5
+                  h-5
+                  flex
+                  justify-center
+                  rounded-full
+                  select-none
+                  bg-error
+                  text-white
+                  hover:bg-error-hover
+                "
+              >
+                <span class="text-center font-normal" aria-hidden="true"
+                  >!</span
+                >
+              </span>
             </div>
           </span>
         </div>
@@ -160,8 +184,10 @@ import {
   StageCreate,
   PipelineCreate,
   Task,
+  TaskCreate,
 } from "../types";
 import { activeTask } from "../utils";
+import isEmpty from "lodash-es/isEmpty";
 
 interface FlowItem {
   stageId: StageId;
@@ -169,6 +195,7 @@ interface FlowItem {
   taskId: TaskId;
   taskName: string;
   taskStatus: TaskStatus;
+  valid: boolean;
 }
 
 export default {
@@ -195,12 +222,27 @@ export default {
     const itemList = computed<FlowItem[]>(() => {
       return props.pipeline.stageList.map((stage, index) => {
         const task = stage.taskList[0];
+        let valid = true;
+        if (props.create) {
+          for (const task of stage.taskList) {
+            if (
+              task.type == "bb.task.database.create" ||
+              task.type == "bb.task.database.schema.update"
+            ) {
+              if (isEmpty((task as TaskCreate).statement)) {
+                valid = false;
+                break;
+              }
+            }
+          }
+        }
         return {
           stageId: props.create ? index : (stage as Stage).id,
           stageName: stage.name,
           taskId: props.create ? index : (task as Task).id,
           taskName: task.name,
           taskStatus: task.status,
+          valid,
         };
       });
     });
