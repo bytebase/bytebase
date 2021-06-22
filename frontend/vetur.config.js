@@ -4,7 +4,7 @@ module.exports = {
       // **required**
       // Where is your project?
       // It is relative to `vetur.config.js`.
-      root: "./frontend",
+      root: "./",
       // **optional** default: `'package.json'`
       // Where is `package.json` in the project?
       // We use it to determine the version of vue.
