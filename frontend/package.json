@@ -4,7 +4,7 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite --mode dev",
-    "package": "vite build --outDir=../backend/server/dist --emptyOutDir",
+    "release": "vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
     "demo": "vite build --mode demo --outDir=dist"
   },
   "dependencies": {
