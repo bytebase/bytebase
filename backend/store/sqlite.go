@@ -40,17 +40,21 @@ type DB struct {
 	// Datasource name.
 	DSN string
 
+	// Used to identify where to load seed data
+	mode string
+
 	// Returns the current time. Defaults to time.Now().
 	// Can be mocked for tests.
 	Now func() time.Time
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string) *DB {
+func NewDB(logger *zap.Logger, dsn string, mode string) *DB {
 	db := &DB{
-		l:   logger,
-		DSN: strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
-		Now: time.Now,
+		l:    logger,
+		DSN:  strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
+		mode: mode,
+		Now:  time.Now,
 	}
 	return db
 }
@@ -87,8 +91,9 @@ func (db *DB) Open() (err error) {
 
 // seed loads the seed data for testing
 func (db *DB) seed() error {
-	db.l.Info("Seeding database...")
-	names, err := fs.Glob(seedFS, "seed/*.sql")
+	dir := fmt.Sprintf("seed/%s", db.mode)
+	db.l.Info(fmt.Sprintf("Seeding database from %s...", dir))
+	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", dir))
 	if err != nil {
 		return err
 	}

@@ -136,7 +136,7 @@ func newMain() *main {
 }
 
 func (m *main) Run() error {
-	db := store.NewDB(m.l, m.profile.dsn)
+	db := store.NewDB(m.l, m.profile.dsn, m.profile.mode)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
