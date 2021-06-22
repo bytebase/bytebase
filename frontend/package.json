@@ -11,7 +11,7 @@
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
-    "autoprefixer": "^9",
+    "autoprefixer": "^10.2.6",
     "axios": "^0.21.1",
     "faker": "^5.1.0",
     "focus-visible": "^5.2.0",
@@ -19,10 +19,10 @@
     "inter-ui": "^3.15.0",
     "lodash-es": "^4.17.21",
     "moment": "^2.29.1",
-    "postcss": "^7",
+    "postcss": "^8.3.5",
     "postcss-focus-visible": "^5.0.0",
     "slug": "^4.0.2",
-    "tailwindcss": "npm:@tailwindcss/postcss7-compat",
+    "tailwindcss": "^2.2.2",
     "uuid": "^8.3.2",
     "vue": "^3.0.11",
     "vue-router": "^4.0.8",
@@ -30,10 +30,10 @@
     "vuex": "^4.0.0"
   },
   "devDependencies": {
-    "@types/uuid": "^8.3.0",
     "@types/faker": "^5.1.7",
     "@types/lodash-es": "^4.17.4",
     "@types/slug": "^0.9.1",
+    "@types/uuid": "^8.3.0",
     "@vitejs/plugin-vue": "^1.1.4",
     "@vue/compiler-sfc": "^3.0.5",
     "vite": "^2.3.8"
