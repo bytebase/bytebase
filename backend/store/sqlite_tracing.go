@@ -67,7 +67,7 @@ func traceCallback(info sqlite3.TraceInfo, logger *zap.Logger) int {
 }
 
 func init() {
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic("Failed to create logger.")
 	}
