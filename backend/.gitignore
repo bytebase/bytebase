@@ -23,5 +23,5 @@ dist
 # Dev database
 data
 
-# Release folder
-release
+# build folder
+bytebase-build
