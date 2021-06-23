@@ -75,7 +75,7 @@ func init() {
 
 	eventMask := sqlite3.TraceStmt | sqlite3.TraceClose
 
-	sql.Register("sqlite3_tracing",
+	sql.Register("sqlite3_trace",
 		&sqlite3.SQLiteDriver{
 			ConnectHook: func(conn *sqlite3.SQLiteConn) error {
 				err := conn.SetTrace(&sqlite3.TraceConfig{
@@ -88,5 +88,5 @@ func init() {
 		})
 
 	// Make app use the tracing driver
-	sqliteDriver = "sqlite3_tracing"
+	sqliteDriver = "sqlite3_trace"
 }

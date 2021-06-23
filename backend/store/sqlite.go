@@ -23,7 +23,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_tracing"
+// If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace"
 var sqliteDriver = "sqlite3"
 
 var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL"}
