@@ -1,4 +1,5 @@
-// +build debug, sqlite_trace
+// +build debug
+// +build sqlite_trace
 
 package store
 
@@ -85,4 +86,7 @@ func init() {
 				return err
 			},
 		})
+
+	// Make app use the tracing driver
+	sqliteDriver = "sqlite3_tracing"
 }

@@ -23,6 +23,9 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
+// If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_tracing"
+var sqliteDriver = "sqlite3"
+
 var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL"}
 
 //go:embed migration
@@ -74,7 +77,7 @@ func (db *DB) Open() (err error) {
 	}
 
 	// Connect to the database.
-	if db.Db, err = sql.Open("sqlite3_tracing", db.DSN); err != nil {
+	if db.Db, err = sql.Open(sqliteDriver, db.DSN); err != nil {
 		return err
 	}
 
