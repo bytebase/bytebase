@@ -8,7 +8,7 @@ const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
 ]);
 
 const state: () => PlanState = () => ({
-  plan: PlanType.FREE,
+  plan: PlanType.TEAM,
 });
 
 const getters = {
@@ -16,9 +16,11 @@ const getters = {
     return state.plan;
   },
 
-  feature: (state: PlanState, getters: any) => (type: FeatureType): boolean => {
-    return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
-  },
+  feature:
+    (state: PlanState, getters: any) =>
+    (type: FeatureType): boolean => {
+      return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
+    },
 };
 
 const actions = {
