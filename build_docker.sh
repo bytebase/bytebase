@@ -1,15 +1,33 @@
 #!/bin/sh
 
-version=`cat ./VERSION`
+# cd to the root directory and run
+# ./build_docker.sh
 
-echo "Start building Bytebase docker image ${version}..."
+# exit when any command fails
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+VERSION=`cat ./VERSION`
+echo "Start building Bytebase docker image ${VERSION}..."
 
 docker build \
-    --build-arg VERSION=${version} \
+    --build-arg VERSION=${VERSION} \
     --build-arg GO_VERSION="$(go version)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\
     --build-arg BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"  \
     --build-arg BUILD_USER="$(id -u -n)" \
     -t bytebase/bytebase .
 
-echo "Completed building Bytebase docker image ${version}."
+echo "${GREEN}Completed building Bytebase docker image ${VERSION}.${NC}"
+echo ""
+echo "Command to start Bytebase on http://localhost:8080"
+echo ""
+echo "$ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase"
+echo ""
+echo "Command to start Bytebase in demo mode on http://example.com"
+echo ""
+echo "$ docker run --init --rm --name bytebase --publish 80:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase --mode demo --host http://example.com"
+echo ""
