@@ -4,9 +4,10 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite --mode dev",
+    "demo": "vite --mode demo",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
-    "release-docker": "vite build --mode release",
-    "demo": "vite build --mode demo --outDir=dist"
+    "release-demo": "vite build --mode demo --outDir=../server/dist --emptyOutDir",
+    "release-docker": "vite build --mode release"
   },
   "dependencies": {
     "@soerenmartius/vue3-clipboard": "^0.1.2",
