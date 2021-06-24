@@ -27,7 +27,15 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			Port:     connectionInfo.Port,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to open database").SetInternal(err)
+			usePassword := "YES"
+			if connectionInfo.Password == "" {
+				usePassword = "NO"
+			}
+			hostPort := connectionInfo.Host
+			if connectionInfo.Port != "" {
+				hostPort += ":" + connectionInfo.Port
+			}
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect %s for user '%s' (using password: %s)", hostPort, connectionInfo.Username, usePassword)).SetInternal(err)
 		}
 
 		resultSet := &api.SqlResultSet{}
