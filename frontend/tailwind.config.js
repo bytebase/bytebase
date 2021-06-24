@@ -6,7 +6,12 @@ module.exports = {
     // removeDeprecatedGapUtilities: true,
     // purgeLayersByDefault: true,
   },
-  purge: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
+  purge: {
+    content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
+    // "w-xxx" is used by BBTab
+    // "pl-xxx" is used by BBOutline
+    safelist: [/^w-/, /^pl-/],
+  },
   theme: {
     extend: {
       colors: {
