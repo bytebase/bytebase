@@ -49,11 +49,11 @@ VALUES
         101,
         6001,
         3001,
-        'sandboxdb1',
+        'bbblog',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
+        1624558090,
         ''
     );
 
@@ -488,36 +488,6 @@ VALUES
         6004,
         3003,
         'proddb3',
-        'utf8mb4',
-        'utf8mb4_0900_ai_ci',
-        'OK',
-        0,
-        ''
-    );
-
--- Database for prod environment instance 6005
-INSERT INTO
-    db (
-        id,
-        creator_id,
-        updater_id,
-        instance_id,
-        project_id,
-        name,
-        character_set,
-        `collation`,
-        sync_status,
-        last_successful_sync_ts,
-        fingerprint
-    )
-VALUES
-    (
-        7018,
-        101,
-        101,
-        6005,
-        1,
-        '*',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',

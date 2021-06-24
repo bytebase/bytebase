@@ -11,7 +11,7 @@ VALUES
         5001,
         101,
         101,
-        'Sandbox A',
+        'Dev',
         0
     );
 

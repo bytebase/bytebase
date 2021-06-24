@@ -22,15 +22,15 @@ VALUES
         101,
         16001,
         3001,
-        "project1",
-        "bytebase-test/project1",
-        "http://gitlab.bytebase.com/bytebase-test/project1",
+        "Bytebase Blog",
+        "bytebase-demo/bbblog",
+        "http://gitlab.bytebase.com/bytebase-demo/bbblog",
         "bytebase",
         "master",
-        -- Refers to the bytebase-test/project1
-        "7",
-        -- Refers to the webhook in bytebase-test/project1
-        "5",
-        "8368dde4-e352-4696-9fef-26bd3af6ec40",
-        "VFN2lgKDRLWjJ25B"
+        -- Refers to the bytebase-demo/bbblog
+        "13",
+        -- Refers to the webhook in bytebase-demo/bbblog
+        "59",
+        "5effe17f-947a-4eff-b0b5-244e26c5cd68",
+        "mQqrGRRnAuuL59F8"
     );

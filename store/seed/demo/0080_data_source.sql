@@ -19,8 +19,8 @@ VALUES
         7001,
         'Admin data source',
         'ADMIN',
-        'root',
-        'root'
+        'admin',
+        'Dev12345'
     );
 
 INSERT INTO
@@ -44,8 +44,8 @@ VALUES
         7005,
         'Admin data source',
         'ADMIN',
-        'root',
-        'root'
+        'admin',
+        'Integration12345'
     );
 
 INSERT INTO
@@ -69,8 +69,8 @@ VALUES
         7009,
         'Admin data source',
         'ADMIN',
-        'root',
-        'root'
+        'admin',
+        'Staging12345'
     );
 
 INSERT INTO
@@ -94,31 +94,6 @@ VALUES
         7013,
         'Admin data source',
         'ADMIN',
-        'root',
-        'root'
-    );
-
-INSERT INTO
-    data_source (
-        id,
-        creator_id,
-        updater_id,
-        instance_id,
-        database_id,
-        name,
-        TYPE,
-        username,
-        PASSWORD
-    )
-VALUES
-    (
-        8005,
-        1,
-        1,
-        6005,
-        7017,
-        'Admin data source',
-        'ADMIN',
-        'admin5',
-        'adminpwd5'
+        'admin',
+        'Prod12345'
     );

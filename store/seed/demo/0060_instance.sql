@@ -6,9 +6,9 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
-        external_link,
         host,
-        port
+        port,
+        external_link
     )
 VALUES
     (
@@ -16,11 +16,11 @@ VALUES
         101,
         101,
         5001,
-        'MySQL sandbox',
+        'RDS dev',
         'MYSQL',
-        'localhost',
-        '127.0.0.1',
-        '33060'
+        'bytebase-demo-dev-mysql8.cerr43rttews.us-west-1.rds.amazonaws.com',
+        '3306',
+        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-dev-mysql8;is-cluster=false'
     );
 
 INSERT INTO
@@ -31,9 +31,9 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
-        external_link,
         host,
-        port
+        port,
+        external_link
     )
 VALUES
     (
@@ -41,11 +41,11 @@ VALUES
         101,
         101,
         5002,
-        'MySQL integration',
+        'RDS integration',
         'MYSQL',
-        'localhost',
-        '127.0.0.1',
-        '33060'
+        'bytebase-demo-integration-mysql8.cerr43rttews.us-west-1.rds.amazonaws.com',
+        '3306',
+        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-integration-mysql8;is-cluster=false'
     );
 
 INSERT INTO
@@ -56,9 +56,9 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
-        external_link,
         host,
-        port
+        port,
+        external_link
     )
 VALUES
     (
@@ -66,11 +66,11 @@ VALUES
         101,
         101,
         5003,
-        'MySQL staging',
+        'RDS staging',
         'MYSQL',
-        'localhost',
-        '127.0.0.1',
-        '33060'
+        'bytebase-demo-staging-mysql57.cerr43rttews.us-west-1.rds.amazonaws.com',
+        '3306',
+        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-staging-mysql57;is-cluster=false'
     );
 
 INSERT INTO
@@ -81,9 +81,9 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
-        external_link,
         host,
-        port
+        port,
+        external_link
     )
 VALUES
     (
@@ -91,34 +91,9 @@ VALUES
         101,
         101,
         5004,
-        'MySQL prod',
+        'RDS prod',
         'MYSQL',
-        'localhost',
-        '127.0.0.1',
-        '33060'
-    );
-
-INSERT INTO
-    instance (
-        id,
-        creator_id,
-        updater_id,
-        environment_id,
-        name,
-        `engine`,
-        external_link,
-        host,
-        port
-    )
-VALUES
-    (
-        6005,
-        101,
-        101,
-        5004,
-        'AWS RDS prod',
-        'MYSQL',
-        'aws.com',
-        'rds.com',
-        '5678'
+        'bytebase-demo-prod-mysql57.cerr43rttews.us-west-1.rds.amazonaws.com',
+        '3306',
+        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-prod-mysql57;is-cluster=false'
     );

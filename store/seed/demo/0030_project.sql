@@ -12,8 +12,8 @@ VALUES
         3001,
         101,
         101,
-        'project 1',
-        'PRJ1',
+        'BBBlog',
+        'BLG',
         'VCS'
     );
 
