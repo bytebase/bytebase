@@ -1,6 +1,8 @@
 #!/bin/sh
 
-version=0.1.0
+version=`cat ./VERSION`
+
+echo "Start building Bytebase docker image ${version}..."
 
 docker build \
     --build-arg VERSION=${version} \
@@ -9,3 +11,5 @@ docker build \
     --build-arg BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"  \
     --build-arg BUILD_USER="$(id -u -n)" \
     -t bytebase/bytebase .
+
+echo "Completed building Bytebase docker image ${version}."
