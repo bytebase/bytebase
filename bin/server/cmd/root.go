@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,7 +34,12 @@ var (
 				os.Exit(1)
 			}
 			// Trim trailing / in case user supplies
-			dataDir = strings.TrimRight(dataDir, "/")
+			dir, err := filepath.Abs(strings.TrimRight(dataDir, "/"))
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			dataDir = dir
 			start()
 		},
 	}
@@ -107,17 +113,17 @@ func newMain() *main {
 		"dev": {
 			mode:      "dev",
 			logConfig: zap.NewDevelopmentConfig(),
-			dsn:       fmt.Sprintf("%s/bytebase_dev.db", dataDir),
+			dsn:       fmt.Sprintf("file:%s/bytebase_dev.db", dataDir),
 		},
 		"release": {
 			mode:      "release",
 			logConfig: zap.NewProductionConfig(),
-			dsn:       fmt.Sprintf("%s/bytebase.db", dataDir),
+			dsn:       fmt.Sprintf("file:%s/bytebase.db", dataDir),
 		},
 		"demo": {
 			mode:      "demo",
 			logConfig: zap.NewProductionConfig(),
-			dsn:       fmt.Sprintf("%s/bytebase_demo.db", dataDir),
+			dsn:       fmt.Sprintf("file:%s/bytebase_demo.db", dataDir),
 		},
 	}[mode]
 
