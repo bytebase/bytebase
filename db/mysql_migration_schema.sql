@@ -3,6 +3,8 @@
 CREATE DATABASE bytebase CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci';
 
 -- Create migration_history table
+-- Note, we don't create trigger to update created_ts and updated_ts because that may causes error:
+-- ERROR 1419 (HY000): You do not have the SUPER privilege and binary logging is enabled (you *might* want to use the less safe log_bin_trust_function_creators variable)
 CREATE TABLE bytebase.migration_history (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     created_by TEXT NOT NULL,
@@ -27,22 +29,3 @@ CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_version ON bytebase.migration_history (namespace(256), version(256));
 
 CREATE INDEX bytebase_idx_migration_history_namespace_type ON bytebase.migration_history(namespace(256), `type`);
-
-CREATE TRIGGER bytebase.trigger_update_migration_history_creation_time BEFORE
-INSERT
-    ON bytebase.migration_history FOR each ROW BEGIN
-SET
-    new.created_ts = unix_timestamp();
-
-SET
-    new.updated_ts = unix_timestamp();
-
-END;
-
-CREATE TRIGGER bytebase.trigger_update_migration_history_modification_time BEFORE
-UPDATE
-    ON bytebase.migration_history FOR each ROW BEGIN
-SET
-    new.updated_ts = unix_timestamp();
-
-END;

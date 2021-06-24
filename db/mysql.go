@@ -265,7 +265,9 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO bytebase.migration_history (
 			created_by,
+			created_ts,
 			updated_by,
+			updated_ts,
 			namespace,
 			sequence,
 			`+"`type`,"+`
@@ -274,7 +276,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 			statement,
 			execution_duration
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?)
 	`,
 		m.Creator,
 		m.Creator,
