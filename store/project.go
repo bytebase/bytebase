@@ -127,7 +127,7 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		create.CreatorId,
 		create.CreatorId,
 		create.Name,
-		create.Key,
+		strings.ToUpper(create.Key),
 	)
 
 	if err != nil {
@@ -225,7 +225,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
 	if v := patch.Key; v != nil {
-		set, args = append(set, "`key` = ?"), append(args, *v)
+		set, args = append(set, "`key` = ?"), append(args, strings.ToUpper(*v))
 	}
 	if v := patch.WorkflowType; v != nil {
 		set, args = append(set, "`workflow_type` = ?"), append(args, *v)
