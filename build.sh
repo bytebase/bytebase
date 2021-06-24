@@ -30,9 +30,9 @@ echo "Step 1 - building bytebase frontend..."
 
 if command -v yarn &> /dev/null
 then
-    yarn --cwd ../frontend release
+    yarn --cwd ./frontend release
 else
-    npm --prefix ../frontend run release
+    npm --prefix ./frontend run release
 fi
 
 echo "Completed building bytebase frontend."
