@@ -30,7 +30,9 @@
                 w-10
                 rounded-full
                 focus:outline-none
-                focus:ring-2 focus:ring-inset focus:ring-white
+                focus:ring-2
+                focus:ring-inset
+                focus:ring-white
               "
             >
               <span class="sr-only">Close sidebar</span>
@@ -136,7 +138,7 @@
           Archive
         </router-link>
         <div
-          v-if="showIntro"
+          v-if="showQuickstart"
           class="
             flex-shrink-0 flex
             justify-center
@@ -259,8 +261,8 @@ import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
-import { QuickActionType, RoleType } from "../types";
-import { isDBA, isDBAOrOwner, isDeveloper, isOwner } from "../utils";
+import { QuickActionType } from "../types";
+import { isDBA, isDemo, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -331,15 +333,16 @@ export default {
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
-    const showIntro = computed(() => {
-      return !store.getters["uistate/introStateByKey"]("hidden");
+    const showQuickstart = computed(() => {
+      // Do not show quickstart in demo mode since we don't expect user to alter the data
+      return !isDemo() && !store.getters["uistate/introStateByKey"]("hidden");
     });
 
     return {
       state,
       quickActionList,
       showBreadcrumb,
-      showIntro,
+      showQuickstart,
     };
   },
 };
