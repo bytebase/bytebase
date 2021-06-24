@@ -43,7 +43,12 @@ func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
 
 	params := []string{"multiStatements=true"}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, config.Port, config.Database, strings.Join(params, "&"))
+	port := config.Port
+	if port == "" {
+		port = "3306"
+	}
+
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
 	driver.l.Debug("Opening MySQL driver", zap.String("dsn", dsn))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
