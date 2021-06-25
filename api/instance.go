@@ -111,6 +111,7 @@ type InstanceMigration struct {
 }
 
 type InstanceService interface {
+	// CreateInstance should also create the * database and the admin data source.
 	CreateInstance(ctx context.Context, create *InstanceCreate) (*Instance, error)
 	FindInstanceList(ctx context.Context, find *InstanceFind) ([]*Instance, error)
 	FindInstance(ctx context.Context, find *InstanceFind) (*Instance, error)

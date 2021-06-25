@@ -18,11 +18,14 @@ var (
 type InstanceService struct {
 	l  *zap.Logger
 	db *DB
+
+	databaseService   api.DatabaseService
+	dataSourceService api.DataSourceService
 }
 
 // NewInstanceService returns a new instance of InstanceService.
-func NewInstanceService(logger *zap.Logger, db *DB) *InstanceService {
-	return &InstanceService{l: logger, db: db}
+func NewInstanceService(logger *zap.Logger, db *DB, databaseService api.DatabaseService, dataSourceService api.DataSourceService) *InstanceService {
+	return &InstanceService{l: logger, db: db, databaseService: databaseService, dataSourceService: dataSourceService}
 }
 
 // CreateInstance creates a new instance.
@@ -34,6 +37,35 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	defer tx.Rollback()
 
 	instance, err := createInstance(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create * database
+	databaseCreate := &api.DatabaseCreate{
+		CreatorId:    create.CreatorId,
+		ProjectId:    api.DEFAULT_PROJECT_ID,
+		InstanceId:   instance.ID,
+		Name:         api.ALL_DATABASE_NAME,
+		CharacterSet: api.DEFAULT_CHARACTER_SET_NAME,
+		Collation:    api.DEFAULT_COLLATION_NAME,
+	}
+	allDatabase, err := s.databaseService.CreateDatabaseTx(ctx, tx.Tx, databaseCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create admin data source
+	adminDataSourceCreate := &api.DataSourceCreate{
+		CreatorId:  create.CreatorId,
+		InstanceId: instance.ID,
+		DatabaseId: allDatabase.ID,
+		Name:       api.ADMIN_DATA_SOURCE_NAME,
+		Type:       api.Admin,
+		Username:   create.Username,
+		Password:   create.Password,
+	}
+	_, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.Tx, adminDataSourceCreate)
 	if err != nil {
 		return nil, err
 	}

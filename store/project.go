@@ -104,9 +104,9 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	return project, nil
 }
 
-// PatchProjectWithTx updates an existing project by ID.
+// PatchProjectTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *ProjectService) PatchProjectWithTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
 	return patchProject(ctx, tx, patch)
 }
 

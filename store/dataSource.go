@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -33,7 +34,7 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	}
 	defer tx.Rollback()
 
-	dataSource, err := s.createDataSource(ctx, tx, create)
+	dataSource, err := s.createDataSource(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +44,10 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	}
 
 	return dataSource, nil
+}
+
+func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
+	return s.createDataSource(ctx, tx, create)
 }
 
 // FindDataSourceList retrieves a list of data sources based on find.
@@ -104,7 +109,7 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 }
 
 // createDataSource creates a new dataSource.
-func (s *DataSourceService) createDataSource(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
+func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
 	// Insert row into dataSource.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO data_source (

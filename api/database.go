@@ -2,10 +2,15 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 )
 
-const ALL_DATABASE_NAME = "*"
+const (
+	ALL_DATABASE_NAME          = "*"
+	DEFAULT_CHARACTER_SET_NAME = "utf8mb4"
+	DEFAULT_COLLATION_NAME     = "utf8mb4_0900_ai_ci"
+)
 
 type SyncStatus string
 
@@ -107,6 +112,8 @@ type DatabasePatch struct {
 
 type DatabaseService interface {
 	CreateDatabase(ctx context.Context, create *DatabaseCreate) (*Database, error)
+	// This is specifically used to create the * database when creating the instance.
+	CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *DatabaseCreate) (*Database, error)
 	FindDatabaseList(ctx context.Context, find *DatabaseFind) ([]*Database, error)
 	FindDatabase(ctx context.Context, find *DatabaseFind) (*Database, error)
 	PatchDatabase(ctx context.Context, patch *DatabasePatch) (*Database, error)

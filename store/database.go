@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -33,7 +34,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	}
 	defer tx.Rollback()
 
-	database, err := s.createDatabase(ctx, tx, create)
+	database, err := s.createDatabase(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +44,10 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	}
 
 	return database, nil
+}
+
+func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
+	return s.createDatabase(ctx, tx, create)
 }
 
 // FindDatabaseList retrieves a list of databases based on find.
@@ -104,7 +109,7 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 }
 
 // createDatabase creates a new database.
-func (s *DatabaseService) createDatabase(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*api.Database, error) {
+func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db (

@@ -19,12 +19,12 @@ type RepositoryService struct {
 	l  *zap.Logger
 	db *DB
 
-	ProjectService api.ProjectService
+	projectService api.ProjectService
 }
 
 // NewRepositoryService returns a new instance of RepositoryService.
 func NewRepositoryService(logger *zap.Logger, db *DB, projectService api.ProjectService) *RepositoryService {
-	return &RepositoryService{l: logger, db: db, ProjectService: projectService}
+	return &RepositoryService{l: logger, db: db, projectService: projectService}
 }
 
 // CreateRepository creates a new repository.
@@ -135,7 +135,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		UpdaterId:    create.CreatorId,
 		WorkflowType: &workflowType,
 	}
-	if _, err := s.ProjectService.PatchProjectWithTx(ctx, tx.Tx, &projectPatch); err != nil {
+	if _, err := s.projectService.PatchProjectTx(ctx, tx.Tx, &projectPatch); err != nil {
 		return nil, err
 	}
 
@@ -347,7 +347,7 @@ func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete
 		UpdaterId:    delete.DeleterId,
 		WorkflowType: &workflowType,
 	}
-	if _, err := s.ProjectService.PatchProjectWithTx(ctx, tx.Tx, &projectPatch); err != nil {
+	if _, err := s.projectService.PatchProjectTx(ctx, tx.Tx, &projectPatch); err != nil {
 		return err
 	}
 
