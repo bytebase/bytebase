@@ -141,7 +141,7 @@ input[type="number"] {
               :class="create ? 'max-w-xl' : ''"
             >
               This is the connection used by Bytebase to perform DDL and DML
-              operations. We recommend you create a separate user for bytebase
+              operations. We recommend you create a separate user 'bytebase@%'
               to operate. Below is an example to create such an user and grant
               it with the needed privileges.
             </p>
@@ -159,6 +159,7 @@ input[type="number"] {
                     border border-r border-control-border
                     bg-gray-50
                     sm:text-sm
+                    whitespace-pre
                   "
                 >
                   {{ GRANT_STATEMENT }}
@@ -337,7 +338,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 
 const GRANT_STATEMENT =
-  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}'; GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, CREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE ON *.* to bytebase@'%';";
+  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}';\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, CREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE ON *.* to bytebase@'%';";
 
 interface LocalState {
   originalInstance?: Instance;
@@ -431,7 +432,7 @@ export default {
           if (isEmpty(resultSet.error)) {
             doCreate();
           } else {
-            state.createInstanceWarning = `Bytebase is unable to connect the instance with the provided connection info. Please check the input is correct. You can still ignore this warning to proceed creating the instance, and fix the connection info later. Error detail: ${resultSet.error}`;
+            state.createInstanceWarning = `Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: ${resultSet.error}`;
             state.showCreateInstanceWarningModal = true;
           }
         });
@@ -510,7 +511,7 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: `Grant statement copied to clipboard. Paste to your mysql client and run it.`,
+          title: `CREATE USER and GRANT statements copied to clipboard. Paste to your mysql client to apply.`,
         });
       });
     };
