@@ -26,6 +26,8 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			Host:     connectionInfo.Host,
 			Port:     connectionInfo.Port,
 		})
+
+		resultSet := &api.SqlResultSet{}
 		if err != nil {
 			usePassword := "YES"
 			if connectionInfo.Password == "" {
@@ -35,12 +37,11 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			if connectionInfo.Port != "" {
 				hostPort += ":" + connectionInfo.Port
 			}
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect '%s' for user '%s' (using password: %s)", hostPort, connectionInfo.Username, usePassword)).SetInternal(err)
-		}
-
-		resultSet := &api.SqlResultSet{}
-		if err := db.Ping(context.Background()); err != nil {
-			resultSet.Error = err.Error()
+			resultSet.Error = fmt.Errorf("failed to connect '%s' for user '%s' (using password: %s), %w", hostPort, connectionInfo.Username, usePassword, err).Error()
+		} else {
+			if err := db.Ping(context.Background()); err != nil {
+				resultSet.Error = err.Error()
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
