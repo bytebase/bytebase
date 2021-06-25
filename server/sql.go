@@ -35,7 +35,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			if connectionInfo.Port != "" {
 				hostPort += ":" + connectionInfo.Port
 			}
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect %s for user '%s' (using password: %s)", hostPort, connectionInfo.Username, usePassword)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect '%s' for user '%s' (using password: %s)", hostPort, connectionInfo.Username, usePassword)).SetInternal(err)
 		}
 
 		resultSet := &api.SqlResultSet{}
@@ -56,7 +56,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId, []string{SECRET_KEY})
+		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId, []string{})
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceId))
@@ -71,7 +71,15 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			Port:     instance.Port,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect instance: %v with user: %v", instance.Name, instance.Username)).SetInternal(err)
+			usePassword := "YES"
+			if instance.Password == "" {
+				usePassword = "NO"
+			}
+			hostPort := instance.Host
+			if instance.Port != "" {
+				hostPort += ":" + instance.Port
+			}
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect '%s' for user '%s' (using password: %s)", hostPort, instance.Username, usePassword)).SetInternal(err)
 		}
 
 		resultSet := &api.SqlResultSet{}

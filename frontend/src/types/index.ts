@@ -23,5 +23,3 @@ export * from "./store";
 
 export * from "./oauth";
 export * from "./jsonapi";
-
-export * from "./migration";

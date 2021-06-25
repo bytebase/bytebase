@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -152,6 +153,85 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.POST("/instance/:instanceId/migration", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("instanceId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		instance, err := s.ComposeInstanceById(context.Background(), id, []string{})
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+
+		resultSet := &api.SqlResultSet{}
+		db, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+		})
+		if err != nil {
+			resultSet.Error = err.Error()
+		} else {
+			if err := db.SetupMigrationIfNeeded(context.Background()); err != nil {
+				resultSet.Error = err.Error()
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration setup status response for host:port: %v:%v", instance.Host, instance.Port)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/instance/:instanceId/migration/status", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("instanceId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		instance, err := s.ComposeInstanceById(context.Background(), id, []string{})
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+
+		instanceMigration := &api.InstanceMigration{}
+		db, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+		})
+		if err != nil {
+			instanceMigration.Status = api.InstanceMigrationUnknown
+			instanceMigration.Error = err.Error()
+		} else {
+			setup, err := db.NeedsSetupMigration(context.Background())
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check migration setup status for host:port: %v:%v", instance.Host, instance.Port)).SetInternal(err)
+			}
+			if setup {
+				instanceMigration.Status = api.InstanceMigrationNotExist
+			} else {
+				instanceMigration.Status = api.InstanceMigrationOK
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceMigration); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration setup status response for host:port: %v:%v", instance.Host, instance.Port)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []string) (*api.Instance, error) {
@@ -188,14 +268,10 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 		return err
 	}
 
-	if bytebase.FindString(includeList, SECRET_KEY) >= 0 {
-		return s.ComposeInstanceSecret(context.Background(), instance)
-	}
-
-	return nil
+	return s.ComposeInstanceAdminDataSource(context.Background(), instance)
 }
 
-func (s *Server) ComposeInstanceSecret(ctx context.Context, instance *api.Instance) error {
+func (s *Server) ComposeInstanceAdminDataSource(ctx context.Context, instance *api.Instance) error {
 	dataSourceFind := &api.DataSourceFind{
 		InstanceId: &instance.ID,
 	}

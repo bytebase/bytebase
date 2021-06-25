@@ -177,8 +177,7 @@ input[type="number"] {
                     bg-gray-50
                     hover:bg-gray-100
                     disabled:bg-gray-50
-                    focus:ring-control
-                    focus:outline-none
+                    focus:ring-control focus:outline-none
                     focus-visible:ring-2
                     focus:ring-offset-1
                     disabled:cursor-not-allowed
@@ -222,61 +221,21 @@ input[type="number"] {
           </div>
 
           <div class="sm:col-span-1 sm:col-start-1">
-            <div class="flex flex-row items-center">
-              <label for="password" class="textlabel block"> Password </label>
-              <div class="ml-1 flex items-center">
-                <button
-                  class="btn-icon"
-                  @click.prevent="state.showPassword = !state.showPassword"
-                >
-                  <svg
-                    v-if="state.showPassword"
-                    class="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                    ></path>
-                  </svg>
-                  <svg
-                    v-else
-                    class="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    ></path>
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    ></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <label for="password" class="textlabel block"> Password </label>
             <input
               id="password"
               name="password"
-              autocomplete="off"
-              :type="state.showPassword ? 'text' : 'password'"
+              type="text"
               class="textfield mt-1 w-full"
+              autocomplete="off"
+              placeholder="sensitive - write only"
               :disabled="!allowEdit"
-              :value="state.instance.password"
-              @input="state.instance.password = $event.target.value"
+              :value="create ? state.instance.password : state.updatedPassword"
+              @input="
+                create
+                  ? (state.instance.password = $event.target.value)
+                  : (state.updatedPassword = $event.target.value)
+              "
             />
           </div>
         </div>
@@ -341,18 +300,18 @@ input[type="number"] {
     </div>
   </form>
   <BBAlert
-    v-if="state.showCreateMigrationSchemaModal"
-    :style="'INFO'"
-    :okText="'Create'"
-    :title="'Create migration schema?'"
-    :description="'The migration schema does not exist on this instance and Bytebase needs to create it in order to manage schema migration.'"
+    v-if="state.showCreateInstanceWarningModal"
+    :style="'WARN'"
+    :okText="'Ignore and create'"
+    :title="'Connection info seems to be incorrect'"
+    :description="state.createInstanceWarning"
     @ok="
       () => {
-        state.showCreateMigrationSchemaModal = false;
-        doCreateSchema();
+        state.showCreateInstanceWarningModal = false;
+        doCreate();
       }
     "
-    @cancel="state.showCreateMigrationSchemaModal = false"
+    @cancel="state.showCreateInstanceWarningModal = false"
   >
   </BBAlert>
 </template>
@@ -374,7 +333,6 @@ import {
   InstancePatch,
   ConnectionInfo,
   SqlResultSet,
-  InstanceMigration,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 
@@ -384,9 +342,11 @@ const GRANT_STATEMENT =
 interface LocalState {
   originalInstance?: Instance;
   instance: Instance | InstanceCreate;
-  showPassword: boolean;
+  // Only used in non-create case.
+  updatedPassword: string;
   connectionResult: string;
-  showCreateMigrationSchemaModal: boolean;
+  showCreateInstanceWarningModal: boolean;
+  createInstanceWarning: string;
 }
 
 export default {
@@ -422,11 +382,12 @@ export default {
             name: "New Instance",
             engine: "MYSQL",
             host: "127.0.0.1",
-            username: "root",
+            username: "",
           },
-      showPassword: false,
+      updatedPassword: "",
       connectionResult: "",
-      showCreateMigrationSchemaModal: false,
+      showCreateInstanceWarningModal: false,
+      createInstanceWarning: "",
     });
 
     const allowCreate = computed(() => {
@@ -442,7 +403,10 @@ export default {
     });
 
     const valueChanged = computed(() => {
-      return !isEqual(state.instance, state.originalInstance);
+      return (
+        !isEqual(state.instance, state.originalInstance) ||
+        !isEmpty(state.updatedPassword)
+      );
     });
 
     const updateInstance = (field: string, value: string) => {
@@ -453,27 +417,6 @@ export default {
       emit("dismiss");
     };
 
-    const doCreateSchema = () => {
-      const connectionInfo: ConnectionInfo = {
-        dbType: "MYSQL",
-        username: state.instance.username,
-        password: state.instance.password,
-        host: state.instance.host,
-        port: state.instance.port,
-      };
-      store
-        .dispatch("migration/createkMigrationSetup", connectionInfo)
-        .then((resultSet: SqlResultSet) => {
-          if (resultSet.error) {
-            state.connectionResult = resultSet.error;
-          } else {
-            doCreate();
-          }
-        });
-    };
-
-    // We will first check if migration schema exists on the instance.
-    // If it doesn't, we will ask user to allow Bytebase to create that schema before proceeding to creating the instance.
     const tryCreate = () => {
       const connectionInfo: ConnectionInfo = {
         dbType: "MYSQL",
@@ -483,21 +426,13 @@ export default {
         port: state.instance.port,
       };
       store
-        .dispatch("migration/checkMigrationSetup", connectionInfo)
-        .then((migration: InstanceMigration) => {
-          switch (migration.status) {
-            case "UNKNOWN": {
-              state.connectionResult = migration.error;
-              break;
-            }
-            case "NOT_EXIST": {
-              state.showCreateMigrationSchemaModal = true;
-              break;
-            }
-            case "OK": {
-              doCreate();
-              break;
-            }
+        .dispatch("sql/ping", connectionInfo)
+        .then((resultSet: SqlResultSet) => {
+          if (isEmpty(resultSet.error)) {
+            doCreate();
+          } else {
+            state.createInstanceWarning = `Bytebase is unable to connect the instance with the provided connection info. Please check the input is correct. You can still ignore this warning to proceed creating the instance, and fix the connection info later. Error detail: ${resultSet.error}`;
+            state.showCreateInstanceWarningModal = true;
           }
         });
     };
@@ -505,11 +440,7 @@ export default {
     // We will also create the database * denoting all databases
     // and its RW data source. The username, password is actually
     // stored in that data source object instead of in the instance self.
-    // 1. Conceptually, data source is the proper place to store connnection info (thinking of DSN)
-    // 2. Instance info will sometimes be pulled when fetching other resoures (like database)
-    //    in order to display the relevant info. In those cases, we don't want to include sensitive
-    //    info such as username/password there. It's harder to redact this on the instance. Thus the
-    //    only option is to split those information into a separate resource which won't be pulled together.
+    // Conceptually, data source is the proper place to store connnection info (thinking of DSN)
     const doCreate = () => {
       store
         .dispatch("instance/createInstance", state.instance)
@@ -528,6 +459,9 @@ export default {
             key: "instance.create",
             newState: true,
           });
+
+          // After creating the instance, we will check if migration schema exists on the instance.
+          setTimeout(() => {}, 1000);
         });
     };
 
@@ -548,8 +482,8 @@ export default {
       if (state.instance.username != state.originalInstance!.username) {
         patchedInstance.username = state.instance.username;
       }
-      if (state.instance.password != state.originalInstance!.password) {
-        patchedInstance.password = state.instance.password;
+      if (!isEmpty(state.updatedPassword)) {
+        patchedInstance.password = state.updatedPassword;
       }
 
       store
@@ -561,6 +495,7 @@ export default {
           state.originalInstance = instance;
           // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
           state.instance = cloneDeep(state.originalInstance!);
+          state.updatedPassword = "";
 
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -584,7 +519,9 @@ export default {
       const connectionInfo: ConnectionInfo = {
         dbType: "MYSQL",
         username: state.instance.username,
-        password: state.instance.password,
+        password: props.create
+          ? state.instance.password
+          : state.updatedPassword,
         host: state.instance.host,
         port: state.instance.port,
       };
@@ -607,7 +544,6 @@ export default {
       valueChanged,
       updateInstance,
       cancel,
-      doCreateSchema,
       tryCreate,
       doCreate,
       doUpdate,

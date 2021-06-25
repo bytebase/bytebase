@@ -75,7 +75,6 @@ const actions = {
   },
 
   async fetchVCSById({ commit }: any, vcsId: VCSId) {
-    // include=secret to return username/password when requesting the specific vcs id
     const data = (await axios.get(`/api/vcs/${vcsId}`)).data;
     const vcs = convert(data.data);
 

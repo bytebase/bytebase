@@ -31,9 +31,6 @@ import router from "./modules/router";
 import command from "./modules/command";
 import notification from "./modules/notification";
 
-// migration module
-import migration from "./modules/migration";
-
 // Debug module
 import debug from "./modules/debug";
 
@@ -66,7 +63,6 @@ export const store: Store<any> = createStore({
     router,
     command,
     notification,
-    migration,
     debug,
   },
   strict: !isProd,

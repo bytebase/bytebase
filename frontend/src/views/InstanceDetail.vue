@@ -48,10 +48,26 @@
       </template>
     </div>
   </div>
+
+  <BBAlert
+    v-if="state.showCreateMigrationSchemaModal"
+    :style="'INFO'"
+    :okText="'Create'"
+    :title="'Create migration schema?'"
+    :description="'The migration schema does not exist on this instance and Bytebase needs to create it in order to manage schema migration.'"
+    @ok="
+      () => {
+        state.showCreateMigrationSchemaModal = false;
+        doCreateMigrationSchema();
+      }
+    "
+    @cancel="state.showCreateMigrationSchemaModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
@@ -59,7 +75,11 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
-import { Instance, SqlResultSet } from "../types";
+import { Instance, InstanceMigration, SqlResultSet } from "../types";
+
+interface LocalState {
+  showCreateMigrationSchemaModal: boolean;
+}
 
 export default {
   name: "InstanceDetail",
@@ -79,15 +99,45 @@ export default {
     const router = useRouter();
     const store = useStore();
 
-    const hasDataSourceFeature = computed(() =>
-      store.getters["plan/feature"]("bb.data-source")
-    );
+    const state = reactive<LocalState>({
+      showCreateMigrationSchemaModal: false,
+    });
 
     const instance = computed((): Instance => {
       return store.getters["instance/instanceById"](
         idFromSlug(props.instanceSlug)
       );
     });
+
+    const prepareMigrationStatus = () => {
+      store
+        .dispatch("instance/checkMigrationSetup", instance.value.id)
+        .then((migration: InstanceMigration) => {
+          switch (migration.status) {
+            case "UNKNOWN": {
+              store.dispatch("notification/pushNotification", {
+                module: "bytebase",
+                style: "CRITICAL",
+                title: `Unable to check migration setup for instance '${instance.value.name}'.`,
+                description: migration.error,
+              });
+              break;
+            }
+            case "NOT_EXIST": {
+              state.showCreateMigrationSchemaModal = true;
+              break;
+            }
+            case "OK": {
+              break;
+            }
+          }
+        });
+    };
+    watchEffect(prepareMigrationStatus);
+
+    const hasDataSourceFeature = computed(() =>
+      store.getters["plan/feature"]("bb.data-source")
+    );
 
     const databaseList = computed(() => {
       return store.getters["database/databaseListByInstanceId"](
@@ -139,6 +189,27 @@ export default {
         });
     };
 
+    const doCreateMigrationSchema = () => {
+      store
+        .dispatch("instance/createMigrationSetup", instance.value.id)
+        .then((resultSet: SqlResultSet) => {
+          if (resultSet.error) {
+            store.dispatch("notification/pushNotification", {
+              module: "bytebase",
+              style: "CRITICAL",
+              title: `Failed to create migration schema for instance '${instance.value.name}'.`,
+              description: resultSet.error,
+            });
+          } else {
+            store.dispatch("notification/pushNotification", {
+              module: "bytebase",
+              style: "SUCCESS",
+              title: `Successfully created migration schema for '${instance.value.name}'.`,
+            });
+          }
+        });
+    };
+
     const syncSchema = () => {
       store
         .dispatch("sql/syncSchema", instance.value.id)
@@ -162,12 +233,14 @@ export default {
     };
 
     return {
+      state,
       hasDataSourceFeature,
       instance,
       databaseList,
       tryAddDatabase,
       doArchive,
       doRestore,
+      doCreateMigrationSchema,
       syncSchema,
     };
   },

@@ -25,6 +25,8 @@ p, OWNER, /instance, POST
 p, OWNER, /instance, GET
 p, OWNER, /instance/{id}, GET
 p, OWNER, /instance/{id}, PATCH
+p, OWNER, /instance/{id}/migration, POST
+p, OWNER, /instance/{id}/migration/status, GET
 p, OWNER, /database, POST
 p, OWNER, /database, GET
 p, OWNER, /database/{id}, GET
@@ -51,5 +53,3 @@ p, OWNER, /vcs/{id}, GET
 p, OWNER, /vcs/{id}, PATCH
 p, OWNER, /vcs/{id}, DELETE
 p, OWNER, /vcs/{id}/repository, GET
-p, OWNER, /migration/instance/status, POST
-p, OWNER, /migration/instance, POST

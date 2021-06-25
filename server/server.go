@@ -19,10 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	SECRET_KEY = "secret"
-)
-
 type Server struct {
 	TaskScheduler *TaskScheduler
 	SchemaSyncer  *SchemaSyncer
@@ -164,7 +160,6 @@ func NewServer(logger *zap.Logger, host string, port int) *Server {
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSqlRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
-	s.registerMigrationRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

@@ -29,9 +29,9 @@ type Instance struct {
 	ExternalLink string  `jsonapi:"attr,externalLink"`
 	Host         string  `jsonapi:"attr,host"`
 	Port         string  `jsonapi:"attr,port"`
-	// Only returns username/password if supplying query parameter 'include=secret'
-	Username string `jsonapi:"attr,username"`
-	Password string `jsonapi:"attr,password"`
+	Username     string  `jsonapi:"attr,username"`
+	// Password is not returned to the client
+	Password string
 }
 
 type InstanceCreate struct {
@@ -82,6 +82,32 @@ type InstancePatch struct {
 	Port         *string `jsonapi:"attr,port"`
 	Username     *string `jsonapi:"attr,username"`
 	Password     *string `jsonapi:"attr,password"`
+}
+
+// Instance migration status
+type InstanceMigrationStatus string
+
+const (
+	InstanceMigrationUnknown  InstanceMigrationStatus = "UNKNOWN"
+	InstanceMigrationOK       InstanceMigrationStatus = "OK"
+	InstanceMigrationNotExist InstanceMigrationStatus = "NOT_EXIST"
+)
+
+func (e InstanceMigrationStatus) String() string {
+	switch e {
+	case InstanceMigrationUnknown:
+		return "UNKNOWN"
+	case InstanceMigrationOK:
+		return "OK"
+	case InstanceMigrationNotExist:
+		return "NOT_EXIST"
+	}
+	return "UNKNOWN"
+}
+
+type InstanceMigration struct {
+	Status InstanceMigrationStatus `jsonapi:"attr,status"`
+	Error  string                  `jsonapi:"attr,error"`
 }
 
 type InstanceService interface {

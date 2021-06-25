@@ -20,6 +20,8 @@ p, DBA, /instance, POST
 p, DBA, /instance, GET
 p, DBA, /instance/{id}, GET
 p, DBA, /instance/{id}, PATCH
+p, DBA, /instance/{id}/migration, POST
+p, DBA, /instance/{id}/migration/status, GET
 p, DBA, /database, POST
 p, DBA, /database, GET
 p, DBA, /database/{id}, GET
@@ -46,5 +48,3 @@ p, DBA, /vcs/{id}, GET
 p, DBA, /vcs/{id}, PATCH
 p, DBA, /vcs/{id}, DELETE
 p, DBA, /vcs/{id}/repository, GET
-p, DBA, /migration/instance/status, POST
-p, DBA, /migration/instance, POST

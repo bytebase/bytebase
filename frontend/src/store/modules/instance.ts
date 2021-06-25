@@ -14,6 +14,8 @@ import {
   empty,
   EMPTY_ID,
   Principal,
+  InstanceMigration,
+  SqlResultSet,
 } from "../../types";
 
 function convert(
@@ -49,6 +51,8 @@ function convert(
     creator,
     updater,
     environment,
+    // Password is not returned by the server, we just take extra caution here to redact it.
+    password: "",
   };
 }
 
@@ -124,9 +128,7 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    // include=secret to return username/password when requesting the specific instance id
-    const data = (await axios.get(`/api/instance/${instanceId}?include=secret`))
-      .data;
+    const data = (await axios.get(`/api/instance/${instanceId}`)).data;
     const instance = convert(data.data, data.included, rootGetters);
 
     commit("setInstanceById", {
@@ -141,7 +143,7 @@ const actions = {
     newInstance: InstanceCreate
   ) {
     const data = (
-      await axios.post(`/api/instance?include=secret`, {
+      await axios.post(`/api/instance`, {
         data: {
           type: "InstanceCreate",
           attributes: newInstance,
@@ -193,6 +195,30 @@ const actions = {
     await axios.delete(`/api/instance/${instanceId}`);
 
     commit("deleteInstanceById", instanceId);
+  },
+
+  async checkMigrationSetup(
+    {}: any,
+    instanceId: InstanceId
+  ): Promise<InstanceMigration> {
+    const data = (
+      await axios.get(`/api/instance/${instanceId}/migration/status`)
+    ).data.data;
+
+    return {
+      status: data.attributes.status,
+      error: data.attributes.error,
+    };
+  },
+
+  async createMigrationSetup(
+    { rootGetters }: any,
+    instanceId: InstanceId
+  ): Promise<SqlResultSet> {
+    const data = (await axios.post(`/api/instance/${instanceId}/migration`))
+      .data.data;
+
+    return rootGetters["sql/convert"](data);
   },
 };
 

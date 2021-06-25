@@ -59,7 +59,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, fmt.Errorf("empty sql statement")
 	}
 
-	if err := server.ComposeTaskRelationship(ctx, task, []string{SECRET_KEY}); err != nil {
+	if err := server.ComposeTaskRelationship(ctx, task, []string{}); err != nil {
 		return true, err
 	}
 
