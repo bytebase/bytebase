@@ -1,7 +1,17 @@
 <template>
   <div class="fixed z-10 inset-0 overflow-y-auto">
     <div
-      class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+      class="
+        flex
+        items-end
+        justify-center
+        min-h-screen
+        pt-4
+        px-4
+        pb-20
+        text-center
+        sm:block sm:p-0
+      "
     >
       <!--
       Background overlay, show/hide based on modal state.
@@ -34,7 +44,21 @@
         To: "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
     -->
       <div
-        class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+        class="
+          inline-block
+          align-bottom
+          bg-white
+          rounded-lg
+          px-4
+          pt-5
+          pb-4
+          text-left
+          overflow-hidden
+          shadow-xl
+          transform
+          transition-all
+          sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6
+        "
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-headline"
@@ -43,7 +67,17 @@
           <div class="flex items-start">
             <div
               v-if="style == 'SUCCESS'"
-              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10"
+              class="
+                mx-auto
+                flex-shrink-0 flex
+                items-center
+                justify-center
+                h-12
+                w-12
+                rounded-full
+                bg-green-100
+                sm:mx-0 sm:h-10 sm:w-10
+              "
             >
               <!-- Heroicon name: outline/exclamation -->
               <svg
@@ -64,7 +98,17 @@
             </div>
             <div
               v-else-if="style == 'WARN'"
-              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10"
+              class="
+                mx-auto
+                flex-shrink-0 flex
+                items-center
+                justify-center
+                h-12
+                w-12
+                rounded-full
+                bg-yellow-100
+                sm:mx-0 sm:h-10 sm:w-10
+              "
             >
               <!-- Heroicon name: outline/exclamation -->
               <svg
@@ -85,7 +129,17 @@
             </div>
             <div
               v-else-if="style == 'CRITICAL'"
-              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10"
+              class="
+                mx-auto
+                flex-shrink-0 flex
+                items-center
+                justify-center
+                h-12
+                w-12
+                rounded-full
+                bg-red-100
+                sm:mx-0 sm:h-10 sm:w-10
+              "
             >
               <!-- Heroicon name: outline/exclamation -->
               <svg
@@ -106,7 +160,17 @@
             </div>
             <div
               v-else
-              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10"
+              class="
+                mx-auto
+                flex-shrink-0 flex
+                items-center
+                justify-center
+                h-12
+                w-12
+                rounded-full
+                bg-blue-100
+                sm:mx-0 sm:h-10 sm:w-10
+              "
             >
               <!-- Heroicon name: outline/exclamation -->
               <svg
@@ -126,7 +190,15 @@
               </svg>
             </div>
             <h3
-              class="ml-4 flex self-center text-lg leading-6 font-medium text-gray-900"
+              class="
+                ml-4
+                flex
+                self-center
+                text-lg
+                leading-6
+                font-medium
+                text-gray-900
+              "
               id="modal-headline"
             >
               {{ title }}
@@ -153,7 +225,26 @@
           </button>
           <button
             type="button"
-            class="sm:ml-3 inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-error text-base font-medium text-white hover:bg-error-hover focus:outline-none focus-visible:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
+            class="
+              sm:ml-3
+              inline-flex
+              justify-center
+              w-full
+              rounded-md
+              border border-transparent
+              shadow-sm
+              px-4
+              py-2
+              bg-error
+              text-base
+              font-medium
+              text-white
+              hover:bg-error-hover
+              focus:outline-none
+              focus-visible:ring-2
+              focus:ring-offset-2 focus:ring-red-500
+              sm:w-auto sm:text-sm
+            "
             v-bind:class="okButtonStyle"
             @click.prevent="$emit('ok', payload)"
           >
@@ -218,7 +309,7 @@ export default {
     const buttonStyleMap: Record<string, string> = {
       INFO: "btn-primary",
       SUCCESS: "btn-success",
-      WARN: "btn-danger",
+      WARN: "btn-primary",
       CRITICAL: "btn-danger",
     };
 
