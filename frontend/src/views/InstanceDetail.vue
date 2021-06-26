@@ -1,6 +1,13 @@
 <template>
   <div class="py-4 space-y-4">
     <ArchiveBanner v-if="instance.rowStatus == 'ARCHIVED'" />
+    <BBAttention
+      v-else-if="state.migrationSetupStatus != 'OK'"
+      :title="attentionTitle"
+      :description="attentionText"
+      :actionText="attentionActionText"
+      @click-action="state.showCreateMigrationSchemaModal = true"
+    />
     <div class="px-6 space-y-6">
       <InstanceForm :create="false" :instance="instance" />
       <div
@@ -54,7 +61,7 @@
     :style="'INFO'"
     :okText="'Create'"
     :title="'Create migration schema?'"
-    :description="'The migration schema does not exist on this instance and Bytebase needs to create it in order to manage schema migration.'"
+    :description="'Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.'"
     @ok="
       () => {
         state.showCreateMigrationSchemaModal = false;
@@ -75,9 +82,15 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
-import { Instance, InstanceMigration, SqlResultSet } from "../types";
+import {
+  Instance,
+  InstanceMigration,
+  InstanceMigrationStatus,
+  SqlResultSet,
+} from "../types";
 
 interface LocalState {
+  migrationSetupStatus: InstanceMigrationStatus;
   showCreateMigrationSchemaModal: boolean;
 }
 
@@ -100,6 +113,7 @@ export default {
     const store = useStore();
 
     const state = reactive<LocalState>({
+      migrationSetupStatus: "OK",
       showCreateMigrationSchemaModal: false,
     });
 
@@ -109,31 +123,45 @@ export default {
       );
     });
 
-    const prepareMigrationStatus = () => {
+    const checkMigrationSetup = () => {
       store
         .dispatch("instance/checkMigrationSetup", instance.value.id)
         .then((migration: InstanceMigration) => {
-          switch (migration.status) {
-            case "UNKNOWN": {
-              store.dispatch("notification/pushNotification", {
-                module: "bytebase",
-                style: "CRITICAL",
-                title: `Unable to check migration setup for instance '${instance.value.name}'.`,
-                description: migration.error,
-              });
-              break;
-            }
-            case "NOT_EXIST": {
-              state.showCreateMigrationSchemaModal = true;
-              break;
-            }
-            case "OK": {
-              break;
-            }
-          }
+          state.migrationSetupStatus = migration.status;
         });
     };
+
+    const prepareMigrationStatus = () => {
+      checkMigrationSetup();
+    };
     watchEffect(prepareMigrationStatus);
+
+    const attentionTitle = computed((): string => {
+      if (state.migrationSetupStatus == "NOT_EXIST") {
+        return "Missing migration schema";
+      } else if (state.migrationSetupStatus == "UNKNOWN") {
+        return "Unable to check migration schema";
+      }
+      return "";
+    });
+
+    const attentionText = computed((): string => {
+      if (state.migrationSetupStatus == "NOT_EXIST") {
+        return "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.";
+      } else if (state.migrationSetupStatus == "UNKNOWN") {
+        return "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance. Please check the instance connection info is correct.";
+      }
+      return "";
+    });
+
+    const attentionActionText = computed((): string => {
+      if (state.migrationSetupStatus == "NOT_EXIST") {
+        return "Create migration schema";
+      } else if (state.migrationSetupStatus == "UNKNOWN") {
+        return "";
+      }
+      return "";
+    });
 
     const hasDataSourceFeature = computed(() =>
       store.getters["plan/feature"]("bb.data-source")
@@ -201,6 +229,7 @@ export default {
               description: resultSet.error,
             });
           } else {
+            checkMigrationSetup();
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "SUCCESS",
@@ -234,6 +263,9 @@ export default {
 
     return {
       state,
+      attentionTitle,
+      attentionText,
+      attentionActionText,
       hasDataSourceFeature,
       instance,
       databaseList,
