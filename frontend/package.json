@@ -1,7 +1,7 @@
 {
   "name": "bytebase",
   "version": "0.1.0",
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --mode dev",
     "demo": "vite --mode demo",
