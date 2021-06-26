@@ -8,7 +8,6 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    `status` TEXT NOT NULL CHECK (`status` IN ('INVITED', 'ACTIVE')),
     `type` TEXT NOT NULL CHECK (`type` IN ('END_USER', 'SYSTEM_BOT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
@@ -39,7 +38,6 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        `status`,
         `type`,
         name,
         email,
@@ -50,7 +48,6 @@ VALUES
         1,
         1,
         1,
-        'ACTIVE',
         'SYSTEM_BOT',
         'Bytebase',
         'support@bytebase.com',
@@ -67,6 +64,7 @@ CREATE TABLE member (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    `status` TEXT NOT NULL CHECK (`status` IN ('INVITED', 'ACTIVE')),
     `role` TEXT NOT NULL CHECK (
         `role` IN ('OWNER', 'DBA', 'DEVELOPER')
     ),

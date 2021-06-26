@@ -5,7 +5,6 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `status`,
         `type`,
         name,
         email,
@@ -15,7 +14,6 @@ VALUES
     (
         1,
         1,
-        'ACTIVE',
         'END_USER',
         'Demo Owner',
         'demo@example.com',
@@ -28,7 +26,6 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `status`,
         `type`,
         name,
         email,
@@ -38,7 +35,6 @@ VALUES
     (
         1,
         1,
-        'ACTIVE',
         'END_USER',
         'Jerry DBA',
         'jerry@example.com',
@@ -51,7 +47,6 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `status`,
         `type`,
         name,
         email,
@@ -61,7 +56,6 @@ VALUES
     (
         1,
         1,
-        'ACTIVE',
         'END_USER',
         'Tom Dev',
         'tom@example.com',
@@ -74,7 +68,6 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `status`,
         `type`,
         name,
         email,
@@ -84,7 +77,6 @@ VALUES
     (
         1,
         1,
-        'ACTIVE',
         'END_USER',
         'Jane Dev',
         'jane@example.com',

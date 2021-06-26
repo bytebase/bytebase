@@ -20,7 +20,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		principalCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		principalCreate.Status = api.Invited
 		principalCreate.Type = api.EndUser
 		principalCreate.PasswordHash = ""
 

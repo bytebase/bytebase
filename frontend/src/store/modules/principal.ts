@@ -5,7 +5,6 @@ import {
   PrincipalCreate,
   PrincipalPatch,
   PrincipalState,
-  PrincipalStatus,
   ResourceObject,
   unknown,
   empty,
@@ -22,7 +21,6 @@ function convert(principal: ResourceObject): Principal {
     createdTs: principal.attributes.createdTs as number,
     updaterId: principal.attributes.updaterId as PrincipalId,
     updatedTs: principal.attributes.updatedTs as number,
-    status: principal.attributes.status as PrincipalStatus,
     type: principal.attributes.type as PrincipalType,
     name: principal.attributes.name as string,
     email: principal.attributes.email as string,
@@ -99,10 +97,9 @@ const actions = {
           data: {
             type: "PrincipalCreate",
             attributes: {
-              status: "INVITED",
               name: newPrincipal.name,
               email: newPrincipal.email,
-              password: isRelease() ? randomString() : "aaa",
+              password: randomString(),
             },
           },
         })

@@ -6,7 +6,7 @@ import { ProjectRoleType } from "./project";
 
 export type MemberMessageType =
   | "bb.message.member.create"
-  | "bb.message.member.invite"
+  | "bb.message.member.add"
   | "bb.message.member.join"
   | "bb.message.member.revoke"
   | "bb.message.member.updaterole";

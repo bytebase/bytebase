@@ -5,8 +5,6 @@ import { PrincipalId } from "./id";
 import { RoleType } from "./member";
 
 // we may support application/bot identity.
-export type PrincipalStatus = "INVITED" | "ACTIVE";
-
 export type PrincipalType = "END_USER" | "SYSTEM_BOT";
 
 export type Principal = {
@@ -21,7 +19,6 @@ export type Principal = {
   updatedTs: number;
 
   // Domain specific fields
-  status: PrincipalStatus;
   type: PrincipalType;
   name: string;
   email: string;

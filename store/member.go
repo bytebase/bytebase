@@ -131,14 +131,16 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 		INSERT INTO member (
 			creator_id,
 			updater_id,
+			`+"`status`,"+`
 			role,
 			principal_id
 		)
-		VALUES (?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
+		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
+		create.Status,
 		create.Role,
 		create.PrincipalId,
 	)
@@ -156,6 +158,7 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 		&member.CreatedTs,
 		&member.UpdaterId,
 		&member.UpdatedTs,
+		&member.Status,
 		&member.Role,
 		&member.PrincipalId,
 	); err != nil {
@@ -182,6 +185,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		    created_ts,
 		    updater_id,
 		    updated_ts,
+			`+"`status`,"+`
 		    role,
 		    principal_id
 		FROM member
@@ -203,6 +207,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 			&member.CreatedTs,
 			&member.UpdaterId,
 			&member.UpdatedTs,
+			&member.Status,
 			&member.Role,
 			&member.PrincipalId,
 		); err != nil {

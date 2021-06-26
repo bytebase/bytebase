@@ -97,12 +97,13 @@
 <script lang="ts">
 import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
-import { isDBAOrOwner } from "../utils";
+import { isDBA, isDBAOrOwner, isOwner } from "../utils";
 
 type IntroItem = {
   name: string;
   link: string;
-  dbaAndOwnerOnly: boolean;
+  allowDBA: boolean;
+  allowDeveloper: Boolean;
   done: ComputedRef<boolean>;
 };
 
@@ -120,15 +121,26 @@ export default {
       {
         name: "Bookmark an issue",
         link: "/issue/hello-world-1",
-        dbaAndOwnerOnly: false,
+        allowDBA: true,
+        allowDeveloper: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("bookmark.create");
         }),
       },
       {
+        name: "Add a member",
+        link: "/setting/member",
+        allowDBA: false,
+        allowDeveloper: false,
+        done: computed(() =>
+          store.getters["uistate/introStateByKey"]("member.addOrInvite")
+        ),
+      },
+      {
         name: "Add an environment",
         link: "/environment",
-        dbaAndOwnerOnly: true,
+        allowDBA: true,
+        allowDeveloper: false,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("environment.create");
         }),
@@ -136,7 +148,8 @@ export default {
       {
         name: "Add an instance",
         link: "/instance",
-        dbaAndOwnerOnly: true,
+        allowDBA: true,
+        allowDeveloper: false,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.create");
         }),
@@ -144,7 +157,8 @@ export default {
       {
         name: "Create a project",
         link: "/project",
-        dbaAndOwnerOnly: false,
+        allowDBA: true,
+        allowDeveloper: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("project.create");
         }),
@@ -152,7 +166,8 @@ export default {
       {
         name: "Create a database",
         link: "/db",
-        dbaAndOwnerOnly: store.getters["plan/feature"]("bb.dba-workflow"),
+        allowDBA: true,
+        allowDeveloper: !store.getters["plan/feature"]("bb.dba-workflow"),
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("database.create")
         ),
@@ -160,36 +175,31 @@ export default {
       {
         name: "Alter schema",
         link: "/db",
-        dbaAndOwnerOnly: false,
+        allowDBA: true,
+        allowDeveloper: true,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("schema.update")
         ),
       },
-      // {
-      //   name: "Invite a member",
-      //   link: "/setting/member",
-      //   dbaAndOwnerOnly: true,
-      //   done: computed(() =>
-      //     store.getters["uistate/introStateByKey"]("member.invite")
-      //   ),
-      // },
     ]);
 
-    const devIntroList: IntroItem[] = introList.filter(
-      (item) => !item.dbaAndOwnerOnly
-    );
-
     const effectiveList = computed(() => {
-      return isDBAOrOwner(currentUser.value.role) ? introList : devIntroList;
+      if (isOwner(currentUser.value.role)) {
+        return introList;
+      }
+      if (isDBA(currentUser.value.role)) {
+        return introList.filter((item) => item.allowDBA);
+      }
+      return introList.filter((item) => item.allowDeveloper);
     });
 
     const isTaskActive = (index: number): boolean => {
       for (let i = index - 1; i >= 0; i--) {
-        if (!introList[i].done) {
+        if (!effectiveList.value[i].done) {
           return false;
         }
       }
-      return !introList[index].done;
+      return !effectiveList.value[index].done;
     };
 
     const hideQuickstart = () => {

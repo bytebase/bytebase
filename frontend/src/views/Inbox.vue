@@ -67,7 +67,7 @@
                   <template
                     v-if="
                       message.type == 'bb.message.member.create' ||
-                      message.type == 'bb.message.member.invite' ||
+                      message.type == 'bb.message.member.add' ||
                       message.type == 'bb.message.member.join' ||
                       message.type == 'bb.message.member.revoke' ||
                       message.type == 'bb.message.member.updaterole'
@@ -257,7 +257,7 @@ export default {
             principalFromId(payload.principalId).email
           } as ${roleName(payload.newRole!)}`;
         }
-        case "bb.message.member.invite": {
+        case "bb.message.member.add": {
           const payload = message.payload as MemberMessagePayload;
           return `invited ${
             principalFromId(payload.principalId).email

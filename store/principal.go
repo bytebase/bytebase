@@ -110,18 +110,16 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 		INSERT INTO principal (
 			creator_id,
 			updater_id,
-			status,
 			type,
 			name,
 			email,
 			password_hash
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, status, type, name, email, password_hash
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
 		create.CreatorId,
 		create.CreatorId,
-		create.Status,
 		create.Type,
 		create.Name,
 		create.Email,
@@ -141,7 +139,6 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 		&principal.CreatedTs,
 		&principal.UpdaterId,
 		&principal.UpdatedTs,
-		&principal.Status,
 		&principal.Type,
 		&principal.Name,
 		&principal.Email,
@@ -170,7 +167,6 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-		    status,
 		    type,
 		    name,
 		    email,
@@ -194,7 +190,6 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 			&principal.CreatedTs,
 			&principal.UpdaterId,
 			&principal.UpdatedTs,
-			&principal.Status,
 			&principal.Type,
 			&principal.Name,
 			&principal.Email,
@@ -225,7 +220,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 		UPDATE principal
 		SET name = ?, updater_id = ?
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, status, type, name, email, password_hash
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
 		principal.Name,
 		patch.UpdaterId,
@@ -244,7 +239,6 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 			&principal.CreatedTs,
 			&principal.UpdaterId,
 			&principal.UpdatedTs,
-			&principal.Status,
 			&principal.Type,
 			&principal.Name,
 			&principal.Email,

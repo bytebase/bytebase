@@ -133,7 +133,7 @@ export default {
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "member.invite",
+        key: "member.addOrInvite",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {

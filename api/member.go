@@ -5,6 +5,26 @@ import (
 	"encoding/json"
 )
 
+type MemberStatus string
+
+const (
+	Unknown MemberStatus = "UNKNOWN"
+	Invited MemberStatus = "INVITED"
+	Active  MemberStatus = "ACTIVE"
+)
+
+func (e MemberStatus) String() string {
+	switch e {
+	case Unknown:
+		return "UNKNOWN"
+	case Invited:
+		return "INVITED"
+	case Active:
+		return "ACTIVE"
+	}
+	return ""
+}
+
 type Role string
 
 const (
@@ -37,7 +57,8 @@ type Member struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Role        Role `jsonapi:"attr,role"`
+	Status      MemberStatus `jsonapi:"attr,status"`
+	Role        Role         `jsonapi:"attr,role"`
 	PrincipalId int
 	Principal   *Principal `jsonapi:"attr,principal"`
 }
@@ -48,8 +69,9 @@ type MemberCreate struct {
 	CreatorId int
 
 	// Domain specific fields
-	Role        Role `jsonapi:"attr,role"`
-	PrincipalId int  `jsonapi:"attr,principalId"`
+	Status      MemberStatus `jsonapi:"attr,status"`
+	Role        Role         `jsonapi:"attr,role"`
+	PrincipalId int          `jsonapi:"attr,principalId"`
 }
 
 type MemberFind struct {

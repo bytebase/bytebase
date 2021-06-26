@@ -1,6 +1,8 @@
 import { MemberId, PrincipalId } from "./id";
 import { Principal } from "./principal";
 
+export type MemberStatus = "INVITED" | "ACTIVE";
+
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
 export type Member = {
@@ -13,6 +15,7 @@ export type Member = {
   updatedTs: number;
 
   // Domain specific fields
+  status: MemberStatus;
   role: RoleType;
   principal: Principal;
 };
@@ -20,6 +23,7 @@ export type Member = {
 export type MemberCreate = {
   // Domain specific fields
   principalId: PrincipalId;
+  status: MemberStatus;
   role: RoleType;
 };
 
