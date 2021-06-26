@@ -17,6 +17,8 @@ export default {
       store.getters["auth/currentUser"]()
     );
 
+    await store.dispatch("actuator/info");
+
     await store.dispatch("environment/fetchEnvironmentList");
 
     await Promise.all([

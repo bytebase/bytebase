@@ -90,6 +90,7 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
+import { ServerInfo } from "../types";
 
 export default {
   name: "ProfileDropdown",
@@ -173,11 +174,11 @@ export default {
     };
 
     const ping = () => {
-      store.dispatch("debug/ping").then((message: string) => {
+      store.dispatch("actuator/info").then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
-          title: message,
+          title: info,
         });
       });
     };

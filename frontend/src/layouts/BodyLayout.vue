@@ -262,7 +262,7 @@ import Breadcrumb from "../components/Breadcrumb.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
-import { isDBA, isDemo, isDeveloper, isOwner } from "../utils";
+import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -335,7 +335,10 @@ export default {
 
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
-      return !isDemo() && !store.getters["uistate/introStateByKey"]("hidden");
+      return (
+        !store.getters["actuator/isDemo"]() &&
+        !store.getters["uistate/introStateByKey"]("hidden")
+      );
     });
 
     return {

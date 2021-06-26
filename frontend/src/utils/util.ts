@@ -4,12 +4,8 @@ export function isDev(): boolean {
   return import.meta.env.DEV;
 }
 
-export function isDemo(): boolean {
-  return import.meta.env.MODE === "demo";
-}
-
 export function isRelease(): boolean {
-  return import.meta.env.PROD && !isDemo();
+  return import.meta.env.PROD;
 }
 
 // Use VITE_BACKEND as the backendURL if specified. Otherwise, just use the current host

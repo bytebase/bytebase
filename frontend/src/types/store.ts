@@ -25,6 +25,11 @@ import { Notification } from "./notification";
 import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Repository } from "./repository";
+import { ServerInfo } from "./actuator";
+
+export interface ActuatorState {
+  serverInfo?: ServerInfo;
+}
 
 export interface AuthState {
   currentUser: Principal;

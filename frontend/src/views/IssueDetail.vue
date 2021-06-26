@@ -124,8 +124,7 @@
           <div
             class="
               py-6
-              lg:pl-4
-              lg:w-96
+              lg:pl-4 lg:w-96
               xl:w-112
               lg:border-l lg:border-block-border
             "
@@ -204,7 +203,6 @@ import isEqual from "lodash-es/isEqual";
 import {
   idFromSlug,
   issueSlug,
-  isDemo,
   pipelineType,
   PipelineType,
   indexFromSlug,
@@ -366,7 +364,7 @@ export default {
       };
 
       // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
-      if (isDemo()) {
+      if (store.getters["actuator/isDemo"]()) {
         newIssue.assigneeId = currentUser.value.id;
       }
 

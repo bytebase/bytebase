@@ -21,5 +21,7 @@ export * from "./notification";
 export * from "./plan";
 export * from "./store";
 
+export * from "./actuator";
+
 export * from "./oauth";
 export * from "./jsonapi";

@@ -31,8 +31,8 @@ import router from "./modules/router";
 import command from "./modules/command";
 import notification from "./modules/notification";
 
-// Debug module
-import debug from "./modules/debug";
+// Actuator module
+import actuator from "./modules/actuator";
 
 const isProd = import.meta.env.NODE_ENV == "production";
 
@@ -63,7 +63,7 @@ export const store: Store<any> = createStore({
     router,
     command,
     notification,
-    debug,
+    actuator,
   },
   strict: !isProd,
 });

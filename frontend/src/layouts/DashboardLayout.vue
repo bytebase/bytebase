@@ -33,6 +33,8 @@ import { useStore } from "vuex";
 import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
+import { ServerInfo } from "../types";
+import { computed } from "@vue/runtime-core";
 
 export default {
   name: "DashboardLayout",
@@ -41,17 +43,20 @@ export default {
     const store = useStore();
 
     const ping = () => {
-      store.dispatch("debug/ping").then((message: string) => {
+      store.dispatch("actuator/info").then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
-          title: message,
+          title: info,
         });
       });
     };
 
+    const isDemo = computed(() => store.getters["actuator/isDemo"]());
+
     return {
       ping,
+      isDemo,
     };
   },
 };

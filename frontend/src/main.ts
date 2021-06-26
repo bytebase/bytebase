@@ -35,7 +35,6 @@ import dataSourceType from "./directives/data-source-type";
 import highlight from "./directives/highlight";
 import {
   isDev,
-  isDemo,
   isRelease,
   backendURL,
   humanizeTs,
@@ -51,6 +50,7 @@ import {
   dataSourceSlug,
   registerStoreWithRoleUtil,
 } from "./utils";
+import { ServerInfo } from "./types";
 
 const app = createApp(App);
 
@@ -60,7 +60,6 @@ app.config.globalProperties.console = console;
 app.config.globalProperties.moment = moment;
 app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.isDev = isDev();
-app.config.globalProperties.isDemo = isDemo();
 app.config.globalProperties.isRelease = isRelease();
 app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
@@ -76,7 +75,6 @@ app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 registerStoreWithRoleUtil(store);
 
 console.debug("dev:", isDev());
-console.debug("demo:", isDemo());
 console.debug("release:", isRelease());
 console.debug("backend:", backendURL());
 

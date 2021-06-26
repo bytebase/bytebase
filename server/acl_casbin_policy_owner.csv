@@ -1,3 +1,4 @@
+p, OWNER, /actuator/info, GET
 p, OWNER, /principal, POST
 p, OWNER, /principal, GET
 p, OWNER, /principal/{id}, GET
