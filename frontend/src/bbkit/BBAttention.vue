@@ -26,19 +26,32 @@
         </div>
       </div>
     </div>
+    <div v-if="actionText != ''" class="flex items-center justify-end">
+      <button
+        type="button"
+        class="btn-primary"
+        @click.prevent="$emit('click-action')"
+      >
+        {{ actionText }}
+      </button>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 export default {
   name: "BBAttention",
-  emits: ["toggle"],
+  emits: ["click-action"],
   props: {
     title: {
       default: "Attention needed",
       type: String,
     },
     description: {
+      default: "",
+      type: String,
+    },
+    actionText: {
       default: "",
       type: String,
     },
