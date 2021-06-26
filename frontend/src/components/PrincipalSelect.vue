@@ -87,11 +87,13 @@ export default {
     const store = useStore();
 
     const principalList = computed((): Principal[] => {
-      const list = store.getters["member/memberList"]().map(
-        (member: Member) => {
+      const list = store.getters["member/memberList"]()
+        .filter((member: Member) => {
+          return member.status == "ACTIVE";
+        })
+        .map((member: Member) => {
           return member.principal;
-        }
-      );
+        });
       // If system bot is the selected ID (e.g. when issue is created by the bot on observing new sql file),
       // Then we add system bot to the list so it can display properly.
       if (props.selectedId == SYSTEM_BOT_ID) {
@@ -106,13 +108,12 @@ export default {
         }
 
         return (
-          item.status == "ACTIVE" &&
           // We write this way instead of props.allowedRoleList.includes(item.role)
           // is becaues isOwner/isDBA/isDeveloper has feature gate logic.
-          ((props.allowedRoleList.includes("OWNER") && isOwner(item.role)) ||
-            (props.allowedRoleList.includes("DBA") && isDBA(item.role)) ||
-            (props.allowedRoleList.includes("DEVELOPER") &&
-              isDeveloper(item.role)))
+          (props.allowedRoleList.includes("OWNER") && isOwner(item.role)) ||
+          (props.allowedRoleList.includes("DBA") && isDBA(item.role)) ||
+          (props.allowedRoleList.includes("DEVELOPER") &&
+            isDeveloper(item.role))
         );
       });
     });

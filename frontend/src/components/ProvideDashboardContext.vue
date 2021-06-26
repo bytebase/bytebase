@@ -19,6 +19,10 @@ export default {
 
     await store.dispatch("actuator/info");
 
+    // Fetch member and principal list so PrincipalSelect can have the data.
+    await store.dispatch("member/fetchMemberList");
+    await store.dispatch("principal/fetchPrincipalList");
+
     await store.dispatch("environment/fetchEnvironmentList");
 
     await Promise.all([
