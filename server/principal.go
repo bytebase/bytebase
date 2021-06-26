@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
@@ -21,7 +22,11 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principalCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		principalCreate.Type = api.EndUser
-		principalCreate.PasswordHash = ""
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(principalCreate.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
+		}
+		principalCreate.PasswordHash = string(passwordHash)
 
 		principal, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
 		if err != nil {
@@ -30,6 +35,8 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create principal").SetInternal(err)
 		}
+		// Assign Developer role to the just created principal
+		principal.Role = api.Developer
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, principal); err != nil {
@@ -86,9 +93,18 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principalPatch := &api.PrincipalPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int)}
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request").SetInternal(err)
+		}
+		if principalPatch.Password != nil && *principalPatch.Password != "" {
+			passwordHash, err := bcrypt.GenerateFromPassword([]byte(*principalPatch.Password), bcrypt.DefaultCost)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
+			}
+			passwordHashStr := string(passwordHash)
+			principalPatch.PasswordHash = &passwordHashStr
 		}
 
 		principal, err := s.PrincipalService.PatchPrincipal(context.Background(), principalPatch)
@@ -97,6 +113,9 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", id)).SetInternal(err)
+		}
+		if err := s.ComposePrincipalRole(context.Background(), principal); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch role for principal: %v", principal.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

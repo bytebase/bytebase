@@ -209,22 +209,24 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
 func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
-	principal := api.Principal{}
-	// Update fields, if set.
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	if v := patch.Name; v != nil {
-		principal.Name = *v
+		set, args = append(set, "name = ?"), append(args, *v)
 	}
+	if v := patch.PasswordHash; v != nil {
+		set, args = append(set, "password_hash = ?"), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
 	row, err := tx.QueryContext(ctx, `
 		UPDATE principal
-		SET name = ?, updater_id = ?
+		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
-		principal.Name,
-		patch.UpdaterId,
-		patch.ID,
+		args...,
 	)
 	if err != nil {
 		return nil, FormatError(err)

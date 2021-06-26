@@ -37,7 +37,7 @@ type Principal struct {
 	Type  PrincipalType `jsonapi:"attr,type"`
 	Name  string        `jsonapi:"attr,name"`
 	Email string        `jsonapi:"attr,email"`
-	// No need to return to the client
+	// Do not return to the client
 	PasswordHash string
 	// Role is stored in the member table, but we include it when returning the principal.
 	// This simplifies the client code where it won't require order depenendency to fetch the related member info first.
@@ -80,6 +80,7 @@ type PrincipalCreate struct {
 	Type         PrincipalType
 	Name         string `jsonapi:"attr,name"`
 	Email        string `jsonapi:"attr,email"`
+	Password     string `jsonapi:"attr,password"`
 	PasswordHash string
 }
 
@@ -106,7 +107,9 @@ type PrincipalPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name *string `jsonapi:"attr,name"`
+	Name         *string `jsonapi:"attr,name"`
+	Password     *string `jsonapi:"attr,password"`
+	PasswordHash *string
 }
 
 type PrincipalService interface {

@@ -41,7 +41,7 @@
                   </svg>
                   <span>Message</span>
                 </button>
-                <template v-if="isCurrentUser">
+                <template v-if="allowEdit">
                   <template v-if="state.editing">
                     <button
                       type="button"
@@ -97,6 +97,7 @@
             <input
               v-if="state.editing"
               required
+              autocomplete="off"
               id="name"
               name="name"
               type="text"
@@ -116,7 +117,7 @@
       <!-- Description list -->
       <div
         v-if="principal.type == 'END_USER'"
-        class="mt-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
+        class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div class="sm:col-span-1">
@@ -145,6 +146,22 @@
               {{ principal.email }}
             </dd>
           </div>
+
+          <div v-if="state.editing" class="sm:col-span-1">
+            <dt class="text-sm font-medium text-control-light">Password</dt>
+            <dd class="mt-1 text-sm text-main">
+              <input
+                id="password"
+                name="password"
+                type="text"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                placeholder="sensitive - write only"
+                :value="state.editingPrincipal.password"
+                @input="updatePrincipal('password', $event.target.value)"
+              />
+            </dd>
+          </div>
         </dl>
       </div>
     </article>
@@ -158,6 +175,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { Principal, PrincipalPatch } from "../types";
+import { isOwner } from "../utils";
 
 interface LocalState {
   editing: boolean;
@@ -168,7 +186,7 @@ export default {
   name: "ProfileDashboard",
   props: {
     principalId: {
-      type: Number,
+      type: String,
     },
   },
   components: { PrincipalAvatar },
@@ -211,13 +229,20 @@ export default {
 
     const principal = computed(() => {
       if (props.principalId) {
-        return store.getters["principal/principalById"](props.principalId);
+        return store.getters["principal/principalById"](
+          parseInt(props.principalId)
+        );
       }
       return currentUser.value;
     });
 
-    const isCurrentUser = computed(() => {
-      return currentUser.value.id == principal.value.id;
+    // User can change her own info.
+    // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
+    const allowEdit = computed(() => {
+      return (
+        currentUser.value.id == principal.value.id ||
+        isOwner(currentUser.value.role)
+      );
     });
 
     const valueChanged = computed(() => {
@@ -252,7 +277,6 @@ export default {
         .then(() => {
           state.editingPrincipal = undefined;
           state.editing = false;
-          store.dispatch("auth/refreshUser");
         });
     };
 
@@ -260,7 +284,7 @@ export default {
       editNameTextField,
       state,
       hasAdminFeature,
-      isCurrentUser,
+      allowEdit,
       principal,
       valueChanged,
       updatePrincipal,

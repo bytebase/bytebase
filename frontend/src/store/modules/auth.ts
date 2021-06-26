@@ -8,6 +8,7 @@ import {
   ActivateInfo,
   ResourceObject,
   unknown,
+  PrincipalId,
 } from "../../types";
 import { getIntCookie, removeCookie } from "../../utils";
 
@@ -98,6 +99,20 @@ const actions = {
       return loggedInUser;
     }
     return unknown("PRINCIPAL") as Principal;
+  },
+
+  async refreshUserIfNeeded(
+    { commit, state, rootGetters }: any,
+    principalId: PrincipalId
+  ) {
+    if (principalId == state.currentUser.id) {
+      const refreshedUser = rootGetters["principal/principalById"](
+        state.currentUser.id
+      );
+      if (!isEqual(refreshedUser, state.currentUser)) {
+        commit("setCurrentUser", refreshedUser);
+      }
+    }
   },
 
   async logout({ commit }: any) {

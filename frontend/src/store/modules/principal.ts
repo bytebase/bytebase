@@ -112,7 +112,7 @@ const actions = {
   },
 
   async patchPrincipal(
-    { commit }: any,
+    { commit, dispatch }: any,
     {
       principalId,
       principalPatch,
@@ -133,6 +133,8 @@ const actions = {
     );
 
     commit("upsertPrincipalInList", updatedPrincipal);
+
+    dispatch("auth/refreshUserIfNeeded", updatedPrincipal.id, { root: true });
 
     return updatedPrincipal;
   },
