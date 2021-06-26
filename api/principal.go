@@ -60,8 +60,9 @@ type Principal struct {
 	Email  string          `jsonapi:"attr,email"`
 	// No need to return to the client
 	PasswordHash string
-	// From member
-	Role Role
+	// Role is stored in the member table, but we include it when returning the principal.
+	// This simplifies the client code where it won't require order depenendency to fetch the related member info first.
+	Role Role `jsonapi:"attr,role"`
 }
 
 // Customize the Principal Marshal method so the returned object

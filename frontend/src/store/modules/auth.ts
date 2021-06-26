@@ -1,6 +1,5 @@
 import axios from "axios";
 import isEqual from "lodash-es/isEqual";
-import isEmpty from "lodash-es/isEmpty";
 import {
   Principal,
   AuthState,
@@ -99,16 +98,6 @@ const actions = {
       return loggedInUser;
     }
     return unknown("PRINCIPAL") as Principal;
-  },
-
-  async refreshUser({ commit, state, rootGetters }: any) {
-    const refreshedUser = rootGetters["principal/principalById"](
-      state.currentUser.id
-    );
-    if (!isEqual(refreshedUser, state.currentUser)) {
-      commit("setCurrentUser", refreshedUser);
-    }
-    return refreshedUser;
   },
 
   async logout({ commit }: any) {

@@ -88,9 +88,6 @@ export default {
 
     watchEffect(watchNotification);
 
-    // Restore previously logged in user if applicable.
-    store.dispatch("auth/restoreUser");
-
     onErrorCaptured((e: any, _, info) => {
       // If e has response, then we assume it's an http error and has already been
       // handled by the axios global handler.

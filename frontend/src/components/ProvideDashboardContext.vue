@@ -3,17 +3,20 @@
 </template>
 
 <script lang="ts">
+import { ComputedRef } from "@vue/reactivity";
 import { useStore } from "vuex";
 import { Principal, DEFAULT_PROJECT_ID } from "../types";
+import { computed } from "@vue/runtime-core";
 
 export default {
   name: "ProvideDashboardContext",
   async setup() {
     const store = useStore();
 
-    await store.dispatch("member/fetchMemberList");
-    // fetchPrincipalList relies on fetchMemberList to find the role of the principal.
-    await store.dispatch("principal/fetchPrincipalList");
+    const currentUser: ComputedRef<Principal> = computed(() =>
+      store.getters["auth/currentUser"]()
+    );
+
     await store.dispatch("environment/fetchEnvironmentList");
 
     await Promise.all([
@@ -22,12 +25,7 @@ export default {
       store.dispatch("uistate/restoreState"),
     ]);
 
-    // Refresh the user after fetchMemberList / fetchPrincipalList.
-    // The user info may change remotely and thus we need to refresh both in-memory and local cache state.
-    store.dispatch("auth/refreshUser").then((currentUser: Principal) => {
-      // In order to display the empty/non-empty inbox icon on the sidebar properly.
-      store.dispatch("message/fetchMessageListByUser", currentUser.id);
-    });
+    store.dispatch("message/fetchMessageListByUser", currentUser.value.id);
   },
 };
 </script>

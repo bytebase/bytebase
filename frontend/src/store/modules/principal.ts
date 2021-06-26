@@ -11,11 +11,11 @@ import {
   empty,
   EMPTY_ID,
   PrincipalType,
+  RoleType,
 } from "../../types";
 import { isRelease, randomString } from "../../utils";
 
-function convert(principal: ResourceObject, rootGetters: any): Principal {
-  const member = rootGetters["member/memberByPrincipalId"](principal.id);
+function convert(principal: ResourceObject): Principal {
   return {
     id: parseInt(principal.id),
     creatorId: principal.attributes.creatorId as PrincipalId,
@@ -26,7 +26,7 @@ function convert(principal: ResourceObject, rootGetters: any): Principal {
     type: principal.attributes.type as PrincipalType,
     name: principal.attributes.name as string,
     email: principal.attributes.email as string,
-    role: member.role,
+    role: principal.attributes.role as RoleType,
   };
 }
 
@@ -38,7 +38,7 @@ const getters = {
   convert:
     (state: PrincipalState, getters: any, rootState: any, rootGetters: any) =>
     (principal: ResourceObject, includedList: ResourceObject[]): Principal => {
-      return convert(principal, rootGetters);
+      return convert(principal);
     },
 
   principalList: (state: PrincipalState) => (): Principal[] => {
@@ -69,11 +69,11 @@ const getters = {
 };
 
 const actions = {
-  async fetchPrincipalList({ state, commit, rootGetters }: any) {
+  async fetchPrincipalList({ commit }: any) {
     const userList: ResourceObject[] = (await axios.get(`/api/principal`)).data
       .data;
     const principalList = userList.map((user) => {
-      return convert(user, rootGetters);
+      return convert(user);
     });
 
     commit("setPrincipalList", principalList);
@@ -81,13 +81,9 @@ const actions = {
     return principalList;
   },
 
-  async fetchPrincipalById(
-    { commit, rootGetters }: any,
-    principalId: PrincipalId
-  ) {
+  async fetchPrincipalById({ commit }: any, principalId: PrincipalId) {
     const principal = convert(
-      (await axios.get(`/api/principal/${principalId}`)).data.data,
-      rootGetters
+      (await axios.get(`/api/principal/${principalId}`)).data.data
     );
 
     commit("upsertPrincipalInList", principal);
@@ -96,10 +92,7 @@ const actions = {
   },
 
   // Returns existing user if already created.
-  async createPrincipal(
-    { commit, rootGetters }: any,
-    newPrincipal: PrincipalCreate
-  ) {
+  async createPrincipal({ commit }: any, newPrincipal: PrincipalCreate) {
     const createdPrincipal = convert(
       (
         await axios.post(`/api/principal`, {
@@ -113,8 +106,7 @@ const actions = {
             },
           },
         })
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("appendPrincipal", createdPrincipal);
@@ -123,7 +115,7 @@ const actions = {
   },
 
   async patchPrincipal(
-    { commit, rootGetters }: any,
+    { commit }: any,
     {
       principalId,
       principalPatch,
@@ -140,8 +132,7 @@ const actions = {
             attributes: principalPatch,
           },
         })
-      ).data.data,
-      rootGetters
+      ).data.data
     );
 
     commit("upsertPrincipalInList", updatedPrincipal);

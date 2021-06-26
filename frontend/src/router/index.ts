@@ -18,7 +18,7 @@ import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
 import { isDev, idFromSlug, isDBAOrOwner } from "../utils";
-import { Principal } from "../types";
+import { Principal, UNKNOWN_ID } from "../types";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -646,243 +646,257 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  const loginUser: Principal = store.getters["auth/currentUser"]();
-  if (
-    to.name === "workspace.instance" ||
-    to.name?.toString().startsWith("setting.workspace.version-control")
-  ) {
-    if (isDBAOrOwner(loginUser.role)) {
-      next();
-    } else {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-    }
-    return;
-  }
-
-  // Fetching specific instance would try to fetch the sensitive info
-  // so we short circuit here for non-DBA/Owner to avoid there.
-  if (to.name?.toString().startsWith("workspace.instance.")) {
-    if (!isDBAOrOwner(loginUser.role)) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (to.name === "workspace.database.create") {
+  const checkRouteAuth = (user: Principal) => {
     if (
-      !store.getters["plan/feature"]("bb.dba-workflow") ||
-      isDBAOrOwner(loginUser.role)
+      to.name === "workspace.instance" ||
+      to.name?.toString().startsWith("setting.workspace.version-control")
     ) {
-      next();
-    } else {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-    }
-    return;
-  }
-
-  if (to.name?.toString().startsWith("workspace.database.datasource")) {
-    if (
-      !store.getters["plan/feature"]("bb.data-source") ||
-      !isDBAOrOwner(loginUser.role)
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (
-    to.name === "error.403" ||
-    to.name === "error.404" ||
-    to.name === "error.500" ||
-    to.name === "oauth-callback" ||
-    to.name === "workspace.home" ||
-    // to.name === "workspace.inbox" ||
-    to.name === "workspace.project" ||
-    to.name === "workspace.database" ||
-    to.name === "workspace.archive" ||
-    to.name === "workspace.environment" ||
-    (to.name?.toString().startsWith("setting") &&
-      to.name?.toString() != "setting.workspace.version-control.detail")
-  ) {
-    next();
-    return;
-  }
-
-  // We may just change the anchor (e.g. in Issue Detail view), thus we don't need
-  // to fetch the data to verify its existence since we have already verified before.
-  if (to.name == from.name) {
-    next();
-    return;
-  }
-
-  const routerSlug = store.getters["router/routeSlug"](to);
-  const principalId = routerSlug.principalId;
-  const environmentSlug = routerSlug.environmentSlug;
-  const projectSlug = routerSlug.projectSlug;
-  const issueSlug = routerSlug.issueSlug;
-  const instanceSlug = routerSlug.instanceSlug;
-  const databaseSlug = routerSlug.databaseSlug;
-  const dataSourceSlug = routerSlug.dataSourceSlug;
-  const vcsSlug = routerSlug.vcsSlug;
-
-  console.debug("RouterSlug:", routerSlug);
-
-  if (principalId) {
-    store
-      .dispatch("principal/fetchPrincipalById", principalId)
-      .then(() => {
+      if (isDBAOrOwner(user.role)) {
         next();
-      })
-      .catch((error) => {
+      } else {
+        console.log("403333", user);
         next({
-          name: "error.404",
+          name: "error.403",
           replace: false,
         });
-        throw error;
-      });
-    return;
-  }
+      }
+      return;
+    }
 
-  if (environmentSlug) {
+    // Fetching specific instance would try to fetch the sensitive info
+    // so we short circuit here for non-DBA/Owner to avoid there.
+    if (to.name?.toString().startsWith("workspace.instance.")) {
+      if (!isDBAOrOwner(user.role)) {
+        next({
+          name: "error.403",
+          replace: false,
+        });
+        return;
+      }
+    }
+
+    if (to.name === "workspace.database.create") {
+      if (
+        !store.getters["plan/feature"]("bb.dba-workflow") ||
+        isDBAOrOwner(user.role)
+      ) {
+        next();
+      } else {
+        next({
+          name: "error.403",
+          replace: false,
+        });
+      }
+      return;
+    }
+
+    if (to.name?.toString().startsWith("workspace.database.datasource")) {
+      if (
+        !store.getters["plan/feature"]("bb.data-source") ||
+        !isDBAOrOwner(user.role)
+      ) {
+        next({
+          name: "error.403",
+          replace: false,
+        });
+        return;
+      }
+    }
+
     if (
-      store.getters["environment/environmentById"](idFromSlug(environmentSlug))
+      to.name === "error.403" ||
+      to.name === "error.404" ||
+      to.name === "error.500" ||
+      to.name === "oauth-callback" ||
+      to.name === "workspace.home" ||
+      // to.name === "workspace.inbox" ||
+      to.name === "workspace.project" ||
+      to.name === "workspace.database" ||
+      to.name === "workspace.archive" ||
+      to.name === "workspace.environment" ||
+      (to.name?.toString().startsWith("setting") &&
+        to.name?.toString() != "setting.workspace.version-control.detail")
     ) {
       next();
       return;
     }
+
+    // We may just change the anchor (e.g. in Issue Detail view), thus we don't need
+    // to fetch the data to verify its existence since we have already verified before.
+    if (to.name == from.name) {
+      next();
+      return;
+    }
+
+    const routerSlug = store.getters["router/routeSlug"](to);
+    const principalId = routerSlug.principalId;
+    const environmentSlug = routerSlug.environmentSlug;
+    const projectSlug = routerSlug.projectSlug;
+    const issueSlug = routerSlug.issueSlug;
+    const instanceSlug = routerSlug.instanceSlug;
+    const databaseSlug = routerSlug.databaseSlug;
+    const dataSourceSlug = routerSlug.dataSourceSlug;
+    const vcsSlug = routerSlug.vcsSlug;
+
+    console.debug("RouterSlug:", routerSlug);
+
+    if (principalId) {
+      store
+        .dispatch("principal/fetchPrincipalById", principalId)
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+      return;
+    }
+
+    if (environmentSlug) {
+      if (
+        store.getters["environment/environmentById"](
+          idFromSlug(environmentSlug)
+        )
+      ) {
+        next();
+        return;
+      }
+      next({
+        name: "error.404",
+        replace: false,
+      });
+    }
+
+    if (projectSlug) {
+      store
+        .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+      return;
+    }
+
+    if (issueSlug) {
+      if (issueSlug.toLowerCase() == "new") {
+        next();
+        return;
+      }
+      store
+        .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+      return;
+    }
+
+    if (databaseSlug) {
+      if (
+        databaseSlug.toLowerCase() == "new" ||
+        databaseSlug.toLowerCase() == "grant"
+      ) {
+        next();
+        return;
+      }
+      store
+        .dispatch("database/fetchDatabaseById", {
+          databaseId: idFromSlug(databaseSlug),
+        })
+        .then((database) => {
+          if (!dataSourceSlug) {
+            next();
+          } else {
+            store
+              .dispatch("dataSource/fetchDataSourceById", {
+                dataSourceId: idFromSlug(dataSourceSlug),
+                databaseId: database.id,
+              })
+              .then(() => {
+                next();
+              })
+              .catch((error) => {
+                next({
+                  name: "error.404",
+                  replace: false,
+                });
+                throw error;
+              });
+          }
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+      return;
+    }
+
+    if (instanceSlug) {
+      store
+        .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+      return;
+    }
+
+    if (vcsSlug) {
+      store
+        .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+      return;
+    }
+
     next({
       name: "error.404",
       replace: false,
     });
-  }
+  };
 
-  if (projectSlug) {
-    store
-      .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
-      .then((project) => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
+  const loginUser: Principal = store.getters["auth/currentUser"]();
+  // On displaying the first page, we need to do an async restore to fetch the lastest user from the server.
+  if (loginUser.id == UNKNOWN_ID) {
+    store.dispatch("auth/restoreUser").then((user: Principal) => {
+      checkRouteAuth(user);
+    });
+  } else {
+    checkRouteAuth(loginUser);
   }
-
-  if (issueSlug) {
-    if (issueSlug.toLowerCase() == "new") {
-      next();
-      return;
-    }
-    store
-      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
-      .then((issue) => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
-  if (databaseSlug) {
-    if (
-      databaseSlug.toLowerCase() == "new" ||
-      databaseSlug.toLowerCase() == "grant"
-    ) {
-      next();
-      return;
-    }
-    store
-      .dispatch("database/fetchDatabaseById", {
-        databaseId: idFromSlug(databaseSlug),
-      })
-      .then((database) => {
-        if (!dataSourceSlug) {
-          next();
-        } else {
-          store
-            .dispatch("dataSource/fetchDataSourceById", {
-              dataSourceId: idFromSlug(dataSourceSlug),
-              databaseId: database.id,
-            })
-            .then((dataSource) => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-              throw error;
-            });
-        }
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
-  if (instanceSlug) {
-    store
-      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
-      .then((instance) => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
-  if (vcsSlug) {
-    store
-      .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
-  next({
-    name: "error.404",
-    replace: false,
-  });
 });
 
 router.afterEach((to, from) => {
