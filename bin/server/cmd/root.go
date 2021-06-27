@@ -174,6 +174,8 @@ func newMain() *main {
 	fmt.Printf("secret=%s\n", secretFile)
 	fmt.Println("-----Config END-------")
 
+	// Always set encoding to "console" for now since we do not redirect to file.
+	activeProfile.logConfig.Encoding = "console"
 	logger, err := activeProfile.logConfig.Build()
 	if err != nil {
 		panic(fmt.Errorf("failed to create logger. %w", err))
