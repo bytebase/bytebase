@@ -196,9 +196,9 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 			user, err := p.FindPrincipal(context.Background(), principalFind)
 			if err != nil {
 				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find to refresh expired token. User ID %d", principalId))
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", principalId))
 				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user to refresh expired token. User ID %d", principalId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalId)).SetInternal(err)
 			}
 
 			if generateToken {
