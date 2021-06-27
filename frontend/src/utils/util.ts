@@ -141,7 +141,7 @@ export function removeCookie(name: string) {
   for (var i = 0; i < list.length; i++) {
     const parts = list[i].split("=");
     if (parts[0].trim() == name) {
-      newList.push(`${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT`);
+      newList.push(`${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/`);
     } else {
       newList.push(list[i]);
     }
