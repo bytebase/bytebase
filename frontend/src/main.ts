@@ -119,10 +119,18 @@ axios.interceptors.response.use(
           style: "CRITICAL",
           title: error.response.data.message,
         });
-      } else {
-        throw error;
       }
+      return;
+    } else if (error.code == "ECONNABORTED") {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Unable to connect to server. Make sure the server is running.",
+      });
+      return;
     }
+
+    throw error;
   }
 );
 
