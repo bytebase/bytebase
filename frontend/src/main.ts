@@ -105,6 +105,14 @@ axios.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
+      // When server returns 401, it means the current login user's token becomes invalid.
+      // Thus we force a logout.
+      if (error.response.status == 401) {
+        store.dispatch("auth/logout").then(() => {
+          router.push({ name: "auth.signin" });
+        });
+      }
+
       if (error.response.data.message) {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",

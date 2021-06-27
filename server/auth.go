@@ -37,7 +37,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		// If password is correct, generate tokens and set cookies.
-		if err := GenerateTokensAndSetCookies(user, c); err != nil {
+		if err := GenerateTokensAndSetCookies(c, user, s.secret); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 		}
 
@@ -90,7 +90,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup.").SetInternal(err)
 		}
 
-		if err := GenerateTokensAndSetCookies(user, c); err != nil {
+		if err := GenerateTokensAndSetCookies(c, user, s.secret); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token.").SetInternal(err)
 		}
 

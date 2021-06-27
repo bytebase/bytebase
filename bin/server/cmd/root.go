@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -18,28 +22,28 @@ import (
 
 // -----------------------------------Command Line Config BEGIN------------------------------------
 
+const (
+	SECRET_LENGTH = 32
+)
+
 var (
 	// Used for flags.
-	mode    string
-	host    string
-	dataDir string
-	port    int
+	mode       string
+	host       string
+	port       int
+	dataDir    string
+	secretFile string
+	secret     string
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase server",
 		Run: func(cmd *cobra.Command, args []string) {
-			if mode != "release" && mode != "dev" && mode != "demo" {
-				fmt.Fprintln(os.Stderr, fmt.Errorf("invalid --mode %s, expect \"release\" | \"dev\" | \"demo\"", mode))
-				os.Exit(1)
-			}
-			// Trim trailing / in case user supplies
-			dir, err := filepath.Abs(strings.TrimRight(dataDir, "/"))
-			if err != nil {
+			if err := preStart(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			dataDir = dir
+
 			start()
 		},
 	}
@@ -53,8 +57,9 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&mode, "mode", "release", "mode which Bytebase is running under. release | dev | demo")
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
-	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running. e.g. 8080")
+	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", "./data", "directory where Bytebase stores data.")
+	rootCmd.PersistentFlags().StringVar(&secretFile, "secret", "./data/secret", "file path storing the secret to sign the JWT for authentication. If file does not exist, Bytebase will generate a 32 byte random string consisting of numbers and letters.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -74,6 +79,40 @@ type main struct {
 	server *server.Server
 
 	db *store.DB
+}
+
+func preStart() error {
+	if mode != "release" && mode != "dev" && mode != "demo" {
+		return fmt.Errorf("invalid --mode %s, expect \"release\" | \"dev\" | \"demo\"", mode)
+	}
+	// Trim trailing / in case user supplies
+	dir, err := filepath.Abs(strings.TrimRight(dataDir, "/"))
+	if err != nil {
+		return err
+	}
+	dataDir = dir
+
+	secretFile, err = filepath.Abs(secretFile)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(secretFile); err == nil {
+		data, err := ioutil.ReadFile(secretFile)
+		if err != nil {
+			return fmt.Errorf("unable to read secret, error: %w", err)
+		}
+		secret = string(data)
+	} else if errors.Is(err, fs.ErrNotExist) {
+		fmt.Printf("Secret file does not exist on the specified path %s. Generating a new one...\n", secretFile)
+		secret = bytebase.RandomString(SECRET_LENGTH)
+		if err := ioutil.WriteFile(secretFile, []byte(secret), 0600); err != nil {
+			return fmt.Errorf("unable to save secret, error: %w", err)
+		}
+		fmt.Printf("Successfully saved secret at %s\n", secretFile)
+	} else {
+		return fmt.Errorf("unable to stat secret file: %s, error: %w", secretFile, err)
+	}
+	return nil
 }
 
 func start() {
@@ -132,6 +171,7 @@ func newMain() *main {
 	fmt.Printf("host=%s\n", host)
 	fmt.Printf("port=%d\n", port)
 	fmt.Printf("data=%s\n", activeProfile.dsn)
+	fmt.Printf("secret=%s\n", secretFile)
 	fmt.Println("-----Config END-------")
 
 	logger, err := activeProfile.logConfig.Build()
@@ -154,7 +194,7 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, m.profile.mode, host, port)
+	server := server.NewServer(m.l, m.profile.mode, host, port, secret)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)

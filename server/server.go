@@ -48,6 +48,7 @@ type Server struct {
 	host      string
 	port      int
 	startedTs int64
+	secret    string
 }
 
 //go:embed dist
@@ -77,7 +78,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger, mode, host string, port int) *Server {
+func NewServer(logger *zap.Logger, mode, host string, port int, secret string) *Server {
 	e := echo.New()
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
@@ -96,6 +97,7 @@ func NewServer(logger *zap.Logger, mode, host string, port int) *Server {
 		host:      host,
 		port:      port,
 		startedTs: time.Now().Unix(),
+		secret:    secret,
 	}
 
 	scheduler := NewTaskScheduler(logger, s)
@@ -129,7 +131,7 @@ func NewServer(logger *zap.Logger, mode, host string, port int) *Server {
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.PrincipalService, next)
+		return JWTMiddleware(logger, s.PrincipalService, next, secret)
 	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
