@@ -25,7 +25,7 @@ import (
 const (
 	SECRET_LENGTH = 32
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
-	BANNER = `
+	GREETING_BANNER = `
 ██████╗ ██╗   ██╗████████╗███████╗██████╗  █████╗ ███████╗███████╗
 ██╔══██╗╚██╗ ██╔╝╚══██╔══╝██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝
 ██████╔╝ ╚████╔╝    ██║   █████╗  ██████╔╝███████║███████╗█████╗  
@@ -36,6 +36,16 @@ const (
 %s
 ___________________________________________________________________________________________
 
+`
+	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=BYE%20BYE
+	BYE_BANNER = `
+██████╗ ██╗   ██╗███████╗    ██████╗ ██╗   ██╗███████╗
+██╔══██╗╚██╗ ██╔╝██╔════╝    ██╔══██╗╚██╗ ██╔╝██╔════╝
+██████╔╝ ╚████╔╝ █████╗      ██████╔╝ ╚████╔╝ █████╗  
+██╔══██╗  ╚██╔╝  ██╔══╝      ██╔══██╗  ╚██╔╝  ██╔══╝  
+██████╔╝   ██║   ███████╗    ██████╔╝   ██║   ███████╗
+╚═════╝    ╚═╝   ╚══════╝    ╚═════╝    ╚═╝   ╚══════╝
+                                                      
 `
 )
 
@@ -159,6 +169,7 @@ func start() {
 	<-ctx.Done()
 
 	m.l.Info("Bytebase stopped properly.")
+	fmt.Print(BYE_BANNER)
 }
 
 func newMain() *main {
@@ -215,7 +226,7 @@ func (m *main) Run() error {
 
 	m.server = server
 
-	fmt.Printf(BANNER, fmt.Sprintf("Starting version %s at %s:%d", version, host, port))
+	fmt.Printf(GREETING_BANNER, fmt.Sprintf("Starting version %s at %s:%d", version, host, port))
 
 	if err := server.Run(); err != nil {
 		return err
