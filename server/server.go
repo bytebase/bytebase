@@ -80,6 +80,8 @@ func getFileSystem() http.FileSystem {
 
 func NewServer(logger *zap.Logger, mode, host string, port int, secret string) *Server {
 	e := echo.New()
+	e.HideBanner = true
+	e.HidePort = true
 
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
 	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
