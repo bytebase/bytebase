@@ -95,17 +95,17 @@ export default {
       store
         .dispatch("issue/fetchIssueListForUser", currentUser.value.id)
         .then((issueList: Issue[]) => {
-          state.createdList = [];
           state.assignedList = [];
+          state.createdList = [];
           state.subscribeList = [];
           state.closeList = [];
           for (const issue of issueList) {
             // "OPEN"
             if (issue.status === "OPEN") {
-              if (issue.creator.id === currentUser.value.id) {
-                state.createdList.push(issue);
-              } else if (issue.assignee?.id === currentUser.value.id) {
+              if (issue.assignee?.id === currentUser.value.id) {
                 state.assignedList.push(issue);
+              } else if (issue.creator.id === currentUser.value.id) {
+                state.createdList.push(issue);
               } else if (
                 issue.subscriberList.find(
                   (item) => item.id == currentUser.value.id
