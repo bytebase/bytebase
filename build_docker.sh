@@ -23,6 +23,10 @@ docker build \
 
 echo "${GREEN}Completed building Bytebase docker image ${VERSION}.${NC}"
 echo ""
+echo "Command to tag and push the image"
+echo ""
+echo "$ docker tag bytebase/bytebase bytebase/bytebase:${VERSION}; docker push bytebase/bytebase:${VERSION}"
+echo ""
 echo "Command to start Bytebase on http://localhost:8080"
 echo ""
 echo "$ docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase"
