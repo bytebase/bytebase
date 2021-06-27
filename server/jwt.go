@@ -129,7 +129,7 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 	c.SetCookie(cookie)
 }
 
-// Purpose of this cookie is to store the user's name.
+// Purpose of this cookie is to store the user's id.
 func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	cookie := new(http.Cookie)
 	cookie.Name = "user"
