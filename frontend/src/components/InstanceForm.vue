@@ -141,9 +141,9 @@ input[type="number"] {
               :class="create ? 'max-w-xl' : ''"
             >
               This is the connection used by Bytebase to perform DDL and DML
-              operations. We recommend you create a separate user 'bytebase@%'
-              to operate. Below is an example to create such an user and grant
-              it with the needed privileges.
+              operations. We recommend you to create a separate user
+              'bytebase@%' to operate. Below is an example to create such an
+              user and grant it with the needed privileges.
             </p>
             <div class="mt-2 text-sm text-main">
               <div class="flex flex-row">
