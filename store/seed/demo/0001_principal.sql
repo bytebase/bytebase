@@ -38,8 +38,8 @@ VALUES
         'END_USER',
         'Jerry DBA',
         'jerry@example.com',
-        -- aaa
-        '$2a$10$a.o5.ELPUO8PKYGuWTSDseOqNssImU2b9qFgBaDKI7CKAKIhQYVfG'
+        -- 2048
+        '$2a$10$Q2NJib9bRvDkap1N1RDP2O3HyxjCldwfvGoxAzZL5gbbBgKAFD4cq'
     );
 
 -- 103
@@ -59,8 +59,8 @@ VALUES
         'END_USER',
         'Tom Dev',
         'tom@example.com',
-        -- aaa
-        '$2a$10$cB0QuMqG0Bmz/j1LDI2gXOqUXtp.Yd87zRus6zxR026RyiyuWeJye'
+        -- 4096
+        '$2a$10$X5bvIWk4BKhEaZqlNLGjgOUB09i97olKBfjTQT49zMtNGnhoy6GIW'
     );
 
 -- 104
@@ -80,6 +80,6 @@ VALUES
         'END_USER',
         'Jane Dev',
         'jane@example.com',
-        -- aaa
-        '$2a$10$DJ/T2SmdNiOAKXnuf.LQzenVYr4sIQSDu004Io1svmiRUmvAEMIw6'
+        -- 8192
+        '$2a$10$2QTgsuKDTGYe68lpeqRqouw1dQTRhssrYSnwQVzQUctQvhnVIccRa'
     );

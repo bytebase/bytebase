@@ -227,14 +227,14 @@ export default {
     const switchToDBA = () => {
       store.dispatch("auth/login", {
         email: "jerry@example.com",
-        password: "aaa",
+        password: "2048",
       });
     };
 
     const switchToDeveloper = () => {
       store.dispatch("auth/login", {
         email: "tom@example.com",
-        password: "aaa",
+        password: "4096",
       });
     };
 
