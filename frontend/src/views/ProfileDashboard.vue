@@ -53,7 +53,7 @@
                     <button
                       type="button"
                       class="btn-normal"
-                      :disabled="!valueChanged"
+                      :disabled="!allowSaveEdit"
                       @click.prevent="saveEdit"
                     >
                       <!-- Heroicon name: solid/save -->
@@ -147,21 +147,42 @@
             </dd>
           </div>
 
-          <div v-if="state.editing" class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">Password</dt>
-            <dd class="mt-1 text-sm text-main">
-              <input
-                id="password"
-                name="password"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
-                placeholder="sensitive - write only"
-                :value="state.editingPrincipal.password"
-                @input="updatePrincipal('password', $event.target.value)"
-              />
-            </dd>
-          </div>
+          <template v-if="state.editing">
+            <div class="sm:col-span-1">
+              <dt class="text-sm font-medium text-control-light">Password</dt>
+              <dd class="mt-1 text-sm text-main">
+                <input
+                  id="password"
+                  name="password"
+                  type="text"
+                  class="textfield mt-1 w-full"
+                  autocomplete="off"
+                  placeholder="sensitive - write only"
+                  :value="state.editingPrincipal.password"
+                  @input="updatePrincipal('password', $event.target.value)"
+                />
+              </dd>
+            </div>
+
+            <div class="sm:col-span-1">
+              <dt class="text-sm font-medium text-control-light">
+                Confirm
+                <span v-if="passwordMismatch" class="text-error">mismatch</span>
+              </dt>
+              <dd class="mt-1 text-sm text-main">
+                <input
+                  id="password-confirm"
+                  name="password-confirm"
+                  type="text"
+                  class="textfield mt-1 w-full"
+                  autocomplete="off"
+                  placeholder="Confirm new password"
+                  :value="state.passwordConfirm"
+                  @input="state.passwordConfirm = $event.target.value"
+                />
+              </dd>
+            </div>
+          </template>
         </dl>
       </div>
     </article>
@@ -171,15 +192,17 @@
 <script lang="ts">
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
-import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import cloneDeep from "lodash-es/cloneDeep";
+import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
+import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { Principal, PrincipalPatch } from "../types";
 import { isOwner } from "../utils";
 
 interface LocalState {
   editing: boolean;
   editingPrincipal?: PrincipalPatch;
+  passwordConfirm?: string;
 }
 
 export default {
@@ -204,7 +227,7 @@ export default {
         if (e.code == "Escape") {
           cancelEdit();
         } else if (e.code == "Enter" && e.metaKey) {
-          if (valueChanged.value) {
+          if (allowSaveEdit.value) {
             saveEdit();
           }
         }
@@ -236,6 +259,13 @@ export default {
       return currentUser.value;
     });
 
+    const passwordMismatch = computed(() => {
+      return (
+        !isEmpty(state.editingPrincipal?.password) &&
+        state.editingPrincipal?.password != state.passwordConfirm
+      );
+    });
+
     // User can change her own info.
     // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
     const allowEdit = computed(() => {
@@ -245,8 +275,12 @@ export default {
       );
     });
 
-    const valueChanged = computed(() => {
-      return !isEqual(principal.value, state.editingPrincipal);
+    const allowSaveEdit = computed(() => {
+      return (
+        !isEqual(principal.value, state.editingPrincipal) &&
+        (state.passwordConfirm == "" ||
+          state.passwordConfirm == state.editingPrincipal?.password)
+      );
     });
 
     const updatePrincipal = (field: string, value: string) => {
@@ -284,9 +318,10 @@ export default {
       editNameTextField,
       state,
       hasAdminFeature,
-      allowEdit,
       principal,
-      valueChanged,
+      allowEdit,
+      allowSaveEdit,
+      passwordMismatch,
       updatePrincipal,
       editUser,
       cancelEdit,
