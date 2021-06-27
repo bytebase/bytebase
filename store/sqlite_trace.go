@@ -1,4 +1,4 @@
-// +build debug
+// +build !release
 // +build sqlite_trace
 
 package store

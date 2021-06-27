@@ -1,4 +1,4 @@
-This folder contains the seed data. Each folder contains seed files for the corresponding mode
+This folder contains the seed data. The release seed data is loaded when building with "release" tag and is NOT running with --demo. Otherwise, the test seed data is loaded.
 
 Each file represents the data for a particular table. The file name is something like 00XX, reasons for doing this:
 

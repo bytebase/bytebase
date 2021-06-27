@@ -44,11 +44,11 @@ type Server struct {
 	e *echo.Echo
 
 	l         *zap.Logger
-	mode      string
 	host      string
 	port      int
 	startedTs int64
 	secret    string
+	demo      bool
 }
 
 //go:embed dist
@@ -78,7 +78,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger, mode, host string, port int, secret string) *Server {
+func NewServer(logger *zap.Logger, host string, port int, secret string, demo bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -95,11 +95,11 @@ func NewServer(logger *zap.Logger, mode, host string, port int, secret string) *
 	s := &Server{
 		l:         logger,
 		e:         e,
-		mode:      mode,
 		host:      host,
 		port:      port,
 		startedTs: time.Now().Unix(),
 		secret:    secret,
+		demo:      demo,
 	}
 
 	scheduler := NewTaskScheduler(logger, s)

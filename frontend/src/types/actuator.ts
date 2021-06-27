@@ -1,5 +1,5 @@
 export type ServerInfo = {
-  mode: string;
+  demo: boolean;
   host: string;
   port: string;
   startedTs: number;

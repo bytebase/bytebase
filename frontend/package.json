@@ -4,9 +4,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --mode dev",
-    "demo": "vite --mode demo",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
-    "release-demo": "vite build --mode demo --outDir=../server/dist --emptyOutDir",
     "release-docker": "vite build --mode release"
   },
   "dependencies": {

@@ -10,7 +10,7 @@ const getters = {
     return state.serverInfo;
   },
   isDemo: (state: ActuatorState) => (): boolean => {
-    return state.serverInfo?.mode == "demo";
+    return state.serverInfo?.demo || false;
   },
 };
 

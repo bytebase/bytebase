@@ -29,5 +29,5 @@ echo "$ docker run --init --name bytebase --restart always --publish 8080:8080 -
 echo ""
 echo "Command to start Bytebase in demo mode on http://example.com"
 echo ""
-echo "$ docker run --init --name bytebase --restart always --publish 80:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase --mode demo --host http://example.com"
+echo "$ docker run --init --name bytebase --restart always --publish 80:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase --demo --host http://example.com"
 echo ""

@@ -41,12 +41,12 @@ ________________________________________________________________________________
 
 var (
 	// Used for flags.
-	mode       string
 	host       string
 	port       int
 	dataDir    string
 	secretFile string
 	secret     string
+	demo       bool
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -68,20 +68,21 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&mode, "mode", "release", "mode which Bytebase is running under. release | dev | demo")
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", "./data", "directory where Bytebase stores data.")
 	rootCmd.PersistentFlags().StringVar(&secretFile, "secret", "./data/secret", "file path storing the secret to sign the JWT for authentication. If file does not exist, Bytebase will generate a 32 byte random string consisting of numbers and letters.")
+	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data and is read-only.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
 
 // -----------------------------------Main Entry Point---------------------------------------------
 type profile struct {
-	mode      string
+	demo      bool
 	logConfig zap.Config
 	dsn       string
+	seedDir   string
 }
 
 type main struct {
@@ -95,9 +96,6 @@ type main struct {
 }
 
 func preStart() error {
-	if mode != "release" && mode != "dev" && mode != "demo" {
-		return fmt.Errorf("invalid --mode %s, expect \"release\" | \"dev\" | \"demo\"", mode)
-	}
 	// Trim trailing / in case user supplies
 	dir, err := filepath.Abs(strings.TrimRight(dataDir, "/"))
 	if err != nil {
@@ -164,30 +162,14 @@ func start() {
 }
 
 func newMain() *main {
-	var activeProfile = map[string]profile{
-		"dev": {
-			mode:      "dev",
-			logConfig: zap.NewDevelopmentConfig(),
-			dsn:       fmt.Sprintf("file:%s/bytebase_dev.db", dataDir),
-		},
-		"release": {
-			mode:      "release",
-			logConfig: zap.NewProductionConfig(),
-			dsn:       fmt.Sprintf("file:%s/bytebase.db", dataDir),
-		},
-		"demo": {
-			mode:      "demo",
-			logConfig: zap.NewProductionConfig(),
-			dsn:       fmt.Sprintf("file:%s/bytebase_demo.db", dataDir),
-		},
-	}[mode]
+	activeProfile := activeProfile(dataDir, demo)
 
 	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("host=%s\n", host)
 	fmt.Printf("port=%d\n", port)
 	fmt.Printf("data=%s\n", activeProfile.dsn)
 	fmt.Printf("secret=%s\n", secretFile)
+	fmt.Printf("demo=%t\n", demo)
 	fmt.Println("-----Config END-------")
 
 	// Always set encoding to "console" for now since we do not redirect to file.
@@ -205,14 +187,14 @@ func newMain() *main {
 }
 
 func (m *main) Run() error {
-	db := store.NewDB(m.l, m.profile.dsn, m.profile.mode)
+	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
 	m.db = db
 
-	server := server.NewServer(m.l, m.profile.mode, host, port, secret)
+	server := server.NewServer(m.l, host, port, secret, demo)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)
