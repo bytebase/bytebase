@@ -37,7 +37,7 @@
     <div>
       <div class="flex items-center space-x-3">
         <div
-          v-if="isDev"
+          v-if="showSwitchPlan"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm"
         >
           <span class="hidden lg:block"
@@ -193,7 +193,7 @@ import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { PlanType } from "../types";
-import { isDBAOrOwner } from "../utils";
+import { isDBAOrOwner, isDev, isOwner } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -215,6 +215,10 @@ export default {
 
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
+    });
+
+    const showSwitchPlan = computed((): boolean => {
+      return isDev() && isOwner(currentUser.value.role);
     });
 
     const switchToOwner = () => {
@@ -255,6 +259,7 @@ export default {
       currentUser,
       currentPlan,
       showDBAItem,
+      showSwitchPlan,
       switchToOwner,
       switchToDBA,
       switchToDeveloper,

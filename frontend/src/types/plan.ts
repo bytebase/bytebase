@@ -13,3 +13,7 @@ export enum PlanType {
   TEAM = 1,
   ENTERPRISE = 2,
 }
+
+export type PlanPatch = {
+  type: PlanType;
+};

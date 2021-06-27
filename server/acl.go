@@ -102,8 +102,13 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 
 		path := strings.TrimPrefix(c.Request().URL.Path, "/api")
 
+		role := member.Role
+		// If admin feature is not enabled, then we treat all user as OWNER.
+		if !s.feature("bb.admin") {
+			role = api.Owner
+		}
 		// Performs the ACL check.
-		pass, err := ce.Enforce(member.Role.String(), path, method)
+		pass, err := ce.Enforce(role.String(), path, method)
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
@@ -111,11 +116,11 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 
 		if !pass {
 			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				fmt.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalId, member.Role))
+				fmt.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalId, role))
 		}
 
 		// Stores role into context.
-		c.Set(GetRoleContextKey(), member.Role)
+		c.Set(GetRoleContextKey(), role)
 
 		return next(c)
 	}

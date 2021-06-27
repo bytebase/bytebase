@@ -49,6 +49,7 @@ type Server struct {
 	startedTs int64
 	secret    string
 	demo      bool
+	plan      api.PlanType
 }
 
 //go:embed dist
@@ -100,6 +101,7 @@ func NewServer(logger *zap.Logger, host string, port int, secret string, demo bo
 		startedTs: time.Now().Unix(),
 		secret:    secret,
 		demo:      demo,
+		plan:      api.TEAM,
 	}
 
 	scheduler := NewTaskScheduler(logger, s)
@@ -167,6 +169,7 @@ func NewServer(logger *zap.Logger, host string, port int, secret string, demo bo
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSqlRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
+	s.registerPlanRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

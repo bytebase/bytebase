@@ -17,6 +17,8 @@ export default {
       store.getters["auth/currentUser"]()
     );
 
+    await store.dispatch("plan/fetchCurrentPlan");
+
     await store.dispatch("actuator/info");
 
     // Fetch member and principal list so PrincipalSelect can have the data.
