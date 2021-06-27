@@ -24,6 +24,19 @@ import (
 
 const (
 	SECRET_LENGTH = 32
+	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
+	BANNER = `
+██████╗ ██╗   ██╗████████╗███████╗██████╗  █████╗ ███████╗███████╗
+██╔══██╗╚██╗ ██╔╝╚══██╔══╝██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝
+██████╔╝ ╚████╔╝    ██║   █████╗  ██████╔╝███████║███████╗█████╗  
+██╔══██╗  ╚██╔╝     ██║   ██╔══╝  ██╔══██╗██╔══██║╚════██║██╔══╝  
+██████╔╝   ██║      ██║   ███████╗██████╔╝██║  ██║███████║███████╗
+╚═════╝    ╚═╝      ╚═╝   ╚══════╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+                                                                  
+%s
+___________________________________________________________________________________________
+
+`
 )
 
 var (
@@ -106,6 +119,9 @@ func preStart() error {
 		fmt.Printf("Secret file does not exist on the specified path %s. Generating a new one...\n", secretFile)
 		secret = bytebase.RandomString(SECRET_LENGTH)
 		if err := ioutil.WriteFile(secretFile, []byte(secret), 0600); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("unable to save secret, please make sure the parent directory exists: %s", filepath.Dir(secretFile))
+			}
 			return fmt.Errorf("unable to save secret, error: %w", err)
 		}
 		fmt.Printf("Successfully saved secret at %s\n", secretFile)
@@ -216,6 +232,9 @@ func (m *main) Run() error {
 	server.RepositoryService = store.NewRepositoryService(m.l, db, server.ProjectService)
 
 	m.server = server
+
+	fmt.Printf(BANNER, fmt.Sprintf("Starting version %s at %s:%d", version, host, port))
+
 	if err := server.Run(); err != nil {
 		return err
 	}
