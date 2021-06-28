@@ -79,7 +79,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger, host string, port int, secret string, demo bool) *Server {
+func NewServer(logger *zap.Logger, host string, port int, secret string, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -117,14 +117,16 @@ func NewServer(logger *zap.Logger, host string, port int, secret string, demo bo
 	s.SchemaSyncer = schemaSyncer
 
 	// Middleware
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Skipper: func(c echo.Context) bool {
-			return !strings.HasPrefix(c.Path(), "/api") && !strings.HasPrefix(c.Path(), "/hook")
-		},
-		Format: `{"time":"${time_rfc3339}",` +
-			`"method":"${method}","uri":"${uri}",` +
-			`"status":${status},"error":"${error}"}` + "\n",
-	}))
+	if debug {
+		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+			Skipper: func(c echo.Context) bool {
+				return !strings.HasPrefix(c.Path(), "/api") && !strings.HasPrefix(c.Path(), "/hook")
+			},
+			Format: `{"time":"${time_rfc3339}",` +
+				`"method":"${method}","uri":"${uri}",` +
+				`"status":${status},"error":"${error}"}` + "\n",
+		}))
+	}
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return RecoverMiddleware(logger, next)
 	})
