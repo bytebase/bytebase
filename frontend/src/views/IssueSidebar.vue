@@ -316,17 +316,6 @@ export default {
       return props.issue.payload[field.id];
     };
 
-    const instance = computed((): Instance => {
-      if (props.create) {
-        const stage = props.selectedStage as StageCreate;
-        return store.getters["instance/instanceById"](
-          stage.taskList[0].instanceId
-        );
-      }
-      const stage = props.selectedStage as Stage;
-      return stage.taskList[0].instance;
-    });
-
     const database = computed((): Database | undefined => {
       if (props.create) {
         const stage = props.selectedStage as StageCreate;
@@ -339,6 +328,22 @@ export default {
       }
       const stage = props.selectedStage as Stage;
       return stage.taskList[0].database;
+    });
+
+    const instance = computed((): Instance => {
+      if (props.create) {
+        // If database is available, then we derive the instance from database because we always fetch database's instance.
+        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
+        if (database.value) {
+          return database.value.instance;
+        }
+        const stage = props.selectedStage as StageCreate;
+        return store.getters["instance/instanceById"](
+          stage.taskList[0].instanceId
+        );
+      }
+      const stage = props.selectedStage as Stage;
+      return stage.taskList[0].instance;
     });
 
     const environment = computed((): Environment => {

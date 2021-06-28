@@ -789,6 +789,14 @@ router.beforeEach((to, from, next) => {
 
     if (issueSlug) {
       if (issueSlug.toLowerCase() == "new") {
+        // For prepraing the database if user visits creating issue url directly.
+        if (to.query.databaseList) {
+          for (const databaseId of (to.query.databaseList as string).split(
+            ","
+          )) {
+            store.dispatch("database/fetchDatabaseById", { databaseId });
+          }
+        }
         next();
         return;
       }
