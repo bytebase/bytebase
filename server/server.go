@@ -176,7 +176,7 @@ func NewServer(logger *zap.Logger, host string, port int, secret string, demo bo
 		e.Logger.Fatal(err)
 	}
 
-	logger.Info(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
+	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
 }

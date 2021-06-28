@@ -118,7 +118,7 @@ func (db *DB) seed() error {
 
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
-	db.l.Info(fmt.Sprintf("Seeding %s...", name))
+	db.l.Debug(fmt.Sprintf("Seeding %s...", name))
 	tx, err := db.Db.Begin()
 	if err != nil {
 		return err

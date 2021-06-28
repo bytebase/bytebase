@@ -54,13 +54,13 @@ func traceCallback(info sqlite3.TraceInfo, logger *zap.Logger) int {
 			}
 
 			if shouldLog {
-				logger.Info(fmt.Sprintf("[trace.sql]%s%s\n",
+				logger.Debug(fmt.Sprintf("[trace.sql]%s%s\n",
 					cleanText,
 					dbErrText))
 			}
 		}
 	} else {
-		logger.Info(fmt.Sprintf("[trace.sql]%s%s\n",
+		logger.Debug(fmt.Sprintf("[trace.sql]%s%s\n",
 			cleanText,
 			dbErrText))
 	}

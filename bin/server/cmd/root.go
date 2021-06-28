@@ -57,6 +57,7 @@ var (
 	secretFile string
 	secret     string
 	demo       bool
+	debug      bool
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -83,6 +84,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", "./data", "directory where Bytebase stores data.")
 	rootCmd.PersistentFlags().StringVar(&secretFile, "secret", "./data/secret", "file path storing the secret to sign the JWT for authentication. If file does not exist, Bytebase will generate a 32 byte random string consisting of numbers and letters.")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data and is read-only.")
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -178,13 +180,20 @@ func newMain() *main {
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("host=%s\n", host)
 	fmt.Printf("port=%d\n", port)
-	fmt.Printf("data=%s\n", activeProfile.dsn)
+	fmt.Printf("dsn=%s\n", activeProfile.dsn)
+	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
 	fmt.Printf("secret=%s\n", secretFile)
 	fmt.Printf("demo=%t\n", demo)
+	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
 	// Always set encoding to "console" for now since we do not redirect to file.
 	activeProfile.logConfig.Encoding = "console"
+	if debug {
+		activeProfile.logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	} else {
+		activeProfile.logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	}
 	logger, err := activeProfile.logConfig.Build()
 	if err != nil {
 		panic(fmt.Errorf("failed to create logger. %w", err))
