@@ -334,8 +334,7 @@
                             text-xs
                             leading-5
                             font-normal
-                            focus:ring-control
-                            focus:outline-none
+                            focus:ring-control focus:outline-none
                             focus-visible:ring-2
                             focus:ring-offset-2
                           "
@@ -358,8 +357,7 @@
                             text-xs
                             leading-5
                             font-normal
-                            focus:ring-control
-                            focus:outline-none
+                            focus:ring-control focus:outline-none
                             focus-visible:ring-2
                             focus:ring-offset-2
                           "
@@ -790,7 +788,6 @@ export default {
             const payload = activity.payload as ActionTaskStatusUpdatePayload;
             const task = findTaskById(props.issue.pipeline, payload.taskId);
             var link = "";
-            var name = task.name;
             if (task.id != UNKNOWN_ID) {
               const stageList = props.issue.pipeline.stageList;
               const index = stageList.findIndex((item) => {
@@ -802,7 +799,7 @@ export default {
               )}?stage=${stageSlug(stageList[index].name, index)}`;
             }
             return {
-              name,
+              name: `${task.name} (${task.stage.name})`,
               link,
             };
           }
