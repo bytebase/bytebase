@@ -16,8 +16,6 @@ func activeProfile(dataDir string, isDemo bool) profile {
 		seedDir = "seed/test"
 	}
 	return profile{
-		demo:      isDemo,
-		logConfig: zap.NewDevelopmentConfig(),
 		dsn:       dsn,
 		seedDir:   seedDir,
 	}

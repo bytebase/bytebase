@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -67,13 +65,6 @@ func (db *DB) Open() (err error) {
 	// Ensure a DSN is set before attempting to open the database.
 	if db.DSN == "" {
 		return fmt.Errorf("dsn required")
-	}
-
-	// Make the parent directory unless using an in-memory db.
-	if !strings.HasPrefix(db.DSN, ":memory:") {
-		if err := os.MkdirAll(filepath.Dir(db.DSN), 0700); err != nil {
-			return err
-		}
 	}
 
 	// Connect to the database.
@@ -148,7 +139,6 @@ func (db *DB) migrate() error {
 
 	source, err := httpfs.New(http.FS(migrationFS), "migration")
 	if err != nil {
-		db.l.DPanic(err.Error())
 		return err
 	}
 
@@ -157,7 +147,6 @@ func (db *DB) migrate() error {
 		source,
 		"sqlite3://"+db.DSN)
 	if err != nil {
-		db.l.DPanic(err.Error())
 		return err
 	}
 

@@ -59,16 +59,36 @@ var (
 	demo       bool
 	debug      bool
 
+	logger *zap.Logger
+
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase server",
 		Run: func(cmd *cobra.Command, args []string) {
+			logConfig := zap.NewProductionConfig()
+			// Always set encoding to "console" for now since we do not redirect to file.
+			logConfig.Encoding = "console"
+			if debug {
+				logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+			} else {
+				logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+				logConfig.DisableStacktrace = true
+			}
+			myLogger, err := logConfig.Build()
+			if err != nil {
+				panic(fmt.Errorf("failed to create logger. %w", err))
+			}
+			logger = myLogger
+			defer logger.Sync()
+
 			if err := preStart(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				logger.Error(err.Error())
 				os.Exit(1)
 			}
 
 			start()
+
+			fmt.Print(BYE_BANNER)
 		},
 	}
 )
@@ -81,8 +101,8 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
-	rootCmd.PersistentFlags().StringVar(&dataDir, "data", "./data", "directory where Bytebase stores data.")
-	rootCmd.PersistentFlags().StringVar(&secretFile, "secret", "./data/secret", "file path storing the secret to sign the JWT for authentication. If file does not exist, Bytebase will generate a 32 byte random string consisting of numbers and letters.")
+	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data.")
+	rootCmd.PersistentFlags().StringVar(&secretFile, "secret", "./bytebase_secret", "file path storing the secret to sign the JWT for authentication. If file does not exist, Bytebase will generate a 32 byte random string consisting of numbers and letters.")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data and is read-only.")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging.")
 }
@@ -91,10 +111,8 @@ func init() {
 
 // -----------------------------------Main Entry Point---------------------------------------------
 type profile struct {
-	demo      bool
-	logConfig zap.Config
-	dsn       string
-	seedDir   string
+	dsn     string
+	seedDir string
 }
 
 type main struct {
@@ -115,6 +133,11 @@ func preStart() error {
 	}
 	dataDir = dir
 
+	if _, err := os.Stat(dataDir); err != nil {
+		error := fmt.Errorf("unable to access --data %s, %w", dataDir, err)
+		return error
+	}
+
 	secretFile, err = filepath.Abs(secretFile)
 	if err != nil {
 		return err
@@ -126,7 +149,7 @@ func preStart() error {
 		}
 		secret = string(data)
 	} else if errors.Is(err, fs.ErrNotExist) {
-		fmt.Printf("Secret file does not exist on the specified path %s. Generating a new one...\n", secretFile)
+		logger.Info(fmt.Sprintf("Secret file does not exist on the specified path %s. Generating a new one...\n", secretFile))
 		secret = bytebase.RandomString(SECRET_LENGTH)
 		if err := ioutil.WriteFile(secretFile, []byte(secret), 0600); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
@@ -134,7 +157,7 @@ func preStart() error {
 			}
 			return fmt.Errorf("unable to save secret, error: %w", err)
 		}
-		fmt.Printf("Successfully saved secret at %s\n", secretFile)
+		logger.Info(fmt.Sprintf("Successfully saved secret at %s\n", secretFile))
 	} else {
 		return fmt.Errorf("unable to stat secret file: %s, error: %w", secretFile, err)
 	}
@@ -153,25 +176,21 @@ func start() {
 		m.l.Info("SIGINT received.")
 		if err := m.Close(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
 		}
 		cancel()
 	}()
 
 	// Execute program.
 	if err := m.Run(); err != nil {
+		m.l.Error(err.Error())
 		if err != http.ErrServerClosed {
 			m.Close()
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			cancel()
 		}
 	}
 
 	// Wait for CTRL-C.
 	<-ctx.Done()
-
-	m.l.Info("Bytebase stopped properly.")
-	fmt.Print(BYE_BANNER)
 }
 
 func newMain() *main {
@@ -187,19 +206,6 @@ func newMain() *main {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	// Always set encoding to "console" for now since we do not redirect to file.
-	activeProfile.logConfig.Encoding = "console"
-	if debug {
-		activeProfile.logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	} else {
-		activeProfile.logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	}
-	logger, err := activeProfile.logConfig.Build()
-	if err != nil {
-		panic(fmt.Errorf("failed to create logger. %w", err))
-	}
-
-	defer logger.Sync()
 	return &main{
 		profile: &activeProfile,
 		l:       logger,
@@ -235,7 +241,7 @@ func (m *main) Run() error {
 
 	m.server = server
 
-	fmt.Printf(GREETING_BANNER, fmt.Sprintf("Starting version %s at %s:%d", version, host, port))
+	fmt.Printf(GREETING_BANNER, fmt.Sprintf("Version %s has started at %s:%d", version, host, port))
 
 	if err := server.Run(); err != nil {
 		return err
@@ -261,5 +267,6 @@ func (m *main) Close() error {
 			return err
 		}
 	}
+	m.l.Info("Bytebase stopped properly.")
 	return nil
 }

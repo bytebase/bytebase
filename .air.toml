@@ -2,7 +2,7 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  bin = "./.air/bytebase --port 8080"
+  bin = "./.air/bytebase --port 8080 --data ./data --secret ./data/secret"
   cmd = "go build -o ./.air/bytebase ./bin/server/main.go"
   delay = 1000
   exclude_dir = [".air", "vendor"]

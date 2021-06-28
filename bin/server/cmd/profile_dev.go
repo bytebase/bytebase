@@ -4,8 +4,6 @@ package cmd
 
 import (
 	"fmt"
-
-	"go.uber.org/zap"
 )
 
 func activeProfile(dataDir string, isDemo bool) profile {
@@ -14,9 +12,7 @@ func activeProfile(dataDir string, isDemo bool) profile {
 		dsn = fmt.Sprintf("file:%s/bytebase_demo.db", dataDir)
 	}
 	return profile{
-		demo:      isDemo,
-		logConfig: zap.NewDevelopmentConfig(),
-		dsn:       dsn,
-		seedDir:   "seed/test",
+		dsn:     dsn,
+		seedDir: "seed/test",
 	}
 }
