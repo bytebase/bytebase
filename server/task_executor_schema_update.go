@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -44,8 +43,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		Type: db.Sql,
 	}
 	if payload.VCSPushEvent != nil {
-		filename := filepath.Base(payload.VCSPushEvent.FileCommit.Added)
-		mi, err = db.ParseMigrationInfo(filename)
+		mi, err = db.ParseMigrationInfo(payload.VCSPushEvent.FileCommit.Added, payload.VCSPushEvent.BaseDirectory)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
 			return true, fmt.Errorf("failed to start schema migration, error: %w", err)

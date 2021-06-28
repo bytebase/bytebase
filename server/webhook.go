@@ -72,10 +72,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		for _, commit := range pushEvent.CommitList {
 			for _, added := range commit.AddedList {
 				if strings.HasPrefix(added, repository.BaseDirectory) && filepath.Ext(added) == ".sql" {
-					filename := filepath.Base(added)
-					mi, err := db.ParseMigrationInfo(filename)
+					mi, err := db.ParseMigrationInfo(added, repository.BaseDirectory)
 					if err != nil {
-						s.l.Warn("invalid migration filename. Ignored", zap.Error(err))
+						s.l.Warn("Invalid migration filename. Ignored", zap.Error(err))
 						continue
 					}
 
@@ -86,42 +85,73 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						repository.VCS.AccessToken,
 					)
 					if err != nil {
-						s.l.Warn("Failed to read file. Ignored", zap.String("filename", filename), zap.Error(err))
+						s.l.Warn("Failed to read file. Ignored", zap.String("file", added), zap.Error(err))
 						continue
 					}
 
 					b, err := io.ReadAll(resp.Body)
 					if err != nil {
-						s.l.Warn("Failed to read file response. Ignored", zap.String("filename", filename), zap.Error(err))
+						s.l.Warn("Failed to read file response. Ignored", zap.String("file", added), zap.Error(err))
 						continue
 					}
 
-					// Find matching database
+					// Find matching database list
 					databaseFind := &api.DatabaseFind{
 						ProjectId: &repository.ProjectId,
 						Name:      &mi.Database,
 					}
-					database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind, []string{})
+					databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind, []string{})
 					if err != nil {
-						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s. Ignored", repository.ProjectId, mi.Database),
-								zap.Int("project_id", repository.ProjectId),
-								zap.String("filename", filename),
-							)
-
-						} else {
-							s.l.Warn("Failed to find database. Ignored", zap.String("filename", filename), zap.Error(err))
-						}
+						s.l.Warn("Failed to find database. Ignored", zap.String("file", added), zap.Error(err))
 						continue
+					} else if len(databaseList) == 0 {
+						s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s. Ignored", repository.ProjectId, mi.Database),
+							zap.Int("project_id", repository.ProjectId),
+							zap.String("file", added),
+						)
+						continue
+					}
+
+					// We support 3 patterns on how to organize the schema files.
+					// Pattern 1: 	The database name is the same across all environments. Each environment will have its own directory, so the
+					//              schema file looks like "dev/v1__db1", "staging/v1__db1".
+					//
+					// Pattern 2: 	Like 1, the database name is the same across all environments. All environment shares the same schema file,
+					//              say v1__db1, when a new file is added like v2__db1_add_column, we will create a multi stage pipeline where
+					//              each stage corresponds to an environment.
+					//
+					// Pattern 3:  	The database name is different among different environments. In such case, the database name alone is enough
+					//             	to identify ambiguity.
+
+					// Further filter by environment name if applicable.
+					filterdDatabaseList := []*api.Database{}
+					if mi.Environment != "" {
+						for _, database := range databaseList {
+							// Environment name comparision is case insensitive
+							if strings.EqualFold(database.Instance.Environment.Name, mi.Environment) {
+								filterdDatabaseList = append(filterdDatabaseList, database)
+							}
+						}
+						if len(filterdDatabaseList) == 0 {
+							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s for environment %s. Ignored", repository.ProjectId, mi.Database, mi.Environment),
+								zap.Int("project_id", repository.ProjectId),
+								zap.String("environment", mi.Environment),
+								zap.String("file", added),
+							)
+							continue
+						}
+					} else {
+						filterdDatabaseList = databaseList
 					}
 
 					// Compose the new issue
 					createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 					if err != nil {
-						s.l.Warn("Failed to parse timestamp. Ignored", zap.String("filename", filename), zap.Error(err))
+						s.l.Warn("Failed to parse timestamp. Ignored", zap.String("file", added), zap.Error(err))
 					}
 					vcsPushEvent := api.VCSPushEvent{
 						VCSType:            repository.VCS.Type,
+						BaseDirectory:      repository.BaseDirectory,
 						Ref:                pushEvent.Ref,
 						RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
 						RepositoryURL:      pushEvent.Project.WebURL,
@@ -137,27 +167,31 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							Added:      added,
 						},
 					}
-					databaseID := database.ID
-					task := &api.TaskCreate{
-						InstanceId:   database.InstanceId,
-						DatabaseId:   &databaseID,
-						Name:         mi.Description,
-						Status:       "PENDING",
-						Type:         api.TaskDatabaseSchemaUpdate,
-						Statement:    string(b),
-						VCSPushEvent: &vcsPushEvent,
-					}
-					stage := &api.StageCreate{
-						EnvironmentId: database.Instance.EnvironmentId,
-						TaskList:      []api.TaskCreate{*task},
-						Name:          database.Instance.Environment.Name,
+
+					stageList := []api.StageCreate{}
+					for _, database := range filterdDatabaseList {
+						databaseID := database.ID
+						task := &api.TaskCreate{
+							InstanceId:   database.InstanceId,
+							DatabaseId:   &databaseID,
+							Name:         mi.Description,
+							Status:       "PENDING",
+							Type:         api.TaskDatabaseSchemaUpdate,
+							Statement:    string(b),
+							VCSPushEvent: &vcsPushEvent,
+						}
+						stageList = append(stageList, api.StageCreate{
+							EnvironmentId: database.Instance.EnvironmentId,
+							TaskList:      []api.TaskCreate{*task},
+							Name:          database.Instance.Environment.Name,
+						})
 					}
 					pipeline := &api.PipelineCreate{
-						StageList: []api.StageCreate{*stage},
+						StageList: stageList,
 						Name:      fmt.Sprintf("Pipeline - %s", commit.Title),
 					}
 					issueCreate := &api.IssueCreate{
-						ProjectId:   database.ProjectId,
+						ProjectId:   repository.ProjectId,
 						Pipeline:    *pipeline,
 						Name:        commit.Title,
 						Type:        api.IssueDatabaseSchemaUpdate,
@@ -167,11 +201,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 					issue, err := s.CreateIssue(context.Background(), issueCreate, api.SYSTEM_BOT_ID)
 					if err != nil {
-						s.l.Warn(fmt.Sprintf("Failed to create update schema task after adding %s", filename), zap.Error(err),
-							zap.String("filename", filename))
+						s.l.Warn(fmt.Sprintf("Failed to create update schema task after adding %s", added), zap.Error(err),
+							zap.String("file", added))
 						continue
 					}
-					createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue '%s' on adding %s", issue.Name, filename))
+					createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue '%s' on adding %s", issue.Name, added))
 				}
 			}
 		}

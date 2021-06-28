@@ -112,6 +112,7 @@ type VCSFileCommit struct {
 
 type VCSPushEvent struct {
 	VCSType            VCSType       `json:"vcsType"`
+	BaseDirectory      string        `json:"baseDir"`
 	Ref                string        `json:"ref"`
 	RepositoryID       string        `json:"repoId"`
 	RepositoryURL      string        `json:"repoUrl"`
