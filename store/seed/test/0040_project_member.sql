@@ -14,8 +14,8 @@ VALUES
         101,
         101,
         3001,
-        'OWNER',
-        102
+        'DEVELOPER',
+        101
     );
 
 INSERT INTO
@@ -33,8 +33,8 @@ VALUES
         101,
         101,
         3001,
-        'DEVELOPER',
-        101
+        'OWNER',
+        102
     );
 
 INSERT INTO
@@ -73,7 +73,7 @@ VALUES
         101,
         3002,
         'OWNER',
-        103
+        101
     );
 
 INSERT INTO
@@ -91,7 +91,7 @@ VALUES
         101,
         101,
         3002,
-        'DEVELOPER',
+        'OWNER',
         102
     );
 
@@ -112,7 +112,7 @@ VALUES
         101,
         3003,
         'OWNER',
-        102
+        101
     );
 
 INSERT INTO
@@ -131,7 +131,26 @@ VALUES
         101,
         3003,
         'DEVELOPER',
-        101
+        102
+    );
+
+INSERT INTO
+    project_member (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        4008,
+        101,
+        101,
+        3003,
+        'OWNER',
+        103
     );
 
 -- Project 3004 membership
@@ -146,7 +165,26 @@ INSERT INTO
     )
 VALUES
     (
-        4008,
+        4009,
+        101,
+        101,
+        3004,
+        'OWNER',
+        101
+    );
+
+INSERT INTO
+    project_member (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        4010,
         101,
         101,
         3004,
@@ -165,49 +203,10 @@ INSERT INTO
     )
 VALUES
     (
-        4009,
-        101,
-        101,
-        3004,
-        'DEVELOPER',
-        101
-    );
-
--- Project 3005 membership
-INSERT INTO
-    project_member (
-        id,
-        creator_id,
-        updater_id,
-        project_id,
-        `role`,
-        principal_id
-    )
-VALUES
-    (
-        4010,
-        101,
-        101,
-        3005,
-        'OWNER',
-        101
-    );
-
-INSERT INTO
-    project_member (
-        id,
-        creator_id,
-        updater_id,
-        project_id,
-        `role`,
-        principal_id
-    )
-VALUES
-    (
         4011,
         101,
         101,
-        3005,
+        3004,
         'DEVELOPER',
         103
     );

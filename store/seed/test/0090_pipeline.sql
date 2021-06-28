@@ -16,21 +16,25 @@ VALUES
         'OPEN'
     );
 
--- A multi stage, each containing a single add column task
+-- A multiple stage Pipeline for simulating webhook push event to create table for shop project database.
 INSERT INTO
     pipeline (
         id,
         creator_id,
+        created_ts,
         updater_id,
+        updated_ts,
         name,
         `status`
     )
 VALUES
     (
         9002,
-        103,
-        103,
-        'Pipeline - Add column ''location'' to table ''warehouse''',
+        1,
+        1624873710,
+        1,
+        1624873710,
+        'Pipeline - Create product table',
         'OPEN'
     );
 
@@ -52,12 +56,14 @@ VALUES
         'OPEN'
     );
 
--- A pipeline simulating webhook push event
+-- Pipeline for simulating webhook push event to create table for blog project dev database.
 INSERT INTO
     pipeline (
         id,
         creator_id,
+        created_ts,
         updater_id,
+        updated_ts,
         name,
         `status`
     )
@@ -65,7 +71,97 @@ VALUES
     (
         9004,
         1,
+        1624865387,
         1,
-        'Pipeline - Create todo table to staging db1',
+        1624865387,
+        'Pipeline - Create user, post, comment table for dev environment',
+        'DONE'
+    );
+
+-- Pipeline for simulating webhook push event to create table for blog project integration database.
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        `status`
+    )
+VALUES
+    (
+        9005,
+        1,
+        1624866790,
+        1,
+        1624866790,
+        'Pipeline - Create user, post, comment table for integration environment',
+        'DONE'
+    );
+
+-- Pipeline for simulating webhook push event to create table for blog project staging database.
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        `status`
+    )
+VALUES
+    (
+        9006,
+        1,
+        1624868407,
+        1,
+        1624868407,
+        'Pipeline - Create user, post, comment table for staging environment',
+        'DONE'
+    );
+
+-- Pipeline for simulating webhook push event to create table for blog project prod database.
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        `status`
+    )
+VALUES
+    (
+        9007,
+        1,
+        1624868680,
+        1,
+        1624868680,
+        'Pipeline - Create user, post, comment table for prod environment',
+        'DONE'
+    );
+
+-- Pipeline for simulating webhook push event to alter table for blog project dev database.
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        `status`
+    )
+VALUES
+    (
+        9008,
+        1,
+        1624869944,
+        1,
+        1624869944,
+        'Pipeline - Add created_at column to user,post,comment table for dev environment',
         'OPEN'
     );

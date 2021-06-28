@@ -16,11 +16,11 @@ VALUES
         101,
         101,
         5001,
-        'RDS dev',
+        'On-premises Dev MySQL',
         'MYSQL',
-        'bytebase-demo-dev-mysql8.cerr43rttews.us-west-1.rds.amazonaws.com',
+        'mysql.dev.example.com',
         '3306',
-        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-dev-mysql8;is-cluster=false'
+        'bytebase.com'
     );
 
 INSERT INTO
@@ -41,11 +41,11 @@ VALUES
         101,
         101,
         5002,
-        'RDS integration',
+        'On-premises Integration MySQL',
         'MYSQL',
-        'bytebase-demo-integration-mysql8.cerr43rttews.us-west-1.rds.amazonaws.com',
+        'mysql.integration.example.com',
         '3306',
-        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-integration-mysql8;is-cluster=false'
+        'bytebase.com'
     );
 
 INSERT INTO
@@ -66,11 +66,11 @@ VALUES
         101,
         101,
         5003,
-        'RDS staging',
+        'On-premises Staging MySQL',
         'MYSQL',
-        'bytebase-demo-staging-mysql57.cerr43rttews.us-west-1.rds.amazonaws.com',
+        'mysql.staging.example.com',
         '3306',
-        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-staging-mysql57;is-cluster=false'
+        'bytebase.com'
     );
 
 INSERT INTO
@@ -91,9 +91,9 @@ VALUES
         101,
         101,
         5004,
-        'RDS prod',
+        'On-premises Prod MySQL',
         'MYSQL',
-        'bytebase-demo-prod-mysql57.cerr43rttews.us-west-1.rds.amazonaws.com',
+        'mysql.prod.example.com',
         '3306',
-        'https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=bytebase-demo-prod-mysql57;is-cluster=false'
+        'bytebase.com'
     );
