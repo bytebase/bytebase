@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -134,6 +135,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
 		repositoryCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		// Remove enclosing /
+		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.RepositoryService.CreateRepository(context.Background(), repositoryCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
@@ -200,6 +203,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch repository request").SetInternal(err)
+		}
+		// Remove enclosing /
+		if repositoryPatch.BaseDirectory != nil {
+			baseDir := strings.Trim(*repositoryPatch.BaseDirectory, "/")
+			repositoryPatch.BaseDirectory = &baseDir
 		}
 
 		repositoryFind := &api.RepositoryFind{
