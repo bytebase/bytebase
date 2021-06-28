@@ -118,7 +118,10 @@ export default {
             else if (issue.status === "DONE" || issue.status === "CANCELED") {
               if (
                 issue.creator.id === currentUser.value.id ||
-                issue.assignee?.id === currentUser.value.id
+                issue.assignee?.id === currentUser.value.id ||
+                issue.subscriberList.find(
+                  (item) => item.id == currentUser.value.id
+                )
               ) {
                 state.closeList.push(issue);
               }
