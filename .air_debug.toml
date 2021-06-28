@@ -2,8 +2,8 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  bin = "./.air/bytebase --port 8080"
-  cmd = "go build -o ./.air/bytebase ./bin/server/main.go"
+  bin = "./.air/bytebase --port 8080 --debug"
+  cmd = "go build --tags \"sqlite_trace\" -o ./.air/bytebase ./bin/server/main.go"
   delay = 1000
   exclude_dir = [".air", "vendor"]
   exclude_file = []
