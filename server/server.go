@@ -44,6 +44,7 @@ type Server struct {
 	e *echo.Echo
 
 	l         *zap.Logger
+	mode      string
 	host      string
 	port      int
 	startedTs int64
@@ -79,7 +80,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger, host string, port int, secret string, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, host string, port int, mode string, secret string, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -96,6 +97,7 @@ func NewServer(logger *zap.Logger, host string, port int, secret string, demo bo
 	s := &Server{
 		l:         logger,
 		e:         e,
+		mode:      mode,
 		host:      host,
 		port:      port,
 		startedTs: time.Now().Unix(),
@@ -137,7 +139,7 @@ func NewServer(logger *zap.Logger, host string, port int, secret string, demo bo
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.PrincipalService, next, secret)
+		return JWTMiddleware(logger, s.PrincipalService, next, mode, secret)
 	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {

@@ -16,7 +16,8 @@ func activeProfile(dataDir string, isDemo bool) profile {
 		seedDir = "seed/test"
 	}
 	return profile{
-		dsn:       dsn,
-		seedDir:   seedDir,
+		mode:    "release",
+		dsn:     dsn,
+		seedDir: seedDir,
 	}
 }

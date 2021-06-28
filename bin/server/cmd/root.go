@@ -111,6 +111,7 @@ func init() {
 
 // -----------------------------------Main Entry Point---------------------------------------------
 type profile struct {
+	mode    string
 	dsn     string
 	seedDir string
 }
@@ -197,6 +198,7 @@ func newMain() *main {
 	activeProfile := activeProfile(dataDir, demo)
 
 	fmt.Println("-----Config BEGIN-----")
+	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("host=%s\n", host)
 	fmt.Printf("port=%d\n", port)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
@@ -220,7 +222,7 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, host, port, secret, demo, debug)
+	server := server.NewServer(m.l, host, port, m.profile.mode, secret, demo, debug)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)
