@@ -57,15 +57,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			databaseFind.ProjectId = &projectId
 		}
-		list, err := s.DatabaseService.FindDatabaseList(context.Background(), databaseFind)
+		list, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind, c.Get(getIncludeKey()).([]string))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
-		}
-
-		for _, database := range list {
-			if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database relationship: %v", database.Name)).SetInternal(err)
-			}
 		}
 
 		filteredList := []*api.Database{}
@@ -196,6 +190,21 @@ func (s *Server) ComposeDatabaseByFind(ctx context.Context, find *api.DatabaseFi
 	}
 
 	return database, nil
+}
+
+func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind, includeList []string) ([]*api.Database, error) {
+	list, err := s.DatabaseService.FindDatabaseList(context.Background(), find)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, database := range list {
+		if err := s.ComposeDatabaseRelationship(context.Background(), database, includeList); err != nil {
+			return nil, err
+		}
+	}
+
+	return list, nil
 }
 
 func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database, includeList []string) error {
