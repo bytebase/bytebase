@@ -144,23 +144,58 @@
           <div class="lg:hidden border-t border-block-border" />
           <div class="w-full py-6 pr-4">
             <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
-              <IssueTaskStatementPanel
-                :statement="selectedStatement"
-                :create="state.create"
-                :rollback="false"
-                @update-statement="updateStatement"
-              />
+              <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel. 
+                   The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
+                   to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
+                   doesn't seem to work well with the reactivity. So for non-edit mode when !state.create, we
+                   list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
+              <template v-if="state.create">
+                <IssueTaskStatementPanel
+                  :statement="selectedStatement"
+                  :create="state.create"
+                  :rollback="false"
+                  @update-statement="updateStatement"
+                />
+              </template>
+              <template
+                v-else
+                v-for="(stage, index) in issue.pipeline.stageList"
+                :key="index"
+              >
+                <template v-if="selectedStage.id == stage.id">
+                  <IssueTaskStatementPanel
+                    :statement="statement(stage)"
+                    :create="state.create"
+                    :rollback="false"
+                    @update-statement="updateStatement"
+                  />
+                </template>
+              </template>
             </section>
             <section
               v-if="showIssueTaskRollbackStatementPanel"
               class="border-b mb-4"
             >
-              <IssueTaskStatementPanel
-                :statement="selectedRollbackStatement"
-                :create="state.create"
-                :rollback="true"
-                @update-statement="updateRollbackStatement"
-              />
+              <template v-if="state.create">
+                <IssueTaskStatementPanel
+                  :statement="selectedRollbackStatement"
+                  :create="state.create"
+                  :rollback="true"
+                  @update-statement="updateRollbackStatement"
+                />
+              </template>
+              <template
+                v-else
+                v-for="(stage, index) in issue.pipeline.stageList"
+                :key="index"
+              >
+                <IssueTaskStatementPanel
+                  :statement="rollbackStatment(stage)"
+                  :create="state.create"
+                  :rollback="true"
+                  @update-statement="updateRollbackStatement"
+                />
+              </template>
             </section>
             <IssueDescriptionPanel
               :issue="issue"
@@ -634,12 +669,12 @@ export default {
     });
 
     const selectStageId = (stageId: StageId) => {
-      const stageList = (issue.value as Issue).pipeline.stageList;
+      const stageList = issue.value.pipeline.stageList;
       const index = stageList.findIndex((item, index) => {
         if (state.create) {
           return index == stageId;
         }
-        return item.id == stageId;
+        return (item as Stage).id == stageId;
       });
       router.replace({
         name: "workspace.issue.detail",
@@ -650,11 +685,8 @@ export default {
       });
     };
 
-    const selectedStatement = computed((): string => {
-      const task = selectedStage.value.taskList[0];
-      if (state.create) {
-        return (task as TaskCreate).statement;
-      }
+    const statement = (stage: Stage): string => {
+      const task = stage.taskList[0];
       switch (task.type) {
         case "bb.task.general":
           return ((task as Task).payload as TaskGeneralPayload).statement || "";
@@ -669,17 +701,24 @@ export default {
               .statement || ""
           );
       }
+    };
+
+    const rollbackStatement = (stage: Stage): string => {
+      const task = stage.taskList[0];
+      return (
+        (task.payload as TaskDatabaseSchemaUpdatePayload).rollbackStatement ||
+        ""
+      );
+    };
+
+    const selectedStatement = computed((): string => {
+      const task = (selectedStage.value as StageCreate).taskList[0];
+      return task.statement;
     });
 
     const selectedRollbackStatement = computed((): string => {
-      const task = selectedStage.value.taskList[0];
-      if (state.create) {
-        return (task as TaskCreate).rollbackStatement;
-      }
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaUpdatePayload)
-          .rollbackStatement || ""
-      );
+      const task = (selectedStage.value as StageCreate).taskList[0];
+      return task.rollbackStatement;
     });
 
     const allowEditSidebar = computed(() => {
@@ -774,6 +813,8 @@ export default {
       issueTemplate,
       selectedStage,
       selectStageId,
+      statement,
+      rollbackStatement,
       selectedStatement,
       selectedRollbackStatement,
       allowEditSidebar,
