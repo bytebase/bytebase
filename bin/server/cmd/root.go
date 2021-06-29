@@ -20,8 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// -----------------------------------Command Line Config BEGIN------------------------------------
-
+// -----------------------------------Global constant BEGIN----------------------------------------
 const (
 	SECRET_LENGTH = 32
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
@@ -49,6 +48,9 @@ ________________________________________________________________________________
 `
 )
 
+// -----------------------------------Global constant END------------------------------------------
+
+// -----------------------------------Command Line Config BEGIN------------------------------------
 var (
 	// Used for flags.
 	host       string
@@ -113,8 +115,11 @@ func init() {
 
 // -----------------------------------Main Entry Point---------------------------------------------
 type profile struct {
-	mode    string
-	dsn     string
+	// mode can be "release" or "dev"
+	mode string
+	// dns points to where Bytebase stores its own data
+	dsn string
+	// seedDir points to where to populate the initial data.
 	seedDir string
 }
 
