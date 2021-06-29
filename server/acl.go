@@ -25,8 +25,8 @@ func GetRoleContextKey() string {
 
 func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Skips auth, webhook end point
-		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/hook") {
+		// Skips auth
+		if strings.HasPrefix(c.Path(), "/api/auth") {
 			return next(c)
 		}
 
