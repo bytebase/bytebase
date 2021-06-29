@@ -68,6 +68,8 @@ var (
 			logConfig := zap.NewProductionConfig()
 			// Always set encoding to "console" for now since we do not redirect to file.
 			logConfig.Encoding = "console"
+			// "console" encoding needs to use the corresponding development encoder config.
+			logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
 			if debug {
 				logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 			} else {
