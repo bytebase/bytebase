@@ -6,22 +6,47 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"net/http"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase"
-	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
-
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace"
+const (
+	// We use SQLite "PRAGMA user_version" to manage the schema version. The schema version consists of
+	// major version and minor version. Backward compatible schema change increases the minor version,
+	// while backward non-compatible schema change increase the majar version.
+	// MAX_MAJOR_SCHEMA_VERSION defines the maximum major schema version this version of code can handle.
+	// We reserve 4 least significant digits for minor version.
+	// e.g.
+	// 10001 -> Major verion 1, minor version 1
+	// 10002 -> Major verion 1, minor version 2
+	// 20001 -> Major verion 2, minor version 1
+	//
+	// If MAX_MAJOR_SCHEMA_VERSION is 2, then it can handle version up to 29999 and report error if encountering
+	// version >= 30000.
+	//
+	// The migration file follows the name pattern of {{version_number}}__{{description}}, and inside each migration
+	// file, the first line is: PRAGMA user_version = {{version_number}};
+	//
+	// Notes about rollback
+	//
+	// The migration script is bundled with the code. If the new release contains new migration, it will be applied
+	// upon startup. It could happen we push out a bad release. If it only involves minor version migration change,
+	// then it's safe to use the older release because of the backward compatibility guarantee. However, if it
+	// involves a major version migration change, the rollback is much harder, and we can only do this during
+	// major app version change (like announce Bytebase 2.0 after 1.0), where we can allocate enough resource for
+	// the migration. But hopefully, we would never do any major migration change at all. In other words, major
+	// migration change is very costly and we should do it as the last resort.
+	MAX_MAJOR_SCHEMA_VERSION = 1
+)
+
+// If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
 var sqliteDriver = "sqlite3"
 
 var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL"}
@@ -83,6 +108,20 @@ func (db *DB) Open() (err error) {
 	return nil
 }
 
+func (db *DB) version() (major int, minor int, err error) {
+	rows, err := db.Db.Query("PRAGMA user_version")
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var version int
+	rows.Next()
+	if err := rows.Scan(&version); err != nil {
+		return 0, 0, err
+	}
+	return version / 10000, version % 10000, nil
+}
+
 // seed loads the seed data for testing
 func (db *DB) seed() error {
 	db.l.Info(fmt.Sprintf("Seeding database from %s...", db.seedDir))
@@ -131,68 +170,85 @@ func (db *DB) seedFile(name string) error {
 // Migration files are embedded in the sqlite/migration folder and are executed
 // in lexigraphical order.
 //
-// Once a migration is run, its name is stored in the 'migrations' table so it
-// is not re-executed. Migrations run in a transaction to prevent partial
-// migrations.
+// We prepend each migration file with PRAGMA user_version = xxx; Each migration
+// file run in a transaction to prevent partial migrations.
 func (db *DB) migrate() error {
 	db.l.Info("Apply database migration if needed...")
 
-	source, err := httpfs.New(http.FS(migrationFS), "migration")
+	major, minor, err := db.version()
+	if err != nil {
+		return fmt.Errorf("failed to get current schema version: %w", err)
+	}
+
+	db.l.Info(fmt.Sprintf("Current schema version before migration: %d(%d)", major, minor))
+
+	if major > MAX_MAJOR_SCHEMA_VERSION {
+		return fmt.Errorf("current major schema version %d is higher than the max major schema version %d this code can handle ", major, MAX_MAJOR_SCHEMA_VERSION)
+	}
+
+	// Apply migrations
+	names, err := fs.Glob(migrationFS, fmt.Sprintf("%s/*.sql", "migration"))
 	if err != nil {
 		return err
 	}
 
-	m, err := migrate.NewWithSourceInstance(
-		"httpfs",
-		source,
-		"sqlite3://"+db.DSN)
-	if err != nil {
-		return err
-	}
+	// Sort the migration up file in ascending order.
+	sort.Strings(names)
 
-	v1, dirty1, err := m.Version()
-	if err != nil {
-		if err != migrate.ErrNilVersion {
-			return err
+	for _, name := range names {
+		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
+		version, err := strconv.Atoi(versionPrefix)
+		if err != nil {
+			return fmt.Errorf("invalid migration file format %s, expected number prefix", filepath.Base(name))
 		}
-	}
-	db.l.Info(fmt.Sprintf("Database version before migration down: %v, dirty: %v", v1, dirty1))
-
-	if err := m.Down(); err != nil {
-		if err == migrate.ErrNoChange {
-			db.l.Info("No need to migrate down.")
+		fileMajor, fileMinor := version/10000, version%10000
+		if fileMajor > major || (fileMajor == major && fileMinor > minor) {
+			if err := db.migrateFile(name, true); err != nil {
+				return fmt.Errorf("migration error: name=%q err=%w", name, err)
+			}
 		} else {
-			return fmt.Errorf("migrate down error: %w", err)
+			db.l.Info(fmt.Sprintf("Ignore this migration file: %s. The corresponding migration version %d(%d) has already been applied.", name, fileMajor, fileMinor))
 		}
 	}
 
-	v2, dirty2, err := m.Version()
-	db.l.Info(fmt.Sprintf("Database version before migration up: %v, dirty: %v", v2, dirty2))
+	major, minor, err = db.version()
 	if err != nil {
-		if err != migrate.ErrNilVersion {
-			return err
-		}
+		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
+	db.l.Info(fmt.Sprintf("Current schema version after migration: %d(%d)", major, minor))
 
-	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
-			db.l.Info("No need to migrate up.")
-		} else {
-			return fmt.Errorf("migrate up error: %w", err)
-		}
+	// This is a sanity check to prevent us setting the incorrect user_version in the migration script.
+	// e.g. We set PRAGMA user_version = 20001 while our code can only handle major version 1.
+	if major != MAX_MAJOR_SCHEMA_VERSION {
+		return fmt.Errorf("current schema major version %d does not match the expected schema major version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", major, MAX_MAJOR_SCHEMA_VERSION)
 	}
-
-	v3, dirty3, err := m.Version()
-	if err != nil {
-		if err != migrate.ErrNilVersion {
-			return err
-		}
-	}
-	db.l.Info(fmt.Sprintf("Database version after migration: %v, dirty: %v", v3, dirty3))
 
 	db.l.Info("Completed database migration.")
-
 	return nil
+}
+
+// migrateFile runs a migration file within a transaction.
+func (db *DB) migrateFile(name string, up bool) error {
+	if up {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	} else {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	}
+
+	tx, err := db.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read and execute migration file.
+	if buf, err := fs.ReadFile(migrationFS, name); err != nil {
+		return err
+	} else if _, err := tx.Exec(string(buf)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // Close closes the database connection.

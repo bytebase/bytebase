@@ -1,3 +1,5 @@
+PRAGMA user_version = 10001;
+
 -- principal
 CREATE TABLE principal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -155,10 +157,12 @@ VALUES
         'UI'
     );
 
-INSERT INTO
-    sqlite_sequence (name, seq)
-VALUES
-    ('project', 100);
+UPDATE
+    sqlite_sequence
+SET
+    seq = 100
+WHERE
+    name = 'project';
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_project_modification_time`
 AFTER
