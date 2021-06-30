@@ -18,7 +18,7 @@ import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
 import { isDev, idFromSlug, isDBAOrOwner } from "../utils";
-import { Principal, UNKNOWN_ID } from "../types";
+import { Principal, QuickActionType, UNKNOWN_ID } from "../types";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -82,6 +82,20 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
+                const developerList: QuickActionType[] = store.getters[
+                  "plan/feature"
+                ]("bb.dba-workflow")
+                  ? [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.request",
+                      "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.project.create",
+                    ]
+                  : [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.project.create",
+                    ];
                 return new Map([
                   [
                     "OWNER",
@@ -104,15 +118,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.project.create",
                     ],
                   ],
-                  [
-                    "DEVELOPER",
-                    [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.request",
-                      "quickaction.bb.database.troubleshoot",
-                      "quickaction.bb.project.create",
-                    ],
-                  ],
+                  ["DEVELOPER", developerList],
                 ]);
               },
             },
@@ -431,6 +437,18 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => "Database",
               quickActionListByRole: () => {
+                const developerList: QuickActionType[] = store.getters[
+                  "plan/feature"
+                ]("bb.dba-workflow")
+                  ? [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.request",
+                      "quickaction.bb.database.troubleshoot",
+                    ]
+                  : [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                    ];
                 return new Map([
                   [
                     "OWNER",
@@ -446,14 +464,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.create",
                     ],
                   ],
-                  [
-                    "DEVELOPER",
-                    [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.request",
-                      "quickaction.bb.database.troubleshoot",
-                    ],
-                  ],
+                  ["DEVELOPER", developerList],
                 ]);
               },
             },

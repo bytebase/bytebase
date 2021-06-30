@@ -87,6 +87,22 @@
           v-model="state.collation"
         />
       </div>
+
+      <div v-if="showAssigneeSelect" class="col-span-2 col-start-2 w-64">
+        <label for="user" class="textlabel">
+          Assignee <span class="text-red-600">*</span>
+        </label>
+        <!-- DBA and Owner always have all access, so we only need to grant to developer -->
+        <PrincipalSelect
+          class="mt-1"
+          id="user"
+          name="user"
+          :allowedRoleList="['OWNER', 'DBA']"
+          :selectedId="state.assigneeId"
+          :placeholder="'Select assignee'"
+          @select-principal-id="selectAssignee"
+        />
+      </div>
     </div>
     <!-- Create button group -->
     <div class="pt-4 flex justify-end">
@@ -130,8 +146,9 @@ import {
   ProjectId,
   IssueCreate,
   SYSTEM_BOT_ID,
+  PrincipalId,
 } from "../types";
-import { issueSlug } from "../utils";
+import { isDBAOrOwner, issueSlug } from "../utils";
 
 interface LocalState {
   projectId?: ProjectId;
@@ -140,6 +157,7 @@ interface LocalState {
   databaseName?: string;
   characterSet: string;
   collation: string;
+  assigneeId?: PrincipalId;
 }
 
 export default {
@@ -159,6 +177,8 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -181,10 +201,15 @@ export default {
 
     watchEffect(prepareInstanceList);
 
+    const showAssigneeSelect = computed(() => {
+      return !isDBAOrOwner(currentUser.value.role);
+    });
+
     const state = reactive<LocalState>({
       projectId: props.projectId,
       characterSet: "utf8mb4",
       collation: "utf8mb4_0900_ai_ci",
+      assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 
     const allowCreate = computed(() => {
@@ -194,7 +219,8 @@ export default {
         state.environmentId &&
         state.instanceId &&
         !isEmpty(state.characterSet) &&
-        !isEmpty(state.collation)
+        !isEmpty(state.collation) &&
+        state.assigneeId
       );
     });
 
@@ -215,6 +241,10 @@ export default {
       state.instanceId = instanceId;
     };
 
+    const selectAssignee = (assigneeId: PrincipalId) => {
+      state.assigneeId = assigneeId;
+    };
+
     const cancel = () => {
       emit("dismiss");
     };
@@ -224,7 +254,7 @@ export default {
         name: `Create database ${state.databaseName}`,
         type: "bb.issue.database.create",
         description: "",
-        assigneeId: SYSTEM_BOT_ID,
+        assigneeId: state.assigneeId,
         projectId: state.projectId!,
         pipeline: {
           stageList: [
@@ -234,7 +264,11 @@ export default {
               taskList: [
                 {
                   name: `Create database ${state.databaseName}`,
-                  status: "PENDING",
+                  // If current user is DBA or Owner, then the created task will start automatically,
+                  // otherwise, it will require approval.
+                  status: isDBAOrOwner(currentUser.value.role)
+                    ? "PENDING"
+                    : "PENDING_APPROVAL",
                   type: "bb.task.database.create",
                   instanceId: state.instanceId!,
                   statement: `CREATE DATABASE \`${state.databaseName}\`\nCHARACTER SET ${state.characterSet} COLLATE ${state.collation}`,
@@ -266,9 +300,11 @@ export default {
       state,
       allowCreate,
       allowEditProject,
+      showAssigneeSelect,
       selectProject,
       selectEnvironment,
       selectInstance,
+      selectAssignee,
       cancel,
       create,
     };

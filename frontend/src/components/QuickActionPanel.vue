@@ -5,14 +5,10 @@
       overflow-hidden
       grid grid-cols-4
       gap-x-2 gap-y-4
-      md:inline-flex
-      md:gap-x-0
+      md:inline-flex md:gap-x-0
     "
   >
-    <template
-      v-for="(quickAction, index) in effectiveQuickActionList"
-      :key="index"
-    >
+    <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
         v-if="quickAction == 'quickaction.bb.instance.create'"
         class="flex flex-col items-center w-28"
@@ -381,14 +377,8 @@ import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
-import { ProjectId, QuickActionType, UNKNOWN_ID } from "../types";
+import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
-
-// Quick action only applicable when DBA workflow feature is enabled.
-const DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST: QuickActionType[] = [
-  "quickaction.bb.database.request",
-  "quickaction.bb.database.troubleshoot",
-];
 
 interface LocalState {
   showModal: Boolean;
@@ -421,16 +411,6 @@ export default {
       modalTitle: "",
       modalSubtitle: "",
       quickActionType: "quickaction.bb.instance.create",
-    });
-
-    const effectiveQuickActionList = computed((): QuickActionType[] => {
-      if (store.getters["plan/feature"]("bb.dba-workflow")) {
-        return props.quickActionList;
-      }
-
-      return props.quickActionList.filter((item: QuickActionType) => {
-        return !DBA_WORKFLOW_APPLICABLE_QUICK_ACTION_LIST.includes(item);
-      });
     });
 
     const projectId = computed((): ProjectId | undefined => {
@@ -486,7 +466,6 @@ export default {
 
     return {
       state,
-      effectiveQuickActionList,
       projectId,
       createProject,
       createInstance,
