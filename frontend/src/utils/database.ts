@@ -3,6 +3,7 @@ import {
   Database,
   DataSourceMember,
   DataSourceType,
+  Environment,
   Principal,
 } from "../types";
 import { isDBAOrOwner } from "./role";
@@ -43,4 +44,29 @@ export function allowDatabaseAccess(
     }
   }
   return false;
+}
+
+// Sort the list to put prod items first.
+export function sortDatabaseList(
+  list: Database[],
+  environmentList: Environment[]
+): Database[] {
+  return list.sort((a: Database, b: Database) => {
+    var aEnvIndex = -1;
+    var bEnvIndex = -1;
+
+    for (var i = 0; i < environmentList.length; i++) {
+      if (environmentList[i].id == a.instance.environment.id) {
+        aEnvIndex = i;
+      }
+      if (environmentList[i].id == b.instance.environment.id) {
+        bEnvIndex = i;
+      }
+
+      if (aEnvIndex != -1 && bEnvIndex != -1) {
+        break;
+      }
+    }
+    return bEnvIndex - aEnvIndex;
+  });
 }

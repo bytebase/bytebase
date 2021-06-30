@@ -30,6 +30,7 @@ import { useRouter } from "vue-router";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { Issue, Project } from "../types";
+import { sortDatabaseList } from "../utils";
 
 interface LocalState {
   progressIssueList: Issue[];
@@ -57,10 +58,15 @@ export default {
       closedIssueList: [],
     });
 
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"](["NORMAL"]);
+    });
+
     const databaseList = computed(() => {
-      return store.getters["database/databaseListByProjectId"](
+      const list = store.getters["database/databaseListByProjectId"](
         props.project.id
       );
+      return sortDatabaseList(list, environmentList.value);
     });
 
     const prepareDatabaseList = () => {

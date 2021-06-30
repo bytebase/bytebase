@@ -82,9 +82,7 @@
                   border
                   p-3
                   flex flex-col
-                  md:pl-4
-                  md:pr-6
-                  md:grid md:grid-cols-2
+                  md:pl-4 md:pr-6 md:grid md:grid-cols-2
                 "
                 :class="
                   database.syncStatus == 'OK'
@@ -125,9 +123,7 @@
                     ml-6
                     pl-1
                     text-sm
-                    md:ml-0
-                    md:pl-0
-                    md:text-right
+                    md:ml-0 md:pl-0 md:text-right
                   "
                 >
                   Last sync status:
@@ -150,9 +146,7 @@
                 p-3
                 flex flex-col
                 cursor-pointer
-                md:pl-4
-                md:pr-6
-                md:grid md:grid-cols-3
+                md:pl-4 md:pr-6 md:grid md:grid-cols-3
               "
             >
               <div class="radio space-x-2 text-sm">
@@ -217,6 +211,7 @@ import {
   ProjectId,
   Repository,
 } from "../types";
+import { sortDatabaseList } from "../utils";
 
 type AlterType = "SINGLE_DB" | "MULTI_DB";
 
@@ -281,25 +276,7 @@ export default {
         );
       }
 
-      // Sort the list to put prod items first.
-      return list.sort((a: Database, b: Database) => {
-        var aEnvIndex = -1;
-        var bEnvIndex = -1;
-
-        for (var i = 0; i < environmentList.value.length; i++) {
-          if (environmentList.value[i].id == a.instance.environment.id) {
-            aEnvIndex = i;
-          }
-          if (environmentList.value[i].id == b.instance.environment.id) {
-            bEnvIndex = i;
-          }
-
-          if (aEnvIndex != -1 && bEnvIndex != -1) {
-            break;
-          }
-        }
-        return bEnvIndex - aEnvIndex;
-      });
+      return sortDatabaseList(list, environmentList.value);
     });
 
     const allowGenerateMultiDb = computed(() => {

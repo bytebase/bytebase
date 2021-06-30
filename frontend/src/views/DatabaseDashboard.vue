@@ -23,6 +23,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database } from "../types";
+import { sortDatabaseList } from "../utils";
 
 interface LocalState {
   searchText: string;
@@ -54,6 +55,10 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"](["NORMAL"]);
+    });
+
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
@@ -66,7 +71,7 @@ export default {
           currentUser.value.id
         )
         .then((list) => {
-          state.databaseList = list;
+          state.databaseList = sortDatabaseList(list, environmentList.value);
         });
     };
 
