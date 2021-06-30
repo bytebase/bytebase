@@ -222,7 +222,7 @@ export default {
     });
 
     const showSwitchPlan = computed((): boolean => {
-      return isDev() && isOwner(currentUser.value.role);
+      return isDev() || store.getters["actuator/isDemo"]();
     });
 
     const switchToOwner = () => {

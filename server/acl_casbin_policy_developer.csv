@@ -41,3 +41,4 @@ p, DEVELOPER, /sql/ping, POST
 p, DEVELOPER, /vcs, GET
 p, DEVELOPER, /vcs/{id}, GET
 p, DEVELOPER, /plan, GET
+p, DEVELOPER, /plan, PATCH
