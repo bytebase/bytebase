@@ -215,7 +215,10 @@ export default {
     const currentPlan = computed(() => store.getters["plan/currentPlan"]());
 
     const showDBAItem = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
+      return (
+        !store.getters["plan/feature"]("bb.dba-workflow") ||
+        isDBAOrOwner(currentUser.value.role)
+      );
     });
 
     const showSwitchPlan = computed((): boolean => {

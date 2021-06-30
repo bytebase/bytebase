@@ -20,7 +20,7 @@
     :okText="'Do not show again'"
     :cancelText="'Dismiss'"
     :title="'How to setup \'Instance\' ?'"
-    :description="'Each instance in Bytebase usually maps to one of your database instance represented by an host:port address. This could be your on-premise MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.\n\nInstance is only exposed to Owners and DBAs. For the developers, they are interacting directly with the database inside the instance.'"
+    :description="'Each instance in Bytebase usually maps to one of your database instance represented by an host:port address. This could be your on-premise MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.'"
     @ok="
       () => {
         doDismissGuide();

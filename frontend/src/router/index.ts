@@ -647,14 +647,10 @@ router.beforeEach((to, from, next) => {
   }
 
   const checkRouteAuth = (user: Principal) => {
-    if (
-      to.name === "workspace.instance" ||
-      to.name?.toString().startsWith("setting.workspace.version-control")
-    ) {
+    if (to.name?.toString().startsWith("setting.workspace.version-control")) {
       if (isDBAOrOwner(user.role)) {
         next();
       } else {
-        console.log("403333", user);
         next({
           name: "error.403",
           replace: false,
@@ -663,16 +659,19 @@ router.beforeEach((to, from, next) => {
       return;
     }
 
-    // Fetching specific instance would try to fetch the sensitive info
-    // so we short circuit here for non-DBA/Owner to avoid there.
-    if (to.name?.toString().startsWith("workspace.instance.")) {
-      if (!isDBAOrOwner(user.role)) {
+    if (to.name === "workspace.instance") {
+      if (
+        !store.getters["plan/feature"]("bb.dba-workflow") ||
+        isDBAOrOwner(user.role)
+      ) {
+        next();
+      } else {
         next({
           name: "error.403",
           replace: false,
         });
-        return;
       }
+      return;
     }
 
     if (to.name === "workspace.database.create") {

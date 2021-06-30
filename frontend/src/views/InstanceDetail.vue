@@ -20,38 +20,42 @@
         <div class="mb-4 flex items-center justify-between">
           <div class="inline-flex space-x-2">
             <div class="text-lg leading-6 font-medium text-main">Databases</div>
-            <BBButtonAdd
-              v-if="instance.rowStatus == 'NORMAL'"
-              @add="tryAddDatabase"
-            />
+            <BBButtonAdd v-if="allowEdit" @add="tryAddDatabase" />
           </div>
-          <button type="button" class="btn-normal" @click.prevent="syncSchema">
+          <button
+            v-if="allowEdit"
+            type="button"
+            class="btn-normal"
+            @click.prevent="syncSchema"
+          >
             Sync Now
           </button>
         </div>
         <DatabaseTable :mode="'INSTANCE'" :databaseList="databaseList" />
       </div>
-      <template v-if="instance.rowStatus == 'NORMAL'">
-        <BBButtonConfirm
-          :style="'ARCHIVE'"
-          :buttonText="'Archive this instance'"
-          :okText="'Archive'"
-          :requireConfirm="true"
-          :confirmTitle="`Archive instance '${instance.name}'?`"
-          :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
-          @confirm="doArchive"
-        />
-      </template>
-      <template v-else-if="instance.rowStatus == 'ARCHIVED'">
-        <BBButtonConfirm
-          :style="'RESTORE'"
-          :buttonText="'Restore this instance'"
-          :okText="'Restore'"
-          :requireConfirm="true"
-          :confirmTitle="`Restore instance '${instance.name}' to normal state?`"
-          :confirmDescription="''"
-          @confirm="doRestore"
-        />
+      <template v-if="allowEdit">
+        <template v-if="instance.rowStatus == 'NORMAL'">
+          <BBButtonConfirm
+            :style="'ARCHIVE'"
+            :buttonText="'Archive this instance'"
+            :okText="'Archive'"
+            :requireConfirm="true"
+            :confirmTitle="`Archive instance '${instance.name}'?`"
+            :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            @confirm="doArchive"
+          />
+        </template>
+        <template v-else-if="instance.rowStatus == 'ARCHIVED'">
+          <BBButtonConfirm
+            :style="'RESTORE'"
+            :buttonText="'Restore this instance'"
+            :okText="'Restore'"
+            :requireConfirm="true"
+            :confirmTitle="`Restore instance '${instance.name}' to normal state?`"
+            :confirmDescription="''"
+            @confirm="doRestore"
+          />
+        </template>
       </template>
     </div>
   </div>
@@ -77,7 +81,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
@@ -111,6 +115,8 @@ export default {
   setup(props, { emit }) {
     const router = useRouter();
     const store = useStore();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const state = reactive<LocalState>({
       migrationSetupStatus: "OK",
@@ -170,6 +176,13 @@ export default {
     const databaseList = computed(() => {
       return store.getters["database/databaseListByInstanceId"](
         instance.value.id
+      );
+    });
+
+    const allowEdit = computed(() => {
+      return (
+        instance.value.rowStatus == "NORMAL" &&
+        isDBAOrOwner(currentUser.value.role)
       );
     });
 
@@ -269,6 +282,7 @@ export default {
       hasDataSourceFeature,
       instance,
       databaseList,
+      allowEdit,
       tryAddDatabase,
       doArchive,
       doRestore,

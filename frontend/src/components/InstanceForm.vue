@@ -240,10 +240,9 @@ input[type="number"] {
             />
           </div>
         </div>
-        <div class="pt-8 space-y-2">
+        <div v-if="showTestConnection" class="pt-8 space-y-2">
           <div class="flex flex-row space-x-2">
             <button
-              :disabled="!allowEdit"
               @click.prevent="testConnection"
               type="button"
               class="btn-normal whitespace-nowrap items-center"
@@ -403,6 +402,10 @@ export default {
       );
     });
 
+    const showTestConnection = computed(() => {
+      return props.create || (state.instance as Instance).rowStatus == "NORMAL";
+    });
+
     const valueChanged = computed(() => {
       return (
         !isEqual(state.instance, state.originalInstance) ||
@@ -542,6 +545,7 @@ export default {
       state,
       allowCreate,
       allowEdit,
+      showTestConnection,
       valueChanged,
       updateInstance,
       cancel,
