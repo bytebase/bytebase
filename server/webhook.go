@@ -104,7 +104,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						s.l.Warn("Failed to find database matching added repository file. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					} else if len(databaseList) == 0 {
-						s.l.Warn(fmt.Sprintf("Project does not own database. Skip", repository.ProjectId, mi.Database),
+						s.l.Warn("Project does not own database. Skip",
 							zap.Int("project_id", repository.ProjectId),
 							zap.String("database_name", mi.Database),
 							zap.String("file", added),
@@ -117,7 +117,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					//              schema file looks like "dev/v1__db1", "staging/v1__db1".
 					//
 					// Pattern 2: 	Like 1, the database name is the same across all environments. All environment shares the same schema file,
-					//              say v1__db1, when a new file is added like v2__db1_add_column, we will create a multi stage pipeline where
+					//              say v1__db1, when a new file is added like v2__db1__add_column, we will create a multi stage pipeline where
 					//              each stage corresponds to an environment.
 					//
 					// Pattern 3:  	The database name is different among different environments. In such case, the database name alone is enough

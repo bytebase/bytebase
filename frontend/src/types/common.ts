@@ -121,7 +121,6 @@ export const unknown = (
     createdTs: 0,
     updaterId: UNKNOWN_ID,
     updatedTs: 0,
-    status: "ACTIVE",
     type: "END_USER",
     name: "<<Unknown principal>>",
     email: "",
@@ -134,6 +133,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
+    status: "ACTIVE",
     role: "DEVELOPER",
     principal: UNKNOWN_PRINCIPAL,
   };
@@ -398,7 +398,6 @@ export const empty = (
     id: EMPTY_ID,
     createdTs: 0,
     updatedTs: 0,
-    status: "ACTIVE",
     type: "END_USER",
     name: "",
     email: "",
@@ -411,6 +410,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
+    status: "ACTIVE",
     role: "DEVELOPER",
     principal: EMPTY_PRINCIPAL,
   };
