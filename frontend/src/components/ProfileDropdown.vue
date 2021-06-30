@@ -11,10 +11,7 @@
     >
       <PrincipalAvatar :principal="currentUser" />
     </button>
-    <BBContextMenu
-      ref="menu"
-      class="origin-top-left absolute right-0 mt-2 w-48 rounded-md shadow-lg"
-    >
+    <BBContextMenu ref="menu" class="origin-top-left mt-2 w-48">
       <router-link
         class="px-4 py-3 menu-item"
         :to="`/u/${currentUser.id}`"

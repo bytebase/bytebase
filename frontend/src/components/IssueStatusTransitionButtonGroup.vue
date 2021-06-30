@@ -51,18 +51,7 @@
             ></path>
           </svg>
         </button>
-        <BBContextMenu
-          ref="menu"
-          class="
-            origin-top-right
-            absolute
-            w-42
-            right-0
-            mt-10
-            rounded-md
-            shadow-lg
-          "
-        >
+        <BBContextMenu ref="menu" class="origin-top-right mt-10 w-42">
           <template
             v-for="(transition, index) in applicableIssueStatusTransitionList"
             :key="index"
