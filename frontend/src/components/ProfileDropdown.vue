@@ -65,17 +65,6 @@
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
-        <a href="#" class="menu-item" role="menuitem">Changelog</a>
-        <a
-          href="https://github.com/bytebase/bytebase/discussions"
-          target="_blank"
-          class="menu-item"
-          role="menuitem"
-          >Support</a
-        >
-      </div>
-      <div class="border-t border-gray-100"></div>
-      <div class="py-1">
         <a @click.prevent="logout" class="menu-item" role="menuitem">Logout</a>
       </div>
     </BBContextMenu>
