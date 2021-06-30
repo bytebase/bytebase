@@ -140,7 +140,7 @@ export default {
       if (state.migrationSetupStatus == "NOT_EXIST") {
         return "Missing migration schema";
       } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return "Unable to check migration schema";
+        return "Unable to check migration schema existence";
       }
       return "";
     });
