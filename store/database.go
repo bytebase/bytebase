@@ -121,11 +121,10 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 			character_set,
 			collation,
 			sync_status,
-			last_successful_sync_ts,
-			fingerprint
+			last_successful_sync_ts
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), '')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts, fingerprint
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')))
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -156,7 +155,6 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 		&database.Collation,
 		&database.SyncStatus,
 		&database.LastSuccessfulSyncTs,
-		&database.Fingerprint,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -196,8 +194,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			character_set,
 			collation,
 		    sync_status,
-			last_successful_sync_ts,
-			fingerprint
+			last_successful_sync_ts
 		FROM db
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -224,7 +221,6 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.Collation,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
-			&database.Fingerprint,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -259,7 +255,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts, fingerprint
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts
 	`,
 		args...,
 	)
@@ -283,7 +279,6 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.Collation,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
-			&database.Fingerprint,
 		); err != nil {
 			return nil, FormatError(err)
 		}

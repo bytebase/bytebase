@@ -8,12 +8,9 @@ import { Principal } from "./principal";
 import { Project } from "./project";
 import { DataSource } from "./dataSource";
 
-// "OK" means find the exact match
-// "DRIFTED" means we find the database with the same name, but the fingerprint is different,
-//            this usually indicates the underlying database has been recreated (might for a entirely different purpose)
-// "NOT_FOUND" means no matching database name found, this ususally means someone changes
-//            the underlying db name.
-export type DatabaseSyncStatus = "OK" | "DRIFTED" | "NOT_FOUND";
+// "OK" means we find the database with the same name.
+// "NOT_FOUND" means no matching database name found, this ususally means someone changes the underlying db name without Bytebase knowledge.
+export type DatabaseSyncStatus = "OK" | "NOT_FOUND";
 // Database
 export type Database = {
   id: DatabaseId;
@@ -35,7 +32,6 @@ export type Database = {
   collation: string;
   syncStatus: DatabaseSyncStatus;
   lastSuccessfulSyncTs: number;
-  fingerprint: string;
 };
 
 export type DatabaseCreate = {

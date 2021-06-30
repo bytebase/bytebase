@@ -16,7 +16,6 @@ type SyncStatus string
 
 const (
 	OK       SyncStatus = "OK"
-	Drifted  SyncStatus = "DRIFTED"
 	NotFound SyncStatus = "NOT_FOUND"
 )
 
@@ -24,8 +23,6 @@ func (e SyncStatus) String() string {
 	switch e {
 	case OK:
 		return "OK"
-	case Drifted:
-		return "DRIFTED"
 	case NotFound:
 		return "NOT_FOUND"
 	}
@@ -56,7 +53,6 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
-	Fingerprint          string     `jsonapi:"attr,fingerprint"`
 }
 
 type DatabaseCreate struct {

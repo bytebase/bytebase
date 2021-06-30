@@ -71,8 +71,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -85,8 +84,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -151,8 +149,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -165,8 +162,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO

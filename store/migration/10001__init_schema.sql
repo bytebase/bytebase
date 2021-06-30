@@ -263,11 +263,8 @@ CREATE TABLE db (
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
     `collation` TEXT NOT NULL,
-    sync_status TEXT NOT NULL CHECK (
-        sync_status IN ('OK', 'DRIFTED', 'NOT_FOUND')
-    ),
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
-    fingerprint TEXT NOT NULL,
     UNIQUE(instance_id, name)
 );
 
@@ -307,9 +304,7 @@ CREATE TABLE tbl (
     row_count BIGINT NOT NULL,
     data_size BIGINT NOT NULL,
     index_size BIGINT NOT NULL,
-    sync_status TEXT NOT NULL CHECK (
-        sync_status IN ('OK', 'DRIFTED', 'NOT_FOUND')
-    ),
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     UNIQUE(database_id, name)
 );

@@ -10,8 +10,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -24,8 +23,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -39,8 +37,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -53,8 +50,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        1624558090,
-        ''
+        1624558090
     );
 
 INSERT INTO
@@ -68,8 +64,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -82,8 +77,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -97,8 +91,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -111,8 +104,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 -- Database for integration environment instance 6002
@@ -127,8 +119,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -141,8 +132,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -156,8 +146,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -170,8 +159,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -185,8 +173,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -199,8 +186,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -214,8 +200,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -228,8 +213,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 -- Database for staging environment instance 6003
@@ -244,8 +228,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -258,8 +241,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -273,8 +255,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -287,8 +268,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -302,8 +282,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -316,8 +295,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -331,8 +309,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -345,8 +322,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 -- Database for prod environment instance 6004
@@ -361,8 +337,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -375,8 +350,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -390,8 +364,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -404,8 +377,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -419,8 +391,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -433,8 +404,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -448,8 +418,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -462,8 +431,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
 
 INSERT INTO
@@ -477,8 +445,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        fingerprint
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -491,6 +458,5 @@ VALUES
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
-        0,
-        ''
+        0
     );
