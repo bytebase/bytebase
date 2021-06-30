@@ -242,7 +242,7 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, host, port, m.profile.mode, config.secret, readonly, demo, debug)
+	server := server.NewServer(m.l, version, host, port, m.profile.mode, config.secret, readonly, demo, debug)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)

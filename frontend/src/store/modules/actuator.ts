@@ -9,6 +9,9 @@ const getters = {
   info: (state: ActuatorState) => (): ServerInfo | undefined => {
     return state.serverInfo;
   },
+  version: (state: ActuatorState) => (): string => {
+    return state.serverInfo?.version || "";
+  },
   isDemo: (state: ActuatorState) => (): boolean => {
     return state.serverInfo?.demo || false;
   },

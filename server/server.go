@@ -44,6 +44,7 @@ type Server struct {
 	e *echo.Echo
 
 	l         *zap.Logger
+	version   string
 	mode      string
 	host      string
 	port      int
@@ -81,7 +82,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger, host string, port int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, version string, host string, port int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -98,6 +99,7 @@ func NewServer(logger *zap.Logger, host string, port int, mode string, secret st
 	s := &Server{
 		l:         logger,
 		e:         e,
+		version:   version,
 		mode:      mode,
 		host:      host,
 		port:      port,
