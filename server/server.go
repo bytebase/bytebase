@@ -119,7 +119,7 @@ func NewServer(logger *zap.Logger, host string, port int, mode string, secret st
 	s.SchemaSyncer = schemaSyncer
 
 	// Middleware
-	if debug {
+	if mode == "dev" || debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !strings.HasPrefix(c.Path(), "/api") && !strings.HasPrefix(c.Path(), "/hook")
