@@ -63,7 +63,7 @@ func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.Bookma
 
 // FindBookmark retrieves a single bookmark based on find.
 // Returns ENOTFOUND if no matching record.
-// Returns the first matching one and prints a warning if finding more than 1 matching records.
+// Returns ECONFLICT if finding more than 1 matching records.
 func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFind) (*api.Bookmark, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -75,9 +75,9 @@ func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFi
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("bookmark not found: %v", find)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("bookmark not found: %+v", find)}
 	} else if len(list) > 1 {
-		s.l.Warn(fmt.Sprintf("found %d activities with filter %v, expect 1. ", len(list), find))
+		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }

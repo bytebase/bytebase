@@ -87,15 +87,15 @@ func (s *TaskRunService) FindTaskRunList(ctx context.Context, tx *sql.Tx, find *
 
 // FindTaskRun retrieves a single taskRun based on find.
 // Returns ENOTFOUND if no matching record.
-// Returns the first matching one and prints a warning if finding more than 1 matching records.
+// Returns ECONFLICT if finding more than 1 matching records.
 func (s *TaskRunService) FindTaskRun(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRun, error) {
 	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task run not found: %v", find)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("task run not found: %+v", find)}
 	} else if len(list) > 1 {
-		s.l.Warn(fmt.Sprintf("found mulitple task runs: %d, expect 1\n", len(list)))
+		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d task runs with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }

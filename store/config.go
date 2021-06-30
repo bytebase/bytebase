@@ -72,9 +72,9 @@ func (s *ConfigService) FindConfig(ctx context.Context, find *api.ConfigFind) (*
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("config not found: %v", find)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("config not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %v, expect 1. ", len(list), find)}
+		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
