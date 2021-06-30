@@ -44,6 +44,7 @@ DELETE FROM
 DELETE FROM
     project_member;
 
+-- Project 1 refers to DEFAULT project which is considered as part of schema
 DELETE FROM
     project
 WHERE
@@ -52,11 +53,13 @@ WHERE
 DELETE FROM
     member;
 
+-- Principal 1 refers to bytebase system account which is considered as part of schema
 DELETE FROM
     principal
 WHERE
     id != 1;
 
+-- By default, for every table, we reserve id <=100 for internal user
 UPDATE
     sqlite_sequence
 SET

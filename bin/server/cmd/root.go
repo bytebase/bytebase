@@ -121,6 +121,8 @@ type profile struct {
 	dsn string
 	// seedDir points to where to populate the initial data.
 	seedDir string
+	// force reset seed, true for testing and demo
+	forceResetSeed bool
 }
 
 type main struct {
@@ -222,7 +224,7 @@ func newMain() *main {
 }
 
 func (m *main) Run() error {
-	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir)
+	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}

@@ -69,18 +69,22 @@ type DB struct {
 	// Dir to load seed data
 	seedDir string
 
+	// Force reset seed, true for testing and demo
+	forceResetSeed bool
+
 	// Returns the current time. Defaults to time.Now().
 	// Can be mocked for tests.
 	Now func() time.Time
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, seedDir string) *DB {
+func NewDB(logger *zap.Logger, dsn string, seedDir string, forceResetSeed bool) *DB {
 	db := &DB{
-		l:       logger,
-		DSN:     strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
-		seedDir: seedDir,
-		Now:     time.Now,
+		l:              logger,
+		DSN:            strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
+		seedDir:        seedDir,
+		forceResetSeed: forceResetSeed,
+		Now:            time.Now,
 	}
 	return db
 }
@@ -97,11 +101,21 @@ func (db *DB) Open() (err error) {
 		return err
 	}
 
+	majorBeforeMigration, minorBeforeMigration, err := db.version()
+	if err != nil {
+		return fmt.Errorf("failed to get current schema version: %w", err)
+	}
+
 	if err := db.migrate(); err != nil {
 		return fmt.Errorf("migrate: %w", err)
 	}
 
-	if err := db.seed(); err != nil {
+	majorAfterMigration, minorAfterMigration, err := db.version()
+	if err != nil {
+		return fmt.Errorf("failed to get current schema version: %w", err)
+	}
+
+	if err := db.seed(majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration); err != nil {
 		return fmt.Errorf("seed: %w", err)
 	}
 
@@ -123,8 +137,8 @@ func (db *DB) version() (major int, minor int, err error) {
 }
 
 // seed loads the seed data for testing
-func (db *DB) seed() error {
-	db.l.Info(fmt.Sprintf("Seeding database from %s...", db.seedDir))
+func (db *DB) seed(majorBeforeMigration int, minorBeforeMigration int, majorAfterMigration int, minorAfterMigration int) error {
+	db.l.Info(fmt.Sprintf("Seeding database from %s, force: %t ...", db.seedDir, db.forceResetSeed))
 	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", db.seedDir))
 	if err != nil {
 		return err
@@ -132,14 +146,26 @@ func (db *DB) seed() error {
 
 	// We separate seed data for each table into their own seed file.
 	// And there exists foreign key dependency among tables, so we
-	// name the seed file as 01_xxx.sql, 02_xxx.sql. Here we sort
+	// name the seed file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
 	// the file name so they are loaded accordingly.
 	sort.Strings(names)
 
 	// Loop over all seed files and execute them in order.
 	for _, name := range names {
-		if err := db.seedFile(name); err != nil {
-			return fmt.Errorf("seed error: name=%q err=%w", name, err)
+		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
+		version, err := strconv.Atoi(versionPrefix)
+		if err != nil {
+			return fmt.Errorf("invalid seed file format %s, expected number prefix", filepath.Base(name))
+		}
+		beforeVersion := majorBeforeMigration*10000 + minorBeforeMigration
+		afterVersion := majorAfterMigration*10000 + minorAfterMigration
+		if db.forceResetSeed || version > beforeVersion && version <= afterVersion {
+			if err := db.seedFile(name); err != nil {
+				return fmt.Errorf("seed error: name=%q err=%w", name, err)
+			}
+		} else {
+			db.l.Info(fmt.Sprintf("Ignore this seed file: %s. The corresponding seed version %d.%d is not in the applicable range (%d.%d, %d.%d].",
+				name, version/10000, version%10000, majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration))
 		}
 	}
 	db.l.Info("Completed database seeding.")
@@ -148,7 +174,7 @@ func (db *DB) seed() error {
 
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
-	db.l.Debug(fmt.Sprintf("Seeding %s...", name))
+	db.l.Info(fmt.Sprintf("Seeding %s...", name))
 	tx, err := db.Db.Begin()
 	if err != nil {
 		return err
@@ -180,7 +206,7 @@ func (db *DB) migrate() error {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	db.l.Info(fmt.Sprintf("Current schema version before migration: %d(%d)", major, minor))
+	db.l.Info(fmt.Sprintf("Current schema version before migration: %d.%d", major, minor))
 
 	if major > MAX_MAJOR_SCHEMA_VERSION {
 		return fmt.Errorf("current major schema version %d is higher than the max major schema version %d this code can handle ", major, MAX_MAJOR_SCHEMA_VERSION)
@@ -207,7 +233,7 @@ func (db *DB) migrate() error {
 				return fmt.Errorf("migration error: name=%q err=%w", name, err)
 			}
 		} else {
-			db.l.Info(fmt.Sprintf("Ignore this migration file: %s. The corresponding migration version %d(%d) has already been applied.", name, fileMajor, fileMinor))
+			db.l.Info(fmt.Sprintf("Ignore this migration file: %s. The corresponding migration version %d.%d has already been applied.", name, fileMajor, fileMinor))
 		}
 	}
 
@@ -215,7 +241,7 @@ func (db *DB) migrate() error {
 	if err != nil {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
-	db.l.Info(fmt.Sprintf("Current schema version after migration: %d(%d)", major, minor))
+	db.l.Info(fmt.Sprintf("Current schema version after migration: %d.%d", major, minor))
 
 	// This is a sanity check to prevent us setting the incorrect user_version in the migration script.
 	// e.g. We set PRAGMA user_version = 20001 while our code can only handle major version 1.
