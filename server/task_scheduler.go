@@ -49,11 +49,15 @@ func (s *TaskScheduler) Run() error {
 				}
 				pipelineList, err := s.server.PipelineService.FindPipelineList(context.Background(), pipelineFind)
 				if err != nil {
-					s.l.Error(fmt.Sprintf("Failed to retrieve open pipelines: %v\n", err))
+					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
 				}
 				for _, pipeline := range pipelineList {
 					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline); err != nil {
-						s.l.Error(fmt.Sprintf("Failed to fetch stage info for pipeline: %v. Error: %v", pipeline.Name, err))
+						s.l.Error("Failed to fetch pipeline relationship",
+							zap.Int("id", pipeline.ID),
+							zap.String("name", pipeline.Name),
+							zap.Error(err),
+						)
 						continue
 					}
 
@@ -63,7 +67,11 @@ func (s *TaskScheduler) Run() error {
 								if task.Status == api.TaskPending {
 									_, err = s.Schedule(context.Background(), task)
 									if err != nil {
-										s.l.Error(fmt.Sprintf("Failed to schedule next running task: %v. Error: %v", task.Name, err))
+										s.l.Error("Failed to schedule next running task",
+											zap.Int("id", task.ID),
+											zap.String("name", task.Name),
+											zap.Error(err),
+										)
 									}
 								}
 								goto PIPELINE_END
@@ -80,20 +88,23 @@ func (s *TaskScheduler) Run() error {
 				}
 				taskList, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {
-					s.l.Error(fmt.Sprintf("Failed to retrieve running tasks: %v\n", err))
+					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
 				}
 
 				for _, task := range taskList {
 					executor, ok := s.executors[string(task.Type)]
 					if !ok {
-						s.l.Error(fmt.Sprintf("Unknown task type: %v. Skip", task.Type))
+						s.l.Error("Skip running task with unknown type",
+							zap.Int("id", task.ID),
+							zap.String("name", task.Name),
+							zap.String("type", string(task.Type)),
+						)
 						continue
 					}
 
 					done, err := executor.RunOnce(context.Background(), s.server, task)
 					if done {
 						if err != nil {
-							s.l.Info(fmt.Sprintf("Task failed '%v(%v)': %v\n", task.Name, task.ID, err))
 							taskStatusPatch := &api.TaskStatusPatch{
 								ID:        task.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
@@ -104,13 +115,12 @@ func (s *TaskScheduler) Run() error {
 							continue
 						}
 
-						s.l.Info(fmt.Sprintf("Task completed '%v(%v)'\n", task.Name, task.ID))
 						_, err = s.server.ChangeTaskStatus(context.Background(), task, api.TaskDone, api.SYSTEM_BOT_ID)
 						if err != nil {
 							s.l.Error("Failed to mark task as DONE",
+								zap.Int("id", task.ID),
+								zap.String("name", task.Name),
 								zap.Error(err),
-								zap.Int("task_id", task.ID),
-								zap.String("task_name", task.Name),
 							)
 						}
 					}
@@ -135,7 +145,6 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 }
 
 func (s *TaskScheduler) Schedule(ctx context.Context, task *api.Task) (*api.Task, error) {
-	s.l.Info(fmt.Sprintf("Try to change task '%v(%v)' to RUNNING\n", task.Name, task.ID))
 	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SYSTEM_BOT_ID)
 	if err != nil {
 		return nil, err

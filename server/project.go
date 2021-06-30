@@ -261,7 +261,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 				// Just emits a warning since we have already updated the repository entry. We will have a separate process to reconcile the state.
 				if resp.StatusCode >= 300 {
-					s.l.Error(("failed to update gitlab webhook when updating repository for project"),
+					s.l.Error(("Failed to update gitlab webhook when updating repository for project"),
 						zap.Int("status_code", resp.StatusCode),
 						zap.String("status", resp.Status),
 						zap.Int("project_id", projectId),
@@ -335,7 +335,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 			// Just emits a warning since we have already removed the repository entry. We will have a separate process to cleanup the orphaned webhook.
 			if resp.StatusCode >= 300 {
-				s.l.Error(("failed to delete gitlab webhook when unlinking repository from project"),
+				s.l.Error(("Failed to delete gitlab webhook when unlinking repository from project"),
 					zap.Int("status_code", resp.StatusCode),
 					zap.Int("project_id", projectId),
 					zap.Int("repository_id", repository.ID),

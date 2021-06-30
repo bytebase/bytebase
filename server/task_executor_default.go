@@ -18,7 +18,7 @@ type DefaultTaskExecutor struct {
 }
 
 func (exec *DefaultTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
-	exec.l.Info("Default task executor", zap.String("task", task.Name))
+	exec.l.Info("Run default task type", zap.String("task", task.Name))
 
 	return true, nil
 }

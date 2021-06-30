@@ -161,8 +161,8 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	defer func() {
 		if err != nil {
 			s.l.Error("Failed to change task status.",
-				zap.Int("task_id", task.ID),
-				zap.String("task_name", task.Name),
+				zap.Int("id", task.ID),
+				zap.String("name", task.Name),
 				zap.String("old_status", string(task.Status)),
 				zap.String("new_status", string(taskStatusPatch.Status)),
 				zap.Error(err))
@@ -246,9 +246,9 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			// Just emits an error instead of failing, since we have another periodic job to sync db info.
 			// Though the db will be assigned to the default project instead of the desired project in that case.
 			s.l.Error("failed to record database after creating database",
-				zap.Error(err),
 				zap.String("database_name", payload.DatabaseName),
 				zap.Int("instance_id", task.InstanceId),
+				zap.Error(err),
 			)
 		}
 	}

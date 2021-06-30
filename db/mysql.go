@@ -107,7 +107,6 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			&table.DataSize,
 			&table.IndexSize,
 		); err != nil {
-			driver.l.Info(fmt.Sprintf("%v", err))
 			return nil, err
 		}
 

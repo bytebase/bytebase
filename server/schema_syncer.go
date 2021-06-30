@@ -45,13 +45,14 @@ func (s *SchemaSyncer) Run() error {
 				}
 				list, err := s.server.InstanceService.FindInstanceList(context.Background(), instanceFind)
 				if err != nil {
-					s.l.Info(fmt.Sprintf("Failed to retrieve instances: %v\n", err))
+					s.l.Error("Failed to retrieve instances", zap.Error(err))
 				}
 
 				for _, instance := range list {
 					if err := s.server.ComposeInstanceAdminDataSource(context.Background(), instance); err != nil {
 						s.l.Error("Failed to sync instance",
-							zap.String("instance_name", instance.Name),
+							zap.Int("id", instance.ID),
+							zap.String("name", instance.Name),
 							zap.String("error", err.Error()))
 						continue
 					}
@@ -59,7 +60,8 @@ func (s *SchemaSyncer) Run() error {
 						resultSet := s.server.SyncSchema(instance)
 						if resultSet.Error != "" {
 							s.l.Error("Failed to sync instance",
-								zap.String("instance_name", instance.Name),
+								zap.Int("id", instance.ID),
+								zap.String("name", instance.Name),
 								zap.String("error", resultSet.Error))
 						}
 					}(instance)

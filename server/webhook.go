@@ -37,7 +37,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := json.Unmarshal(b, pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted push event").SetInternal(err)
 		}
-		s.l.Info((fmt.Sprintf("Push event: %+v", *pushEvent)))
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
@@ -74,7 +73,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				if strings.HasPrefix(added, repository.BaseDirectory) && filepath.Ext(added) == ".sql" {
 					mi, err := db.ParseMigrationInfo(added, repository.BaseDirectory)
 					if err != nil {
-						s.l.Warn("Invalid migration filename. Ignored", zap.Error(err))
+						s.l.Warn("Invalid migration filename. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					}
 
@@ -85,13 +84,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						repository.VCS.AccessToken,
 					)
 					if err != nil {
-						s.l.Warn("Failed to read file. Ignored", zap.String("file", added), zap.Error(err))
+						s.l.Warn("Failed to read added repository file. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					}
 
 					b, err := io.ReadAll(resp.Body)
 					if err != nil {
-						s.l.Warn("Failed to read file response. Ignored", zap.String("file", added), zap.Error(err))
+						s.l.Warn("Failed to read added repository file response. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					}
 
@@ -102,11 +101,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 					databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
 					if err != nil {
-						s.l.Warn("Failed to find database. Ignored", zap.String("file", added), zap.Error(err))
+						s.l.Warn("Failed to find database matching added repository file. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					} else if len(databaseList) == 0 {
-						s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s. Ignored", repository.ProjectId, mi.Database),
+						s.l.Warn(fmt.Sprintf("Project does not own database. Skip", repository.ProjectId, mi.Database),
 							zap.Int("project_id", repository.ProjectId),
+							zap.String("database_name", mi.Database),
 							zap.String("file", added),
 						)
 						continue
@@ -133,7 +133,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							}
 						}
 						if len(filterdDatabaseList) == 0 {
-							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s for environment %s. Ignored", repository.ProjectId, mi.Database, mi.Environment),
+							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s for environment %s. Skip", repository.ProjectId, mi.Database, mi.Environment),
 								zap.Int("project_id", repository.ProjectId),
 								zap.String("environment", mi.Environment),
 								zap.String("file", added),
@@ -147,7 +147,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					// Compose the new issue
 					createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 					if err != nil {
-						s.l.Warn("Failed to parse timestamp. Ignored", zap.String("file", added), zap.Error(err))
+						s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
 					}
 					vcsPushEvent := api.VCSPushEvent{
 						VCSType:            repository.VCS.Type,
@@ -201,7 +201,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 					issue, err := s.CreateIssue(context.Background(), issueCreate, api.SYSTEM_BOT_ID)
 					if err != nil {
-						s.l.Warn(fmt.Sprintf("Failed to create update schema task after adding %s", added), zap.Error(err),
+						s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
 							zap.String("file", added))
 						continue
 					}

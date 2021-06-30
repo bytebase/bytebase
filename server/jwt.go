@@ -176,7 +176,6 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 		}
 
 		generateToken := time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration
-		generateReason := "Token about to expire, generate new token..."
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
@@ -185,7 +184,6 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 				if ve.Errors == jwt.ValidationErrorExpired {
 					err = nil
 					generateToken = true
-					generateReason = "Token has expired, generate new token..."
 				}
 			}
 		}
@@ -248,7 +246,6 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 
 					// If we have a valid refresh token, we will generate new access token and refresh token
 					if refreshToken != nil && refreshToken.Valid {
-						l.Info(generateReason)
 						if err := GenerateTokensAndSetCookies(c, user, mode, secret); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalId)).SetInternal(err)
 						}
