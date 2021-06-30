@@ -97,3 +97,30 @@ VALUES
         '3306',
         'bytebase.com'
     );
+
+INSERT INTO
+    instance (
+        id,
+        row_status,
+        creator_id,
+        updater_id,
+        environment_id,
+        name,
+        `engine`,
+        host,
+        port,
+        external_link
+    )
+VALUES
+    (
+        6005,
+        'ARCHIVED',
+        101,
+        101,
+        5004,
+        'Retired Prod MySQL',
+        'MYSQL',
+        'mysql.retired.example.com',
+        '3306',
+        ""
+    );

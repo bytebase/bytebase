@@ -12,7 +12,7 @@ VALUES
         3001,
         101,
         101,
-        'Test Project',
+        'Test (UI)',
         'TEST',
         'UI'
     );
@@ -31,7 +31,7 @@ VALUES
         3002,
         101,
         101,
-        'Shop (VCS)',
+        'Shop (Git)',
         'SHP',
         'VCS'
     );
@@ -50,7 +50,7 @@ VALUES
         3003,
         101,
         101,
-        'Blog (VCS)',
+        'Blog (Git)',
         'BLG',
         'VCS'
     );

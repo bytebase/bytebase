@@ -72,7 +72,7 @@ VALUES
         101,
         101,
         11006,
-        'Update db1_dev task run',
+        'Update testdb_dev task run',
         'FAILED',
         'bb.task.database.schema.update',
         'table "tbl1" already exists'

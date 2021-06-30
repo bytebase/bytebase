@@ -46,7 +46,7 @@ VALUES
         101,
         6001,
         3001,
-        'db1_dev',
+        'testdb_dev',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -155,7 +155,7 @@ VALUES
         101,
         6002,
         3001,
-        'db1_integration',
+        'testdb_integration',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -264,7 +264,7 @@ VALUES
         101,
         6003,
         3001,
-        'db1_staging',
+        'testdb_staging',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -373,7 +373,7 @@ VALUES
         101,
         6004,
         3001,
-        'db1_prod',
+        'testdb_prod',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',
@@ -434,6 +434,7 @@ VALUES
         0
     );
 
+-- Database for prod environment instance 6005
 INSERT INTO
     db (
         id,
@@ -452,9 +453,9 @@ VALUES
         7017,
         101,
         101,
-        6004,
-        3004,
-        'glacier',
+        6005,
+        1,
+        '*',
         'utf8mb4',
         'utf8mb4_0900_ai_ci',
         'OK',

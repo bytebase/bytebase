@@ -1,4 +1,4 @@
--- Task for Pipeline 9001 "Hello world", Stage 10001 "Prod" to update database 7014 "db1_prod"
+-- Task for Pipeline 9001 "Hello world", Stage 10001 "Prod" to update database 7014 "testdb_prod"
 INSERT INTO
     task (
         id,
@@ -166,7 +166,7 @@ VALUES
     );
 
 -- Task for Pipeline 9003 create table
--- Task for stage 10006 "Dev" to craete table in database 7002 'db1_dev'
+-- Task for stage 10006 "Dev" to craete table in database 7002 'testdb_dev'
 INSERT INTO
     task (
         id,
@@ -190,13 +190,13 @@ VALUES
         10006,
         6001,
         7002,
-        'Update db1_dev',
+        'Update testdb_dev',
         'bb.task.database.schema.update',
         'FAILED',
-        '{"statement":"CREATE TABLE db1_dev.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE db1_dev.tbl1;"}'
+        '{"statement":"CREATE TABLE testdb_dev.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl1;"}'
     );
 
--- Task for stage 10003 "Integration" to update database 7006 'db1_integration'
+-- Task for stage 10003 "Integration" to update database 7006 'testdb_integration'
 INSERT INTO
     task (
         id,
@@ -220,10 +220,10 @@ VALUES
         10007,
         6001,
         7006,
-        'Update db1_integration',
+        'Update testdb_integration',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"statement":"CREATE TABLE db1_integration.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE db1_integration.tbl1;"}'
+        '{"statement":"CREATE TABLE testdb_integration.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl1;"}'
     );
 
 -- Task for stage 10008 simulating webhook push event

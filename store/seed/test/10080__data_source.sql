@@ -97,3 +97,28 @@ VALUES
         'admin',
         'Prod12345'
     );
+
+INSERT INTO
+    data_source (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        database_id,
+        name,
+        TYPE,
+        username,
+        PASSWORD
+    )
+VALUES
+    (
+        8005,
+        1,
+        1,
+        6005,
+        7017,
+        'Admin data source',
+        'ADMIN',
+        'admin',
+        'Prod12345'
+    );
