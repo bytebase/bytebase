@@ -355,5 +355,5 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		return &issue, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("issue ID not found: %d", patch.ID)}
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("unable to find issue ID to update: %d", patch.ID)}
 }
