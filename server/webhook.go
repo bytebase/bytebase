@@ -56,7 +56,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointId)).SetInternal(err)
 		}
 
-		if err := s.ComposeRepositoryRelationship(context.Background(), repository, []string{}); err != nil {
+		if err := s.ComposeRepositoryRelationship(context.Background(), repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 		}
 
@@ -100,7 +100,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						ProjectId: &repository.ProjectId,
 						Name:      &mi.Database,
 					}
-					databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind, []string{})
+					databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
 					if err != nil {
 						s.l.Warn("Failed to find database. Ignored", zap.String("file", added), zap.Error(err))
 						continue

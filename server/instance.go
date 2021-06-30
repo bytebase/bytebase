@@ -30,7 +30,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 			return err
 		}
 
@@ -53,7 +53,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 				return err
 			}
 		}
@@ -71,7 +71,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -143,7 +143,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeInstanceRelationship(context.Background(), instance, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 			return err
 		}
 
@@ -160,7 +160,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), id, []string{})
+		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -196,7 +196,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), id, []string{})
+		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -234,7 +234,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []string) (*api.Instance, error) {
+func (s *Server) ComposeInstanceById(ctx context.Context, id int) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -243,27 +243,27 @@ func (s *Server) ComposeInstanceById(ctx context.Context, id int, includeList []
 		return nil, err
 	}
 
-	if err := s.ComposeInstanceRelationship(ctx, instance, includeList); err != nil {
+	if err := s.ComposeInstanceRelationship(ctx, instance); err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance, includeList []string) error {
+func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance) error {
 	var err error
 
-	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId, []string{})
+	instance.Creator, err = s.ComposePrincipalById(context.Background(), instance.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	instance.Updater, err = s.ComposePrincipalById(context.Background(), instance.UpdaterId, []string{})
+	instance.Updater, err = s.ComposePrincipalById(context.Background(), instance.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	instance.Environment, err = s.ComposeEnvironmentById(context.Background(), instance.EnvironmentId, []string{})
+	instance.Environment, err = s.ComposeEnvironmentById(context.Background(), instance.EnvironmentId)
 	if err != nil {
 		return err
 	}

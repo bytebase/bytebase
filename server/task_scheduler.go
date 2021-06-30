@@ -52,7 +52,7 @@ func (s *TaskScheduler) Run() error {
 					s.l.Error(fmt.Sprintf("Failed to retrieve open pipelines: %v\n", err))
 				}
 				for _, pipeline := range pipelineList {
-					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline, []string{}); err != nil {
+					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline); err != nil {
 						s.l.Error(fmt.Sprintf("Failed to fetch stage info for pipeline: %v. Error: %v", pipeline.Name, err))
 						continue
 					}

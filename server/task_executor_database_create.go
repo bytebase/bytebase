@@ -38,7 +38,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, fmt.Errorf("invalid create database payload: %w", err)
 	}
 
-	if err := server.ComposeTaskRelationship(ctx, task, []string{}); err != nil {
+	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
 		return true, err
 	}
 

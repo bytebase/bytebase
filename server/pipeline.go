@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func (s *Server) ComposePipelineById(ctx context.Context, id int, includeList []string) (*api.Pipeline, error) {
+func (s *Server) ComposePipelineById(ctx context.Context, id int) (*api.Pipeline, error) {
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
@@ -15,27 +15,27 @@ func (s *Server) ComposePipelineById(ctx context.Context, id int, includeList []
 		return nil, err
 	}
 
-	if err := s.ComposePipelineRelationship(ctx, pipeline, includeList); err != nil {
+	if err := s.ComposePipelineRelationship(ctx, pipeline); err != nil {
 		return nil, err
 	}
 
 	return pipeline, nil
 }
 
-func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.Pipeline, includeList []string) error {
+func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
-	pipeline.Creator, err = s.ComposePrincipalById(context.Background(), pipeline.CreatorId, includeList)
+	pipeline.Creator, err = s.ComposePrincipalById(context.Background(), pipeline.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	pipeline.Updater, err = s.ComposePrincipalById(context.Background(), pipeline.UpdaterId, includeList)
+	pipeline.Updater, err = s.ComposePrincipalById(context.Background(), pipeline.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	pipeline.StageList, err = s.ComposeStageListByPipelineId(context.Background(), pipeline.ID, includeList)
+	pipeline.StageList, err = s.ComposeStageListByPipelineId(context.Background(), pipeline.ID)
 	if err != nil {
 		return err
 	}

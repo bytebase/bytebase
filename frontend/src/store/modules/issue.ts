@@ -96,11 +96,7 @@ const actions = {
     { commit, rootGetters }: any,
     userId: PrincipalId
   ) {
-    const data = (
-      await axios.get(
-        `/api/issue?user=${userId}&include=principal,project,pipeline,pipeline.stage,pipeline.task`
-      )
-    ).data;
+    const data = (await axios.get(`/api/issue?user=${userId}`)).data;
     const issueList = data.data.map((issue: ResourceObject) => {
       return convert(issue, data.included, rootGetters);
     });
@@ -110,11 +106,7 @@ const actions = {
   },
 
   async fetchIssueListForProject({ rootGetters }: any, projectId: ProjectId) {
-    const data = (
-      await axios.get(
-        `/api/issue?project=${projectId}&include=principal,project,pipeline,pipeline.stage,pipeline.task`
-      )
-    ).data;
+    const data = (await axios.get(`/api/issue?project=${projectId}`)).data;
     const issueList = data.data.map((issue: ResourceObject) => {
       return convert(issue, data.included, rootGetters);
     });
@@ -124,11 +116,7 @@ const actions = {
   },
 
   async fetchIssueById({ commit, rootGetters }: any, issueId: IssueId) {
-    const data = (
-      await axios.get(
-        `/api/issue/${issueId}?include=principal,project,pipeline,pipeline.stage,pipeline.task`
-      )
-    ).data;
+    const data = (await axios.get(`/api/issue/${issueId}`)).data;
     const issue = convert(data.data, data.included, rootGetters);
     commit("setIssueById", {
       issueId,
@@ -139,19 +127,16 @@ const actions = {
 
   async createIssue({ commit, rootGetters }: any, newIssue: IssueCreate) {
     const data = (
-      await axios.post(
-        `/api/issue?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
-        {
-          data: {
-            type: "IssueCreate",
-            attributes: {
-              ...newIssue,
-              // Server expects payload as string, so we stringify first.
-              payload: JSON.stringify(newIssue.payload),
-            },
+      await axios.post(`/api/issue`, {
+        data: {
+          type: "IssueCreate",
+          attributes: {
+            ...newIssue,
+            // Server expects payload as string, so we stringify first.
+            payload: JSON.stringify(newIssue.payload),
           },
-        }
-      )
+        },
+      })
     ).data;
     const createdIssue = convert(data.data, data.included, rootGetters);
 
@@ -174,15 +159,12 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(
-        `/api/issue/${issueId}?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
-        {
-          data: {
-            type: "issuePatch",
-            attributes: issuePatch,
-          },
-        }
-      )
+      await axios.patch(`/api/issue/${issueId}`, {
+        data: {
+          type: "issuePatch",
+          attributes: issuePatch,
+        },
+      })
     ).data;
     const updatedIssue = convert(data.data, data.included, rootGetters);
 
@@ -207,15 +189,12 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(
-        `/api/issue/${issueId}/status?include=principal,project,pipeline,pipeline.stage,pipeline.task`,
-        {
-          data: {
-            type: "issueStatusPatch",
-            attributes: issueStatusPatch,
-          },
-        }
-      )
+      await axios.patch(`/api/issue/${issueId}/status`, {
+        data: {
+          type: "issueStatusPatch",
+          attributes: issueStatusPatch,
+        },
+      })
     ).data;
     const updatedIssue = convert(data.data, data.included, rootGetters);
 

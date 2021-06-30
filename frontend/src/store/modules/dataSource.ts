@@ -109,9 +109,7 @@ const actions = {
     }: { dataSourceId: DataSourceId; databaseId: DatabaseId }
   ) {
     const data = (
-      await axios.get(
-        `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`
-      )
+      await axios.get(`/api/database/${databaseId}/datasource/${dataSourceId}`)
     ).data;
     const dataSource = convert(data.data, data.included, rootGetters);
 
@@ -128,15 +126,12 @@ const actions = {
     newDataSource: DataSourceCreate
   ) {
     const data = (
-      await axios.post(
-        `/api/database/${newDataSource.databaseId}/datasource?include=database,instance`,
-        {
-          data: {
-            type: "DataSourceCreate",
-            attributes: newDataSource,
-          },
-        }
-      )
+      await axios.post(`/api/database/${newDataSource.databaseId}/datasource`, {
+        data: {
+          type: "DataSourceCreate",
+          attributes: newDataSource,
+        },
+      })
     ).data;
     const createdDataSource = convert(data.data, data.included, rootGetters);
 
@@ -169,7 +164,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${databaseId}/datasource/${dataSourceId}?include=database,instance`,
+        `/api/database/${databaseId}/datasource/${dataSourceId}`,
         {
           data: {
             type: "dataSourcePatch",
@@ -222,7 +217,7 @@ const actions = {
   ) {
     const data = (
       await axios.post(
-        `/api/database/${databaseId}/datasource/${dataSourceId}/member?include=database,instance`,
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member`,
         {
           data: {
             type: "dataSourceMember",
@@ -259,7 +254,7 @@ const actions = {
   ) {
     const data = (
       await axios.delete(
-        `/api/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}?include=database,instance`
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}`
       )
     ).data;
     // It's patching the data source and returns the updated data source

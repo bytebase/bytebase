@@ -32,7 +32,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
@@ -62,7 +62,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, project := range list {
-			if err := s.ComposeProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
 			}
 		}
@@ -80,7 +80,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		project, err := s.ComposeProjectlById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		project, err := s.ComposeProjectlById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -117,7 +117,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectRelationship(context.Background(), project, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated project relationship: %v", project.Name)).SetInternal(err)
 		}
 
@@ -145,7 +145,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		if err := s.ComposeRepositoryRelationship(context.Background(), repository, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeRepositoryRelationship(context.Background(), repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
@@ -179,7 +179,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, repository := range list {
-			if err := s.ComposeRepositoryRelationship(context.Background(), repository, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeRepositoryRelationship(context.Background(), repository); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 			}
 		}
@@ -273,7 +273,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeRepositoryRelationship(context.Background(), updatedRepository, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeRepositoryRelationship(context.Background(), updatedRepository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to updating repository for project").SetInternal(err)
 		}
 
@@ -350,7 +350,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectlById(ctx context.Context, id int, includeList []string) (*api.Project, error) {
+func (s *Server) ComposeProjectlById(ctx context.Context, id int) (*api.Project, error) {
 	projectFind := &api.ProjectFind{
 		ID: &id,
 	}
@@ -359,27 +359,27 @@ func (s *Server) ComposeProjectlById(ctx context.Context, id int, includeList []
 		return nil, err
 	}
 
-	if err := s.ComposeProjectRelationship(ctx, project, includeList); err != nil {
+	if err := s.ComposeProjectRelationship(ctx, project); err != nil {
 		return nil, err
 	}
 
 	return project, nil
 }
 
-func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project, includeList []string) error {
+func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project) error {
 	var err error
 
-	project.Creator, err = s.ComposePrincipalById(context.Background(), project.CreatorId, includeList)
+	project.Creator, err = s.ComposePrincipalById(context.Background(), project.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	project.Updater, err = s.ComposePrincipalById(context.Background(), project.UpdaterId, includeList)
+	project.Updater, err = s.ComposePrincipalById(context.Background(), project.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectId(ctx, project.ID, includeList)
+	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectId(ctx, project.ID)
 	if err != nil {
 		return err
 	}

@@ -70,7 +70,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		principal, err := s.ComposePrincipalById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		principal, err := s.ComposePrincipalById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -126,7 +126,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposePrincipalById(ctx context.Context, id int, includeList []string) (*api.Principal, error) {
+func (s *Server) ComposePrincipalById(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,
 	}

@@ -35,7 +35,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project member").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created project membership relationship").SetInternal(err)
 		}
 
@@ -73,7 +73,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project membership ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project membership relationship").SetInternal(err)
 		}
 
@@ -113,7 +113,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projectId int, includeList []string) ([]*api.ProjectMember, error) {
+func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projectId int) ([]*api.ProjectMember, error) {
 	projectMemberFind := &api.ProjectMemberFind{
 		ProjectId: &projectId,
 	}
@@ -123,27 +123,27 @@ func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projec
 	}
 
 	for _, projectMember := range projectMemberList {
-		if err := s.ComposeProjectMemberRelationship(ctx, projectMember, includeList); err != nil {
+		if err := s.ComposeProjectMemberRelationship(ctx, projectMember); err != nil {
 			return nil, err
 		}
 	}
 	return projectMemberList, nil
 }
 
-func (s *Server) ComposeProjectMemberRelationship(ctx context.Context, projectMember *api.ProjectMember, includeList []string) error {
+func (s *Server) ComposeProjectMemberRelationship(ctx context.Context, projectMember *api.ProjectMember) error {
 	var err error
 
-	projectMember.Creator, err = s.ComposePrincipalById(context.Background(), projectMember.CreatorId, includeList)
+	projectMember.Creator, err = s.ComposePrincipalById(context.Background(), projectMember.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Updater, err = s.ComposePrincipalById(context.Background(), projectMember.UpdaterId, includeList)
+	projectMember.Updater, err = s.ComposePrincipalById(context.Background(), projectMember.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Principal, err = s.ComposePrincipalById(context.Background(), projectMember.PrincipalId, includeList)
+	projectMember.Principal, err = s.ComposePrincipalById(context.Background(), projectMember.PrincipalId)
 	if err != nil {
 		return err
 	}

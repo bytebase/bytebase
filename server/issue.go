@@ -57,7 +57,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, issue := range list {
-			if err := s.ComposeIssueRelationship(context.Background(), issue, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {
 				return err
 			}
 		}
@@ -75,7 +75,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		issue, err := s.ComposeIssueById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -189,7 +189,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue); err != nil {
 			return err
 		}
 
@@ -214,7 +214,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueById(context.Background(), id, c.Get(getIncludeKey()).([]string))
+		issue, err := s.ComposeIssueById(context.Background(), id)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -232,7 +232,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
-		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue); err != nil {
 			return err
 		}
 
@@ -244,7 +244,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeIssueById(ctx context.Context, id int, includeList []string) (*api.Issue, error) {
+func (s *Server) ComposeIssueById(ctx context.Context, id int) (*api.Issue, error) {
 	issueFind := &api.IssueFind{
 		ID: &id,
 	}
@@ -253,34 +253,34 @@ func (s *Server) ComposeIssueById(ctx context.Context, id int, includeList []str
 		return nil, err
 	}
 
-	if err := s.ComposeIssueRelationship(ctx, issue, includeList); err != nil {
+	if err := s.ComposeIssueRelationship(ctx, issue); err != nil {
 		return nil, err
 	}
 
 	return issue, nil
 }
 
-func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue, includeList []string) error {
+func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue) error {
 	var err error
 
-	issue.Creator, err = s.ComposePrincipalById(context.Background(), issue.CreatorId, includeList)
+	issue.Creator, err = s.ComposePrincipalById(context.Background(), issue.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	issue.Updater, err = s.ComposePrincipalById(context.Background(), issue.UpdaterId, includeList)
+	issue.Updater, err = s.ComposePrincipalById(context.Background(), issue.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	issue.Assignee, err = s.ComposePrincipalById(context.Background(), issue.AssigneeId, includeList)
+	issue.Assignee, err = s.ComposePrincipalById(context.Background(), issue.AssigneeId)
 	if err != nil {
 		return err
 	}
 
 	subscriberList := []*api.Principal{}
 	for _, subscriberId := range issue.SubscriberIdList {
-		oneSubscriber, err := s.ComposePrincipalById(context.Background(), subscriberId, includeList)
+		oneSubscriber, err := s.ComposePrincipalById(context.Background(), subscriberId)
 		if err != nil {
 			return err
 		}
@@ -288,12 +288,12 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue,
 	}
 	issue.SubscriberList = subscriberList
 
-	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId, includeList)
+	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId)
 	if err != nil {
 		return err
 	}
 
-	issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId, includeList)
+	issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId)
 	if err != nil {
 		return err
 	}
@@ -386,7 +386,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
 	}
 
-	if err := s.ComposeIssueRelationship(context.Background(), issue, []string{}); err != nil {
+	if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {
 		return nil, err
 	}
 

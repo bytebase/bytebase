@@ -59,7 +59,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
 
-		if err := s.ComposeTaskRelationship(context.Background(), updatedTask, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeTaskRelationship(context.Background(), updatedTask); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
@@ -71,7 +71,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, includeList []string) ([]*api.Task, error) {
+func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int) ([]*api.Task, error) {
 	taskFind := &api.TaskFind{
 		StageId: &stageId,
 	}
@@ -81,7 +81,7 @@ func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incl
 	}
 
 	for _, task := range taskList {
-		if err := s.ComposeTaskRelationship(ctx, task, includeList); err != nil {
+		if err := s.ComposeTaskRelationship(ctx, task); err != nil {
 			return nil, err
 		}
 	}
@@ -89,7 +89,7 @@ func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int, incl
 	return taskList, nil
 }
 
-func (s *Server) ComposeTaskById(ctx context.Context, id int, includeList []string) (*api.Task, error) {
+func (s *Server) ComposeTaskById(ctx context.Context, id int) (*api.Task, error) {
 	taskFind := &api.TaskFind{
 		ID: &id,
 	}
@@ -98,39 +98,39 @@ func (s *Server) ComposeTaskById(ctx context.Context, id int, includeList []stri
 		return nil, err
 	}
 
-	if err := s.ComposeTaskRelationship(ctx, task, includeList); err != nil {
+	if err := s.ComposeTaskRelationship(ctx, task); err != nil {
 		return nil, err
 	}
 
 	return task, nil
 }
 
-func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, includeList []string) error {
+func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task) error {
 	var err error
 
-	task.Creator, err = s.ComposePrincipalById(context.Background(), task.CreatorId, includeList)
+	task.Creator, err = s.ComposePrincipalById(context.Background(), task.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	task.Updater, err = s.ComposePrincipalById(context.Background(), task.UpdaterId, includeList)
+	task.Updater, err = s.ComposePrincipalById(context.Background(), task.UpdaterId)
 	if err != nil {
 		return err
 	}
 
 	for _, taskRun := range task.TaskRunList {
-		taskRun.Creator, err = s.ComposePrincipalById(context.Background(), taskRun.CreatorId, includeList)
+		taskRun.Creator, err = s.ComposePrincipalById(context.Background(), taskRun.CreatorId)
 		if err != nil {
 			return err
 		}
 
-		taskRun.Updater, err = s.ComposePrincipalById(context.Background(), taskRun.UpdaterId, includeList)
+		taskRun.Updater, err = s.ComposePrincipalById(context.Background(), taskRun.UpdaterId)
 		if err != nil {
 			return err
 		}
 	}
 
-	task.Instance, err = s.ComposeInstanceById(context.Background(), task.InstanceId, includeList)
+	task.Instance, err = s.ComposeInstanceById(context.Background(), task.InstanceId)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task, in
 		databaseFind := &api.DatabaseFind{
 			ID: task.DatabaseId,
 		}
-		task.Database, err = s.ComposeDatabaseByFind(context.Background(), databaseFind, includeList)
+		task.Database, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
 			return err
 		}
@@ -256,7 +256,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot,
 	// then we mark the issue as DONE.
 	if updatedTask.Status == "DONE" && issue.AssigneeId == api.SYSTEM_BOT_ID {
-		issue.Pipeline, err = s.ComposePipelineById(ctx, issue.PipelineId, []string{})
+		issue.Pipeline, err = s.ComposePipelineById(ctx, issue.PipelineId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline to mark issue %v as DONE after completing task %v", issue.Name, updatedTask.Name)
 		}

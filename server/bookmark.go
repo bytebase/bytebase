@@ -29,7 +29,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create bookmark").SetInternal(err)
 		}
 
-		if err := s.ComposeBookmarkRelationship(context.Background(), bookmark, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeBookmarkRelationship(context.Background(), bookmark); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created bookmark relationship").SetInternal(err)
 		}
 
@@ -51,7 +51,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		}
 
 		for _, bookmark := range list {
-			if err := s.ComposeBookmarkRelationship(context.Background(), bookmark, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeBookmarkRelationship(context.Background(), bookmark); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch bookmark relationship: %v", bookmark.Name)).SetInternal(err)
 			}
 		}
@@ -87,15 +87,15 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeBookmarkRelationship(ctx context.Context, bookmark *api.Bookmark, includeList []string) error {
+func (s *Server) ComposeBookmarkRelationship(ctx context.Context, bookmark *api.Bookmark) error {
 	var err error
 
-	bookmark.Creator, err = s.ComposePrincipalById(ctx, bookmark.CreatorId, includeList)
+	bookmark.Creator, err = s.ComposePrincipalById(ctx, bookmark.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	bookmark.Updater, err = s.ComposePrincipalById(context.Background(), bookmark.UpdaterId, includeList)
+	bookmark.Updater, err = s.ComposePrincipalById(context.Background(), bookmark.UpdaterId)
 	if err != nil {
 		return err
 	}

@@ -142,10 +142,6 @@ func NewServer(logger *zap.Logger, host string, port int, mode string, secret st
 		return JWTMiddleware(logger, s.PrincipalService, next, mode, secret)
 	})
 
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return ApiRequestMiddleware(logger, next)
-	})
-
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
 		e.Logger.Fatal(err)

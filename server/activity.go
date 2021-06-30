@@ -26,7 +26,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
 		}
 
-		if err := s.ComposeActivityRelationship(context.Background(), activity, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeActivityRelationship(context.Background(), activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created activity relationship").SetInternal(err)
 		}
 
@@ -53,7 +53,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		for _, activity := range list {
-			if err := s.ComposeActivityRelationship(context.Background(), activity, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeActivityRelationship(context.Background(), activity); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch activity relationship: %v", activity.ID)).SetInternal(err)
 			}
 		}
@@ -87,7 +87,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch activity ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeActivityRelationship(context.Background(), activity, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeActivityRelationship(context.Background(), activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated activity relationship: %v", activity.ID)).SetInternal(err)
 		}
 
@@ -122,15 +122,15 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeActivityRelationship(ctx context.Context, activity *api.Activity, includeList []string) error {
+func (s *Server) ComposeActivityRelationship(ctx context.Context, activity *api.Activity) error {
 	var err error
 
-	activity.Creator, err = s.ComposePrincipalById(context.Background(), activity.CreatorId, includeList)
+	activity.Creator, err = s.ComposePrincipalById(context.Background(), activity.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	activity.Updater, err = s.ComposePrincipalById(context.Background(), activity.UpdaterId, includeList)
+	activity.Updater, err = s.ComposePrincipalById(context.Background(), activity.UpdaterId)
 	if err != nil {
 		return err
 	}

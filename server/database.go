@@ -29,7 +29,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
 		}
 
-		if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created database relationship").SetInternal(err)
 		}
 
@@ -57,7 +57,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			databaseFind.ProjectId = &projectId
 		}
-		list, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind, c.Get(getIncludeKey()).([]string))
+		list, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
 		}
@@ -94,7 +94,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind, c.Get(getIncludeKey()).([]string))
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -131,7 +131,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeDatabaseRelationship(context.Background(), database, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated database relationship: %v", database.Name)).SetInternal(err)
 		}
 
@@ -179,27 +179,27 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeDatabaseByFind(ctx context.Context, find *api.DatabaseFind, includeList []string) (*api.Database, error) {
+func (s *Server) ComposeDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
 	database, err := s.DatabaseService.FindDatabase(context.Background(), find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.ComposeDatabaseRelationship(ctx, database, includeList); err != nil {
+	if err := s.ComposeDatabaseRelationship(ctx, database); err != nil {
 		return nil, err
 	}
 
 	return database, nil
 }
 
-func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind, includeList []string) ([]*api.Database, error) {
+func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
 	list, err := s.DatabaseService.FindDatabaseList(context.Background(), find)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, database := range list {
-		if err := s.ComposeDatabaseRelationship(context.Background(), database, includeList); err != nil {
+		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
 			return nil, err
 		}
 	}
@@ -207,25 +207,25 @@ func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.Databa
 	return list, nil
 }
 
-func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database, includeList []string) error {
+func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database) error {
 	var err error
 
-	database.Creator, err = s.ComposePrincipalById(context.Background(), database.CreatorId, includeList)
+	database.Creator, err = s.ComposePrincipalById(context.Background(), database.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	database.Updater, err = s.ComposePrincipalById(context.Background(), database.UpdaterId, includeList)
+	database.Updater, err = s.ComposePrincipalById(context.Background(), database.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId, includeList)
+	database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId)
 	if err != nil {
 		return err
 	}
 
-	database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId, includeList)
+	database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId)
 	if err != nil {
 		return err
 	}

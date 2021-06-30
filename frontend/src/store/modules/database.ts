@@ -211,11 +211,7 @@ const actions = {
     { commit, rootGetters }: any,
     instanceId: InstanceId
   ) {
-    const data = (
-      await axios.get(
-        `/api/database?instance=${instanceId}&include=instance,project,project.projectMember`
-      )
-    ).data;
+    const data = (await axios.get(`/api/database?instance=${instanceId}`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
@@ -230,11 +226,7 @@ const actions = {
     { commit, rootGetters }: any,
     projectId: ProjectId
   ) {
-    const data = (
-      await axios.get(
-        `/api/database?project=${projectId}&include=instance,project,project.projectMember`
-      )
-    ).data;
+    const data = (await axios.get(`/api/database?project=${projectId}`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
@@ -249,11 +241,7 @@ const actions = {
     { commit, rootGetters }: any,
     userId: PrincipalId
   ) {
-    const data = (
-      await axios.get(
-        `/api/database?user=${userId}&include=instance,project,project.projectMember`
-      )
-    ).data;
+    const data = (await axios.get(`/api/database?user=${userId}`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
@@ -270,11 +258,8 @@ const actions = {
   ) {
     // Don't fetch the data source info as the current user may not have access to the
     // database of this particular environment.
-    const data = (
-      await axios.get(
-        `/api/database?environment=${environmentId}&include=instance,project,project.projectMember`
-      )
-    ).data;
+    const data = (await axios.get(`/api/database?environment=${environmentId}`))
+      .data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
@@ -293,8 +278,8 @@ const actions = {
     }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
     const url = instanceId
-      ? `/api/instance/${instanceId}/database/${databaseId}?include=instance,project,project.projectMember,dataSource`
-      : `/api/database/${databaseId}?include=instance,project,project.projectMember,dataSource`;
+      ? `/api/instance/${instanceId}/database/${databaseId}`
+      : `/api/database/${databaseId}`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
@@ -310,15 +295,12 @@ const actions = {
     newDatabase: DatabaseCreate
   ) {
     const data = (
-      await axios.post(
-        `/api/database?include=instance,project,project.projectMember`,
-        {
-          data: {
-            type: "DatabaseCreate",
-            attributes: newDatabase,
-          },
-        }
-      )
+      await axios.post(`/api/database`, {
+        data: {
+          type: "DatabaseCreate",
+          attributes: newDatabase,
+        },
+      })
     ).data;
     const createdDatabase: Database = convert(
       data.data,
@@ -346,17 +328,14 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(
-        `/api/database/${databaseId}?include=instance,project,project.projectMember`,
-        {
-          data: {
-            type: "databasePatch",
-            attributes: {
-              projectId,
-            },
+      await axios.patch(`/api/database/${databaseId}`, {
+        data: {
+          type: "databasePatch",
+          attributes: {
+            projectId,
           },
-        }
-      )
+        },
+      })
     ).data;
     const updatedDatabase = convert(data.data, data.included, rootGetters);
 

@@ -30,7 +30,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create environment").SetInternal(err)
 		}
 
-		if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeEnvironmentRelationship(context.Background(), environment); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created environment relationship").SetInternal(err)
 		}
 
@@ -53,7 +53,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		for _, environment := range list {
-			if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeEnvironmentRelationship(context.Background(), environment); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment relationship: %v", environment.Name)).SetInternal(err)
 			}
 		}
@@ -87,7 +87,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeEnvironmentRelationship(context.Background(), environment); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated environment relationship: %v", environment.Name)).SetInternal(err)
 		}
 
@@ -123,7 +123,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		for _, environment := range list {
-			if err := s.ComposeEnvironmentRelationship(context.Background(), environment, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeEnvironmentRelationship(context.Background(), environment); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch reordered environment relationship: %v", environment.Name)).SetInternal(err)
 			}
 		}
@@ -136,7 +136,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeEnvironmentById(ctx context.Context, id int, includeList []string) (*api.Environment, error) {
+func (s *Server) ComposeEnvironmentById(ctx context.Context, id int) (*api.Environment, error) {
 	environmentFind := &api.EnvironmentFind{
 		ID: &id,
 	}
@@ -145,22 +145,22 @@ func (s *Server) ComposeEnvironmentById(ctx context.Context, id int, includeList
 		return nil, err
 	}
 
-	if err := s.ComposeEnvironmentRelationship(ctx, environment, includeList); err != nil {
+	if err := s.ComposeEnvironmentRelationship(ctx, environment); err != nil {
 		return nil, err
 	}
 
 	return environment, nil
 }
 
-func (s *Server) ComposeEnvironmentRelationship(ctx context.Context, environment *api.Environment, includeList []string) error {
+func (s *Server) ComposeEnvironmentRelationship(ctx context.Context, environment *api.Environment) error {
 	var err error
 
-	environment.Creator, err = s.ComposePrincipalById(context.Background(), environment.CreatorId, includeList)
+	environment.Creator, err = s.ComposePrincipalById(context.Background(), environment.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	environment.Updater, err = s.ComposePrincipalById(context.Background(), environment.UpdaterId, includeList)
+	environment.Updater, err = s.ComposePrincipalById(context.Background(), environment.UpdaterId)
 	if err != nil {
 		return err
 	}

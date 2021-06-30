@@ -143,7 +143,7 @@ const getters = {
 
 const actions = {
   async fetchProjectList({ commit, rootGetters }: any) {
-    const data = (await axios.get(`/api/project?include=projectMember`)).data;
+    const data = (await axios.get(`/api/project`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
     });
@@ -165,7 +165,7 @@ const actions = {
     const path =
       `/api/project?user=${userId}` +
       (rowStatusList ? "&rowstatus=" + rowStatusList.join(",") : "");
-    const data = (await axios.get(`${path}&include=projectMember`)).data;
+    const data = (await axios.get(`${path}`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
       return convert(project, data.included, rootGetters);
     });
@@ -175,9 +175,7 @@ const actions = {
   },
 
   async fetchProjectById({ commit, rootGetters }: any, projectId: ProjectId) {
-    const data = (
-      await axios.get(`/api/project/${projectId}?include=projectMember`)
-    ).data;
+    const data = (await axios.get(`/api/project/${projectId}`)).data;
     const project = convert(data.data, data.included, rootGetters);
 
     commit("setProjectById", {
@@ -189,7 +187,7 @@ const actions = {
 
   async createProject({ commit, rootGetters }: any, newProject: ProjectCreate) {
     const data = (
-      await axios.post(`/api/project?include=projectMember`, {
+      await axios.post(`/api/project`, {
         data: {
           type: "ProjectCreate",
           attributes: newProject,
@@ -217,7 +215,7 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/project/${projectId}?include=projectMember`, {
+      await axios.patch(`/api/project/${projectId}`, {
         data: {
           type: "projectPatch",
           attributes: projectPatch,

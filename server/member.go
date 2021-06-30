@@ -29,7 +29,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create member").SetInternal(err)
 		}
 
-		if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeMemberRelationship(context.Background(), member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created member relationship").SetInternal(err)
 		}
 
@@ -48,7 +48,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		for _, member := range list {
-			if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
+			if err := s.ComposeMemberRelationship(context.Background(), member); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", member.ID)).SetInternal(err)
 			}
 		}
@@ -82,7 +82,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch member ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeMemberRelationship(context.Background(), member, c.Get(getIncludeKey()).([]string)); err != nil {
+		if err := s.ComposeMemberRelationship(context.Background(), member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated member relationship: %v", member.ID)).SetInternal(err)
 		}
 
@@ -117,20 +117,20 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member, includeList []string) error {
+func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member) error {
 	var err error
 
-	member.Creator, err = s.ComposePrincipalById(ctx, member.CreatorId, includeList)
+	member.Creator, err = s.ComposePrincipalById(ctx, member.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	member.Updater, err = s.ComposePrincipalById(context.Background(), member.UpdaterId, includeList)
+	member.Updater, err = s.ComposePrincipalById(context.Background(), member.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	member.Principal, err = s.ComposePrincipalById(context.Background(), member.PrincipalId, includeList)
+	member.Principal, err = s.ComposePrincipalById(context.Background(), member.PrincipalId)
 	if err != nil {
 		return err
 	}
