@@ -33,10 +33,6 @@ const actions = {
       code: string;
     }
   ): Promise<OAuthToken> {
-    console.log(
-      "req",
-      `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
-    );
     const data = (
       await axios.post(
         `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
@@ -57,10 +53,6 @@ const actions = {
     {}: any,
     { vcs, token }: { vcs: VCS; token: string }
   ): Promise<ExternalRepositoryInfo[]> {
-    console.log(
-      "req",
-      `${vcs.instanceURL}/${GITLAB_API_PATH}/projects?membership=true&simple=true`
-    );
     // We will use user's token to create webhook in the project, which requires the token owner to
     // be at least the project maintainer(40)
     const data = (

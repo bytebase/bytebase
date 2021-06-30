@@ -555,7 +555,6 @@ export default {
     };
 
     const updateCustomField = (field: InputField | OutputField, value: any) => {
-      console.debug("updateCustomField", field.name, value);
       if (!isEqual(issue.value.payload[field.id], value)) {
         if (state.create) {
           state.newIssue!.payload[field.id] = value;
@@ -652,8 +651,6 @@ export default {
     const currentPipelineType = computed((): PipelineType => {
       return pipelineType(issue.value.pipeline);
     });
-
-    console.debug(currentPipelineType.value);
 
     const selectedStage = computed((): Stage | StageCreate => {
       const stageSlug = router.currentRoute.value.query.stage as string;

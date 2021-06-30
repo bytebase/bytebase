@@ -748,8 +748,6 @@ router.beforeEach((to, from, next) => {
     const dataSourceSlug = routerSlug.dataSourceSlug;
     const vcsSlug = routerSlug.vcsSlug;
 
-    console.debug("RouterSlug:", routerSlug);
-
     if (principalId) {
       store
         .dispatch("principal/fetchPrincipalById", principalId)
