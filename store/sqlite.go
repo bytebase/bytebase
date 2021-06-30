@@ -107,7 +107,7 @@ func (db *DB) Open() (err error) {
 	}
 
 	if err := db.migrate(); err != nil {
-		return fmt.Errorf("migrate: %w", err)
+		return fmt.Errorf("failed to migrate: %w", err)
 	}
 
 	majorAfterMigration, minorAfterMigration, err := db.version()
@@ -116,7 +116,7 @@ func (db *DB) Open() (err error) {
 	}
 
 	if err := db.seed(majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration); err != nil {
-		return fmt.Errorf("seed: %w", err)
+		return fmt.Errorf("failed to seed: %w", err)
 	}
 
 	return nil

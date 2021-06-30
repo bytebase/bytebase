@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase"
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -22,7 +20,9 @@ import (
 
 // -----------------------------------Global constant BEGIN----------------------------------------
 const (
+	// Length for the secret used to sign the JWT auth token
 	SECRET_LENGTH = 32
+
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
 	GREETING_BANNER = `
 ██████╗ ██╗   ██╗████████╗███████╗██████╗  █████╗ ███████╗███████╗
@@ -53,13 +53,12 @@ ________________________________________________________________________________
 // -----------------------------------Command Line Config BEGIN------------------------------------
 var (
 	// Used for flags.
-	host       string
-	port       int
-	dataDir    string
-	secretFile string
-	secret     string
-	demo       bool
-	debug      bool
+	host    string
+	port    int
+	dataDir string
+	secret  string
+	demo    bool
+	debug   bool
 
 	logger *zap.Logger
 
@@ -106,7 +105,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data.")
-	rootCmd.PersistentFlags().StringVar(&secretFile, "secret", "./bytebase_secret", "file path storing the secret to sign the JWT for authentication. If file does not exist, Bytebase will generate a 32 byte random string consisting of numbers and letters.")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data and is read-only.")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging.")
 }
@@ -123,6 +121,12 @@ type profile struct {
 	seedDir string
 	// force reset seed, true for testing and demo
 	forceResetSeed bool
+}
+
+// retrieved via the ConfigService upon startup
+type config struct {
+	// secret used to sign the JWT auth token
+	secret string
 }
 
 type main struct {
@@ -148,29 +152,6 @@ func preStart() error {
 		return error
 	}
 
-	secretFile, err = filepath.Abs(secretFile)
-	if err != nil {
-		return err
-	}
-	if _, err := os.Stat(secretFile); err == nil {
-		data, err := ioutil.ReadFile(secretFile)
-		if err != nil {
-			return fmt.Errorf("unable to read secret, error: %w", err)
-		}
-		secret = string(data)
-	} else if errors.Is(err, fs.ErrNotExist) {
-		logger.Info(fmt.Sprintf("Secret file does not exist on the specified path %s. Generating a new one...\n", secretFile))
-		secret = bytebase.RandomString(SECRET_LENGTH)
-		if err := ioutil.WriteFile(secretFile, []byte(secret), 0600); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("unable to save secret, please make sure the parent directory exists: %s", filepath.Dir(secretFile))
-			}
-			return fmt.Errorf("unable to save secret, error: %w", err)
-		}
-		logger.Info(fmt.Sprintf("Successfully saved secret at %s\n", secretFile))
-	} else {
-		return fmt.Errorf("unable to stat secret file: %s, error: %w", secretFile, err)
-	}
 	return nil
 }
 
@@ -212,7 +193,6 @@ func newMain() *main {
 	fmt.Printf("port=%d\n", port)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
-	fmt.Printf("secret=%s\n", secretFile)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
@@ -223,15 +203,40 @@ func newMain() *main {
 	}
 }
 
+func initConfig(configService api.ConfigService) (*config, error) {
+	result := &config{}
+	{
+		configCreate := &api.ConfigCreate{
+			CreatorId:   api.SYSTEM_BOT_ID,
+			Name:        "bb.auth.secret",
+			Value:       bytebase.RandomString(SECRET_LENGTH),
+			Description: "Random string used to sign the JWT auth token.",
+		}
+		config, err := configService.CreateConfigIfNotExist(context.Background(), configCreate)
+		if err != nil {
+			return nil, err
+		}
+		result.secret = config.Value
+	}
+
+	return result, nil
+}
+
 func (m *main) Run() error {
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
+	configService := store.NewConfigService(m.l, db)
+	config, err := initConfig(configService)
+	if err != nil {
+		return fmt.Errorf("failed to init config: %w", err)
+	}
+
 	m.db = db
 
-	server := server.NewServer(m.l, host, port, m.profile.mode, secret, demo, debug)
+	server := server.NewServer(m.l, host, port, m.profile.mode, config.secret, demo, debug)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)

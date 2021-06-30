@@ -56,6 +56,39 @@ VALUES
         ''
     );
 
+-- Config
+CREATE TABLE config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    name TEXT NOT NULL UNIQUE,
+    value TEXT NOT NULL,
+    description TEXT NOT NULL
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('config', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_config_modification_time`
+AFTER
+UPDATE
+    ON `config` FOR EACH ROW BEGIN
+UPDATE
+    `config`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Member
 CREATE TABLE member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
