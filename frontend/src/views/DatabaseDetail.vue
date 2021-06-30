@@ -7,9 +7,7 @@
           px-4
           pb-4
           border-b border-block-border
-          md:flex
-          md:items-center
-          md:justify-between
+          md:flex md:items-center md:justify-between
         "
       >
         <div class="flex-1 min-w-0">
@@ -37,8 +35,7 @@
             class="
               flex flex-col
               space-y-1
-              md:space-y-0
-              md:flex-row md:flex-wrap
+              md:space-y-0 md:flex-row md:flex-wrap
             "
           >
             <dt class="sr-only">Environment</dt>
@@ -160,7 +157,7 @@
             <template
               v-for="(item, index) of [
                 { type: 'RW', list: readWriteDataSourceList },
-                { type: 'RO', list: readOnlyDataSourceList },
+                { type: 'RO', list: readonlyDataSourceList },
               ]"
               :key="index"
             >
@@ -407,7 +404,7 @@ export default {
       });
     });
 
-    const readOnlyDataSourceList = computed(() => {
+    const readonlyDataSourceList = computed(() => {
       return dataSourceList.value.filter((dataSource: DataSource) => {
         return dataSource.type == "RO";
       });
@@ -483,7 +480,7 @@ export default {
       allowViewDataSource,
       allowChangeDataSource,
       readWriteDataSourceList,
-      readOnlyDataSourceList,
+      readonlyDataSourceList,
       tryTransferProject,
       updateProject,
       isEditingDataSource,

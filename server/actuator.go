@@ -11,6 +11,7 @@ import (
 func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		serverInfo := api.ServerInfo{
+			Readonly:  s.readonly,
 			Demo:      s.demo,
 			Host:      s.host,
 			Port:      strconv.Itoa(s.port),

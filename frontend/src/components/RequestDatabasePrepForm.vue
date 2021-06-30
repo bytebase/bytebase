@@ -92,10 +92,10 @@
               />
               <BBSwitch
                 :label="'Read only'"
-                :value="state.readOnly"
+                :value="state.readonly"
                 @toggle="
                   (on) => {
-                    state.readOnly = on;
+                    state.readonly = on;
                   }
                 "
               />
@@ -142,7 +142,7 @@ interface LocalState {
   create: "ON" | "OFF";
   databaseName: string;
   databaseId: DatabaseId;
-  readOnly: boolean;
+  readonly: boolean;
 }
 
 export default {
@@ -176,7 +176,7 @@ export default {
       create: "ON",
       databaseName: "",
       databaseId: UNKNOWN_ID,
-      readOnly: true,
+      readonly: true,
     });
 
     const alreadyGranted = computed(() => {
@@ -191,7 +191,7 @@ export default {
       return allowDatabaseAccess(
         store.getters["database/databaseById"](state.databaseId),
         currentUser.value,
-        state.readOnly ? "RO" : "RW"
+        state.readonly ? "RO" : "RW"
       );
     });
 
@@ -241,12 +241,12 @@ export default {
           query: {
             template: "bb.issue.database.grant",
             name: `[${environment.name}] Request database '${database.name}' ${
-              state.readOnly ? "Read Only access" : "Read & Write access"
+              state.readonly ? "Readonly access" : "Read & Write access"
             }`,
             environment: state.environmentId,
             project: state.projectId,
             databaseList: state.databaseId,
-            readonly: state.readOnly ? "true" : "false",
+            readonly: state.readonly ? "true" : "false",
           },
         });
       }

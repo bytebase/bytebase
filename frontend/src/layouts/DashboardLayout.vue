@@ -1,6 +1,26 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
-    <BannerDemo v-if="isDemo" />
+    <template v-if="isDemo">
+      <BannerDemo />
+    </template>
+    <template v-else-if="isReadonly">
+      <div
+        class="
+          h-12
+          w-full
+          text-lg
+          font-medium
+          bg-yellow-500
+          text-white
+          flex
+          justify-center
+          items-center
+        "
+      >
+        Server is in readonly mode. You can still view the console, but any
+        change attempt will fail.
+      </div>
+    </template>
     <nav class="bg-white border-b border-block-border">
       <div class="max-w-full mx-auto px-4">
         <DashboardHeader />
@@ -54,9 +74,12 @@ export default {
 
     const isDemo = computed(() => store.getters["actuator/isDemo"]());
 
+    const isReadonly = computed(() => store.getters["actuator/isReadonly"]());
+
     return {
       ping,
       isDemo,
+      isReadonly,
     };
   },
 };

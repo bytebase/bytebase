@@ -77,13 +77,13 @@ const template: IssueTemplate = {
 
         const issue = ctx.issue as Issue;
         const database = issue.pipeline.stageList[0].taskList[0].database!;
-        const readOnly = issue.payload[INPUT_READ_ONLY_FIELD_ID];
+        const readonly = issue.payload[INPUT_READ_ONLY_FIELD_ID];
         let dataSourceId;
         for (const dataSource of database.dataSourceList) {
-          if (readOnly && dataSource.type == "RO") {
+          if (readonly && dataSource.type == "RO") {
             dataSourceId = dataSource.id;
             break;
-          } else if (!readOnly && dataSource.type == "RW") {
+          } else if (!readonly && dataSource.type == "RW") {
             dataSourceId = dataSource.id;
             break;
           }

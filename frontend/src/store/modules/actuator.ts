@@ -12,6 +12,9 @@ const getters = {
   isDemo: (state: ActuatorState) => (): boolean => {
     return state.serverInfo?.demo || false;
   },
+  isReadonly: (state: ActuatorState) => (): boolean => {
+    return state.serverInfo?.readonly || false;
+  },
 };
 
 const actions = {
