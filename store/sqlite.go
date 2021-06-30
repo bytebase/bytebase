@@ -72,18 +72,25 @@ type DB struct {
 	// Force reset seed, true for testing and demo
 	forceResetSeed bool
 
+	// If true, database will be opened in readonly mode
+	readonly bool
+
 	// Returns the current time. Defaults to time.Now().
 	// Can be mocked for tests.
 	Now func() time.Time
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, seedDir string, forceResetSeed bool) *DB {
+func NewDB(logger *zap.Logger, dsn string, seedDir string, forceResetSeed bool, readonly bool) *DB {
+	if readonly {
+		pragmaList = append(pragmaList, "mode=ro")
+	}
 	db := &DB{
 		l:              logger,
 		DSN:            strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
 		seedDir:        seedDir,
 		forceResetSeed: forceResetSeed,
+		readonly:       readonly,
 		Now:            time.Now,
 	}
 	return db
@@ -100,23 +107,26 @@ func (db *DB) Open() (err error) {
 	if db.Db, err = sql.Open(sqliteDriver, db.DSN); err != nil {
 		return err
 	}
+	if db.readonly {
+		db.l.Info("Database is opened in readonly mode. Skip migration and seeding.")
+	} else {
+		majorBeforeMigration, minorBeforeMigration, err := db.version()
+		if err != nil {
+			return fmt.Errorf("failed to get current schema version: %w", err)
+		}
 
-	majorBeforeMigration, minorBeforeMigration, err := db.version()
-	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
-	}
+		if err := db.migrate(); err != nil {
+			return fmt.Errorf("failed to migrate: %w", err)
+		}
 
-	if err := db.migrate(); err != nil {
-		return fmt.Errorf("failed to migrate: %w", err)
-	}
+		majorAfterMigration, minorAfterMigration, err := db.version()
+		if err != nil {
+			return fmt.Errorf("failed to get current schema version: %w", err)
+		}
 
-	majorAfterMigration, minorAfterMigration, err := db.version()
-	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
-	}
-
-	if err := db.seed(majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration); err != nil {
-		return fmt.Errorf("failed to seed: %w", err)
+		if err := db.seed(majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration); err != nil {
+			return fmt.Errorf("failed to seed: %w", err)
+		}
 	}
 
 	return nil
@@ -164,7 +174,7 @@ func (db *DB) seed(majorBeforeMigration int, minorBeforeMigration int, majorAfte
 				return fmt.Errorf("seed error: name=%q err=%w", name, err)
 			}
 		} else {
-			db.l.Info(fmt.Sprintf("Ignore this seed file: %s. The corresponding seed version %d.%d is not in the applicable range (%d.%d, %d.%d].",
+			db.l.Info(fmt.Sprintf("Skip this seed file: %s. The corresponding seed version %d.%d is not in the applicable range (%d.%d, %d.%d].",
 				name, version/10000, version%10000, majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration))
 		}
 	}
@@ -233,7 +243,7 @@ func (db *DB) migrate() error {
 				return fmt.Errorf("migration error: name=%q err=%w", name, err)
 			}
 		} else {
-			db.l.Info(fmt.Sprintf("Ignore this migration file: %s. The corresponding migration version %d.%d has already been applied.", name, fileMajor, fileMinor))
+			db.l.Info(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %d.%d has already been applied.", name, fileMajor, fileMinor))
 		}
 	}
 

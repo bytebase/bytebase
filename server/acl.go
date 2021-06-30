@@ -23,11 +23,16 @@ func GetRoleContextKey() string {
 	return roleContextKey
 }
 
-func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc) echo.HandlerFunc {
+func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth
 		if strings.HasPrefix(c.Path(), "/api/auth") {
 			return next(c)
+		}
+
+		method := c.Request().Method
+		if readonly && method != "GET" {
+			return echo.NewHTTPError(http.StatusMethodNotAllowed, "Server is in readonly mode")
 		}
 
 		// Gets principal id from the context.
@@ -44,7 +49,6 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
 
-		method := c.Request().Method
 		// If the requests is trying to PATCH/DELETE herself, we will change the method signature to
 		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
 		if method == "PATCH" || method == "DELETE" {

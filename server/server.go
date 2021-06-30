@@ -49,6 +49,7 @@ type Server struct {
 	port      int
 	startedTs int64
 	secret    string
+	readonly  bool
 	demo      bool
 	plan      api.PlanType
 }
@@ -80,7 +81,7 @@ func getFileSystem() http.FileSystem {
 	return http.FS(fsys)
 }
 
-func NewServer(logger *zap.Logger, host string, port int, mode string, secret string, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, host string, port int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -102,21 +103,24 @@ func NewServer(logger *zap.Logger, host string, port int, mode string, secret st
 		port:      port,
 		startedTs: time.Now().Unix(),
 		secret:    secret,
+		readonly:  readonly,
 		demo:      demo,
 		plan:      api.TEAM,
 	}
 
-	scheduler := NewTaskScheduler(logger, s)
-	defaultExecutor := NewDefaultTaskExecutor(logger)
-	createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
-	sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
-	scheduler.Register(string(api.TaskGeneral), defaultExecutor)
-	scheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
-	scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
-	s.TaskScheduler = scheduler
+	if !readonly {
+		scheduler := NewTaskScheduler(logger, s)
+		defaultExecutor := NewDefaultTaskExecutor(logger)
+		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
+		sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
+		scheduler.Register(string(api.TaskGeneral), defaultExecutor)
+		scheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
+		scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+		s.TaskScheduler = scheduler
 
-	schemaSyncer := NewSchemaSyncer(logger, s)
-	s.SchemaSyncer = schemaSyncer
+		schemaSyncer := NewSchemaSyncer(logger, s)
+		s.SchemaSyncer = schemaSyncer
+	}
 
 	// Middleware
 	if mode == "dev" || debug {
@@ -152,7 +156,7 @@ func NewServer(logger *zap.Logger, host string, port int, mode string, secret st
 		e.Logger.Fatal(err)
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return ACLMiddleware(logger, s, ce, next)
+		return ACLMiddleware(logger, s, ce, next, readonly)
 	})
 	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
@@ -182,12 +186,14 @@ func NewServer(logger *zap.Logger, host string, port int, mode string, secret st
 }
 
 func (server *Server) Run() error {
-	if err := server.TaskScheduler.Run(); err != nil {
-		return err
-	}
+	if !server.readonly {
+		if err := server.TaskScheduler.Run(); err != nil {
+			return err
+		}
 
-	if err := server.SchemaSyncer.Run(); err != nil {
-		return err
+		if err := server.SchemaSyncer.Run(); err != nil {
+			return err
+		}
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.

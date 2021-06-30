@@ -56,9 +56,13 @@ var (
 	host    string
 	port    int
 	dataDir string
-	secret  string
-	demo    bool
-	debug   bool
+	// When we are running in readonly mode:
+	// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
+	// - Requests other than GET will be rejected
+	// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
+	readonly bool
+	demo     bool
+	debug    bool
 
 	logger *zap.Logger
 
@@ -105,7 +109,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data.")
-	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data and is read-only.")
+	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only.")
+	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data.")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging.")
 }
 
@@ -193,6 +198,7 @@ func newMain() *main {
 	fmt.Printf("port=%d\n", port)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
+	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
@@ -223,7 +229,7 @@ func initConfig(configService api.ConfigService) (*config, error) {
 }
 
 func (m *main) Run() error {
-	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed)
+	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
@@ -236,7 +242,7 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, host, port, m.profile.mode, config.secret, demo, debug)
+	server := server.NewServer(m.l, host, port, m.profile.mode, config.secret, readonly, demo, debug)
 	server.PrincipalService = store.NewPrincipalService(m.l, db)
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)
