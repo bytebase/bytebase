@@ -82,6 +82,40 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
+                const ownerList: QuickActionType[] = store.getters[
+                  "plan/feature"
+                ]("bb.dba-workflow")
+                  ? [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.project.create",
+                      "quickaction.bb.user.manage",
+                    ]
+                  : [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.project.create",
+                      "quickaction.bb.user.manage",
+                    ];
+                const dbaList: QuickActionType[] = store.getters[
+                  "plan/feature"
+                ]("bb.dba-workflow")
+                  ? [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.project.create",
+                    ]
+                  : [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.project.create",
+                    ];
                 const developerList: QuickActionType[] = store.getters[
                   "plan/feature"
                 ]("bb.dba-workflow")
@@ -97,27 +131,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.project.create",
                     ];
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.database.troubleshoot",
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.user.manage",
-                    ],
-                  ],
-                  [
-                    "DBA",
-                    [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.database.troubleshoot",
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.project.create",
-                    ],
-                  ],
+                  ["OWNER", ownerList],
+                  ["DBA", dbaList],
                   ["DEVELOPER", developerList],
                 ]);
               },
@@ -437,6 +452,30 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => "Database",
               quickActionListByRole: () => {
+                const ownerList: QuickActionType[] = store.getters[
+                  "plan/feature"
+                ]("bb.dba-workflow")
+                  ? [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.database.troubleshoot",
+                    ]
+                  : [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                    ];
+                const dbaList: QuickActionType[] = store.getters[
+                  "plan/feature"
+                ]("bb.dba-workflow")
+                  ? [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.database.troubleshoot",
+                    ]
+                  : [
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.create",
+                    ];
                 const developerList: QuickActionType[] = store.getters[
                   "plan/feature"
                 ]("bb.dba-workflow")
@@ -450,20 +489,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.create",
                     ];
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.create",
-                    ],
-                  ],
-                  [
-                    "DBA",
-                    [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.create",
-                    ],
-                  ],
+                  ["OWNER", ownerList],
+                  ["DBA", dbaList],
                   ["DEVELOPER", developerList],
                 ]);
               },
