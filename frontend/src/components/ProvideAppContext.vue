@@ -10,7 +10,13 @@ export default {
   async setup() {
     const store = useStore();
 
-    await Promise.all([store.dispatch("actuator/info")]);
+    // Restore login user first.
+    await store.dispatch("auth/restoreUser");
+
+    await Promise.all([
+      store.dispatch("actuator/info"),
+      store.dispatch("plan/fetchCurrentPlan"),
+    ]);
   },
 };
 </script>

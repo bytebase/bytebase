@@ -144,8 +144,8 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 // will try to generate new access token and refresh token.
 func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc, mode string, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Skips auth and actuator
-		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/actuator") {
+		// Skips auth, actuator, plan
+		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/actuator") || strings.HasPrefix(c.Path(), "/api/plan") {
 			return next(c)
 		}
 
