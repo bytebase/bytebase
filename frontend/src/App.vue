@@ -62,8 +62,11 @@ export default {
       }
     }, CHECK_LOGGEDIN_STATE_DURATION);
 
-    const removeNotification = (id: string) => {
-      state.notificationList.shift();
+    const removeNotification = (item: BBNotificationItem) => {
+      const index = state.notificationList.indexOf(item);
+      if (index >= 0) {
+        state.notificationList.splice(index, 1);
+      }
     };
 
     const watchNotification = () => {
@@ -73,23 +76,26 @@ export default {
         })
         .then((notification: Notification | undefined) => {
           if (notification) {
-            state.notificationList.push({
-              style: notification.style,
-              title: notification.title,
-              description: notification.description || "",
-              link: notification.link || "",
-              linkTitle: notification.linkTitle || "",
-            });
-            // state.notification = notification;
-            if (!notification.manualHide) {
-              setTimeout(
-                () => {
-                  removeNotification(notification.id);
-                },
-                notification.style == "CRITICAL"
-                  ? CRITICAL_NOTIFICAITON_DURATION
-                  : NOTIFICAITON_DURATION
-              );
+            // Show at most 5 notifications to prevent excessive notification when shit hits the fan.
+            if (state.notificationList.length < 5) {
+              const item: BBNotificationItem = {
+                style: notification.style,
+                title: notification.title,
+                description: notification.description || "",
+                link: notification.link || "",
+                linkTitle: notification.linkTitle || "",
+              };
+              state.notificationList.push(item);
+              if (!notification.manualHide) {
+                setTimeout(
+                  () => {
+                    removeNotification(item);
+                  },
+                  notification.style == "CRITICAL"
+                    ? CRITICAL_NOTIFICAITON_DURATION
+                    : NOTIFICAITON_DURATION
+                );
+              }
             }
           }
         });

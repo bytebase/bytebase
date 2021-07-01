@@ -124,7 +124,9 @@
                       text-accent
                       hover:text-accent-hover
                       focus:outline-none
-                      focus:ring-2 focus:ring-offset-2 focus:ring-accent
+                      focus:ring-2
+                      focus:ring-offset-2
+                      focus:ring-accent
                     "
                     @click.prevent="viewLink(notification.link)"
                   >
@@ -140,9 +142,11 @@
                       text-gray-700
                       hover:text-gray-500
                       focus:outline-none
-                      focus:ring-2 focus:ring-offset-2 focus:ring-accent
+                      focus:ring-2
+                      focus:ring-offset-2
+                      focus:ring-accent
                     "
-                    @click.prevent="$emit('close')"
+                    @click.prevent="$emit('close', notification)"
                   >
                     Dismiss
                   </button>
@@ -158,7 +162,7 @@
                     hover:text-gray-500
                     focus:outline-none
                   "
-                  @click.prevent="$emit('close')"
+                  @click.prevent="$emit('close', notification)"
                 >
                   <span class="sr-only">Close</span>
                   <!-- Heroicon name: solid/x -->
