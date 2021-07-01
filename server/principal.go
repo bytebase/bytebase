@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,14 +52,25 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
 
+		filteredList := []*api.Principal{}
 		for _, principal := range list {
 			if err := s.ComposePrincipalRole(context.Background(), principal); err != nil {
+				// Normally this should not happen since we create the member together with the principal
+				// and we don't allow deleting the member. Just in case.
+				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+					s.l.Error("Principal has not been assigned a role. Skip",
+						zap.Int("id", principal.ID),
+						zap.String("name", principal.Name),
+					)
+					continue
+				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch role for principal: %v", principal.Name)).SetInternal(err)
 			}
+			filteredList = append(filteredList, principal)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, filteredList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal principal list response").SetInternal(err)
 		}
 		return nil
