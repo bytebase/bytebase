@@ -51,7 +51,7 @@
   </button>
   <BBAlert
     v-if="state.showModal"
-    :style="'CRITICAL'"
+    :style="style == 'DELETE' || style == 'ARCHIVE' ? 'CRITICAL' : 'INFO'"
     :okText="okText"
     :title="confirmTitle"
     :description="confirmDescription"
