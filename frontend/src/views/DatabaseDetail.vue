@@ -305,7 +305,7 @@ import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import { DataSource, ProjectId, DataSourcePatch, UNKNOWN_ID } from "../types";
@@ -329,7 +329,7 @@ export default {
     DataSourceConnectionPanel,
     DataSourceTable,
     TableTable,
-    PrincipalSelect,
+    MemberSelect,
     ProjectSelect,
   },
   setup(props, ctx) {

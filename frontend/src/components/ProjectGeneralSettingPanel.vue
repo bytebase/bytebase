@@ -54,7 +54,7 @@
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import { Project, ProjectPatch } from "../types";
 
@@ -65,7 +65,7 @@ interface LocalState {
 
 export default {
   name: "ProjectGeneralSettingPanel",
-  components: { PrincipalSelect, ProjectMemberTable },
+  components: { MemberSelect, ProjectMemberTable },
   props: {
     project: {
       required: true,

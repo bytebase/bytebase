@@ -55,7 +55,7 @@ interface LocalState {
 }
 
 export default {
-  name: "PrincipalSelect",
+  name: "MemberSelect",
   emits: ["select-principal-id"],
   components: { PrincipalAvatar },
   props: {

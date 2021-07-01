@@ -201,7 +201,7 @@ import isEmpty from "lodash-es/isEmpty";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import { instanceSlug, databaseSlug, issueSlug } from "../utils";
 import {
   Issue,
@@ -233,7 +233,7 @@ export default {
     InstanceSelect,
     EnvironmentSelect,
     ProjectSelect,
-    PrincipalSelect,
+    MemberSelect,
   },
   setup(props, ctx) {
     const store = useStore();

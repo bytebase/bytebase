@@ -21,7 +21,7 @@
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2">
-        <PrincipalSelect
+        <MemberSelect
           :disabled="!allowEditAssignee"
           :selectedId="create ? issue.assigneeId : issue.assignee?.id"
           :allowedRoleList="['OWNER', 'DBA']"
@@ -244,7 +244,7 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import { InputField } from "../plugins";
@@ -300,7 +300,7 @@ export default {
     ProjectSelect,
     EnvironmentSelect,
     PrincipalAvatar,
-    PrincipalSelect,
+    MemberSelect,
     StageSelect,
     IssueStatusIcon,
   },

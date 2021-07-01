@@ -18,7 +18,7 @@ export default {
     );
 
     await Promise.all([
-      // Fetch member and principal list so PrincipalSelect can have the data.
+      // Fetch member and principal list so MemberSelect can have the data.
       store.dispatch("member/fetchMemberList"),
       store.dispatch("principal/fetchPrincipalList"),
       store.dispatch("environment/fetchEnvironmentList"),

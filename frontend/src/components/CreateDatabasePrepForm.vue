@@ -93,7 +93,7 @@
           Assignee <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
-        <PrincipalSelect
+        <MemberSelect
           class="mt-1"
           id="user"
           name="user"
@@ -139,7 +139,7 @@ import isEmpty from "lodash-es/isEmpty";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import {
   EnvironmentId,
   InstanceId,
@@ -172,7 +172,7 @@ export default {
     InstanceSelect,
     EnvironmentSelect,
     ProjectSelect,
-    PrincipalSelect,
+    MemberSelect,
   },
   setup(props, { emit }) {
     const store = useStore();

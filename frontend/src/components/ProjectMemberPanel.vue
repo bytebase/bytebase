@@ -9,7 +9,7 @@
             class="flex flex-row justify-between py-0.5 select-none space-x-4"
           >
             <div class="w-64">
-              <PrincipalSelect
+              <MemberSelect
                 id="user"
                 name="user"
                 :required="false"
@@ -87,7 +87,7 @@
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
   PrincipalId,
@@ -107,7 +107,7 @@ interface LocalState {
 
 export default {
   name: "ProjectMemberPanel",
-  components: { PrincipalSelect, ProjectMemberTable },
+  components: { MemberSelect, ProjectMemberTable },
   props: {
     project: {
       required: true,

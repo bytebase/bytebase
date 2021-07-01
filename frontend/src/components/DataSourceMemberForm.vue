@@ -100,7 +100,7 @@ input[type="number"] {
             </span>
           </label>
           <!-- DBA and Owner always have all access, so we only need to grant to developer -->
-          <PrincipalSelect
+          <MemberSelect
             class="mt-1"
             id="user"
             name="user"
@@ -184,7 +184,7 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import DataSourceSelect from "../components/DataSourceSelect.vue";
 import InstanceSelect from "../components/InstanceSelect.vue";
-import PrincipalSelect from "../components/PrincipalSelect.vue";
+import MemberSelect from "../components/MemberSelect.vue";
 import {
   DatabaseId,
   DataSource,
@@ -228,7 +228,7 @@ export default {
     EnvironmentSelect,
     DatabaseSelect,
     DataSourceSelect,
-    PrincipalSelect,
+    MemberSelect,
     InstanceSelect,
   },
   setup(props, { emit }) {
