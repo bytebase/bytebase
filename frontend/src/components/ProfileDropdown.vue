@@ -59,8 +59,12 @@
         <router-link to="/setting" class="menu-item" role="menuitem"
           >Settings</router-link
         >
-        <a @click.prevent="resetQuickstart" class="menu-item" role="menuitem"
-          >Reset Quickstart</a
+        <a
+          v-if="showQuickstart"
+          @click.prevent="resetQuickstart"
+          class="menu-item"
+          role="menuitem"
+          >Quickstart</a
         >
       </div>
       <div class="border-t border-gray-100"></div>
@@ -87,6 +91,10 @@ export default {
     const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const showQuickstart = computed(() => {
+      return !store.getters["actuator/isDemo"]();
+    });
 
     const logout = () => {
       store.dispatch("auth/logout").then(() => {
@@ -171,6 +179,7 @@ export default {
 
     return {
       currentUser,
+      showQuickstart,
       resetQuickstart,
       logout,
       switchToOwner,
