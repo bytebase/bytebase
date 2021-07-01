@@ -44,6 +44,7 @@ const getters = {
   memberList: (state: MemberState) => (): Member[] => {
     return state.memberList;
   },
+
   memberByPrincipalId:
     (state: MemberState) =>
     (id: PrincipalId): Member => {
@@ -53,6 +54,15 @@ const getters = {
 
       return (
         state.memberList.find((item) => item.principal.id == id) ||
+        (unknown("MEMBER") as Member)
+      );
+    },
+
+  memberByEmail:
+    (state: MemberState) =>
+    (email: string): Member => {
+      return (
+        state.memberList.find((item) => item.principal.email == email) ||
         (unknown("MEMBER") as Member)
       );
     },

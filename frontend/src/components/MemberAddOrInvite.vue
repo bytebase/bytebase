@@ -190,10 +190,8 @@ export default {
         if (!isValidEmail(user.email)) {
           return "Invalid email address";
         } else {
-          const principal = store.getters["principal/principalByEmail"](
-            user.email
-          );
-          if (principal.id != UNKNOWN_ID) {
+          const member = store.getters["member/memberByEmail"](user.email);
+          if (member.id != UNKNOWN_ID) {
             return "Already a member";
           }
         }

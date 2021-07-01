@@ -43,15 +43,6 @@ const getters = {
     return state.principalList;
   },
 
-  principalByEmail:
-    (state: PrincipalState) =>
-    (email: string): Principal => {
-      return (
-        state.principalList.find((item) => item.email == email) ||
-        (unknown("PRINCIPAL") as Principal)
-      );
-    },
-
   principalById:
     (state: PrincipalState) =>
     (principalId: PrincipalId): Principal => {
