@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -18,6 +19,17 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			Port:      strconv.Itoa(s.port),
 			StartedTs: s.startedTs,
 		}
+
+		findRole := api.Owner
+		find := &api.MemberFind{
+			Role: &findRole,
+		}
+		list, err := s.MemberService.FindMemberList(context.Background(), find)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch admin setup status").SetInternal(err)
+		}
+		serverInfo.NeedAdminSetup = len(list) == 0
+
 		return c.JSON(http.StatusOK, serverInfo)
 	})
 }

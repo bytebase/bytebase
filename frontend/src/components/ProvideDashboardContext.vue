@@ -19,7 +19,6 @@ export default {
 
     await Promise.all([
       store.dispatch("plan/fetchCurrentPlan"),
-      store.dispatch("actuator/info"),
       // Fetch member and principal list so PrincipalSelect can have the data.
       store.dispatch("member/fetchMemberList"),
       store.dispatch("principal/fetchPrincipalList"),

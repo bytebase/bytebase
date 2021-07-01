@@ -79,6 +79,7 @@ type MemberFind struct {
 
 	// Domain specific fields
 	PrincipalId *int
+	Role        *Role
 }
 
 func (find *MemberFind) String() string {

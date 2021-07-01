@@ -177,6 +177,9 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 	if v := find.PrincipalId; v != nil {
 		where, args = append(where, "principal_id = ?"), append(args, *v)
 	}
+	if v := find.Role; v != nil {
+		where, args = append(where, "role = ?"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 

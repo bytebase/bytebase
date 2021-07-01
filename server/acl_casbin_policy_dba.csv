@@ -1,4 +1,3 @@
-p, DBA, /actuator/info, GET
 p, DBA, /principal, GET
 p, DBA, /principal/{id}, GET
 p, DBA, /principal/{id}, PATCH_SELF

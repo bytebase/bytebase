@@ -1,4 +1,3 @@
-p, DEVELOPER, /actuator/info, GET
 p, DEVELOPER, /principal, GET
 p, DEVELOPER, /principal/{id}, GET
 p, DEVELOPER, /principal/{id}, PATCH_SELF

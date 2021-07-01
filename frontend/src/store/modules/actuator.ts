@@ -18,6 +18,9 @@ const getters = {
   isReadonly: (state: ActuatorState) => (): boolean => {
     return state.serverInfo?.readonly || false;
   },
+  needAdminSetup: (state: ActuatorState) => (): boolean => {
+    return state.serverInfo?.needAdminSetup || false;
+  },
 };
 
 const actions = {

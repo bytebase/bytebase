@@ -25,8 +25,8 @@ func GetRoleContextKey() string {
 
 func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Skips auth and plan
-		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/plan") {
+		// Skips auth, actuator and plan
+		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/actuator") || strings.HasPrefix(c.Path(), "/api/plan") {
 			return next(c)
 		}
 

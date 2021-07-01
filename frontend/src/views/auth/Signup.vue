@@ -3,7 +3,11 @@
     <div>
       <img class="h-12 w-auto" src="../../assets/logo.svg" alt="Bytebase" />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        Register your account
+        <template v-if="needAdminSetup" class="text-accent font-semnibold">
+          Setup
+          <span class="text-accent font-semnibold">admin account</span>
+        </template>
+        <template v-else> Register your account </template>
       </h2>
     </div>
 
@@ -15,7 +19,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Email<span class="text-red-600">*</span>
+              Email <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -36,8 +40,7 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
                 "
                 @input="onTextEmail"
               />
@@ -49,14 +52,15 @@
               for="password"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Password<span class="text-red-600">*</span>
+              Password <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="password"
                 type="password"
-                autocomplete="on"
-                v-model="state.password"
+                autocomplete="off"
+                :value="state.password"
+                @input="changePassword($event.target.value)"
                 required
                 class="
                   appearance-none
@@ -70,8 +74,44 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
+                "
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              for="password-confirm"
+              class="block text-sm font-medium leading-5 text-control"
+            >
+              Confirm Password
+              <span class="text-red-600"
+                >* {{ state.showPasswordMismatchError ? "mismatch" : "" }}</span
+              >
+            </label>
+            <div class="mt-1 rounded-md shadow-sm">
+              <input
+                id="password-confirm"
+                type="password"
+                autocomplete="off"
+                :placeholder="'Confirm password'"
+                :value="state.passwordConfirm"
+                @input="changePasswordConfirm($event.target.value)"
+                required
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm sm:leading-5
                 "
               />
             </div>
@@ -102,8 +142,7 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
                 "
                 @input="onTextName"
               />
@@ -117,7 +156,7 @@
                 :disabled="!allowSignup"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
-                Register
+                {{ needAdminSetup ? "Create admin account" : "Register" }}
               </button>
             </span>
           </div>
@@ -125,7 +164,7 @@
       </div>
     </div>
 
-    <div class="mt-6 relative">
+    <div v-if="!needAdminSetup" class="mt-6 relative">
       <div class="absolute inset-0 flex items-center" aria-hidden="true">
         <div class="w-full border-t border-control-border"></div>
       </div>
@@ -142,15 +181,18 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { SignupInfo } from "../../types";
+import { SignupInfo, TEXT_VALIDATION_DELAY } from "../../types";
 import { isValidEmail } from "../../utils";
 
 interface LocalState {
   email: string;
   password: string;
+  passwordConfirm: string;
+  passwordValidationTimer?: ReturnType<typeof setTimeout>;
+  showPasswordMismatchError: boolean;
   name: string;
   nameManuallyEdited: boolean;
 }
@@ -164,13 +206,66 @@ export default {
     const state = reactive<LocalState>({
       email: "",
       password: "",
+      passwordConfirm: "",
+      showPasswordMismatchError: false,
       name: "",
       nameManuallyEdited: false,
     });
 
-    const allowSignup = computed(() => {
-      return isValidEmail(state.email) && state.password;
+    onUnmounted(() => {
+      if (state.passwordValidationTimer) {
+        clearInterval(state.passwordValidationTimer);
+      }
     });
+
+    const needAdminSetup = computed(() => {
+      return store.getters["actuator/needAdminSetup"]();
+    });
+
+    const allowSignup = computed(() => {
+      return (
+        isValidEmail(state.email) &&
+        state.password &&
+        !state.showPasswordMismatchError
+      );
+    });
+
+    const passwordMatch = computed(() => {
+      return state.password == state.passwordConfirm;
+    });
+
+    const refreshPasswordValidation = () => {
+      if (state.passwordValidationTimer) {
+        clearInterval(state.passwordValidationTimer);
+      }
+
+      if (passwordMatch.value) {
+        state.showPasswordMismatchError = false;
+      } else {
+        state.passwordValidationTimer = setTimeout(() => {
+          // If error is already displayed, we hide the error only if there is valid input.
+          // Otherwise, we hide the error if input is either empty or valid.
+          if (state.showPasswordMismatchError) {
+            state.showPasswordMismatchError = !passwordMatch.value;
+          } else {
+            state.showPasswordMismatchError =
+              state.password != "" &&
+              state.passwordConfirm != "" &&
+              !passwordMatch.value;
+          }
+        }, TEXT_VALIDATION_DELAY);
+      }
+    };
+
+    const changePassword = (value: string) => {
+      state.password = value;
+      refreshPasswordValidation();
+    };
+
+    const changePasswordConfirm = (value: string) => {
+      state.passwordConfirm = value;
+      refreshPasswordValidation();
+    };
 
     const onTextEmail = () => {
       const email = state.email.trim();
@@ -199,19 +294,26 @@ export default {
     };
 
     const trySignup = () => {
-      const signupInfo: SignupInfo = {
-        email: state.email,
-        password: state.password,
-        name: state.name,
-      };
-      store.dispatch("auth/signup", signupInfo).then(() => {
-        router.push("/");
-      });
+      if (!passwordMatch.value) {
+        state.showPasswordMismatchError = true;
+      } else {
+        const signupInfo: SignupInfo = {
+          email: state.email,
+          password: state.password,
+          name: state.name,
+        };
+        store.dispatch("auth/signup", signupInfo).then(() => {
+          router.push("/");
+        });
+      }
     };
 
     return {
       state,
+      needAdminSetup,
       allowSignup,
+      changePassword,
+      changePasswordConfirm,
       onTextEmail,
       onTextName,
       trySignup,

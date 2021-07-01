@@ -75,28 +75,42 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
 		}
 
+		findRole := api.Owner
+		find := &api.MemberFind{
+			Role: &findRole,
+		}
+		list, err := s.MemberService.FindMemberList(context.Background(), find)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
+		}
+
+		// Grant the member Owner role if there is no existing Owner member.
+		role := api.Developer
+		if len(list) == 0 {
+			role = api.Owner
+		}
 		memberCreate := &api.MemberCreate{
 			CreatorId:   api.SYSTEM_BOT_ID,
 			Status:      api.Active,
-			Role:        api.Developer,
+			Role:        role,
 			PrincipalId: user.ID,
 		}
 
 		_, err = s.MemberService.CreateMember(context.Background(), memberCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s.", signup.Email))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signup.Email))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup.").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
 		}
 
 		if err := GenerateTokensAndSetCookies(c, user, s.mode, s.secret); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token.").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal signup response.").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal signup response").SetInternal(err)
 		}
 		return nil
 	})
