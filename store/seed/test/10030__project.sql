@@ -71,7 +71,7 @@ VALUES
         'ARCHIVED',
         101,
         101,
-        'Project Glacier',
-        'GLC',
+        'Retired Project',
+        'RTR',
         'UI'
     );
