@@ -18,8 +18,11 @@ export default {
     );
 
     await Promise.all([
-      // Fetch member and principal list so MemberSelect can have the data.
+      // Fetch so MemberSelect can have the data.
       store.dispatch("member/fetchMemberList"),
+      // Though fetchMemberList also return the principal info, it's possible that a principal is no longer a member.
+      // since all record types have creator, updater which are associated with principal, so we need to fetch
+      // the principal list as well.
       store.dispatch("principal/fetchPrincipalList"),
       store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.

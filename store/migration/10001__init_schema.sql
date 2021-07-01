@@ -90,6 +90,7 @@ WHERE
 END;
 
 -- Member
+-- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
 CREATE TABLE member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
