@@ -182,7 +182,7 @@ export default {
         principalId: state.principalId,
         role: hasAdminFeature.value ? state.role : "OWNER",
       };
-      const principal = store.getters["principal/principalById"](
+      const member = store.getters["member/memberByPrincipalId"](
         state.principalId
       );
       store
@@ -194,7 +194,7 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully added ${principal.name} to the project.`,
+            title: `Successfully added ${member.principal.name} to the project.`,
           });
         });
 
