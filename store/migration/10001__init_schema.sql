@@ -492,7 +492,7 @@ CREATE TABLE task (
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
-    payload TEXT NOT NULL DEFAULT '{}'
+    payload TEXT NOT NULL DEFAULT ''
 );
 
 INSERT INTO
@@ -532,7 +532,7 @@ CREATE TABLE task_run (
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
     error TEXT NOT NULL DEFAULT '',
-    payload TEXT NOT NULL DEFAULT '{}'
+    payload TEXT NOT NULL DEFAULT ''
 );
 
 INSERT INTO
@@ -574,7 +574,7 @@ CREATE TABLE issue (
     description TEXT NOT NULL,
     assignee_id INTEGER REFERENCES principal (id),
     subscriber_id_list TEXT NOT NULL,
-    payload TEXT NOT NULL DEFAULT '{}'
+    payload TEXT NOT NULL DEFAULT ''
 );
 
 INSERT INTO
@@ -608,7 +608,7 @@ CREATE TABLE activity (
     container_id INTEGER NOT NULL CHECK (container_id != 0),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
     `comment` TEXT NOT NULL DEFAULT '',
-    payload TEXT NOT NULL DEFAULT '{}'
+    payload TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_activity_container_id ON activity(container_id);
