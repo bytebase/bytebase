@@ -7,7 +7,6 @@
       v-for="(notification, index) of notificationList.slice().reverse()"
       :key="index"
     >
-      <!-- TODO: Needs to figure out how to do transition -->
       <!--
     Notification panel, show/hide based on alert state.
 

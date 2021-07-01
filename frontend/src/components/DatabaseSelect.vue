@@ -88,9 +88,8 @@ export default {
     );
 
     const prepareDatabaseList = () => {
-      // TODO: need to revisit this, instead of fetching each time,
-      // we maybe able to let the outside context to provide the database list
-      // and we just do a get here.
+      // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
+      // to provide the database list and we just do a get here.
       if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
         store.dispatch(
           "database/fetchDatabaseListByEnvironmentId",

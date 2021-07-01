@@ -42,7 +42,6 @@
     ></textarea>
   </template>
   <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
-  <!-- TODO: There is still flickering between edit/non-edit mode depending on the line height -->
   <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
     <div v-if="state.editStatement" v-highlight class="whitespace-pre-wrap">
       {{ state.editStatement }}

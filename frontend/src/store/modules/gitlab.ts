@@ -103,7 +103,7 @@ const actions = {
           // Saying that, delivering a souding dry run solution would be great and hopefully we can achieve that one day.
           // merge_requests_events: true,
           push_events_branch_filter: branchFilter,
-          // TODO: Be lax for now
+          // TODO(tianzhou): Be lax to not enable_ssl_verification
           enable_ssl_verification: false,
         },
         {

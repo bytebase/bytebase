@@ -48,13 +48,14 @@ const routes: Array<RouteRecordRaw> = [
         component: Signup,
         props: true,
       },
-      {
-        path: "activate",
-        name: ACTIVATE_MODULE,
-        meta: { title: () => "Activate" },
-        component: Activate,
-        props: true,
-      },
+      // TODO(tianzhou): Disable activate page for now, requires implementing invite
+      // {
+      //   path: "activate",
+      //   name: ACTIVATE_MODULE,
+      //   meta: { title: () => "Activate" },
+      //   component: Activate,
+      //   props: true,
+      // },
       {
         path: "password-reset",
         name: PASSWORD_RESET_MODULE,
@@ -666,7 +667,7 @@ router.beforeEach((to, from, next) => {
       if (to.name === ACTIVATE_MODULE) {
         const token = to.query.token;
         if (token) {
-          // TODO: Needs to validate the token
+          // TODO(tianzhou): Needs to validate the activate token
           next();
         } else {
           // Go to signup if token is missing

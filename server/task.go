@@ -197,7 +197,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
 	}
 
-	// TODO: This indiciates a coupling that pipeline belongs to an issue.
+	// TODO(tianzhou): This indiciates a coupling that pipeline belongs to an issue.
 	// A better way is to implement this as an onTaskStatusChange callback
 	issueFind := &api.IssueFind{
 		PipelineId: &task.PipelineId,

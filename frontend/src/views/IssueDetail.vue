@@ -787,7 +787,7 @@ export default {
     });
 
     const showIssueTaskRollbackStatementPanel = computed(() => {
-      // TODO: disable it for now
+      // TODO(tianzhou): Disable rollback statement for now
       return false;
       //return issue.value.type == "bb.issue.database.schema.update";
     });

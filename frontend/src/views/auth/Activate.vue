@@ -51,8 +51,7 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
                 "
               />
             </div>
@@ -83,8 +82,7 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
                 "
               />
             </div>
@@ -126,7 +124,7 @@ export default {
     const router = useRouter();
     const token = router.currentRoute.value.query.token as string;
 
-    // TODO: Get info from token
+    // TODO(tianzhou): Get info from activate token
     const state = reactive<LocalState>({
       email: "bob@example.com",
       password: "",

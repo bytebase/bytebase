@@ -470,7 +470,7 @@ export default {
       // If a valid issue id is provided, we will set the database output field
       // if it's not set before. This is based on the assumption that user creates
       // the database to fullfill that particular issue (e.g. completing the request db workflow)
-      // TODO: If there is no applicable database field, we should also link the database to the issue.
+      // TODO(tianzhou): If there is no applicable database field, we should also link the database to the issue.
       if (linkedIssue) {
         const template = templateForType(linkedIssue.type);
         if (template) {

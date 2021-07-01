@@ -49,7 +49,7 @@ export default {
     });
 
     const allowAddOrInvite = computed(() => {
-      // TODO: Enable for DBA and developer
+      // TODO(tianzhou): Implement invite mode for DBA and developer
       // If current user is owner, MemberAddOrInvite is in Add mode.
       // If current user is DBA or developer, MemberAddOrInvite is in Invite mode.
       // For now, we only enable Add mode for owner

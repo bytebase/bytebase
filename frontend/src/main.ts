@@ -134,7 +134,7 @@ axios.interceptors.response.use(
   }
 );
 
-// TODO: A global hook to collect errors to a central service
+// A global hook to collect errors to a central service
 // app.config.errorHandler = function (err, vm, info) {
 // };
 
