@@ -48,9 +48,7 @@
             font-medium
           "
         >
-          <span class="hidden lg:block font-normal text-accent"
-            >Switch plan</span
-          >
+          <span class="hidden lg:block font-normal text-accent">Plan</span>
           <div
             v-if="currentPlan != 0"
             class="bar-link"
@@ -88,9 +86,7 @@
             font-medium
           "
         >
-          <span class="hidden lg:block font-normal text-accent"
-            >Switch role
-          </span>
+          <span class="hidden lg:block font-normal text-accent">Role</span>
           <div
             v-if="currentUser.role != 'OWNER'"
             class="bar-link"
