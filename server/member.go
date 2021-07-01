@@ -92,29 +92,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-
-	g.DELETE("/member/:id", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
-		}
-
-		memberDelete := &api.MemberDelete{
-			ID:        id,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
-		}
-		err = s.MemberService.DeleteMember(context.Background(), memberDelete)
-		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete member ID: %v", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
-		return nil
-	})
 }
 
 func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member) error {

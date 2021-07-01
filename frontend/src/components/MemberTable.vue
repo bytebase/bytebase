@@ -1,5 +1,4 @@
 <template>
-  <p class="text-lg font-medium leading-7 text-main">Current members</p>
   <BBTable
     class="mt-2"
     :columnList="columnList"
@@ -39,10 +38,10 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: memberUI }">
+    <template v-slot:body="{ rowData: member }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
-          <template v-if="'INVITED' == memberUI.principal.status">
+          <template v-if="'INVITED' == member.principal.status">
             <span
               class="
                 inline-flex
@@ -59,20 +58,20 @@
               Invited
             </span>
             <span class="textlabel">
-              {{ memberUI.principal.email }}
+              {{ member.principal.email }}
             </span>
           </template>
           <template v-else>
-            <PrincipalAvatar :principal="memberUI.principal" />
+            <PrincipalAvatar :principal="member.principal" />
             <div class="flex flex-col">
               <div class="flex flex-row items-center space-x-2">
                 <router-link
-                  :to="`/u/${memberUI.principal.id}`"
+                  :to="`/u/${member.principal.id}`"
                   class="normal-link"
-                  >{{ memberUI.principal.name }}
+                  >{{ member.principal.name }}
                 </router-link>
                 <span
-                  v-if="currentUser.id == memberUI.principal.id"
+                  v-if="currentUser.id == member.principal.id"
                   class="
                     inline-flex
                     items-center
@@ -89,7 +88,7 @@
                 </span>
               </div>
               <span class="textlabel">
-                {{ memberUI.principal.email }}
+                {{ member.principal.email }}
               </span>
             </div>
           </template>
@@ -97,11 +96,11 @@
       </BBTableCell>
       <BBTableCell v-if="hasAdminFeature" class="">
         <RoleSelect
-          :selectedRole="memberUI.role"
-          :disabled="!allowChangeRole(memberUI.role)"
+          :selectedRole="member.role"
+          :disabled="!allowChangeRole(member)"
           @change-role="
             (role) => {
-              changeRole(memberUI.id, role);
+              changeRole(member.id, role);
             }
           "
         />
@@ -109,21 +108,32 @@
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
           <span>
-            {{ humanizeTs(memberUI.updatedTs) }}
+            {{ humanizeTs(member.updatedTs) }}
           </span>
           <span>by</span>
-          <router-link :to="`/u/${memberUI.updater.id}`" class="normal-link"
-            >{{ memberUI.updater.name }}
+          <router-link :to="`/u/${member.updater.id}`" class="normal-link"
+            >{{ member.updater.name }}
           </router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
-          v-if="allowChangeRole(memberUI.role)"
+          v-if="allowDeactivateMember(member)"
+          :style="'ARCHIVE'"
           :requireConfirm="true"
-          :okText="'Revoke'"
-          :confirmTitle="`Are you sure to revoke '${memberUI.role}' from '${memberUI.principal.name}'`"
-          @confirm="deleteRole(memberUI.id)"
+          :okText="'Deactivate'"
+          :confirmTitle="`Are you sure to deactivate '${member.principal.name}'`"
+          :confirmDescription="'You can still reactivate later'"
+          @confirm="changeRowStatus(member.id, 'ARCHIVED')"
+        />
+        <BBButtonConfirm
+          v-else-if="allowActivateMember(member)"
+          :style="'RESTORE'"
+          :requireConfirm="true"
+          :okText="'Reactivate'"
+          :confirmTitle="`Are you sure to reactivate '${member.principal.name}'`"
+          :confirmDescription="''"
+          @confirm="changeRowStatus(member.id, 'NORMAL')"
         />
       </BBTableCell>
     </template>
@@ -151,11 +161,11 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import { MemberId, RoleType, MemberPatch, Member } from "../types";
+import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 
@@ -164,7 +174,12 @@ interface LocalState {}
 export default {
   name: "MemberTable",
   components: { RoleSelect, PrincipalAvatar },
-  props: {},
+  props: {
+    memberList: {
+      required: true,
+      type: Object as PropType<Member[]>,
+    },
+  },
   setup(props, ctx) {
     const store = useStore();
 
@@ -176,17 +191,11 @@ export default {
 
     const state = reactive<LocalState>({});
 
-    const prepareMemberList = () => {
-      store.dispatch("member/fetchMemberList");
-    };
-
-    watchEffect(prepareMemberList);
-
     const dataSource = computed((): BBTableSectionDataSource<Member>[] => {
       const ownerList: Member[] = [];
       const dbaList: Member[] = [];
       const developerList: Member[] = [];
-      for (const member of store.getters["member/memberList"]()) {
+      for (const member of props.memberList) {
         if (member.role == "OWNER") {
           ownerList.push(member);
         }
@@ -238,7 +247,7 @@ export default {
               title: "Role",
             },
             {
-              title: "Granted Time",
+              title: "Updated Time",
             },
             {
               title: "",
@@ -249,7 +258,7 @@ export default {
               title: "Account",
             },
             {
-              title: "Granted Time",
+              title: "Updated Time",
             },
             {
               title: "",
@@ -261,11 +270,24 @@ export default {
       return isOwner(currentUser.value.role);
     });
 
-    const allowChangeRole = (role: RoleType) => {
+    const allowChangeRole = (member: Member) => {
       return (
         allowEdit.value &&
-        (role != "OWNER" || dataSource.value[0].list.length > 1)
+        member.rowStatus == "NORMAL" &&
+        (member.role != "OWNER" || dataSource.value[0].list.length > 1)
       );
+    };
+
+    const allowDeactivateMember = (member: Member) => {
+      return (
+        allowEdit.value &&
+        member.rowStatus == "NORMAL" &&
+        (member.role != "OWNER" || dataSource.value[0].list.length > 1)
+      );
+    };
+
+    const allowActivateMember = (member: Member) => {
+      return allowEdit.value && member.rowStatus == "ARCHIVED";
     };
 
     const showUpgradeInfo = computed(() => {
@@ -283,8 +305,14 @@ export default {
       });
     };
 
-    const deleteRole = (id: MemberId) => {
-      store.dispatch("member/deleteMemberById", id);
+    const changeRowStatus = (id: MemberId, rowStatus: RowStatus) => {
+      const memberPatch: MemberPatch = {
+        rowStatus,
+      };
+      store.dispatch("member/patchMember", {
+        id,
+        memberPatch,
+      });
     };
 
     return {
@@ -296,8 +324,10 @@ export default {
       dataSource,
       allowEdit,
       allowChangeRole,
+      allowDeactivateMember,
+      allowActivateMember,
       changeRole,
-      deleteRole,
+      changeRowStatus,
     };
   },
 };

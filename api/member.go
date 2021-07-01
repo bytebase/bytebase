@@ -49,6 +49,7 @@ type Member struct {
 	ID int `jsonapi:"primary,member"`
 
 	// Standard fields
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorId int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
@@ -94,6 +95,7 @@ type MemberPatch struct {
 	ID int
 
 	// Standard fields
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
 
@@ -101,18 +103,9 @@ type MemberPatch struct {
 	Role *string `jsonapi:"attr,role"`
 }
 
-type MemberDelete struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
-}
-
 type MemberService interface {
 	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
 	FindMemberList(ctx context.Context, find *MemberFind) ([]*Member, error)
 	FindMember(ctx context.Context, find *MemberFind) (*Member, error)
 	PatchMember(ctx context.Context, patch *MemberPatch) (*Member, error)
-	DeleteMember(ctx context.Context, delete *MemberDelete) error
 }

@@ -3,16 +3,24 @@
     <MemberAddOrInvite />
   </div>
   <div>
-    <MemberTable />
+    <p class="text-lg font-medium leading-7 text-main">Active members</p>
+    <MemberTable :memberList="activeMemberList" />
+    <div v-if="inactiveMemberList.length > 0" class="mt-8">
+      <p class="text-lg font-medium leading-7 text-control-light">
+        Inactive members
+      </p>
+      <MemberTable :memberList="inactiveMemberList" />
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { isOwner } from "../utils";
+import { Member } from "../types";
 
 export default {
   name: "SettingWorkspaceMember",
@@ -21,6 +29,24 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const prepareMemberList = () => {
+      store.dispatch("member/fetchMemberList");
+    };
+
+    watchEffect(prepareMemberList);
+
+    const activeMemberList = computed(() => {
+      return store.getters["member/memberList"]().filter(
+        (member: Member) => member.rowStatus == "NORMAL"
+      );
+    });
+
+    const inactiveMemberList = computed(() => {
+      return store.getters["member/memberList"]().filter(
+        (member: Member) => member.rowStatus == "ARCHIVED"
+      );
+    });
 
     const allowAddOrInvite = computed(() => {
       // TODO: Enable for DBA and developer
@@ -31,6 +57,8 @@ export default {
     });
 
     return {
+      activeMemberList,
+      inactiveMemberList,
       allowAddOrInvite,
     };
   },

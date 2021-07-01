@@ -1,3 +1,4 @@
+import { RowStatus } from "./common";
 import { MemberId, PrincipalId } from "./id";
 import { Principal } from "./principal";
 
@@ -9,6 +10,7 @@ export type Member = {
   id: MemberId;
 
   // Standard fields
+  rowStatus: RowStatus;
   creator: Principal;
   createdTs: number;
   updater: Principal;
@@ -28,6 +30,9 @@ export type MemberCreate = {
 };
 
 export type MemberPatch = {
+  // Standard fields
+  rowStatus?: RowStatus;
+
   // Domain specific fields
-  role: RoleType;
+  role?: RoleType;
 };

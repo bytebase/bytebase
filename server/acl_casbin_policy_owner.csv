@@ -6,7 +6,6 @@ p, OWNER, /principal/{id}, PATCH_SELF
 p, OWNER, /member, POST
 p, OWNER, /member, GET
 p, OWNER, /member/{id}, PATCH
-p, OWNER, /member/{id}, DELETE
 p, OWNER, /project, POST
 p, OWNER, /project, GET
 p, OWNER, /project/{id}, GET

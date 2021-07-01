@@ -103,27 +103,6 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	return member, nil
 }
 
-// DeleteMember deletes an existing member by ID.
-// Returns ENOTFOUND if member does not exist.
-func (s *MemberService) DeleteMember(ctx context.Context, delete *api.MemberDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	err = deleteMember(ctx, tx, delete)
-	if err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
-}
-
 // createMember creates a new member.
 func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.Member, error) {
 	// Insert row into database.
@@ -136,7 +115,7 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -154,6 +133,7 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 	var member api.Member
 	if err := row.Scan(
 		&member.ID,
+		&member.RowStatus,
 		&member.CreatorId,
 		&member.CreatedTs,
 		&member.UpdaterId,
@@ -184,6 +164,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
 		    id,
+			row_status,
 		    creator_id,
 		    created_ts,
 		    updater_id,
@@ -206,6 +187,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		var member api.Member
 		if err := rows.Scan(
 			&member.ID,
+			&member.RowStatus,
 			&member.CreatorId,
 			&member.CreatedTs,
 			&member.UpdaterId,
@@ -230,6 +212,9 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Member, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
+	}
 	if v := patch.Role; v != nil {
 		set, args = append(set, "role = ?"), append(args, api.Role(*v))
 	}
@@ -241,7 +226,7 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, role, principal_id
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
 	`,
 		args...,
 	)
@@ -254,10 +239,12 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		var member api.Member
 		if err := row.Scan(
 			&member.ID,
+			&member.RowStatus,
 			&member.CreatorId,
 			&member.CreatedTs,
 			&member.UpdaterId,
 			&member.UpdatedTs,
+			&member.Status,
 			&member.Role,
 			&member.PrincipalId,
 		); err != nil {
@@ -268,20 +255,4 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 	}
 
 	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", patch.ID)}
-}
-
-// deleteMember permanently deletes a member by ID.
-func deleteMember(ctx context.Context, tx *Tx, delete *api.MemberDelete) error {
-	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM member WHERE id = ?`, delete.ID)
-	if err != nil {
-		return FormatError(err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", delete.ID)}
-	}
-
-	return nil
 }

@@ -25,9 +25,23 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Email not found: %s", login.Email))
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+		}
+
+		memberFind := &api.MemberFind{
+			PrincipalId: &user.ID,
+		}
+		member, err := s.MemberService.FindMember(context.Background(), memberFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", login.Email))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+		}
+		if member.RowStatus == api.Archived {
+			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
 		// Compare the stored hashed password, with the hashed version of the password that was received.
