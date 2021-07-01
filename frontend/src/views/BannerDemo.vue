@@ -1,14 +1,14 @@
 <template>
   <div v-if="show" class="bg-accent">
-    <div class="max-w-7xl mx-auto py-3 px-3">
+    <div class="mx-auto py-3 px-3">
       <div class="flex items-center justify-between flex-wrap">
         <div class="w-0 flex-1 flex items-center">
           <p class="ml-3 font-medium text-white truncate">
             <span>
               {{
                 isReadonly
-                  ? "You are trying a DEMO version in readonly mode."
-                  : "You are trying a DEMO version."
+                  ? "This is a DEMO version of Bytebase in readonly mode."
+                  : "This is a DEMO version of Bytebase."
               }}
             </span>
           </p>
