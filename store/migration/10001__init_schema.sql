@@ -68,7 +68,7 @@ CREATE TABLE setting (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL UNIQUE,
     value TEXT NOT NULL,
-    description TEXT NOT NULL
+    description TEXT NOT NULL DEFAULT ''
 );
 
 INSERT INTO
@@ -260,7 +260,7 @@ CREATE TABLE instance (
     `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL', 'POSTGRES')),
     host TEXT NOT NULL,
     port TEXT NOT NULL,
-    external_link TEXT NOT NULL
+    external_link TEXT NOT NULL DEFAULT ''
 );
 
 INSERT INTO
@@ -478,7 +478,7 @@ CREATE TABLE task (
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     stage_id INTEGER NOT NULL REFERENCES stage (id),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
-    -- Could be empty FOR tasks LIKE creating DATABASE
+    -- Could be empty for tasks like creating database
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (
@@ -571,7 +571,7 @@ CREATE TABLE issue (
     name TEXT NOT NULL,
     `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED')),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.issue.%'),
-    description TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
     assignee_id INTEGER REFERENCES principal (id),
     subscriber_id_list TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
@@ -678,15 +678,15 @@ CREATE TABLE vcs (
     `type` TEXT NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
     instance_url TEXT NOT NULL CHECK (
         (
-            instance_url LIKE 'http:/%'
-            OR instance_url LIKE 'https:/%'
+            instance_url LIKE 'http://%'
+            OR instance_url LIKE 'https://%'
         )
         AND instance_url = rtrim(instance_url, '/')
     ),
     api_url TEXT NOT NULL CHECK (
         (
-            api_url LIKE 'http:/%'
-            OR api_url LIKE 'https:/%'
+            api_url LIKE 'http://%'
+            OR api_url LIKE 'https://%'
         )
         AND api_url = rtrim(api_url, '/')
     ),
