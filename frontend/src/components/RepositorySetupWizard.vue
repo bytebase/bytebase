@@ -103,7 +103,7 @@ export default {
 
     const allowNext = computed((): boolean => {
       if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
-        return !isEmpty(state.config.repositoryConfig.branchFilter);
+        return !isEmpty(state.config.repositoryConfig.branchFilter.trim());
       }
       return true;
     });
@@ -127,7 +127,7 @@ export default {
             vcs: state.config.vcs,
             webhookEndpointId,
             projectId: state.config.repositoryInfo.externalId,
-            branchFilter: state.config.repositoryConfig.branchFilter,
+            branchFilter: state.config.repositoryConfig.branchFilter.trim(),
             secretToken,
             accessToken: state.config.token.accessToken,
           })
