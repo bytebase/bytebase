@@ -90,6 +90,7 @@ import { useStore } from "vuex";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
+  DEFAULT_PROJECT_ID,
   PrincipalId,
   Project,
   ProjectMember,
@@ -130,6 +131,10 @@ export default {
     );
 
     const allowAddMember = computed(() => {
+      if (props.project.id == DEFAULT_PROJECT_ID) {
+        return false;
+      }
+
       if (props.project.rowStatus == "ARCHIVED") {
         return false;
       }

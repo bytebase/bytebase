@@ -56,7 +56,7 @@ import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
-import { Project, ProjectPatch } from "../types";
+import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
 
 interface LocalState {
   name: string;
@@ -86,6 +86,7 @@ export default {
 
     const allowSave = computed((): boolean => {
       return (
+        props.project.id != DEFAULT_PROJECT_ID &&
         !isEmpty(state.name) &&
         !isEmpty(state.key) &&
         (state.name != props.project.name || state.key != props.project.key)
