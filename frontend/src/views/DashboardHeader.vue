@@ -11,7 +11,11 @@
         /></router-link>
       </div>
       <div class="hidden sm:block">
-        <div class="ml-6 flex items-baseline space-x-2">
+        <div class="ml-6 flex items-baseline">
+          <router-link to="/project" class="bar-link px-2 py-2 rounded-md"
+            >Projects</router-link
+          >
+
           <router-link to="/db" class="bar-link px-2 py-2 rounded-md"
             >Databases</router-link
           >
@@ -153,6 +157,10 @@
       Open: "block", closed: "hidden"
     -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
+      >Projects</router-link
+    >
+
     <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
       >Databases</router-link
     >
