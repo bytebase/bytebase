@@ -24,11 +24,11 @@ type Table struct {
 	Name                 string     `jsonapi:"attr,name"`
 	Engine               string     `jsonapi:"attr,engine"`
 	Collation            string     `jsonapi:"attr,collation"`
+	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
+	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
 	RowCount             int64      `jsonapi:"attr,rowCount"`
 	DataSize             int64      `jsonapi:"attr,dataSize"`
 	IndexSize            int64      `jsonapi:"attr,indexSize"`
-	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
-	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
 }
 
 type TableCreate struct {

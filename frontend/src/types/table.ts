@@ -21,9 +21,9 @@ export type Table = {
   name: string;
   engine: string;
   collation: string;
+  syncStatus: TableSyncStatus;
+  lastSuccessfulSyncTs: number;
   rowCount: number;
   dataSize: number;
   indexSize: number;
-  syncStatus: TableSyncStatus;
-  lastSuccessfulSyncTs: number;
 };

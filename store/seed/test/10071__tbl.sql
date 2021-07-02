@@ -7,11 +7,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -21,11 +21,11 @@ VALUES
         'tbl1',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1625075289,
         1234,
         16384,
-        0,
-        'OK',
-        1625075289
+        0
     );
 
 -- Table for database 7006 testdb_integration 
@@ -37,11 +37,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -51,11 +51,11 @@ VALUES
         'tbl1',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1625075289,
         1234,
         16384,
-        16384,
-        'OK',
-        1625075289
+        16384
     );
 
 -- Table for database 7010 testdb_staging 
@@ -67,11 +67,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -81,11 +81,11 @@ VALUES
         'tbl1',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624475289,
         12234,
         65536,
-        16384,
-        'OK',
-        1624475289
+        16384
     );
 
 -- Table for database 7014 testdb_prod
@@ -97,11 +97,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -111,11 +111,11 @@ VALUES
         'tbl1',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624475289,
         1234,
         32768,
-        4096,
-        'OK',
-        1624475289
+        4096
     );
 
 -- Table for database 7003 shop
@@ -127,11 +127,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -141,11 +141,11 @@ VALUES
         'product',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624275289,
         1000,
         4096,
-        0,
-        'OK',
-        1624275289
+        0
     );
 
 -- Table for database 7007 shop
@@ -157,11 +157,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -171,11 +171,11 @@ VALUES
         'product',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624575289,
         1000,
         4096,
-        1024,
-        'OK',
-        1624575289
+        1024
     );
 
 -- Table for database 7004 blog
@@ -187,11 +187,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -201,11 +201,11 @@ VALUES
         'user',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624275289,
         1000,
         4096,
-        1024,
-        'OK',
-        1624275289
+        1024
     );
 
 INSERT INTO
@@ -216,11 +216,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -230,11 +230,11 @@ VALUES
         'post',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624275289,
         1000,
         8192,
-        1024,
-        'OK',
-        1624275289
+        1024
     );
 
 INSERT INTO
@@ -245,11 +245,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -259,11 +259,11 @@ VALUES
         'comment',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624275289,
         30000,
         65536,
-        4096,
-        'OK',
-        1624275289
+        4096
     );
 
 -- Table for database 7008 blog
@@ -275,11 +275,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -289,11 +289,11 @@ VALUES
         'user',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624675289,
         100,
         4096,
-        0,
-        'OK',
-        1624675289
+        0
     );
 
 INSERT INTO
@@ -304,11 +304,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -318,11 +318,11 @@ VALUES
         'post',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624675289,
         300,
         4096,
-        1024,
-        'OK',
-        1624675289
+        1024
     );
 
 INSERT INTO
@@ -333,11 +333,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -347,11 +347,11 @@ VALUES
         'comment',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1624675289,
         2000,
         65536,
-        2048,
-        'OK',
-        1624675289
+        2048
     );
 
 -- Table for database 7012 blog
@@ -363,11 +363,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -377,11 +377,11 @@ VALUES
         'user',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1622675289,
         200,
         4096,
-        1024,
-        'OK',
-        1622675289
+        1024
     );
 
 INSERT INTO
@@ -392,11 +392,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -406,11 +406,11 @@ VALUES
         'post',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1622675289,
         500,
         4096,
-        1024,
-        'OK',
-        1622675289
+        1024
     );
 
 INSERT INTO
@@ -421,11 +421,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -435,11 +435,11 @@ VALUES
         'comment',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1622675289,
         4000,
         65536,
-        65536,
-        'OK',
-        1622675289
+        65536
     );
 
 -- Table for database 7016 blog
@@ -451,11 +451,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -465,11 +465,11 @@ VALUES
         'user',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1622275289,
         200,
         4096,
-        1024,
-        'OK',
-        1622275289
+        1024
     );
 
 INSERT INTO
@@ -480,11 +480,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -494,11 +494,11 @@ VALUES
         'post',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1622275289,
         500,
         4096,
-        1024,
-        'OK',
-        1622275289
+        1024
     );
 
 INSERT INTO
@@ -509,11 +509,11 @@ INSERT INTO
         name,
         ENGINE,
         `collation`,
+        sync_status,
+        last_successful_sync_ts,
         row_count,
         data_size,
-        index_size,
-        sync_status,
-        last_successful_sync_ts
+        index_size
     )
 VALUES
     (
@@ -523,9 +523,9 @@ VALUES
         'comment',
         'InnoDB',
         'utf8mb4_0900_ai_ci',
+        'OK',
+        1622275289,
         7000,
         8192,
-        0,
-        'OK',
-        1622275289
+        0
     );

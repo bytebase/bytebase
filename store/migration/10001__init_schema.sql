@@ -335,11 +335,11 @@ CREATE TABLE tbl (
     name TEXT NOT NULL,
     `engine` TEXT NOT NULL,
     `collation` TEXT NOT NULL,
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
+    last_successful_sync_ts BIGINT NOT NULL,
     row_count BIGINT NOT NULL,
     data_size BIGINT NOT NULL,
     index_size BIGINT NOT NULL,
-    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
-    last_successful_sync_ts BIGINT NOT NULL,
     UNIQUE(database_id, name)
 );
 

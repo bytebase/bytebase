@@ -114,14 +114,14 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			name,
 			engine,
 			collation,
+			sync_status,
+			last_successful_sync_ts,
 			row_count,
 			data_size,
-			index_size,
-			sync_status,
-			last_successful_sync_ts
+			index_size
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')))
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, row_count, data_size, index_size, sync_status, last_successful_sync_ts
+		VALUES (?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -151,11 +151,11 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 		&table.Name,
 		&table.Engine,
 		&table.Collation,
+		&table.SyncStatus,
+		&table.LastSuccessfulSyncTs,
 		&table.RowCount,
 		&table.DataSize,
 		&table.IndexSize,
-		&table.SyncStatus,
-		&table.LastSuccessfulSyncTs,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -187,11 +187,11 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 		    name,
 			engine,
 			collation,
+			sync_status,
+			last_successful_sync_ts,
 			row_count,
 			data_size,
-			index_size,
-		    sync_status,
-			last_successful_sync_ts
+			index_size
 		FROM tbl
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -215,11 +215,11 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 			&table.Name,
 			&table.Engine,
 			&table.Collation,
+			&table.SyncStatus,
+			&table.LastSuccessfulSyncTs,
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
-			&table.SyncStatus,
-			&table.LastSuccessfulSyncTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -251,7 +251,7 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 		UPDATE tbl
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, row_count, data_size, index_size, sync_status, last_successful_sync_ts
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size
 	`,
 		args...,
 	)
@@ -272,11 +272,11 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 			&table.Name,
 			&table.Engine,
 			&table.Collation,
+			&table.SyncStatus,
+			&table.LastSuccessfulSyncTs,
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
-			&table.SyncStatus,
-			&table.LastSuccessfulSyncTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}
