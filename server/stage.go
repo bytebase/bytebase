@@ -41,7 +41,7 @@ func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage)
 		return err
 	}
 
-	stage.TaskList, err = s.ComposeTaskListByStageId(context.Background(), stage.ID)
+	stage.TaskList, err = s.ComposeTaskListByPipelineAndStageId(context.Background(), stage.PipelineId, stage.ID)
 	if err != nil {
 		return err
 	}

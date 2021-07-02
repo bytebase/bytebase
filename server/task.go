@@ -71,9 +71,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeTaskListByStageId(ctx context.Context, stageId int) ([]*api.Task, error) {
+func (s *Server) ComposeTaskListByPipelineAndStageId(ctx context.Context, pipelineId int, stageId int) ([]*api.Task, error) {
 	taskFind := &api.TaskFind{
-		StageId: &stageId,
+		PipelineId: &pipelineId,
+		StageId:    &stageId,
 	}
 	taskList, err := s.TaskService.FindTaskList(context.Background(), taskFind)
 	if err != nil {
