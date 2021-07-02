@@ -263,10 +263,12 @@
   >
     <div class="col-span-1 w-64">
       <label for="user" class="textlabel"> Project </label>
+      <!-- Only allow to transfer database to the project having OWNER role -->
       <ProjectSelect
         class="mt-1"
         id="project"
         name="project"
+        :allowedRoleList="['OWNER']"
         :selectedId="state.editingProjectId"
         @select-project-id="
           (projectId) => {
@@ -372,8 +374,22 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
+    // Workspace owner, dba or db's project owner can transfer the project
     const allowChangeProject = computed(() => {
-      return isCurrentUserDBAOrOwner.value;
+      if (isCurrentUserDBAOrOwner.value) {
+        return true;
+      }
+
+      for (const member of database.value.project.memberList) {
+        if (
+          member.role == "OWNER" &&
+          member.principal.id == currentUser.value.id
+        ) {
+          return true;
+        }
+      }
+
+      return false;
     });
 
     const allowViewDataSource = computed(() => {

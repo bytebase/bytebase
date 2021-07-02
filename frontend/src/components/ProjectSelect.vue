@@ -45,9 +45,23 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
+import {
+  computed,
+  ComputedRef,
+  PropType,
+  reactive,
+  watch,
+  watchEffect,
+} from "vue";
 import { useStore } from "vuex";
-import { Principal, Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
+import {
+  Principal,
+  Project,
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+  ProjectRoleType,
+} from "../types";
+import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
   selectedId: number;
@@ -65,6 +79,10 @@ export default {
     disabled: {
       default: false,
       type: Boolean,
+    },
+    allowedRoleList: {
+      default: ["OWNER", "DEVELOPER"],
+      type: Object as PropType<ProjectRoleType[]>,
     },
   },
   setup(props, { emit }) {
@@ -86,11 +104,31 @@ export default {
 
     watchEffect(prepareProjectList);
 
+    const hasAdminFeature = computed(() =>
+      store.getters["plan/feature"]("bb.admin")
+    );
+
     const projectList = computed((): Project[] => {
-      return store.getters["project/projectListByUser"](currentUser.value.id, [
-        "NORMAL",
-        "ARCHIVED",
-      ]);
+      const list = store.getters["project/projectListByUser"](
+        currentUser.value.id,
+        ["NORMAL", "ARCHIVED"]
+      );
+
+      if (!hasAdminFeature || isDBAOrOwner(currentUser.value.role)) {
+        return list;
+      }
+
+      return list.filter((project: Project) => {
+        for (const member of project.memberList) {
+          if (
+            currentUser.value.id == member.principal.id &&
+            props.allowedRoleList.includes(member.role)
+          ) {
+            return true;
+          }
+        }
+        return false;
+      });
     });
 
     const selectedIdNotInList = computed((): boolean => {
