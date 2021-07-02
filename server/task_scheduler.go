@@ -52,6 +52,9 @@ func (s *TaskScheduler) Run() error {
 					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
 				}
 				for _, pipeline := range pipelineList {
+					if pipeline.ID == api.ONBOARDING_PIPELINE_ID {
+						continue
+					}
 					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline); err != nil {
 						s.l.Error("Failed to fetch pipeline relationship",
 							zap.Int("id", pipeline.ID),
@@ -92,6 +95,10 @@ func (s *TaskScheduler) Run() error {
 				}
 
 				for _, task := range taskList {
+					if task.ID == api.ONBOARDING_TASK_ID1 || task.ID == api.ONBOARDING_TASK_ID2 {
+						continue
+					}
+
 					executor, ok := s.executors[string(task.Type)]
 					if !ok {
 						s.l.Error("Skip running task with unknown type",

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 )
 
+const ONBOARDING_PIPELINE_ID = 101
+
 // Pipeline status
 type PipelineStatus string
 

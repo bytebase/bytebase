@@ -141,6 +141,7 @@ import {
   IssueStatusTransition,
   IssueStatusTransitionType,
   ISSUE_STATUS_TRANSITION_LIST,
+  ONBOARDING_ISSUE_ID,
   Principal,
   SYSTEM_BOT_ID,
   Task,
@@ -210,6 +211,9 @@ export default {
 
     const applicableTaskStatusTransitionList = computed(
       (): TaskStatusTransition[] => {
+        if ((props.issue as Issue).id == ONBOARDING_ISSUE_ID) {
+          return [];
+        }
         switch ((props.issue as Issue).status) {
           case "DONE":
           case "CANCELED":
@@ -273,6 +277,9 @@ export default {
 
     const applicableIssueStatusTransitionList = computed(
       (): IssueStatusTransition[] => {
+        if ((props.issue as Issue).id == ONBOARDING_ISSUE_ID) {
+          return [];
+        }
         const list: IssueStatusTransitionType[] = [];
         // Allow assignee, or assignee is the system bot and current user is DBA or owner
         if (

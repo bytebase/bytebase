@@ -259,6 +259,7 @@ import {
   Stage,
   StageCreate,
   Instance,
+  ONBOARDING_ISSUE_ID,
 } from "../types";
 import { allTaskList, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
@@ -405,7 +406,8 @@ export default {
       // being assigned to the issue.
       return (
         props.create ||
-        ((props.issue as Issue).status == "OPEN" &&
+        ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
+          (props.issue as Issue).status == "OPEN" &&
           (currentUser.value.id == (props.issue as Issue).assignee?.id ||
             isDBAOrOwner(currentUser.value.role)))
       );

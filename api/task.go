@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 )
 
+const ONBOARDING_TASK_ID1 = 101
+const ONBOARDING_TASK_ID2 = 102
+
 type TaskStatus string
 
 const (
