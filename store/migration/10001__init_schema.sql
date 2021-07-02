@@ -343,6 +343,8 @@ CREATE TABLE tbl (
     UNIQUE(database_id, name)
 );
 
+CREATE INDEX idx_tbl_database_id ON tbl(database_id);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
@@ -380,6 +382,8 @@ CREATE TABLE data_source (
     UNIQUE(database_id, name)
 );
 
+CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
@@ -414,6 +418,8 @@ CREATE TABLE pipeline (
     `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED'))
 );
 
+CREATE INDEX idx_pipeline_status ON pipeline(`status`);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
@@ -446,6 +452,8 @@ CREATE TABLE stage (
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL
 );
+
+CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
 
 INSERT INTO
     sqlite_sequence (name, seq)
@@ -495,6 +503,10 @@ CREATE TABLE task (
     payload TEXT NOT NULL DEFAULT ''
 );
 
+CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
+
+CREATE INDEX idx_task_status ON task(`status`);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
@@ -534,6 +546,8 @@ CREATE TABLE task_run (
     detail TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );
+
+CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 
 INSERT INTO
     sqlite_sequence (name, seq)
@@ -576,6 +590,14 @@ CREATE TABLE issue (
     subscriber_id_list TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
 );
+
+CREATE INDEX idx_issue_project_id ON issue(project_id);
+
+CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
+
+CREATE INDEX idx_issue_creator_id ON issue(creator_id);
+
+CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 INSERT INTO
     sqlite_sequence (name, seq)
