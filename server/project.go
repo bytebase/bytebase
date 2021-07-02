@@ -32,8 +32,20 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
+		projectMember := &api.ProjectMemberCreate{
+			CreatorId:   projectCreate.CreatorId,
+			ProjectId:   project.ID,
+			Role:        api.ProjectOwner,
+			PrincipalId: projectCreate.CreatorId,
+		}
+
+		_, err = s.ProjectMemberService.CreateProjectMember(context.Background(), projectMember)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
+		}
+
 		if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch relationship after creating project").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
