@@ -105,9 +105,7 @@ func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, pat
 	// Build UPDATE clause.
 	set, args := []string{}, []interface{}{}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
-	if v := patch.Error; v != nil {
-		set, args = append(set, "error = ?"), append(args, *v)
-	}
+	set, args = append(set, "detail = ?"), append(args, patch.Detail)
 
 	// Build WHERE clause.
 	where := []string{"1 = 1"}

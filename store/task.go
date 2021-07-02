@@ -339,7 +339,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 				taskRunStatusPatch.Status = api.TaskRunDone
 			case api.TaskFailed:
 				taskRunStatusPatch.Status = api.TaskRunFailed
-				taskRunStatusPatch.Error = &patch.Comment
+				taskRunStatusPatch.Detail = patch.Comment
 			case api.TaskPending:
 			case api.TaskPendingApproval:
 			case api.TaskCanceled:

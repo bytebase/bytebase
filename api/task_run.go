@@ -92,8 +92,8 @@ type TaskRunStatusPatch struct {
 
 	// Domain specific fields
 	Status TaskRunStatus
-	// If status is FAILED, then we will set the error
-	Error *string
+	// The task status detail
+	Detail string
 }
 
 type TaskRunService interface {

@@ -56,8 +56,8 @@ VALUES
         ''
     );
 
--- Config
-CREATE TABLE config (
+-- Setting
+CREATE TABLE setting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
@@ -74,14 +74,14 @@ CREATE TABLE config (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('config', 100);
+    ('setting', 100);
 
-CREATE TRIGGER IF NOT EXISTS `trigger_update_config_modification_time`
+CREATE TRIGGER IF NOT EXISTS `trigger_update_setting_modification_time`
 AFTER
 UPDATE
-    ON `config` FOR EACH ROW BEGIN
+    ON `setting` FOR EACH ROW BEGIN
 UPDATE
-    `config`
+    `setting`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

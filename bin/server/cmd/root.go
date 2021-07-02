@@ -128,7 +128,7 @@ type profile struct {
 	forceResetSeed bool
 }
 
-// retrieved via the ConfigService upon startup
+// retrieved via the SettingService upon startup
 type config struct {
 	// secret used to sign the JWT auth token
 	secret string
@@ -209,16 +209,16 @@ func newMain() *main {
 	}
 }
 
-func initConfig(configService api.ConfigService) (*config, error) {
+func initSetting(settingService api.SettingService) (*config, error) {
 	result := &config{}
 	{
-		configCreate := &api.ConfigCreate{
+		configCreate := &api.SettingCreate{
 			CreatorId:   api.SYSTEM_BOT_ID,
 			Name:        "bb.auth.secret",
 			Value:       bytebase.RandomString(SECRET_LENGTH),
 			Description: "Random string used to sign the JWT auth token.",
 		}
-		config, err := configService.CreateConfigIfNotExist(context.Background(), configCreate)
+		config, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
 		if err != nil {
 			return nil, err
 		}
@@ -234,8 +234,8 @@ func (m *main) Run() error {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
-	configService := store.NewConfigService(m.l, db)
-	config, err := initConfig(configService)
+	settingService := store.NewSettingService(m.l, db)
+	config, err := initSetting(settingService)
 	if err != nil {
 		return fmt.Errorf("failed to init config: %w", err)
 	}
