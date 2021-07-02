@@ -36,8 +36,7 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
                 "
               />
             </div>
@@ -88,8 +87,7 @@
                   focus:outline-none
                   focus:shadow-outline-blue
                   focus:border-control-border
-                  sm:text-sm
-                  sm:leading-5
+                  sm:text-sm sm:leading-5
                 "
               />
             </div>
@@ -125,10 +123,10 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { LoginInfo } from "../../types";
+import { LoginInfo, ServerInfo } from "../../types";
 import { isRelease, isValidEmail } from "../../utils";
 
 interface LocalState {
@@ -146,6 +144,19 @@ export default {
       email: isRelease() ? "" : "demo@example.com",
       password: isRelease() ? "" : "1024",
     });
+
+    const prepareInfo = () => {
+      store.dispatch("actuator/info").then((info: ServerInfo) => {
+        // Navigate to signup if needs admin setup.
+        // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
+        // after router has already made the decision on first page load.
+        if (info.needAdminSetup) {
+          router.push({ name: "auth.signup", replace: true });
+        }
+      });
+    };
+
+    watchEffect(prepareInfo);
 
     const allowSignin = computed(() => {
       return isValidEmail(state.email) && state.password;
