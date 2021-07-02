@@ -317,7 +317,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        error,
+        detail,
         payload
     )
 VALUES
@@ -340,7 +340,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        error,
+        detail,
         payload
     )
 VALUES

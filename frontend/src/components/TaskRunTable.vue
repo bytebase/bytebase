@@ -74,7 +74,7 @@
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
-        {{ taskRun.error }}
+        {{ taskRun.detail }}
       </BBTableCell>
       <BBTableCell class="table-cell w-12">
         <div class="flex flex-row items-center space-x-2">
@@ -109,7 +109,7 @@ const columnList: BBTableColumn[] = [
     title: "Status",
   },
   {
-    title: "Error",
+    title: "Detail",
   },
   {
     title: "Invoker",

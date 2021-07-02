@@ -39,7 +39,7 @@ func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *
 			payload
 		)
 		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, error, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, detail, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -66,7 +66,7 @@ func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
-		&taskRun.Error,
+		&taskRun.Detail,
 		&taskRun.Payload,
 	); err != nil {
 		return nil, FormatError(err)
@@ -122,7 +122,7 @@ func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, pat
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, error, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, detail, payload"+`
 	`,
 		args...,
 	)
@@ -144,7 +144,7 @@ func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, pat
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
-		&taskRun.Error,
+		&taskRun.Detail,
 		&taskRun.Payload,
 	); err != nil {
 		return nil, FormatError(err)
@@ -182,7 +182,7 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
-			error,
+			detail,
 			payload
 		FROM task_run
 		WHERE `+strings.Join(where, " AND "),
@@ -207,7 +207,7 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 			&taskRun.Name,
 			&taskRun.Status,
 			&taskRun.Type,
-			&taskRun.Error,
+			&taskRun.Detail,
 			&taskRun.Payload,
 		); err != nil {
 			return nil, FormatError(err)

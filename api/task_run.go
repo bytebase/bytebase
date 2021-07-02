@@ -48,7 +48,7 @@ type TaskRun struct {
 	Name    string        `jsonapi:"attr,name"`
 	Status  TaskRunStatus `jsonapi:"attr,status"`
 	Type    TaskType      `jsonapi:"attr,type"`
-	Error   string        `jsonapi:"attr,error"`
+	Detail  string        `jsonapi:"attr,detail"`
 	Payload string        `jsonapi:"attr,payload"`
 }
 
