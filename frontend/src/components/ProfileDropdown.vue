@@ -108,23 +108,23 @@ export default {
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "environment.create",
+        key: "comment.create",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "instance.create",
+        key: "project.visit",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "project.create",
+        key: "environment.visit",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "database.create",
+        key: "instance.visit",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
-        key: "schema.update",
+        key: "database.visit",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
@@ -137,11 +137,19 @@ export default {
       });
 
       store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.project",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
         key: "guide.environment",
         newState: false,
       });
       store.dispatch("uistate/saveIntroStateByKey", {
         key: "guide.instance",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.database",
         newState: false,
       });
     };

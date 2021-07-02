@@ -120,12 +120,57 @@ export default {
     const introList: IntroItem[] = reactive([
       {
         name: "Bookmark an issue",
-        link: "/issue/hello-world-1",
+        link: "/issue/hello-world-101",
         allowDBA: true,
         allowDeveloper: true,
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("bookmark.create");
         }),
+      },
+      {
+        name: "Add a comment",
+        link: "/issue/hello-world-101#activity101",
+        allowDBA: true,
+        allowDeveloper: true,
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("comment.create");
+        }),
+      },
+      {
+        name: "Visit project",
+        link: "/project",
+        allowDBA: true,
+        allowDeveloper: true,
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("project.visit");
+        }),
+      },
+      {
+        name: "Visit environment",
+        link: "/environment",
+        allowDBA: true,
+        allowDeveloper: false,
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("environment.visit");
+        }),
+      },
+      {
+        name: "Visit instance",
+        link: "/instance",
+        allowDBA: true,
+        allowDeveloper: !store.getters["plan/feature"]("bb.dba-workflow"),
+        done: computed(() => {
+          return store.getters["uistate/introStateByKey"]("instance.visit");
+        }),
+      },
+      {
+        name: "Visit database",
+        link: "/db",
+        allowDBA: true,
+        allowDeveloper: true,
+        done: computed(() =>
+          store.getters["uistate/introStateByKey"]("database.visit")
+        ),
       },
       {
         name: "Add a member",
@@ -134,51 +179,6 @@ export default {
         allowDeveloper: false,
         done: computed(() =>
           store.getters["uistate/introStateByKey"]("member.addOrInvite")
-        ),
-      },
-      {
-        name: "Add an environment",
-        link: "/environment",
-        allowDBA: true,
-        allowDeveloper: false,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("environment.create");
-        }),
-      },
-      {
-        name: "Add an instance",
-        link: "/instance",
-        allowDBA: true,
-        allowDeveloper: false,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("instance.create");
-        }),
-      },
-      {
-        name: "Create a project",
-        link: "/project",
-        allowDBA: true,
-        allowDeveloper: true,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("project.create");
-        }),
-      },
-      {
-        name: "Create a database",
-        link: "/db",
-        allowDBA: true,
-        allowDeveloper: !store.getters["plan/feature"]("bb.dba-workflow"),
-        done: computed(() =>
-          store.getters["uistate/introStateByKey"]("database.create")
-        ),
-      },
-      {
-        name: "Alter schema",
-        link: "/db",
-        allowDBA: true,
-        allowDeveloper: true,
-        done: computed(() =>
-          store.getters["uistate/introStateByKey"]("schema.update")
         ),
       },
     ]);

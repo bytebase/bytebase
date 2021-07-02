@@ -591,15 +591,6 @@ export default {
           issueStatusPatch,
         })
         .then(() => {
-          if (
-            newStatus == "DONE" &&
-            issueTemplate.value.type == "bb.issue.database.schema.update"
-          ) {
-            store.dispatch("uistate/saveIntroStateByKey", {
-              key: "schema.update",
-              newState: true,
-            });
-          }
           pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
         });
     };

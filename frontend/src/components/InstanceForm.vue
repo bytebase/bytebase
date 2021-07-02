@@ -459,11 +459,6 @@ export default {
             title: `Successfully created instance '${createdInstance.name}'.`,
           });
 
-          store.dispatch("uistate/saveIntroStateByKey", {
-            key: "instance.create",
-            newState: true,
-          });
-
           // After creating the instance, we will check if migration schema exists on the instance.
           setTimeout(() => {}, 1000);
         });

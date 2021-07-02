@@ -58,7 +58,7 @@
     :okText="'Do not show again'"
     :cancelText="'Dismiss'"
     :title="'How to setup \'Environment\' ?'"
-    :description="'Each environment in Bytebase maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment and most issues also require specifying an environment first.'"
+    :description="'Each environment maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment.'"
     @ok="
       () => {
         doDismissGuide();
@@ -90,8 +90,8 @@ interface LocalState {
   reorderedEnvironmentList: Environment[];
   selectedIndex: number;
   showCreateModal: boolean;
-  showGuide: boolean;
   reorder: boolean;
+  showGuide: boolean;
 }
 
 export default {
@@ -113,8 +113,8 @@ export default {
       reorderedEnvironmentList: [],
       selectedIndex: -1,
       showCreateModal: false,
-      showGuide: false,
       reorder: false,
+      showGuide: false,
     });
 
     const selectEnvironmentOnHash = () => {
@@ -156,6 +156,10 @@ export default {
       if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
         setTimeout(() => {
           state.showGuide = true;
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "environment.visit",
+            newState: true,
+          });
         }, 1000);
       }
     });
@@ -210,11 +214,6 @@ export default {
         .then(() => {
           state.showCreateModal = false;
           selectEnvironment(environmentList.value.length - 1);
-
-          store.dispatch("uistate/saveIntroStateByKey", {
-            key: "environment.create",
-            newState: true,
-          });
         });
     };
 

@@ -9,6 +9,22 @@
     </div>
     <ProjectTable :projectList="filteredList(state.projectList)" />
   </div>
+
+  <BBAlert
+    v-if="state.showGuide"
+    :style="'INFO'"
+    :okText="'Do not show again'"
+    :cancelText="'Dismiss'"
+    :title="'How to setup \'Project\' ?'"
+    :description="'Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable version control workflow.'"
+    @ok="
+      () => {
+        doDismissGuide();
+      }
+    "
+    @cancel="state.showGuide = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -20,6 +36,7 @@ import { Project } from "../types";
 interface LocalState {
   projectList: Project[];
   searchText: string;
+  showGuide: boolean;
 }
 
 export default {
@@ -36,6 +53,7 @@ export default {
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
+      showGuide: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -43,6 +61,16 @@ export default {
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
+
+      if (!store.getters["uistate/introStateByKey"]("guide.project")) {
+        setTimeout(() => {
+          state.showGuide = true;
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "project.visit",
+            newState: true,
+          });
+        }, 1000);
+      }
     });
 
     const prepareProjectList = () => {
@@ -59,6 +87,14 @@ export default {
 
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
+    };
+
+    const doDismissGuide = () => {
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.project",
+        newState: true,
+      });
+      state.showGuide = false;
     };
 
     const filteredList = (list: Project[]) => {
@@ -78,6 +114,7 @@ export default {
       searchField,
       state,
       filteredList,
+      doDismissGuide,
       changeSearchText,
     };
   },

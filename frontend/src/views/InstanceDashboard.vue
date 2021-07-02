@@ -20,7 +20,7 @@
     :okText="'Do not show again'"
     :cancelText="'Dismiss'"
     :title="'How to setup \'Instance\' ?'"
-    :description="'Each instance in Bytebase usually maps to one of your database instance represented by an host:port address. This could be your on-premise MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.'"
+    :description="'Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.'"
     @ok="
       () => {
         doDismissGuide();
@@ -74,6 +74,10 @@ export default {
       if (!store.getters["uistate/introStateByKey"]("guide.instance")) {
         setTimeout(() => {
           state.showGuide = true;
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "instance.visit",
+            newState: true,
+          });
         }, 1000);
       }
     });

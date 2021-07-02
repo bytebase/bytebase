@@ -189,3 +189,233 @@ VALUES
         'admin',
         ''
     );
+
+-- Create pipeline/stage/task/issue for onboarding
+-- Create pipeline 101 "Hello world"
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `status`
+    )
+VALUES
+    (
+        101,
+        1,
+        1,
+        'Pipeline - Hello world',
+        'OPEN'
+    );
+
+-- Create stage 101, 102 for pipeline 101
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        101,
+        1,
+        1,
+        101,
+        101,
+        'Test'
+    );
+
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        102,
+        1,
+        1,
+        101,
+        102,
+        'Prod'
+    );
+
+-- Create task 101 for stage 101
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        101,
+        1,
+        1,
+        101,
+        101,
+        101,
+        NULL,
+        'Welcome',
+        'bb.task.general',
+        'RUNNING',
+        '{"statement":"SELECT ''Welcome Builders'';"}'
+    );
+
+-- Create task 102 for stage 102
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        102,
+        1,
+        1,
+        101,
+        102,
+        102,
+        NULL,
+        'Let''s go',
+        'bb.task.general',
+        'PENDING_APPROVAL',
+        '{"statement":"SELECT ''Let''s go'';"}'
+    );
+
+-- Create task_run for task 101
+INSERT INTO
+    task_run (
+        creator_id,
+        updater_id,
+        task_id,
+        name,
+        `status`,
+        `type`,
+        error,
+        payload
+    )
+VALUES
+    (
+        1,
+        1,
+        101,
+        'Welcome',
+        'FAILED',
+        'bb.task.general',
+        'Something is not right...',
+        ''
+    );
+
+INSERT INTO
+    task_run (
+        creator_id,
+        updater_id,
+        task_id,
+        name,
+        `status`,
+        `type`,
+        error,
+        payload
+    )
+VALUES
+    (
+        1,
+        1,
+        101,
+        'Welcome',
+        'RUNNING',
+        'bb.task.general',
+        'Let''s give another try',
+        ''
+    );
+
+-- Create issue 101 "Hello world"
+INSERT INTO
+    issue (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        pipeline_id,
+        name,
+        `status`,
+        `type`,
+        description,
+        assignee_id,
+        subscriber_id_list
+    )
+VALUES
+    (
+        101,
+        1,
+        1,
+        1,
+        101,
+        'Hello world!',
+        'OPEN',
+        'bb.issue.general',
+        'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: ' || char(10, 10) || ' - Creating a new database' || char(10) || ' - Creating a table' || char(10) || ' - Creating an index' || char(10) || ' - Adding/altering a column' || char(10) || ' - Troubleshooting performance issue' || char(10, 10) || 'Let''s try some simple tasks:' || char(10, 10) || '1. Bookmark this issue by clicking the star icon on the top of this page' || char(10) || '2. Leave a comment below to greet future comers' || char(10) || '3. Follow the Quickstart on the bottom left to get familiar with other features',
+        1,
+        ''
+    );
+
+-- Create activity 101
+INSERT INTO
+    activity (
+        id,
+        creator_id,
+        updater_id,
+        container_id,
+        `type`
+    )
+VALUES
+    (
+        101,
+        1,
+        1,
+        101,
+        'bb.issue.create'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        updater_id,
+        container_id,
+        `type`,
+        `comment`
+    )
+VALUES
+    (
+        1,
+        1,
+        101,
+        'bb.issue.comment.create',
+        'Go fish!'
+    );

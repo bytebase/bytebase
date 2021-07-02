@@ -501,11 +501,6 @@ export default {
         }
       }
 
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "database.create",
-        newState: true,
-      });
-
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "SUCCESS",

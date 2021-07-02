@@ -13,13 +13,28 @@
     </div>
     <DatabaseTable :bordered="false" :databaseList="filteredList" />
   </div>
+
+  <BBAlert
+    v-if="state.showGuide"
+    :style="'INFO'"
+    :okText="'Do not show again'"
+    :cancelText="'Dismiss'"
+    :title="'How to setup \'Database\' ?'"
+    :description="'Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'. In Bytebase, a database always belongs to a signle project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.'"
+    @ok="
+      () => {
+        doDismissGuide();
+      }
+    "
+    @cancel="state.showGuide = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import cloneDeep from "lodash-es/cloneDeep";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database } from "../types";
@@ -29,6 +44,7 @@ interface LocalState {
   searchText: string;
   databaseList: Database[];
   selectedEnvironment?: Environment;
+  showGuide: boolean;
 }
 
 export default {
@@ -51,6 +67,7 @@ export default {
             router.currentRoute.value.query.environment
           )
         : undefined,
+      showGuide: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -62,6 +79,16 @@ export default {
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
+
+      if (!store.getters["uistate/introStateByKey"]("guide.database")) {
+        setTimeout(() => {
+          state.showGuide = true;
+          store.dispatch("uistate/saveIntroStateByKey", {
+            key: "database.visit",
+            newState: true,
+          });
+        }, 1000);
+      }
     });
 
     const prepareDatabaseList = () => {
@@ -76,6 +103,14 @@ export default {
     };
 
     watchEffect(prepareDatabaseList);
+
+    const doDismissGuide = () => {
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "guide.database",
+        newState: true,
+      });
+      state.showGuide = false;
+    };
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
@@ -114,6 +149,7 @@ export default {
       searchField,
       state,
       filteredList,
+      doDismissGuide,
       selectEnvironment,
       changeSearchText,
     };

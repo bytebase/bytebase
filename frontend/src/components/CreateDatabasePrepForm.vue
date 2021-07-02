@@ -285,13 +285,6 @@ export default {
         payload: {},
       };
       store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
-        // It's a bit earlier to set database.create as true here since we just successfully created the issue
-        // and the issue might not complete. However, we don't have a reliable way to observe issue completion,
-        // thus this is the best place to set this.
-        store.dispatch("uistate/saveIntroStateByKey", {
-          key: "database.create",
-          newState: true,
-        });
         router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
       });
     };

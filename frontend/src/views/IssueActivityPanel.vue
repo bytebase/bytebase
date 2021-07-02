@@ -692,6 +692,11 @@ export default {
         comment: newComment.value,
       };
       store.dispatch("activity/createActivity", createActivity).then(() => {
+        store.dispatch("uistate/saveIntroStateByKey", {
+          key: "comment.create",
+          newState: true,
+        });
+
         newComment.value = "";
         nextTick(() => sizeToFit(newCommentTextArea.value));
 

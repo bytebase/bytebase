@@ -99,7 +99,7 @@ export default {
         .dispatch("project/createProject", state.project)
         .then((createdProject: Project) => {
           store.dispatch("uistate/saveIntroStateByKey", {
-            key: "project.create",
+            key: "project.visit",
             newState: true,
           });
 
