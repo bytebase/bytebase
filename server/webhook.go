@@ -103,7 +103,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						s.l.Warn("Failed to find database matching added repository file. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					} else if len(databaseList) == 0 {
-						s.l.Warn("Project does not own database. Skip",
+						s.l.Warn("Project does not own this database. Skip",
 							zap.Int("project_id", repository.ProjectId),
 							zap.String("database_name", mi.Database),
 							zap.String("file", added),
@@ -141,6 +141,37 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						}
 					} else {
 						filterdDatabaseList = databaseList
+					}
+
+					{
+						// It could happen that for a particular environment a project contain 2 database with the same name.
+						// We will emit warning in this case.
+						var databaseListByEnv = map[int][]*api.Database{}
+						for _, database := range filterdDatabaseList {
+							list, ok := databaseListByEnv[database.Instance.EnvironmentId]
+							if ok {
+								databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
+							} else {
+								list := make([]*api.Database, 0)
+								databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
+							}
+						}
+
+						var multipleDatabaseForSameEnv = false
+						for environemntId, databaseList := range databaseListByEnv {
+							if len(databaseList) > 1 {
+								multipleDatabaseForSameEnv = true
+
+								s.l.Warn(fmt.Sprintf("Project ID %d contain multiple database %s for environment %d. Skip", repository.ProjectId, mi.Database, environemntId),
+									zap.Int("project_id", repository.ProjectId),
+									zap.String("file", added),
+								)
+							}
+						}
+
+						if multipleDatabaseForSameEnv {
+							continue
+						}
 					}
 
 					// Compose the new issue
