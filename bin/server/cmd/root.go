@@ -106,12 +106,12 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running. e.g. https://bytebase.example.com")
+	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
-	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data.")
-	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only.")
-	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run in demo mode. Demo mode uses demo data.")
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging.")
+	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data")
+	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
+	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
