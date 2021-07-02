@@ -132,6 +132,7 @@ export const unknown = (
 
   const UNKNOWN_MEMBER: Member = {
     id: UNKNOWN_ID,
+    rowStatus: "NORMAL",
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -409,6 +410,7 @@ export const empty = (
 
   const EMPTY_MEMBER: Member = {
     id: EMPTY_ID,
+    rowStatus: "NORMAL",
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
