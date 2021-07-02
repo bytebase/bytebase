@@ -60,7 +60,7 @@ LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 
-# Directory to store the data, used as the mount point
+# Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
 
 CMD ["--host", "http://localhost", "--port", "8080", "--data", "/var/opt/bytebase"]
