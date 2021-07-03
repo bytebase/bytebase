@@ -20,11 +20,13 @@ var (
 type IssueService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewIssueService returns a new instance of IssueService.
-func NewIssueService(logger *zap.Logger, db *DB) *IssueService {
-	return &IssueService{l: logger, db: db}
+func NewIssueService(logger *zap.Logger, db *DB, cache api.CacheService) *IssueService {
+	return &IssueService{l: logger, db: db, cache: cache}
 }
 
 // CreateIssue creates a new issue.
@@ -44,6 +46,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate)
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+		return nil, err
+	}
+
 	return issue, nil
 }
 
@@ -58,6 +64,14 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 	list, err := s.findIssueList(ctx, tx, find)
 	if err != nil {
 		return []*api.Issue{}, err
+	}
+
+	if err == nil {
+		for _, issue := range list {
+			if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return list, nil
@@ -81,6 +95,11 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d issues with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.IssueCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -100,6 +119,10 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+		return nil, err
 	}
 
 	return issue, nil
