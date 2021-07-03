@@ -7,8 +7,8 @@
             <span>
               {{
                 isReadonly
-                  ? "This is a DEMO version of Bytebase in readonly mode."
-                  : "This is a DEMO version of Bytebase."
+                  ? "This is a demo version of Bytebase in read-only mode."
+                  : "This is a demo version of Bytebase."
               }}
             </span>
           </p>
