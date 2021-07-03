@@ -49,7 +49,8 @@ const (
 // If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
 var sqliteDriver = "sqlite3"
 
-var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL"}
+// Allocate 32MB cache
+var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=33554432"}
 
 //go:embed migration
 var migrationFS embed.FS
