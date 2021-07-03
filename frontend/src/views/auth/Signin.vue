@@ -141,12 +141,15 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      email: isRelease() ? "" : "demo@example.com",
-      password: isRelease() ? "" : "1024",
+      email: "",
+      password: "",
     });
 
     const prepareInfo = () => {
       store.dispatch("actuator/info").then((info: ServerInfo) => {
+        const demo = store.getters["actuator/isDemo"]();
+        state.email = demo ? "demo@example.com" : "";
+        state.password = demo ? "1024" : "";
         // Navigate to signup if needs admin setup.
         // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
         // after router has already made the decision on first page load.
