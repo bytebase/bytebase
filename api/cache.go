@@ -8,6 +8,7 @@ const (
 	ProjectCache     CacheNamespace = "r"
 	InstanceCache    CacheNamespace = "i"
 	DatabaseCache    CacheNamespace = "d"
+	MemberCache      CacheNamespace = "m"
 )
 
 type CacheService interface {

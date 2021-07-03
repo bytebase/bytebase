@@ -18,11 +18,13 @@ var (
 type MemberService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewMemberService returns a new instance of MemberService.
-func NewMemberService(logger *zap.Logger, db *DB) *MemberService {
-	return &MemberService{l: logger, db: db}
+func NewMemberService(logger *zap.Logger, db *DB, cache api.CacheService) *MemberService {
+	return &MemberService{l: logger, db: db, cache: cache}
 }
 
 // CreateMember creates a new member.
@@ -42,6 +44,10 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalId, member); err != nil {
+		return nil, err
+	}
+
 	return member, nil
 }
 
@@ -58,6 +64,14 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 		return []*api.Member{}, err
 	}
 
+	if err == nil {
+		for _, member := range list {
+			if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalId, member); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -65,6 +79,17 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
+	if find.PrincipalId != nil {
+		member := &api.Member{}
+		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalId, member)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return member, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,6 +104,11 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalId, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -98,6 +128,10 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalId, member); err != nil {
+		return nil, err
 	}
 
 	return member, nil
