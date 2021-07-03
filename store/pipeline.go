@@ -18,11 +18,13 @@ var (
 type PipelineService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewPipelineService returns a new instance of PipelineService.
-func NewPipelineService(logger *zap.Logger, db *DB) *PipelineService {
-	return &PipelineService{l: logger, db: db}
+func NewPipelineService(logger *zap.Logger, db *DB, cache api.CacheService) *PipelineService {
+	return &PipelineService{l: logger, db: db, cache: cache}
 }
 
 // CreatePipeline creates a new pipeline.
@@ -42,6 +44,10 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+		return nil, err
+	}
+
 	return pipeline, nil
 }
 
@@ -58,6 +64,14 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 		return []*api.Pipeline{}, err
 	}
 
+	if err == nil {
+		for _, pipeline := range list {
+			if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -65,6 +79,17 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFind) (*api.Pipeline, error) {
+	if find.ID != nil {
+		pipeline := &api.Pipeline{}
+		has, err := s.cache.FindCache(api.PipelineCache, *find.ID, pipeline)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return pipeline, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,6 +104,11 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d pipelines with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.PipelineCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -98,6 +128,10 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+		return nil, err
 	}
 
 	return pipeline, nil

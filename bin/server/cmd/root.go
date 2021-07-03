@@ -253,7 +253,7 @@ func (m *main) Run() error {
 	server.InstanceService = store.NewInstanceService(m.l, db, server.CacheService, server.DatabaseService, server.DataSourceService)
 	server.TableService = store.NewTableService(m.l, db)
 	server.IssueService = store.NewIssueService(m.l, db)
-	server.PipelineService = store.NewPipelineService(m.l, db)
+	server.PipelineService = store.NewPipelineService(m.l, db, server.CacheService)
 	server.StageService = store.NewStageService(m.l, db)
 	server.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db))
 	server.ActivityService = store.NewActivityService(m.l, db)
