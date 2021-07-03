@@ -5,6 +5,7 @@ type CacheNamespace string
 const (
 	PrincipalCache   CacheNamespace = "p"
 	EnvironmentCache CacheNamespace = "e"
+	ProjectCache     CacheNamespace = "r"
 )
 
 type CacheService interface {

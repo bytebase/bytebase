@@ -19,11 +19,13 @@ var (
 type ProjectService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewProjectService returns a new project of ProjectService.
-func NewProjectService(logger *zap.Logger, db *DB) *ProjectService {
-	return &ProjectService{l: logger, db: db}
+func NewProjectService(logger *zap.Logger, db *DB, cache api.CacheService) *ProjectService {
+	return &ProjectService{l: logger, db: db, cache: cache}
 }
 
 // CreateProject creates a new project.
@@ -43,6 +45,10 @@ func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectC
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+		return nil, err
+	}
+
 	return project, nil
 }
 
@@ -59,6 +65,14 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 		return []*api.Project{}, err
 	}
 
+	if err == nil {
+		for _, project := range list {
+			if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -66,6 +80,17 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind) (*api.Project, error) {
+	if find.ID != nil {
+		project := &api.Project{}
+		has, err := s.cache.FindCache(api.ProjectCache, *find.ID, project)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return project, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -80,6 +105,11 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d projects with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.ProjectCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -99,6 +129,10 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+		return nil, err
 	}
 
 	return project, nil
