@@ -114,7 +114,7 @@ type PrincipalPatch struct {
 
 type PrincipalService interface {
 	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
-	FindPrincipalList(ctx context.Context, find *PrincipalFind) ([]*Principal, error)
+	FindPrincipalList(ctx context.Context) ([]*Principal, error)
 	FindPrincipal(ctx context.Context, find *PrincipalFind) (*Principal, error)
 	PatchPrincipal(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
 }

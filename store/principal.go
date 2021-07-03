@@ -46,14 +46,14 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 }
 
 // FindPrincipalList retrieves a list of principals.
-func (s *PrincipalService) FindPrincipalList(ctx context.Context, find *api.PrincipalFind) ([]*api.Principal, error) {
+func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, find)
+	list, err := findPrincipalList(ctx, tx, &api.PrincipalFind{})
 	if err != nil {
 		return []*api.Principal{}, err
 	}
