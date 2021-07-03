@@ -3,7 +3,8 @@ package api
 type CacheNamespace string
 
 const (
-	PrincipalCache CacheNamespace = "p"
+	PrincipalCache   CacheNamespace = "p"
+	EnvironmentCache CacheNamespace = "e"
 )
 
 type CacheService interface {

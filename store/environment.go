@@ -18,11 +18,13 @@ var (
 type EnvironmentService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewEnvironmentService returns a new instance of EnvironmentService.
-func NewEnvironmentService(logger *zap.Logger, db *DB) *EnvironmentService {
-	return &EnvironmentService{l: logger, db: db}
+func NewEnvironmentService(logger *zap.Logger, db *DB, cache api.CacheService) *EnvironmentService {
+	return &EnvironmentService{l: logger, db: db, cache: cache}
 }
 
 // CreateEnvironment creates a new environment.
@@ -42,6 +44,10 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+		return nil, err
+	}
+
 	return environment, nil
 }
 
@@ -58,6 +64,14 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 		return []*api.Environment{}, err
 	}
 
+	if err == nil {
+		for _, environment := range list {
+			if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -65,6 +79,17 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) (*api.Environment, error) {
+	if find.ID != nil {
+		environment := &api.Environment{}
+		has, err := s.cache.FindCache(api.EnvironmentCache, *find.ID, environment)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return environment, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,6 +104,11 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d environments with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.EnvironmentCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -98,6 +128,10 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+		return nil, err
 	}
 
 	return environment, nil

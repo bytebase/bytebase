@@ -247,7 +247,7 @@ func (m *main) Run() error {
 	server.MemberService = store.NewMemberService(m.l, db)
 	server.ProjectService = store.NewProjectService(m.l, db)
 	server.ProjectMemberService = store.NewProjectMemberService(m.l, db)
-	server.EnvironmentService = store.NewEnvironmentService(m.l, db)
+	server.EnvironmentService = store.NewEnvironmentService(m.l, db, server.CacheService)
 	server.DataSourceService = store.NewDataSourceService(m.l, db)
 	server.DatabaseService = store.NewDatabaseService(m.l, db)
 	server.InstanceService = store.NewInstanceService(m.l, db, server.DatabaseService, server.DataSourceService)
