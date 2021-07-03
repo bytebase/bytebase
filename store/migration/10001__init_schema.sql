@@ -16,6 +16,8 @@ CREATE TABLE principal (
     password_hash TEXT NOT NULL
 );
 
+CREATE INDEX idx_principal_email ON principal(email);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
