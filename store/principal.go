@@ -18,11 +18,13 @@ var (
 type PrincipalService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewPrincipalService returns a new instance of PrincipalService.
-func NewPrincipalService(logger *zap.Logger, db *DB) *PrincipalService {
-	return &PrincipalService{l: logger, db: db}
+func NewPrincipalService(logger *zap.Logger, db *DB, cache api.CacheService) *PrincipalService {
+	return &PrincipalService{l: logger, db: db, cache: cache}
 }
 
 // CreatePrincipal creates a new principal.
@@ -42,6 +44,10 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+		return nil, err
+	}
+
 	return principal, nil
 }
 
@@ -58,6 +64,14 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 		return []*api.Principal{}, err
 	}
 
+	if err == nil {
+		for _, principal := range list {
+			if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -65,6 +79,17 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
+	if find.ID != nil {
+		principal := &api.Principal{}
+		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principal)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return principal, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,6 +104,11 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d principals with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.PrincipalCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -98,6 +128,10 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+		return nil, err
 	}
 
 	return principal, nil

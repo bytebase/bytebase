@@ -23,6 +23,8 @@ type Server struct {
 	TaskScheduler *TaskScheduler
 	SchemaSyncer  *SchemaSyncer
 
+	CacheService api.CacheService
+
 	PrincipalService     api.PrincipalService
 	MemberService        api.MemberService
 	ProjectService       api.ProjectService
@@ -97,17 +99,18 @@ func NewServer(logger *zap.Logger, version string, host string, port int, mode s
 	e.GET("/assets/*", echo.WrapHandler(assetHandler))
 
 	s := &Server{
-		l:         logger,
-		e:         e,
-		version:   version,
-		mode:      mode,
-		host:      host,
-		port:      port,
-		startedTs: time.Now().Unix(),
-		secret:    secret,
-		readonly:  readonly,
-		demo:      demo,
-		plan:      api.TEAM,
+		l:            logger,
+		CacheService: NewCacheService(logger),
+		e:            e,
+		version:      version,
+		mode:         mode,
+		host:         host,
+		port:         port,
+		startedTs:    time.Now().Unix(),
+		secret:       secret,
+		readonly:     readonly,
+		demo:         demo,
+		plan:         api.TEAM,
 	}
 
 	if !readonly {
