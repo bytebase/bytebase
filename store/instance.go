@@ -19,13 +19,15 @@ type InstanceService struct {
 	l  *zap.Logger
 	db *DB
 
+	cache api.CacheService
+
 	databaseService   api.DatabaseService
 	dataSourceService api.DataSourceService
 }
 
 // NewInstanceService returns a new instance of InstanceService.
-func NewInstanceService(logger *zap.Logger, db *DB, databaseService api.DatabaseService, dataSourceService api.DataSourceService) *InstanceService {
-	return &InstanceService{l: logger, db: db, databaseService: databaseService, dataSourceService: dataSourceService}
+func NewInstanceService(logger *zap.Logger, db *DB, cache api.CacheService, databaseService api.DatabaseService, dataSourceService api.DataSourceService) *InstanceService {
+	return &InstanceService{l: logger, db: db, cache: cache, databaseService: databaseService, dataSourceService: dataSourceService}
 }
 
 // CreateInstance creates a new instance.
@@ -74,6 +76,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		return nil, FormatError(err)
 	}
 
+	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+		return nil, err
+	}
+
 	return instance, nil
 }
 
@@ -90,6 +96,14 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 		return []*api.Instance{}, err
 	}
 
+	if err == nil {
+		for _, instance := range list {
+			if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -97,6 +111,17 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFind) (*api.Instance, error) {
+	if find.ID != nil {
+		instance := &api.Instance{}
+		has, err := s.cache.FindCache(api.InstanceCache, *find.ID, instance)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return instance, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -111,6 +136,11 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d instances with filter %+v, expect 1", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.InstanceCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -130,6 +160,10 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+		return nil, err
 	}
 
 	return instance, nil

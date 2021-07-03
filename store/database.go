@@ -19,11 +19,13 @@ var (
 type DatabaseService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *zap.Logger, db *DB) *DatabaseService {
-	return &DatabaseService{l: logger, db: db}
+func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService) *DatabaseService {
+	return &DatabaseService{l: logger, db: db, cache: cache}
 }
 
 // CreateDatabase creates a new database.
@@ -41,6 +43,10 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+		return nil, err
 	}
 
 	return database, nil
@@ -63,6 +69,14 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 		return []*api.Database{}, err
 	}
 
+	if err == nil {
+		for _, database := range list {
+			if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return list, nil
 }
 
@@ -70,6 +84,17 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
+	if find.ID != nil {
+		database := &api.Database{}
+		has, err := s.cache.FindCache(api.DatabaseCache, *find.ID, database)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			return database, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -84,6 +109,11 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	} else if len(list) > 1 {
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d databases with filter %+v, expect 1. ", len(list), find)}
 	}
+
+	if err := s.cache.UpsertCache(api.DatabaseCache, list[0].ID, list[0]); err != nil {
+		return nil, err
+	}
+
 	return list[0], nil
 }
 
@@ -103,6 +133,10 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+		return nil, err
 	}
 
 	return database, nil
