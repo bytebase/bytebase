@@ -78,7 +78,7 @@ console.debug("dev:", isDev());
 console.debug("release:", isRelease());
 console.debug("backend:", backendURL());
 
-axios.defaults.timeout = 3000;
+axios.defaults.timeout = 10000;
 axios.interceptors.request.use((request) => {
   if (isDev() && request.url!.startsWith("/api")) {
     console.debug(
@@ -125,7 +125,7 @@ axios.interceptors.response.use(
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",
-        title: "Unable to connect to server. Make sure the server is running.",
+        title: "Connecting server timeout. Make sure the server is running.",
       });
       return;
     }
