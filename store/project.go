@@ -141,7 +141,17 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 // PatchProjectTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
 func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
-	return patchProject(ctx, tx, patch)
+	project, err := patchProject(ctx, tx, patch)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+		return nil, err
+	}
+
+	return project, nil
 }
 
 // createProject creates a new project.
