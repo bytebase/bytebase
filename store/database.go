@@ -53,7 +53,16 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 }
 
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
-	return s.createDatabase(ctx, tx, create)
+	database, err := s.createDatabase(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+		return nil, err
+	}
+
+	return database, nil
 }
 
 // FindDatabaseList retrieves a list of databases based on find.
