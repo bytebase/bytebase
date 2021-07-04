@@ -8,16 +8,6 @@ export function isRelease(): boolean {
   return import.meta.env.PROD;
 }
 
-// Use VITE_BACKEND as the backendURL if specified. Otherwise, just use the current host
-// For dev environment, we usually set VITE_BACKEND to point to different backend.
-// For production environment, we won't set VITE_BACKEND because we bundle frontend/backend as a monolithic.
-export function backendURL(): string {
-  if (import.meta.env.VITE_BACKEND) {
-    return import.meta.env.VITE_BACKEND as string;
-  }
-  return window.location.origin;
-}
-
 export function humanizeTs(ts: number): string {
   const time = moment.utc(ts * 1000);
   if (moment().year() == time.year()) {

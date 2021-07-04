@@ -42,9 +42,7 @@ export type RepositoryCreate = {
   baseDirectory: string;
   branchFilter: string;
   externalId: string;
-  externalWebhookId: string;
-  webhookEndpointId: string;
-  secretToken: string;
+  accessToken: string;
 };
 
 export type RepositoryPatch = {
@@ -66,10 +64,6 @@ export type ExternalRepositoryInfo = {
   fullPath: string;
   // e.g. http://gitlab.bytebase.com/bytebase/sample-project
   webURL: string;
-};
-
-export type WebhookInfo = {
-  id: string;
 };
 
 export function baseDirectoryWebURL(repository: Repository): string {

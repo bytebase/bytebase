@@ -13,6 +13,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
+	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.2.0
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0

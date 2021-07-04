@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -146,6 +147,58 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
+
+		vcsFind := &api.VCSFind{
+			ID: &repositoryCreate.VCSId,
+		}
+		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSId)).SetInternal(err)
+		}
+
+		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
+		repositoryCreate.WebhookEndpointId = uuid.NewV4().String()
+		repositoryCreate.WebhookSecretToken = bytebase.RandomString(gitlab.SECRET_TOKEN_LENGTH)
+		switch vcs.Type {
+		case "GITLAB_SELF_HOST":
+			webhookPost := gitlab.WebhookPost{
+				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, repositoryCreate.WebhookEndpointId),
+				SecretToken:            repositoryCreate.WebhookSecretToken,
+				PushEvents:             true,
+				PushEventsBranchFilter: repositoryCreate.BranchFilter,
+				EnableSSLVerification:  false,
+			}
+			body, err := json.Marshal(webhookPost)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectId)).SetInternal(err)
+			}
+			resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryCreate.ExternalId)
+			resp, err := gitlab.POST(vcs.InstanceURL, resourcePath, repositoryCreate.AccessToken, bytes.NewBuffer(body))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectId)).SetInternal(err)
+			}
+			defer resp.Body.Close()
+
+			// Just emits a warning since we have already updated the repository entry. We will have a separate process to reconcile the state.
+			if resp.StatusCode >= 300 {
+				return echo.NewHTTPError(http.StatusInternalServerError,
+					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d, status: %s",
+						repositoryCreate.ProjectId,
+						resp.StatusCode,
+						resp.Status,
+					))
+			}
+
+			webhookInfo := &gitlab.WebhookInfo{}
+			if err := json.NewDecoder(resp.Body).Decode(webhookInfo); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal create webhook response for project ID: %v", repositoryCreate.ProjectId)).SetInternal(err)
+			}
+			repositoryCreate.ExternalWebhookId = strconv.Itoa(webhookInfo.ID)
+		}
+
 		repositoryCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
@@ -270,6 +323,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
 				}
+				defer resp.Body.Close()
 
 				// Just emits a warning since we have already updated the repository entry. We will have a separate process to reconcile the state.
 				if resp.StatusCode >= 300 {
@@ -344,6 +398,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
 			}
+			defer resp.Body.Close()
 
 			// Just emits a warning since we have already removed the repository entry. We will have a separate process to cleanup the orphaned webhook.
 			if resp.StatusCode >= 300 {

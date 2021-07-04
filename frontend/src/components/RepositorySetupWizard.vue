@@ -118,39 +118,23 @@ export default {
     };
 
     const tryFinishSetup = (allowFinishCallback: () => void) => {
-      // The secret token to validate the gitlab webhook sender.
-      const secretToken = randomString(16);
-      const webhookEndpointId = uuidv4();
       const createFunc = () => {
+        const repositoryCreate: RepositoryCreate = {
+          vcsId: state.config.vcs.id,
+          projectId: props.project.id,
+          name: state.config.repositoryInfo.name,
+          fullPath: state.config.repositoryInfo.fullPath,
+          webURL: state.config.repositoryInfo.webURL,
+          baseDirectory: state.config.repositoryConfig.baseDirectory,
+          branchFilter: state.config.repositoryConfig.branchFilter,
+          externalId: state.config.repositoryInfo.externalId,
+          accessToken: state.config.token.accessToken,
+        };
         store
-          .dispatch("gitlab/createWebhook", {
-            vcs: state.config.vcs,
-            webhookEndpointId,
-            projectId: state.config.repositoryInfo.externalId,
-            branchFilter: state.config.repositoryConfig.branchFilter.trim(),
-            secretToken,
-            accessToken: state.config.token.accessToken,
-          })
-          .then((webhook: WebhookInfo) => {
-            const repositoryCreate: RepositoryCreate = {
-              vcsId: state.config.vcs.id,
-              projectId: props.project.id,
-              name: state.config.repositoryInfo.name,
-              fullPath: state.config.repositoryInfo.fullPath,
-              webURL: state.config.repositoryInfo.webURL,
-              baseDirectory: state.config.repositoryConfig.baseDirectory,
-              branchFilter: state.config.repositoryConfig.branchFilter,
-              externalId: state.config.repositoryInfo.externalId,
-              externalWebhookId: webhook.id,
-              webhookEndpointId,
-              secretToken,
-            };
-            store
-              .dispatch("repository/createRepository", repositoryCreate)
-              .then(() => {
-                allowFinishCallback();
-                emit("finish");
-              });
+          .dispatch("repository/createRepository", repositoryCreate)
+          .then(() => {
+            allowFinishCallback();
+            emit("finish");
           });
       };
       if (props.create) {

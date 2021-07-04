@@ -13,8 +13,9 @@ INSERT INTO
         branch_filter,
         external_id,
         external_webhook_id,
+        webhook_url_host,
         webhook_endpoint_id,
-        secret_token
+        webhook_secret_token
     )
 VALUES
     (
@@ -32,6 +33,7 @@ VALUES
         "13",
         -- Refers to the webhook in bytebase-demo/blog
         "60",
+        "https://demo.bytebase.com",
         "e99bf622-7f58-4d6b-a5be-b97af313d7ea",
         "xxxxxxxxxxxxxxxx"
     );
@@ -50,8 +52,9 @@ INSERT INTO
         branch_filter,
         external_id,
         external_webhook_id,
+        webhook_url_host,
         webhook_endpoint_id,
-        secret_token
+        webhook_secret_token
     )
 VALUES
     (
@@ -69,6 +72,7 @@ VALUES
         "14",
         -- Refers to the webhook in bytebase-demo/shop
         "61",
+        "https://demo.bytebase.com",
         "c5e30130-7322-4f84-953a-d08168c047d1",
         "xxxxxxxxxxxxxxxx"
     );

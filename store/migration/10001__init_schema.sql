@@ -773,10 +773,12 @@ CREATE TABLE repo (
     -- Push webhook id from the corresponding VCS provider.
     -- For GitLab, this is the project webhook id. e.g. 123
     external_webhook_id TEXT NOT NULL,
-    -- Identify the target repository receiving the webhook event. This is a random string, and we don't store the full URL because the backend may change host.
+    -- Identify the host of the webhook url where the webhook event sends. We store this to identify stale webhook url whose url doesn't match the current bytebase --host.
+    webhook_url_host TEXT NOT NULL,
+    -- Identify the target repository receiving the webhook event. This is a random string.
     webhook_endpoint_id TEXT NOT NULL UNIQUE,
-    -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we can compare it with the one stored in db to validate it sends to the expected endpoint.
-    secret_token TEXT NOT NULL
+    -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
+    webhook_secret_token TEXT NOT NULL
 );
 
 INSERT INTO

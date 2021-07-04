@@ -36,7 +36,6 @@ import highlight from "./directives/highlight";
 import {
   isDev,
   isRelease,
-  backendURL,
   humanizeTs,
   sizeToFit,
   urlfy,
@@ -76,7 +75,6 @@ registerStoreWithRoleUtil(store);
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
-console.debug("backend:", backendURL());
 
 axios.defaults.timeout = 10000;
 axios.interceptors.request.use((request) => {

@@ -23,15 +23,16 @@ type Repository struct {
 	Project   *Project `jsonapi:"relation,project"`
 
 	// Domain specific fields
-	Name              string `jsonapi:"attr,name"`
-	FullPath          string `jsonapi:"attr,fullPath"`
-	WebURL            string `jsonapi:"attr,webURL"`
-	BaseDirectory     string `jsonapi:"attr,baseDirectory"`
-	BranchFilter      string `jsonapi:"attr,branchFilter"`
-	ExternalId        string `jsonapi:"attr,externalId"`
-	ExternalWebhookId string
-	WebhookEndpointId string
-	SecretToken       string
+	Name               string `jsonapi:"attr,name"`
+	FullPath           string `jsonapi:"attr,fullPath"`
+	WebURL             string `jsonapi:"attr,webURL"`
+	BaseDirectory      string `jsonapi:"attr,baseDirectory"`
+	BranchFilter       string `jsonapi:"attr,branchFilter"`
+	ExternalId         string `jsonapi:"attr,externalId"`
+	ExternalWebhookId  string
+	WebhookURLHost     string
+	WebhookEndpointId  string
+	WebhookSecretToken string
 }
 
 type RepositoryCreate struct {
@@ -44,15 +45,19 @@ type RepositoryCreate struct {
 	ProjectId int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Name              string `jsonapi:"attr,name"`
-	FullPath          string `jsonapi:"attr,fullPath"`
-	WebURL            string `jsonapi:"attr,webURL"`
-	BaseDirectory     string `jsonapi:"attr,baseDirectory"`
-	BranchFilter      string `jsonapi:"attr,branchFilter"`
-	ExternalId        string `jsonapi:"attr,externalId"`
-	ExternalWebhookId string `jsonapi:"attr,externalWebhookId"`
-	WebhookEndpointId string `jsonapi:"attr,webhookEndpointId"`
-	SecretToken       string `jsonapi:"attr,secretToken"`
+	Name          string `jsonapi:"attr,name"`
+	FullPath      string `jsonapi:"attr,fullPath"`
+	WebURL        string `jsonapi:"attr,webURL"`
+	BaseDirectory string `jsonapi:"attr,baseDirectory"`
+	BranchFilter  string `jsonapi:"attr,branchFilter"`
+	ExternalId    string `jsonapi:"attr,externalId"`
+	// Token belonged by the end user creating the webhook. We are accessing the end user's repository
+	// so we should use her access token instead of the access token stored in VCS.
+	AccessToken        string `jsonapi:"attr,accessToken"`
+	ExternalWebhookId  string
+	WebhookURLHost     string
+	WebhookEndpointId  string
+	WebhookSecretToken string
 }
 
 type RepositoryFind struct {

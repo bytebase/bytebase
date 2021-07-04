@@ -4,12 +4,9 @@ import {
   VCS,
   OAuthConfig,
   OAuthToken,
-  WebhookInfo,
 } from "../../types";
-import { backendURL } from "../../utils";
 
 const GITLAB_API_PATH = "api/v4";
-const GITLAB_WEBHOOK_PATH = "hook/gitlab";
 
 const getters = {};
 
@@ -67,56 +64,6 @@ const actions = {
     ).data;
 
     return data.map((item: any) => convertGitLabProject(item));
-  },
-
-  // Create webhook to receive push event
-  async createWebhook(
-    {}: any,
-    {
-      vcs,
-      webhookEndpointId,
-      projectId,
-      branchFilter,
-      secretToken,
-      accessToken,
-    }: {
-      vcs: VCS;
-      projectId: string;
-      branchFilter: string;
-      webhookEndpointId: string;
-      secretToken: string;
-      accessToken: string;
-    }
-  ): Promise<WebhookInfo> {
-    const url = `${backendURL()}/${GITLAB_WEBHOOK_PATH}/${webhookEndpointId}`;
-    const data = (
-      await axios.post(
-        `${vcs.instanceURL}/${GITLAB_API_PATH}/projects/${projectId}/hooks`,
-        {
-          url,
-          token: secretToken,
-          push_events: true,
-          // For now, there is no native dry run DDL support in mysql/postgres. One may wonder if we could wrap the DDL
-          // in a transaction and just not commit at the end, unfortunately there are side effects which are hard to control.
-          // See https://www.postgresql.org/message-id/CAMsr%2BYGiYQ7PYvYR2Voio37YdCpp79j5S%2BcmgVJMOLM2LnRQcA%40mail.gmail.com
-          // So we can't possibly display useful info when reviewing a MR, thus we don't enable this event.
-          // Saying that, delivering a souding dry run solution would be great and hopefully we can achieve that one day.
-          // merge_requests_events: true,
-          push_events_branch_filter: branchFilter,
-          // TODO(tianzhou): Be lax to not enable_ssl_verification
-          enable_ssl_verification: false,
-        },
-        {
-          headers: {
-            Authorization: "Bearer " + accessToken,
-          },
-        }
-      )
-    ).data;
-
-    return {
-      id: data.id.toString(),
-    };
   },
 };
 

@@ -58,7 +58,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 		}
 
-		if c.Request().Header.Get("X-Gitlab-Token") != repository.SecretToken {
+		if c.Request().Header.Get("X-Gitlab-Token") != repository.WebhookSecretToken {
 			return echo.NewHTTPError(http.StatusBadRequest, "Secret token mismatch")
 		}
 
@@ -92,6 +92,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						s.l.Warn("Failed to read added repository file response. Skip", zap.String("file", added), zap.Error(err))
 						continue
 					}
+					defer resp.Body.Close()
 
 					// Find matching database list
 					databaseFind := &api.DatabaseFind{
