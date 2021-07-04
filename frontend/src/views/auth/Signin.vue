@@ -127,7 +127,7 @@ import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { LoginInfo, ServerInfo } from "../../types";
-import { isRelease, isValidEmail } from "../../utils";
+import { isDev, isValidEmail } from "../../utils";
 
 interface LocalState {
   email: string;
@@ -148,8 +148,8 @@ export default {
     const prepareInfo = () => {
       store.dispatch("actuator/info").then((info: ServerInfo) => {
         const demo = store.getters["actuator/isDemo"]();
-        state.email = demo ? "demo@example.com" : "";
-        state.password = demo ? "1024" : "";
+        state.email = isDev() || demo ? "demo@example.com" : "";
+        state.password = isDev() || demo ? "1024" : "";
         // Navigate to signup if needs admin setup.
         // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
         // after router has already made the decision on first page load.
