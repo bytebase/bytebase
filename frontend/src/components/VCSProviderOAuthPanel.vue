@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div class="textlabel">
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
-        Register Bytebase as a GitLab system OAuth application.
+        Register Bytebase as a GitLab instance-wide OAuth application.
       </template>
     </div>
     <ol class="textinfolabel space-y-2">

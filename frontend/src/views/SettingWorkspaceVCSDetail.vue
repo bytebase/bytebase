@@ -48,7 +48,8 @@
       <label for="applicationid" class="textlabel"> Application ID </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          Application ID for the registered GitLab system OAuth application.
+          Application ID for the registered GitLab instance-wide OAuth
+          application.
           <a :href="adminApplicationURL" target="_blank" class="normal-link"
             >View in GitLab</a
           >
@@ -67,7 +68,7 @@
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          Secret for the registered GitLab system OAuth application.
+          Secret for the registered GitLab instance-wide OAuth application.
         </template>
       </p>
       <input

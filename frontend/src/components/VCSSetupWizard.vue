@@ -132,7 +132,7 @@ export default {
 
     const attentionText = computed((): string => {
       if (state.config.type == "GITLAB_SELF_HOST") {
-        return "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a system OAuth application in GitLab, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.";
+        return "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.";
       }
       return "";
     });
