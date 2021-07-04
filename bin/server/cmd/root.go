@@ -108,7 +108,7 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is running e.g. https://bytebase.example.com")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "port where Bytebase is running e.g. 8080")
-	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data")
+	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
@@ -145,12 +145,17 @@ type main struct {
 }
 
 func preStart() error {
-	// Trim trailing / in case user supplies
-	dir, err := filepath.Abs(strings.TrimRight(dataDir, "/"))
-	if err != nil {
-		return err
+	// Convert to absolute path if relative path is supplied.
+	if !filepath.IsAbs(dataDir) {
+		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + dataDir)
+		if err != nil {
+			return err
+		}
+		dataDir = absDir
 	}
-	dataDir = dir
+
+	// Trim trailing / in case user supplies
+	dataDir = strings.TrimRight(dataDir, "/")
 
 	if _, err := os.Stat(dataDir); err != nil {
 		error := fmt.Errorf("unable to access --data %s, %w", dataDir, err)
