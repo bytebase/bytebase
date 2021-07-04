@@ -1,3 +1,4 @@
+-- This is for demo purpose and the applciation_id has alraedy been deleted
 INSERT INTO
     vcs (
         id,
@@ -23,8 +24,8 @@ VALUES
         'https://gitlab.bytebase.com',
         'https://gitlab.bytebase.com/api/v4',
         '0d1f706e68e3bf22be6712752726a3eec2a9684ec098a9695015f484165ed922',
-        '77deb508304dd73fa9b6868d319e1832889c6fc8ea087f400e6efe35d7c6dd87',
-        'a6e1d552205a64c41afd377dedff745fd38a41733b2c780a506ad593ea42d27b',
+        'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
         0,
-        'e4b22027c3ef1847a898e2f8ef1e28056d286bc23bdd11a235711e434e447ab8'
+        'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     );

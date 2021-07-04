@@ -1,3 +1,4 @@
+-- This is for demo purpose and the webhook has already been deleted
 INSERT INTO
     repo (
         id,
@@ -32,7 +33,7 @@ VALUES
         -- Refers to the webhook in bytebase-demo/blog
         "60",
         "e99bf622-7f58-4d6b-a5be-b97af313d7ea",
-        "3TmNgpQxI35MQEeS"
+        "xxxxxxxxxxxxxxxx"
     );
 
 INSERT INTO
@@ -69,5 +70,5 @@ VALUES
         -- Refers to the webhook in bytebase-demo/shop
         "61",
         "c5e30130-7322-4f84-953a-d08168c047d1",
-        "gbjoh84prbxkz8ny"
+        "xxxxxxxxxxxxxxxx"
     );
