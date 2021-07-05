@@ -37,7 +37,6 @@ import {
   RepositoryCreate,
   unknown,
   VCS,
-  WebhookInfo,
 } from "../types";
 import { projectSlug, randomString } from "../utils";
 
@@ -129,6 +128,8 @@ export default {
           branchFilter: state.config.repositoryConfig.branchFilter,
           externalId: state.config.repositoryInfo.externalId,
           accessToken: state.config.token.accessToken,
+          expiresTs: state.config.token.expiresTs,
+          refreshToken: state.config.token.refreshToken,
         };
         store
           .dispatch("repository/createRepository", repositoryCreate)

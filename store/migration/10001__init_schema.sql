@@ -715,10 +715,7 @@ CREATE TABLE vcs (
         AND api_url = rtrim(api_url, '/')
     ),
     application_id TEXT NOT NULL,
-    secret TEXT NOT NULL,
-    access_token TEXT NOT NULL,
-    expires_ts BIGINT NOT NULL,
-    refresh_token TEXT NOT NULL
+    secret TEXT NOT NULL
 );
 
 INSERT INTO
@@ -778,7 +775,11 @@ CREATE TABLE repo (
     -- Identify the target repository receiving the webhook event. This is a random string.
     webhook_endpoint_id TEXT NOT NULL UNIQUE,
     -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
-    webhook_secret_token TEXT NOT NULL
+    webhook_secret_token TEXT NOT NULL,
+    -- access_token, expires_ts, refresh_token belongs to the user linking the project to the VCS repository.
+    access_token TEXT NOT NULL,
+    expires_ts BIGINT NOT NULL,
+    refresh_token TEXT NOT NULL
 );
 
 INSERT INTO

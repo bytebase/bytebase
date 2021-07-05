@@ -155,10 +155,13 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 			external_webhook_id,
 			webhook_url_host,
 			webhook_endpoint_id,
-			webhook_secret_token
+			webhook_secret_token,
+			access_token,
+			expires_ts,
+			refresh_token
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -174,6 +177,9 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		create.WebhookURLHost,
 		create.WebhookEndpointId,
 		create.WebhookSecretToken,
+		create.AccessToken,
+		create.ExpiresTs,
+		create.RefreshToken,
 	)
 
 	if err != nil {
@@ -201,6 +207,9 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		&repository.WebhookURLHost,
 		&repository.WebhookEndpointId,
 		&repository.WebhookSecretToken,
+		&repository.AccessToken,
+		&repository.ExpiresTs,
+		&repository.RefreshToken,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -242,7 +251,10 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			external_webhook_id,
 			webhook_url_host,
 			webhook_endpoint_id,
-			webhook_secret_token
+			webhook_secret_token,
+			access_token,
+			expires_ts,
+			refresh_token
 		FROM repo
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -274,6 +286,9 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			&repository.WebhookURLHost,
 			&repository.WebhookEndpointId,
 			&repository.WebhookSecretToken,
+			&repository.AccessToken,
+			&repository.ExpiresTs,
+			&repository.RefreshToken,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -305,7 +320,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 		UPDATE repo
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		args...,
 	)
@@ -334,6 +349,9 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 			&repository.WebhookURLHost,
 			&repository.WebhookEndpointId,
 			&repository.WebhookSecretToken,
+			&repository.AccessToken,
+			&repository.ExpiresTs,
+			&repository.RefreshToken,
 		); err != nil {
 			return nil, FormatError(err)
 		}

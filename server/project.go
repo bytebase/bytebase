@@ -319,7 +319,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
 				}
 				resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalId, repository.ExternalWebhookId)
-				resp, err := gitlab.PUT(vcs.InstanceURL, resourcePath, vcs.AccessToken, bytes.NewBuffer(json))
+				resp, err := gitlab.PUT(vcs.InstanceURL, resourcePath, repository.AccessToken, bytes.NewBuffer(json))
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
 				}
@@ -394,7 +394,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
-			resp, err := gitlab.DELETE(vcs.InstanceURL, fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalId, repository.ExternalWebhookId), vcs.AccessToken)
+			resp, err := gitlab.DELETE(vcs.InstanceURL, fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalId, repository.ExternalWebhookId), repository.AccessToken)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
 			}

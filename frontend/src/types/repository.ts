@@ -43,6 +43,8 @@ export type RepositoryCreate = {
   branchFilter: string;
   externalId: string;
   accessToken: string;
+  expiresTs: number;
+  refreshToken: string;
 };
 
 export type RepositoryPatch = {

@@ -251,9 +251,6 @@ export default {
               if (!isEmpty(state.secret)) {
                 vcsPatch.secret = state.secret;
               }
-              vcsPatch.accessToken = token.accessToken;
-              vcsPatch.expiresTs = token.expiresTs;
-              vcsPatch.refreshToken = token.refreshToken;
               store
                 .dispatch("vcs/patchVCS", {
                   vcsId: vcs.value.id,

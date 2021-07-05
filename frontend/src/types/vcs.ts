@@ -10,9 +10,6 @@ export interface VCSConfig {
   instanceURL: string;
   applicationId: string;
   secret: string;
-  accessToken: string;
-  expiresTs: number;
-  refreshToken: string;
 }
 
 export type VCS = {
@@ -40,9 +37,6 @@ export type VCSCreate = {
   instanceURL: string;
   applicationId: string;
   secret: string;
-  accessToken: string;
-  expiresTs: number;
-  refreshToken: string;
 };
 
 export type VCSPatch = {
@@ -50,9 +44,6 @@ export type VCSPatch = {
   name?: string;
   applicationId?: string;
   secret?: string;
-  accessToken?: string;
-  expiresTs?: number;
-  refreshToken?: string;
 };
 
 export type VCSTokenCreate = {

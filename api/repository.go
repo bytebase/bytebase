@@ -33,6 +33,10 @@ type Repository struct {
 	WebhookURLHost     string
 	WebhookEndpointId  string
 	WebhookSecretToken string
+	// These will be exclusively used on the server side and we don't return it to the client.
+	AccessToken  string
+	ExpiresTs    int64
+	RefreshToken string
 }
 
 type RepositoryCreate struct {
@@ -51,9 +55,12 @@ type RepositoryCreate struct {
 	BaseDirectory string `jsonapi:"attr,baseDirectory"`
 	BranchFilter  string `jsonapi:"attr,branchFilter"`
 	ExternalId    string `jsonapi:"attr,externalId"`
-	// Token belonged by the end user creating the webhook. We are accessing the end user's repository
-	// so we should use her access token instead of the access token stored in VCS.
+	// Token belonged by the user linking the project to the VCS repository. We store this token together
+	// with the refresh token in the new repository record so we can use it to call VCS API on
+	// behalf of that user to perform tasks like webhook CRUD later.
 	AccessToken        string `jsonapi:"attr,accessToken"`
+	ExpiresTs          int64  `jsonapi:"attr,expiresTs"`
+	RefreshToken       string `jsonapi:"attr,refreshToken"`
 	ExternalWebhookId  string
 	WebhookURLHost     string
 	WebhookEndpointId  string

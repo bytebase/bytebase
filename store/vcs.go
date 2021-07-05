@@ -136,13 +136,10 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 			instance_url,
 			api_url,
 			application_id,
-			secret,
-			access_token,
-			expires_ts,
-			refresh_token
+			secret
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret, access_token, expires_ts, refresh_token"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -152,9 +149,6 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 		create.ApiURL,
 		create.ApplicationId,
 		create.Secret,
-		create.AccessToken,
-		create.ExpiresTs,
-		create.RefreshToken,
 	)
 
 	if err != nil {
@@ -176,9 +170,6 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 		&vcs.ApiURL,
 		&vcs.ApplicationId,
 		&vcs.Secret,
-		&vcs.AccessToken,
-		&vcs.ExpiresTs,
-		&vcs.RefreshToken,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -205,10 +196,7 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 			instance_url,
 			api_url,
 			application_id,
-			secret,
-			access_token,
-			expires_ts,
-			refresh_token
+			secret
 		FROM vcs
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -234,9 +222,6 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 			&vcs.ApiURL,
 			&vcs.ApplicationId,
 			&vcs.Secret,
-			&vcs.AccessToken,
-			&vcs.ExpiresTs,
-			&vcs.RefreshToken,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -263,15 +248,6 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 	if v := patch.Secret; v != nil {
 		set, args = append(set, "secret = ?"), append(args, *v)
 	}
-	if v := patch.AccessToken; v != nil {
-		set, args = append(set, "access_token = ?"), append(args, *v)
-	}
-	if v := patch.ExpiresTs; v != nil {
-		set, args = append(set, "expires_ts = ?"), append(args, *v)
-	}
-	if v := patch.RefreshToken; v != nil {
-		set, args = append(set, "refresh_token = ?"), append(args, *v)
-	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -279,7 +255,7 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret, access_token, expires_ts, refresh_token"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret"+`
 	`,
 		args...,
 	)
@@ -302,9 +278,6 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 			&vcs.ApiURL,
 			&vcs.ApplicationId,
 			&vcs.Secret,
-			&vcs.AccessToken,
-			&vcs.ExpiresTs,
-			&vcs.RefreshToken,
 		); err != nil {
 			return nil, FormatError(err)
 		}

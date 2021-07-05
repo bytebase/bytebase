@@ -15,7 +15,10 @@ INSERT INTO
         external_webhook_id,
         webhook_url_host,
         webhook_endpoint_id,
-        webhook_secret_token
+        webhook_secret_token,
+        access_token,
+        expires_ts,
+        refresh_token
     )
 VALUES
     (
@@ -35,7 +38,10 @@ VALUES
         "60",
         "https://demo.bytebase.com",
         "e99bf622-7f58-4d6b-a5be-b97af313d7ea",
-        "xxxxxxxxxxxxxxxx"
+        "xxxxxxxxxxxxxxxx",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        0,
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     );
 
 INSERT INTO
@@ -54,7 +60,10 @@ INSERT INTO
         external_webhook_id,
         webhook_url_host,
         webhook_endpoint_id,
-        webhook_secret_token
+        webhook_secret_token,
+        access_token,
+        expires_ts,
+        refresh_token
     )
 VALUES
     (
@@ -74,5 +83,8 @@ VALUES
         "61",
         "https://demo.bytebase.com",
         "c5e30130-7322-4f84-953a-d08168c047d1",
-        "xxxxxxxxxxxxxxxx"
+        "xxxxxxxxxxxxxxxx",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        0,
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     );

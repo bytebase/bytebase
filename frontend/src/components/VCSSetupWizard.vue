@@ -73,8 +73,6 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
     const state = reactive<LocalState>({
       config: {
         type: "GITLAB_SELF_HOST",
@@ -82,9 +80,6 @@ export default {
         instanceURL: "",
         applicationId: "",
         secret: "",
-        accessToken: "",
-        expiresTs: 0,
-        refreshToken: "",
       },
       currentStep: 0,
     });
@@ -159,9 +154,6 @@ export default {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
             if (token) {
               state.currentStep = newStep;
-              state.config.accessToken = token.accessToken;
-              state.config.expiresTs = token.expiresTs;
-              state.config.refreshToken = token.refreshToken;
               allowChangeCallback();
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",

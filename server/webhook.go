@@ -80,7 +80,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					resp, err := gitlab.GET(
 						repository.VCS.InstanceURL,
 						fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalId, url.QueryEscape(added), commit.ID),
-						repository.VCS.AccessToken,
+						repository.AccessToken,
 					)
 					if err != nil {
 						s.l.Warn("Failed to read added repository file. Skip", zap.String("file", added), zap.Error(err))
