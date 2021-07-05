@@ -17,6 +17,7 @@
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { UNKNOWN_ID } from "../types";
 
 export default {
   name: "BookmarkListSidePanel",
@@ -27,7 +28,13 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareBookmarkList = () => {
-      store.dispatch("bookmark/fetchBookmarkListByUser", currentUser.value.id);
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store.dispatch(
+          "bookmark/fetchBookmarkListByUser",
+          currentUser.value.id
+        );
+      }
     };
 
     watchEffect(prepareBookmarkList);

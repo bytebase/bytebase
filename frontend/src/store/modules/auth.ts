@@ -49,6 +49,14 @@ const actions = {
     return convertedUser;
   },
 
+  async logout({ commit }: any) {
+    await axios.post("/api/auth/logout");
+
+    removeCookie("user");
+    commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
+    return unknown("PRINCIPAL") as Principal;
+  },
+
   async signup({ commit, dispatch, rootGetters }: any, signupInfo: SignupInfo) {
     const newUser = (
       await axios.post("/api/auth/signup", {
@@ -113,12 +121,6 @@ const actions = {
         commit("setCurrentUser", refreshedUser);
       }
     }
-  },
-
-  async logout({ commit }: any) {
-    removeCookie("user");
-    commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
-    return unknown("PRINCIPAL") as Principal;
   },
 };
 

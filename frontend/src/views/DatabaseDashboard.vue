@@ -37,7 +37,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Environment, Database } from "../types";
+import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 
 interface LocalState {
@@ -92,14 +92,17 @@ export default {
     });
 
     const prepareDatabaseList = () => {
-      store
-        .dispatch(
-          "database/fetchDatabaseListByPrincipalId",
-          currentUser.value.id
-        )
-        .then((list) => {
-          state.databaseList = sortDatabaseList(list, environmentList.value);
-        });
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store
+          .dispatch(
+            "database/fetchDatabaseListByPrincipalId",
+            currentUser.value.id
+          )
+          .then((list) => {
+            state.databaseList = sortDatabaseList(list, environmentList.value);
+          });
+      }
     };
 
     watchEffect(prepareDatabaseList);

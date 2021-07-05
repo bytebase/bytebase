@@ -44,7 +44,13 @@ import { useStore } from "vuex";
 import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Environment, Instance, Principal, Project } from "../types";
+import {
+  Environment,
+  Instance,
+  Principal,
+  Project,
+  UNKNOWN_ID,
+} from "../types";
 import { isDBAOrOwner } from "../utils";
 
 const PROJECT_TAB = 0;
@@ -72,10 +78,13 @@ export default {
     const store = useStore();
 
     const prepareList = () => {
-      store.dispatch("project/fetchProjectListByUser", {
-        userId: currentUser.value.id,
-        rowStatusList: ["ARCHIVED"],
-      });
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store.dispatch("project/fetchProjectListByUser", {
+          userId: currentUser.value.id,
+          rowStatusList: ["ARCHIVED"],
+        });
+      }
 
       if (isDBAOrOwner(currentUser.value.role)) {
         store.dispatch("instance/fetchInstanceList", ["ARCHIVED"]);

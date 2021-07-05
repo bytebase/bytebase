@@ -12,7 +12,7 @@ import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
-import { Database, Environment, EnvironmentId } from "../types";
+import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
 import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
@@ -31,10 +31,13 @@ export default {
     });
 
     const prepareDatabaseList = () => {
-      store.dispatch(
-        "database/fetchDatabaseListByPrincipalId",
-        currentUser.value.id
-      );
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store.dispatch(
+          "database/fetchDatabaseListByPrincipalId",
+          currentUser.value.id
+        );
+      }
     };
 
     watchEffect(prepareDatabaseList);

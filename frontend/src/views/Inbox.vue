@@ -207,11 +207,14 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareMessageList = () => {
-      store
-        .dispatch("message/fetchMessageListByUser", currentUser.value.id)
-        .then((list: Message[]) => {
-          state.messageList = list;
-        });
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store
+          .dispatch("message/fetchMessageListByUser", currentUser.value.id)
+          .then((list: Message[]) => {
+            state.messageList = list;
+          });
+      }
     };
 
     watchEffect(prepareMessageList);

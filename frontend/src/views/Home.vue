@@ -47,7 +47,7 @@ import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
 import { activeEnvironment, activeTask } from "../utils";
-import { Environment, Issue, TaskStatus } from "../types";
+import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   createdList: Issue[];
@@ -92,42 +92,45 @@ export default {
     });
 
     const prepareIssueList = () => {
-      store
-        .dispatch("issue/fetchIssueListForUser", currentUser.value.id)
-        .then((issueList: Issue[]) => {
-          state.assignedList = [];
-          state.createdList = [];
-          state.subscribeList = [];
-          state.closeList = [];
-          for (const issue of issueList) {
-            // "OPEN"
-            if (issue.status === "OPEN") {
-              if (issue.assignee?.id === currentUser.value.id) {
-                state.assignedList.push(issue);
-              } else if (issue.creator.id === currentUser.value.id) {
-                state.createdList.push(issue);
-              } else if (
-                issue.subscriberList.find(
-                  (item) => item.id == currentUser.value.id
-                )
-              ) {
-                state.subscribeList.push(issue);
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store
+          .dispatch("issue/fetchIssueListForUser", currentUser.value.id)
+          .then((issueList: Issue[]) => {
+            state.assignedList = [];
+            state.createdList = [];
+            state.subscribeList = [];
+            state.closeList = [];
+            for (const issue of issueList) {
+              // "OPEN"
+              if (issue.status === "OPEN") {
+                if (issue.assignee?.id === currentUser.value.id) {
+                  state.assignedList.push(issue);
+                } else if (issue.creator.id === currentUser.value.id) {
+                  state.createdList.push(issue);
+                } else if (
+                  issue.subscriberList.find(
+                    (item) => item.id == currentUser.value.id
+                  )
+                ) {
+                  state.subscribeList.push(issue);
+                }
+              }
+              // "DONE" or "CANCELED"
+              else if (issue.status === "DONE" || issue.status === "CANCELED") {
+                if (
+                  issue.creator.id === currentUser.value.id ||
+                  issue.assignee?.id === currentUser.value.id ||
+                  issue.subscriberList.find(
+                    (item) => item.id == currentUser.value.id
+                  )
+                ) {
+                  state.closeList.push(issue);
+                }
               }
             }
-            // "DONE" or "CANCELED"
-            else if (issue.status === "DONE" || issue.status === "CANCELED") {
-              if (
-                issue.creator.id === currentUser.value.id ||
-                issue.assignee?.id === currentUser.value.id ||
-                issue.subscriberList.find(
-                  (item) => item.id == currentUser.value.id
-                )
-              ) {
-                state.closeList.push(issue);
-              }
-            }
-          }
-        });
+          });
+      }
     };
 
     watchEffect(prepareIssueList);

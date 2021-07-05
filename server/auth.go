@@ -62,6 +62,15 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.POST("/auth/logout", func(c echo.Context) error {
+		removeTokenCookie(c, accessTokenCookieName)
+		removeTokenCookie(c, refreshTokenCookieName)
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
 	g.POST("/auth/signup", func(c echo.Context) error {
 		signup := &api.Signup{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, signup); err != nil {

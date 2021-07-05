@@ -11,7 +11,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 
-import { Project } from "../types";
+import { Project, UNKNOWN_ID } from "../types";
 import { projectName, projectSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
@@ -24,9 +24,12 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareProjectList = () => {
-      store.dispatch("project/fetchProjectListByUser", {
-        userId: currentUser.value.id,
-      });
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store.dispatch("project/fetchProjectListByUser", {
+          userId: currentUser.value.id,
+        });
+      }
     };
 
     watchEffect(prepareProjectList);

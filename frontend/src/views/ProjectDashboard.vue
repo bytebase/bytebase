@@ -31,7 +31,7 @@
 import { watchEffect, computed, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Project } from "../types";
+import { Project, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   projectList: Project[];
@@ -74,13 +74,16 @@ export default {
     });
 
     const prepareProjectList = () => {
-      store
-        .dispatch("project/fetchProjectListByUser", {
-          userId: currentUser.value.id,
-        })
-        .then((projectList: Project[]) => {
-          state.projectList = projectList;
-        });
+      // It will also be called when user logout
+      if (currentUser.value.id != UNKNOWN_ID) {
+        store
+          .dispatch("project/fetchProjectListByUser", {
+            userId: currentUser.value.id,
+          })
+          .then((projectList: Project[]) => {
+            state.projectList = projectList;
+          });
+      }
     };
 
     watchEffect(prepareProjectList);
