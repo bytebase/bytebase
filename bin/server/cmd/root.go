@@ -68,7 +68,7 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
-		Short: "Bytebase server",
+		Short: "Bytebase is a database schema change and version control platform",
 		Run: func(cmd *cobra.Command, args []string) {
 			logConfig := zap.NewProductionConfig()
 			// Always set encoding to "console" for now since we do not redirect to file.
