@@ -63,7 +63,7 @@ export default {
     const store = useStore();
 
     const ping = () => {
-      store.dispatch("actuator/info").then((info: ServerInfo) => {
+      store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",

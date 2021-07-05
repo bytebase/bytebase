@@ -123,10 +123,10 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { LoginInfo, ServerInfo } from "../../types";
+import { LoginInfo } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 
 interface LocalState {
@@ -145,21 +145,17 @@ export default {
       password: "",
     });
 
-    const prepareInfo = () => {
-      store.dispatch("actuator/info").then((info: ServerInfo) => {
-        const demo = store.getters["actuator/isDemo"]();
-        state.email = isDev() || demo ? "demo@example.com" : "";
-        state.password = isDev() || demo ? "1024" : "";
-        // Navigate to signup if needs admin setup.
-        // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
-        // after router has already made the decision on first page load.
-        if (info.needAdminSetup) {
-          router.push({ name: "auth.signup", replace: true });
-        }
-      });
-    };
-
-    watchEffect(prepareInfo);
+    onMounted(() => {
+      const demo = store.getters["actuator/isDemo"]();
+      state.email = isDev() || demo ? "demo@example.com" : "";
+      state.password = isDev() || demo ? "1024" : "";
+      // Navigate to signup if needs admin setup.
+      // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
+      // after router has already made the decision on first page load.
+      if (store.getters["actuator/needAdminSetup"]()) {
+        router.push({ name: "auth.signup", replace: true });
+      }
+    });
 
     const allowSignin = computed(() => {
       return isValidEmail(state.email) && state.password;

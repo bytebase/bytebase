@@ -1,14 +1,5 @@
 <template>
-  <Suspense>
-    <template #default>
-      <ProvideAppContext>
-        <router-view />
-      </ProvideAppContext>
-    </template>
-    <template #fallback>
-      <span class="items-center flex">Loading...</span>
-    </template>
-  </Suspense>
+  <router-view />
   <template v-if="state.notificationList.length > 0">
     <BBNotification
       :placement="'BOTTOM_RIGHT'"
@@ -22,7 +13,6 @@
 import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import ProvideAppContext from "./components/ProvideAppContext.vue";
 import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
@@ -40,7 +30,7 @@ interface LocalState {
 
 export default {
   name: "App",
-  components: { ProvideAppContext },
+  components: {},
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

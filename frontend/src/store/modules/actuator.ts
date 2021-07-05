@@ -24,7 +24,7 @@ const getters = {
 };
 
 const actions = {
-  async info({ commit }: any): Promise<ServerInfo> {
+  async fetchInfo({ commit }: any): Promise<ServerInfo> {
     const serverInfo = (await axios.get(`/api/actuator/info`)).data;
 
     commit("setInfo", serverInfo);
