@@ -37,6 +37,7 @@ import highlight from "./directives/highlight";
 import {
   isDev,
   isRelease,
+  backendURL,
   humanizeTs,
   sizeToFit,
   urlfy,
@@ -55,6 +56,7 @@ registerStoreWithRoleUtil(store);
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
+console.debug("backend:", backendURL());
 
 axios.defaults.timeout = 10000;
 axios.interceptors.request.use((request) => {
@@ -83,9 +85,14 @@ axios.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      // When server returns 401, it means the current login user's token becomes invalid.
-      // Thus we force a logout.
-      if (error.response.status == 401) {
+      // When receiving 401 and is returned by our server, it means the current
+      // login user's token becomes invalid. Thus we force a logout.
+      // We could receive 401 when calling external service such as VCS provider,
+      // in such case, we shouldn't logout.
+      if (
+        error.response.status == 401 &&
+        error.response.request.responseURL.startsWith(backendURL())
+      ) {
         store.dispatch("auth/logout").then(() => {
           router.push({ name: "auth.signin" });
         });
