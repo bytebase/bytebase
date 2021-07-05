@@ -17,7 +17,7 @@ import Signup from "../views/auth/Signup.vue";
 import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
-import { isDev, idFromSlug, isDBAOrOwner } from "../utils";
+import { isDev, idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 import { Principal, QuickActionType, UNKNOWN_ID } from "../types";
 
 const HOME_MODULE = "workspace.home";
@@ -688,15 +688,14 @@ router.beforeEach((to, from, next) => {
   const currentUser = store.getters["auth/currentUser"]();
 
   if (to.name?.toString().startsWith("setting.workspace.version-control")) {
-    if (isDBAOrOwner(currentUser.role)) {
-      next();
-    } else {
+    // Returns 403 immediately if not Owner. Otherwise, we may need to fetch the VCS detail
+    if (!isOwner(currentUser.role)) {
       next({
         name: "error.403",
         replace: false,
       });
+      return;
     }
-    return;
   }
 
   if (to.name === "workspace.instance") {
