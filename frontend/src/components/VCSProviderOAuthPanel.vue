@@ -40,11 +40,39 @@
                 </dt>
                 <dd class="text-sm text-main">Bytebase</dd>
               </div>
-              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+              <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
                 <dt class="text-sm font-medium text-control-light text-right">
                   Redirect URI
                 </dt>
-                <dd class="text-sm text-main">{{ redirectURL() }}</dd>
+                <dd class="text-sm text-main items-center flex">
+                  {{ redirectURL() }}
+                  <button
+                    tabindex="-1"
+                    class="
+                      ml-1
+                      text-sm
+                      font-medium
+                      text-control-light
+                      hover:bg-gray-100
+                    "
+                    @click.prevent="copyRedirecURI"
+                  >
+                    <svg
+                      class="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      ></path>
+                    </svg>
+                  </button>
+                </dd>
               </div>
               <div class="grid grid-cols-2 gap-4 px-4 py-2">
                 <dt class="text-sm font-medium text-control-light text-right">
@@ -105,12 +133,14 @@
 <script lang="ts">
 import { computed, onUnmounted, PropType, reactive } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import {
   isValidVCSApplicationIdOrSecret,
   TEXT_VALIDATION_DELAY,
   VCSConfig,
   redirectURL,
 } from "../types";
+import { useStore } from "vuex";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;
@@ -128,6 +158,7 @@ export default {
     },
   },
   setup(props, ctx) {
+    const store = useStore();
     const state = reactive<LocalState>({
       showApplicationIdError:
         !isEmpty(props.config.applicationId) &&
@@ -152,6 +183,16 @@ export default {
       }
       return "";
     });
+
+    const copyRedirecURI = () => {
+      toClipboard(redirectURL()).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "INFO",
+          title: `Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.`,
+        });
+      });
+    };
 
     const changeApplicatonId = (value: string) => {
       props.config.applicationId = value;
@@ -211,6 +252,7 @@ export default {
       redirectURL,
       state,
       createAdminApplicationURL,
+      copyRedirecURI,
       changeApplicatonId,
       changeSecret,
     };
