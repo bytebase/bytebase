@@ -90,7 +90,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.GET("/project/:projectId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
 		}
 
 		project, err := s.ComposeProjectlById(context.Background(), id)
@@ -111,7 +111,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.PATCH("/project/:projectId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
 		}
 
 		projectPatch := &api.ProjectPatch{

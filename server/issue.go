@@ -72,7 +72,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.GET("/issue/:issueId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("issueId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
 		}
 
 		issue, err := s.ComposeIssueById(context.Background(), id)
@@ -93,7 +93,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.PATCH("/issue/:issueId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("issueId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
 		}
 
 		issuePatch := &api.IssuePatch{
@@ -200,7 +200,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.PATCH("/issue/:issueId/status", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("issueId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
 		}
 
 		issueStatusPatch := &api.IssueStatusPatch{

@@ -65,7 +65,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	g.GET("/vcs/:vcsId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("vcsId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsId"))).SetInternal(err)
 		}
 
 		vcs, err := s.ComposeVCSById(context.Background(), id)
@@ -142,7 +142,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	g.GET("/vcs/:vcsId/repository", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("vcsId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsId"))).SetInternal(err)
 		}
 
 		repositoryFind := &api.RepositoryFind{

@@ -68,7 +68,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.GET("/instance/:instanceId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("instanceId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
 		}
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
@@ -89,7 +89,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.PATCH("/instance/:instanceId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("instanceId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
 		}
 
 		instancePatch := &api.InstancePatch{
@@ -157,7 +157,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.POST("/instance/:instanceId/migration", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("instanceId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
 		}
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
@@ -193,7 +193,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.GET("/instance/:instanceId/migration/status", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("instanceId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
 		}
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
