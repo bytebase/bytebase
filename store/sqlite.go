@@ -347,6 +347,8 @@ func FormatError(err error) error {
 		return bytebase.Errorf(bytebase.ECONFLICT, "bookmark already exists")
 	case "UNIQUE constraint failed: repo.project_id":
 		return bytebase.Errorf(bytebase.ECONFLICT, "project has already linked repository")
+	case "UNIQUE constraint failed: issue_subscriber.issue_id, issue_subscriber.subscriber_id":
+		return bytebase.Errorf(bytebase.ECONFLICT, "issue subscriber already exists")
 	default:
 		return err
 	}

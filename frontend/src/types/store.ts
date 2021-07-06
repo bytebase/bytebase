@@ -26,6 +26,7 @@ import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Repository } from "./repository";
 import { ServerInfo } from "./actuator";
+import { IssueSubscriber } from "./issueSubscriber";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -66,6 +67,10 @@ export interface IssueState {
   // Instead, we always fetch the list every time we display the issue list view.
   issueListByUser: Map<PrincipalId, Issue[]>;
   issueById: Map<IssueId, Issue>;
+}
+
+export interface IssueSubscriberState {
+  subscriberListByIssue: Map<IssueId, IssueSubscriber[]>;
 }
 
 export interface PipelineState {}

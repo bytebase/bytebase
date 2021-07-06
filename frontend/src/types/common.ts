@@ -242,7 +242,7 @@ export const unknown = (
     status: "DONE",
     type: "bb.issue.general",
     description: "",
-    subscriberList: [],
+    subscriberIdList: [],
     payload: {},
   };
 
@@ -520,7 +520,7 @@ export const empty = (
     status: "DONE",
     type: "bb.issue.general",
     description: "",
-    subscriberList: [],
+    subscriberIdList: [],
     payload: {},
   };
 

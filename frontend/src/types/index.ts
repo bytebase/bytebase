@@ -5,6 +5,7 @@ export * from "./member";
 export * from "./principal";
 export * from "./project";
 export * from "./issue";
+export * from "./issueSubscriber";
 export * from "./pipeline";
 export * from "./instance";
 export * from "./database";

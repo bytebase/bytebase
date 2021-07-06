@@ -562,6 +562,7 @@ import {
   SYSTEM_BOT_ID,
   ActionIssueStatusUpdatePayload,
   ActivityCreate,
+  IssueSubscriber,
 } from "../types";
 import { findTaskById, issueSlug, sizeToFit, stageSlug } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
@@ -590,7 +591,7 @@ type ActionIconType =
 
 export default {
   name: "IssueActivityPanel",
-  emits: ["update-subscriber-list"],
+  emits: ["add-subscriber-id"],
   props: {
     issue: {
       required: true,
@@ -679,6 +680,12 @@ export default {
       });
     });
 
+    const subscriberList = computed((): IssueSubscriber[] => {
+      return store.getters["issueSubscriber/subscriberListByIssue"](
+        props.issue.id
+      );
+    });
+
     const cancelEditComment = () => {
       editComment.value = "";
       state.activeActivity = undefined;
@@ -703,18 +710,14 @@ export default {
         // Because the user just added a comment and we assume she is interested in this
         // issue, and we add her to the subscriber list if she is not there
         let isSubscribed = false;
-        for (const principal of props.issue.subscriberList) {
-          if (principal.id == currentUser.value.id) {
+        for (const subscriber of subscriberList.value) {
+          if (subscriber.subscriber.id == currentUser.value.id) {
             isSubscribed = true;
             break;
           }
         }
         if (!isSubscribed) {
-          const list = props.issue.subscriberList.map((item: Principal) => {
-            return item.id;
-          });
-          list.push(currentUser.value.id);
-          emit("update-subscriber-list", list);
+          emit("add-subscriber-id", currentUser.value.id);
         }
       });
     };

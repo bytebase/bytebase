@@ -36,6 +36,9 @@ p, OWNER, /issue, GET
 p, OWNER, /issue/{id}, GET
 p, OWNER, /issue/{id}, PATCH
 p, OWNER, /issue/{id}/status, PATCH
+p, OWNER, /issue/{id}/subscriber, GET
+p, OWNER, /issue/{id}/subscriber, POST
+p, OWNER, /issue/{id}/subscriber/{subscriberId}, DELETE
 p, OWNER, /activity, POST
 p, OWNER, /activity, GET
 p, OWNER, /activity/{id}, PATCH_SELF

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -24,6 +23,17 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issue, err := s.CreateIssue(context.Background(), issueCreate, c.Get(GetPrincipalIdContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+		}
+
+		for _, subscriberId := range issueCreate.SubscriberIdList {
+			subscriberCreate := &api.IssueSubscriberCreate{
+				IssueId:      issue.ID,
+				SubscriberId: subscriberId,
+			}
+			_, err := s.IssueSubscriberService.CreateIssueSubscriber(context.Background(), subscriberCreate)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberId, issue.ID)).SetInternal(err)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -154,25 +164,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			payloadList = append(payloadList, payload)
 		}
-		if issuePatch.SubscriberIdListStr != nil {
-			oldSubscriberIdList := []string{}
-			for _, item := range issue.SubscriberIdList {
-				oldSubscriberIdList = append(oldSubscriberIdList, strconv.Itoa(item))
-			}
-			oldSubscriberIdStr := strings.Join(oldSubscriberIdList, ",")
-
-			if *issuePatch.SubscriberIdListStr != oldSubscriberIdStr {
-				payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-					FieldId:  api.IssueFieldSubscriberList,
-					OldValue: oldSubscriberIdStr,
-					NewValue: *issuePatch.SubscriberIdListStr,
-				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue subscribers: %v", updatedIssue.Name)).SetInternal(err)
-				}
-				payloadList = append(payloadList, payload)
-			}
-		}
 
 		for _, payload := range payloadList {
 			_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
@@ -275,15 +266,18 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 		return err
 	}
 
-	subscriberList := []*api.Principal{}
-	for _, subscriberId := range issue.SubscriberIdList {
-		oneSubscriber, err := s.ComposePrincipalById(context.Background(), subscriberId)
-		if err != nil {
-			return err
-		}
-		subscriberList = append(subscriberList, oneSubscriber)
+	issueSubscriberFind := &api.IssueSubscriberFind{
+		IssueId: &issue.ID,
 	}
-	issue.SubscriberList = subscriberList
+	list, err := s.IssueSubscriberService.FindIssueSubscriberList(context.Background(), issueSubscriberFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
+	}
+
+	issue.SubscriberIdList = []int{}
+	for _, subscriber := range list {
+		issue.SubscriberIdList = append(issue.SubscriberIdList, subscriber.SubscriberId)
+	}
 
 	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId)
 	if err != nil {

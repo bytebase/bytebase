@@ -91,9 +91,8 @@ type Issue struct {
 	Description      string      `jsonapi:"attr,description"`
 	AssigneeId       int         `jsonapi:"attr,assigneeId"`
 	Assignee         *Principal  `jsonapi:"attr,assignee"`
-	SubscriberIdList []int
-	SubscriberList   []*Principal `jsonapi:"attr,subscriberList"`
-	Payload          string       `jsonapi:"attr,payload"`
+	SubscriberIdList []int       `jsonapi:"attr,subscriberIdList"`
+	Payload          string      `jsonapi:"attr,payload"`
 }
 
 type IssueCreate struct {
@@ -148,11 +147,7 @@ type IssuePatch struct {
 	Status      *IssueStatus
 	Description *string `jsonapi:"attr,description"`
 	AssigneeId  *int    `jsonapi:"attr,assigneeId"`
-	// We expect a list of PrincipalId separated by `,`.
-	// This is a hack because google/jsonapi doesn't support unmarshaling int slice.
-	// The community has a outstanding PR to support this: https://github.com/google/jsonapi/pull/129
-	SubscriberIdListStr *string `jsonapi:"attr,subscriberIdListStr"`
-	Payload             *string `jsonapi:"attr,payload"`
+	Payload     *string `jsonapi:"attr,payload"`
 }
 
 type IssueStatusPatch struct {

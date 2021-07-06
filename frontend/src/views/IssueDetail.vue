@@ -136,7 +136,8 @@
               :inputFieldList="issueTemplate.inputFieldList"
               :allowEdit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
-              @update-subscriber-list="updateSubscriberIdList"
+              @add-subscriber-id="addSubscriberId"
+              @remove-subscriber-id="removeSubscriberId"
               @update-custom-field="updateCustomField"
               @select-stage-id="selectStageId"
             />
@@ -211,7 +212,7 @@
               <IssueActivityPanel
                 :issue="issue"
                 :issueTemplate="issueTemplate"
-                @update-subscriber-list="updateSubscriberIdList"
+                @add-subscriber-id="addSubscriberId"
               />
             </section>
           </div>
@@ -548,9 +549,17 @@ export default {
       }
     };
 
-    const updateSubscriberIdList = (newSubscriberIdList: PrincipalId[]) => {
-      patchIssue({
-        subscriberIdListStr: newSubscriberIdList.join(","),
+    const addSubscriberId = (subscriberId: PrincipalId) => {
+      store.dispatch("issueSubscriber/createSubscriber", {
+        issueId: (issue.value as Issue).id,
+        subscriberId,
+      });
+    };
+
+    const removeSubscriberId = (subscriberId: PrincipalId) => {
+      store.dispatch("issueSubscriber/deleteSubscriber", {
+        issueId: (issue.value as Issue).id,
+        subscriberId,
       });
     };
 
@@ -791,7 +800,8 @@ export default {
       updateStatement,
       updateRollbackStatement,
       updateAssigneeId,
-      updateSubscriberIdList,
+      addSubscriberId,
+      removeSubscriberId,
       updateCustomField,
       doCreate,
       changeIssueStatus,

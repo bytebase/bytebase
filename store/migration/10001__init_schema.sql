@@ -589,7 +589,6 @@ CREATE TABLE issue (
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
     assignee_id INTEGER REFERENCES principal (id),
-    subscriber_id_list TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
 );
 
@@ -618,6 +617,17 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- stores the issue subscribers. Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
+-- We use a separate table mainly because we can't leverage indexed query if the subscriber id is stored
+-- as a comma separated id list in the issue table.
+CREATE TABLE issue_subscriber (
+    issue_id INTEGER NOT NULL REFERENCES issue (id),
+    subscriber_id INTEGER NOT NULL REFERENCES principal (id),
+    PRIMARY KEY (issue_id, subscriber_id)
+);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_id);
 
 -- activity table stores the activity for the container such as issue
 CREATE TABLE activity (

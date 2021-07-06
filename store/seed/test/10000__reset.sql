@@ -12,6 +12,9 @@ DELETE FROM
     activity;
 
 DELETE FROM
+    issue_subscriber;
+
+DELETE FROM
     issue;
 
 DELETE FROM

@@ -28,6 +28,9 @@ p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET
 p, DEVELOPER, /issue/{id}, PATCH
 p, DEVELOPER, /issue/{id}/status, PATCH
+p, DEVELOPER, /issue/{id}/subscriber, GET
+p, DEVELOPER, /issue/{id}/subscriber, POST
+p, DEVELOPER, /issue/{id}/subscriber/{subscriberId}, DELETE
 p, DEVELOPER, /activity, POST
 p, DEVELOPER, /activity, GET
 p, DEVELOPER, /activity/{id}, PATCH_SELF

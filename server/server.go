@@ -25,23 +25,24 @@ type Server struct {
 
 	CacheService api.CacheService
 
-	PrincipalService     api.PrincipalService
-	MemberService        api.MemberService
-	ProjectService       api.ProjectService
-	ProjectMemberService api.ProjectMemberService
-	EnvironmentService   api.EnvironmentService
-	InstanceService      api.InstanceService
-	DatabaseService      api.DatabaseService
-	TableService         api.TableService
-	DataSourceService    api.DataSourceService
-	IssueService         api.IssueService
-	PipelineService      api.PipelineService
-	StageService         api.StageService
-	TaskService          api.TaskService
-	ActivityService      api.ActivityService
-	BookmarkService      api.BookmarkService
-	VCSService           api.VCSService
-	RepositoryService    api.RepositoryService
+	PrincipalService       api.PrincipalService
+	MemberService          api.MemberService
+	ProjectService         api.ProjectService
+	ProjectMemberService   api.ProjectMemberService
+	EnvironmentService     api.EnvironmentService
+	InstanceService        api.InstanceService
+	DatabaseService        api.DatabaseService
+	TableService           api.TableService
+	DataSourceService      api.DataSourceService
+	IssueService           api.IssueService
+	IssueSubscriberService api.IssueSubscriberService
+	PipelineService        api.PipelineService
+	StageService           api.StageService
+	TaskService            api.TaskService
+	ActivityService        api.ActivityService
+	BookmarkService        api.BookmarkService
+	VCSService             api.VCSService
+	RepositoryService      api.RepositoryService
 
 	e *echo.Echo
 
@@ -173,6 +174,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, mode s
 	s.registerInstanceRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
+	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)

@@ -26,7 +26,6 @@ function convert(
   const creator = issue.attributes.creator as Principal;
   const updater = issue.attributes.updater as Principal;
   const assignee = issue.attributes.assignee as Principal;
-  const subscriberList = issue.attributes.subscriberList as Principal[];
 
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
@@ -58,14 +57,13 @@ function convert(
   return {
     ...(issue.attributes as Omit<
       Issue,
-      "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
+      "id" | "project" | "creator" | "updater" | "assignee"
     >),
     id: parseInt(issue.id),
     project,
     creator,
     updater,
     assignee,
-    subscriberList,
     pipeline,
   };
 }

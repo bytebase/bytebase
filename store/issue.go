@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase"
@@ -130,10 +129,6 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 
 // createIssue creates a new issue.
 func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.IssueCreate) (*api.Issue, error) {
-	subscriberIdList := []string{}
-	for _, item := range create.SubscriberIdList {
-		subscriberIdList = append(subscriberIdList, strconv.Itoa(item))
-	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,
@@ -145,11 +140,10 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			`+"`type`,"+`
 			description,
 			assignee_id,
-			subscriber_id_list,
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, payload"+`
+		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -159,7 +153,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		create.Type,
 		create.Description,
 		create.AssigneeId,
-		strings.Join(subscriberIdList, ","),
 		create.Payload,
 	)
 
@@ -170,7 +163,6 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 
 	row.Next()
 	var issue api.Issue
-	var idList string
 	if err := row.Scan(
 		&issue.ID,
 		&issue.CreatorId,
@@ -184,25 +176,11 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		&issue.Type,
 		&issue.Description,
 		&issue.AssigneeId,
-		&idList,
 		&issue.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	issue.SubscriberIdList = []int{}
-	if idList != "" {
-		for _, item := range strings.Split(idList, ",") {
-			oneId, err := strconv.Atoi(item)
-			if err != nil {
-				s.l.Error("Issue contains invalid subscriber id",
-					zap.Int("issue_id", issue.ID),
-					zap.String("subscriber_id", item),
-				)
-			}
-			issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
-		}
-	}
 	return &issue, nil
 }
 
@@ -219,18 +197,10 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 	if v := find.PrincipalId; v != nil {
-		where = append(where, "(creator_id = ? OR assignee_id = ? OR subscriber_id_list = ? OR subscriber_id_list LIKE ? OR subscriber_id_list LIKE ? OR subscriber_id_list LIKE ?)")
+		where = append(where, "(creator_id = ? OR assignee_id = ? OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = ?))")
 		args = append(args, *v)
 		args = append(args, *v)
-		// For subscriber_id_list search, there are 4 possible patterns
-		// 1. There is just 1 id.
 		args = append(args, *v)
-		// 2. id is the first element
-		args = append(args, fmt.Sprintf("%d,%%", *v))
-		// 3. id is in the middle
-		args = append(args, fmt.Sprintf("%%,%d,%%", *v))
-		// 4. id is the last element
-		args = append(args, fmt.Sprintf("%%,%d", *v))
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -247,7 +217,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			`+"`type`,"+`
 			description,
 			assignee_id,
-			subscriber_id_list,
 			payload
 		FROM issue
 		WHERE `+strings.Join(where, " AND "),
@@ -262,7 +231,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	list := make([]*api.Issue, 0)
 	for rows.Next() {
 		var issue api.Issue
-		var idList string
 		if err := rows.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -276,24 +244,9 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			&issue.Type,
 			&issue.Description,
 			&issue.AssigneeId,
-			&idList,
 			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
-		}
-
-		issue.SubscriberIdList = []int{}
-		if idList != "" {
-			for _, item := range strings.Split(idList, ",") {
-				oneId, err := strconv.Atoi(item)
-				if err != nil {
-					s.l.Error("Issue contains invalid subscriber id",
-						zap.Int("issue_id", issue.ID),
-						zap.String("subscriber_id", item),
-					)
-				}
-				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
-			}
 		}
 
 		list = append(list, &issue)
@@ -321,9 +274,6 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if v := patch.AssigneeId; v != nil {
 		set, args = append(set, "assignee_id = ?"), append(args, *v)
 	}
-	if v := patch.SubscriberIdListStr; v != nil {
-		set, args = append(set, "subscriber_id_list = ?"), append(args, *v)
-	}
 	if v := patch.Payload; v != nil {
 		payload, err := json.Marshal(*patch.Payload)
 		if err != nil {
@@ -339,7 +289,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, subscriber_id_list, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, payload"+`
 	`,
 		args...,
 	)
@@ -350,7 +300,6 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 
 	if row.Next() {
 		var issue api.Issue
-		var idList string
 		if err := row.Scan(
 			&issue.ID,
 			&issue.CreatorId,
@@ -364,24 +313,9 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 			&issue.Type,
 			&issue.Description,
 			&issue.AssigneeId,
-			&idList,
 			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
-		}
-
-		issue.SubscriberIdList = []int{}
-		if idList != "" {
-			for _, item := range strings.Split(idList, ",") {
-				oneId, err := strconv.Atoi(item)
-				if err != nil {
-					s.l.Error("Issue contains invalid subscriber id",
-						zap.Int("issue_id", issue.ID),
-						zap.String("subscriber_id", item),
-					)
-				}
-				issue.SubscriberIdList = append(issue.SubscriberIdList, oneId)
-			}
 		}
 
 		return &issue, nil

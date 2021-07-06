@@ -16,6 +16,7 @@ import principal from "./modules/principal";
 import plan from "./modules/plan";
 import auth from "./modules/auth";
 import issue from "./modules/issue";
+import issueSubscriber from "./modules/issueSubscriber";
 import pipeline from "./modules/pipeline";
 import stage from "./modules/stage";
 import task from "./modules/task";
@@ -53,6 +54,7 @@ export const store: Store<any> = createStore({
     plan,
     auth,
     issue,
+    issueSubscriber,
     pipeline,
     stage,
     task,

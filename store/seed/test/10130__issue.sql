@@ -10,8 +10,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -24,8 +23,7 @@ VALUES
         'OPEN',
         'bb.issue.general',
         'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: ' || char(10, 10) || ' - Creating a new database' || char(10) || ' - Creating a table' || char(10) || ' - Creating an index' || char(10) || ' - Adding/Altering a column' || char(10) || ' - Troubleshooting performance issue' || char(10, 10) || 'Let''s try some simple tasks:' || char(10, 10) || '1. Bookmark this issue by clicking the star icon on the top of this page' || char(10) || '2. Leave a comment below to greet future comers',
-        101,
-        '101,102,103,104'
+        101
     );
 
 -- Issue for simulating webhook push event to create table in multi-stage for shop project.
@@ -42,15 +40,14 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
         13002,
-        1,
+        103,
         1624873710,
-        1,
+        103,
         1624873710,
         3002,
         9002,
@@ -58,8 +55,7 @@ VALUES
         'OPEN',
         'bb.issue.database.schema.update',
         'Create product table',
-        101,
-        '101,102,103,104'
+        102
     );
 
 -- Issue for the multi stage create table pipeline, first stage has a failed task run
@@ -74,8 +70,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -88,8 +83,7 @@ VALUES
         'OPEN',
         'bb.issue.database.schema.update',
         'Create tbl1.',
-        102,
-        '101,102,103,104'
+        102
     );
 
 -- Issue for simulating webhook push event to create table for blog project dev database.
@@ -106,8 +100,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -122,8 +115,7 @@ VALUES
         'DONE',
         'bb.issue.database.schema.update',
         'Create user, post, comment table for dev environment',
-        1,
-        '101,102,103,104'
+        1
     );
 
 -- Issue for simulating webhook push event to create table for blog project integration database.
@@ -140,8 +132,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -156,8 +147,7 @@ VALUES
         'DONE',
         'bb.issue.database.schema.update',
         'Create user, post, comment table for integration environment',
-        1,
-        '101,102,103,104'
+        1
     );
 
 -- Issue for simulating webhook push event to create table for blog project staging database.
@@ -174,8 +164,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -190,8 +179,7 @@ VALUES
         'DONE',
         'bb.issue.database.schema.update',
         'Create user, post, comment table for staging environment',
-        1,
-        '101,102,103,104'
+        1
     );
 
 -- Issue for simulating webhook push event to create table for blog project prod database.
@@ -208,8 +196,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -224,8 +211,7 @@ VALUES
         'DONE',
         'bb.issue.database.schema.update',
         'Create user, post, comment table for prod environment',
-        1,
-        '101,102,103,104'
+        1
     );
 
 -- Issue for simulating webhook push event to alter table for blog project dev database.
@@ -242,8 +228,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -258,6 +243,5 @@ VALUES
         'OPEN',
         'bb.issue.database.schema.update',
         'Add created_at column to user,post,comment table for dev environment',
-        1,
-        '101,102,103,104'
+        1
     );

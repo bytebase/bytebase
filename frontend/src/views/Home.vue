@@ -109,9 +109,7 @@ export default {
                 } else if (issue.creator.id === currentUser.value.id) {
                   state.createdList.push(issue);
                 } else if (
-                  issue.subscriberList.find(
-                    (item) => item.id == currentUser.value.id
-                  )
+                  issue.subscriberIdList.includes(currentUser.value.id)
                 ) {
                   state.subscribeList.push(issue);
                 }
@@ -121,9 +119,7 @@ export default {
                 if (
                   issue.creator.id === currentUser.value.id ||
                   issue.assignee?.id === currentUser.value.id ||
-                  issue.subscriberList.find(
-                    (item) => item.id == currentUser.value.id
-                  )
+                  issue.subscriberIdList.includes(currentUser.value.id)
                 ) {
                   state.closeList.push(issue);
                 }

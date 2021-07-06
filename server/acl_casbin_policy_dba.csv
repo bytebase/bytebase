@@ -32,6 +32,9 @@ p, DBA, /issue, GET
 p, DBA, /issue/{id}, GET
 p, DBA, /issue/{id}, PATCH
 p, DBA, /issue/{id}/status, PATCH
+p, DBA, /issue/{id}/subscriber, GET
+p, DBA, /issue/{id}/subscriber, POST
+p, DBA, /issue/{id}/subscriber/{subscriberId}, DELETE
 p, DBA, /activity, POST
 p, DBA, /activity, GET
 p, DBA, /activity/{id}, PATCH_SELF

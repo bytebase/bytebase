@@ -172,73 +172,22 @@
         </ul>
       </template>
     </div>
-    <div
+    <IssueSubscriberPanel
       v-if="!create"
-      class="
-        mt-6
-        border-t border-block-border
-        pt-6
-        grid
-        gap-y-4 gap-x-6
-        grid-cols-3
+      :issue="issue"
+      @add-subscriber-id="
+        (subscriberId) => $emit('add-subscriber-id', subscriberId)
       "
-    >
-      <h2
-        class="
-          textlabel
-          flex
-          items-center
-          col-span-1 col-start-1
-          whitespace-nowrap
-        "
-      >
-        {{
-          issue.subscriberList.length +
-          (issue.subscriberList.length > 1 ? " subscribers" : " subscriber")
-        }}
-      </h2>
-      <div v-if="subscriberList.length > 0" class="col-span-3 col-start-1">
-        <div class="flex space-x-1">
-          <template v-for="(subscriber, index) in subscriberList" :key="index">
-            <router-link :to="`/u/${subscriber.id}`" class="hover:opacity-75">
-              <PrincipalAvatar :principal="subscriber" :size="'SMALL'" />
-            </router-link>
-          </template>
-        </div>
-      </div>
-      <button
-        type="button"
-        class="btn-normal items-center col-span-3 col-start-1"
-        @click.prevent="toggleSubscription"
-      >
-        <span class="w-full">
-          <svg
-            class="h-5 w-5 text-control inline -mt-0.5 mr-1"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              v-if="isCurrentUserSubscribed"
-              fill-rule="evenodd"
-              d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
-              clip-rule="evenodd"
-            ></path>
-            <path
-              v-else
-              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-            ></path></svg
-          >{{ isCurrentUserSubscribed ? "Unsubscribe" : "Subscribe" }}</span
-        >
-      </button>
-    </div>
+      @remove-subscriber-id="
+        (subscriberId) => $emit('remove-subscriber-id', subscriberId)
+      "
+    />
   </aside>
 </template>
 
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
-import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -247,6 +196,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
+import IssueSubscriberPanel from "../components/IssueSubscriberPanel.vue";
 import { InputField } from "../plugins";
 import {
   Database,
@@ -262,7 +212,6 @@ import {
   ONBOARDING_ISSUE_ID,
 } from "../types";
 import { allTaskList, isDBAOrOwner } from "../utils";
-import { useRouter } from "vue-router";
 
 interface LocalState {}
 
@@ -270,7 +219,8 @@ export default {
   name: "IssueSidebar",
   emits: [
     "update-assignee-id",
-    "update-subscriber-list",
+    "add-subscriber-id",
+    "remove-subscriber-id",
     "update-custom-field",
     "select-stage-id",
   ],
@@ -304,10 +254,10 @@ export default {
     MemberSelect,
     StageSelect,
     IssueStatusIcon,
+    IssueSubscriberPanel,
   },
   setup(props, { emit }) {
     const store = useStore();
-    const router = useRouter();
 
     const state = reactive<LocalState>({});
 
@@ -377,28 +327,6 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
-    const isCurrentUserSubscribed = computed((): boolean => {
-      for (const principal of (props.issue as Issue).subscriberList) {
-        if (currentUser.value.id == principal.id) {
-          return true;
-        }
-      }
-      return false;
-    });
-
-    const subscriberList = computed((): Principal[] => {
-      const list: Principal[] = [];
-      (props.issue as Issue).subscriberList.forEach((principal: Principal) => {
-        // Put the current user at the front if in the list.
-        if (currentUser.value.id == principal.id) {
-          list.unshift(principal);
-        } else {
-          list.push(principal);
-        }
-      });
-      return list;
-    });
-
     const allowEditAssignee = computed(() => {
       // We allow the current assignee or DBA to re-assign the issue.
       // Though only DBA can be assigned to the issue, the current
@@ -423,28 +351,6 @@ export default {
       }
     };
 
-    const toggleSubscription = () => {
-      const list = cloneDeep((props.issue as Issue).subscriberList);
-      if (isCurrentUserSubscribed.value) {
-        const index = (props.issue as Issue).subscriberList.findIndex(
-          (item: Principal) => {
-            return item.id == currentUser.value.id;
-          }
-        );
-        if (index >= 0) {
-          list.splice(index, 1);
-        }
-      } else {
-        list.push(currentUser.value);
-      }
-      emit(
-        "update-subscriber-list",
-        list.map((item: Principal) => {
-          return item.id;
-        })
-      );
-    };
-
     return {
       EMPTY_ID,
       state,
@@ -455,12 +361,9 @@ export default {
       project,
       showInstance,
       showStageSelect,
-      isCurrentUserSubscribed,
-      subscriberList,
       allowEditAssignee,
       allowEditCustomField,
       trySaveCustomField,
-      toggleSubscription,
     };
   },
 };
