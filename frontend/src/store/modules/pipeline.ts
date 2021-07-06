@@ -21,9 +21,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Pipeline {
-  const creator = pipeline.attributes.creator as Principal;
-  const updater = pipeline.attributes.updater as Principal;
-
   const stageList: Stage[] = [];
   const stageIdList = pipeline.relationships!.stage
     .data as ResourceIdentifier[];
@@ -43,13 +40,8 @@ function convert(
   }
 
   const result: Pipeline = {
-    ...(pipeline.attributes as Omit<
-      Pipeline,
-      "id" | "creator" | "updater" | "stageList"
-    >),
+    ...(pipeline.attributes as Omit<Pipeline, "id" | "stageList">),
     id: parseInt(pipeline.id),
-    creator,
-    updater,
     stageList,
   };
 

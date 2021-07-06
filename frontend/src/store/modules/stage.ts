@@ -24,9 +24,6 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Stage, "pipeline"> {
-  const creator = stage.attributes.creator as Principal;
-  const updater = stage.attributes.updater as Principal;
-
   const environmentId = (
     stage.relationships!.environment.data as ResourceIdentifier
   ).id;
@@ -61,13 +58,8 @@ function convertPartial(
   }
 
   const result: Omit<Stage, "pipeline"> = {
-    ...(stage.attributes as Omit<
-      Stage,
-      "id" | "creator" | "updater" | "database" | "taskList"
-    >),
+    ...(stage.attributes as Omit<Stage, "id" | "database" | "taskList">),
     id: parseInt(stage.id),
-    creator,
-    updater,
     environment,
     taskList,
   };

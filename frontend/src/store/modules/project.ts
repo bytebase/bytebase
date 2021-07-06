@@ -24,13 +24,7 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Project {
-  const creator = project.attributes.creator as Principal;
-  const updater = project.attributes.updater as Principal;
-
-  const attrs = project.attributes as Omit<
-    Project,
-    "id" | "creator" | "updater" | "memberList"
-  >;
+  const attrs = project.attributes as Omit<Project, "id" | "memberList">;
   // Only able to assign an empty member list, otherwise would cause circular dependency.
   // This should be fine as we shouldn't access member via member.project.memberList
   const projectWithoutMemberList: Project = {
@@ -38,8 +32,8 @@ function convert(
     rowStatus: attrs.rowStatus,
     name: attrs.name,
     key: attrs.key,
-    creator,
-    updater,
+    creator: attrs.creator,
+    updater: attrs.updater,
     createdTs: attrs.createdTs,
     updatedTs: attrs.updatedTs,
     memberList: [],

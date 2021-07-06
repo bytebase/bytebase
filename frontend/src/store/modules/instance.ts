@@ -23,9 +23,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Instance {
-  const creator = instance.attributes.creator as Principal;
-  const updater = instance.attributes.updater as Principal;
-
   const environmentId = (
     instance.relationships!.environment.data as ResourceIdentifier
   ).id;
@@ -43,13 +40,8 @@ function convert(
   }
 
   return {
-    ...(instance.attributes as Omit<
-      Instance,
-      "id" | "environment" | "creator" | "updater"
-    >),
+    ...(instance.attributes as Omit<Instance, "id" | "environment">),
     id: parseInt(instance.id),
-    creator,
-    updater,
     environment,
     // Password is not returned by the server, we just take extra caution here to redact it.
     password: "",

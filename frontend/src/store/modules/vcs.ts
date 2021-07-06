@@ -16,13 +16,9 @@ import {
 } from "../../types";
 
 function convert(vcs: ResourceObject): VCS {
-  const creator = vcs.attributes.creator as Principal;
-  const updater = vcs.attributes.updater as Principal;
   return {
-    ...(vcs.attributes as Omit<VCS, "id" | "creator" | "updater">),
+    ...(vcs.attributes as Omit<VCS, "id">),
     id: parseInt(vcs.id),
-    creator,
-    updater,
   };
 }
 

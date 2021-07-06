@@ -10,14 +10,9 @@ import {
 } from "../../types";
 
 function convert(bookmark: ResourceObject, rootGetters: any): Bookmark {
-  const creator = bookmark.attributes.creator as Principal;
-  const updater = bookmark.attributes.updater as Principal;
-
   return {
-    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator" | "updater">),
+    ...(bookmark.attributes as Omit<Bookmark, "id">),
     id: parseInt(bookmark.id),
-    creator,
-    updater,
   };
 }
 

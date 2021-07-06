@@ -19,19 +19,12 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Member {
-  const creator = member.attributes.creator as Principal;
-  const updater = member.attributes.updater as Principal;
   const principal = member.attributes.principal as Principal;
   principal.role = member.attributes.role as RoleType;
 
   return {
-    ...(member.attributes as Omit<
-      Member,
-      "id" | "creator" | "updater" | "principal"
-    >),
+    ...(member.attributes as Omit<Member, "id" | "principal">),
     id: parseInt(member.id),
-    creator,
-    updater,
     principal,
   };
 }

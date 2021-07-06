@@ -18,17 +18,13 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Activity {
-  const creator = activity.attributes.creator as Principal;
-  const updater = activity.attributes.updater as Principal;
   const payload = activity.attributes.payload
     ? JSON.parse(activity.attributes.payload as string)
     : undefined;
 
   return {
-    ...(activity.attributes as Omit<Activity, "id" | "creator" | "updater">),
+    ...(activity.attributes as Omit<Activity, "id">),
     id: parseInt(activity.id),
-    creator,
-    updater,
     payload,
   };
 }

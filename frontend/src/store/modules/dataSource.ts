@@ -24,8 +24,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): DataSource {
-  const creator = dataSource.attributes.creator as Principal;
-  const updater = dataSource.attributes.updater as Principal;
   const databaseId = (
     dataSource.relationships!.database.data as ResourceIdentifier
   ).id;
@@ -61,13 +59,11 @@ function convert(
   return {
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "creator" | "updater" | "instanceId" | "database" | "memberList"
+      "id" | "instanceId" | "database" | "memberList"
     >),
     id: parseInt(dataSource.id),
     instance,
     database,
-    creator,
-    updater,
     memberList,
   };
 }

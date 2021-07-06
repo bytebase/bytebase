@@ -20,9 +20,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Repository {
-  const creator = respository.attributes.creator as Principal;
-  const updater = respository.attributes.updater as Principal;
-
   const vcsId = (respository.relationships!.vcs.data as ResourceIdentifier).id;
   let vcs: VCS = unknown("VCS") as VCS;
   vcs.id = parseInt(vcsId);
@@ -43,13 +40,8 @@ function convert(
   }
 
   return {
-    ...(respository.attributes as Omit<
-      Repository,
-      "id" | "creator" | "updater" | "vcs" | "project"
-    >),
+    ...(respository.attributes as Omit<Repository, "id" | "vcs" | "project">),
     id: parseInt(respository.id),
-    creator,
-    updater,
     vcs,
     project,
   };

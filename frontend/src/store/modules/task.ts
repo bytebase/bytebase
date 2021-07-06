@@ -26,20 +26,13 @@ function convertTaskRun(
   includedList: ResourceObject[],
   rootGetters: any
 ): TaskRun {
-  const creator = taskRun.attributes.creator as Principal;
-  const updater = taskRun.attributes.updater as Principal;
   const payload = taskRun.attributes.payload
     ? JSON.parse(taskRun.attributes.payload as string)
     : undefined;
 
   return {
-    ...(taskRun.attributes as Omit<
-      TaskRun,
-      "id" | "creator" | "updater" | "payload"
-    >),
+    ...(taskRun.attributes as Omit<TaskRun, "id" | "payload">),
     id: parseInt(taskRun.id),
-    creator,
-    updater,
     payload,
   };
 }

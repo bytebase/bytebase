@@ -19,17 +19,9 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Environment {
-  const creator = environment.attributes.creator as Principal;
-  const updater = environment.attributes.updater as Principal;
-
   return {
-    ...(environment.attributes as Omit<
-      Environment,
-      "id" | "creator" | "updater"
-    >),
+    ...(environment.attributes as Omit<Environment, "id">),
     id: parseInt(environment.id),
-    creator,
-    updater,
   };
 }
 

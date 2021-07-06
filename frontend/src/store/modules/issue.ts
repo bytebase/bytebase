@@ -23,10 +23,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Issue {
-  const creator = issue.attributes.creator as Principal;
-  const updater = issue.attributes.updater as Principal;
-  const assignee = issue.attributes.assignee as Principal;
-
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
   let project: Project = unknown("PROJECT") as Project;
@@ -55,15 +51,9 @@ function convert(
   }
 
   return {
-    ...(issue.attributes as Omit<
-      Issue,
-      "id" | "project" | "creator" | "updater" | "assignee"
-    >),
+    ...(issue.attributes as Omit<Issue, "id" | "project">),
     id: parseInt(issue.id),
     project,
-    creator,
-    updater,
-    assignee,
     pipeline,
   };
 }

@@ -8,14 +8,9 @@ import {
 } from "../../types";
 
 function convert(table: ResourceObject, rootGetters: any): Table {
-  const creator = table.attributes.creator as Principal;
-  const updater = table.attributes.updater as Principal;
-
   return {
-    ...(table.attributes as Omit<Table, "id" | "creator" | "updater">),
+    ...(table.attributes as Omit<Table, "id">),
     id: parseInt(table.id),
-    creator,
-    updater,
   };
 }
 

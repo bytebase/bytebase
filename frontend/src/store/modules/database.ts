@@ -24,9 +24,6 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Database {
-  const creator = database.attributes.creator as Principal;
-  const updater = database.attributes.updater as Principal;
-
   // We first populate the id for instance, project and dataSourceList.
   // And if we also provide the detail info for those objects in the includedList,
   // then we convert them to the detailed objects.
@@ -64,11 +61,9 @@ function convert(
   const databaseWithoutDataSourceList = {
     ...(database.attributes as Omit<
       Database,
-      "id" | "creator" | "updater" | "instance" | "project" | "dataSourceList"
+      "id" | "instance" | "project" | "dataSourceList"
     >),
     id: parseInt(database.id),
-    creator,
-    updater,
     instance,
     project,
     dataSourceList: [],
