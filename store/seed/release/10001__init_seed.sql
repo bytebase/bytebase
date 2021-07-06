@@ -367,8 +367,7 @@ INSERT INTO
         `status`,
         `type`,
         description,
-        assignee_id,
-        subscriber_id_list
+        assignee_id
     )
 VALUES
     (
@@ -381,8 +380,7 @@ VALUES
         'OPEN',
         'bb.issue.general',
         'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: ' || char(10, 10) || ' - Creating a new database' || char(10) || ' - Creating a table' || char(10) || ' - Creating an index' || char(10) || ' - Adding/altering a column' || char(10) || ' - Troubleshooting performance issue' || char(10, 10) || 'Let''s try some simple tasks:' || char(10, 10) || '1. Bookmark this issue by clicking the star icon on the top of this page' || char(10) || '2. Leave a comment below to greet future comers' || char(10) || '3. Follow the Quickstart on the bottom left to get familiar with other features',
-        1,
-        ''
+        1
     );
 
 -- Create activity 101
