@@ -644,6 +644,8 @@ export const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+  console.debug("Router %s -> %s", from.name, to.name);
+
   const isLoggedIn = store.getters["auth/isLoggedIn"]();
 
   const fromModule = from.name
@@ -761,7 +763,7 @@ router.beforeEach((to, from, next) => {
 
   // We may just change the anchor (e.g. in Issue Detail view), thus we don't need
   // to fetch the data to verify its existence since we have already verified before.
-  if (to.name == from.name) {
+  if (to.path == from.path) {
     next();
     return;
   }
