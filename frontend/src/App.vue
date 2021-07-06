@@ -17,6 +17,9 @@ import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 
+// Show at most 3 notifications to prevent excessive notification when shit hits the fan.
+const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
+
 // Check expiration every 30 sec and logout if expired
 const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
 
@@ -66,8 +69,9 @@ export default {
         })
         .then((notification: Notification | undefined) => {
           if (notification) {
-            // Show at most 5 notifications to prevent excessive notification when shit hits the fan.
-            if (state.notificationList.length < 5) {
+            if (
+              state.notificationList.length < MAX_NOTIFICATION_DISPLAY_COUNT
+            ) {
               const item: BBNotificationItem = {
                 style: notification.style,
                 title: notification.title,
