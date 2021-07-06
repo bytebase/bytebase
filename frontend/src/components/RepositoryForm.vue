@@ -37,22 +37,6 @@
       />
     </div>
     <div>
-      <div class="textlabel">Base directory</div>
-      <div class="mt-1 textinfolabel">
-        The directory and all its sub-directories that Bytebase will observe the
-        SQL file (.sql) change. If empty, then Bytebase will observe the entire
-        repository.
-      </div>
-      <input
-        id="basedirectory"
-        name="basedirectory"
-        type="text"
-        class="textfield mt-2 w-full"
-        :disabled="!allowEdit"
-        v-model="repositoryConfig.baseDirectory"
-      />
-    </div>
-    <div>
       <div class="textlabel">Branch <span class="text-red-600">*</span></div>
       <div class="mt-1 textinfolabel">
         The branch where Bytebase observes the SQL file (.sql) change.
@@ -69,6 +53,22 @@
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">
         Tip: You can also use wildcard like 'feature/*'
       </div>
+    </div>
+    <div>
+      <div class="textlabel">Base directory</div>
+      <div class="mt-1 textinfolabel">
+        The directory and all its sub-directories that Bytebase will observe the
+        SQL file (.sql) change. If empty, then Bytebase will observe the entire
+        repository.
+      </div>
+      <input
+        id="basedirectory"
+        name="basedirectory"
+        type="text"
+        class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
+        v-model="repositoryConfig.baseDirectory"
+      />
     </div>
   </div>
 </template>
