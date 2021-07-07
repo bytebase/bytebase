@@ -259,9 +259,8 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return err
 	}
 
-	// Phase 2 - Executing migration unless it's baselining and has empty statement
-	// Baseline can have empty statement
-	if !(m.Type == Baseline && statement == "") {
+	// Phase 2 - Executing migration unless it's baselining
+	if m.Type != Baseline {
 		_, err = tx.ExecContext(ctx, statement)
 		if err != nil {
 			return formatError(err)
