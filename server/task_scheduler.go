@@ -109,7 +109,7 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
-					done, err := executor.RunOnce(context.Background(), s.server, task)
+					done, detail, err := executor.RunOnce(context.Background(), s.server, task)
 					if done {
 						if err != nil {
 							taskStatusPatch := &api.TaskStatusPatch{
@@ -122,7 +122,13 @@ func (s *TaskScheduler) Run() error {
 							continue
 						}
 
-						_, err = s.server.ChangeTaskStatus(context.Background(), task, api.TaskDone, api.SYSTEM_BOT_ID)
+						taskStatusPatch := &api.TaskStatusPatch{
+							ID:        task.ID,
+							UpdaterId: api.SYSTEM_BOT_ID,
+							Status:    api.TaskDone,
+							Comment:   detail,
+						}
+						_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 						if err != nil {
 							s.l.Error("Failed to mark task as DONE",
 								zap.Int("id", task.ID),

@@ -21,7 +21,7 @@ type SchemaUpdateTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
+func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -36,7 +36,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, fmt.Errorf("invalid database schema update payload: %w", err)
+		return true, "", fmt.Errorf("invalid database schema update payload: %w", err)
 	}
 
 	mi := &db.MigrationInfo{
@@ -46,7 +46,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		mi, err = db.ParseMigrationInfo(payload.VCSPushEvent.FileCommit.Added, payload.VCSPushEvent.BaseDirectory)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return true, fmt.Errorf("failed to start schema migration, error: %w", err)
+			return true, "", fmt.Errorf("failed to start schema migration, error: %w", err)
 		}
 		mi.Creator = payload.VCSPushEvent.FileCommit.AuthorName
 	}
@@ -54,11 +54,11 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	sql := strings.TrimSpace(payload.Statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
 	if mi.Type != db.Baseline && sql == "" {
-		return true, fmt.Errorf("empty sql statement")
+		return true, "", fmt.Errorf("empty sql statement")
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
-		return true, err
+		return true, "", err
 	}
 
 	instance := task.Instance
@@ -74,7 +74,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		Database: databaseName,
 	})
 	if err != nil {
-		return true, fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}
 
 	if payload.VCSPushEvent == nil {
@@ -85,7 +85,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		)
 
 		if err := driver.Execute(ctx, sql); err != nil {
-			return true, err
+			return true, "", err
 		}
 	} else {
 		exec.l.Debug("Start sql migration...",
@@ -97,16 +97,21 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 		setup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
-			return true, fmt.Errorf("failed to check migration setup for instance: %v, %w", instance.Name, err)
+			return true, "", fmt.Errorf("failed to check migration setup for instance: %v, %w", instance.Name, err)
 		}
 		if setup {
-			return true, fmt.Errorf("missing migration schema for instance: %v", instance.Name)
+			return true, "", fmt.Errorf("missing migration schema for instance: %v", instance.Name)
 		}
 
 		if err := driver.ExecuteMigration(ctx, mi, sql); err != nil {
-			return true, err
+			return true, "", err
 		}
 	}
 
-	return true, nil
+	detail = fmt.Sprintf("Applied migration version %s to database '%s'", mi.Version, databaseName)
+	if mi.Type == db.Baseline {
+		detail = fmt.Sprintf("Established baseline version %s for database '%s'", mi.Version, databaseName)
+	}
+
+	return true, detail, nil
 }

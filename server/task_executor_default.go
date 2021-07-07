@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 	"go.uber.org/zap"
@@ -17,8 +18,8 @@ type DefaultTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *DefaultTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
+func (exec *DefaultTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
 	exec.l.Info("Run default task type", zap.String("task", task.Name))
 
-	return true, nil
+	return true, fmt.Sprintf("No-op task %s", task.Name), nil
 }

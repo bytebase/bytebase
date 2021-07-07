@@ -129,7 +129,7 @@ VALUES
         1624873710,
         13002,
         'bb.pipeline.task.status.update',
-        '',
+        'Established baseline version %s for database ''shop''',
         '{"taskId":11002,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -175,7 +175,7 @@ VALUES
         1624873710,
         13002,
         'bb.pipeline.task.status.update',
-        '',
+        'Established baseline version %s for database ''shop''',
         '{"taskId":11003,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -281,7 +281,7 @@ VALUES
         1624865388,
         13004,
         'bb.pipeline.task.status.update',
-        '',
+        'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11008,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -374,7 +374,7 @@ VALUES
         1624866791,
         13005,
         'bb.pipeline.task.status.update',
-        '',
+        'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11009,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -467,7 +467,7 @@ VALUES
         1624868408,
         13006,
         'bb.pipeline.task.status.update',
-        '',
+        'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11010,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -560,7 +560,7 @@ VALUES
         1624868681,
         13007,
         'bb.pipeline.task.status.update',
-        '',
+        'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11011,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -653,6 +653,6 @@ VALUES
         1624869945,
         13008,
         'bb.pipeline.task.status.update',
-        'failed to connect instance: On-premises Dev MySQL with user: admin. dial tcp: lookup mysql.dev.example.com: no such host',
+        'database ''blog'' has already applied version 202106280100',
         '{"taskId":11012,"oldStatus":"RUNNING","newStatus":"FAILED"}'
     );

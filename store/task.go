@@ -333,13 +333,13 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			taskRunStatusPatch := &api.TaskRunStatusPatch{
 				ID:     &taskRun.ID,
 				TaskId: &patch.ID,
+				Detail: patch.Comment,
 			}
 			switch patch.Status {
 			case api.TaskDone:
 				taskRunStatusPatch.Status = api.TaskRunDone
 			case api.TaskFailed:
 				taskRunStatusPatch.Status = api.TaskRunFailed
-				taskRunStatusPatch.Detail = patch.Comment
 			case api.TaskPending:
 			case api.TaskPendingApproval:
 			case api.TaskCanceled:

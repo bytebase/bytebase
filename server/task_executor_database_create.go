@@ -20,7 +20,7 @@ type DatabaseCreateTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, err error) {
+func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -35,11 +35,11 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, fmt.Errorf("invalid create database payload: %w", err)
+		return true, "", fmt.Errorf("invalid create database payload: %w", err)
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
-		return true, err
+		return true, "", err
 	}
 
 	instance := task.Instance
@@ -50,7 +50,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Port:     instance.Port,
 	})
 	if err != nil {
-		return true, fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}
 
 	exec.l.Debug("Start creating database...",
@@ -60,8 +60,8 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	if err := driver.Execute(ctx, payload.Statement); err != nil {
-		return true, err
+		return true, "", err
 	}
 
-	return true, nil
+	return true, fmt.Sprintf("Created database '%s'", payload.DatabaseName), nil
 }
