@@ -14,7 +14,7 @@ input[type="number"] {
 
 <template>
   <form class="space-y-6 divide-y divide-block-border">
-    <div class="space-y-6 divide-y divide-block-border">
+    <div class="space-y-6 divide-y divide-block-border px-1">
       <!-- Instance Name -->
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2 sm:col-start-1">
