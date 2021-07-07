@@ -79,11 +79,11 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 				TABLE_NAME,
 				UNIX_TIMESTAMP(CREATE_TIME),
 				IFNULL(UNIX_TIMESTAMP(UPDATE_TIME), 0),
-				ENGINE,
-				TABLE_COLLATION,
-				TABLE_ROWS,
-				DATA_LENGTH,
-				INDEX_LENGTH
+				IFNULL(ENGINE, ''),
+				IFNULL(TABLE_COLLATION, ''),
+				IFNULL(TABLE_ROWS, 0),
+				IFNULL(DATA_LENGTH, 0),
+				IFNULL(INDEX_LENGTH, 0)
 			FROM information_schema.TABLES
 			WHERE `+tableWhere,
 	)
