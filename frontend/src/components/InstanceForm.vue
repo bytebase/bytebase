@@ -258,7 +258,7 @@ input[type="number"] {
           </div>
           <div
             v-if="state.connectionResult && state.connectionResult != 'OK'"
-            class="flex items-center text-error"
+            class="flex items-center text-error w-128"
           >
             {{ state.connectionResult }}
           </div>
@@ -337,7 +337,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 
 const GRANT_STATEMENT =
-  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}';\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, CREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE ON *.* to bytebase@'%';";
+  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, \nCREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
 
 interface LocalState {
   originalInstance?: Instance;
