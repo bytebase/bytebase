@@ -106,7 +106,7 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&host, "host", "https://localhost", "host where Bytebase is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 80, "port where Bytebase is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")

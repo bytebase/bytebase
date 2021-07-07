@@ -217,7 +217,7 @@ export default {
     });
 
     const showSwitchPlan = computed((): boolean => {
-      return isDev() || store.getters["actuator/isDemo"]();
+      return isDev();
     });
 
     const switchToOwner = () => {
