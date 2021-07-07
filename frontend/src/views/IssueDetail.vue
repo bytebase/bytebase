@@ -246,13 +246,13 @@ import {
   stageSlug,
   activeTask,
 } from "../utils";
-import IssueHighlightPanel from "../views/IssueHighlightPanel.vue";
-import IssueStagePanel from "../views/IssueStagePanel.vue";
-import IssueOutputPanel from "../views/IssueOutputPanel.vue";
-import IssueTaskStatementPanel from "./IssueTaskStatementPanel.vue";
-import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
-import IssueActivityPanel from "../views/IssueActivityPanel.vue";
-import IssueSidebar from "../views/IssueSidebar.vue";
+import IssueHighlightPanel from "../components/IssueHighlightPanel.vue";
+import IssueStagePanel from "../components/IssueStagePanel.vue";
+import IssueOutputPanel from "../components/IssueOutputPanel.vue";
+import IssueTaskStatementPanel from "../components/IssueTaskStatementPanel.vue";
+import IssueDescriptionPanel from "../components/IssueDescriptionPanel.vue";
+import IssueActivityPanel from "../components/IssueActivityPanel.vue";
+import IssueSidebar from "../components/IssueSidebar.vue";
 import IssueStatusTransitionButtonGroup from "../components/IssueStatusTransitionButtonGroup.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import {
