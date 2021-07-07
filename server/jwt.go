@@ -161,7 +161,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 
 		cookie, err := c.Cookie(accessTokenCookieName)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Missing access token")
+			return echo.NewHTTPError(http.StatusUnauthorized, "Missing access token")
 		}
 
 		claims := &Claims{}
