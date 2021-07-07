@@ -14,11 +14,10 @@ import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
-import Activate from "../views/auth/Activate.vue";
 import PasswordReset from "../views/auth/PasswordReset.vue";
 import { store } from "../store";
-import { isDev, idFromSlug, isDBAOrOwner, isOwner } from "../utils";
-import { Principal, QuickActionType, UNKNOWN_ID } from "../types";
+import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
+import { QuickActionType } from "../types";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";

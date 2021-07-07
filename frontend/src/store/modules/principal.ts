@@ -12,7 +12,7 @@ import {
   PrincipalType,
   RoleType,
 } from "../../types";
-import { isRelease, randomString } from "../../utils";
+import { randomString } from "../../utils";
 
 function convert(principal: ResourceObject): Principal {
   return {

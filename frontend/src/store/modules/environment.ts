@@ -8,10 +8,8 @@ import {
   unknown,
   RowStatus,
   EnvironmentPatch,
-  PrincipalId,
   empty,
   EMPTY_ID,
-  Principal,
 } from "../../types";
 
 function convert(

@@ -1,7 +1,6 @@
 import axios from "axios";
 import {
   ResourceObject,
-  Principal,
   TableState,
   DatabaseId,
   Table,

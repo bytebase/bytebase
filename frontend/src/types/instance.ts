@@ -1,6 +1,6 @@
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { EnvironmentId, InstanceId, PrincipalId } from "./id";
+import { EnvironmentId, InstanceId } from "./id";
 import { Principal } from "./principal";
 
 export type EngineType = "MYSQL";

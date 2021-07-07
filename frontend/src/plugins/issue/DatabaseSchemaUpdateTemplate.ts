@@ -1,10 +1,8 @@
-import isEmpty from "lodash-es/isEmpty";
+
 
 import {
   IssueTemplate,
   TemplateContext,
-  IssueBuiltinFieldId,
-  IssueContext,
 } from "../types";
 
 import { StageCreate, IssueCreate } from "../../types";

@@ -1,17 +1,10 @@
-import axios from "axios";
+
 import {
   ResourceIdentifier,
   ResourceObject,
   Pipeline,
-  PipelineId,
   PipelineState,
-  PipelineStatusPatch,
-  Task,
-  Issue,
-  IssueId,
-  unknown,
   Stage,
-  Principal,
 } from "../../types";
 
 const state: () => PipelineState = () => ({});
@@ -63,26 +56,6 @@ const getters = {
     (pipeline: ResourceObject, includedList: ResourceObject[]): Pipeline => {
       return convert(pipeline, includedList, rootGetters);
     },
-
-  async updatePipelineStatus(
-    { dispatch }: any,
-    {
-      pipelineId,
-      pipelineStatusPatch,
-    }: {
-      pipelineId: PipelineId;
-      pipelineStatusPatch: PipelineStatusPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/pipeline/${pipelineId}/status`, {
-        data: {
-          type: "pipelineStatusPatch",
-          attributes: pipelineStatusPatch,
-        },
-      })
-    ).data;
-  },
 };
 
 const actions = {};

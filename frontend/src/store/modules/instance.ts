@@ -13,7 +13,6 @@ import {
   RowStatus,
   empty,
   EMPTY_ID,
-  Principal,
   InstanceMigration,
   SqlResultSet,
 } from "../../types";

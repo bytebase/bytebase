@@ -2,7 +2,7 @@
 // in the "database" object.
 // Physically, a database belongs to an instance. Logically, it belongs to a project.
 
-import { DatabaseId, InstanceId, IssueId, PrincipalId, ProjectId } from "./id";
+import { DatabaseId, InstanceId, IssueId, ProjectId } from "./id";
 import { Instance } from "./instance";
 import { Principal } from "./principal";
 import { Project } from "./project";

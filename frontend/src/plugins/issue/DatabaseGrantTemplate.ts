@@ -1,13 +1,12 @@
-import isEmpty from "lodash-es/isEmpty";
+
 import {
   IssueTemplate,
   TemplateContext,
-  IssueBuiltinFieldId,
   INPUT_CUSTOM_FIELD_ID_BEGIN,
   IssueContext,
   OUTPUT_CUSTOM_FIELD_ID_BEGIN,
 } from "../types";
-import { IssueCreate, EnvironmentId, UNKNOWN_ID, Issue } from "../../types";
+import { IssueCreate, UNKNOWN_ID, Issue } from "../../types";
 import { allowDatabaseAccess, fullDatabasePath } from "../../utils";
 
 const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;

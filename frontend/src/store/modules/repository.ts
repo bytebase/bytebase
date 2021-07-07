@@ -5,13 +5,11 @@ import {
   ResourceObject,
   ResourceIdentifier,
   unknown,
-  Principal,
   Repository,
   RepositoryCreate,
   Project,
   ProjectId,
   VCS,
-  ProjectPatch,
   RepositoryPatch,
 } from "../../types";
 

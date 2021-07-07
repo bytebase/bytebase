@@ -1,23 +1,5 @@
-import isEmpty from "lodash-es/isEmpty";
-import {
-  IssueTemplate,
-  TemplateContext,
-  IssueBuiltinFieldId,
-  OUTPUT_CUSTOM_FIELD_ID_BEGIN,
-  IssueContext,
-  INPUT_CUSTOM_FIELD_ID_BEGIN,
-} from "../types";
-import {
-  EMPTY_ID,
-  Issue,
-  IssueCreate,
-  Pipeline,
-  UNKNOWN_ID,
-} from "../../types";
-import { activeEnvironment, fullDatabasePath } from "../../utils";
-
-const INPUT_DATABASE_NAME = INPUT_CUSTOM_FIELD_ID_BEGIN;
-const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
+import { IssueTemplate, TemplateContext } from "../types";
+import { IssueCreate } from "../../types";
 
 const template: IssueTemplate = {
   type: "bb.issue.database.create",

@@ -7,7 +7,6 @@ import {
   IssuePatch,
   IssueState,
   ResourceObject,
-  Principal,
   unknown,
   Project,
   ResourceIdentifier,

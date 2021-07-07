@@ -1,4 +1,4 @@
-import { BookmarkId, PrincipalId } from "./id";
+import { BookmarkId } from "./id";
 import { Principal } from "./principal";
 
 export type Bookmark = {

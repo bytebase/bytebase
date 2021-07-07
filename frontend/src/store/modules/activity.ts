@@ -8,9 +8,6 @@ import {
   ActivityState,
   ResourceObject,
   ActivityPatch,
-  ResourceIdentifier,
-  Principal,
-  unknown,
 } from "../../types";
 
 function convert(

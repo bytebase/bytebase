@@ -1,5 +1,4 @@
-import { PrincipalId, VCSId } from "./id";
-import { OAuthToken } from "./oauth";
+import { VCSId } from "./id";
 import { Principal } from "./principal";
 
 export type VCSType = "GITLAB_SELF_HOST";

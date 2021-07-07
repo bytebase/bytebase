@@ -1,20 +1,14 @@
-import axios from "axios";
+
 import {
   ResourceIdentifier,
   ResourceObject,
   Stage,
-  StageId,
   StageState,
   Task,
-  Issue,
-  IssueId,
   unknown,
   PipelineId,
   Pipeline,
-  Database,
-  empty,
   Environment,
-  Principal,
 } from "../../types";
 
 const state: () => StageState = () => ({});

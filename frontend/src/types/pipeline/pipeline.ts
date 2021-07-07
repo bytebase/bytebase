@@ -1,4 +1,4 @@
-import { PipelineId, PrincipalId } from "../id";
+import { PipelineId } from "../id";
 import { Principal } from "../principal";
 import { Stage, StageCreate } from "./stage";
 

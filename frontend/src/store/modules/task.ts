@@ -11,7 +11,6 @@ import {
   Pipeline,
   TaskStatusPatch,
   TaskId,
-  Database,
   empty,
   ResourceIdentifier,
   Principal,

@@ -5,14 +5,10 @@ import {
   VCSCreate,
   VCSState,
   ResourceObject,
-  ResourceIdentifier,
   unknown,
   VCSPatch,
   empty,
   EMPTY_ID,
-  Principal,
-  Repository,
-  Project,
 } from "../../types";
 
 function convert(vcs: ResourceObject): VCS {

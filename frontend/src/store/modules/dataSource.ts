@@ -16,7 +16,6 @@ import {
   DataSourcePatch,
   EMPTY_ID,
   empty,
-  Principal,
 } from "../../types";
 
 function convert(

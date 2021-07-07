@@ -6,7 +6,6 @@ import {
   BookmarkState,
   ResourceObject,
   unknown,
-  Principal,
 } from "../../types";
 
 function convert(bookmark: ResourceObject, rootGetters: any): Bookmark {

@@ -1,4 +1,4 @@
-import { CommandId, CommandRegisterId, PrincipalId, VCSId } from "./id";
+import { CommandId, CommandRegisterId, PrincipalId } from "./id";
 import { Principal } from "./principal";
 import { Member } from "./member";
 import { Environment } from "./environment";
