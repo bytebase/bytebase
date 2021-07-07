@@ -229,7 +229,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return err
 	}
 	if duplicate {
-		return fmt.Errorf("%s has already applied version %s", m.Database, m.Version)
+		return fmt.Errorf("database '%s' has already applied version %s", m.Database, m.Version)
 	}
 
 	// Check if there is any higher version already been applied
@@ -238,7 +238,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return err
 	}
 	if version != nil {
-		return fmt.Errorf("%s has already applied version %s which is higher than %s", m.Database, *version, m.Version)
+		return fmt.Errorf("database '%s' has already applied version %s which is higher than %s", m.Database, *version, m.Version)
 	}
 
 	// If the migration type is not baseline, then we can only proceed if there is existing baseline
