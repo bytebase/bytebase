@@ -112,26 +112,34 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			updater_id,
 			database_id,
 			name,
+			`+"`type`,"+`
 			engine,
 			collation,
 			sync_status,
 			last_successful_sync_ts,
 			row_count,
 			data_size,
-			index_size
+			index_size,
+			data_free,
+			create_options,
+			comment
 		)
-		VALUES (?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size, data_free, create_options, comment"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.DatabaseId,
 		create.Name,
+		create.Type,
 		create.Engine,
 		create.Collation,
 		create.RowCount,
 		create.DataSize,
 		create.IndexSize,
+		create.DataFree,
+		create.CreateOptions,
+		create.Comment,
 	)
 
 	if err != nil {
@@ -149,6 +157,7 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 		&table.UpdatedTs,
 		&table.DatabaseId,
 		&table.Name,
+		&table.Type,
 		&table.Engine,
 		&table.Collation,
 		&table.SyncStatus,
@@ -156,6 +165,9 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 		&table.RowCount,
 		&table.DataSize,
 		&table.IndexSize,
+		&table.DataFree,
+		&table.CreateOptions,
+		&table.Comment,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -185,13 +197,17 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 		    updated_ts,
 			database_id,
 		    name,
+			`+"`type`,"+`
 			engine,
 			collation,
 			sync_status,
 			last_successful_sync_ts,
 			row_count,
 			data_size,
-			index_size
+			index_size,
+			data_free,
+			create_options,
+			comment
 		FROM tbl
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -213,6 +229,7 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 			&table.UpdatedTs,
 			&table.DatabaseId,
 			&table.Name,
+			&table.Type,
 			&table.Engine,
 			&table.Collation,
 			&table.SyncStatus,
@@ -220,6 +237,9 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
+			&table.DataFree,
+			&table.CreateOptions,
+			&table.Comment,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -251,7 +271,7 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 		UPDATE tbl
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size, data_free, create_options, comment"+`
 	`,
 		args...,
 	)
@@ -270,6 +290,7 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 			&table.UpdatedTs,
 			&table.DatabaseId,
 			&table.Name,
+			&table.Type,
 			&table.Engine,
 			&table.Collation,
 			&table.SyncStatus,
@@ -277,6 +298,9 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
+			&table.DataFree,
+			&table.CreateOptions,
+			&table.Comment,
 		); err != nil {
 			return nil, FormatError(err)
 		}

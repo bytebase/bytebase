@@ -25,14 +25,18 @@ func (e Type) String() string {
 }
 
 type DBTable struct {
-	Name      string
-	CreatedTs int64
-	UpdatedTs int64
-	Engine    string
-	Collation string
-	RowCount  int64
-	DataSize  int64
-	IndexSize int64
+	Name          string
+	CreatedTs     int64
+	UpdatedTs     int64
+	Type          string
+	Engine        string
+	Collation     string
+	RowCount      int64
+	DataSize      int64
+	IndexSize     int64
+	DataFree      int64
+	CreateOptions string
+	Comment       string
 }
 
 type DBSchema struct {

@@ -142,7 +142,18 @@
             <div class="text-lg leading-6 font-medium text-main mb-4">
               Tables
             </div>
-            <TableTable :tableList="tableList" />
+            <TableTable
+              :mode="'TABLE'"
+              :tableList="tableList.filter((item) => item.type == 'BASE TABLE')"
+            />
+
+            <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+              Views
+            </div>
+            <TableTable
+              :mode="'VIEW'"
+              :tableList="tableList.filter((item) => item.type == 'VIEW')"
+            />
           </div>
 
           <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->

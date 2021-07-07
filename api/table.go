@@ -22,6 +22,7 @@ type Table struct {
 
 	// Domain specific fields
 	Name                 string     `jsonapi:"attr,name"`
+	Type                 string     `jsonapi:"attr,type"`
 	Engine               string     `jsonapi:"attr,engine"`
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
@@ -29,6 +30,9 @@ type Table struct {
 	RowCount             int64      `jsonapi:"attr,rowCount"`
 	DataSize             int64      `jsonapi:"attr,dataSize"`
 	IndexSize            int64      `jsonapi:"attr,indexSize"`
+	DataFree             int64      `jsonapi:"attr,dataFree"`
+	CreateOptions        string     `jsonapi:"attr,createOptions"`
+	Comment              string     `jsonapi:"attr,comment"`
 }
 
 type TableCreate struct {
@@ -37,15 +41,19 @@ type TableCreate struct {
 	CreatorId int
 
 	// Related fields
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	DatabaseId int
 
 	// Domain specific fields
-	Name      string `jsonapi:"attr,name"`
-	Engine    string `jsonapi:"attr,engine"`
-	Collation string `jsonapi:"attr,collation"`
-	RowCount  int64
-	DataSize  int64
-	IndexSize int64
+	Name          string
+	Type          string
+	Engine        string
+	Collation     string
+	RowCount      int64
+	DataSize      int64
+	IndexSize     int64
+	DataFree      int64
+	CreateOptions string
+	Comment       string
 }
 
 type TableFind struct {

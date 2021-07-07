@@ -149,14 +149,18 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 						if err != nil {
 							if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 								tableCreate := &api.TableCreate{
-									CreatorId:  api.SYSTEM_BOT_ID,
-									DatabaseId: database.ID,
-									Name:       table.Name,
-									Engine:     table.Engine,
-									Collation:  table.Collation,
-									RowCount:   table.RowCount,
-									DataSize:   table.DataSize,
-									IndexSize:  table.IndexSize,
+									CreatorId:     api.SYSTEM_BOT_ID,
+									DatabaseId:    database.ID,
+									Name:          table.Name,
+									Type:          table.Type,
+									Engine:        table.Engine,
+									Collation:     table.Collation,
+									RowCount:      table.RowCount,
+									DataSize:      table.DataSize,
+									IndexSize:     table.IndexSize,
+									DataFree:      table.DataFree,
+									CreateOptions: table.CreateOptions,
+									Comment:       table.Comment,
 								}
 								if err := createTable(database, tableCreate); err != nil {
 									return err
@@ -200,14 +204,18 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 
 					for _, table := range schema.TableList {
 						tableCreate := &api.TableCreate{
-							CreatorId:  api.SYSTEM_BOT_ID,
-							DatabaseId: database.ID,
-							Name:       table.Name,
-							Engine:     table.Engine,
-							Collation:  table.Collation,
-							RowCount:   table.RowCount,
-							DataSize:   table.DataSize,
-							IndexSize:  table.IndexSize,
+							CreatorId:     api.SYSTEM_BOT_ID,
+							DatabaseId:    database.ID,
+							Name:          table.Name,
+							Type:          table.Type,
+							Engine:        table.Engine,
+							Collation:     table.Collation,
+							RowCount:      table.RowCount,
+							DataSize:      table.DataSize,
+							IndexSize:     table.IndexSize,
+							DataFree:      table.DataFree,
+							CreateOptions: table.CreateOptions,
+							Comment:       table.Comment,
 						}
 						if err := createTable(database, tableCreate); err != nil {
 							return err
@@ -331,14 +339,18 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 						if err != nil {
 							if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 								tableCreate := &api.TableCreate{
-									CreatorId:  api.SYSTEM_BOT_ID,
-									DatabaseId: database.ID,
-									Name:       table.Name,
-									Engine:     table.Engine,
-									Collation:  table.Collation,
-									RowCount:   table.RowCount,
-									DataSize:   table.DataSize,
-									IndexSize:  table.IndexSize,
+									CreatorId:     api.SYSTEM_BOT_ID,
+									DatabaseId:    database.ID,
+									Name:          table.Name,
+									Type:          table.Type,
+									Engine:        table.Engine,
+									Collation:     table.Collation,
+									RowCount:      table.RowCount,
+									DataSize:      table.DataSize,
+									IndexSize:     table.IndexSize,
+									DataFree:      table.DataFree,
+									CreateOptions: table.CreateOptions,
+									Comment:       table.Comment,
 								}
 								if err := createTable(database, tableCreate); err != nil {
 									return err
@@ -382,14 +394,18 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 
 					for _, table := range schema.TableList {
 						tableCreate := &api.TableCreate{
-							CreatorId:  api.SYSTEM_BOT_ID,
-							DatabaseId: database.ID,
-							Name:       table.Name,
-							Engine:     table.Engine,
-							Collation:  table.Collation,
-							RowCount:   table.RowCount,
-							DataSize:   table.DataSize,
-							IndexSize:  table.IndexSize,
+							CreatorId:     api.SYSTEM_BOT_ID,
+							DatabaseId:    database.ID,
+							Name:          table.Name,
+							Type:          table.Type,
+							Engine:        table.Engine,
+							Collation:     table.Collation,
+							RowCount:      table.RowCount,
+							DataSize:      table.DataSize,
+							IndexSize:     table.IndexSize,
+							DataFree:      table.DataFree,
+							CreateOptions: table.CreateOptions,
+							Comment:       table.Comment,
 						}
 						if err := createTable(database, tableCreate); err != nil {
 							return err

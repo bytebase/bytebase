@@ -79,11 +79,15 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 				TABLE_NAME,
 				UNIX_TIMESTAMP(CREATE_TIME),
 				IFNULL(UNIX_TIMESTAMP(UPDATE_TIME), 0),
+				TABLE_TYPE,
 				IFNULL(ENGINE, ''),
 				IFNULL(TABLE_COLLATION, ''),
 				IFNULL(TABLE_ROWS, 0),
 				IFNULL(DATA_LENGTH, 0),
-				IFNULL(INDEX_LENGTH, 0)
+				IFNULL(INDEX_LENGTH, 0),
+				IFNULL(DATA_FREE, 0),
+				IFNULL(CREATE_OPTIONS, ''),
+				IFNULL(TABLE_COMMENT, '')
 			FROM information_schema.TABLES
 			WHERE `+tableWhere,
 	)
@@ -101,11 +105,15 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			&table.Name,
 			&table.CreatedTs,
 			&table.UpdatedTs,
+			&table.Type,
 			&table.Engine,
 			&table.Collation,
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
+			&table.DataFree,
+			&table.CreateOptions,
+			&table.Comment,
 		); err != nil {
 			return nil, err
 		}

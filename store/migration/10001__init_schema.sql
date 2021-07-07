@@ -335,6 +335,7 @@ CREATE TABLE tbl (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
+    `type` TEXT NOT NULL,
     `engine` TEXT NOT NULL,
     `collation` TEXT NOT NULL,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
@@ -342,6 +343,9 @@ CREATE TABLE tbl (
     row_count BIGINT NOT NULL,
     data_size BIGINT NOT NULL,
     index_size BIGINT NOT NULL,
+    data_free BIGINT NOT NULL,
+    create_options TEXT NOT NULL,
+    `comment` TEXT NOT NULL,
     UNIQUE(database_id, name)
 );
 
