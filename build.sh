@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # cd to the root directory and run
-# ./build.sh
+# ./build.sh [outdir]
 
 # exit when any command fails
 set -e
@@ -10,7 +10,14 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-OUTPUT_BINARY=$( cd bytebase-build &> /dev/null && pwd )/bytebase
+if [ -z "$1" ];
+then
+  OUTPUT_DIR=$( cd bytebase-build &> /dev/null && pwd )
+else
+  OUTPUT_DIR="$1"
+fi
+
+OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
 if [[ `dirname "${BASH_SOURCE[0]}"` != "." ]]
 then
