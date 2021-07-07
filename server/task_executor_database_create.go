@@ -11,7 +11,7 @@ import (
 )
 
 func NewDatabaseCreateTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &SchemaUpdateTaskExecutor{
+	return &DatabaseCreateTaskExecutor{
 		l: logger,
 	}
 }
