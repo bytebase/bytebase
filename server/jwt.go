@@ -149,6 +149,15 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	c.SetCookie(cookie)
 }
 
+func removeUserCookie(c echo.Context) {
+	cookie := new(http.Cookie)
+	cookie.Name = "user"
+	cookie.Value = ""
+	cookie.Expires = time.Unix(0, 0)
+	cookie.Path = "/"
+	c.SetCookie(cookie)
+}
+
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.

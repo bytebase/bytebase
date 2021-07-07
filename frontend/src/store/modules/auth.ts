@@ -10,7 +10,7 @@ import {
   unknown,
   PrincipalId,
 } from "../../types";
-import { getIntCookie, removeCookie } from "../../utils";
+import { getIntCookie } from "../../utils";
 
 function convert(user: ResourceObject, rootGetters: any): Principal {
   return rootGetters["principal/principalById"](user.id);
@@ -52,7 +52,6 @@ const actions = {
   async logout({ commit }: any) {
     await axios.post("/api/auth/logout");
 
-    removeCookie("user");
     commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
     return unknown("PRINCIPAL") as Principal;
   },
