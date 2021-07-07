@@ -97,7 +97,7 @@
         </template>
       </template>
       <template v-else-if="project.workflowType == 'VCS'">
-        <RepositoryDetail
+        <RepositoryPanel
           :project="project"
           :repository="repository"
           :allowEdit="allowEdit"
@@ -112,7 +112,7 @@
 import { reactive, watchEffect, watch } from "vue";
 import { computed, PropType } from "@vue/runtime-core";
 import RepositorySetupWizard from "./RepositorySetupWizard.vue";
-import RepositoryDetail from "./RepositoryDetail.vue";
+import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
 import { useStore } from "vuex";
 
@@ -126,7 +126,7 @@ export default {
   name: "ProjectVersionControlPanel",
   components: {
     RepositorySetupWizard,
-    RepositoryDetail,
+    RepositoryPanel,
   },
   props: {
     project: {
