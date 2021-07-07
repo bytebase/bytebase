@@ -34,6 +34,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return err
 		}
 
+		// Try immediately sync the schema after instance creation.
+		s.SyncSchema(instance)
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create instance response").SetInternal(err)
