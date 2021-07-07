@@ -249,18 +249,6 @@ input[type="number"] {
             >
               Test Connection
             </button>
-            <div
-              v-if="state.connectionResult == 'OK'"
-              class="flex items-center text-success"
-            >
-              {{ state.connectionResult }}
-            </div>
-          </div>
-          <div
-            v-if="state.connectionResult && state.connectionResult != 'OK'"
-            class="flex items-center text-error w-128"
-          >
-            {{ state.connectionResult }}
           </div>
         </div>
       </div>
@@ -344,7 +332,6 @@ interface LocalState {
   instance: Instance | InstanceCreate;
   // Only used in non-create case.
   updatedPassword: string;
-  connectionResult: string;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
 }
@@ -385,7 +372,6 @@ export default {
             username: "",
           },
       updatedPassword: "",
-      connectionResult: "",
       showCreateInstanceWarningModal: false,
       createInstanceWarning: "",
     });
@@ -528,9 +514,20 @@ export default {
         .dispatch("sql/ping", connectionInfo)
         .then((resultSet: SqlResultSet) => {
           if (isEmpty(resultSet.error)) {
-            state.connectionResult = "OK";
+            store.dispatch("notification/pushNotification", {
+              module: "bytebase",
+              style: "SUCCESS",
+              title: `Successfully connected instance.`,
+            });
           } else {
-            state.connectionResult = resultSet.error;
+            store.dispatch("notification/pushNotification", {
+              module: "bytebase",
+              style: "CRITICAL",
+              title: `Failed to connect instance.`,
+              description: resultSet.error,
+              // Manual hide, because user may need time to inspect the error
+              manualHide: true,
+            });
           }
         });
     };
