@@ -4,7 +4,13 @@
       Before any project can enable version control workflow, Bytebase first
       needs to integrate with the corresponding version control system (VCS) by
       registering as an OAuth application in that VCS. Below are the steps to
-      configure this.
+      configure this. You can also follow our<a
+        href="https://docs.bytebase.com/use-bytebase/vcs-integration?ref=console"
+        target="_blank"
+        class="normal-link"
+      >
+        detailed guide</a
+      >.
     </div>
     <div class="pt-4">
       <VCSSetupWizard />

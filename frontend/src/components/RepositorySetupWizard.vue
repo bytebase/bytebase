@@ -1,6 +1,16 @@
 <template>
   <div>
+    <div class="textinfolabel">
+      If you encounter errors during the process, please refer to our<a
+        href="https://docs.bytebase.com/use-bytebase/vcs-integration/link-repository?ref=console"
+        target="_blank"
+        class="normal-link"
+      >
+        detailed guide</a
+      >.
+    </div>
     <BBStepTab
+      class="pt-4"
       :stepItemList="stepList"
       :allowNext="allowNext"
       @try-change-step="tryChangeStep"
