@@ -21,7 +21,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -48,7 +48,7 @@ VALUES
         3001,
         'testdb_dev',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         1624558090
     );
@@ -75,7 +75,7 @@ VALUES
         3002,
         'shop',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -102,7 +102,7 @@ VALUES
         3003,
         'blog',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -130,7 +130,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -157,7 +157,7 @@ VALUES
         3001,
         'testdb_integration',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -184,7 +184,7 @@ VALUES
         3002,
         'shop',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -211,7 +211,7 @@ VALUES
         3003,
         'blog',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -239,7 +239,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -266,7 +266,7 @@ VALUES
         3001,
         'testdb_staging',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -293,7 +293,7 @@ VALUES
         3002,
         'shop',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -320,7 +320,7 @@ VALUES
         3003,
         'blog',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -348,7 +348,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -375,7 +375,7 @@ VALUES
         3001,
         'testdb_prod',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -402,7 +402,7 @@ VALUES
         3002,
         'shop',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -429,7 +429,7 @@ VALUES
         3003,
         'blog',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -457,7 +457,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );

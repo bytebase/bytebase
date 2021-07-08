@@ -82,7 +82,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );
@@ -160,7 +160,7 @@ VALUES
         1,
         '*',
         'utf8mb4',
-        'utf8mb4_0900_ai_ci',
+        'utf8mb4_general_ci',
         'OK',
         0
     );

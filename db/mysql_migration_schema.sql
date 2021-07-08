@@ -1,6 +1,6 @@
 -- This is the bytebase schema to track migration info for MySQL
 -- Create a database called bytebase
-CREATE DATABASE bytebase CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci';
+CREATE DATABASE bytebase CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- Create migration_history table
 -- Note, we don't create trigger to update created_ts and updated_ts because that may causes error:

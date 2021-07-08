@@ -208,7 +208,7 @@ export default {
     const state = reactive<LocalState>({
       projectId: props.projectId,
       characterSet: "utf8mb4",
-      collation: "utf8mb4_0900_ai_ci",
+      collation: "utf8mb4_general_ci",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 

@@ -274,7 +274,7 @@ export default {
         (router.currentRoute.value.query.charset as string) || "utf8mb4",
       collation:
         (router.currentRoute.value.query.collation as string) ||
-        "utf8mb4_0900_ai_ci",
+        "utf8mb4_general_ci",
       issueId: parseInt(
         router.currentRoute.value.query.issue as string
       ) as IssueId,

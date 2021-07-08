@@ -9,7 +9,9 @@ import (
 const (
 	ALL_DATABASE_NAME          = "*"
 	DEFAULT_CHARACTER_SET_NAME = "utf8mb4"
-	DEFAULT_COLLATION_NAME     = "utf8mb4_0900_ai_ci"
+	// Use utf8mb4_general_ci instead of the new MySQL 8.0.1 default utf8mb4_0900_ai_ci
+	// because the former is compatible with more other MySQL flavors (e.g. MariaDB)
+	DEFAULT_COLLATION_NAME = "utf8mb4_general_ci"
 )
 
 type SyncStatus string
