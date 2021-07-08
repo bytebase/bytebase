@@ -389,7 +389,11 @@ export default {
     });
 
     const showTestConnection = computed(() => {
-      return props.create || (state.instance as Instance).rowStatus == "NORMAL";
+      return (
+        props.create ||
+        ((state.instance as Instance).rowStatus == "NORMAL" &&
+          isDBAOrOwner(currentUser.value.role))
+      );
     });
 
     const valueChanged = computed(() => {
