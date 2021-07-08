@@ -182,7 +182,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			defer resp.Body.Close()
 
-			// Just emits a warning since we have already updated the repository entry. We will have a separate process to reconcile the state.
 			if resp.StatusCode >= 300 {
 				return echo.NewHTTPError(http.StatusInternalServerError,
 					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d, status: %s",
