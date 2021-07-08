@@ -5,19 +5,19 @@ import {
   RouteLocationNormalized,
   RouteRecordRaw,
 } from "vue-router";
-import SplashLayout from "../layouts/SplashLayout.vue";
-import DashboardLayout from "../layouts/DashboardLayout.vue";
 import BodyLayout from "../layouts/BodyLayout.vue";
+import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
-import DashboardSidebar from "../views/DashboardSidebar.vue";
-import Home from "../views/Home.vue";
+import SplashLayout from "../layouts/SplashLayout.vue";
+import { store } from "../store";
+import { QuickActionType } from "../types";
+import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
+// import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
-import PasswordReset from "../views/auth/PasswordReset.vue";
-import { store } from "../store";
-import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
-import { QuickActionType } from "../types";
+import DashboardSidebar from "../views/DashboardSidebar.vue";
+import Home from "../views/Home.vue";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -25,6 +25,7 @@ const SIGNIN_MODULE = "auth.signin";
 const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
+const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -55,11 +56,18 @@ const routes: Array<RouteRecordRaw> = [
       //   component: Activate,
       //   props: true,
       // },
+      // {
+      //   path: "password-reset",
+      //   name: PASSWORD_RESET_MODULE,
+      //   meta: { title: () => "Reset Password" },
+      //   component: PasswordReset,
+      //   props: true,
+      // },
       {
-        path: "password-reset",
-        name: PASSWORD_RESET_MODULE,
-        meta: { title: () => "Reset Password" },
-        component: PasswordReset,
+        path: "password-forgot",
+        name: PASSWORD_FORGOT_MODULE,
+        meta: { title: () => "Forgot Password" },
+        component: () => import("../views/auth/PasswordForgot.vue"),
         props: true,
       },
     ],
@@ -660,7 +668,8 @@ router.beforeEach((to, from, next) => {
     to.name === SIGNIN_MODULE ||
     to.name === SIGNUP_MODULE ||
     to.name === ACTIVATE_MODULE ||
-    to.name === PASSWORD_RESET_MODULE
+    to.name === PASSWORD_RESET_MODULE ||
+    to.name === PASSWORD_FORGOT_MODULE
   ) {
     if (isLoggedIn) {
       next({ name: HOME_MODULE, replace: true });

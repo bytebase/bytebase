@@ -56,7 +56,7 @@
             >
               <div>Password<span class="text-red-600">*</span></div>
               <router-link
-                to="/auth/password-reset"
+                to="/auth/password-forgot"
                 class="
                   text-sm
                   font-normal
