@@ -48,7 +48,11 @@ $ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/
 
 ## Development
 
-**Bytebase is built with a curated tech stack.**
+Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start working on the code:
+
+1. It has no external dependency.
+1. It requires zero config.
+1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
 ![Screenshot](./docs/assets/techstack.svg)
 
