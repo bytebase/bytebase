@@ -161,10 +161,12 @@ export default {
     });
 
     const attentionActionText = computed((): string => {
-      if (state.migrationSetupStatus == "NOT_EXIST") {
-        return "Create migration schema";
-      } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return "";
+      if (isDBAOrOwner(currentUser.value.role)) {
+        if (state.migrationSetupStatus == "NOT_EXIST") {
+          return "Create migration schema";
+        } else if (state.migrationSetupStatus == "UNKNOWN") {
+          return "";
+        }
       }
       return "";
     });
