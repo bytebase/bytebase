@@ -20,7 +20,7 @@
     :okText="'Do not show again'"
     :cancelText="'Dismiss'"
     :title="'How to setup \'Database\' ?'"
-    :description="'Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'. In Bytebase, a database always belongs to a signle project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.'"
+    :description="'Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'. In Bytebase, a database always belongs to a single project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.'"
     @ok="
       () => {
         doDismissGuide();
