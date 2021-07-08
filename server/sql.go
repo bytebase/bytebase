@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase"
@@ -132,6 +133,10 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 			}
 
 			for _, schema := range schemaList {
+				// Skip our internal "bytebase" database
+				if strings.EqualFold("bytebase", schema.Name) {
+					continue
+				}
 				var matchedDb *api.Database
 				for _, db := range dbList {
 					if db.Name == schema.Name {
