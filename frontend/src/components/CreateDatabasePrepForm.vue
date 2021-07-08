@@ -13,6 +13,9 @@
           class="textfield mt-1 w-full"
           v-model="state.databaseName"
         />
+        <span v-if="isReservedName" class="text-red-600"
+          >{{ state.databaseName }} is a reserved name</span
+        >
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
@@ -212,9 +215,14 @@ export default {
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 
+    const isReservedName = computed(() => {
+      return state.databaseName?.toLowerCase() == "bytebase";
+    });
+
     const allowCreate = computed(() => {
       return (
         !isEmpty(state.databaseName) &&
+        !isReservedName.value &&
         state.projectId &&
         state.environmentId &&
         state.instanceId &&
@@ -291,6 +299,7 @@ export default {
 
     return {
       state,
+      isReservedName,
       allowCreate,
       allowEditProject,
       showAssigneeSelect,
