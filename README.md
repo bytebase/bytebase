@@ -3,6 +3,8 @@
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-beta-green)
 
+![Screenshot](./docs/assets/Overview1.png)
+
 [Bytebase](https://bytebase.com/) is a zero-config, dependency-free database schema change and version control tool for teams. It supports 2 mainstream schema change workflow:
 
 - UI based SQL review
@@ -45,6 +47,10 @@ $ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/
 ```
 
 ## Development
+
+**Bytebase is built with a curated tech stack.**
+
+![Screenshot](./docs/assets/techstack.svg)
 
 ### Prerequisites
 
