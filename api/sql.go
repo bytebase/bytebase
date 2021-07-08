@@ -7,11 +7,12 @@ import (
 )
 
 type ConnectionInfo struct {
-	DBType   db.Type `jsonapi:"attr,dbType"`
-	Host     string  `jsonapi:"attr,host"`
-	Port     string  `jsonapi:"attr,port"`
-	Username string  `jsonapi:"attr,username"`
-	Password string  `jsonapi:"attr,password"`
+	DBType     db.Type `jsonapi:"attr,dbType"`
+	Host       string  `jsonapi:"attr,host"`
+	Port       string  `jsonapi:"attr,port"`
+	Username   string  `jsonapi:"attr,username"`
+	Password   string  `jsonapi:"attr,password"`
+	InstanceId *int    `jsonapi:"attr,instanceId"`
 }
 
 type SqlSyncSchema struct {

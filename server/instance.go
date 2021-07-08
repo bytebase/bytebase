@@ -291,3 +291,19 @@ func (s *Server) ComposeInstanceAdminDataSource(ctx context.Context, instance *a
 	}
 	return nil
 }
+
+func (s *Server) FindInstanceAdminPasswordById(ctx context.Context, instanceId int) (string, error) {
+	dataSourceFind := &api.DataSourceFind{
+		InstanceId: &instanceId,
+	}
+	dataSourceList, err := s.DataSourceService.FindDataSourceList(context.Background(), dataSourceFind)
+	if err != nil {
+		return "", err
+	}
+	for _, dataSource := range dataSourceList {
+		if dataSource.Type == api.Admin {
+			return dataSource.Password, nil
+		}
+	}
+	return "", &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("missing admin password for instance: %d", instanceId)}
+}

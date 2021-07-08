@@ -20,9 +20,22 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
 		}
 
+		password := connectionInfo.Password
+		// Instance detail page has a Test Connection button, if user doesn't input new password, we
+		// want the connection to use the existing password to test the connection, however, we do
+		// not transfer the password back to client, thus the client will pass the instanceId to
+		// let server retrieve the password.
+		if password == "" && connectionInfo.InstanceId != nil {
+			adminPassword, err := s.FindInstanceAdminPasswordById(context.Background(), *connectionInfo.InstanceId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceId)).SetInternal(err)
+			}
+			password = adminPassword
+		}
+
 		db, err := db.Open(connectionInfo.DBType, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
 			Username: connectionInfo.Username,
-			Password: connectionInfo.Password,
+			Password: password,
 			Host:     connectionInfo.Host,
 			Port:     connectionInfo.Port,
 		})

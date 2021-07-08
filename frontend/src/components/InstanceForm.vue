@@ -513,6 +513,7 @@ export default {
           : state.updatedPassword,
         host: state.instance.host,
         port: state.instance.port,
+        instanceId: props.create ? undefined : (state.instance as Instance).id,
       };
       store
         .dispatch("sql/ping", connectionInfo)
