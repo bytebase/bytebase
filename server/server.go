@@ -2,13 +2,12 @@ package server
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
-	"net/http"
 	"strings"
 	"time"
+
+	_ "embed"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/casbin/casbin/v2"
@@ -58,12 +57,6 @@ type Server struct {
 	plan      api.PlanType
 }
 
-//go:embed dist
-var embededFiles embed.FS
-
-//go:embed dist/index.html
-var indexContent string
-
 //go:embed acl_casbin_model.conf
 var casbinModel string
 
@@ -76,28 +69,12 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
-func getFileSystem() http.FileSystem {
-	fsys, err := fs.Sub(embededFiles, "dist")
-	if err != nil {
-		panic(err)
-	}
-
-	return http.FS(fsys)
-}
-
 func NewServer(logger *zap.Logger, version string, host string, port int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
-	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
-	e.GET("/*", func(c echo.Context) error {
-		return c.HTML(http.StatusOK, indexContent)
-	})
-
-	assetHandler := http.FileServer(getFileSystem())
-	e.GET("/assets/*", echo.WrapHandler(assetHandler))
+	embedFrontend(logger, e)
 
 	s := &Server{
 		l:            logger,
