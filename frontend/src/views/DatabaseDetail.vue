@@ -280,6 +280,7 @@
         id="project"
         name="project"
         :allowedRoleList="['OWNER']"
+        :includeDefaultProject="true"
         :selectedId="state.editingProjectId"
         @select-project-id="
           (projectId) => {

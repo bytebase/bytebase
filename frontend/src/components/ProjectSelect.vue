@@ -11,7 +11,13 @@
     <option disabled :selected="UNKNOWN_ID == state.selectedId">
       Select project
     </option>
-    <option v-if="state.selectedId == DEFAULT_PROJECT_ID" :selected="true">
+    <!-- If includeDefaultProject is false but the selected project is the default
+         project, we will show it. If includeDefaultProject is true, then it's
+         already in the list, so no need to show it twice -->
+    <option
+      v-if="!includeDefaultProject && state.selectedId == DEFAULT_PROJECT_ID"
+      :selected="true"
+    >
       Default
     </option>
     <!-- It may happen the selected id might not be in the project list.
@@ -84,6 +90,10 @@ export default {
       default: ["OWNER", "DEVELOPER"],
       type: Object as PropType<ProjectRoleType[]>,
     },
+    includeDefaultProject: {
+      default: false,
+      type: Boolean,
+    },
   },
   setup(props, { emit }) {
     const store = useStore();
@@ -114,11 +124,19 @@ export default {
         ["NORMAL", "ARCHIVED"]
       );
 
+      if (props.includeDefaultProject) {
+        list.unshift(store.getters["project/projectById"](DEFAULT_PROJECT_ID));
+      }
+
       if (!hasAdminFeature || isDBAOrOwner(currentUser.value.role)) {
         return list;
       }
 
       return list.filter((project: Project) => {
+        if (project.id == DEFAULT_PROJECT_ID) {
+          return true;
+        }
+
         for (const member of project.memberList) {
           if (
             currentUser.value.id == member.principal.id &&
