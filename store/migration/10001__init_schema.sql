@@ -385,6 +385,9 @@ CREATE TABLE data_source (
     `type` TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
     `password` TEXT NOT NULL,
+    ssl_key TEXT NOT NULL DEFAULT '',
+    ssl_cert TEXT NOT NULL DEFAULT '',
+    ssl_ca TEXT NOT NULL DEFAULT '',
     UNIQUE(database_id, name)
 );
 
