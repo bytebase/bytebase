@@ -3,7 +3,7 @@
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-beta-green)
 
-![Screenshot](./docs/assets/Overview1.png)
+![Screenshot](./docs/assets/overview1.png)
 
 [Bytebase](https://bytebase.com/) is a zero-config, dependency-free database schema change and version control management tool for teams. It supports 2 mainstream schema change workflow:
 
