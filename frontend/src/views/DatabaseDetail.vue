@@ -321,7 +321,13 @@ import TableTable from "../components/TableTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
-import { DataSource, ProjectId, DataSourcePatch, UNKNOWN_ID } from "../types";
+import {
+  DataSource,
+  ProjectId,
+  DataSourcePatch,
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+} from "../types";
 import { cloneDeep, isEqual } from "lodash";
 
 interface LocalState {
@@ -385,8 +391,15 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
-    // Workspace owner, dba or db's project owner can transfer the project
+    // Prject can be transferred if meets either of the condition below:
+    // - Database is in default project
+    // - Workspace owner, dba
+    // - db's project owner
     const allowChangeProject = computed(() => {
+      if (database.value.project.id == DEFAULT_PROJECT_ID) {
+        return true;
+      }
+
       if (isCurrentUserDBAOrOwner.value) {
         return true;
       }
