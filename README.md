@@ -60,10 +60,13 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 - Go (1.16 or later)
 - Yarn
+- [Air](https://github.com/cosmtrek/air#installation) (For backend live reload)
 
 ### Steps
 
-1.  Start backend (with live reload)
+1.  Install [Air](https://github.com/cosmtrek/air#installation)
+
+1.  Start backend using air (with live reload)
 
     ```bash
     $ air
