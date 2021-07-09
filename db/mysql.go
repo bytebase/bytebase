@@ -242,7 +242,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	}
 
 	// If the migration type is not baseline, then we can only proceed if there is existing baseline
-	// This check is also wrapped in transaction to avoid edge case where two baselings are running concurrently.
+	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	if m.Type != Baseline {
 		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
 		if err != nil {
