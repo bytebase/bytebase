@@ -54,7 +54,13 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 1. It requires zero config.
 1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/docs/assets/techstack.svg)
+**Tech Stack**
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.svg)
+
+**Data Model**
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
 ### Prerequisites
 
