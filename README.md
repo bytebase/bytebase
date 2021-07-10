@@ -1,9 +1,9 @@
-# <a href="https://bytebase.com"><img alt="Bytebase" src="./frontend/src/assets/logo.svg" height="56px" /></a>
+# <a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/frontend/src/assets/logo.svg" height="56px" /></a>
 
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-beta-green)
 
-![Screenshot](./docs/assets/overview1.png)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview1.png)
 
 [Bytebase](https://bytebase.com/) is a zero-config, dependency-free database schema change and version control management tool for teams. It supports 2 mainstream schema change workflow:
 
@@ -54,7 +54,7 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 1. It requires zero config.
 1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
-![Screenshot](./docs/assets/techstack.svg)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/docs/assets/techstack.svg)
 
 ### Prerequisites
 
