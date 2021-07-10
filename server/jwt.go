@@ -40,7 +40,7 @@ const (
 	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
 	cookieExpDuration = refreshTokenDuration - 1*time.Minute
 
-	// Conext section
+	// Context section
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIdContextKey = "principal-id"
@@ -198,7 +198,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
-				// If expiration error is the only error,  we will clear the err
+				// If expiration error is the only error, we will clear the err
 				// and generate new access token and refresh token
 				if ve.Errors == jwt.ValidationErrorExpired {
 					err = nil

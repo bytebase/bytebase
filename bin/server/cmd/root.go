@@ -120,7 +120,7 @@ func init() {
 type profile struct {
 	// mode can be "release" or "dev"
 	mode string
-	// dns points to where Bytebase stores its own data
+	// dsn points to where Bytebase stores its own data
 	dsn string
 	// seedDir points to where to populate the initial data.
 	seedDir string
