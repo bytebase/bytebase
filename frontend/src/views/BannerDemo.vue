@@ -36,7 +36,7 @@
               hover:bg-indigo-50
             "
           >
-            Deploy yours in 15 seconds
+            Deploy yours in 5 seconds
             <svg
               class="ml-1 w-6 h-6"
               fill="none"
