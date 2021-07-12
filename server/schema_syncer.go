@@ -59,7 +59,7 @@ func (s *SchemaSyncer) Run() error {
 					go func(instance *api.Instance) {
 						resultSet := s.server.SyncSchema(instance)
 						if resultSet.Error != "" {
-							s.l.Error("Failed to sync instance",
+							s.l.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),
 								zap.String("name", instance.Name),
 								zap.String("error", resultSet.Error))
