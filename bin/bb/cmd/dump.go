@@ -2,7 +2,7 @@
 package cmd
 
 import (
-	"github.com/bytebase/bb/dump"
+	"github.com/bytebase/bytebase/bin/bb/dump"
 	"github.com/spf13/cobra"
 )
 

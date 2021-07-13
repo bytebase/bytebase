@@ -1,0 +1,13 @@
+root = "."
+tmp_dir = ".air"
+
+[build]
+  bin = "./.air/bb version"
+  cmd = "go build -o ./.air/bb ./bin/bb/main.go"
+  delay = 1000
+  exclude_dir = [".air", "vendor", "frontend"]
+  exclude_file = []
+  exclude_regex = []
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = ""

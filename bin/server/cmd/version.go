@@ -19,7 +19,7 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of Bytebase",
+	Short: "Print the version of Bytebase",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Bytebase version: %s\n", version)
 		fmt.Printf("Golang version: %s\n", goversion)
