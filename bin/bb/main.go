@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/bytebase/bb/cmd"
+	"github.com/bytebase/bytebase/bin/bb/cmd"
 )
 
 func main() {
