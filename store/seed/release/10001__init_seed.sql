@@ -33,7 +33,8 @@ VALUES
         1
     );
 
--- Create 1 "test" and 1 "prod" instance (including * database and admin data source)
+-- Create 1 "test", 1 "prod" instance (including * database and admin data source)
+-- Both instances contains the connection info we expect user to setup according to https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing
 -- "test" instance
 INSERT INTO
     instance (
@@ -53,11 +54,11 @@ VALUES
         1,
         1,
         101,
-        'On-premises Test MySQL',
+        'MySQL Test',
         'MYSQL',
-        'mysql.test.example.com',
+        '127.0.0.1',
         '3306',
-        'bytebase.com'
+        'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
     );
 
 INSERT INTO
@@ -97,7 +98,7 @@ INSERT INTO
         name,
         TYPE,
         username,
-        PASSWORD
+        `password`
     )
 VALUES
     (
@@ -108,8 +109,8 @@ VALUES
         101,
         'Admin data source',
         'ADMIN',
-        'admin',
-        ''
+        'root',
+        'testpwd1'
     );
 
 -- "prod" instance
@@ -131,11 +132,11 @@ VALUES
         1,
         1,
         102,
-        'On-premises Prod MySQL',
+        'MySQL Prod',
         'MYSQL',
-        'mysql.prod.example.com',
+        '127.0.0.1',
         '3306',
-        'bytebase.com'
+        'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
     );
 
 INSERT INTO
@@ -175,7 +176,7 @@ INSERT INTO
         name,
         TYPE,
         username,
-        PASSWORD
+        `password`
     )
 VALUES
     (
@@ -186,8 +187,8 @@ VALUES
         102,
         'Admin data source',
         'ADMIN',
-        'admin',
-        ''
+        'root',
+        'testpwd1'
     );
 
 -- Create pipeline/stage/task/issue for onboarding
