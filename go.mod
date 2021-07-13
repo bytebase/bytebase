@@ -10,6 +10,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/jsonapi v1.0.0
 	github.com/labstack/echo/v4 v4.2.2
+	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
