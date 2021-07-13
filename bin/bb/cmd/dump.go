@@ -7,12 +7,18 @@ import (
 )
 
 func init() {
-	dumpCmd.Flags().StringVar(&databaseType, "database-type", "mysql", "Database type such as `mysql`.")
-	dumpCmd.Flags().StringVar(&username, "username", "root", "User name to login database.")
+	dumpCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql, or pg).")
+	dumpCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
 	dumpCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
-	dumpCmd.Flags().StringVar(&hostname, "hostname", "localhost", "Hostname of database.")
-	dumpCmd.Flags().StringVar(&port, "port", "3306", "port of database.")
-	dumpCmd.Flags().StringVar(&directory, "directory", "", "directory to dump baselines; output to stdout if unspecified.")
+	dumpCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
+	dumpCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
+	dumpCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
+	dumpCmd.Flags().StringVar(&directory, "directory", "", "Directory to dump baselines; output to stdout if unspecified.")
+
+	// tls flags for SSL connection.
+	dumpCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
+	dumpCmd.Flags().StringVar(&sslCA, "ssl-cert", "", "X509 cert in PEM format.")
+	dumpCmd.Flags().StringVar(&sslCA, "ssl-key", "", "X509 key in PEM format.")
 
 	rootCmd.AddCommand(dumpCmd)
 }
@@ -23,13 +29,25 @@ var (
 	password     string
 	hostname     string
 	port         string
+	database     string
 	directory    string
+
+	// SSL flags.
+	sslCA               string // server-ca.pem
+	sslCert             string // client-cert.pem
+	sslKey              string // client-key.pem
+	sslVerifyServerName string // The server name to be verified.
 
 	dumpCmd = &cobra.Command{
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return dump.Dump(databaseType, username, password, hostname, port, directory)
+			tlsCfg := dump.TlsConfig{
+				SslCA:   sslCA,
+				SslCert: sslCert,
+				SslKey:  sslKey,
+			}
+			return dump.Dump(databaseType, username, password, hostname, port, database, directory, tlsCfg)
 		},
 	}
 )
