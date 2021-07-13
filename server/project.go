@@ -13,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/google/jsonapi"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -160,7 +160,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
-		repositoryCreate.WebhookEndpointId = uuid.NewV4().String()
+		v4, err := uuid.NewRandom()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate uuid").SetInternal(err)
+		}
+		repositoryCreate.WebhookEndpointId = v4.String()
 		repositoryCreate.WebhookSecretToken = bytebase.RandomString(gitlab.SECRET_TOKEN_LENGTH)
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
