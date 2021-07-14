@@ -1,18 +1,18 @@
-import { CommandId, CommandRegisterId, PrincipalId } from "./id";
-import { Principal } from "./principal";
-import { Member } from "./member";
-import { Environment } from "./environment";
-import { Project, ProjectMember } from "./project";
-import { Instance } from "./instance";
+import { Activity } from "./activity";
+import { Bookmark } from "./bookmark";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
+import { Environment } from "./environment";
+import { CommandId, CommandRegisterId, PrincipalId } from "./id";
+import { Instance } from "./instance";
 import { Issue } from "./issue";
-import { Pipeline, Stage, Task } from "./pipeline";
-import { Activity } from "./activity";
+import { Member } from "./member";
 import { Message } from "./message";
-import { Bookmark } from "./bookmark";
-import { VCS } from "./vcs";
+import { Pipeline, Stage, Task } from "./pipeline";
+import { Principal } from "./principal";
+import { Project, ProjectMember } from "./project";
 import { Repository } from "./repository";
+import { VCS } from "./vcs";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -164,6 +164,7 @@ export const unknown = (
     updatedTs: 0,
     memberList: [],
     workflowType: "UI",
+    visibility: "PUBLIC",
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -442,6 +443,7 @@ export const empty = (
     updatedTs: 0,
     memberList: [],
     workflowType: "UI",
+    visibility: "PUBLIC",
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {

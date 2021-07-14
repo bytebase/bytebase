@@ -1,22 +1,22 @@
 import axios from "axios";
 import {
+  empty,
+  EMPTY_ID,
+  MemberId,
+  Principal,
   PrincipalId,
-  ProjectId,
   Project,
   ProjectCreate,
-  ProjectPatch,
-  ProjectState,
-  ResourceObject,
-  unknown,
+  ProjectId,
   ProjectMember,
   ProjectMemberCreate,
   ProjectMemberPatch,
-  MemberId,
+  ProjectPatch,
+  ProjectState,
   ResourceIdentifier,
+  ResourceObject,
   RowStatus,
-  EMPTY_ID,
-  empty,
-  Principal,
+  unknown,
 } from "../../types";
 
 function convert(
@@ -38,6 +38,7 @@ function convert(
     updatedTs: attrs.updatedTs,
     memberList: [],
     workflowType: attrs.workflowType,
+    visibility: attrs.visibility,
   };
 
   const memberList: ProjectMember[] = [];

@@ -171,7 +171,8 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
     `key` TEXT NOT NULL UNIQUE,
-    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS'))
+    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
+    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE'))
 );
 
 INSERT INTO
@@ -181,7 +182,8 @@ INSERT INTO
         updater_id,
         name,
         `key`,
-        workflow_type
+        workflow_type,
+        visibility
     )
 VALUES
     (
@@ -190,7 +192,8 @@ VALUES
         1,
         'Default',
         'DEFAULT',
-        'UI'
+        'UI',
+        'PUBLIC'
     );
 
 UPDATE
