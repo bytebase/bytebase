@@ -9,6 +9,8 @@ export type ProjectRoleType = "OWNER" | "DEVELOPER";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 
+export type ProjectVisibility = "PUBLIC" | "PRIVATE";
+
 // Project
 export type Project = {
   id: ProjectId;
@@ -27,6 +29,7 @@ export type Project = {
   // to do various access check.
   memberList: ProjectMember[];
   workflowType: ProjectWorkflowType;
+  visibility: ProjectVisibility;
 };
 
 export type ProjectCreate = {

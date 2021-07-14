@@ -5,7 +5,8 @@ INSERT INTO
         updater_id,
         name,
         `key`,
-        workflow_type
+        workflow_type,
+        visibility
     )
 VALUES
     (
@@ -14,7 +15,8 @@ VALUES
         101,
         'Test (UI)',
         'TEST',
-        'UI'
+        'UI',
+        'PUBLIC'
     );
 
 INSERT INTO
@@ -24,7 +26,8 @@ INSERT INTO
         updater_id,
         name,
         `key`,
-        workflow_type
+        workflow_type,
+        visibility
     )
 VALUES
     (
@@ -33,7 +36,8 @@ VALUES
         101,
         'Shop (Git)',
         'SHP',
-        'VCS'
+        'VCS',
+        'PUBLIC'
     );
 
 INSERT INTO
@@ -43,7 +47,8 @@ INSERT INTO
         updater_id,
         name,
         `key`,
-        workflow_type
+        workflow_type,
+        visibility
     )
 VALUES
     (
@@ -52,7 +57,8 @@ VALUES
         101,
         'Blog (Git)',
         'BLG',
-        'VCS'
+        'VCS',
+        'PUBLIC'
     );
 
 INSERT INTO
@@ -63,7 +69,8 @@ INSERT INTO
         updater_id,
         name,
         `key`,
-        workflow_type
+        workflow_type,
+        visibility
     )
 VALUES
     (
@@ -73,5 +80,6 @@ VALUES
         101,
         'Retired Project',
         'RTR',
-        'UI'
+        'UI',
+        'PUBLIC'
     );

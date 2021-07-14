@@ -25,6 +25,23 @@ func (e ProjectWorkflowType) String() string {
 	return ""
 }
 
+type ProjectVisibility string
+
+const (
+	PUBLIC  ProjectVisibility = "PUBLIC"
+	PRIVATE ProjectVisibility = "PRIVATE"
+)
+
+func (e ProjectVisibility) String() string {
+	switch e {
+	case PUBLIC:
+		return "PUBLIC"
+	case PRIVATE:
+		return "PRIVATE"
+	}
+	return ""
+}
+
 type Project struct {
 	ID int `jsonapi:"primary,project"`
 
@@ -44,6 +61,7 @@ type Project struct {
 	Name         string              `jsonapi:"attr,name"`
 	Key          string              `jsonapi:"attr,key"`
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
+	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
 }
 
 type ProjectCreate struct {
