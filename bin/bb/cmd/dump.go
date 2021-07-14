@@ -17,8 +17,8 @@ func init() {
 
 	// tls flags for SSL connection.
 	dumpCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
-	dumpCmd.Flags().StringVar(&sslCA, "ssl-cert", "", "X509 cert in PEM format.")
-	dumpCmd.Flags().StringVar(&sslCA, "ssl-key", "", "X509 key in PEM format.")
+	dumpCmd.Flags().StringVar(&sslCert, "ssl-cert", "", "X509 cert in PEM format.")
+	dumpCmd.Flags().StringVar(&sslKey, "ssl-key", "", "X509 key in PEM format.")
 
 	rootCmd.AddCommand(dumpCmd)
 }
