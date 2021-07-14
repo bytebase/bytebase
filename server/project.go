@@ -160,11 +160,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
-		v4, err := uuid.NewRandom()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate uuid").SetInternal(err)
-		}
-		repositoryCreate.WebhookEndpointId = v4.String()
+		repositoryCreate.WebhookEndpointId = uuid.New().String()
 		repositoryCreate.WebhookSecretToken = bytebase.RandomString(gitlab.SECRET_TOKEN_LENGTH)
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
