@@ -28,8 +28,11 @@ func Dump(databaseType, username, password, hostname, port, database, directory 
 
 	switch databaseType {
 	case "mysql":
-		if username == "" && port == "" {
-			username, port = "root", "3306"
+		if username == "" {
+			username = "root"
+		}
+		if port == "" {
+			port = "3306"
 		}
 		tlsConfig, err := tlsCfg.GetSslConfig()
 		if err != nil {
