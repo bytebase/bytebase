@@ -19,7 +19,7 @@ fi
 
 OUTPUT_BINARY=$OUTPUT_DIR/bb
 
-if [[ `dirname "${BASH_SOURCE[0]}"` != "." ]]
+if [ `dirname "${BASH_SOURCE[0]}"` != "." ]
 then
   echo "${RED}Precheck failed.${NC} Build script must run from Bytebase root directory ${SCRIPT_DIR}"; exit 1;
 fi
