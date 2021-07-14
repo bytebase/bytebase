@@ -19,13 +19,13 @@ fi
 
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
-if [[ `dirname "${BASH_SOURCE[0]}"` != "." ]]
+if [ `dirname "${BASH_SOURCE[0]}"` != "." ]
 then
   echo "${RED}Precheck failed.${NC} Build script must run from Bytebase root directory ${SCRIPT_DIR}"; exit 1;
 fi
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [[ "${GO_VERSION}" < "1.16" ]];
+if [ "${GO_VERSION}" < "1.16" ];
 then
    echo "${RED}Precheck failed.${NC} Require go version >= 1.16. Current version ${GO_VERSION}."; exit 1;
 fi
