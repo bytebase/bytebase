@@ -122,12 +122,13 @@ type MigrationHistory struct {
 	UpdatedTs int64  `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Database          string           `jsonapi:"attr,database"`
-	Type              db.MigrationType `jsonapi:"attr,type"`
-	Version           string           `jsonapi:"attr,version"`
-	Description       string           `jsonapi:"attr,description"`
-	Statement         string           `jsonapi:"attr,statement"`
-	ExecutionDuration int              `jsonapi:"attr,executionDuration"`
+	Database          string             `jsonapi:"attr,database"`
+	Engine            db.MigrationEngine `jsonapi:"attr,engine"`
+	Type              db.MigrationType   `jsonapi:"attr,type"`
+	Version           string             `jsonapi:"attr,version"`
+	Description       string             `jsonapi:"attr,description"`
+	Statement         string             `jsonapi:"attr,statement"`
+	ExecutionDuration int                `jsonapi:"attr,executionDuration"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future
 	IssueId string `jsonapi:"attr,issueId"`
 	Payload string `jsonapi:"attr,payload"`

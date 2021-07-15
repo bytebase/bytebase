@@ -224,7 +224,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Version)
+	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, tx, m.Namespace, m.Version)
+	version, err := checkOutofOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
 		return err
 	}
@@ -241,9 +241,9 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return fmt.Errorf("database '%s' has already applied version %s which is higher than %s", m.Database, *version, m.Version)
 	}
 
-	// If the migration type is not baseline, then we can only proceed if there is existing baseline
+	// If the migration engine is VCS and type is not baseline, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Type != Baseline {
+	if m.Engine == VCS && m.Type != Baseline {
 		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
 		if err != nil {
 			return err
@@ -254,13 +254,15 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		}
 	}
 
-	sequence, err := findNextSequence(ctx, tx, m.Namespace, m.Type == Baseline)
+	// VCS based SQL migration requires existing baselining
+	requireBaseline := m.Engine == VCS && m.Type == Sql
+	sequence, err := findNextSequence(ctx, tx, m.Namespace, requireBaseline)
 	if err != nil {
 		return err
 	}
 
-	// Phase 2 - Executing migration unless it's baselining
-	if m.Type != Baseline {
+	// Phase 2 - Executing migration unless it's VCS baselining
+	if m.Engine != VCS || m.Type != Baseline {
 		_, err = tx.ExecContext(ctx, statement)
 		if err != nil {
 			return formatError(err)
@@ -276,6 +278,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 			updated_ts,
 			namespace,
 			sequence,
+			`+"`engine`,"+`
 			`+"`type`,"+`
 			version,
 			description,
@@ -284,12 +287,13 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 			issue_id,
 			payload
 		)
-		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		m.Creator,
 		m.Creator,
 		m.Namespace,
 		sequence,
+		m.Engine,
 		m.Type,
 		m.Version,
 		m.Description,
@@ -329,6 +333,7 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 		    updated_ts,
 			namespace,
 			sequence,
+			`+"`engine`,"+`
 			`+"`type`,"+`
 			version,
 			description,
@@ -357,6 +362,7 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 			&history.UpdatedTs,
 			&history.Namespace,
 			&history.Sequence,
+			&history.Engine,
 			&history.Type,
 			&history.Version,
 			&history.Description,
@@ -397,10 +403,10 @@ func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, erro
 	return true, nil
 }
 
-func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, version string) (bool, error) {
-	args := []interface{}{namespace, version}
+func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine MigrationEngine, version string) (bool, error) {
+	args := []interface{}{namespace, engine.String(), version}
 	row, err := tx.QueryContext(ctx, `
-		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND version = ?
+		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND `+"`engine` = ? AND version = ?"+`
 	`,
 		args...,
 	)
@@ -416,10 +422,10 @@ func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, ve
 	return false, nil
 }
 
-func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, version string) (*string, error) {
-	args := []interface{}{namespace, version}
+func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine MigrationEngine, version string) (*string, error) {
+	args := []interface{}{namespace, engine.String(), version}
 	row, err := tx.QueryContext(ctx, `
-		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND STRCMP(?, version) = -1
+		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND `+"`engine` = ? AND STRCMP(?, version) = -1"+`
 	`,
 		args...,
 	)
@@ -442,7 +448,7 @@ func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, v
 	return nil, nil
 }
 
-func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
+func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
 	args := []interface{}{namespace}
 	row, err := tx.QueryContext(ctx, `
 		SELECT MAX(sequence) + 1 FROM bytebase.migration_history WHERE namespace = ?
@@ -462,8 +468,8 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, baselin
 	}
 
 	if !sequence.Valid {
-		// Returns 1 if we are creating the first baseline
-		if baseline {
+		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
+		if !requireBaseline {
 			return 1, nil
 		}
 

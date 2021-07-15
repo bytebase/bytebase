@@ -51,6 +51,8 @@ CREATE TABLE bytebase.migration_history (
     namespace TEXT NOT NULL,
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence INTEGER UNSIGNED NOT NULL,
+    -- We call it engine because maybe we could load history from other migration tool.
+    `engine` ENUM('UI', 'VCS') NOT NULL,
     `type` ENUM('BASELINE', 'SQL', 'SQL_ROLLBACK') NOT NULL,
     version TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -63,6 +65,6 @@ CREATE TABLE bytebase.migration_history (
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase.migration_history (namespace(256), sequence);
 
-CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_version ON bytebase.migration_history (namespace(256), version(256));
+CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), `engine`, version(256));
 
-CREATE INDEX bytebase_idx_migration_history_namespace_type ON bytebase.migration_history(namespace(256), `type`);
+CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), `engine`, `type`);

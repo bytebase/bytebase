@@ -58,6 +58,23 @@ type DriverConfig struct {
 
 type DriverFunc func(DriverConfig) Driver
 
+type MigrationEngine string
+
+const (
+	UI  MigrationEngine = "UI"
+	VCS MigrationEngine = "VCS"
+)
+
+func (e MigrationEngine) String() string {
+	switch e {
+	case UI:
+		return "UI"
+	case VCS:
+		return "VCS"
+	}
+	return "UNKNOWN"
+}
+
 type MigrationType string
 
 const (
@@ -84,6 +101,7 @@ type MigrationInfo struct {
 	Namespace   string
 	Database    string
 	Environment string
+	Engine      MigrationEngine
 	Type        MigrationType
 	Description string
 	Creator     string
@@ -110,6 +128,7 @@ func ParseMigrationInfo(fullPath string, baseDir string) (*MigrationInfo, error)
 	}
 
 	mi := &MigrationInfo{
+		Engine:      VCS,
 		Version:     parts[0],
 		Namespace:   parts[1],
 		Database:    parts[1],
@@ -154,6 +173,7 @@ type MigrationHistory struct {
 
 	Namespace         string
 	Sequence          int
+	Engine            MigrationEngine
 	Type              MigrationType
 	Version           string
 	Description       string
