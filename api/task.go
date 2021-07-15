@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 const ONBOARDING_TASK_ID1 = 101
@@ -56,9 +58,9 @@ type TaskDatabaseCreatePayload struct {
 }
 
 type TaskDatabaseSchemaUpdatePayload struct {
-	Statement         string        `json:"statement,omitempty"`
-	RollbackStatement string        `json:"rollbackStatement,omitempty"`
-	VCSPushEvent      *VCSPushEvent `json:"pushEvent,omitempty"`
+	Statement         string               `json:"statement,omitempty"`
+	RollbackStatement string               `json:"rollbackStatement,omitempty"`
+	VCSPushEvent      *common.VCSPushEvent `json:"pushEvent,omitempty"`
 }
 
 type Task struct {
@@ -113,7 +115,7 @@ type TaskCreate struct {
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
-	VCSPushEvent      *VCSPushEvent
+	VCSPushEvent      *common.VCSPushEvent
 }
 
 type TaskFind struct {

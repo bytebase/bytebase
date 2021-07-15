@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -74,6 +75,10 @@ func (e MigrationType) String() string {
 	return "UNKNOWN"
 }
 
+type MigrationInfoPayload struct {
+	VCSPushEvent *common.VCSPushEvent `json:"pushEvent,omitempty"`
+}
+
 type MigrationInfo struct {
 	Version     string
 	Namespace   string
@@ -82,6 +87,8 @@ type MigrationInfo struct {
 	Type        MigrationType
 	Description string
 	Creator     string
+	IssueId     string
+	Payload     string
 }
 
 // ParseMigrationInfo derives MigrationInfo from fullPath and baseDir
@@ -152,6 +159,8 @@ type MigrationHistory struct {
 	Description       string
 	Statement         string
 	ExecutionDuration int
+	IssueId           string
+	Payload           string
 }
 
 type MigrationHistoryFind struct {

@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/db"
 	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/labstack/echo/v4"
@@ -180,7 +181,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					if err != nil {
 						s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
 					}
-					vcsPushEvent := api.VCSPushEvent{
+					vcsPushEvent := common.VCSPushEvent{
 						VCSType:            repository.VCS.Type,
 						BaseDirectory:      repository.BaseDirectory,
 						Ref:                pushEvent.Ref,
@@ -188,7 +189,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						RepositoryURL:      pushEvent.Project.WebURL,
 						RepositoryFullPath: pushEvent.Project.FullPath,
 						AuthorName:         pushEvent.AuthorName,
-						FileCommit: api.VCSFileCommit{
+						FileCommit: common.VCSFileCommit{
 							ID:         commit.ID,
 							Title:      commit.Title,
 							Message:    commit.Message,

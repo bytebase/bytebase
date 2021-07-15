@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -49,6 +50,30 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			return true, "", fmt.Errorf("failed to start schema migration, error: %w", err)
 		}
 		mi.Creator = payload.VCSPushEvent.FileCommit.AuthorName
+
+		miPayload := &db.MigrationInfoPayload{
+			VCSPushEvent: payload.VCSPushEvent,
+		}
+		bytes, err := json.Marshal(miPayload)
+		if err != nil {
+			return true, "", fmt.Errorf("failed to start schema migration, unable to marshal vcs push event payload %w", err)
+		}
+		mi.Payload = string(bytes)
+	}
+
+	issueFind := &api.IssueFind{
+		PipelineId: &task.PipelineId,
+	}
+	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	if err != nil {
+		// If somehow we unable about to find the issue, we just emit the error since it's not
+		// critical enough to fail the entire operation.
+		exec.l.Error("Failed to fetch containing issue for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	} else {
+		mi.IssueId = strconv.Itoa(issue.ID)
 	}
 
 	sql := strings.TrimSpace(payload.Statement)

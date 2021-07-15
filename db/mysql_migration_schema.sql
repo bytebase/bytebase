@@ -56,7 +56,9 @@ CREATE TABLE bytebase.migration_history (
     description TEXT NOT NULL,
     -- Recorded the migration statement
     statement TEXT NOT NULL,
-    execution_duration INTEGER NOT NULL
+    execution_duration INTEGER NOT NULL,
+    issue_id TEXT NOT NULL,
+    payload TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase.migration_history (namespace(256), sequence);

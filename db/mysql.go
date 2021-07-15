@@ -280,9 +280,11 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 			version,
 			description,
 			statement,
-			execution_duration
+			execution_duration,
+			issue_id,
+			payload
 		)
-		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		m.Creator,
 		m.Creator,
@@ -293,6 +295,8 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		m.Description,
 		statement,
 		time.Now().Unix()-startedTs,
+		m.IssueId,
+		m.Payload,
 	)
 
 	if err != nil {
@@ -329,7 +333,9 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 			version,
 			description,
 		    statement,
-		    execution_duration
+		    execution_duration,
+			issue_id,
+			payload
 		FROM bytebase.migration_history
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -356,6 +362,8 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 			&history.Description,
 			&history.Statement,
 			&history.ExecutionDuration,
+			&history.IssueId,
+			&history.Payload,
 		); err != nil {
 			return nil, err
 		}

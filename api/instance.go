@@ -128,6 +128,9 @@ type MigrationHistory struct {
 	Description       string           `jsonapi:"attr,description"`
 	Statement         string           `jsonapi:"attr,statement"`
 	ExecutionDuration int              `jsonapi:"attr,executionDuration"`
+	// This is a string instead of int as the issue id may come from other issue tracking system in the future
+	IssueId string `jsonapi:"attr,issueId"`
+	Payload string `jsonapi:"attr,payload"`
 }
 
 type InstanceService interface {

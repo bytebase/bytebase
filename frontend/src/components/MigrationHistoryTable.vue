@@ -9,22 +9,29 @@
   >
     <template v-slot:body="{ rowData: history }">
       <BBTableCell :leftPadding="4" class="w-16 table-cell">
-        {{ history.creator }}
-      </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
-        {{ humanizeTs(history.createdTs) }}
-      </BBTableCell>
-      <BBTableCell class="w-32 table-cell">
         {{ history.version }}
       </BBTableCell>
-      <BBTableCell class="w-8 table-cell truncate">
-        {{ history.statement }}
+      <BBTableCell class="w-16 table-cell">
+        {{ history.type }}
       </BBTableCell>
-      <BBTableCell class="w-8 table-cell truncate">
+      <BBTableCell class="w-16 table-cell">
+        <template v-if="history.issueId">
+          <router-link :to="`/issue/${history.issueId}`" class="normal-link"
+            >{{ history.issueId }}
+          </router-link>
+        </template>
+      </BBTableCell>
+      <BBTableCell class="w-32 table-cell truncate">
         {{ history.description }}
       </BBTableCell>
       <BBTableCell class="w-16 table-cell">
         {{ secondsToString(history.executionDuration) }}
+      </BBTableCell>
+      <BBTableCell class="w-16 table-cell">
+        {{ humanizeTs(history.createdTs) }}
+      </BBTableCell>
+      <BBTableCell class="w-16 table-cell">
+        {{ history.creator }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -37,22 +44,25 @@ import { secondsToString } from "../utils";
 
 const COLUMN_LIST = [
   {
-    title: "Creator",
-  },
-  {
-    title: "Created",
-  },
-  {
     title: "Version",
   },
   {
-    title: "SQL",
+    title: "Type",
+  },
+  {
+    title: "Issue",
   },
   {
     title: "Description",
   },
   {
     title: "Duration",
+  },
+  {
+    title: "Created",
+  },
+  {
+    title: "Creator",
   },
 ];
 
