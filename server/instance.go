@@ -276,6 +276,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					Updater:           entry.Updater,
 					UpdatedTs:         entry.UpdatedTs,
 					Database:          entry.Namespace,
+					Engine:            entry.Engine,
 					Type:              entry.Type,
 					Version:           entry.Version,
 					Description:       entry.Description,

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/db"
@@ -35,6 +36,11 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		}
 	}()
 
+	if task.Database == nil {
+		return true, "", fmt.Errorf("missing database when updating schema")
+	}
+	databaseName := task.Database.Name
+
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, "", fmt.Errorf("invalid database schema update payload: %w", err)
@@ -43,7 +49,25 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	mi := &db.MigrationInfo{
 		Type: db.Sql,
 	}
-	if payload.VCSPushEvent != nil {
+	if payload.VCSPushEvent == nil {
+		mi.Engine = db.UI
+		creator, err := server.ComposePrincipalById(context.Background(), task.CreatorId)
+		if err != nil {
+			// If somehow we unable to find the principal, we just emit the error since it's not
+			// critical enough to fail the entire operation.
+			exec.l.Error("Failed to fetch creator for composing the migration info",
+				zap.Int("task_id", task.ID),
+				zap.Error(err),
+			)
+		} else {
+			mi.Creator = creator.Name
+		}
+		// Use the concatenation of current time and the task id to guarantee uniqueness in an ascending way.
+		mi.Version = strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(task.ID)}, ".")
+		mi.Database = databaseName
+		mi.Namespace = databaseName
+		mi.Description = task.Name
+	} else {
 		mi, err = db.ParseMigrationInfo(payload.VCSPushEvent.FileCommit.Added, payload.VCSPushEvent.BaseDirectory)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
@@ -66,7 +90,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 	issue, err := server.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
-		// If somehow we unable about to find the issue, we just emit the error since it's not
+		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
 		exec.l.Error("Failed to fetch containing issue for composing the migration info",
 			zap.Int("task_id", task.ID),
@@ -87,10 +111,6 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 
 	instance := task.Instance
-	databaseName := ""
-	if task.Database != nil {
-		databaseName = task.Database.Name
-	}
 	driver, err := db.Open(instance.Engine, db.DriverConfig{Logger: exec.l}, db.ConnectionConfig{
 		Username: instance.Username,
 		Password: instance.Password,
@@ -102,35 +122,24 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}
 
-	if payload.VCSPushEvent == nil {
-		exec.l.Debug("Start executing sql...",
-			zap.String("instance", instance.Name),
-			zap.String("database", databaseName),
-			zap.String("sql", sql),
-		)
+	exec.l.Debug("Start sql migration...",
+		zap.String("instance", instance.Name),
+		zap.String("database", databaseName),
+		zap.String("engine", mi.Engine.String()),
+		zap.String("type", mi.Type.String()),
+		zap.String("sql", sql),
+	)
 
-		if err := driver.Execute(ctx, sql); err != nil {
-			return true, "", err
-		}
-	} else {
-		exec.l.Debug("Start sql migration...",
-			zap.String("instance", instance.Name),
-			zap.String("database", databaseName),
-			zap.String("type", mi.Type.String()),
-			zap.String("sql", sql),
-		)
+	setup, err := driver.NeedsSetupMigration(ctx)
+	if err != nil {
+		return true, "", fmt.Errorf("failed to check migration setup for instance: %v, %w", instance.Name, err)
+	}
+	if setup {
+		return true, "", fmt.Errorf("missing migration schema for instance: %v", instance.Name)
+	}
 
-		setup, err := driver.NeedsSetupMigration(ctx)
-		if err != nil {
-			return true, "", fmt.Errorf("failed to check migration setup for instance: %v, %w", instance.Name, err)
-		}
-		if setup {
-			return true, "", fmt.Errorf("missing migration schema for instance: %v", instance.Name)
-		}
-
-		if err := driver.ExecuteMigration(ctx, mi, sql); err != nil {
-			return true, "", err
-		}
+	if err := driver.ExecuteMigration(ctx, mi, sql); err != nil {
+		return true, "", err
 	}
 
 	detail = fmt.Sprintf("Applied migration version %s to database '%s'", mi.Version, databaseName)

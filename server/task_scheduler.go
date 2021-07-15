@@ -109,6 +109,17 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
+					// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
+					// We may optimize this in the future since only some relationship info is needed by the executor
+					if err := s.server.ComposeTaskRelationship(context.Background(), task); err != nil {
+						s.l.Error("Failed to fetch task relationship",
+							zap.Int("id", task.ID),
+							zap.String("name", task.Name),
+							zap.String("type", string(task.Type)),
+						)
+						continue
+					}
+
 					done, detail, err := executor.RunOnce(context.Background(), s.server, task)
 					if done {
 						if err != nil {

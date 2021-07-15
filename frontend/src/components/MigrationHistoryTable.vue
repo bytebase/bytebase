@@ -8,7 +8,10 @@
     :rowClickable="false"
   >
     <template v-slot:body="{ rowData: history }">
-      <BBTableCell :leftPadding="4" class="w-16 table-cell">
+      <BBTableCell :leftPadding="4" class="w-8 table-cell">
+        {{ history.engine }}
+      </BBTableCell>
+      <BBTableCell class="w-16 table-cell">
         {{ history.version }}
       </BBTableCell>
       <BBTableCell class="w-16 table-cell">
@@ -43,6 +46,9 @@ import { MigrationHistory } from "../types";
 import { secondsToString } from "../utils";
 
 const COLUMN_LIST = [
+  {
+    title: "Workflow",
+  },
   {
     title: "Version",
   },

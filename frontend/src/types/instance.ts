@@ -65,6 +65,8 @@ export type InstanceMigration = {
   error: string;
 };
 
+export type MigrationEngine = "UI" | "VCS";
+
 export type MigrationType = "BASELINE" | "SQL";
 
 export type MigrationHistoryPayload = {
@@ -78,6 +80,7 @@ export type MigrationHistory = {
   updater: string;
   updatedTs: number;
   database: string;
+  engine: MigrationEngine;
   type: MigrationType;
   version: string;
   description: string;
