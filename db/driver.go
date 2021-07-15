@@ -137,6 +137,27 @@ func ParseMigrationInfo(fullPath string, baseDir string) (*MigrationInfo, error)
 	return mi, nil
 }
 
+type MigrationHistory struct {
+	ID int
+
+	Creator   string
+	CreatedTs int64
+	Updater   string
+	UpdatedTs int64
+
+	Namespace         string
+	Sequence          int
+	Type              MigrationType
+	Version           string
+	Description       string
+	Statement         string
+	ExecutionDuration int
+}
+
+type MigrationHistoryFind struct {
+	Database *string
+}
+
 type Driver interface {
 	open(config ConnectionConfig) (Driver, error)
 	Ping(ctx context.Context) error
@@ -150,6 +171,8 @@ type Driver interface {
 	SetupMigrationIfNeeded(ctx context.Context) error
 	// Execute migration will apply the statement and record the migration history on success.
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error
+	// Find the migration history list
+	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 }
 
 type ConnectionConfig struct {

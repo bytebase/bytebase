@@ -1,6 +1,6 @@
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { EnvironmentId, InstanceId } from "./id";
+import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
 import { Principal } from "./principal";
 
 export type EngineType = "MYSQL";
@@ -57,9 +57,25 @@ export type InstancePatch = {
   password?: string;
 };
 
-export type InstanceMigrationStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
+export type MigrationStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
 
 export type InstanceMigration = {
-  status: InstanceMigrationStatus;
+  status: MigrationStatus;
   error: string;
+};
+
+export type MigrationType = "BASELINE" | "SQL";
+
+export type MigrationHistory = {
+  id: MigrationHistoryId;
+  creator: string;
+  createdTs: number;
+  updater: string;
+  updatedTs: number;
+  database: string;
+  type: MigrationType;
+  version: string;
+  description: string;
+  statement: string;
+  executionDuration: number;
 };

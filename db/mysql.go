@@ -304,6 +304,71 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	return nil
 }
 
+func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error) {
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.Database; v != nil {
+		where, args = append(where, "namespace = ?"), append(args, *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT 
+		    id,
+			created_by,
+		    created_ts,
+		    updated_by,
+		    updated_ts,
+			namespace,
+			sequence,
+			`+"`type`,"+`
+			version,
+			description,
+		    statement,
+		    execution_duration
+		FROM bytebase.migration_history
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	list := make([]*MigrationHistory, 0)
+	for rows.Next() {
+		var history MigrationHistory
+		if err := rows.Scan(
+			&history.ID,
+			&history.Creator,
+			&history.CreatedTs,
+			&history.Updater,
+			&history.UpdatedTs,
+			&history.Namespace,
+			&history.Sequence,
+			&history.Type,
+			&history.Version,
+			&history.Description,
+			&history.Statement,
+			&history.ExecutionDuration,
+		); err != nil {
+			return nil, err
+		}
+
+		list = append(list, &history)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, error) {
 	args := []interface{}{namespace}
 	row, err := tx.QueryContext(ctx, `

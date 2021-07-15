@@ -1,4 +1,5 @@
 import { Activity } from "./activity";
+import { ServerInfo } from "./actuator";
 import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
@@ -6,27 +7,26 @@ import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
 import {
   CommandId,
+  DatabaseId,
   DataSourceId,
   InstanceId,
   IssueId,
-  ProjectId,
   PrincipalId,
-  DatabaseId,
+  ProjectId,
   VCSId,
 } from "./id";
-import { Instance } from "./instance";
+import { Instance, MigrationHistory } from "./instance";
 import { Issue } from "./issue";
+import { IssueSubscriber } from "./issueSubscriber";
 import { Member } from "./member";
 import { Message } from "./message";
+import { Notification } from "./notification";
 import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { Notification } from "./notification";
+import { Repository } from "./repository";
 import { Table } from "./table";
 import { VCS } from "./vcs";
-import { Repository } from "./repository";
-import { ServerInfo } from "./actuator";
-import { IssueSubscriber } from "./issueSubscriber";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -89,6 +89,8 @@ export interface EnvironmentState {
 
 export interface InstanceState {
   instanceById: Map<InstanceId, Instance>;
+  // The key is a concatenation of instance id and database name
+  migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }
 
 export interface DataSourceState {

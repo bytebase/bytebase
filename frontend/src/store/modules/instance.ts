@@ -1,20 +1,21 @@
 import axios from "axios";
 import {
-  InstanceId,
-  Instance,
-  InstanceCreate,
-  InstanceState,
-  ResourceObject,
-  Environment,
-  EnvironmentId,
-  ResourceIdentifier,
-  unknown,
-  InstancePatch,
-  RowStatus,
   empty,
   EMPTY_ID,
+  Environment,
+  EnvironmentId,
+  Instance,
+  InstanceCreate,
+  InstanceId,
   InstanceMigration,
+  InstancePatch,
+  InstanceState,
+  MigrationHistory,
+  ResourceIdentifier,
+  ResourceObject,
+  RowStatus,
   SqlResultSet,
+  unknown,
 } from "../../types";
 
 function convert(
@@ -47,8 +48,16 @@ function convert(
   };
 }
 
+function convertMigrationHistory(history: ResourceObject): MigrationHistory {
+  return {
+    ...(history.attributes as Omit<MigrationHistory, "id">),
+    id: parseInt(history.id),
+  };
+}
+
 const state: () => InstanceState = () => ({
   instanceById: new Map(),
+  migrationHistoryListByIdAndDatabaseName: new Map(),
 });
 
 const getters = {
@@ -93,6 +102,16 @@ const getters = {
 
       return (
         state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
+      );
+    },
+
+  migrationHistoryListByInstanceIdAndDatabaseName:
+    (state: InstanceState) =>
+    (instanceId: InstanceId, databaseName: string): MigrationHistory[] => {
+      return (
+        state.migrationHistoryListByIdAndDatabaseName.get(
+          [instanceId, databaseName].join(".")
+        ) || []
       );
     },
 };
@@ -211,6 +230,34 @@ const actions = {
 
     return rootGetters["sql/convert"](data);
   },
+
+  async migrationHistory(
+    { commit }: any,
+    {
+      instanceId,
+      databaseName,
+    }: {
+      instanceId: InstanceId;
+      databaseName: string;
+    }
+  ): Promise<MigrationHistory> {
+    const data = (
+      await axios.get(
+        `/api/instance/${instanceId}/migration/history?database=${databaseName}`
+      )
+    ).data.data;
+    const historyList = data.map((history: ResourceObject) => {
+      return convertMigrationHistory(history);
+    });
+
+    commit("setMigrationHistoryListByInstanceIdAndDatabaseName", {
+      instanceId,
+      databaseName,
+      historyList,
+    });
+
+    return historyList;
+  },
 };
 
 const mutations = {
@@ -235,6 +282,24 @@ const mutations = {
 
   deleteInstanceById(state: InstanceState, instanceId: InstanceId) {
     state.instanceById.delete(instanceId);
+  },
+
+  setMigrationHistoryListByInstanceIdAndDatabaseName(
+    state: InstanceState,
+    {
+      instanceId,
+      databaseName,
+      historyList,
+    }: {
+      instanceId: InstanceId;
+      databaseName: string;
+      historyList: MigrationHistory[];
+    }
+  ) {
+    state.migrationHistoryListByIdAndDatabaseName.set(
+      [instanceId, databaseName].join("."),
+      historyList
+    );
   },
 };
 
