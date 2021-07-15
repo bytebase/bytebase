@@ -235,6 +235,62 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.GET("/instance/:instanceId/migration/history", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("instanceId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
+		}
+
+		instance, err := s.ComposeInstanceById(context.Background(), id)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+
+		historyList := []*api.MigrationHistory{}
+		driver, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+		})
+		if err == nil {
+			find := &db.MigrationHistoryFind{}
+			databaseStr := c.QueryParams().Get("database")
+			if databaseStr != "" {
+				find.Database = &databaseStr
+			}
+			list, err := driver.FindMigrationHistoryList(context.Background(), find)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			}
+
+			for _, entry := range list {
+				historyList = append(historyList, &api.MigrationHistory{
+					ID:                entry.ID,
+					Creator:           entry.Creator,
+					CreatedTs:         entry.CreatedTs,
+					Updater:           entry.Updater,
+					UpdatedTs:         entry.UpdatedTs,
+					Database:          entry.Namespace,
+					Type:              entry.Type,
+					Version:           entry.Version,
+					Description:       entry.Description,
+					Statement:         entry.Statement,
+					ExecutionDuration: entry.ExecutionDuration,
+				})
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, historyList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Name)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) ComposeInstanceById(ctx context.Context, id int) (*api.Instance, error) {

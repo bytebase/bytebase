@@ -34,6 +34,10 @@ export function bytesToString(size: number): string {
   return size.toString() + " " + unitList[i];
 }
 
+export function secondsToString(second: number): string {
+  return moment.duration(second).humanize();
+}
+
 export function urlfy(str: string): string {
   let result = str.trim();
   if (result.search(/^http[s]?\:\/\//) == -1) {

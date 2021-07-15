@@ -26,6 +26,7 @@ p, OWNER, /instance/{id}, GET
 p, OWNER, /instance/{id}, PATCH
 p, OWNER, /instance/{id}/migration, POST
 p, OWNER, /instance/{id}/migration/status, GET
+p, OWNER, /instance/{id}/migration/history, GET
 p, OWNER, /database, POST
 p, OWNER, /database, GET
 p, OWNER, /database/{id}, GET

@@ -154,6 +154,11 @@
               :mode="'VIEW'"
               :tableList="tableList.filter((item) => item.type == 'VIEW')"
             />
+
+            <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+              Migration History
+            </div>
+            <MigrationHistoryTable :historyList="migrationHistoryList" />
           </div>
 
           <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -319,6 +324,7 @@ import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
+import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
@@ -349,6 +355,7 @@ export default {
     DataSourceConnectionPanel,
     DataSourceTable,
     TableTable,
+    MigrationHistoryTable,
     MemberSelect,
     ProjectSelect,
   },
@@ -363,6 +370,12 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const database = computed(() => {
+      return store.getters["database/databaseById"](
+        idFromSlug(props.databaseSlug)
+      );
+    });
+
     const prepareTableList = () => {
       store.dispatch(
         "table/fetchTableListByDatabaseId",
@@ -372,20 +385,29 @@ export default {
 
     watchEffect(prepareTableList);
 
+    const prepareMigrationHistoryList = () => {
+      store.dispatch("instance/migrationHistory", {
+        instanceId: database.value.instance.id,
+        databaseName: database.value.name,
+      });
+    };
+
+    watchEffect(prepareMigrationHistoryList);
+
     const hasDataSourceFeature = computed(() =>
       store.getters["plan/feature"]("bb.data-source")
     );
-
-    const database = computed(() => {
-      return store.getters["database/databaseById"](
-        idFromSlug(props.databaseSlug)
-      );
-    });
 
     const tableList = computed(() => {
       return store.getters["table/tableListByDatabaseId"](
         idFromSlug(props.databaseSlug)
       );
+    });
+
+    const migrationHistoryList = computed(() => {
+      return store.getters[
+        "instance/migrationHistoryListByInstanceIdAndDatabaseName"
+      ](database.value.instance.id, database.value.name);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -515,6 +537,7 @@ export default {
       state,
       database,
       tableList,
+      migrationHistoryList,
       hasDataSourceFeature,
       isCurrentUserDBAOrOwner,
       allowChangeProject,

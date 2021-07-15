@@ -89,12 +89,12 @@ import InstanceForm from "../components/InstanceForm.vue";
 import {
   Instance,
   InstanceMigration,
-  InstanceMigrationStatus,
+  MigrationStatus,
   SqlResultSet,
 } from "../types";
 
 interface LocalState {
-  migrationSetupStatus: InstanceMigrationStatus;
+  migrationSetupStatus: MigrationStatus;
   showCreateMigrationSchemaModal: boolean;
 }
 

@@ -110,6 +110,26 @@ type InstanceMigration struct {
 	Error  string                  `jsonapi:"attr,error"`
 }
 
+// MigrationHistory is stored in the instance instead of our own data file, so the field
+// format is a bit different from the standard format
+type MigrationHistory struct {
+	ID int `jsonapi:"primary,migrationHistory"`
+
+	// Standard fields
+	Creator   string `jsonapi:"attr,creator"`
+	CreatedTs int64  `jsonapi:"attr,createdTs"`
+	Updater   string `jsonapi:"attr,updater"`
+	UpdatedTs int64  `jsonapi:"attr,updatedTs"`
+
+	// Domain specific fields
+	Database          string           `jsonapi:"attr,database"`
+	Type              db.MigrationType `jsonapi:"attr,type"`
+	Version           string           `jsonapi:"attr,version"`
+	Description       string           `jsonapi:"attr,description"`
+	Statement         string           `jsonapi:"attr,statement"`
+	ExecutionDuration int              `jsonapi:"attr,executionDuration"`
+}
+
 type InstanceService interface {
 	// CreateInstance should also create the * database and the admin data source.
 	CreateInstance(ctx context.Context, create *InstanceCreate) (*Instance, error)
