@@ -51,7 +51,7 @@ CREATE TABLE bytebase.migration_history (
     namespace TEXT NOT NULL,
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence INTEGER UNSIGNED NOT NULL,
-    `type` ENUM('BASELINE', 'SQL', 'SQL_ROLLBACK', 'DELETED') NOT NULL,
+    `type` ENUM('BASELINE', 'SQL', 'SQL_ROLLBACK') NOT NULL,
     version TEXT NOT NULL,
     description TEXT NOT NULL,
     -- Recorded the migration statement
