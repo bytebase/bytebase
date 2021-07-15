@@ -281,6 +281,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					Description:       entry.Description,
 					Statement:         entry.Statement,
 					ExecutionDuration: entry.ExecutionDuration,
+					IssueId:           entry.IssueId,
+					Payload:           entry.Payload,
 				})
 			}
 		}

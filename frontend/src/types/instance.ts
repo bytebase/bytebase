@@ -2,6 +2,7 @@ import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
 import { Principal } from "./principal";
+import { VCSPushEvent } from "./vcs";
 
 export type EngineType = "MYSQL";
 
@@ -66,6 +67,10 @@ export type InstanceMigration = {
 
 export type MigrationType = "BASELINE" | "SQL";
 
+export type MigrationHistoryPayload = {
+  pushEvent?: VCSPushEvent;
+};
+
 export type MigrationHistory = {
   id: MigrationHistoryId;
   creator: string;
@@ -78,4 +83,6 @@ export type MigrationHistory = {
   description: string;
   statement: string;
   executionDuration: number;
+  issueId: number;
+  payload?: MigrationHistoryPayload;
 };
