@@ -15,7 +15,7 @@ import (
 // Dump exports the schema of a database instance.
 // All non-system databases will be exported to the input directory in the format of database_name.sql for each database.
 // When directory isn't specified, the schema will be exported to stdout.
-func Dump(databaseType, username, password, hostname, port, database, directory string, tlsCfg TlsConfig) error {
+func Dump(databaseType, username, password, hostname, port, database, directory string, tlsCfg TlsConfig, schemaOnly bool) error {
 	if directory != "" {
 		dirInfo, err := os.Stat(directory)
 		if os.IsNotExist(err) {
@@ -44,14 +44,14 @@ func Dump(databaseType, username, password, hostname, port, database, directory 
 		}
 		defer dp.Close()
 
-		return dp.Dump(database, directory)
+		return dp.Dump(database, directory, schemaOnly)
 	case "pg":
 		dp, err := pgdump.New(username, password, hostname, port, database, tlsCfg.SslCA, tlsCfg.SslCert, tlsCfg.SslKey)
 		if err != nil {
 			return fmt.Errorf("pgdump.New(%q, %q, %q, %q) got error: %v", username, password, hostname, port, err)
 		}
 		defer dp.Close()
-		return dp.Dump(database, directory)
+		return dp.Dump(database, directory, schemaOnly)
 	default:
 		return fmt.Errorf("database type %q not supported; supported types: mysql, pg.", databaseType)
 	}
