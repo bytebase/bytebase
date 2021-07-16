@@ -178,18 +178,6 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: true,
             },
           },
-          {
-            path: "500",
-            name: "error.500",
-            components: {
-              content: () => import("../views/Page500.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: {
-              content: true,
-              leftSidebar: true,
-            },
-          },
           // {
           //   path: "inbox",
           //   name: "workspace.inbox",
