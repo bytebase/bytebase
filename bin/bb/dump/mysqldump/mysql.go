@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -133,6 +134,18 @@ func (dp *Dumper) Dump(database, directory string) error {
 		}
 		for _, tbl := range tables {
 			content += fmt.Sprintf("%s\n", tbl.statement)
+			if tbl.tableType == "BASE TABLE" {
+				stmts, err := dp.getTableData(dbName, tbl.name)
+				if err != nil {
+					return err
+				}
+				for _, stmt := range stmts {
+					content += stmt
+				}
+				if len(stmts) > 0 {
+					content += "\n"
+				}
+			}
 		}
 
 		// Procedure and function (routine) statements.
@@ -311,6 +324,56 @@ func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) 
 		return "", fmt.Errorf("unrecognized table type %q for database %q table %q.", tblType, dbName, tblName)
 	}
 
+}
+
+// getTableData gets the data of a table.
+func (dp *Dumper) getTableData(dbName, tblName string) ([]string, error) {
+	query := fmt.Sprintf("SELECT * FROM %s.%s;", dbName, tblName)
+	rows, err := dp.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stmts []string
+
+	cols, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	if len(cols) <= 0 {
+		return nil, fmt.Errorf("table %q.%q has no columns.", dbName, tblName)
+	}
+	values := make([]*sql.NullString, len(cols))
+	ptrs := make([]interface{}, len(cols))
+	for i := 0; i < len(cols); i++ {
+		ptrs[i] = &values[i]
+	}
+	for rows.Next() {
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, err
+		}
+		tokens := make([]string, len(cols))
+		for i, v := range values {
+			switch {
+			case v == nil || !v.Valid:
+				tokens[i] = "NULL"
+			case isNumeric(cols[i].ScanType().Name()):
+				tokens[i] = v.String
+			default:
+				tokens[i] = fmt.Sprintf("'%s'", v.String)
+			}
+		}
+		stmt := fmt.Sprintf("INSERT INTO `%s`.`%s` VALUES (%s);\n", dbName, tblName, strings.Join(tokens, ", "))
+		stmts = append(stmts, stmt)
+	}
+	return stmts, nil
+}
+
+// isNumeric determines whether the value needs quotes.
+// Even if the function returns incorrect result, the data dump will still work.
+func isNumeric(t string) bool {
+	return strings.Contains(t, "int") || strings.Contains(t, "bool") || strings.Contains(t, "float") || strings.Contains(t, "byte")
 }
 
 // getRoutines gets all routines of a database.

@@ -132,6 +132,16 @@ func (dp *Dumper) Dump(database, directory string) error {
 		}
 		for _, tbl := range tables {
 			content += fmt.Sprintf("%s\n", tbl.Statement())
+			stmts, err := dp.getTableData(tbl)
+			if err != nil {
+				return err
+			}
+			for _, stmt := range stmts {
+				content += stmt
+			}
+			if len(stmts) > 0 {
+				content += "\n"
+			}
 		}
 
 		// View statements.
@@ -753,6 +763,56 @@ func (dp *Dumper) getIndices() ([]indexSchema, error) {
 	}
 
 	return indices, nil
+}
+
+// getTableData gets the data of a table.
+func (dp *Dumper) getTableData(tbl tableSchema) ([]string, error) {
+	query := fmt.Sprintf("SELECT * FROM %s.%s;", tbl.schemaName, tbl.name)
+	rows, err := dp.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stmts []string
+
+	cols, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	if len(cols) <= 0 {
+		return nil, fmt.Errorf("table %q.%q has no columns.", tbl.schemaName, tbl.name)
+	}
+	values := make([]*sql.NullString, len(cols))
+	ptrs := make([]interface{}, len(cols))
+	for i := 0; i < len(cols); i++ {
+		ptrs[i] = &values[i]
+	}
+	for rows.Next() {
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, err
+		}
+		tokens := make([]string, len(cols))
+		for i, v := range values {
+			switch {
+			case v == nil || !v.Valid:
+				tokens[i] = "NULL"
+			case isNumeric(cols[i].ScanType().Name()):
+				tokens[i] = v.String
+			default:
+				tokens[i] = fmt.Sprintf("'%s'", v.String)
+			}
+		}
+		stmt := fmt.Sprintf("INSERT INTO %s.%s VALUES (%s);\n", tbl.schemaName, tbl.name, strings.Join(tokens, ", "))
+		stmts = append(stmts, stmt)
+	}
+	return stmts, nil
+}
+
+// isNumeric determines whether the value needs quotes.
+// Even if the function returns incorrect result, the data dump will still work.
+func isNumeric(t string) bool {
+	return strings.Contains(t, "int") || strings.Contains(t, "bool") || strings.Contains(t, "float") || strings.Contains(t, "byte")
 }
 
 // getSequences gets all sequences of a database.
