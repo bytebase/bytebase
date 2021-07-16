@@ -58,10 +58,10 @@ export type InstancePatch = {
   password?: string;
 };
 
-export type MigrationStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
+export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
 
 export type InstanceMigration = {
-  status: MigrationStatus;
+  status: MigrationSchemaStatus;
   error: string;
 };
 

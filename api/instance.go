@@ -84,30 +84,30 @@ type InstancePatch struct {
 	Password     *string `jsonapi:"attr,password"`
 }
 
-// Instance migration status
-type InstanceMigrationStatus string
+// Instance migration schema status
+type InstanceMigrationSchemaStatus string
 
 const (
-	InstanceMigrationUnknown  InstanceMigrationStatus = "UNKNOWN"
-	InstanceMigrationOK       InstanceMigrationStatus = "OK"
-	InstanceMigrationNotExist InstanceMigrationStatus = "NOT_EXIST"
+	InstanceMigrationSchemaUnknown  InstanceMigrationSchemaStatus = "UNKNOWN"
+	InstanceMigrationSchemaOK       InstanceMigrationSchemaStatus = "OK"
+	InstanceMigrationSchemaNotExist InstanceMigrationSchemaStatus = "NOT_EXIST"
 )
 
-func (e InstanceMigrationStatus) String() string {
+func (e InstanceMigrationSchemaStatus) String() string {
 	switch e {
-	case InstanceMigrationUnknown:
+	case InstanceMigrationSchemaUnknown:
 		return "UNKNOWN"
-	case InstanceMigrationOK:
+	case InstanceMigrationSchemaOK:
 		return "OK"
-	case InstanceMigrationNotExist:
+	case InstanceMigrationSchemaNotExist:
 		return "NOT_EXIST"
 	}
 	return "UNKNOWN"
 }
 
 type InstanceMigration struct {
-	Status InstanceMigrationStatus `jsonapi:"attr,status"`
-	Error  string                  `jsonapi:"attr,error"`
+	Status InstanceMigrationSchemaStatus `jsonapi:"attr,status"`
+	Error  string                        `jsonapi:"attr,error"`
 }
 
 // MigrationHistory is stored in the instance instead of our own data file, so the field

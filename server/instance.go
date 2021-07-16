@@ -215,7 +215,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Port:     instance.Port,
 		})
 		if err != nil {
-			instanceMigration.Status = api.InstanceMigrationUnknown
+			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
 		} else {
 			setup, err := db.NeedsSetupMigration(context.Background())
@@ -223,9 +223,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check migration setup status for host:port: %v:%v", instance.Host, instance.Port)).SetInternal(err)
 			}
 			if setup {
-				instanceMigration.Status = api.InstanceMigrationNotExist
+				instanceMigration.Status = api.InstanceMigrationSchemaNotExist
 			} else {
-				instanceMigration.Status = api.InstanceMigrationOK
+				instanceMigration.Status = api.InstanceMigrationSchemaOK
 			}
 		}
 

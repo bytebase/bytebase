@@ -154,11 +154,19 @@
               :mode="'VIEW'"
               :tableList="tableList.filter((item) => item.type == 'VIEW')"
             />
-
             <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
               Migration History
             </div>
-            <MigrationHistoryTable :historyList="migrationHistoryList" />
+            <MigrationHistoryTable
+              v-if="state.migrationSetupStatus == 'OK'"
+              :historyList="migrationHistoryList"
+            />
+            <BBAttention
+              v-else
+              :title="attentionTitle"
+              :actionText="'Config instance'"
+              @click-action="configInstance"
+            />
           </div>
 
           <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -327,13 +335,15 @@ import TableTable from "../components/TableTable.vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
-import { idFromSlug, isDBAOrOwner } from "../utils";
+import { idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
 import {
   DataSource,
   ProjectId,
   DataSourcePatch,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
+  MigrationSchemaStatus,
+  InstanceMigration,
 } from "../types";
 import { cloneDeep, isEqual } from "lodash";
 
@@ -341,6 +351,7 @@ interface LocalState {
   editingDataSource?: DataSource;
   showModal: boolean;
   editingProjectId: ProjectId;
+  migrationSetupStatus: MigrationSchemaStatus;
 }
 
 export default {
@@ -366,6 +377,7 @@ export default {
     const state = reactive<LocalState>({
       showModal: false,
       editingProjectId: UNKNOWN_ID,
+      migrationSetupStatus: "OK",
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -386,10 +398,17 @@ export default {
     watchEffect(prepareTableList);
 
     const prepareMigrationHistoryList = () => {
-      store.dispatch("instance/migrationHistory", {
-        instanceId: database.value.instance.id,
-        databaseName: database.value.name,
-      });
+      store
+        .dispatch("instance/checkMigrationSetup", database.value.instance.id)
+        .then((migration: InstanceMigration) => {
+          state.migrationSetupStatus = migration.status;
+          if (state.migrationSetupStatus == "OK") {
+            store.dispatch("instance/migrationHistory", {
+              instanceId: database.value.instance.id,
+              databaseName: database.value.name,
+            });
+          }
+        });
     };
 
     watchEffect(prepareMigrationHistoryList);
@@ -402,6 +421,15 @@ export default {
       return store.getters["table/tableListByDatabaseId"](
         idFromSlug(props.databaseSlug)
       );
+    });
+
+    const attentionTitle = computed((): string => {
+      if (state.migrationSetupStatus == "NOT_EXIST") {
+        return `Missing migration history schema on instance "${database.value.instance.name}"`;
+      } else if (state.migrationSetupStatus == "UNKNOWN") {
+        return `Unable to connect instance "${database.value.instance.name}" to retrieve migration history`;
+      }
+      return "";
     });
 
     const migrationHistoryList = computed(() => {
@@ -533,10 +561,15 @@ export default {
         });
     };
 
+    const configInstance = () => {
+      router.push(`/instance/${instanceSlug(database.value.instance)}`);
+    };
+
     return {
       state,
       database,
       tableList,
+      attentionTitle,
       migrationHistoryList,
       hasDataSourceFeature,
       isCurrentUserDBAOrOwner,
@@ -552,6 +585,7 @@ export default {
       editDataSource,
       cancelEditDataSource,
       saveEditDataSource,
+      configInstance,
     };
   },
 };

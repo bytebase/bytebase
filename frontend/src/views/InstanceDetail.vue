@@ -89,12 +89,12 @@ import InstanceForm from "../components/InstanceForm.vue";
 import {
   Instance,
   InstanceMigration,
-  MigrationStatus,
+  MigrationSchemaStatus,
   SqlResultSet,
 } from "../types";
 
 interface LocalState {
-  migrationSetupStatus: MigrationStatus;
+  migrationSetupStatus: MigrationSchemaStatus;
   showCreateMigrationSchemaModal: boolean;
 }
 
@@ -137,16 +137,16 @@ export default {
         });
     };
 
-    const prepareMigrationStatus = () => {
+    const prepareMigrationSchemaStatus = () => {
       checkMigrationSetup();
     };
-    watchEffect(prepareMigrationStatus);
+    watchEffect(prepareMigrationSchemaStatus);
 
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
         return "Missing migration schema";
       } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return "Unable to check migration schema existence";
+        return "Unable to connect instance to check migration schema";
       }
       return "";
     });
