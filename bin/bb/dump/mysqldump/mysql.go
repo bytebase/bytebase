@@ -92,7 +92,7 @@ func (dp *Dumper) Close() error {
 }
 
 // Dump dumps the schema of a MySQL instance.
-func (dp *Dumper) Dump(database, directory string) error {
+func (dp *Dumper) Dump(database, directory string, schemaOnly bool) error {
 	dbNames, err := dp.getDatabases()
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
@@ -134,7 +134,7 @@ func (dp *Dumper) Dump(database, directory string) error {
 		}
 		for _, tbl := range tables {
 			content += fmt.Sprintf("%s\n", tbl.statement)
-			if tbl.tableType == "BASE TABLE" {
+			if !schemaOnly && tbl.tableType == "BASE TABLE" {
 				stmts, err := dp.getTableData(dbName, tbl.name)
 				if err != nil {
 					return err

@@ -74,7 +74,7 @@ func (dp *Dumper) switchDatabase(dbName string) error {
 }
 
 // Dump dumps the schema of a Postgres instance.
-func (dp *Dumper) Dump(database, directory string) error {
+func (dp *Dumper) Dump(database, directory string, schemaOnly bool) error {
 	dbNames, err := dp.getDatabases()
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
@@ -132,15 +132,17 @@ func (dp *Dumper) Dump(database, directory string) error {
 		}
 		for _, tbl := range tables {
 			content += fmt.Sprintf("%s\n", tbl.Statement())
-			stmts, err := dp.getTableData(tbl)
-			if err != nil {
-				return err
-			}
-			for _, stmt := range stmts {
-				content += stmt
-			}
-			if len(stmts) > 0 {
-				content += "\n"
+			if !schemaOnly {
+				stmts, err := dp.getTableData(tbl)
+				if err != nil {
+					return err
+				}
+				for _, stmt := range stmts {
+					content += stmt
+				}
+				if len(stmts) > 0 {
+					content += "\n"
+				}
 			}
 		}
 

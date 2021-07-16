@@ -20,6 +20,8 @@ func init() {
 	dumpCmd.Flags().StringVar(&sslCert, "ssl-cert", "", "X509 cert in PEM format.")
 	dumpCmd.Flags().StringVar(&sslKey, "ssl-key", "", "X509 key in PEM format.")
 
+	dumpCmd.Flags().BoolVar(&schemaOnly, "schema-only", false, "Schema only dump.")
+
 	rootCmd.AddCommand(dumpCmd)
 }
 
@@ -38,6 +40,9 @@ var (
 	sslKey              string // client-key.pem
 	sslVerifyServerName string // The server name to be verified.
 
+	// Dump options.
+	schemaOnly bool
+
 	dumpCmd = &cobra.Command{
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
@@ -47,7 +52,7 @@ var (
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			return dump.Dump(databaseType, username, password, hostname, port, database, directory, tlsCfg)
+			return dump.Dump(databaseType, username, password, hostname, port, database, directory, tlsCfg, schemaOnly)
 		},
 	}
 )
