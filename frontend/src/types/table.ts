@@ -22,7 +22,6 @@ export type Table = {
 
   // Domain specific fields
   name: string;
-  table: string;
   type: TableType;
   engine: TableEngineType;
   collation: string;
