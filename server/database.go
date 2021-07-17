@@ -151,7 +151,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.DatabaseService.FindDatabase(context.Background(), databaseFind)
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))

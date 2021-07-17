@@ -64,6 +64,20 @@ const getters = {
       }
 
       {
+        // /db/:databaseSlug/table/:tableName
+        // Total 3 elements, 2nd element is the database slug, 3rd element is the table name
+        const databaseComponents = currentRoute.path.match(
+          "/db/([0-9a-zA-Z_-]+)/table/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined, undefined];
+        if (databaseComponents[1] && databaseComponents[2]) {
+          return {
+            databaseSlug: databaseComponents[1],
+            tableName: databaseComponents[2],
+          };
+        }
+      }
+
+      {
         // /db/:databaseSlug/datasource/:dataSourceSlug
         // Total 3 elements, 2nd element is the database slug, 3rd element is the data source slug
         const dataSourceComponents = currentRoute.path.match(

@@ -5,7 +5,8 @@
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
-    :rowClickable="false"
+    :rowClickable="mode == 'TABLE'"
+    @click-row="clickTable"
   >
     <template v-slot:body="{ rowData: table }">
       <BBTableCell :leftPadding="4" class="w-16">
@@ -42,8 +43,9 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { Table } from "../types";
-import { bytesToString } from "../utils";
+import { Database, Table } from "../types";
+import { bytesToString, databaseSlug } from "../utils";
+import { useRouter } from "vue-router";
 
 type Mode = "TABLE" | "VIEW";
 
@@ -110,13 +112,21 @@ export default {
     },
   },
   setup(props, ctx) {
+    const router = useRouter();
+
     const columnList = computed(() => {
       return columnListMap.get(props.mode);
     });
 
+    const clickTable = (section: number, row: number) => {
+      const table = props.tableList[row];
+      router.push(`/db/${databaseSlug(table.database)}/table/${table.name}`);
+    };
+
     return {
       columnList,
       bytesToString,
+      clickTable,
     };
   },
 };

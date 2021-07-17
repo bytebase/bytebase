@@ -134,6 +134,7 @@ export default {
       const projectSlug = routeSlug.projectSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
+      const tableName = routeSlug.tableName;
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const versionControlSlug = routeSlug.vcsSlug;
 
@@ -159,7 +160,7 @@ export default {
           path: "/db",
         });
 
-        if (dataSourceSlug) {
+        if (tableName || dataSourceSlug) {
           const database = store.getters["database/databaseById"](
             idFromSlug(databaseSlug)
           );

@@ -1,15 +1,33 @@
 import axios from "axios";
 import {
-  ResourceObject,
-  TableState,
+  Database,
   DatabaseId,
+  ResourceIdentifier,
+  ResourceObject,
   Table,
+  TableState,
+  unknown,
 } from "../../types";
 
-function convert(table: ResourceObject, rootGetters: any): Table {
+function convert(
+  table: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Table {
+  const databaseId = (table.relationships!.database.data as ResourceIdentifier)
+    .id;
+
+  let database: Database = unknown("DATABASE") as Database;
+  for (const item of includedList || []) {
+    if (item.type == "database" && item.id == databaseId) {
+      database = rootGetters["database/convert"](item);
+      break;
+    }
+  }
   return {
-    ...(table.attributes as Omit<Table, "id">),
+    ...(table.attributes as Omit<Table, "id" | "database">),
     id: parseInt(table.id),
+    database,
   };
 }
 
@@ -30,10 +48,9 @@ const actions = {
     { commit, rootGetters }: any,
     databaseId: DatabaseId
   ) {
-    const tableList = (
-      await axios.get(`/api/database/${databaseId}/table`)
-    ).data.data.map((table: ResourceObject) => {
-      return convert(table, rootGetters);
+    const data = (await axios.get(`/api/database/${databaseId}/table`)).data;
+    const tableList = data.data.map((table: ResourceObject) => {
+      return convert(table, data.included, rootGetters);
     });
 
     commit("setTableListByDatabaseId", { databaseId, tableList });
