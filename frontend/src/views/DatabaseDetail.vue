@@ -50,18 +50,16 @@
                 {{ environmentName(database.instance.environment) }}
               </router-link>
             </dd>
-            <template v-if="isCurrentUserDBAOrOwner">
-              <dt class="sr-only">Instance</dt>
-              <dd class="flex items-center text-sm md:mr-4">
-                <span class="textlabel">Instance&nbsp;-&nbsp;</span>
-                <router-link
-                  :to="`/instance/${instanceSlug(database.instance)}`"
-                  class="normal-link"
-                >
-                  {{ instanceName(database.instance) }}
-                </router-link>
-              </dd>
-            </template>
+            <dt class="sr-only">Instance</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+              <router-link
+                :to="`/instance/${instanceSlug(database.instance)}`"
+                class="normal-link"
+              >
+                {{ instanceName(database.instance) }}
+              </router-link>
+            </dd>
             <dt class="sr-only">Project</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Project&nbsp;-&nbsp;</span>
@@ -572,7 +570,6 @@ export default {
       attentionTitle,
       migrationHistoryList,
       hasDataSourceFeature,
-      isCurrentUserDBAOrOwner,
       allowChangeProject,
       allowViewDataSource,
       allowChangeDataSource,
