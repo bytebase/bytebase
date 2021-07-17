@@ -333,7 +333,7 @@ func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) 
 
 // getTableData gets the data of a table.
 func (dp *Dumper) getTableData(dbName, tblName string) ([]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s.%s;", dbName, tblName)
+	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
 	rows, err := dp.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func (dp *Dumper) getTableData(dbName, tblName string) ([]string, error) {
 		return nil, err
 	}
 	if len(cols) <= 0 {
-		return nil, fmt.Errorf("table %q.%q has no columns.", dbName, tblName)
+		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
 	ptrs := make([]interface{}, len(cols))
