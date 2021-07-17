@@ -5,14 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 
 	_ "github.com/lib/pq"
 )
 
 var (
-	pgSystemDatabases = map[string]bool{
+	systemDatabases = map[string]bool{
 		"template0": true,
 		"template1": true,
 	}
@@ -73,11 +72,11 @@ func (dp *Dumper) switchDatabase(dbName string) error {
 	return nil
 }
 
-// Dump dumps the schema of a Postgres instance.
-func (dp *Dumper) Dump(database, directory string, schemaOnly bool) error {
+// GetDumpableDatabases gets the databases to be exported.
+func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 	dbNames, err := dp.getDatabases()
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	if database != "" {
@@ -89,122 +88,134 @@ func (dp *Dumper) Dump(database, directory string, schemaOnly bool) error {
 			}
 		}
 		if !exist {
-			return fmt.Errorf("database %q not found.", database)
+			return nil, fmt.Errorf("database %q not found.", database)
 		}
 		dbNames = []string{database}
 	}
-
-	// pg_dump -d dbName --schema-only
+	var ret []string
 	for _, dbName := range dbNames {
-		if pgSystemDatabases[dbName] {
+		if systemDatabases[dbName] {
 			continue
 		}
-		if err := dp.switchDatabase(dbName); err != nil {
+		ret = append(ret, dbName)
+	}
+	return ret, nil
+}
+
+// Dump dumps the schema of a Postgres instance.
+func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
+	// pg_dump -d dbName --schema-only
+	if err := dp.switchDatabase(dbName); err != nil {
+		return err
+	}
+
+	// Database statement.
+	dbStmt := getDatabaseStmt(dbName)
+	if _, err := out.WriteString(dbStmt); err != nil {
+		return err
+	}
+
+	// Schema statements.
+	schemas, err := dp.getPgSchemas()
+	if err != nil {
+		return err
+	}
+	for _, schema := range schemas {
+		if _, err := out.WriteString(schema.Statement()); err != nil {
 			return err
 		}
+	}
 
-		// Database statement.
-		dbStmt := getDatabaseStmt(dbName)
-		content := fmt.Sprintf("%s\n", dbStmt)
-
-		// Schema statements.
-		schemas, err := dp.getPgSchemas()
-		if err != nil {
+	// Sequence statements.
+	seqs, err := dp.getSequences()
+	if err != nil {
+		return fmt.Errorf("failed to get sequences from database %q: %s", dbName, err)
+	}
+	for _, seq := range seqs {
+		if _, err := out.WriteString(seq.Statement()); err != nil {
 			return err
 		}
-		for _, schema := range schemas {
-			content += fmt.Sprintf("%s\n", schema.Statement())
-		}
+	}
 
-		// Sequence statements.
-		seqs, err := dp.getSequences()
-		if err != nil {
-			return fmt.Errorf("failed to get sequences from database %q: %s", dbName, err)
+	// Table statements.
+	tables, err := dp.getPgTables()
+	if err != nil {
+		return fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
+	}
+	for _, tbl := range tables {
+		if _, err := out.WriteString(tbl.Statement()); err != nil {
+			return err
 		}
-		for _, seq := range seqs {
-			content += fmt.Sprintf("%s\n", seq.Statement())
-		}
-
-		// Table statements.
-		tables, err := dp.getPgTables()
-		if err != nil {
-			return fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
-		}
-		for _, tbl := range tables {
-			content += fmt.Sprintf("%s\n", tbl.Statement())
-			if !schemaOnly {
-				stmts, err := dp.getTableData(tbl)
-				if err != nil {
-					return err
-				}
-				for _, stmt := range stmts {
-					content += stmt
-				}
-				if len(stmts) > 0 {
-					content += "\n"
-				}
-			}
-		}
-
-		// View statements.
-		views, err := dp.getViews()
-		if err != nil {
-			return fmt.Errorf("failed to get views from database %q: %s", dbName, err)
-		}
-		for _, view := range views {
-			content += fmt.Sprintf("%s\n", view.Statement())
-		}
-
-		// Index statements.
-		indices, err := dp.getIndices()
-		if err != nil {
-			return fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
-		}
-		for _, idx := range indices {
-			content += fmt.Sprintf("%s\n", idx.Statement())
-		}
-
-		// Function statements.
-		fs, err := dp.getFunctions()
-		if err != nil {
-			return fmt.Errorf("failed to get functions from database %q: %s", dbName, err)
-		}
-		for _, f := range fs {
-			content += fmt.Sprintf("%s\n", f.Statement())
-		}
-
-		// Trigger statements.
-		triggers, err := dp.getTriggers()
-		if err != nil {
-			return fmt.Errorf("failed to get triggers from database %q: %s", dbName, err)
-		}
-		for _, tr := range triggers {
-			content += fmt.Sprintf("%s\n", tr.Statement())
-		}
-
-		// Event statements.
-		events, err := dp.getEventTriggers()
-		if err != nil {
-			return fmt.Errorf("failed to get event triggers from database %q: %s", dbName, err)
-		}
-		for _, evt := range events {
-			content += fmt.Sprintf("%s\n", evt.Statement())
-		}
-
-		// Write to files or print.
-		if directory == "" {
-			fmt.Printf(content)
-		} else {
-			path := path.Join(directory, fmt.Sprintf("%s.sql", dbName))
-			fmt.Printf("database %q: %s\n", dbName, path)
-			f, err := os.Create(path)
+		if !schemaOnly {
+			stmts, err := dp.getTableData(tbl)
 			if err != nil {
 				return err
 			}
-			defer f.Close()
-			if _, err := f.WriteString(content); err != nil {
-				return err
+			for _, stmt := range stmts {
+				if _, err := out.WriteString(stmt); err != nil {
+					return err
+				}
 			}
+			if len(stmts) > 0 {
+				if _, err := out.WriteString("\n"); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// View statements.
+	views, err := dp.getViews()
+	if err != nil {
+		return fmt.Errorf("failed to get views from database %q: %s", dbName, err)
+	}
+	for _, view := range views {
+		if _, err := out.WriteString(view.Statement()); err != nil {
+			return err
+		}
+	}
+
+	// Index statements.
+	indices, err := dp.getIndices()
+	if err != nil {
+		return fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+	}
+	for _, idx := range indices {
+		if _, err := out.WriteString(idx.Statement()); err != nil {
+			return err
+		}
+	}
+
+	// Function statements.
+	fs, err := dp.getFunctions()
+	if err != nil {
+		return fmt.Errorf("failed to get functions from database %q: %s", dbName, err)
+	}
+	for _, f := range fs {
+		if _, err := out.WriteString(f.Statement()); err != nil {
+			return err
+		}
+	}
+
+	// Trigger statements.
+	triggers, err := dp.getTriggers()
+	if err != nil {
+		return fmt.Errorf("failed to get triggers from database %q: %s", dbName, err)
+	}
+	for _, tr := range triggers {
+		if _, err := out.WriteString(tr.Statement()); err != nil {
+			return err
+		}
+	}
+
+	// Event statements.
+	events, err := dp.getEventTriggers()
+	if err != nil {
+		return fmt.Errorf("failed to get event triggers from database %q: %s", dbName, err)
+	}
+	for _, evt := range events {
+		if _, err := out.WriteString(evt.Statement()); err != nil {
+			return err
 		}
 	}
 
@@ -355,7 +366,7 @@ func (ps *pgSchema) Statement() string {
 		"-- Schema structure for '%s'\n"+
 		"--\n"+
 		"CREATE SCHEMA %s;\n"+
-		"ALTER SCHEMA hello OWNER TO %s;\n", ps.name, ps.name, ps.schemaOwner)
+		"ALTER SCHEMA hello OWNER TO %s;\n\n", ps.name, ps.name, ps.schemaOwner)
 }
 
 // Statement returns the create statement of a table.
@@ -377,6 +388,7 @@ func (t *tableSchema) Statement() string {
 	for _, constraint := range t.constraints {
 		s += fmt.Sprintf("%s\n", constraint.Statement())
 	}
+	s += "\n"
 	return s
 }
 
@@ -409,7 +421,7 @@ func (v *viewSchema) Statement() string {
 		"--\n"+
 		"-- View structure for '%s'.'%s'\n"+
 		"--\n"+
-		"CREATE VIEW %s.%s AS\n%s",
+		"CREATE VIEW %s.%s AS\n%s\n",
 		v.schemaName, v.name, v.schemaName, v.name, v.statement)
 }
 
@@ -441,6 +453,7 @@ func (seq *sequencePgSchema) Statement() string {
 	case "NO":
 		s += ";\n"
 	}
+	s += "\n"
 	return s
 }
 
@@ -450,7 +463,7 @@ func (idx indexSchema) Statement() string {
 		"--\n"+
 		"-- Index structure for '%s'.'%s'\n"+
 		"--\n"+
-		"%s;\n",
+		"%s;\n\n",
 		idx.schemaName, idx.name, idx.statement)
 }
 
@@ -460,7 +473,7 @@ func (f functionSchema) Statement() string {
 		"--\n"+
 		"-- Function structure for '%s'.'%s'\n"+
 		"--\n"+
-		"%s;\n",
+		"%s;\n\n",
 		f.schemaName, f.name, f.statement)
 }
 
@@ -470,7 +483,7 @@ func (t triggerSchema) Statement() string {
 		"--\n"+
 		"-- Trigger structure for '%s'\n"+
 		"--\n"+
-		"%s;\n",
+		"%s;\n\n",
 		t.name, t.statement)
 }
 
@@ -500,6 +513,7 @@ func (t eventTriggerSchema) Statement() string {
 			s += "ENABLE;\n"
 		}
 	}
+	s += "\n"
 	return s
 }
 
@@ -509,7 +523,7 @@ func getDatabaseStmt(dbName string) string {
 		"--\n"+
 		"-- PostgreSQL database structure for `%s`\n"+
 		"--\n"+
-		"\\connect %s;\n",
+		"\\connect %s;\n\n",
 		dbName, dbName)
 }
 

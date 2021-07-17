@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 
 	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
 	"github.com/bytebase/bytebase/bin/bb/dump/pgdump"
@@ -44,16 +45,60 @@ func Dump(databaseType, username, password, hostname, port, database, directory 
 		}
 		defer dp.Close()
 
-		return dp.Dump(database, directory, schemaOnly)
+		databases, err := dp.GetDumpableDatabases(database)
+		if err != nil {
+			return err
+		}
+		for _, dbName := range databases {
+			out, err := getOutFile(dbName, directory)
+			if err != nil {
+				return fmt.Errorf("getOutFile(%s, %s) got error: %s", dbName, directory, err)
+			}
+			defer out.Close()
+
+			if err := dp.Dump(dbName, out, schemaOnly); err != nil {
+				return err
+			}
+		}
+		return nil
 	case "pg":
 		dp, err := pgdump.New(username, password, hostname, port, database, tlsCfg.SslCA, tlsCfg.SslCert, tlsCfg.SslKey)
 		if err != nil {
 			return fmt.Errorf("pgdump.New(%q, %q, %q, %q) got error: %v", username, password, hostname, port, err)
 		}
 		defer dp.Close()
-		return dp.Dump(database, directory, schemaOnly)
+		databases, err := dp.GetDumpableDatabases(database)
+		if err != nil {
+			return err
+		}
+		for _, dbName := range databases {
+			out, err := getOutFile(dbName, directory)
+			if err != nil {
+				return fmt.Errorf("getOutFile(%s, %s) got error: %s", dbName, directory, err)
+			}
+			defer out.Close()
+
+			if err := dp.Dump(dbName, out, schemaOnly); err != nil {
+				return err
+			}
+		}
+		return nil
 	default:
 		return fmt.Errorf("database type %q not supported; supported types: mysql, pg.", databaseType)
+	}
+}
+
+// getOutFile gets the file descriptor to export the dump.
+func getOutFile(dbName, directory string) (*os.File, error) {
+	if directory == "" {
+		return os.Stdout, nil
+	} else {
+		path := path.Join(directory, fmt.Sprintf("%s.sql", dbName))
+		f, err := os.Create(path)
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
 	}
 }
 
