@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
@@ -91,13 +90,12 @@ func (dp *Dumper) Close() error {
 	return dp.db.Close()
 }
 
-// Dump dumps the schema of a MySQL instance.
-func (dp *Dumper) Dump(database, directory string, schemaOnly bool) error {
+// GetDumpableDatabases gets the databases to be exported.
+func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 	dbNames, err := dp.getDatabases()
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
-
 	if database != "" {
 		exist := false
 		for _, n := range dbNames {
@@ -107,88 +105,95 @@ func (dp *Dumper) Dump(database, directory string, schemaOnly bool) error {
 			}
 		}
 		if !exist {
-			return fmt.Errorf("database %q not found.", database)
+			return nil, fmt.Errorf("database %q not found.", database)
 		}
 		dbNames = []string{database}
 	}
-
-	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
+	var ret []string
 	for _, dbName := range dbNames {
 		if systemDatabases[dbName] {
 			continue
 		}
+		ret = append(ret, dbName)
+	}
+	return ret, nil
+}
 
-		// Database statement.
-		dbStmt, err := dp.getDatabaseStmt(dbName)
-		if err != nil {
-			return fmt.Errorf("failed to get database %q: %s", dbName, err)
-		}
-		content := fmt.Sprintf("%s", dbStmt)
-		// Use database statement.
-		content += fmt.Sprintf(useDatabaseFmt, dbName)
+// Dump dumps the schema of a MySQL instance.
+func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
+	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
-		// Table and view statement.
-		tables, err := dp.getTables(dbName)
-		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
-		}
-		for _, tbl := range tables {
-			content += fmt.Sprintf("%s\n", tbl.statement)
-			if !schemaOnly && tbl.tableType == "BASE TABLE" {
-				stmts, err := dp.getTableData(dbName, tbl.name)
-				if err != nil {
-					return err
-				}
-				for _, stmt := range stmts {
-					content += stmt
-				}
-				if len(stmts) > 0 {
-					content += "\n"
-				}
-			}
-		}
+	// Database statement.
+	dbStmt, err := dp.getDatabaseStmt(dbName)
+	if err != nil {
+		return fmt.Errorf("failed to get database %q: %s", dbName, err)
+	}
+	if _, err := out.WriteString(dbStmt); err != nil {
+		return err
+	}
+	// Use database statement.
+	useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
+	if _, err := out.WriteString(useStmt); err != nil {
+		return err
+	}
 
-		// Procedure and function (routine) statements.
-		routines, err := dp.getRoutines(dbName)
-		if err != nil {
-			return fmt.Errorf("failed to get routines of database %q: %s", dbName, err)
+	// Table and view statement.
+	tables, err := dp.getTables(dbName)
+	if err != nil {
+		return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
+	}
+	for _, tbl := range tables {
+		if _, err := out.WriteString(fmt.Sprintf("%s\n", tbl.statement)); err != nil {
+			return err
 		}
-		for _, rt := range routines {
-			content += fmt.Sprintf("%s\n", rt.statement)
-		}
-
-		// Event statements.
-		events, err := dp.getEvents(dbName)
-		if err != nil {
-			return fmt.Errorf("failed to get events of database %q: %s", dbName, err)
-		}
-		for _, et := range events {
-			content += fmt.Sprintf("%s\n", et.statement)
-		}
-
-		// Trigger statements.
-		triggers, err := dp.getTriggers(dbName)
-		if err != nil {
-			return fmt.Errorf("failed to get triggers of database %q: %s", dbName, err)
-		}
-		for _, tr := range triggers {
-			content += fmt.Sprintf("%s\n", tr.statement)
-		}
-
-		// Write to files or print.
-		if directory == "" {
-			fmt.Printf(content)
-		} else {
-			path := path.Join(directory, fmt.Sprintf("%s.sql", dbName))
-			fmt.Printf("database %q: %s\n", dbName, path)
-			f, err := os.Create(path)
+		if !schemaOnly && tbl.tableType == "BASE TABLE" {
+			stmts, err := dp.getTableData(dbName, tbl.name)
 			if err != nil {
 				return err
 			}
-			defer f.Close()
-			if _, err := f.WriteString(content); err != nil {
-				return err
+			for _, stmt := range stmts {
+				if _, err := out.WriteString(stmt); err != nil {
+					return err
+				}
 			}
+			if len(stmts) > 0 {
+				if _, err := out.WriteString("\n"); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Procedure and function (routine) statements.
+	routines, err := dp.getRoutines(dbName)
+	if err != nil {
+		return fmt.Errorf("failed to get routines of database %q: %s", dbName, err)
+	}
+	for _, rt := range routines {
+		if _, err := out.WriteString(fmt.Sprintf("%s\n", rt.statement)); err != nil {
+			return err
+		}
+	}
+
+	// Event statements.
+	events, err := dp.getEvents(dbName)
+	if err != nil {
+		return fmt.Errorf("failed to get events of database %q: %s", dbName, err)
+	}
+	for _, et := range events {
+		if _, err := out.WriteString(fmt.Sprintf("%s\n", et.statement)); err != nil {
+			return err
+		}
+	}
+
+	// Trigger statements.
+	triggers, err := dp.getTriggers(dbName)
+	if err != nil {
+		return fmt.Errorf("failed to get triggers of database %q: %s", dbName, err)
+	}
+	for _, tr := range triggers {
+		if _, err := out.WriteString(fmt.Sprintf("%s\n", tr.statement)); err != nil {
+			return err
 		}
 	}
 
