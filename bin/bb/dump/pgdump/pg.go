@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	_ "github.com/lib/pq"
@@ -15,6 +16,155 @@ var (
 		"template0": true,
 		"template1": true,
 	}
+	reserved = map[string]bool{
+		"AES128":            true,
+		"AES256":            true,
+		"ALL":               true,
+		"ALLOWOVERWRITE":    true,
+		"ANALYSE":           true,
+		"ANALYZE":           true,
+		"AND":               true,
+		"ANY":               true,
+		"ARRAY":             true,
+		"AS":                true,
+		"ASC":               true,
+		"AUTHORIZATION":     true,
+		"BACKUP":            true,
+		"BETWEEN":           true,
+		"BINARY":            true,
+		"BLANKSASNULL":      true,
+		"BOTH":              true,
+		"BYTEDICT":          true,
+		"CASE":              true,
+		"CAST":              true,
+		"CHECK":             true,
+		"COLLATE":           true,
+		"COLUMN":            true,
+		"CONSTRAINT":        true,
+		"CREATE":            true,
+		"CREDENTIALS":       true,
+		"CROSS":             true,
+		"CURRENT_DATE":      true,
+		"CURRENT_TIME":      true,
+		"CURRENT_TIMESTAMP": true,
+		"CURRENT_USER":      true,
+		"CURRENT_USER_ID":   true,
+		"DEFAULT":           true,
+		"DEFERRABLE":        true,
+		"DEFLATE":           true,
+		"DEFRAG":            true,
+		"DELTA":             true,
+		"DELTA32K":          true,
+		"DESC":              true,
+		"DISABLE":           true,
+		"DISTINCT":          true,
+		"DO":                true,
+		"ELSE":              true,
+		"EMPTYASNULL":       true,
+		"ENABLE":            true,
+		"ENCODE":            true,
+		"ENCRYPT":           true,
+		"ENCRYPTION":        true,
+		"END":               true,
+		"EXCEPT":            true,
+		"EXPLICIT":          true,
+		"FALSE":             true,
+		"FOR":               true,
+		"FOREIGN":           true,
+		"FREEZE":            true,
+		"FROM":              true,
+		"FULL":              true,
+		"GLOBALDICT256":     true,
+		"GLOBALDICT64K":     true,
+		"GRANT":             true,
+		"GROUP":             true,
+		"GZIP":              true,
+		"HAVING":            true,
+		"IDENTITY":          true,
+		"IGNORE":            true,
+		"ILIKE":             true,
+		"IN":                true,
+		"INITIALLY":         true,
+		"INNER":             true,
+		"INTERSECT":         true,
+		"INTO":              true,
+		"IS":                true,
+		"ISNULL":            true,
+		"JOIN":              true,
+		"LEADING":           true,
+		"LEFT":              true,
+		"LIKE":              true,
+		"LIMIT":             true,
+		"LOCALTIME":         true,
+		"LOCALTIMESTAMP":    true,
+		"LUN":               true,
+		"LUNS":              true,
+		"LZO":               true,
+		"LZOP":              true,
+		"MINUS":             true,
+		"MOSTLY13":          true,
+		"MOSTLY32":          true,
+		"MOSTLY8":           true,
+		"NATURAL":           true,
+		"NEW":               true,
+		"NOT":               true,
+		"NOTNULL":           true,
+		"NULL":              true,
+		"NULLS":             true,
+		"OFF":               true,
+		"OFFLINE":           true,
+		"OFFSET":            true,
+		"OLD":               true,
+		"ON":                true,
+		"ONLY":              true,
+		"OPEN":              true,
+		"OR":                true,
+		"ORDER":             true,
+		"OUTER":             true,
+		"OVERLAPS":          true,
+		"PARALLEL":          true,
+		"PARTITION":         true,
+		"PERCENT":           true,
+		"PLACING":           true,
+		"PRIMARY":           true,
+		"RAW":               true,
+		"READRATIO":         true,
+		"RECOVER":           true,
+		"REFERENCES":        true,
+		"REJECTLOG":         true,
+		"RESORT":            true,
+		"RESTORE":           true,
+		"RIGHT":             true,
+		"SELECT":            true,
+		"SESSION_USER":      true,
+		"SIMILAR":           true,
+		"SOME":              true,
+		"SYSDATE":           true,
+		"SYSTEM":            true,
+		"TABLE":             true,
+		"TAG":               true,
+		"TDES":              true,
+		"TEXT255":           true,
+		"TEXT32K":           true,
+		"THEN":              true,
+		"TO":                true,
+		"TOP":               true,
+		"TRAILING":          true,
+		"TRUE":              true,
+		"TRUNCATECOLUMNS":   true,
+		"UNION":             true,
+		"UNIQUE":            true,
+		"USER":              true,
+		"USING":             true,
+		"VERBOSE":           true,
+		"WALLET":            true,
+		"WHEN":              true,
+		"WHERE":             true,
+		"WITH":              true,
+		"WITHIN":            true,
+		"WITHOUT":           true,
+	}
+	ident = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
 )
 
 // Dumper is a class for dumping schemas of a Postgres instance.
@@ -363,17 +513,16 @@ type eventTriggerSchema struct {
 func (ps *pgSchema) Statement() string {
 	return fmt.Sprintf(""+
 		"--\n"+
-		"-- Schema structure for '%s'\n"+
+		"-- Schema structure for %s\n"+
 		"--\n"+
-		"CREATE SCHEMA %s;\n"+
-		"ALTER SCHEMA hello OWNER TO %s;\n\n", ps.name, ps.name, ps.schemaOwner)
+		"CREATE SCHEMA %s;\n\n", ps.name, ps.name)
 }
 
 // Statement returns the create statement of a table.
 func (t *tableSchema) Statement() string {
 	s := fmt.Sprintf(""+
 		"--\n"+
-		"-- Table structure for '%s'.'%s'\n"+
+		"-- Table structure for %s.%s\n"+
 		"--\n"+
 		"CREATE TABLE %s.%s (\n",
 		t.schemaName, t.name, t.schemaName, t.name)
@@ -419,7 +568,7 @@ func (c *tableConstraint) Statement() string {
 func (v *viewSchema) Statement() string {
 	return fmt.Sprintf(""+
 		"--\n"+
-		"-- View structure for '%s'.'%s'\n"+
+		"-- View structure for %s.%s\n"+
 		"--\n"+
 		"CREATE VIEW %s.%s AS\n%s\n",
 		v.schemaName, v.name, v.schemaName, v.name, v.statement)
@@ -429,7 +578,7 @@ func (v *viewSchema) Statement() string {
 func (seq *sequencePgSchema) Statement() string {
 	s := fmt.Sprintf(""+
 		"--\n"+
-		"-- Sequence structure for '%s'.'%s'\n"+
+		"-- Sequence structure for %s.%s\n"+
 		"--\n"+
 		"CREATE SEQUENCE %s.%s\n"+
 		"    AS %s\n"+
@@ -461,7 +610,7 @@ func (seq *sequencePgSchema) Statement() string {
 func (idx indexSchema) Statement() string {
 	return fmt.Sprintf(""+
 		"--\n"+
-		"-- Index structure for '%s'.'%s'\n"+
+		"-- Index structure for %s.%s\n"+
 		"--\n"+
 		"%s;\n\n",
 		idx.schemaName, idx.name, idx.statement)
@@ -471,7 +620,7 @@ func (idx indexSchema) Statement() string {
 func (f functionSchema) Statement() string {
 	return fmt.Sprintf(""+
 		"--\n"+
-		"-- Function structure for '%s'.'%s'\n"+
+		"-- Function structure for %s.%s\n"+
 		"--\n"+
 		"%s;\n\n",
 		f.schemaName, f.name, f.statement)
@@ -481,7 +630,7 @@ func (f functionSchema) Statement() string {
 func (t triggerSchema) Statement() string {
 	return fmt.Sprintf(""+
 		"--\n"+
-		"-- Trigger structure for '%s'\n"+
+		"-- Trigger structure for %s\n"+
 		"--\n"+
 		"%s;\n\n",
 		t.name, t.statement)
@@ -491,7 +640,7 @@ func (t triggerSchema) Statement() string {
 func (t eventTriggerSchema) Statement() string {
 	s := fmt.Sprintf(""+
 		"--\n"+
-		"-- Event trigger structure for '%s'\n"+
+		"-- Event trigger structure for %s\n"+
 		"--\n",
 		t.name)
 	s += fmt.Sprintf("CREATE EVENT TRIGGER %s ON %s", t.name, t.event)
@@ -521,7 +670,7 @@ func (t eventTriggerSchema) Statement() string {
 func getDatabaseStmt(dbName string) string {
 	return fmt.Sprintf(""+
 		"--\n"+
-		"-- PostgreSQL database structure for `%s`\n"+
+		"-- PostgreSQL database structure for %s\n"+
 		"--\n"+
 		"\\connect %s;\n\n",
 		dbName, dbName)
@@ -560,6 +709,7 @@ func (dp *Dumper) getPgSchemas() ([]pgSchema, error) {
 		if err := rows.Scan(&schema.name, &schema.schemaOwner); err != nil {
 			return nil, err
 		}
+		schema.name = quoteIdentifier(schema.name)
 		if ok := pgSystemSchema(schema.name); ok {
 			continue
 		}
@@ -612,8 +762,8 @@ func (dp *Dumper) getPgTables() ([]tableSchema, error) {
 		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tablespace, &hasindexes, &hasrules, &hastriggers, &rowsecurity); err != nil {
 			return nil, err
 		}
-		tbl.schemaName = schemaname
-		tbl.name = tablename
+		tbl.schemaName = quoteIdentifier(schemaname)
+		tbl.name = quoteIdentifier(tablename)
 		tbl.tableowner = tableowner
 
 		columns, err := dp.getTableColumns(tbl.schemaName, tbl.name)
@@ -698,6 +848,7 @@ func (dp *Dumper) getTableConstraints() (map[string][]tableConstraint, error) {
 		if err := rows.Scan(&schemaName, &tableName, &constraint.name, &constraint.constraint); err != nil {
 			return nil, err
 		}
+		schemaName, tableName, constraint.name = quoteIdentifier(schemaName), quoteIdentifier(tableName), quoteIdentifier(constraint.name)
 
 		var key string
 		if strings.Contains(tableName, ".") {
@@ -729,6 +880,7 @@ func (dp *Dumper) getViews() ([]viewSchema, error) {
 		if err := rows.Scan(&view.schemaName, &view.name); err != nil {
 			return nil, err
 		}
+		view.schemaName, view.name = quoteIdentifier(view.schemaName), quoteIdentifier(view.name)
 		if err = dp.getView(&view); err != nil {
 			return nil, fmt.Errorf("getPgView(%q, %q) got error %v", view.schemaName, view.name, err)
 		}
@@ -775,6 +927,7 @@ func (dp *Dumper) getIndices() ([]indexSchema, error) {
 		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement); err != nil {
 			return nil, err
 		}
+		idx.schemaName, idx.tableName, idx.name = quoteIdentifier(idx.schemaName), quoteIdentifier(idx.tableName), quoteIdentifier(idx.name)
 		indices = append(indices, idx)
 	}
 
@@ -797,7 +950,7 @@ func (dp *Dumper) getTableData(tbl tableSchema) ([]string, error) {
 		return nil, err
 	}
 	if len(cols) <= 0 {
-		return nil, fmt.Errorf("table %q.%q has no columns.", tbl.schemaName, tbl.name)
+		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
 	ptrs := make([]interface{}, len(cols))
@@ -847,6 +1000,7 @@ func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
 		if err := rows.Scan(&schemaName, &seqName, &cache); err != nil {
 			return nil, err
 		}
+		schemaName, seqName = quoteIdentifier(schemaName), quoteIdentifier(seqName)
 		caches[fmt.Sprintf("%s.%s", schemaName, seqName)] = cache
 	}
 
@@ -866,6 +1020,7 @@ func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
 		if err := rows.Scan(&seq.schemaName, &seq.name, &seq.dataType, &seq.startValue, &seq.increment, &seq.minimumValue, &seq.maximumValue, &seq.cycleOption); err != nil {
 			return nil, err
 		}
+		seq.schemaName, seq.name = quoteIdentifier(seq.schemaName), quoteIdentifier(seq.name)
 		cache, ok := caches[fmt.Sprintf("%s.%s", seq.schemaName, seq.name)]
 		if !ok {
 			return nil, fmt.Errorf("cannot find cache value for sequence: %q.%q", seq.schemaName, seq.name)
@@ -901,6 +1056,7 @@ func (dp *Dumper) getFunctions() ([]functionSchema, error) {
 		if err := rows.Scan(&f.schemaName, &f.name, &f.language, &f.statement, &f.arguments); err != nil {
 			return nil, err
 		}
+		f.schemaName, f.name = quoteIdentifier(f.schemaName), quoteIdentifier(f.name)
 		fs = append(fs, f)
 	}
 
@@ -923,6 +1079,7 @@ func (dp *Dumper) getTriggers() ([]triggerSchema, error) {
 		if err := rows.Scan(&t.name, &t.statement); err != nil {
 			return nil, err
 		}
+		t.name = quoteIdentifier(t.name)
 		triggers = append(triggers, t)
 	}
 
@@ -949,8 +1106,25 @@ func (dp *Dumper) getEventTriggers() ([]eventTriggerSchema, error) {
 		if err := rows.Scan(&t.name, &t.enabled, &t.event, &t.owner, &t.tags, &t.funcName); err != nil {
 			return nil, err
 		}
+		t.name = quoteIdentifier(t.name)
 		triggers = append(triggers, t)
 	}
 
 	return triggers, nil
+}
+
+// quoteIdentifier will quote identifiers including keywords, capital charactors, or special charactors.
+func quoteIdentifier(s string) string {
+	quote := false
+	if reserved[strings.ToUpper(s)] {
+		quote = true
+	}
+	if !ident.MatchString(s) {
+		quote = true
+	}
+	if quote {
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(s, "\"", "\"\""))
+	} else {
+		return s
+	}
 }
