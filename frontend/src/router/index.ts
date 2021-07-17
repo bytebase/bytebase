@@ -549,6 +549,18 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "table/:tableName",
+                name: "workspace.database.table.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    return `Table - ${route.params.tableName}`;
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/TableDetail.vue"),
+                props: true,
+              },
+              {
                 path: "datasource/:dataSourceSlug",
                 name: "workspace.database.datasource.detail",
                 meta: {
