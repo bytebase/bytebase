@@ -105,6 +105,22 @@
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
             <div class="col-span-1 col-start-1">
               <dt class="text-sm font-medium text-control-light">
+                Character set
+              </dt>
+              <dd class="mt-1 text-sm text-main">
+                {{ database.characterSet }}
+              </dd>
+            </div>
+
+            <div class="col-span-1">
+              <dt class="text-sm font-medium text-control-light">Collation</dt>
+              <dd class="mt-1 text-sm text-main">
+                {{ database.collation }}
+              </dd>
+            </div>
+
+            <div class="col-span-1 col-start-1">
+              <dt class="text-sm font-medium text-control-light">
                 Sync status
               </dt>
               <dd class="mt-1 text-sm text-main">

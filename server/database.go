@@ -173,6 +173,42 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, tableList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch table list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/database/:id/table/:tableName", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+
+		tableName := c.Param("tableName")
+		tableFind := &api.TableFind{
+			DatabaseId: &id,
+			Name:       &tableName,
+		}
+		table, err := s.TableService.FindTable(context.Background(), tableFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table for database id: %d, table name: %s", id, tableName)).SetInternal(err)
+		}
+
+		table.Database = database
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, table); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch table response: %v", id)).SetInternal(err)
 		}
 		return nil

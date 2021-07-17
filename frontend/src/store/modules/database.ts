@@ -3,19 +3,19 @@ import {
   Database,
   DatabaseCreate,
   DatabaseId,
+  DatabaseState,
+  DataSource,
+  empty,
+  EMPTY_ID,
+  EnvironmentId,
   Instance,
   InstanceId,
-  DatabaseState,
-  ResourceObject,
-  ResourceIdentifier,
-  EnvironmentId,
   PrincipalId,
-  unknown,
-  DataSource,
   Project,
   ProjectId,
-  EMPTY_ID,
-  empty,
+  ResourceIdentifier,
+  ResourceObject,
+  unknown,
 } from "../../types";
 
 function convert(
@@ -120,7 +120,7 @@ const getters = {
   convert:
     (state: DatabaseState, getters: any, rootState: any, rootGetters: any) =>
     (database: ResourceObject, inlcudedList: ResourceObject[]): Database => {
-      return convert(database, [], rootGetters);
+      return convert(database, inlcudedList, rootGetters);
     },
 
   databaseListByInstanceId:
