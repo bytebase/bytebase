@@ -292,9 +292,15 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
 	}
+
+	constraints := make(map[string]bool)
 	for _, tbl := range tables {
 		if _, err := out.WriteString(tbl.Statement()); err != nil {
 			return err
+		}
+		for _, constraint := range tbl.constraints {
+			key := fmt.Sprintf("%s.%s.%s", constraint.schemaName, constraint.tableName, constraint.name)
+			constraints[key] = true
 		}
 		if !schemaOnly {
 			stmts, err := dp.getTableData(tbl)
@@ -331,6 +337,10 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 		return fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
 	}
 	for _, idx := range indices {
+		key := fmt.Sprintf("%s.%s.%s", idx.schemaName, idx.tableName, idx.name)
+		if constraints[key] {
+			continue
+		}
 		if _, err := out.WriteString(idx.Statement()); err != nil {
 			return err
 		}
@@ -451,9 +461,10 @@ type columnSchema struct {
 
 // tableConstraint describes constraint schema of a pg table.
 type tableConstraint struct {
-	name            string
-	schemaTableName string
-	constraint      string
+	name       string
+	schemaName string
+	tableName  string
+	constraint string
 }
 
 // viewSchema describes the schema of a pg view.
@@ -559,9 +570,9 @@ func (c *columnSchema) Statement() string {
 // Statement returns the create statement of a table constraint.
 func (c *tableConstraint) Statement() string {
 	return fmt.Sprintf(""+
-		"ALTER TABLE ONLY %s\n"+
+		"ALTER TABLE ONLY %s.%s\n"+
 		"    ADD CONSTRAINT %s %s;\n",
-		c.schemaTableName, c.name, c.constraint)
+		c.schemaName, c.tableName, c.name, c.constraint)
 }
 
 // Statement returns the create statement of a view.
@@ -570,7 +581,7 @@ func (v *viewSchema) Statement() string {
 		"--\n"+
 		"-- View structure for %s.%s\n"+
 		"--\n"+
-		"CREATE VIEW %s.%s AS\n%s\n",
+		"CREATE VIEW %s.%s AS\n%s\n\n",
 		v.schemaName, v.name, v.schemaName, v.name, v.statement)
 }
 
@@ -844,19 +855,14 @@ func (dp *Dumper) getTableConstraints() (map[string][]tableConstraint, error) {
 
 	for rows.Next() {
 		var constraint tableConstraint
-		var schemaName, tableName string
-		if err := rows.Scan(&schemaName, &tableName, &constraint.name, &constraint.constraint); err != nil {
+		if err := rows.Scan(&constraint.schemaName, &constraint.tableName, &constraint.name, &constraint.constraint); err != nil {
 			return nil, err
 		}
-		schemaName, tableName, constraint.name = quoteIdentifier(schemaName), quoteIdentifier(tableName), quoteIdentifier(constraint.name)
-
-		var key string
-		if strings.Contains(tableName, ".") {
-			key = tableName
-		} else {
-			key = fmt.Sprintf("%s.%s", schemaName, tableName)
+		if strings.Contains(constraint.tableName, ".") {
+			constraint.tableName = constraint.tableName[1+strings.Index(constraint.tableName, "."):]
 		}
-		constraint.schemaTableName = key
+		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
+		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
 		v, _ := ret[key]
 		ret[key] = append(v, constraint)
 	}
