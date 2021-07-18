@@ -69,6 +69,8 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		"'information_schema'",
 		"'performance_schema'",
 		"'sys'",
+		// Skip our internal "bytebase" database
+		"'bytebase'",
 	}
 
 	// Query column info
