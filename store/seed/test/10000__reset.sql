@@ -33,6 +33,9 @@ DELETE FROM
     data_source;
 
 DELETE FROM
+    col;
+
+DELETE FROM
     tbl;
 
 DELETE FROM

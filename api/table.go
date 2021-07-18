@@ -33,6 +33,7 @@ type Table struct {
 	DataFree             int64      `jsonapi:"attr,dataFree"`
 	CreateOptions        string     `jsonapi:"attr,createOptions"`
 	Comment              string     `jsonapi:"attr,comment"`
+	ColumnList           []*Column  `jsonapi:"attr,columnList"`
 }
 
 type TableCreate struct {

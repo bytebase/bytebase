@@ -169,6 +169,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		for _, table := range tableList {
 			table.Database = database
+			columnFind := &api.ColumnFind{
+				DatabaseId: &id,
+				TableId:    &table.ID,
+			}
+			table.ColumnList, err = s.ColumnService.FindColumnList(context.Background(), columnFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -206,6 +214,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		table.Database = database
+
+		columnFind := &api.ColumnFind{
+			DatabaseId: &id,
+			TableId:    &table.ID,
+		}
+		table.ColumnList, err = s.ColumnService.FindColumnList(context.Background(), columnFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, table); err != nil {

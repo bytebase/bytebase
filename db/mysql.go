@@ -71,6 +71,65 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		"'sys'",
 	}
 
+	// Query column info
+	columnWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	columnRows, err := driver.db.QueryContext(ctx, `
+			SELECT
+				TABLE_SCHEMA,
+				TABLE_NAME,
+				IFNULL(COLUMN_NAME, ''), 
+				ORDINAL_POSITION,
+				COLUMN_DEFAULT,
+				IS_NULLABLE,
+				COLUMN_TYPE,
+				IFNULL(CHARACTER_SET_NAME, ''),
+				IFNULL(COLLATION_NAME, ''),
+				COLUMN_COMMENT
+			FROM information_schema.COLUMNS
+			WHERE `+columnWhere,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// dbName.tableName -> columnList map
+	columnMap := make(map[string][]DBColumn)
+	for columnRows.Next() {
+		var dbName string
+		var tableName string
+		var nullable string
+		var defaultStr sql.NullString
+		var column DBColumn
+		if err := columnRows.Scan(
+			&dbName,
+			&tableName,
+			&column.Name,
+			&column.Position,
+			&defaultStr,
+			&nullable,
+			&column.Type,
+			&column.CharacterSet,
+			&column.Collation,
+			&column.Comment,
+		); err != nil {
+			return nil, err
+		}
+
+		if defaultStr.Valid {
+			column.Default = &defaultStr.String
+		}
+
+		key := fmt.Sprintf("%s.%s", dbName, tableName)
+		tableList, ok := columnMap[key]
+		if ok {
+			columnMap[key] = append(tableList, column)
+		} else {
+			list := make([]DBColumn, 0)
+			columnMap[key] = append(list, column)
+		}
+	}
+	columnRows.Close()
+
 	// Query table info
 	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	tableRows, err := driver.db.QueryContext(ctx, `
@@ -117,6 +176,9 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		); err != nil {
 			return nil, err
 		}
+
+		key := fmt.Sprintf("%s.%s", dbName, table.Name)
+		table.ColumnList = columnMap[key]
 
 		tableList, ok := tableMap[dbName]
 		if ok {

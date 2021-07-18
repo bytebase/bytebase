@@ -167,6 +167,10 @@
           </dl>
         </div>
       </div>
+
+      <div class="mt-6 px-6">
+        <ColumnTable :columnList="table.columnList" />
+      </div>
     </main>
   </div>
 </template>
@@ -174,6 +178,7 @@
 <script lang="ts">
 import { computed } from "@vue/runtime-core";
 import { useStore } from "vuex";
+import ColumnTable from "../components/ColumnTable.vue";
 import { bytesToString, idFromSlug } from "../utils";
 
 export default {
@@ -188,7 +193,7 @@ export default {
       type: String,
     },
   },
-  components: {},
+  components: { ColumnTable },
   setup(props, ctx) {
     const store = useStore();
 
