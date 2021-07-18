@@ -418,6 +418,51 @@ WHERE
 
 END;
 
+-- idx stores the index for a particular table from a particular database
+-- data is synced periodically from the instance
+CREATE TABLE idx (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL REFERENCES db (id),
+    table_id INTEGER NOT NULL REFERENCES tbl (id),
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
+    last_successful_sync_ts BIGINT NOT NULL,
+    name TEXT NOT NULL,
+    expression TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    `type` TEXT NOT NULL,
+    `unique` INTEGER NOT NULL,
+    visible INTEGER NOT NULL,
+    `comment` TEXT NOT NULL,
+    UNIQUE(database_id, table_id, name, expression)
+);
+
+CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('idx', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_idx_modification_time`
+AFTER
+UPDATE
+    ON `idx` FOR EACH ROW BEGIN
+UPDATE
+    `idx`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
