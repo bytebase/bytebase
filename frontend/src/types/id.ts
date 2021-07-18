@@ -37,6 +37,8 @@ export type DatabaseId = IdType;
 
 export type TableId = IdType;
 
+export type ColumnId = IdType;
+
 export type VCSId = IdType;
 
 export type RepositoryId = IdType;

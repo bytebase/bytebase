@@ -25,6 +25,17 @@ func (e Type) String() string {
 	return "UNKNOWN"
 }
 
+type DBColumn struct {
+	Name         string
+	Position     int
+	Default      *string
+	Nullable     bool
+	Type         string
+	CharacterSet string
+	Collation    string
+	Comment      string
+}
+
 type DBTable struct {
 	Name          string
 	CreatedTs     int64
@@ -38,6 +49,7 @@ type DBTable struct {
 	DataFree      int64
 	CreateOptions string
 	Comment       string
+	ColumnList    []DBColumn
 }
 
 type DBSchema struct {

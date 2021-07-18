@@ -1,6 +1,7 @@
 -- Table for database 7002 testdb_dev 
 INSERT INTO
     tbl (
+        id,
         creator_id,
         updater_id,
         database_id,
@@ -19,6 +20,7 @@ INSERT INTO
     )
 VALUES
     (
+        7101,
         101,
         101,
         7002,

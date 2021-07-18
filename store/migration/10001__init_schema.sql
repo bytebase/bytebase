@@ -299,11 +299,11 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
+    last_successful_sync_ts BIGINT NOT NULL,
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
     `collation` TEXT NOT NULL,
-    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
-    last_successful_sync_ts BIGINT NOT NULL,
     UNIQUE(instance_id, name)
 );
 
@@ -337,12 +337,12 @@ CREATE TABLE tbl (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
+    last_successful_sync_ts BIGINT NOT NULL,
     name TEXT NOT NULL,
     `type` TEXT NOT NULL,
     `engine` TEXT NOT NULL,
     `collation` TEXT NOT NULL,
-    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
-    last_successful_sync_ts BIGINT NOT NULL,
     row_count BIGINT NOT NULL,
     data_size BIGINT NOT NULL,
     index_size BIGINT NOT NULL,
@@ -365,6 +365,52 @@ UPDATE
     ON `tbl` FOR EACH ROW BEGIN
 UPDATE
     `tbl`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- col stores the column for a particular table from a particular database
+-- data is synced periodically from the instance
+CREATE TABLE col (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL REFERENCES db (id),
+    table_id INTEGER NOT NULL REFERENCES tbl (id),
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
+    last_successful_sync_ts BIGINT NOT NULL,
+    name TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    `default` TEXT,
+    `nullable` INTEGER NOT NULL,
+    `type` TEXT NOT NULL,
+    character_set TEXT NOT NULL,
+    `collation` TEXT NOT NULL,
+    `comment` TEXT NOT NULL,
+    UNIQUE(database_id, table_id, name)
+);
+
+CREATE INDEX idx_col_database_id_table_id ON col(database_id, table_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('col', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_col_modification_time`
+AFTER
+UPDATE
+    ON `col` FOR EACH ROW BEGIN
+UPDATE
+    `col`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

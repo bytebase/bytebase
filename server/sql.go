@@ -106,13 +106,24 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
-			var createTable = func(database *api.Database, tableCreate *api.TableCreate) error {
-				_, err := s.TableService.CreateTable(context.Background(), tableCreate)
+			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
+				createTable, err := s.TableService.CreateTable(context.Background(), tableCreate)
 				if err != nil {
 					if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-						return fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
+						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
-					return fmt.Errorf("failed to sync database for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
+					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
+				}
+				return createTable, nil
+			}
+
+			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
+				_, err := s.ColumnService.CreateColumn(context.Background(), columnCreate)
+				if err != nil {
+					if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
+					}
+					return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Failed to import new column: %s. Error %w", instance.Name, database.Name, table.Name, columnCreate.Name, err)
 				}
 				return nil
 			}
@@ -168,6 +179,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 							Name:       &table.Name,
 						}
 						storedTable, err := s.TableService.FindTable(context.Background(), tableFind)
+						var upsertedTable *api.Table
 						if err != nil {
 							if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 								tableCreate := &api.TableCreate{
@@ -184,7 +196,8 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 									CreateOptions: table.CreateOptions,
 									Comment:       table.Comment,
 								}
-								if err := createTable(database, tableCreate); err != nil {
+								upsertedTable, err = createTable(database, tableCreate)
+								if err != nil {
 									return err
 								}
 							} else {
@@ -197,12 +210,57 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 								SyncStatus:           &syncStatus,
 								LastSuccessfulSyncTs: &ts,
 							}
-							_, err := s.TableService.PatchTable(context.Background(), tablePatch)
+							upsertedTable, err = s.TableService.PatchTable(context.Background(), tablePatch)
 							if err != nil {
 								if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 									return fmt.Errorf("failed to sync table for instance: %s, database: %s. Table not found: %s", instance.Name, database.Name, storedTable.Name)
 								}
 								return fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to update table: %s. Error %w", instance.Name, database.Name, storedTable.Name, err)
+							}
+						}
+
+						for _, column := range table.ColumnList {
+							columnFind := &api.ColumnFind{
+								DatabaseId: &database.ID,
+								TableId:    &upsertedTable.ID,
+								Name:       &column.Name,
+							}
+							storedColumn, err := s.ColumnService.FindColumn(context.Background(), columnFind)
+							if err != nil {
+								if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+									columnCreate := &api.ColumnCreate{
+										CreatorId:    api.SYSTEM_BOT_ID,
+										DatabaseId:   database.ID,
+										TableId:      upsertedTable.ID,
+										Name:         column.Name,
+										Position:     column.Position,
+										Default:      column.Default,
+										Nullable:     column.Nullable,
+										Type:         column.Type,
+										CharacterSet: column.CharacterSet,
+										Collation:    column.Collation,
+										Comment:      column.Comment,
+									}
+									if err := createColumn(database, upsertedTable, columnCreate); err != nil {
+										return err
+									}
+								} else {
+									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+								}
+							} else {
+								columnPatch := &api.ColumnPatch{
+									ID:                   storedColumn.ID,
+									UpdaterId:            api.SYSTEM_BOT_ID,
+									SyncStatus:           &syncStatus,
+									LastSuccessfulSyncTs: &ts,
+								}
+								_, err := s.ColumnService.PatchColumn(context.Background(), columnPatch)
+								if err != nil {
+									if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+										return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column not found: %s", instance.Name, database.Name, upsertedTable.Name, storedColumn.Name)
+									}
+									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Failed to update column: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, storedColumn.Name, err)
+								}
 							}
 						}
 					}
@@ -239,8 +297,40 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 							CreateOptions: table.CreateOptions,
 							Comment:       table.Comment,
 						}
-						if err := createTable(database, tableCreate); err != nil {
+						upsertedTable, err := createTable(database, tableCreate)
+						if err != nil {
 							return err
+						}
+
+						for _, column := range table.ColumnList {
+							columnFind := &api.ColumnFind{
+								DatabaseId: &database.ID,
+								TableId:    &upsertedTable.ID,
+								Name:       &column.Name,
+							}
+							_, err := s.ColumnService.FindColumn(context.Background(), columnFind)
+							if err != nil {
+								if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+									columnCreate := &api.ColumnCreate{
+										CreatorId:    api.SYSTEM_BOT_ID,
+										DatabaseId:   database.ID,
+										TableId:      upsertedTable.ID,
+										Name:         column.Name,
+										Position:     column.Position,
+										Default:      column.Default,
+										Nullable:     column.Nullable,
+										Type:         column.Type,
+										CharacterSet: column.CharacterSet,
+										Collation:    column.Collation,
+										Comment:      column.Comment,
+									}
+									if err := createColumn(database, upsertedTable, columnCreate); err != nil {
+										return err
+									}
+								} else {
+									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+								}
+							}
 						}
 					}
 				}
