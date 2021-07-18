@@ -74,7 +74,7 @@ const COLUMN_LIST: BBTableColumn[] = [
 ];
 
 export default {
-  name: "TableTable",
+  name: "ColumnTable",
   components: {},
   props: {
     columnList: {
