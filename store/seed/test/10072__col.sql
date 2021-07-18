@@ -1238,7 +1238,7 @@ VALUES
         ''
     );
 
--- Column for database 7008 blog, table 7114 post 
+-- Column for database 7012 blog, table 7114 post 
 INSERT INTO
     col (
         creator_id,
@@ -1379,7 +1379,7 @@ VALUES
         ''
     );
 
--- Column for database 7008 blog, table 7115 comment 
+-- Column for database 7012 blog, table 7115 comment 
 INSERT INTO
     col (
         creator_id,
