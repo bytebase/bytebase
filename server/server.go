@@ -33,6 +33,7 @@ type Server struct {
 	DatabaseService        api.DatabaseService
 	TableService           api.TableService
 	ColumnService          api.ColumnService
+	IndexService           api.IndexService
 	DataSourceService      api.DataSourceService
 	IssueService           api.IssueService
 	IssueSubscriberService api.IssueSubscriberService

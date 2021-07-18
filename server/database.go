@@ -177,6 +177,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
+
+			indexFind := &api.IndexFind{
+				DatabaseId: &id,
+				TableId:    &table.ID,
+			}
+			table.IndexList, err = s.IndexService.FindIndexList(context.Background(), indexFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -222,6 +231,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		table.ColumnList, err = s.ColumnService.FindColumnList(context.Background(), columnFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
+		}
+
+		indexFind := &api.IndexFind{
+			DatabaseId: &id,
+			TableId:    &table.ID,
+		}
+		table.IndexList, err = s.IndexService.FindIndexList(context.Background(), indexFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

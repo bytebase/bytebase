@@ -127,6 +127,17 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 				return nil
 			}
 
+			var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
+				_, err := s.IndexService.CreateIndex(context.Background(), indexCreate)
+				if err != nil {
+					if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
+					}
+					return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to import new index and expression: %s(%s). Error %w", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression, err)
+				}
+				return nil
+			}
+
 			// Compare the stored db info with the just synced db schema.
 			// Case 1: If item appears both in the stored db info and the synced db schema, then we UPDATE the corresponding record in the stored db.
 			// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the record in the stored db.
@@ -169,6 +180,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 
 					for _, table := range schema.TableList {
+						// Table
 						tableFind := &api.TableFind{
 							DatabaseId: &database.ID,
 							Name:       &table.Name,
@@ -214,6 +226,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 							}
 						}
 
+						// Column
 						for _, column := range table.ColumnList {
 							columnFind := &api.ColumnFind{
 								DatabaseId: &database.ID,
@@ -258,6 +271,52 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 								}
 							}
 						}
+
+						// Index
+						for _, index := range table.IndexList {
+							indexFind := &api.IndexFind{
+								DatabaseId: &database.ID,
+								TableId:    &upsertedTable.ID,
+								Name:       &index.Name,
+								Expression: &index.Expression,
+							}
+							storedIndex, err := s.IndexService.FindIndex(context.Background(), indexFind)
+							if err != nil {
+								if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+									indexCreate := &api.IndexCreate{
+										CreatorId:  api.SYSTEM_BOT_ID,
+										DatabaseId: database.ID,
+										TableId:    upsertedTable.ID,
+										Name:       index.Name,
+										Expression: index.Expression,
+										Position:   index.Position,
+										Type:       index.Type,
+										Unique:     index.Unique,
+										Visible:    index.Visible,
+										Comment:    index.Comment,
+									}
+									if err := createIndex(database, upsertedTable, indexCreate); err != nil {
+										return err
+									}
+								} else {
+									return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+								}
+							} else {
+								indexPatch := &api.IndexPatch{
+									ID:                   storedIndex.ID,
+									UpdaterId:            api.SYSTEM_BOT_ID,
+									SyncStatus:           &syncStatus,
+									LastSuccessfulSyncTs: &ts,
+								}
+								_, err := s.IndexService.PatchIndex(context.Background(), indexPatch)
+								if err != nil {
+									if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+										return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Index not found: %s", instance.Name, database.Name, upsertedTable.Name, storedIndex.Name)
+									}
+									return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to update index: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, storedIndex.Name, err)
+								}
+							}
+						}
 					}
 				} else {
 					// Case 2
@@ -278,6 +337,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 
 					for _, table := range schema.TableList {
+						// Table
 						tableCreate := &api.TableCreate{
 							CreatorId:     api.SYSTEM_BOT_ID,
 							DatabaseId:    database.ID,
@@ -297,6 +357,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 							return err
 						}
 
+						// Column
 						for _, column := range table.ColumnList {
 							columnFind := &api.ColumnFind{
 								DatabaseId: &database.ID,
@@ -324,6 +385,38 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 									}
 								} else {
 									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+								}
+							}
+						}
+
+						// Index
+						for _, index := range table.IndexList {
+							indexFind := &api.IndexFind{
+								DatabaseId: &database.ID,
+								TableId:    &upsertedTable.ID,
+								Name:       &index.Name,
+								Expression: &index.Expression,
+							}
+							_, err := s.IndexService.FindIndex(context.Background(), indexFind)
+							if err != nil {
+								if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+									indexCreate := &api.IndexCreate{
+										CreatorId:  api.SYSTEM_BOT_ID,
+										DatabaseId: database.ID,
+										TableId:    upsertedTable.ID,
+										Name:       index.Name,
+										Expression: index.Expression,
+										Position:   index.Position,
+										Type:       index.Type,
+										Unique:     index.Unique,
+										Visible:    index.Visible,
+										Comment:    index.Comment,
+									}
+									if err := createIndex(database, upsertedTable, indexCreate); err != nil {
+										return err
+									}
+								} else {
+									return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 								}
 							}
 						}

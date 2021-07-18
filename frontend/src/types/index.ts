@@ -24,4 +24,5 @@ export * from "./repository";
 export * from "./sql";
 export * from "./store";
 export * from "./table";
+export * from "./tableIndex";
 export * from "./vcs";

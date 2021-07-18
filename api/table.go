@@ -34,6 +34,7 @@ type Table struct {
 	CreateOptions        string     `jsonapi:"attr,createOptions"`
 	Comment              string     `jsonapi:"attr,comment"`
 	ColumnList           []*Column  `jsonapi:"attr,columnList"`
+	IndexList            []*Index   `jsonapi:"attr,indexList"`
 }
 
 type TableCreate struct {

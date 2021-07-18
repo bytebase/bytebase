@@ -169,7 +169,13 @@
       </div>
 
       <div class="mt-6 px-6">
+        <div class="text-lg leading-6 font-medium text-main mb-4">Columns</div>
         <ColumnTable :columnList="table.columnList" />
+      </div>
+
+      <div class="mt-6 px-6">
+        <div class="text-lg leading-6 font-medium text-main mb-4">Indexes</div>
+        <IndexTable :indexList="table.indexList" />
       </div>
     </main>
   </div>
@@ -179,6 +185,7 @@
 import { computed } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import ColumnTable from "../components/ColumnTable.vue";
+import IndexTable from "../components/IndexTable.vue";
 import { bytesToString, idFromSlug } from "../utils";
 
 export default {
@@ -193,7 +200,7 @@ export default {
       type: String,
     },
   },
-  components: { ColumnTable },
+  components: { ColumnTable, IndexTable },
   setup(props, ctx) {
     const store = useStore();
 
@@ -205,7 +212,6 @@ export default {
     });
 
     const database = computed(() => {
-      console.log("table", table.value);
       return table.value.database;
     });
 
