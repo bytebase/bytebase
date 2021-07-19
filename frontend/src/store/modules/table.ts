@@ -1,15 +1,33 @@
 import axios from "axios";
 import {
-  ResourceObject,
-  TableState,
+  Database,
   DatabaseId,
+  ResourceIdentifier,
+  ResourceObject,
   Table,
+  TableState,
+  unknown,
 } from "../../types";
 
-function convert(table: ResourceObject, rootGetters: any): Table {
+function convert(
+  table: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Table {
+  const databaseId = (table.relationships!.database.data as ResourceIdentifier)
+    .id;
+
+  let database: Database = unknown("DATABASE") as Database;
+  for (const item of includedList || []) {
+    if (item.type == "database" && item.id == databaseId) {
+      database = rootGetters["database/convert"](item, includedList);
+      break;
+    }
+  }
   return {
-    ...(table.attributes as Omit<Table, "id">),
+    ...(table.attributes as Omit<Table, "id" | "database">),
     id: parseInt(table.id),
+    database,
   };
 }
 
@@ -18,6 +36,16 @@ const state: () => TableState = () => ({
 });
 
 const getters = {
+  tableListByDatabaseIdAndTableName:
+    (state: TableState) =>
+    (databaseId: DatabaseId, tableName: string): Table | undefined => {
+      const list = state.tableListByDatabaseId.get(databaseId);
+      if (list) {
+        return list.find((item: Table) => item.name == tableName);
+      }
+      return undefined;
+    },
+
   tableListByDatabaseId:
     (state: TableState) =>
     (databaseId: DatabaseId): Table[] => {
@@ -26,14 +54,30 @@ const getters = {
 };
 
 const actions = {
+  async fetchTableByDatabaseIdAndTableName(
+    { commit, rootGetters }: any,
+    { databaseId, tableName }: { databaseId: DatabaseId; tableName: string }
+  ) {
+    const data = (
+      await axios.get(`/api/database/${databaseId}/table/${tableName}`)
+    ).data;
+    const table = convert(data.data, data.included, rootGetters);
+
+    commit("setTableByDatabaseIdAndTableName", {
+      databaseId,
+      tableName,
+      table,
+    });
+    return table;
+  },
+
   async fetchTableListByDatabaseId(
     { commit, rootGetters }: any,
     databaseId: DatabaseId
   ) {
-    const tableList = (
-      await axios.get(`/api/database/${databaseId}/table`)
-    ).data.data.map((table: ResourceObject) => {
-      return convert(table, rootGetters);
+    const data = (await axios.get(`/api/database/${databaseId}/table`)).data;
+    const tableList = data.data.map((table: ResourceObject) => {
+      return convert(table, data.included, rootGetters);
     });
 
     commit("setTableListByDatabaseId", { databaseId, tableList });
@@ -42,6 +86,31 @@ const actions = {
 };
 
 const mutations = {
+  setTableByDatabaseIdAndTableName(
+    state: TableState,
+    {
+      databaseId,
+      tableName,
+      table,
+    }: {
+      databaseId: DatabaseId;
+      tableName: string;
+      table: Table;
+    }
+  ) {
+    const list = state.tableListByDatabaseId.get(databaseId);
+    if (list) {
+      const i = list.findIndex((item: Table) => item.name == tableName);
+      if (i != -1) {
+        list[i] = table;
+      } else {
+        list.push(table);
+      }
+    } else {
+      state.tableListByDatabaseId.set(databaseId, [table]);
+    }
+  },
+
   setTableListByDatabaseId(
     state: TableState,
     {

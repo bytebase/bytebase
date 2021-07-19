@@ -25,6 +25,28 @@ func (e Type) String() string {
 	return "UNKNOWN"
 }
 
+type DBIndex struct {
+	Name string
+	// This could refer to a column or an expression
+	Expression string
+	Position   int
+	Type       string
+	Unique     bool
+	Visible    bool
+	Comment    string
+}
+
+type DBColumn struct {
+	Name         string
+	Position     int
+	Default      *string
+	Nullable     bool
+	Type         string
+	CharacterSet string
+	Collation    string
+	Comment      string
+}
+
 type DBTable struct {
 	Name          string
 	CreatedTs     int64
@@ -38,6 +60,8 @@ type DBTable struct {
 	DataFree      int64
 	CreateOptions string
 	Comment       string
+	ColumnList    []DBColumn
+	IndexList     []DBIndex
 }
 
 type DBSchema struct {

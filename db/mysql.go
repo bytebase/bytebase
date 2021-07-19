@@ -69,7 +69,129 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		"'information_schema'",
 		"'performance_schema'",
 		"'sys'",
+		// Skip our internal "bytebase" database
+		"'bytebase'",
 	}
+
+	// Query index info
+	indexWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	indexRows, err := driver.db.QueryContext(ctx, `
+			SELECT
+				TABLE_SCHEMA,
+				TABLE_NAME,
+				INDEX_NAME,
+				COLUMN_NAME,
+				EXPRESSION,
+				SEQ_IN_INDEX,
+				INDEX_TYPE,
+				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
+				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
+				INDEX_COMMENT
+			FROM information_schema.STATISTICS
+			WHERE `+indexWhere,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// dbName/tableName -> indexList map
+	indexMap := make(map[string][]DBIndex)
+	for indexRows.Next() {
+		var dbName string
+		var tableName string
+		var columnName sql.NullString
+		var expression sql.NullString
+		var index DBIndex
+		if err := indexRows.Scan(
+			&dbName,
+			&tableName,
+			&index.Name,
+			&columnName,
+			&expression,
+			&index.Position,
+			&index.Type,
+			&index.Unique,
+			&index.Visible,
+			&index.Comment,
+		); err != nil {
+			return nil, err
+		}
+
+		if columnName.Valid {
+			index.Expression = columnName.String
+		} else if expression.Valid {
+			index.Expression = expression.String
+		}
+
+		key := fmt.Sprintf("%s/%s", dbName, tableName)
+		indexList, ok := indexMap[key]
+		if ok {
+			indexMap[key] = append(indexList, index)
+		} else {
+			list := make([]DBIndex, 0)
+			indexMap[key] = append(list, index)
+		}
+	}
+	indexRows.Close()
+
+	// Query column info
+	columnWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	columnRows, err := driver.db.QueryContext(ctx, `
+			SELECT
+				TABLE_SCHEMA,
+				TABLE_NAME,
+				IFNULL(COLUMN_NAME, ''), 
+				ORDINAL_POSITION,
+				COLUMN_DEFAULT,
+				IS_NULLABLE,
+				COLUMN_TYPE,
+				IFNULL(CHARACTER_SET_NAME, ''),
+				IFNULL(COLLATION_NAME, ''),
+				COLUMN_COMMENT
+			FROM information_schema.COLUMNS
+			WHERE `+columnWhere,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// dbName/tableName -> columnList map
+	columnMap := make(map[string][]DBColumn)
+	for columnRows.Next() {
+		var dbName string
+		var tableName string
+		var nullable string
+		var defaultStr sql.NullString
+		var column DBColumn
+		if err := columnRows.Scan(
+			&dbName,
+			&tableName,
+			&column.Name,
+			&column.Position,
+			&defaultStr,
+			&nullable,
+			&column.Type,
+			&column.CharacterSet,
+			&column.Collation,
+			&column.Comment,
+		); err != nil {
+			return nil, err
+		}
+
+		if defaultStr.Valid {
+			column.Default = &defaultStr.String
+		}
+
+		key := fmt.Sprintf("%s/%s", dbName, tableName)
+		tableList, ok := columnMap[key]
+		if ok {
+			columnMap[key] = append(tableList, column)
+		} else {
+			list := make([]DBColumn, 0)
+			columnMap[key] = append(list, column)
+		}
+	}
+	columnRows.Close()
 
 	// Query table info
 	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
@@ -117,6 +239,10 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		); err != nil {
 			return nil, err
 		}
+
+		key := fmt.Sprintf("%s/%s", dbName, table.Name)
+		table.ColumnList = columnMap[key]
+		table.IndexList = indexMap[key]
 
 		tableList, ok := tableMap[dbName]
 		if ok {

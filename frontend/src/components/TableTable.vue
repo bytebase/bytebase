@@ -5,7 +5,8 @@
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
-    :rowClickable="false"
+    :rowClickable="mode == 'TABLE'"
+    @click-row="clickTable"
   >
     <template v-slot:body="{ rowData: table }">
       <BBTableCell :leftPadding="4" class="w-16">
@@ -15,9 +16,6 @@
         {{ table.engine }}
       </BBTableCell>
       <BBTableCell v-if="mode == 'TABLE'" class="w-8">
-        {{ table.collation }}
-      </BBTableCell>
-      <BBTableCell v-if="mode == 'TABLE'" class="w-8">
         {{ table.rowCount }}
       </BBTableCell>
       <BBTableCell v-if="mode == 'TABLE'" class="w-8">
@@ -25,9 +23,6 @@
       </BBTableCell>
       <BBTableCell v-if="mode == 'TABLE'" class="w-8">
         {{ bytesToString(table.indexSize) }}
-      </BBTableCell>
-      <BBTableCell v-if="mode == 'TABLE'" class="w-8">
-        {{ table.dataFree }}
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ table.syncStatus }}
@@ -43,7 +38,8 @@
 import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Table } from "../types";
-import { bytesToString } from "../utils";
+import { bytesToString, databaseSlug } from "../utils";
+import { useRouter } from "vue-router";
 
 type Mode = "TABLE" | "VIEW";
 
@@ -58,9 +54,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Engine",
       },
       {
-        title: "Collation",
-      },
-      {
         title: "Row count est.",
       },
       {
@@ -68,9 +61,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
       },
       {
         title: "Index size",
-      },
-      {
-        title: "Free size",
       },
       {
         title: "Sync status",
@@ -110,13 +100,21 @@ export default {
     },
   },
   setup(props, ctx) {
+    const router = useRouter();
+
     const columnList = computed(() => {
       return columnListMap.get(props.mode);
     });
 
+    const clickTable = (section: number, row: number) => {
+      const table = props.tableList[row];
+      router.push(`/db/${databaseSlug(table.database)}/table/${table.name}`);
+    };
+
     return {
       columnList,
       bytesToString,
+      clickTable,
     };
   },
 };

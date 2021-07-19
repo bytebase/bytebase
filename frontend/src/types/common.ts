@@ -40,6 +40,7 @@ export type RouterSlug = {
   issueSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
+  tableName?: string;
   dataSourceSlug?: string;
   vcsSlug?: string;
 };
