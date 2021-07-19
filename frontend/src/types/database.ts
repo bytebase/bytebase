@@ -2,11 +2,11 @@
 // in the "database" object.
 // Physically, a database belongs to an instance. Logically, it belongs to a project.
 
+import { DataSource } from "./dataSource";
 import { DatabaseId, InstanceId, IssueId, ProjectId } from "./id";
 import { Instance } from "./instance";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { DataSource } from "./dataSource";
 
 // "OK" means we find the database with the same name.
 // "NOT_FOUND" means no matching database name found, this ususally means someone changes the underlying db name without Bytebase knowledge.
@@ -27,11 +27,11 @@ export type Database = {
   updatedTs: number;
 
   // Domain specific fields
+  syncStatus: DatabaseSyncStatus;
+  lastSuccessfulSyncTs: number;
   name: string;
   characterSet: string;
   collation: string;
-  syncStatus: DatabaseSyncStatus;
-  lastSuccessfulSyncTs: number;
 };
 
 export type DatabaseCreate = {

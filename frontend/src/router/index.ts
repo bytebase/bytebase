@@ -178,18 +178,6 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: true,
             },
           },
-          {
-            path: "500",
-            name: "error.500",
-            components: {
-              content: () => import("../views/Page500.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: {
-              content: true,
-              leftSidebar: true,
-            },
-          },
           // {
           //   path: "inbox",
           //   name: "workspace.inbox",
@@ -561,6 +549,18 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "table/:tableName",
+                name: "workspace.database.table.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    return `Table - ${route.params.tableName}`;
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/TableDetail.vue"),
+                props: true,
+              },
+              {
                 path: "datasource/:dataSourceSlug",
                 name: "workspace.database.datasource.detail",
                 meta: {
@@ -783,6 +783,7 @@ router.beforeEach((to, from, next) => {
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
+  const tableName = routerSlug.tableName;
   const dataSourceSlug = routerSlug.dataSourceSlug;
   const vcsSlug = routerSlug.vcsSlug;
 
@@ -870,9 +871,25 @@ router.beforeEach((to, from, next) => {
         databaseId: idFromSlug(databaseSlug),
       })
       .then((database) => {
-        if (!dataSourceSlug) {
+        if (!tableName && !dataSourceSlug) {
           next();
-        } else {
+        } else if (tableName) {
+          store
+            .dispatch("table/fetchTableByDatabaseIdAndTableName", {
+              databaseId: database.id,
+              tableName,
+            })
+            .then(() => {
+              next();
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+              throw error;
+            });
+        } else if (dataSourceSlug) {
           store
             .dispatch("dataSource/fetchDataSourceById", {
               dataSourceId: idFromSlug(dataSourceSlug),

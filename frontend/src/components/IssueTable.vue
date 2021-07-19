@@ -117,7 +117,6 @@
 
 <script lang="ts">
 import { reactive, PropType } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
   BBTableColumn,
@@ -134,7 +133,7 @@ import {
   allTaskList,
   stageSlug,
 } from "../utils";
-import { Issue, EMPTY_ID, Task } from "../types";
+import { Issue, Task } from "../types";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -230,7 +229,7 @@ export default {
     },
   },
   setup(props, ctx) {
-    const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       dataSource: [],
@@ -243,8 +242,6 @@ export default {
     const activeDatabaseName = function (issue: Issue) {
       return activeDatabase(issue.pipeline)?.name;
     };
-
-    const router = useRouter();
 
     const taskStepList = function (issue: Issue): BBStep[] {
       const list: Task[] = allTaskList(issue.pipeline);

@@ -33,6 +33,12 @@ DELETE FROM
     data_source;
 
 DELETE FROM
+    idx;
+
+DELETE FROM
+    col;
+
+DELETE FROM
     tbl;
 
 DELETE FROM
