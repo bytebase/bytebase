@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bytebase/bytebase/bin/bb/connect"
 	_ "github.com/lib/pq"
 )
 
@@ -169,57 +170,14 @@ var (
 
 // Dumper is a class for dumping schemas of a Postgres instance.
 type Dumper struct {
-	baseDNS string
-	// db is a shared database object across actions for different databases.
-	// Use switchDatabase() for connecting to a different database.
-	db *sql.DB
+	conn *connect.PostgresConnect
 }
 
-// New creates a new MySQL dumper.
-func New(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (*Dumper, error) {
-	if (sslCert == "" && sslKey != "") || (sslCert != "" && sslKey == "") {
-		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset.")
-	}
-
-	dns, err := guessDNS(username, password, hostname, port, database, sslCA, sslCert, sslKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// db is closed in the dumper closer.
-	db, err := sql.Open("postgres", dns)
-	if err != nil {
-		return nil, err
-	}
+// New creates a new Postgres dumper.
+func New(conn *connect.PostgresConnect) *Dumper {
 	return &Dumper{
-		baseDNS: dns,
-		db:      db,
-	}, nil
-}
-
-// Close closes the dumper.
-func (dp *Dumper) Close() error {
-	if dp.db != nil {
-		return dp.db.Close()
+		conn: conn,
 	}
-	return nil
-}
-
-// switchDatabase switches to a different database.
-func (dp *Dumper) switchDatabase(dbName string) error {
-	if dp.db != nil {
-		if err := dp.db.Close(); err != nil {
-			return err
-		}
-	}
-
-	dns := dp.baseDNS + " dbname=" + dbName
-	db, err := sql.Open("postgres", dns)
-	if err != nil {
-		return err
-	}
-	dp.db = db
-	return nil
 }
 
 // GetDumpableDatabases gets the databases to be exported.
@@ -255,7 +213,7 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 // Dump dumps the schema of a Postgres instance.
 func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 	// pg_dump -d dbName --schema-only
-	if err := dp.switchDatabase(dbName); err != nil {
+	if err := dp.conn.SwitchDatabase(dbName); err != nil {
 		return err
 	}
 
@@ -380,59 +338,6 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 	}
 
 	return nil
-}
-
-// guessDNS will guess the dns of a valid DB connection.
-func guessDNS(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, error) {
-	// dbname is guessed if not specified.
-	m := map[string]string{
-		"host":     hostname,
-		"port":     port,
-		"user":     username,
-		"password": password,
-	}
-
-	if sslCA == "" {
-		m["sslmode"] = "disable"
-	} else {
-		m["sslmode"] = "verify-ca"
-		m["sslrootcert"] = sslCA
-		if sslCert != "" && sslKey != "" {
-			m["sslcert"] = sslCert
-			m["sslkey"] = sslKey
-		}
-	}
-	var tokens []string
-	for k, v := range m {
-		if v != "" {
-			tokens = append(tokens, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
-	dns := strings.Join(tokens, " ")
-
-	var guesses []string
-	if database != "" {
-		guesses = append(guesses, dns+" dbname="+database)
-	} else {
-		// Guess default database postgres, template1.
-		guesses = append(guesses, dns)
-		guesses = append(guesses, dns+" dbname=postgres")
-		guesses = append(guesses, dns+" dbname=template1")
-	}
-
-	for _, dns := range guesses {
-		db, err := sql.Open("postgres", dns)
-		if err != nil {
-			continue
-		}
-		defer db.Close()
-
-		if err = db.Ping(); err != nil {
-			continue
-		}
-		return dns, nil
-	}
-	return "", fmt.Errorf("cannot find valid dns for connection")
 }
 
 // pgSchema describes a pg schema, a namespace for all schemas.
@@ -690,7 +595,7 @@ func getDatabaseStmt(dbName string) string {
 // getDatabases gets all databases of a Postgres instance.
 func (dp *Dumper) getDatabases() ([]string, error) {
 	var dbNames []string
-	rows, err := dp.db.Query("SELECT datname FROM pg_database;")
+	rows, err := dp.conn.DB.Query("SELECT datname FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +614,7 @@ func (dp *Dumper) getDatabases() ([]string, error) {
 // getPgSchemas gets all schemas of a database.
 func (dp *Dumper) getPgSchemas() ([]pgSchema, error) {
 	var schemas []pgSchema
-	rows, err := dp.db.Query("SELECT schema_name, schema_owner FROM information_schema.schemata;")
+	rows, err := dp.conn.DB.Query("SELECT schema_name, schema_owner FROM information_schema.schemata;")
 	if err != nil {
 		return nil, err
 	}
@@ -759,7 +664,7 @@ func (dp *Dumper) getPgTables() ([]tableSchema, error) {
 	query := "" +
 		"SELECT * FROM pg_catalog.pg_tables " +
 		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -799,7 +704,7 @@ func (dp *Dumper) getTableColumns(schemaName, tableName string) ([]columnSchema,
 		"SELECT column_name, data_type, character_maximum_length, column_default, is_nullable " +
 		"FROM INFORMATION_SCHEMA.COLUMNS " +
 		"WHERE table_schema=$1 AND table_name=$2;"
-	rows, err := dp.db.Query(query, schemaName, tableName)
+	rows, err := dp.conn.DB.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -847,7 +752,7 @@ func (dp *Dumper) getTableConstraints() (map[string][]tableConstraint, error) {
 		"JOIN pg_namespace n ON n.oid = c.connamespace " +
 		"WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');"
 	ret := make(map[string][]tableConstraint)
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -875,7 +780,7 @@ func (dp *Dumper) getViews() ([]viewSchema, error) {
 		"SELECT table_schema, table_name FROM information_schema.views " +
 		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
 	var views []viewSchema
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -900,7 +805,7 @@ func (dp *Dumper) getViews() ([]viewSchema, error) {
 // getView gets the schema of a view.
 func (dp *Dumper) getView(view *viewSchema) error {
 	query := fmt.Sprintf("SELECT pg_get_viewdef('%s.%s', true);", view.schemaName, view.name)
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return err
 	}
@@ -922,7 +827,7 @@ func (dp *Dumper) getIndices() ([]indexSchema, error) {
 		"FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
 
 	var indices []indexSchema
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -943,7 +848,7 @@ func (dp *Dumper) getIndices() ([]indexSchema, error) {
 // getTableData gets the data of a table.
 func (dp *Dumper) getTableData(tbl tableSchema) ([]string, error) {
 	query := fmt.Sprintf("SELECT * FROM %s.%s;", tbl.schemaName, tbl.name)
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -996,7 +901,7 @@ func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
 	query := "SELECT seqclass.relnamespace::regnamespace::text, seqclass.relname, seq.seqcache " +
 		"FROM pg_catalog.pg_class AS seqclass " +
 		"JOIN pg_catalog.pg_sequence AS seq ON (seq.seqrelid = seqclass.relfilenode);"
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1014,7 +919,7 @@ func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
 	query = "" +
 		"SELECT sequence_schema, sequence_name, data_type, start_value, increment, minimum_value, maximum_value, cycle_option " +
 		"FROM information_schema.sequences;"
-	rows, err = dp.db.Query(query)
+	rows, err = dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1051,7 +956,7 @@ func (dp *Dumper) getFunctions() ([]functionSchema, error) {
 		"WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');"
 
 	var fs []functionSchema
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1074,7 +979,7 @@ func (dp *Dumper) getTriggers() ([]triggerSchema, error) {
 	query := "SELECT tgname, pg_get_triggerdef(t.oid) FROM pg_trigger AS t;"
 
 	var triggers []triggerSchema
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1101,7 +1006,7 @@ func (dp *Dumper) getEventTriggers() ([]eventTriggerSchema, error) {
 		"FROM pg_event_trigger e;"
 
 	var triggers []eventTriggerSchema
-	rows, err := dp.db.Query(query)
+	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}

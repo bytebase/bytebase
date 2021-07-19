@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/dump"
 	"github.com/spf13/cobra"
 )
@@ -47,7 +48,7 @@ var (
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := dump.TlsConfig{
+			tlsCfg := connect.TlsConfig{
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
