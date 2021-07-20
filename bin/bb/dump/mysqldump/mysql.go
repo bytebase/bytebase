@@ -20,8 +20,11 @@ var (
 )
 
 const (
-	useDatabaseFmt = "USE `%s`;\n\n"
-	settingsStmt   = "" +
+	databaseHeaderFmt = "" +
+		"--\n" +
+		"-- PostgreSQL database structure for `%s`\n" +
+		"--\n\n"
+	settingsStmt = "" +
 		"SET character_set_client  = %s;\n" +
 		"SET character_set_results = %s;\n" +
 		"SET collation_connection  = %s;\n" +
@@ -108,17 +111,9 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
-	// Database statement.
-	dbStmt, err := dp.getDatabaseStmt(dbName)
-	if err != nil {
-		return fmt.Errorf("failed to get database %q: %s", dbName, err)
-	}
-	if _, err := out.WriteString(dbStmt); err != nil {
-		return err
-	}
-	// Use database statement.
-	useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
-	if _, err := out.WriteString(useStmt); err != nil {
+	// Database header.
+	header := fmt.Sprintf(databaseHeaderFmt, dbName)
+	if _, err := out.WriteString(header); err != nil {
 		return err
 	}
 
@@ -228,25 +223,6 @@ type eventSchema struct {
 type triggerSchema struct {
 	name      string
 	statement string
-}
-
-// getDatabaseStmt gets the create statement of a database.
-func (dp *Dumper) getDatabaseStmt(dbName string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
-	rows, err := dp.conn.DB.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var stmt, unused string
-		if err := rows.Scan(&unused, &stmt); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s;\n", stmt), nil
-	}
-	return "", fmt.Errorf("query %q returned multiple rows.", query)
 }
 
 // getTables gets all tables of a database.

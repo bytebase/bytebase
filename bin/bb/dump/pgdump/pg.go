@@ -582,14 +582,13 @@ func (t eventTriggerSchema) Statement() string {
 	return s
 }
 
-// getDatabaseStmt returns the create statement of a Postgres database.
+// getDatabaseStmt returns the header of a Postgres database.
 func getDatabaseStmt(dbName string) string {
 	return fmt.Sprintf(""+
 		"--\n"+
 		"-- PostgreSQL database structure for %s\n"+
-		"--\n"+
-		"\\connect %s;\n\n",
-		dbName, dbName)
+		"--\n\n",
+		dbName)
 }
 
 // getDatabases gets all databases of a Postgres instance.
