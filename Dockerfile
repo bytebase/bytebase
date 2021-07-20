@@ -10,7 +10,7 @@ FROM mhart/alpine-node:14.16.1 as frontend
 WORKDIR /frontend-build
 
 # Install build dependency (e.g. vite)
-COPY ./frontend/package.json ./frontend/yarn.lock .
+COPY ./frontend/package.json ./frontend/yarn.lock ./
 RUN yarn
 
 COPY ./frontend/ .
