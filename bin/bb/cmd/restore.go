@@ -18,9 +18,10 @@ func init() {
 	restoreCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
 	restoreCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
 	restoreCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
-	// TODO(spinningbot): database and file are required flags.
 	restoreCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
 	restoreCmd.Flags().StringVar(&file, "file", "", "Directory to dump baselines; output to stdout if unspecified.")
+	restoreCmd.MarkFlagRequired("database")
+	restoreCmd.MarkFlagRequired("file")
 
 	// tls flags for SSL connection.
 	restoreCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
