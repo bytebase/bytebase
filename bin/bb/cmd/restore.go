@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
+	"github.com/bytebase/bytebase/bin/bb/restore/pgrestore"
 	"github.com/spf13/cobra"
 )
 
@@ -82,6 +83,12 @@ func restoreDatabase(databaseType, username, password, hostname, port, database,
 		}
 		defer conn.Close()
 
+		if err := conn.SwitchDatabase(database); err != nil {
+			return fmt.Errorf("conn.SwitchDatabase(%q) got error: %v", database, err)
+		}
+		if err := pgrestore.Restore(conn, sc); err != nil {
+			return fmt.Errorf("mysqlrestore.Restore() got error: %v", err)
+		}
 		return nil
 	default:
 		return fmt.Errorf("database type %q not supported; supported types: mysql, pg.", databaseType)
