@@ -35,6 +35,8 @@ VALUES
 
 -- Create 1 "test", 1 "prod" instance (including * database and admin data source)
 -- Both instances contains the connection info we expect user to setup according to https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing
+-- Set host to 172.17.0.1 which is the default docker gateway ip.
+-- Our quickstart guide suggests to run both Bytebase and MySQL using docker, and in such case, bytebase access the mysqld container via 172.17.0.1
 -- "test" instance
 INSERT INTO
     instance (
@@ -56,7 +58,7 @@ VALUES
         101,
         'MySQL Test (You can follow the "External Link" field to bring up the MySQL server)',
         'MYSQL',
-        '127.0.0.1',
+        '172.17.0.1',
         '3306',
         'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
     );
@@ -134,7 +136,7 @@ VALUES
         102,
         'MySQL Prod (You can follow the "External Link" field to bring up the MySQL server)',
         'MYSQL',
-        '127.0.0.1',
+        '172.17.0.1',
         '3306',
         'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
     );
