@@ -1,4 +1,4 @@
-// mysqlrestore is a library for importing MySQL database schemas and data provided by bytebase.com.
+// mysqlrestore is a library for restoring MySQL database schemas and data provided by bytebase.com.
 package mysqlrestore
 
 import (
@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/bin/bb/connect"
 )
 
+// Restore restores the schema of a MySQL instance.
 func Restore(conn *connect.MysqlConnect, sc *bufio.Scanner) error {
 	s := ""
 	delimiter := false
