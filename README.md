@@ -4,13 +4,11 @@
 
 &nbsp;
 
-> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
-> issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
-
-&nbsp;
-
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-red)
+
+> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
+> issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview1.png)
 
