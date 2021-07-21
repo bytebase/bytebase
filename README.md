@@ -1,7 +1,13 @@
 # <a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/frontend/src/assets/logo.svg" height="56px" /></a>
 
+### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
+
+&nbsp;
+
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
 > issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
+
+&nbsp;
 
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-red)
@@ -67,8 +73,8 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 ### Prerequisites
 
-- Go (1.16 or later)
-- Yarn
+- [Go](https://golang.org/doc/install) (1.16 or later)
+- [Yarn](https://yarnpkg.com/getting-started/install)
 - [Air](https://github.com/cosmtrek/air#installation) (For backend live reload)
 
 ### Steps
