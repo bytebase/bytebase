@@ -1,9 +1,7 @@
-import { createApp } from "vue";
 import axios from "axios";
 import moment from "moment";
+import { createApp } from "vue";
 import App from "./App.vue";
-import { store } from "./store";
-import { router } from "./router";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 import {
@@ -22,32 +20,34 @@ import {
   BBStepTab,
   BBSwitch,
   BBTab,
-  BBTabPanel,
+  BBTabFilter,
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
-  BBTabFilter,
+  BBTabPanel,
   BBTextField,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
+import { router } from "./router";
+import { store } from "./store";
 import {
-  isDev,
-  isRelease,
-  humanizeTs,
-  sizeToFit,
-  urlfy,
-  environmentName,
-  environmentSlug,
-  projectName,
-  projectSlug,
-  instanceName,
-  instanceSlug,
   databaseSlug,
   dataSourceSlug,
+  environmentName,
+  environmentSlug,
+  humanizeTs,
+  instanceName,
+  instanceSlug,
+  isDev,
+  isRelease,
+  projectName,
+  projectSlug,
   registerStoreWithRoleUtil,
+  sizeToFit,
+  urlfy,
 } from "./utils";
 
 registerStoreWithRoleUtil(store);
