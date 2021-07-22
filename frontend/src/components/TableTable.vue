@@ -30,6 +30,29 @@
       <BBTableCell class="w-16">
         {{ humanizeTs(table.lastSuccessfulSyncTs) }}
       </BBTableCell>
+      <BBTableCell v-if="showConsoleLink" class="w-4">
+        <button
+          class="btn-icon"
+          @click.stop="
+            window.open(consoleLink(table.database.name, table.name), '_blank')
+          "
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+            ></path>
+          </svg>
+        </button>
+      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -38,8 +61,14 @@
 import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Table } from "../types";
-import { bytesToString, databaseSlug } from "../utils";
+import {
+  bytesToString,
+  databaseSlug,
+  databaseTableConsoleLink,
+} from "../utils";
 import { useRouter } from "vue-router";
+import { isEmpty } from "lodash";
+import { useStore } from "vuex";
 
 type Mode = "TABLE" | "VIEW";
 
@@ -100,11 +129,36 @@ export default {
     },
   },
   setup(props, ctx) {
+    const store = useStore();
     const router = useRouter();
 
     const columnList = computed(() => {
-      return columnListMap.get(props.mode);
+      const list = columnListMap.get(props.mode);
+      if (showConsoleLink.value) {
+        list?.push({ title: "SQL console" });
+      }
+
+      return list;
     });
+
+    const showConsoleLink = computed(() => {
+      if (props.mode != "TABLE") {
+        return false;
+      }
+
+      const consoleURL =
+        store.getters["setting/settingByName"]("bb.console.table").value;
+      return !isEmpty(consoleURL);
+    });
+
+    const consoleLink = (databaseName: string, tableName: string) => {
+      const consoleURL =
+        store.getters["setting/settingByName"]("bb.console.table").value;
+      if (!isEmpty(consoleURL)) {
+        return databaseTableConsoleLink(consoleURL, databaseName, tableName);
+      }
+      return "";
+    };
 
     const clickTable = (section: number, row: number) => {
       const table = props.tableList[row];
@@ -113,6 +167,8 @@ export default {
 
     return {
       columnList,
+      showConsoleLink,
+      consoleLink,
       bytesToString,
       clickTable,
     };

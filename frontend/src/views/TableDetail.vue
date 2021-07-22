@@ -77,6 +77,31 @@
                 {{ projectName(database.project) }}
               </router-link>
             </dd>
+            <dd
+              v-if="consoleLink.length > 0"
+              class="flex items-center text-sm md:mr-4"
+            >
+              <span class="textlabel">SQL Console</span>
+              <button
+                class="ml-1 btn-icon"
+                @click.prevent="window.open(urlfy(consoleLink), '_blank')"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  ></path>
+                </svg>
+              </button>
+            </dd>
           </dl>
         </div>
       </div>
@@ -186,7 +211,8 @@ import { computed } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
-import { bytesToString, idFromSlug } from "../utils";
+import { bytesToString, databaseTableConsoleLink, idFromSlug } from "../utils";
+import { isEmpty } from "lodash";
 
 export default {
   name: "TableDetail",
@@ -215,9 +241,23 @@ export default {
       return table.value.database;
     });
 
+    const consoleLink = computed(() => {
+      const consoleURL =
+        store.getters["setting/settingByName"]("bb.console.table").value;
+      if (!isEmpty(consoleURL)) {
+        return databaseTableConsoleLink(
+          consoleURL,
+          database.value.name,
+          table.value.name
+        );
+      }
+      return "";
+    });
+
     return {
       table,
       database,
+      consoleLink,
       bytesToString,
     };
   },

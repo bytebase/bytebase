@@ -24,6 +24,7 @@ type Server struct {
 
 	CacheService api.CacheService
 
+	SettingService         api.SettingService
 	PrincipalService       api.PrincipalService
 	MemberService          api.MemberService
 	ProjectService         api.ProjectService
@@ -143,6 +144,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, mode s
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return ACLMiddleware(logger, s, ce, next, readonly)
 	})
+	s.registerSettingRoutes(apiGroup)
 	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)

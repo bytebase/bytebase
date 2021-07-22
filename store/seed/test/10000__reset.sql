@@ -1,5 +1,8 @@
 -- For testing, we reset data on each run
 DELETE FROM
+    setting;
+
+DELETE FROM
     repo;
 
 DELETE FROM

@@ -250,7 +250,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "general",
                 name: "setting.workspace.general",
-                meta: { title: () => "Account General" },
+                meta: { title: () => "General" },
                 component: () => import("../views/SettingWorkspaceGeneral.vue"),
                 props: true,
               },

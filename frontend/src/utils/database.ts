@@ -1,4 +1,3 @@
-
 import {
   Database,
   DataSourceMember,
@@ -69,4 +68,25 @@ export function sortDatabaseList(
     }
     return bEnvIndex - aEnvIndex;
   });
+}
+
+// templateURL corresponds to the "bb.console.database" setting.
+// This method replaces {{DB_NAME}} with the actual database/table name.
+export function databaseConsoleLink(
+  templateURL: string,
+  databaseName: string
+): string {
+  return templateURL.replace("{{DB_NAME}}", databaseName);
+}
+
+// templateURL corresponds to the "bb.console.table" setting.
+// This method replaces {{DB_NAME}}/{{TABLE_NAME}} with the actual database/table name.
+export function databaseTableConsoleLink(
+  templateURL: string,
+  databaseName: string,
+  tableName: string
+): string {
+  return templateURL
+    .replace("{{DB_NAME}}", databaseName)
+    .replace("{{TABLE_NAME}}", tableName);
 }

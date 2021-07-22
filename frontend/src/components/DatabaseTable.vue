@@ -61,6 +61,27 @@
       <BBTableCell v-if="showMiscColumn" class="w-16">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
       </BBTableCell>
+      <BBTableCell v-if="showConsoleLink" class="w-4">
+        <button
+          class="btn-icon"
+          @click.stop="window.open(consoleLink(database.name), '_blank')"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+            ></path>
+          </svg>
+        </button>
+      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -69,9 +90,10 @@
 import { computed, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { databaseSlug, isDBAOrOwner } from "../utils";
+import { databaseConsoleLink, databaseSlug, isDBAOrOwner } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
+import { isEmpty } from "lodash";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -282,16 +304,45 @@ export default {
     });
 
     const columnList = computed(() => {
+      var list: BBTableColumn[] = [];
       if (
         (props.mode == "ALL" || props.mode == "ALL_SHORT") &&
         !showInstanceColumn.value
       ) {
-        return props.mode == "ALL"
-          ? columnListMap.get("ALL_HIDE_INSTANCE")
-          : columnListMap.get("ALL_HIDE_INSTANCE_SHORT");
+        list =
+          props.mode == "ALL"
+            ? columnListMap.get("ALL_HIDE_INSTANCE")!
+            : columnListMap.get("ALL_HIDE_INSTANCE_SHORT")!;
+      } else {
+        list = columnListMap.get(props.mode)!;
       }
-      return columnListMap.get(props.mode);
+      if (showConsoleLink.value) {
+        list.push({ title: "SQL console" });
+      }
+      return list;
     });
+
+    const showConsoleLink = computed(() => {
+      if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
+        return false;
+      }
+
+      const consoleURL = store.getters["setting/settingByName"](
+        "bb.console.database"
+      ).value;
+      console.log("aaa", consoleURL);
+      return !isEmpty(consoleURL);
+    });
+
+    const consoleLink = (databaseName: string) => {
+      const consoleURL = store.getters["setting/settingByName"](
+        "bb.console.database"
+      ).value;
+      if (!isEmpty(consoleURL)) {
+        return databaseConsoleLink(consoleURL, databaseName);
+      }
+      return "";
+    };
 
     const clickDatabase = function (section: number, row: number) {
       const database = props.databaseList[row];
@@ -308,6 +359,8 @@ export default {
       showInstanceColumn,
       showMiscColumn,
       columnList,
+      showConsoleLink,
+      consoleLink,
       clickDatabase,
     };
   },

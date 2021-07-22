@@ -30,7 +30,7 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 	// We do a find followed by a create if NOT found. Though SQLite supports UPSERT ON CONFLICT DO NOTHING syntax, it doesn't
 	// support RETURNING in such case. So we have to use separate SELECT and INSERT anyway.
 	find := &api.SettingFind{
-		Name: create.Name,
+		Name: &create.Name,
 	}
 	setting, err := s.FindSetting(ctx, find)
 	if err != nil {
@@ -58,6 +58,21 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 	return setting, nil
 }
 
+// FindSettingList retrieves a list of settings based on find.
+func (s *SettingService) FindSettingList(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := findSettingList(ctx, tx, find)
+	if err != nil {
+		return []*api.Setting{}, err
+	}
+	return list, nil
+}
+
 // FindSetting retrieves a single setting based on find.
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
@@ -77,6 +92,27 @@ func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind)
 		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
+}
+
+// PatchSetting updates an existing setting by name.
+// Returns ENOTFOUND if setting does not exist.
+func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	setting, err := patchSetting(ctx, tx, patch)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return setting, nil
 }
 
 // createSetting creates a new setting.
@@ -120,10 +156,17 @@ func createSetting(ctx context.Context, tx *Tx, create *api.SettingCreate) (*api
 
 func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*api.Setting, err error) {
 	// Build WHERE clause.
-	where, args := []string{"name = ?"}, []interface{}{find.Name}
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.Name; v != nil {
+		where, args = append(where, "name = ?"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 		    name,
 		    value,
 			description
@@ -141,6 +184,10 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 	for rows.Next() {
 		var setting api.Setting
 		if err := rows.Scan(
+			&setting.CreatorId,
+			&setting.CreatedTs,
+			&setting.UpdaterId,
+			&setting.UpdatedTs,
 			&setting.Name,
 			&setting.Value,
 			&setting.Description,
@@ -155,4 +202,46 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 	}
 
 	return list, nil
+}
+
+// patchSetting updates a setting by name. Returns the new state of the setting after update.
+func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Setting, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args = append(set, "value = ?"), append(args, patch.Value)
+
+	args = append(args, patch.Name)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, `
+		UPDATE setting
+		SET `+strings.Join(set, ", ")+`
+		WHERE name = ?
+		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var setting api.Setting
+		if err := row.Scan(
+			&setting.CreatorId,
+			&setting.CreatedTs,
+			&setting.UpdaterId,
+			&setting.UpdatedTs,
+			&setting.Name,
+			&setting.Value,
+			&setting.Description,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &setting, nil
+	}
+
+	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("setting not found: %s", patch.Name)}
 }

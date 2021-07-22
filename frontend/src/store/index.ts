@@ -23,6 +23,7 @@ import project from "./modules/project";
 import repository from "./modules/repository";
 // Following states are only stored in memory
 import router from "./modules/router";
+import setting from "./modules/setting";
 import sql from "./modules/sql";
 import stage from "./modules/stage";
 import table from "./modules/table";
@@ -56,6 +57,7 @@ export const store: Store<any> = createStore({
     project,
     repository,
     router,
+    setting,
     sql,
     stage,
     table,

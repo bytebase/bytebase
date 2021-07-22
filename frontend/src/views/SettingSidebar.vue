@@ -24,7 +24,8 @@
             h-6
             w-6
             text-gray-500
-            group-hover:text-gray-500 group-focus:text-gray-600
+            group-hover:text-gray-500
+            group-focus:text-gray-600
           "
           fill="none"
           viewBox="0 0 24 24"
@@ -109,12 +110,12 @@
           Workspace
         </div>
         <div class="space-y-1">
-          <!-- <router-link
+          <router-link
             to="/setting/general"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             General
-          </router-link> -->
+          </router-link>
           <!-- <router-link
             to="/setting/agent"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
