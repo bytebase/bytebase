@@ -224,7 +224,7 @@ func initSetting(settingService api.SettingService) (*config, error) {
 	{
 		configCreate := &api.SettingCreate{
 			CreatorId:   api.SYSTEM_BOT_ID,
-			Name:        "bb.auth.secret",
+			Name:        api.SettingAuthSecret,
 			Value:       bytebase.RandomString(SECRET_LENGTH),
 			Description: "Random string used to sign the JWT auth token.",
 		}
