@@ -31,7 +31,7 @@
             >Environments</router-link
           >
           <router-link
-            to="/setting/member"
+            to="/setting/general"
             class="bar-link px-2 py-2 rounded-md"
             >Settings</router-link
           >
@@ -177,7 +177,7 @@
     >
 
     <router-link
-      to="/setting/member"
+      to="/setting/general"
       class="bar-link rounded-md block px-3 py-2"
       >Settings</router-link
     >
