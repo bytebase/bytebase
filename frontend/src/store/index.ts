@@ -1,71 +1,67 @@
 import { createStore, Store } from "vuex";
-
 // Following states are persisted in database
 import activity from "./modules/activity";
-import message from "./modules/message";
-import bookmark from "./modules/bookmark";
-import member from "./modules/member";
-import environment from "./modules/environment";
-import project from "./modules/project";
-import instance from "./modules/instance";
-import dataSource from "./modules/dataSource";
-import database from "./modules/database";
-import table from "./modules/table";
-import sql from "./modules/sql";
-import principal from "./modules/principal";
-import plan from "./modules/plan";
-import auth from "./modules/auth";
-import issue from "./modules/issue";
-import issueSubscriber from "./modules/issueSubscriber";
-import pipeline from "./modules/pipeline";
-import stage from "./modules/stage";
-import task from "./modules/task";
-import vcs from "./modules/vcs";
-import repository from "./modules/repository";
-import gitlab from "./modules/gitlab";
-
-// Following states are persisted in local storage
-import uistate from "./modules/uistate";
-
-// Following states are only stored in memory
-import router from "./modules/router";
-import command from "./modules/command";
-import notification from "./modules/notification";
-
 // Actuator module
 import actuator from "./modules/actuator";
+import auth from "./modules/auth";
+import bookmark from "./modules/bookmark";
+import command from "./modules/command";
+import database from "./modules/database";
+import dataSource from "./modules/dataSource";
+import environment from "./modules/environment";
+import gitlab from "./modules/gitlab";
+import instance from "./modules/instance";
+import issue from "./modules/issue";
+import issueSubscriber from "./modules/issueSubscriber";
+import member from "./modules/member";
+import message from "./modules/message";
+import notification from "./modules/notification";
+import pipeline from "./modules/pipeline";
+import plan from "./modules/plan";
+import principal from "./modules/principal";
+import project from "./modules/project";
+import repository from "./modules/repository";
+// Following states are only stored in memory
+import router from "./modules/router";
+import sql from "./modules/sql";
+import stage from "./modules/stage";
+import table from "./modules/table";
+import task from "./modules/task";
+// Following states are persisted in local storage
+import uistate from "./modules/uistate";
+import vcs from "./modules/vcs";
 
 const isProd = import.meta.env.NODE_ENV == "production";
 
 export const store: Store<any> = createStore({
   modules: {
     activity,
-    message,
-    bookmark,
-    member,
-    environment,
-    project,
-    instance,
-    dataSource,
-    database,
-    table,
-    sql,
-    principal,
-    plan,
+    actuator,
     auth,
+    bookmark,
+    command,
+    database,
+    dataSource,
+    environment,
+    gitlab,
+    instance,
     issue,
     issueSubscriber,
-    pipeline,
-    stage,
-    task,
-    vcs,
-    repository,
-    gitlab,
-    uistate,
-    router,
-    command,
+    member,
+    message,
     notification,
-    actuator,
+    pipeline,
+    plan,
+    principal,
+    project,
+    repository,
+    router,
+    sql,
+    stage,
+    table,
+    task,
+    uistate,
+    vcs,
   },
   strict: !isProd,
 });
