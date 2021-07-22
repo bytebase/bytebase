@@ -9,6 +9,8 @@ export type PrincipalId = IdType;
 
 export type MemberId = IdType;
 
+export type SettingId = IdType;
+
 export type BookmarkId = IdType;
 
 export type ProjectId = IdType;

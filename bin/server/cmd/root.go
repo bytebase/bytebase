@@ -235,6 +235,32 @@ func initSetting(settingService api.SettingService) (*config, error) {
 		result.secret = config.Value
 	}
 
+	{
+		configCreate := &api.SettingCreate{
+			CreatorId:   api.SYSTEM_BOT_ID,
+			Name:        api.SettingConsoleDatabase,
+			Value:       "",
+			Description: "URL for the external console (e.g. phpMyAdmin) pointing to a particular database.",
+		}
+		_, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	{
+		configCreate := &api.SettingCreate{
+			CreatorId:   api.SYSTEM_BOT_ID,
+			Name:        api.SettingConsoleTable,
+			Value:       "",
+			Description: "URL for the external console (e.g. phpMyAdmin) pointing to a particular table.",
+		}
+		_, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return result, nil
 }
 
@@ -253,6 +279,7 @@ func (m *main) Run() error {
 	m.db = db
 
 	server := server.NewServer(m.l, version, host, port, m.profile.mode, config.secret, readonly, demo, debug)
+	server.SettingService = settingService
 	server.PrincipalService = store.NewPrincipalService(m.l, db, server.CacheService)
 	server.MemberService = store.NewMemberService(m.l, db, server.CacheService)
 	server.ProjectService = store.NewProjectService(m.l, db, server.CacheService)

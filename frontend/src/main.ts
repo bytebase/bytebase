@@ -124,6 +124,7 @@ axios.interceptors.response.use(
 // We use finally because we always want to mount the app regardless of the error.
 Promise.all([
   store.dispatch("actuator/fetchInfo"),
+  store.dispatch("setting/fetchSetting"),
   store.dispatch("plan/fetchCurrentPlan"),
   store.dispatch("auth/restoreUser"),
 ]).finally(() => {

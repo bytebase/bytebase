@@ -70,6 +70,31 @@
                 {{ projectName(database.project) }}
               </router-link>
             </dd>
+            <dd
+              v-if="consoleLink.length > 0"
+              class="flex items-center text-sm md:mr-4"
+            >
+              <span class="textlabel">SQL Console</span>
+              <button
+                class="ml-1 btn-icon"
+                @click.prevent="window.open(urlfy(consoleLink), '_blank')"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  ></path>
+                </svg>
+              </button>
+            </dd>
           </dl>
         </div>
         <button
@@ -349,7 +374,12 @@ import TableTable from "../components/TableTable.vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
-import { idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
+import {
+  databaseConsoleLink,
+  idFromSlug,
+  instanceSlug,
+  isDBAOrOwner,
+} from "../utils";
 import {
   DataSource,
   ProjectId,
@@ -359,7 +389,7 @@ import {
   MigrationSchemaStatus,
   InstanceMigration,
 } from "../types";
-import { cloneDeep, isEqual } from "lodash";
+import { cloneDeep, isEmpty, isEqual } from "lodash";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -426,6 +456,16 @@ export default {
     };
 
     watchEffect(prepareMigrationHistoryList);
+
+    const consoleLink = computed(() => {
+      const consoleURL = store.getters["setting/settingByName"](
+        "bb.console.database"
+      ).value;
+      if (!isEmpty(consoleURL)) {
+        return databaseConsoleLink(consoleURL, database.value.name, "");
+      }
+      return "";
+    });
 
     const hasDataSourceFeature = computed(() =>
       store.getters["plan/feature"]("bb.data-source")
@@ -585,6 +625,7 @@ export default {
       tableList,
       attentionTitle,
       migrationHistoryList,
+      consoleLink,
       hasDataSourceFeature,
       allowChangeProject,
       allowViewDataSource,

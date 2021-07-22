@@ -59,3 +59,5 @@ p, OWNER, /vcs/{id}, DELETE
 p, OWNER, /vcs/{id}/repository, GET
 p, OWNER, /plan, GET
 p, OWNER, /plan, PATCH
+p, OWNER, /setting, GET
+p, OWNER, /setting/{name}, PATCH

@@ -25,6 +25,7 @@ import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { Repository } from "./repository";
+import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
 
@@ -34,6 +35,10 @@ export interface ActuatorState {
 
 export interface AuthState {
   currentUser: Principal;
+}
+
+export interface SettingState {
+  settingByName: Map<SettingName, Setting>;
 }
 
 export interface PlanState {
