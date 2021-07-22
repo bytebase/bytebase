@@ -5,21 +5,27 @@ import (
 	"encoding/json"
 )
 
+type SettingName string
+
+const (
+	SettingAuthSecret SettingName = "bb.auth.secret"
+)
+
 type Setting struct {
-	Name        string
+	Name        SettingName
 	Value       string
 	Description string
 }
 
 type SettingCreate struct {
 	CreatorId   int
-	Name        string
+	Name        SettingName
 	Value       string
 	Description string
 }
 
 type SettingFind struct {
-	Name string
+	Name SettingName
 }
 
 func (find *SettingFind) String() string {
