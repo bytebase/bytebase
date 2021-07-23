@@ -95,7 +95,7 @@ import { useRouter } from "vue-router";
 import { consoleLink, databaseSlug, isDBAOrOwner } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
-import { isEmpty } from "lodash";
+import { cloneDeep, isEmpty } from "lodash";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -319,6 +319,8 @@ export default {
         list = columnListMap.get(props.mode)!;
       }
       if (showConsoleLink.value) {
+        // Use cloneDeep, otherwise it will alter the one in columnListMap
+        list = cloneDeep(list);
         list.push({ title: "SQL console" });
       }
       return list;
