@@ -1,20 +1,20 @@
 import axios from "axios";
 import {
-  PrincipalId,
-  IssueId,
-  Issue,
-  IssueCreate,
-  IssuePatch,
-  IssueState,
-  ResourceObject,
-  unknown,
-  Project,
-  ResourceIdentifier,
-  ProjectId,
-  IssueStatusPatch,
-  Pipeline,
   empty,
   EMPTY_ID,
+  Issue,
+  IssueCreate,
+  IssueId,
+  IssuePatch,
+  IssueState,
+  IssueStatusPatch,
+  Pipeline,
+  PrincipalId,
+  Project,
+  ProjectId,
+  ResourceIdentifier,
+  ResourceObject,
+  unknown,
 } from "../../types";
 
 function convert(
