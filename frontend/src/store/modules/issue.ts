@@ -58,15 +58,10 @@ function convert(
 }
 
 const state: () => IssueState = () => ({
-  issueListByUser: new Map(),
   issueById: new Map(),
 });
 
 const getters = {
-  issueListByUser: (state: IssueState) => (userId: PrincipalId) => {
-    return state.issueListByUser.get(userId) || [];
-  },
-
   issueById:
     (state: IssueState) =>
     (issueId: IssueId): Issue => {
@@ -88,7 +83,7 @@ const actions = {
       return convert(issue, data.included, rootGetters);
     });
 
-    commit("setIssueListForUser", { userId, issueList });
+    // The caller consumes directly, so we don't store it.
     return issueList;
   },
 
@@ -197,19 +192,6 @@ const actions = {
 };
 
 const mutations = {
-  setIssueListForUser(
-    state: IssueState,
-    {
-      userId,
-      issueList,
-    }: {
-      userId: PrincipalId;
-      issueList: Issue[];
-    }
-  ) {
-    state.issueListByUser.set(userId, issueList);
-  },
-
   setIssueById(
     state: IssueState,
     {
