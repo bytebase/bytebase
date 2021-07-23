@@ -238,22 +238,9 @@ func initSetting(settingService api.SettingService) (*config, error) {
 	{
 		configCreate := &api.SettingCreate{
 			CreatorId:   api.SYSTEM_BOT_ID,
-			Name:        api.SettingConsoleDatabase,
+			Name:        api.SettingConsoleURL,
 			Value:       "",
-			Description: "URL for the external console (e.g. phpMyAdmin) pointing to a particular database.",
-		}
-		_, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	{
-		configCreate := &api.SettingCreate{
-			CreatorId:   api.SYSTEM_BOT_ID,
-			Name:        api.SettingConsoleTable,
-			Value:       "",
-			Description: "URL for the external console (e.g. phpMyAdmin) pointing to a particular table.",
+			Description: "URL for the external console (e.g. phpMyAdmin).",
 		}
 		_, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
 		if err != nil {

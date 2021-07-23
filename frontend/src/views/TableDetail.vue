@@ -38,13 +38,6 @@
               md:space-y-0 md:flex-row md:flex-wrap
             "
           >
-            <dt class="sr-only">Database</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Database&nbsp;-&nbsp;</span>
-              <router-link :to="`/db/${databaseSlug}`" class="normal-link">
-                {{ database.name }}
-              </router-link>
-            </dd>
             <dt class="sr-only">Environment</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Environment&nbsp;-&nbsp;</span>
@@ -77,14 +70,19 @@
                 {{ projectName(database.project) }}
               </router-link>
             </dd>
-            <dd
-              v-if="consoleLink.length > 0"
-              class="flex items-center text-sm md:mr-4"
-            >
-              <span class="textlabel">SQL Console</span>
+            <dt class="sr-only">Database</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">Database&nbsp;-&nbsp;</span>
+              <router-link :to="`/db/${databaseSlug}`" class="normal-link">
+                {{ database.name }}
+              </router-link>
+
+              <span class="ml-2 textlabel">SQL Console</span>
               <button
                 class="ml-1 btn-icon"
-                @click.prevent="window.open(urlfy(consoleLink), '_blank')"
+                @click.prevent="
+                  window.open(urlfy(databaseConsoleLink), '_blank')
+                "
               >
                 <svg
                   class="w-4 h-4"
@@ -211,7 +209,7 @@ import { computed } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
-import { bytesToString, databaseTableConsoleLink, idFromSlug } from "../utils";
+import { bytesToString, consoleLink, idFromSlug } from "../utils";
 import { isEmpty } from "lodash";
 
 export default {
@@ -241,15 +239,11 @@ export default {
       return table.value.database;
     });
 
-    const consoleLink = computed(() => {
+    const databaseConsoleLink = computed(() => {
       const consoleURL =
-        store.getters["setting/settingByName"]("bb.console.table").value;
+        store.getters["setting/settingByName"]("bb.console.url").value;
       if (!isEmpty(consoleURL)) {
-        return databaseTableConsoleLink(
-          consoleURL,
-          database.value.name,
-          table.value.name
-        );
+        return consoleLink(consoleURL, database.value.name);
       }
       return "";
     });
@@ -257,7 +251,7 @@ export default {
     return {
       table,
       database,
-      consoleLink,
+      databaseConsoleLink,
       bytesToString,
     };
   },
