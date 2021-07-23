@@ -202,8 +202,15 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		args = append(args, *v)
 		args = append(args, *v)
 	}
+	if v := find.StatusList; v != nil {
+		list := []string{}
+		for _, status := range *v {
+			list = append(list, fmt.Sprintf("'%s'", status))
+		}
+		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
+	}
 
-	rows, err := tx.QueryContext(ctx, `
+	var query = `
 		SELECT 
 		    id,
 		    creator_id,
@@ -213,15 +220,18 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			project_id,
 			pipeline_id,
 		    name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			` + "`status`," + `
+			` + "`type`," + `
 			description,
 			assignee_id,
 			payload
 		FROM issue
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+		WHERE ` + strings.Join(where, " AND ")
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, FormatError(err)
 	}
