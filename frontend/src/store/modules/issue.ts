@@ -7,6 +7,7 @@ import {
   IssueId,
   IssuePatch,
   IssueState,
+  IssueStatus,
   IssueStatusPatch,
   Pipeline,
   PrincipalId,
@@ -75,10 +76,22 @@ const getters = {
 
 const actions = {
   async fetchIssueListForUser(
-    { commit, rootGetters }: any,
-    userId: PrincipalId
+    { rootGetters }: any,
+    {
+      userId,
+      issueStatusList,
+      limit,
+    }: {
+      userId: PrincipalId;
+      issueStatusList: IssueStatus[];
+      limit?: number;
+    }
   ) {
-    const data = (await axios.get(`/api/issue?user=${userId}`)).data;
+    var url = `/api/issue?user=${userId}&status=${issueStatusList.join(",")}`;
+    if (limit) {
+      url += `&limit=${limit}`;
+    }
+    const data = (await axios.get(url)).data;
     const issueList = data.data.map((issue: ResourceObject) => {
       return convert(issue, data.included, rootGetters);
     });
