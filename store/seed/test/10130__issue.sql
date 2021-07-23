@@ -80,7 +80,7 @@ VALUES
         3001,
         9003,
         'Create a new table ''tbl1''',
-        'OPEN',
+        'CANCELED',
         'bb.issue.database.schema.update',
         'Create tbl1.',
         102
