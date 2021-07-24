@@ -10,7 +10,11 @@
     @click-row="clickIssue"
   >
     <template v-slot:header>
-      <BBTableHeaderCell class="w-4 table-cell" :title="columnList[0].title" />
+      <BBTableHeaderCell
+        :leftPadding="4"
+        class="w-4 table-cell"
+        :title="columnList[0].title"
+      />
       <template v-if="mode == 'ALL'">
         <BBTableHeaderCell
           class="w-12 table-cell"
