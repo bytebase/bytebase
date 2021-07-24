@@ -14,7 +14,7 @@
       aria-haspopup="listbox"
       aria-expanded="true"
       aria-labelledby="listbox-label"
-      class="btn-select relative w-full pl-3 pr-10 py-2"
+      class="btn-select relative w-full pl-3 pr-10 py-1.5"
       :disabled="disabled"
       @click="toggle"
     >
