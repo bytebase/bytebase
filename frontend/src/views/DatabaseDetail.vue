@@ -314,7 +314,7 @@ export default {
 
     const selectTab = (index: number) => {
       state.selectedIndex = index;
-      router.resolve({
+      router.replace({
         name: "workspace.database.detail",
         hash: "#" + databaseTabItemList[index].hash,
       });
