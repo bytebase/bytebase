@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -52,6 +53,20 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIdStr)).SetInternal(err)
 			}
 			issueFind.ProjectId = &projectId
+		}
+		if issueStatusListStr := c.QueryParam("status"); issueStatusListStr != "" {
+			statusList := []api.IssueStatus{}
+			for _, status := range strings.Split(issueStatusListStr, ",") {
+				statusList = append(statusList, api.IssueStatus(status))
+			}
+			issueFind.StatusList = &statusList
+		}
+		if limitStr := c.QueryParam("limit"); limitStr != "" {
+			limit, err := strconv.Atoi(limitStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
+			}
+			issueFind.Limit = &limit
 		}
 		userIdStr := c.QueryParams().Get("user")
 		if userIdStr != "" {

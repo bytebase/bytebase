@@ -124,6 +124,9 @@ type IssueFind struct {
 	PipelineId *int
 	// Find issue where principalId is either creator, assignee or subscriber
 	PrincipalId *int
+	StatusList  *[]IssueStatus
+	// If specified, then it will only fetch "Limit" most recently updated issues
+	Limit *int
 }
 
 func (find *IssueFind) String() string {

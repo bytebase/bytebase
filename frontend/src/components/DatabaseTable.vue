@@ -64,7 +64,9 @@
       <BBTableCell v-if="showConsoleLink" class="w-4">
         <button
           class="btn-icon"
-          @click.stop="window.open(consoleLink(database.name), '_blank')"
+          @click.stop="
+            window.open(databaseConsoleLink(database.name), '_blank')
+          "
         >
           <svg
             class="w-4 h-4"
@@ -90,10 +92,10 @@
 import { computed, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { databaseConsoleLink, databaseSlug, isDBAOrOwner } from "../utils";
+import { consoleLink, databaseSlug, isDBAOrOwner } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
-import { isEmpty } from "lodash";
+import { cloneDeep, isEmpty } from "lodash";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -317,6 +319,8 @@ export default {
         list = columnListMap.get(props.mode)!;
       }
       if (showConsoleLink.value) {
+        // Use cloneDeep, otherwise it will alter the one in columnListMap
+        list = cloneDeep(list);
         list.push({ title: "SQL console" });
       }
       return list;
@@ -327,19 +331,16 @@ export default {
         return false;
       }
 
-      const consoleURL = store.getters["setting/settingByName"](
-        "bb.console.database"
-      ).value;
-      console.log("aaa", consoleURL);
+      const consoleURL =
+        store.getters["setting/settingByName"]("bb.console.url").value;
       return !isEmpty(consoleURL);
     });
 
-    const consoleLink = (databaseName: string) => {
-      const consoleURL = store.getters["setting/settingByName"](
-        "bb.console.database"
-      ).value;
+    const databaseConsoleLink = (databaseName: string) => {
+      const consoleURL =
+        store.getters["setting/settingByName"]("bb.console.url").value;
       if (!isEmpty(consoleURL)) {
-        return databaseConsoleLink(consoleURL, databaseName);
+        return consoleLink(consoleURL, databaseName);
       }
       return "";
     };
@@ -360,7 +361,7 @@ export default {
       showMiscColumn,
       columnList,
       showConsoleLink,
-      consoleLink,
+      databaseConsoleLink,
       clickDatabase,
     };
   },

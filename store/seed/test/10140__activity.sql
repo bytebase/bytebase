@@ -183,14 +183,18 @@ VALUES
 INSERT INTO
     activity (
         creator_id,
+        created_ts,
         updater_id,
+        updated_ts,
         container_id,
         `type`
     )
 VALUES
     (
         103,
+        1624873710,
         103,
+        1624873710,
         13003,
         'bb.issue.create'
     );
@@ -213,6 +217,23 @@ VALUES
         'bb.pipeline.task.status.update',
         'table "tbl1" already exists',
         '{"taskId":11006,"oldStatus":"RUNNING","newStatus":"FAILED"}'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        updater_id,
+        container_id,
+        `type`,
+        payload
+    )
+VALUES
+    (
+        102,
+        102,
+        13003,
+        'bb.issue.status.update',
+        '{"oldStatus":"OPEN","newStatus":"CANCELED"}'
     );
 
 -- Activity for issue 13004

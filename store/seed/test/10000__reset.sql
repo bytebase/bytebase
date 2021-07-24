@@ -1,6 +1,9 @@
 -- For testing, we reset data on each run
+-- Do not reset bb.auth.secret so that we don't need to re-login after restart
 DELETE FROM
-    setting;
+    setting
+WHERE
+    name != 'bb.auth.secret';
 
 DELETE FROM
     repo;
