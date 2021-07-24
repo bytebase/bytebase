@@ -19,8 +19,8 @@ VALUES
         7001,
         'Admin data source',
         'ADMIN',
-        'admin',
-        'Dev12345'
+        'root',
+        'testpwd1'
     );
 
 INSERT INTO
@@ -94,8 +94,8 @@ VALUES
         7013,
         'Admin data source',
         'ADMIN',
-        'admin',
-        'Prod12345'
+        'root',
+        'testpwd1'
     );
 
 INSERT INTO
