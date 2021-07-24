@@ -535,7 +535,6 @@ const routes: Array<RouteRecordRaw> = [
           },
           {
             path: "db/:databaseSlug",
-            name: "workspace.database.detail",
             components: {
               content: DatabaseLayout,
               leftSidebar: DashboardSidebar,
