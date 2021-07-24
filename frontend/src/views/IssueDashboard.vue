@@ -7,6 +7,21 @@
         @select-environment="selectEnvironment"
       />
       <div class="flex flex-row space-x-4">
+        <button
+          v-if="project"
+          class="
+            px-4
+            cursor-pointer
+            rounded-md
+            text-control text-sm
+            bg-link-hover
+            focus:outline-none
+            hover:underline
+          "
+          @click.prevent="goProject"
+        >
+          {{ project.key }}
+        </button>
         <MemberSelect
           v-if="scopeByPrincipal"
           :selectedId="state.selectedPrincipalId"
@@ -38,7 +53,7 @@ import IssueTable from "../components/IssueTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { computed, onMounted, watchEffect } from "@vue/runtime-core";
-import { activeEnvironment } from "../utils";
+import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 
 interface LocalState {
@@ -96,6 +111,13 @@ export default {
     // for a particular project.
     const scopeByPrincipal = computed(() => {
       return router.currentRoute.value.query.user || !state.selectedProjectId;
+    });
+
+    const project = computed(() => {
+      if (state.selectedProjectId) {
+        return store.getters["project/projectById"](state.selectedProjectId);
+      }
+      return undefined;
     });
 
     const prepareIssueList = () => {
@@ -205,14 +227,25 @@ export default {
       state.searchText = searchText;
     };
 
+    const goProject = () => {
+      router.push({
+        name: "workspace.project.detail",
+        params: {
+          projectSlug: projectSlug(project.value),
+        },
+      });
+    };
+
     return {
       searchField,
       state,
       scopeByPrincipal,
+      project,
       sectionList,
       selectEnvironment,
       selectPrincipal,
       changeSearchText,
+      goProject,
     };
   },
 };
