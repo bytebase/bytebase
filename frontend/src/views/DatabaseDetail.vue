@@ -162,7 +162,7 @@
     </div>
   </BBModal>
   <BBTabFilter
-    class="px-1 pb-2 border-b border-block-border"
+    class="px-4 pb-2 border-b border-block-border"
     :responsive="false"
     :tabList="databaseTabItemList.map((item) => item.name)"
     :selectedIndex="state.selectedIndex"

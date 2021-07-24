@@ -6,7 +6,7 @@
     {{ project.name }}
   </h1>
   <BBTabFilter
-    class="px-1 pb-2 border-b border-block-border"
+    class="px-3 pb-2 border-b border-block-border"
     :responsive="false"
     :tabList="projectTabItemList.map((item) => item.name)"
     :selectedIndex="state.selectedIndex"

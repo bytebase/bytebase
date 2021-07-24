@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-2 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <BBTabFilter
         :tabList="tabList"
         :selectedIndex="state.selectedIndex"
