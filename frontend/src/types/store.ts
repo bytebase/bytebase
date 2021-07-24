@@ -67,10 +67,6 @@ export interface MessageState {
 }
 
 export interface IssueState {
-  // [NOTE] This is only used by the issue list view. We don't
-  // update the entry here if any issue is changed (the updated issue only gets updated in issueById).
-  // Instead, we always fetch the list every time we display the issue list view.
-  issueListByUser: Map<PrincipalId, Issue[]>;
   issueById: Map<IssueId, Issue>;
 }
 

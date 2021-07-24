@@ -1,4 +1,5 @@
 <template>
+  <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
@@ -18,19 +19,7 @@
       :bottomBordered="true"
       :issueSectionList="[
         {
-          title: 'Assigned',
-          list: filteredList(state.assignedList).sort(openIssueSorter),
-        },
-        {
-          title: 'Created',
-          list: filteredList(state.createdList).sort(openIssueSorter),
-        },
-        {
-          title: 'Subscribed',
-          list: filteredList(state.subscribeList).sort(openIssueSorter),
-        },
-        {
-          title: 'Recently Closed',
+          title: 'Closed',
           list: filteredList(state.closeList).sort((a, b) => {
             return b.updatedTs - a.updatedTs;
           }),
@@ -38,39 +27,27 @@
       ]"
     />
   </div>
-  <router-link to="/issue" class="mt-2 px-4 flex justify-end normal-link">
-    View all closed
-  </router-link>
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, onMounted, reactive, ref } from "vue";
-import { useStore } from "vuex";
+import { reactive, ref } from "@vue/reactivity";
 import { useRouter } from "vue-router";
+import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { activeEnvironment, activeTask } from "../utils";
-import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
-
-// Show at most 10 recently closed issues
-const MAX_CLOSED_ISSUE_COUNT = 10;
+import { Environment, Issue, UNKNOWN_ID } from "../types";
+import { computed, onMounted, watchEffect } from "@vue/runtime-core";
+import { activeEnvironment } from "../utils";
 
 interface LocalState {
-  createdList: Issue[];
-  assignedList: Issue[];
-  subscribeList: Issue[];
   closeList: Issue[];
   searchText: string;
   selectedEnvironment?: Environment;
 }
 
 export default {
-  name: "Home",
-  components: {
-    EnvironmentTabFilter,
-    IssueTable,
-  },
-  props: {},
+  name: "IssueDashboard",
+  components: { EnvironmentTabFilter, IssueTable },
   setup(props, ctx) {
     const searchField = ref();
 
@@ -78,9 +55,6 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      createdList: [],
-      assignedList: [],
-      subscribeList: [],
       closeList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
@@ -103,40 +77,20 @@ export default {
         store
           .dispatch("issue/fetchIssueListForUser", {
             userId: currentUser.value.id,
-            issueStatusList: ["OPEN"],
-          })
-          .then((issueList: Issue[]) => {
-            state.assignedList = [];
-            state.createdList = [];
-            state.subscribeList = [];
-            for (const issue of issueList) {
-              if (issue.assignee?.id === currentUser.value.id) {
-                state.assignedList.push(issue);
-              } else if (issue.creator.id === currentUser.value.id) {
-                state.createdList.push(issue);
-              } else if (
-                issue.subscriberIdList.includes(currentUser.value.id)
-              ) {
-                state.subscribeList.push(issue);
-              }
-            }
-          });
-
-        store
-          .dispatch("issue/fetchIssueListForUser", {
-            userId: currentUser.value.id,
             issueStatusList: ["DONE", "CANCELED"],
-            limit: MAX_CLOSED_ISSUE_COUNT,
           })
           .then((issueList: Issue[]) => {
             state.closeList = [];
             for (const issue of issueList) {
-              if (
-                issue.creator.id === currentUser.value.id ||
-                issue.assignee?.id === currentUser.value.id ||
-                issue.subscriberIdList.includes(currentUser.value.id)
-              ) {
-                state.closeList.push(issue);
+              // "DONE" or "CANCELED"
+              if (issue.status === "DONE" || issue.status === "CANCELED") {
+                if (
+                  issue.creator.id === currentUser.value.id ||
+                  issue.assignee?.id === currentUser.value.id ||
+                  issue.subscriberIdList.includes(currentUser.value.id)
+                ) {
+                  state.closeList.push(issue);
+                }
               }
             }
           });
@@ -149,11 +103,11 @@ export default {
       state.selectedEnvironment = environment;
       if (environment) {
         router.replace({
-          name: "workspace.home",
+          name: "workspace.issue",
           query: { environment: environment.id },
         });
       } else {
-        router.replace({ name: "workspace.home" });
+        router.replace({ name: "workspace.issue" });
       }
     };
 
@@ -177,38 +131,12 @@ export default {
       });
     };
 
-    const openIssueSorter = (a: Issue, b: Issue) => {
-      const statusOrder = (status: TaskStatus) => {
-        switch (status) {
-          case "FAILED":
-            return 0;
-          case "PENDING_APPROVAL":
-            return 1;
-          case "PENDING":
-            return 2;
-          case "RUNNING":
-            return 3;
-          case "DONE":
-            return 4;
-          case "CANCELED":
-            return 5;
-        }
-      };
-      const aStatusOrder = statusOrder(activeTask(a.pipeline).status);
-      const bStatusOrder = statusOrder(activeTask(b.pipeline).status);
-      if (aStatusOrder == bStatusOrder) {
-        return b.updatedTs - a.updatedTs;
-      }
-      return aStatusOrder - bStatusOrder;
-    };
-
     return {
       searchField,
       state,
       filteredList,
       selectEnvironment,
       changeSearchText,
-      openIssueSorter,
     };
   },
 };

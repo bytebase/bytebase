@@ -9,17 +9,11 @@ type SettingName string
 
 const (
 	SettingAuthSecret SettingName = "bb.auth.secret"
-	// The console URL for a particular database, it supports following variables
+	// The console URL, it supports following variables
 	// {{DB_NAME}}: the database name
 	// e.g. For a phpmyadmin instance running on http://myphpadmin.example.com:8080, the setting would be:
 	// http://myphpadmin.example.com:8080/index.php?route=/database/sql&db={{DB_NAME}}
-	SettingConsoleDatabase SettingName = "bb.console.database"
-	// The console URL for a particular table, it supports following variables
-	// {{DB_NAME}}: the database name
-	// {{TABLE_NAME}}: the table name
-	// e.g. For a phpmyadmin instance running on http://myphpadmin.example.com:8080, the setting would be:
-	// http://myphpadmin.example.com:8080/index.php?route=/table/sql&db={{DB_NAME}}&table={{TABLE_NAME}}
-	SettingConsoleTable SettingName = "bb.console.table"
+	SettingConsoleURL SettingName = "bb.console.url"
 )
 
 type Setting struct {

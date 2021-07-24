@@ -321,6 +321,18 @@ const routes: Array<RouteRecordRaw> = [
             ],
           },
           {
+            path: "issue",
+            name: "workspace.issue",
+            meta: {
+              title: () => "Issue",
+            },
+            components: {
+              content: () => import("../views/IssueDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
             path: "environment",
             name: "workspace.environment",
             meta: {
@@ -761,6 +773,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
+    to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail")

@@ -70,13 +70,15 @@
               </router-link>
             </dd>
             <dd
-              v-if="consoleLink.length > 0"
+              v-if="databaseConsoleLink.length > 0"
               class="flex items-center text-sm md:mr-4"
             >
               <span class="textlabel">SQL Console</span>
               <button
                 class="ml-1 btn-icon"
-                @click.prevent="window.open(urlfy(consoleLink), '_blank')"
+                @click.prevent="
+                  window.open(urlfy(databaseConsoleLink), '_blank')
+                "
               >
                 <svg
                   class="w-4 h-4"
@@ -191,7 +193,7 @@ import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import {
-  databaseConsoleLink,
+  consoleLink,
   idFromSlug,
   instanceSlug,
   isDBAOrOwner,
@@ -251,12 +253,11 @@ export default {
       );
     });
 
-    const consoleLink = computed(() => {
-      const consoleURL = store.getters["setting/settingByName"](
-        "bb.console.database"
-      ).value;
+    const databaseConsoleLink = computed(() => {
+      const consoleURL =
+        store.getters["setting/settingByName"]("bb.console.url").value;
       if (!isEmpty(consoleURL)) {
-        return databaseConsoleLink(consoleURL, database.value.name, "");
+        return consoleLink(consoleURL, database.value.name);
       }
       return "";
     });
@@ -313,7 +314,7 @@ export default {
 
     const selectTab = (index: number) => {
       state.selectedIndex = index;
-      router.replace({
+      router.resolve({
         name: "workspace.database.detail",
         hash: "#" + databaseTabItemList[index].hash,
       });
@@ -352,7 +353,7 @@ export default {
       OVERVIEW_TAB,
       state,
       database,
-      consoleLink,
+      databaseConsoleLink,
       allowChangeProject,
       tryTransferProject,
       updateProject,
