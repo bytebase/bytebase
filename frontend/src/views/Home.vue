@@ -38,7 +38,10 @@
       ]"
     />
   </div>
-  <router-link to="/issue" class="mt-2 px-4 flex justify-end normal-link">
+  <router-link
+    to="/issue?status=closed"
+    class="mt-2 px-4 flex justify-end normal-link"
+  >
     View all closed
   </router-link>
 </template>

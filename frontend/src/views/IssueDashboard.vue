@@ -17,14 +17,7 @@
       :rightBordered="false"
       :topBordered="true"
       :bottomBordered="true"
-      :issueSectionList="[
-        {
-          title: 'Closed',
-          list: filteredList(state.closedList).sort((a, b) => {
-            return b.updatedTs - a.updatedTs;
-          }),
-        },
-      ]"
+      :issueSectionList="sectionList"
     />
   </div>
 </template>
@@ -38,8 +31,12 @@ import IssueTable from "../components/IssueTable.vue";
 import { Environment, Issue, UNKNOWN_ID } from "../types";
 import { computed, onMounted, watchEffect } from "@vue/runtime-core";
 import { activeEnvironment } from "../utils";
+import { BBTableSectionDataSource } from "../bbkit/types";
 
 interface LocalState {
+  showOpen: boolean;
+  showClosed: boolean;
+  openList: Issue[];
   closedList: Issue[];
   searchText: string;
   selectedEnvironment?: Environment;
@@ -54,7 +51,14 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    const statusList: string[] = router.currentRoute.value.query.status
+      ? (router.currentRoute.value.query.status as string).split(",")
+      : [];
+
     const state = reactive<LocalState>({
+      showOpen: statusList.length == 0 || statusList.includes("open"),
+      showClosed: statusList.length == 0 || statusList.includes("closed"),
+      openList: [],
       closedList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
@@ -74,26 +78,41 @@ export default {
     const prepareIssueList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch("issue/fetchIssueListForUser", {
-            userId: currentUser.value.id,
-            issueStatusList: ["DONE", "CANCELED"],
-          })
-          .then((issueList: Issue[]) => {
-            state.closedList = [];
-            for (const issue of issueList) {
-              // "DONE" or "CANCELED"
-              if (issue.status === "DONE" || issue.status === "CANCELED") {
-                if (
-                  issue.creator.id === currentUser.value.id ||
-                  issue.assignee?.id === currentUser.value.id ||
-                  issue.subscriberIdList.includes(currentUser.value.id)
-                ) {
-                  state.closedList.push(issue);
+        // We call open and close separately because normally the number of open issues is limited
+        // while the closed issues could be a lot.
+        if (state.showOpen) {
+          store
+            .dispatch("issue/fetchIssueListForUser", {
+              userId: currentUser.value.id,
+              issueStatusList: ["OPEN"],
+            })
+            .then((issueList: Issue[]) => {
+              state.openList = issueList;
+            });
+        }
+
+        if (state.showClosed) {
+          store
+            .dispatch("issue/fetchIssueListForUser", {
+              userId: currentUser.value.id,
+              issueStatusList: ["DONE", "CANCELED"],
+            })
+            .then((issueList: Issue[]) => {
+              state.closedList = [];
+              for (const issue of issueList) {
+                // "DONE" or "CANCELED"
+                if (issue.status === "DONE" || issue.status === "CANCELED") {
+                  if (
+                    issue.creator.id === currentUser.value.id ||
+                    issue.assignee?.id === currentUser.value.id ||
+                    issue.subscriberIdList.includes(currentUser.value.id)
+                  ) {
+                    state.closedList.push(issue);
+                  }
                 }
               }
-            }
-          });
+            });
+        }
       }
     };
 
@@ -131,10 +150,31 @@ export default {
       });
     };
 
+    const sectionList = computed((): BBTableSectionDataSource<Issue>[] => {
+      const list = [];
+      if (state.showOpen) {
+        list.push({
+          title: "Open",
+          list: filteredList(state.openList).sort((a, b) => {
+            return b.updatedTs - a.updatedTs;
+          }),
+        });
+      }
+      if (state.showClosed) {
+        list.push({
+          title: "Closed",
+          list: filteredList(state.closedList).sort((a, b) => {
+            return b.updatedTs - a.updatedTs;
+          }),
+        });
+      }
+      return list;
+    });
+
     return {
       searchField,
       state,
-      filteredList,
+      sectionList,
       selectEnvironment,
       changeSearchText,
     };
