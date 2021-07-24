@@ -75,33 +75,38 @@ const getters = {
 };
 
 const actions = {
-  async fetchIssueListForUser(
+  async fetchIssueList(
     { rootGetters }: any,
     {
-      userId,
       issueStatusList,
+      userId,
+      projectId,
       limit,
     }: {
-      userId: PrincipalId;
-      issueStatusList: IssueStatus[];
+      issueStatusList?: IssueStatus[];
+      userId?: PrincipalId;
+      projectId?: ProjectId;
       limit?: number;
     }
   ) {
-    var url = `/api/issue?user=${userId}&status=${issueStatusList.join(",")}`;
+    var queryList = [];
+    if (issueStatusList) {
+      queryList.push(`status=${issueStatusList.join(",")}`);
+    }
+    if (userId) {
+      queryList.push(`user=${userId}`);
+    }
+    if (projectId) {
+      queryList.push(`project=${projectId}`);
+    }
     if (limit) {
-      url += `&limit=${limit}`;
+      queryList.push(`limit=${limit}`);
+    }
+    var url = "/api/issue";
+    if (queryList.length > 0) {
+      url += `?${queryList.join("&")}`;
     }
     const data = (await axios.get(url)).data;
-    const issueList = data.data.map((issue: ResourceObject) => {
-      return convert(issue, data.included, rootGetters);
-    });
-
-    // The caller consumes directly, so we don't store it.
-    return issueList;
-  },
-
-  async fetchIssueListForProject({ rootGetters }: any, projectId: ProjectId) {
-    const data = (await axios.get(`/api/issue?project=${projectId}`)).data;
     const issueList = data.data.map((issue: ResourceObject) => {
       return convert(issue, data.included, rootGetters);
     });

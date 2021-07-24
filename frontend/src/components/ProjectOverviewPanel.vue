@@ -19,6 +19,12 @@
           },
         ]"
       />
+      <router-link
+        :to="`/issue?status=closed&project=${project.id}`"
+        class="mt-2 flex justify-end normal-link"
+      >
+        View all closed
+      </router-link>
     </div>
   </div>
 </template>
@@ -77,7 +83,9 @@ export default {
 
     const prepareIssueList = () => {
       store
-        .dispatch("issue/fetchIssueListForProject", props.project.id)
+        .dispatch("issue/fetchIssueList", {
+          projectId: props.project.id,
+        })
         .then((issueList: Issue[]) => {
           state.progressIssueList = [];
           state.closedIssueList = [];
