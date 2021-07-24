@@ -68,32 +68,7 @@ INSERT INTO
 VALUES
     (13005, 101);
 
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13005, 102);
-
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13005, 103);
-
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13005, 104);
-
 -- Subscriber for issue 13006
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13006, 101);
-
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13006, 102);
-
 INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
 VALUES
@@ -115,16 +90,6 @@ INSERT INTO
 VALUES
     (13007, 102);
 
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13007, 103);
-
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13007, 104);
-
 -- Subscriber for issue 13008
 INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
@@ -134,14 +99,4 @@ VALUES
 INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
 VALUES
-    (13008, 102);
-
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13008, 103);
-
-INSERT INTO
-    issue_subscriber (issue_id, subscriber_id)
-VALUES
-    (13008, 104);
+    (13007, 103);
