@@ -2,13 +2,7 @@
   <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
-      <div
-        class="
-          px-4
-          pb-4
-          md:flex md:items-center md:justify-between
-        "
-      >
+      <div class="px-4 pb-4 md:flex md:items-center md:justify-between">
         <div class="flex-1 min-w-0">
           <!-- Summary -->
           <div class="flex items-center">
@@ -192,17 +186,8 @@ import { useRouter } from "vue-router";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
-import {
-  consoleLink,
-  idFromSlug,
-  instanceSlug,
-  isDBAOrOwner,
-} from "../utils";
-import {
-  ProjectId,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-} from "../types";
+import { consoleLink, idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
+import { ProjectId, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 import { isEmpty } from "lodash";
 
 const OVERVIEW_TAB = 0;
