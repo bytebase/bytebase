@@ -179,7 +179,10 @@ export default {
       if (currentRoute.value.meta.title) {
         list.push({
           name: currentRoute.value.meta.title(currentRoute.value),
-          path: currentRoute.value.path,
+          // Set empty path for the current route to make the link not clickable.
+          // We do this because clicking the current route path won't trigger reload and would
+          // confuse user since UI won't change while we may have cleared all query parameters.
+          path: "",
         });
       }
 
