@@ -4,8 +4,15 @@
       <h3 class="text-lg leading-6 font-medium text-main">SQL Console URL</h3>
       <p class="mt-1 textinfolabel">
         If your team use a separate SQL console such as phpMyAdmin, you can
-        provide its URL pattern here, so that Bytebase can surface the console
-        link on the relevant database and table UI.
+        provide its URL pattern here. Once provided, Bytebase will surface the
+        console link on the relevant database and table UI
+        <a
+          href="https://docs.bytebase.com/settings/external-sql-console"
+          target="_blank"
+          class="normal-link"
+        >
+          detailed guide</a
+        >.
       </p>
 
       <div class="mt-4">
@@ -19,15 +26,8 @@
           v-model="state.consoleURL"
         />
         <div for="databaseURL" class="mt-2 textinfolabel">
-          Hint: Use {{ DB_NAME_PLACEHOLDER }} as the placeholder for the actual
+          Tip: Use {{ DB_NAME_PLACEHOLDER }} as the placeholder for the actual
           database name
-          <a
-            href="https://docs.bytebase.com/settings/external-sql-console"
-            target="_blank"
-            class="normal-link"
-          >
-            detailed guide</a
-          >.
         </div>
       </div>
     </div>
