@@ -6,11 +6,17 @@
         :selectedId="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
-      <BBTableSearch
-        ref="searchField"
-        :placeholder="'Search issue name'"
-        @change-text="(text) => changeSearchText(text)"
-      />
+      <div class="flex flex-row space-x-4">
+        <MemberSelect
+          :selectedId="state.selectedPrincipalId"
+          @select-principal-id="selectPrincipal"
+        />
+        <BBTableSearch
+          ref="searchField"
+          :placeholder="'Search issue name'"
+          @change-text="(text) => changeSearchText(text)"
+        />
+      </div>
     </div>
     <IssueTable
       :leftBordered="false"
@@ -28,7 +34,8 @@ import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { Environment, Issue, UNKNOWN_ID } from "../types";
+import MemberSelect from "../components/MemberSelect.vue";
+import { Environment, Issue, PrincipalId, UNKNOWN_ID } from "../types";
 import { computed, onMounted, watchEffect } from "@vue/runtime-core";
 import { activeEnvironment } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -40,16 +47,19 @@ interface LocalState {
   closedList: Issue[];
   searchText: string;
   selectedEnvironment?: Environment;
+  selectedPrincipalId: PrincipalId;
 }
 
 export default {
   name: "IssueDashboard",
-  components: { EnvironmentTabFilter, IssueTable },
+  components: { EnvironmentTabFilter, IssueTable, MemberSelect },
   setup(props, ctx) {
     const searchField = ref();
 
     const store = useStore();
     const router = useRouter();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const statusList: string[] = router.currentRoute.value.query.status
       ? (router.currentRoute.value.query.status as string).split(",")
@@ -66,9 +76,8 @@ export default {
             router.currentRoute.value.query.environment
           )
         : undefined,
+      selectedPrincipalId: currentUser.value.id,
     });
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     onMounted(() => {
       // Focus on the internal search field when mounted
@@ -76,43 +85,40 @@ export default {
     });
 
     const prepareIssueList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        // We call open and close separately because normally the number of open issues is limited
-        // while the closed issues could be a lot.
-        if (state.showOpen) {
-          store
-            .dispatch("issue/fetchIssueListForUser", {
-              userId: currentUser.value.id,
-              issueStatusList: ["OPEN"],
-            })
-            .then((issueList: Issue[]) => {
-              state.openList = issueList;
-            });
-        }
+      // We call open and close separately because normally the number of open issues is limited
+      // while the closed issues could be a lot.
+      if (state.showOpen) {
+        store
+          .dispatch("issue/fetchIssueListForUser", {
+            userId: state.selectedPrincipalId,
+            issueStatusList: ["OPEN"],
+          })
+          .then((issueList: Issue[]) => {
+            state.openList = issueList;
+          });
+      }
 
-        if (state.showClosed) {
-          store
-            .dispatch("issue/fetchIssueListForUser", {
-              userId: currentUser.value.id,
-              issueStatusList: ["DONE", "CANCELED"],
-            })
-            .then((issueList: Issue[]) => {
-              state.closedList = [];
-              for (const issue of issueList) {
-                // "DONE" or "CANCELED"
-                if (issue.status === "DONE" || issue.status === "CANCELED") {
-                  if (
-                    issue.creator.id === currentUser.value.id ||
-                    issue.assignee?.id === currentUser.value.id ||
-                    issue.subscriberIdList.includes(currentUser.value.id)
-                  ) {
-                    state.closedList.push(issue);
-                  }
+      if (state.showClosed) {
+        store
+          .dispatch("issue/fetchIssueListForUser", {
+            userId: state.selectedPrincipalId,
+            issueStatusList: ["DONE", "CANCELED"],
+          })
+          .then((issueList: Issue[]) => {
+            state.closedList = [];
+            for (const issue of issueList) {
+              // "DONE" or "CANCELED"
+              if (issue.status === "DONE" || issue.status === "CANCELED") {
+                if (
+                  issue.creator.id === state.selectedPrincipalId ||
+                  issue.assignee?.id === state.selectedPrincipalId ||
+                  issue.subscriberIdList.includes(state.selectedPrincipalId)
+                ) {
+                  state.closedList.push(issue);
                 }
               }
-            });
-        }
+            }
+          });
       }
     };
 
@@ -123,11 +129,25 @@ export default {
       if (environment) {
         router.replace({
           name: "workspace.issue",
-          query: { environment: environment.id },
+          query: {
+            ...router.currentRoute.value.query,
+            environment: environment.id,
+          },
         });
       } else {
         router.replace({ name: "workspace.issue" });
       }
+    };
+
+    const selectPrincipal = (principalId: PrincipalId) => {
+      state.selectedPrincipalId = principalId;
+      router.replace({
+        name: "workspace.issue",
+        query: {
+          ...router.currentRoute.value.query,
+          user: principalId,
+        },
+      });
     };
 
     const changeSearchText = (searchText: string) => {
@@ -176,6 +196,7 @@ export default {
       state,
       sectionList,
       selectEnvironment,
+      selectPrincipal,
       changeSearchText,
     };
   },
