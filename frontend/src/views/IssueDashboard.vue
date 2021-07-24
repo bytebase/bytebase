@@ -180,7 +180,13 @@ export default {
           },
         });
       } else {
-        router.replace({ name: "workspace.issue" });
+        router.replace({
+          name: "workspace.issue",
+          query: {
+            ...router.currentRoute.value.query,
+            environment: undefined,
+          },
+        });
       }
     };
 
