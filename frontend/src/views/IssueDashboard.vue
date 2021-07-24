@@ -82,6 +82,16 @@ export default {
       ? (router.currentRoute.value.query.status as string).split(",")
       : [];
 
+    // Applies principal scope if we explicitly specify user in the query parameter
+    // or project is NOT present in the query parameter.
+    // In other words, if only project is present in the query parameter, then
+    // we do NOT apply principal scope, which is the case if we want to list all issues
+    // for a particular project.
+    // Note: We do not use computed, otherwise it will cause prepareIssueList to refetch everytime we click environment tab
+    const scopeByPrincipal =
+      !router.currentRoute.value.query.user ||
+      !router.currentRoute.value.query.project;
+
     const state = reactive<LocalState>({
       showOpen: statusList.length == 0 || statusList.includes("open"),
       showClosed: statusList.length == 0 || statusList.includes("closed"),
@@ -104,15 +114,6 @@ export default {
       searchField.value.$el.querySelector("#search").focus();
     });
 
-    // Applies principal scope if we explicitly specify user in the query parameter
-    // or project is NOT present in the query parameter.
-    // In other words, if only project is present in the query parameter, then
-    // we do NOT apply principal scope, which is the case if we want to list all issues
-    // for a particular project.
-    const scopeByPrincipal = computed(() => {
-      return router.currentRoute.value.query.user || !state.selectedProjectId;
-    });
-
     const project = computed(() => {
       if (state.selectedProjectId) {
         return store.getters["project/projectById"](state.selectedProjectId);
@@ -127,9 +128,7 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
-            userId: scopeByPrincipal.value
-              ? state.selectedPrincipalId
-              : undefined,
+            userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
             projectId: state.selectedProjectId,
           })
           .then((issueList: Issue[]) => {
@@ -141,9 +140,7 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
-            userId: scopeByPrincipal.value
-              ? state.selectedPrincipalId
-              : undefined,
+            userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
             projectId: state.selectedProjectId,
           })
           .then((issueList: Issue[]) => {
