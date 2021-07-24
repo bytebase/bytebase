@@ -8,6 +8,7 @@
       />
       <div class="flex flex-row space-x-4">
         <MemberSelect
+          v-if="scopeByPrincipal"
           :selectedId="state.selectedPrincipalId"
           @select-principal-id="selectPrincipal"
         />
@@ -35,7 +36,7 @@ import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
-import { Environment, Issue, PrincipalId, UNKNOWN_ID } from "../types";
+import { Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { computed, onMounted, watchEffect } from "@vue/runtime-core";
 import { activeEnvironment } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -46,8 +47,9 @@ interface LocalState {
   openList: Issue[];
   closedList: Issue[];
   searchText: string;
-  selectedEnvironment?: Environment;
   selectedPrincipalId: PrincipalId;
+  selectedEnvironment?: Environment;
+  selectedProjectId?: ProjectId;
 }
 
 export default {
@@ -71,12 +73,15 @@ export default {
       openList: [],
       closedList: [],
       searchText: "",
+      selectedPrincipalId: currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
           )
         : undefined,
-      selectedPrincipalId: currentUser.value.id,
+      selectedProjectId: router.currentRoute.value.query.project
+        ? parseInt(router.currentRoute.value.query.project as string)
+        : undefined,
     });
 
     onMounted(() => {
@@ -84,14 +89,26 @@ export default {
       searchField.value.$el.querySelector("#search").focus();
     });
 
+    // Applies principal scope if we explicitly specify user in the query parameter
+    // or project is NOT present in the query parameter.
+    // In other words, if only project is present in the query parameter, then
+    // we do NOT apply principal scope, which is the case if we want to list all issues
+    // for a particular project.
+    const scopeByPrincipal = computed(() => {
+      return router.currentRoute.value.query.user || !state.selectedProjectId;
+    });
+
     const prepareIssueList = () => {
       // We call open and close separately because normally the number of open issues is limited
       // while the closed issues could be a lot.
       if (state.showOpen) {
         store
-          .dispatch("issue/fetchIssueListForUser", {
-            userId: state.selectedPrincipalId,
+          .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
+            userId: scopeByPrincipal.value
+              ? state.selectedPrincipalId
+              : undefined,
+            projectId: state.selectedProjectId,
           })
           .then((issueList: Issue[]) => {
             state.openList = issueList;
@@ -100,59 +117,20 @@ export default {
 
       if (state.showClosed) {
         store
-          .dispatch("issue/fetchIssueListForUser", {
-            userId: state.selectedPrincipalId,
+          .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
+            userId: scopeByPrincipal.value
+              ? state.selectedPrincipalId
+              : undefined,
+            projectId: state.selectedProjectId,
           })
           .then((issueList: Issue[]) => {
-            state.closedList = [];
-            for (const issue of issueList) {
-              // "DONE" or "CANCELED"
-              if (issue.status === "DONE" || issue.status === "CANCELED") {
-                if (
-                  issue.creator.id === state.selectedPrincipalId ||
-                  issue.assignee?.id === state.selectedPrincipalId ||
-                  issue.subscriberIdList.includes(state.selectedPrincipalId)
-                ) {
-                  state.closedList.push(issue);
-                }
-              }
-            }
+            state.closedList = issueList;
           });
       }
     };
 
     watchEffect(prepareIssueList);
-
-    const selectEnvironment = (environment: Environment) => {
-      state.selectedEnvironment = environment;
-      if (environment) {
-        router.replace({
-          name: "workspace.issue",
-          query: {
-            ...router.currentRoute.value.query,
-            environment: environment.id,
-          },
-        });
-      } else {
-        router.replace({ name: "workspace.issue" });
-      }
-    };
-
-    const selectPrincipal = (principalId: PrincipalId) => {
-      state.selectedPrincipalId = principalId;
-      router.replace({
-        name: "workspace.issue",
-        query: {
-          ...router.currentRoute.value.query,
-          user: principalId,
-        },
-      });
-    };
-
-    const changeSearchText = (searchText: string) => {
-      state.searchText = searchText;
-    };
 
     const filteredList = (list: Issue[]) => {
       if (!state.selectedEnvironment && !state.searchText) {
@@ -191,9 +169,40 @@ export default {
       return list;
     });
 
+    const selectEnvironment = (environment: Environment) => {
+      state.selectedEnvironment = environment;
+      if (environment) {
+        router.replace({
+          name: "workspace.issue",
+          query: {
+            ...router.currentRoute.value.query,
+            environment: environment.id,
+          },
+        });
+      } else {
+        router.replace({ name: "workspace.issue" });
+      }
+    };
+
+    const selectPrincipal = (principalId: PrincipalId) => {
+      state.selectedPrincipalId = principalId;
+      router.replace({
+        name: "workspace.issue",
+        query: {
+          ...router.currentRoute.value.query,
+          user: principalId,
+        },
+      });
+    };
+
+    const changeSearchText = (searchText: string) => {
+      state.searchText = searchText;
+    };
+
     return {
       searchField,
       state,
+      scopeByPrincipal,
       sectionList,
       selectEnvironment,
       selectPrincipal,

@@ -104,9 +104,9 @@ export default {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
         store
-          .dispatch("issue/fetchIssueListForUser", {
-            userId: currentUser.value.id,
+          .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
+            userId: currentUser.value.id,
           })
           .then((issueList: Issue[]) => {
             state.assignedList = [];
@@ -126,9 +126,9 @@ export default {
           });
 
         store
-          .dispatch("issue/fetchIssueListForUser", {
-            userId: currentUser.value.id,
+          .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
+            userId: currentUser.value.id,
             limit: MAX_CLOSED_ISSUE_COUNT,
           })
           .then((issueList: Issue[]) => {
