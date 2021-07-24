@@ -16,9 +16,9 @@ VALUES
         101,
         101,
         5001,
-        'On-premises Dev MySQL',
+        'Localhost Dev MySQL',
         'MYSQL',
-        'mysql.dev.example.com',
+        '127.0.0.1',
         '3306',
         'bytebase.com'
     );
