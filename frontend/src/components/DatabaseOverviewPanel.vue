@@ -1,14 +1,10 @@
 <template>
   <div class="mt-6">
-    <div
-      class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border"
-    >
+    <div class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border">
       <!-- Description list -->
       <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
         <div class="col-span-1 col-start-1">
-          <dt class="text-sm font-medium text-control-light">
-            Character set
-          </dt>
+          <dt class="text-sm font-medium text-control-light">Character set</dt>
           <dd class="mt-1 text-sm text-main">
             {{ database.characterSet }}
           </dd>
@@ -22,9 +18,7 @@
         </div>
 
         <div class="col-span-1 col-start-1">
-          <dt class="text-sm font-medium text-control-light">
-            Sync status
-          </dt>
+          <dt class="text-sm font-medium text-control-light">Sync status</dt>
           <dd class="mt-1 text-sm text-main">
             <span>{{ database.syncStatus }}</span>
           </dd>
@@ -55,9 +49,7 @@
       </dl>
 
       <div class="pt-6">
-        <div class="text-lg leading-6 font-medium text-main mb-4">
-          Tables
-        </div>
+        <div class="text-lg leading-6 font-medium text-main mb-4">Tables</div>
         <TableTable
           :mode="'TABLE'"
           :tableList="tableList.filter((item) => item.type == 'BASE TABLE')"
@@ -87,10 +79,7 @@
 
       <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
       <div v-if="false" class="pt-6">
-        <DataSourceTable
-          :instance="database.instance"
-          :database="database"
-        />
+        <DataSourceTable :instance="database.instance" :database="database" />
       </div>
 
       <template v-if="allowViewDataSource">
@@ -204,11 +193,7 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
-import {
-  idFromSlug,
-  instanceSlug,
-  isDBAOrOwner,
-} from "../utils";
+import { idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
 import {
   Database,
   DataSource,
@@ -247,26 +232,21 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const database = props.database;
-
     const prepareTableList = () => {
-      store.dispatch(
-        "table/fetchTableListByDatabaseId",
-        database.id
-      );
+      store.dispatch("table/fetchTableListByDatabaseId", props.database.id);
     };
 
     watchEffect(prepareTableList);
 
     const prepareMigrationHistoryList = () => {
       store
-        .dispatch("instance/checkMigrationSetup", database.instance.id)
+        .dispatch("instance/checkMigrationSetup", props.database.instance.id)
         .then((migration: InstanceMigration) => {
           state.migrationSetupStatus = migration.status;
           if (state.migrationSetupStatus == "OK") {
             store.dispatch("instance/migrationHistory", {
-              instanceId: database.instance.id,
-              databaseName: database.name,
+              instanceId: props.database.instance.id,
+              databaseName: props.database.name,
             });
           }
         });
@@ -279,16 +259,14 @@ export default {
     );
 
     const tableList = computed(() => {
-      return store.getters["table/tableListByDatabaseId"](
-        database.id
-      );
+      return store.getters["table/tableListByDatabaseId"](props.database.id);
     });
 
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
-        return `Missing migration history schema on instance "${database.instance.name}"`;
+        return `Missing migration history schema on instance "${props.database.instance.name}"`;
       } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return `Unable to connect instance "${database.instance.name}" to retrieve migration history`;
+        return `Unable to connect instance "${props.database.instance.name}" to retrieve migration history`;
       }
       return "";
     });
@@ -296,7 +274,7 @@ export default {
     const migrationHistoryList = computed(() => {
       return store.getters[
         "instance/migrationHistoryListByInstanceIdAndDatabaseName"
-      ](database.instance.id, database.name);
+      ](props.database.instance.id, props.database.name);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -308,7 +286,7 @@ export default {
         return true;
       }
 
-      for (const member of database.project.memberList) {
+      for (const member of props.database.project.memberList) {
         if (member.principal.id == currentUser.value.id) {
           return true;
         }
@@ -322,7 +300,7 @@ export default {
     });
 
     const dataSourceList = computed(() => {
-      return database.dataSourceList;
+      return props.database.dataSourceList;
     });
 
     const readWriteDataSourceList = computed(() => {
@@ -377,12 +355,11 @@ export default {
     };
 
     const configInstance = () => {
-      router.push(`/instance/${instanceSlug(database.instance)}`);
+      router.push(`/instance/${instanceSlug(props.database.instance)}`);
     };
 
     return {
       state,
-      database,
       tableList,
       attentionTitle,
       migrationHistoryList,
