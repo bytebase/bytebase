@@ -20,7 +20,7 @@
       :issueSectionList="[
         {
           title: 'Closed',
-          list: filteredList(state.closeList).sort((a, b) => {
+          list: filteredList(state.closedList).sort((a, b) => {
             return b.updatedTs - a.updatedTs;
           }),
         },
@@ -40,7 +40,7 @@ import { computed, onMounted, watchEffect } from "@vue/runtime-core";
 import { activeEnvironment } from "../utils";
 
 interface LocalState {
-  closeList: Issue[];
+  closedList: Issue[];
   searchText: string;
   selectedEnvironment?: Environment;
 }
@@ -55,7 +55,7 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      closeList: [],
+      closedList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
@@ -80,7 +80,7 @@ export default {
             issueStatusList: ["DONE", "CANCELED"],
           })
           .then((issueList: Issue[]) => {
-            state.closeList = [];
+            state.closedList = [];
             for (const issue of issueList) {
               // "DONE" or "CANCELED"
               if (issue.status === "DONE" || issue.status === "CANCELED") {
@@ -89,7 +89,7 @@ export default {
                   issue.assignee?.id === currentUser.value.id ||
                   issue.subscriberIdList.includes(currentUser.value.id)
                 ) {
-                  state.closeList.push(issue);
+                  state.closedList.push(issue);
                 }
               }
             }

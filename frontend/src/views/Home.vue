@@ -31,7 +31,7 @@
         },
         {
           title: 'Recently Closed',
-          list: filteredList(state.closeList).sort((a, b) => {
+          list: filteredList(state.closedList).sort((a, b) => {
             return b.updatedTs - a.updatedTs;
           }),
         },
@@ -59,7 +59,7 @@ interface LocalState {
   createdList: Issue[];
   assignedList: Issue[];
   subscribeList: Issue[];
-  closeList: Issue[];
+  closedList: Issue[];
   searchText: string;
   selectedEnvironment?: Environment;
 }
@@ -81,7 +81,7 @@ export default {
       createdList: [],
       assignedList: [],
       subscribeList: [],
-      closeList: [],
+      closedList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
         ? store.getters["environment/environmentById"](
@@ -129,14 +129,14 @@ export default {
             limit: MAX_CLOSED_ISSUE_COUNT,
           })
           .then((issueList: Issue[]) => {
-            state.closeList = [];
+            state.closedList = [];
             for (const issue of issueList) {
               if (
                 issue.creator.id === currentUser.value.id ||
                 issue.assignee?.id === currentUser.value.id ||
                 issue.subscriberIdList.includes(currentUser.value.id)
               ) {
-                state.closeList.push(issue);
+                state.closedList.push(issue);
               }
             }
           });
