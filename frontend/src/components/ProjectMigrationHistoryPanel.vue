@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <div class="textinfolabel">
+    <div class="text-center textinfolabel">
       For database having migration history, we list up to 5 most recent
       histories below. You can click the database name to view all histories.
     </div>
