@@ -59,6 +59,10 @@ func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
 	return driver, nil
 }
 
+func (driver *MySQLDriver) Close(ctx context.Context) error {
+	return driver.db.Close()
+}
+
 func (driver *MySQLDriver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }

@@ -181,6 +181,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
+			defer db.Close(context.Background())
 			if err := db.SetupMigrationIfNeeded(context.Background()); err != nil {
 				resultSet.Error = err.Error()
 			}
@@ -218,6 +219,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
 		} else {
+			defer db.Close(context.Background())
 			setup, err := db.NeedsSetupMigration(context.Background())
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check migration setup status for host:port: %v:%v", instance.Host, instance.Port)).SetInternal(err)
@@ -271,6 +273,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Port:     instance.Port,
 		})
 		if err == nil {
+			defer driver.Close(context.Background())
 			list, err := driver.FindMigrationHistoryList(context.Background(), find)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)

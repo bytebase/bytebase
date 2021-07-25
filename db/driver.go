@@ -215,6 +215,8 @@ type MigrationHistoryFind struct {
 
 type Driver interface {
 	open(config ConnectionConfig) (Driver, error)
+	// Remember to call Close to avoid connection leak
+	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
 	SyncSchema(ctx context.Context) ([]*DBSchema, error)
 	Execute(ctx context.Context, statement string) error
