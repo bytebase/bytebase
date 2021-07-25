@@ -38,6 +38,8 @@ import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
+import { cloneDeep } from "lodash";
+import { sortInstanceList } from "../utils";
 
 interface LocalState {
   searchText: string;
@@ -56,6 +58,10 @@ export default {
 
     const store = useStore();
     const router = useRouter();
+
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"](["NORMAL"]);
+    });
 
     const state = reactive<LocalState>({
       searchText: "",
@@ -113,7 +119,8 @@ export default {
     };
 
     const instanceList = computed(() => {
-      return store.getters["instance/instanceList"]();
+      const list = store.getters["instance/instanceList"]();
+      return sortInstanceList(cloneDeep(list), environmentList.value);
     });
 
     const filteredList = (list: Instance[]) => {
