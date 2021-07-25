@@ -87,6 +87,7 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import {
+  Database,
   Instance,
   InstanceMigration,
   MigrationSchemaStatus,
@@ -176,9 +177,26 @@ export default {
     );
 
     const databaseList = computed(() => {
-      return store.getters["database/databaseListByInstanceId"](
+      const list = store.getters["database/databaseListByInstanceId"](
         instance.value.id
       );
+      if (isDBAOrOwner(currentUser.value.role)) {
+        return list;
+      }
+
+      // In edge case when the user is no longer an Owner or DBA, we only want to display the database
+      // belonging to the project which the user is a member of. The returned list above may contain
+      // databases not meeting this criteria and we need to filter out them.
+      const filteredList: Database[] = [];
+      for (const database of list) {
+        for (const member of database.project.memberList) {
+          if (member.principal.id == currentUser.value.id) {
+            filteredList.push(database);
+            break;
+          }
+        }
+      }
+      return filteredList;
     });
 
     const allowEdit = computed(() => {
