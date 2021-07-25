@@ -231,11 +231,9 @@ const actions = {
     return databaseList;
   },
 
-  async fetchDatabaseListByPrincipalId(
-    { commit, rootGetters }: any,
-    userId: PrincipalId
-  ) {
-    const data = (await axios.get(`/api/database?user=${userId}`)).data;
+  // Server uses the caller identity to fetch the database list related to the caller.
+  async fetchDatabaseList({ commit, rootGetters }: any) {
+    const data = (await axios.get(`/api/database`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
