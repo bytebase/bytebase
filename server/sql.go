@@ -52,6 +52,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			}
 			resultSet.Error = fmt.Errorf("failed to connect '%s' for user '%s' (using password: %s), %w", hostPort, connectionInfo.Username, usePassword, err).Error()
 		} else {
+			defer db.Close(context.Background())
 			if err := db.Ping(context.Background()); err != nil {
 				resultSet.Error = err.Error()
 			}
@@ -100,6 +101,8 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 		if err != nil {
 			return fmt.Errorf("failed to connect instance: %v with user: %v. Error %w", instance.Name, instance.Username, err)
 		}
+
+		defer driver.Close(context.Background())
 
 		schemaList, err := driver.SyncSchema(context.Background())
 		if err != nil {
