@@ -94,14 +94,9 @@ export default {
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch(
-            "database/fetchDatabaseListByPrincipalId",
-            currentUser.value.id
-          )
-          .then((list) => {
-            state.databaseList = sortDatabaseList(list, environmentList.value);
-          });
+        store.dispatch("database/fetchDatabaseList").then((list) => {
+          state.databaseList = sortDatabaseList(list, environmentList.value);
+        });
       }
     };
 
