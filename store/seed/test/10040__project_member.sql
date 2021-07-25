@@ -20,7 +20,6 @@ VALUES
 
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -29,7 +28,6 @@ INSERT INTO
     )
 VALUES
     (
-        4002,
         101,
         101,
         3001,
@@ -39,7 +37,6 @@ VALUES
 
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -48,7 +45,6 @@ INSERT INTO
     )
 VALUES
     (
-        4003,
         101,
         101,
         3001,
@@ -59,7 +55,6 @@ VALUES
 -- Project 3002 membership
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -68,7 +63,6 @@ INSERT INTO
     )
 VALUES
     (
-        4004,
         101,
         101,
         3002,
@@ -78,7 +72,6 @@ VALUES
 
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -87,7 +80,6 @@ INSERT INTO
     )
 VALUES
     (
-        4005,
         101,
         101,
         3002,
@@ -98,7 +90,6 @@ VALUES
 -- Project 3003 membership
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -107,7 +98,6 @@ INSERT INTO
     )
 VALUES
     (
-        4006,
         101,
         101,
         3003,
@@ -117,7 +107,6 @@ VALUES
 
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -126,7 +115,6 @@ INSERT INTO
     )
 VALUES
     (
-        4007,
         101,
         101,
         3003,
@@ -137,7 +125,6 @@ VALUES
 -- Project 3004 membership
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -146,7 +133,6 @@ INSERT INTO
     )
 VALUES
     (
-        4009,
         101,
         101,
         3004,
@@ -156,7 +142,6 @@ VALUES
 
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -165,7 +150,6 @@ INSERT INTO
     )
 VALUES
     (
-        4010,
         101,
         101,
         3004,
@@ -175,7 +159,6 @@ VALUES
 
 INSERT INTO
     project_member (
-        id,
         creator_id,
         updater_id,
         project_id,
@@ -184,7 +167,6 @@ INSERT INTO
     )
 VALUES
     (
-        4011,
         101,
         101,
         3004,
