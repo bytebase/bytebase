@@ -234,7 +234,7 @@ const actions = {
     return rootGetters["sql/convert"](data);
   },
 
-  async migrationHistory(
+  async fetchMigrationHistory(
     { commit }: any,
     {
       instanceId,

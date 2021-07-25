@@ -244,7 +244,7 @@ export default {
         .then((migration: InstanceMigration) => {
           state.migrationSetupStatus = migration.status;
           if (state.migrationSetupStatus == "OK") {
-            store.dispatch("instance/migrationHistory", {
+            store.dispatch("instance/fetchMigrationHistory", {
               instanceId: props.database.instance.id,
               databaseName: props.database.name,
             });
