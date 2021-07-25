@@ -114,6 +114,7 @@ const databaseSorter = (a: Database, b: Database): number => {
 
 const state: () => DatabaseState = () => ({
   databaseListByInstanceId: new Map(),
+  databaseListByProjectId: new Map(),
 });
 
 const getters = {
@@ -163,15 +164,7 @@ const getters = {
   databaseListByProjectId:
     (state: DatabaseState) =>
     (projectId: ProjectId): Database[] => {
-      const list: Database[] = [];
-      for (let [_, databaseList] of state.databaseListByInstanceId) {
-        databaseList.forEach((item: Database) => {
-          if (item.project.id == projectId) {
-            list.push(item);
-          }
-        });
-      }
-      return list;
+      return state.databaseListByProjectId.get(projectId) || [];
     },
 
   databaseById:
@@ -226,7 +219,7 @@ const actions = {
     });
     databaseList.sort(databaseSorter);
 
-    commit("upsertDatabaseList", { databaseList });
+    commit("setDatabaseListByProjectId", { databaseList, projectId });
 
     return databaseList;
   },
@@ -340,6 +333,19 @@ const actions = {
 };
 
 const mutations = {
+  setDatabaseListByProjectId(
+    state: DatabaseState,
+    {
+      databaseList,
+      projectId,
+    }: {
+      databaseList: Database[];
+      projectId: ProjectId;
+    }
+  ) {
+    state.databaseListByProjectId.set(projectId, databaseList);
+  },
+
   upsertDatabaseList(
     state: DatabaseState,
     {
