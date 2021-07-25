@@ -1,13 +1,40 @@
 <template>
-  <div class="flex flex-col space-y-2">
+  <div class="flex flex-col space-y-4">
     <div class="textinfolabel">
       For database having migration history, we list up to 5 most recent
       histories below. You can click the database name to view all histories.
     </div>
-    <MigrationHistoryTable
-      :mode="'PROJECT'"
-      :historySectionList="state.migrationHistorySectionList"
-    />
+    <template v-if="state.migrationHistorySectionList.length > 0">
+      <MigrationHistoryTable
+        :mode="'PROJECT'"
+        :historySectionList="state.migrationHistorySectionList"
+      />
+    </template>
+    <template v-else>
+      <!-- This example requires Tailwind CSS v2.0+ -->
+      <div class="text-center">
+        <svg
+          class="mx-auto w-16 h-16 text-control-light"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+          ></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-main">
+          Do not find migration history from any database in this project.
+        </h3>
+        <p class="mt-1 text-sm text-control-light">
+          Migration history is recorded whenever the database schema is altered.
+        </p>
+      </div>
+    </template>
   </div>
 </template>
 
