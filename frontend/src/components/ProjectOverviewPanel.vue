@@ -30,13 +30,11 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect, PropType } from "vue";
+import { reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { Issue, Project } from "../types";
-import { sortDatabaseList } from "../utils";
+import { Database, Issue, Project } from "../types";
 
 interface LocalState {
   progressIssueList: Issue[];
@@ -54,32 +52,18 @@ export default {
       required: true,
       type: Object as PropType<Project>,
     },
+    databaseList: {
+      required: true,
+      type: Object as PropType<Database[]>,
+    },
   },
   setup(props, { emit }) {
     const store = useStore();
-    const router = useRouter();
 
     const state = reactive<LocalState>({
       progressIssueList: [],
       closedIssueList: [],
     });
-
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
-
-    const databaseList = computed(() => {
-      const list = store.getters["database/databaseListByProjectId"](
-        props.project.id
-      );
-      return sortDatabaseList(list, environmentList.value);
-    });
-
-    const prepareDatabaseList = () => {
-      store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
-    };
-
-    watchEffect(prepareDatabaseList);
 
     const prepareIssueList = () => {
       store
@@ -106,7 +90,6 @@ export default {
 
     return {
       state,
-      databaseList,
     };
   },
 };
