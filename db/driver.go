@@ -209,6 +209,8 @@ type MigrationHistory struct {
 
 type MigrationHistoryFind struct {
 	Database *string
+	// If specified, then it will only fetch "Limit" most recent migration histories
+	Limit *int
 }
 
 type Driver interface {

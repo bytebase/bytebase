@@ -239,16 +239,18 @@ const actions = {
     {
       instanceId,
       databaseName,
+      limit,
     }: {
       instanceId: InstanceId;
       databaseName: string;
+      limit?: number;
     }
   ): Promise<MigrationHistory> {
-    const data = (
-      await axios.get(
-        `/api/instance/${instanceId}/migration/history?database=${databaseName}`
-      )
-    ).data.data;
+    var url = `/api/instance/${instanceId}/migration/history?database=${databaseName}`;
+    if (limit) {
+      url += `&limit=${limit}`;
+    }
+    const data = (await axios.get(url)).data.data;
     const historyList = data.map((history: ResourceObject) => {
       return convertMigrationHistory(history);
     });
