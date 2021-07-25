@@ -1,39 +1,54 @@
 <template>
   <BBTable
     :columnList="COLUMN_LIST"
-    :dataSource="historyList"
+    :sectionDataSource="historySectionList"
+    :compactSection="true"
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
     :rowClickable="false"
   >
+    <template v-slot:header>
+      <BBTableHeaderCell
+        :leftPadding="4"
+        class="w-8"
+        :title="COLUMN_LIST[0].title"
+      />
+      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[1].title" />
+      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[2].title" />
+      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[3].title" />
+      <BBTableHeaderCell class="w-32" :title="COLUMN_LIST[4].title" />
+      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[5].title" />
+      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[6].title" />
+      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[7].title" />
+    </template>
     <template v-slot:body="{ rowData: history }">
-      <BBTableCell :leftPadding="4" class="w-8 table-cell">
+      <BBTableCell :leftPadding="4">
         {{ history.engine }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell>
         {{ history.version }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell>
         {{ history.type }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell>
         <template v-if="history.issueId">
           <router-link :to="`/issue/${history.issueId}`" class="normal-link"
             >{{ history.issueId }}
           </router-link>
         </template>
       </BBTableCell>
-      <BBTableCell class="w-32 table-cell truncate">
+      <BBTableCell>
         {{ history.description }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell>
         {{ secondsToString(history.executionDuration) }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell>
         {{ humanizeTs(history.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell>
         {{ history.creator }}
       </BBTableCell>
     </template>
@@ -44,6 +59,7 @@
 import { PropType } from "vue";
 import { MigrationHistory } from "../types";
 import { secondsToString } from "../utils";
+import { BBTableSectionDataSource } from "../bbkit/types";
 
 const COLUMN_LIST = [
   {
@@ -76,9 +92,9 @@ export default {
   name: "MigrationHistoryTable",
   components: {},
   props: {
-    historyList: {
+    historySectionList: {
       required: true,
-      type: Object as PropType<MigrationHistory[]>,
+      type: Object as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
     },
   },
   setup(props, ctx) {
