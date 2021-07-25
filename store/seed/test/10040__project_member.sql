@@ -91,7 +91,7 @@ VALUES
         101,
         101,
         3002,
-        'OWNER',
+        'DEVELOPER',
         102
     );
 
@@ -131,25 +131,6 @@ VALUES
         101,
         3003,
         'DEVELOPER',
-        102
-    );
-
-INSERT INTO
-    project_member (
-        id,
-        creator_id,
-        updater_id,
-        project_id,
-        `role`,
-        principal_id
-    )
-VALUES
-    (
-        4008,
-        101,
-        101,
-        3003,
-        'OWNER',
         103
     );
 
