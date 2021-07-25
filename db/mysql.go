@@ -450,8 +450,8 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 		where, args = append(where, "namespace = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+	var query = `
+			SELECT 
 		    id,
 			created_by,
 		    created_ts,
@@ -459,8 +459,8 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 		    updated_ts,
 			namespace,
 			sequence,
-			`+"`engine`,"+`
-			`+"`type`,"+`
+			` + "`engine`," + `
+			` + "`type`," + `
 			version,
 			description,
 		    statement,
@@ -468,9 +468,13 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 			issue_id,
 			payload
 		FROM bytebase.migration_history
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+		WHERE ` + strings.Join(where, " AND ") + `
+		ORDER BY created_ts DESC`
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

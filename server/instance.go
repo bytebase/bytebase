@@ -250,6 +250,19 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 		}
 
+		find := &db.MigrationHistoryFind{}
+		databaseStr := c.QueryParams().Get("database")
+		if databaseStr != "" {
+			find.Database = &databaseStr
+		}
+		if limitStr := c.QueryParam("limit"); limitStr != "" {
+			limit, err := strconv.Atoi(limitStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
+			}
+			find.Limit = &limit
+		}
+
 		historyList := []*api.MigrationHistory{}
 		driver, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
 			Username: instance.Username,
@@ -258,11 +271,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Port:     instance.Port,
 		})
 		if err == nil {
-			find := &db.MigrationHistoryFind{}
-			databaseStr := c.QueryParams().Get("database")
-			if databaseStr != "" {
-				find.Database = &databaseStr
-			}
 			list, err := driver.FindMigrationHistoryList(context.Background(), find)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
