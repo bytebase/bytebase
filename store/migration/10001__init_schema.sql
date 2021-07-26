@@ -701,6 +701,8 @@ CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 
 CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
+CREATE INDEX idx_issue_created_ts ON issue(created_ts);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
