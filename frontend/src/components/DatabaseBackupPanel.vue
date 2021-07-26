@@ -1,0 +1,95 @@
+<template>
+  <div class="pt-6">
+    <div class="text-lg leading-6 font-medium text-main mb-4">Take a backup</div>
+    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
+      <div class="sm:col-span-3 sm:col-start-1">
+        <label for="backupName" class="textlabel block"> Name </label>
+        <input
+        required
+        type="text"
+        id="backupName"
+        name="backupName"
+        placeholder="backup-unique-name"
+        class="textfield mt-1 w-full"
+        :value="state.backupName"
+        @input="updateInstance('backupName', $event.target.value)"
+        />
+      </div>
+      <div class="sm:col-span-6">
+        <label for="backupPath" class="textlabel block"> Path </label>
+        <input
+          type="text"
+          id="backupPath"
+          name="backupPath"
+          placeholder="e.g. backup-1.sql | /tmp/backup-1.sql"
+          class="textfield mt-1 w-full"
+          :value="state.backupPath"
+          @input="updateInstance('backupPath', $event.target.value)"
+        />
+      </div>
+      <div class="sm:col-span-1">
+        <label> Click </label>
+        <button
+          @click.prevent="testConnection"
+          type="button"
+          class="btn-normal whitespace-nowrap items-center"
+        >
+          Backup now
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="pt-6">
+    <div class="text-lg leading-6 font-medium text-main mb-4">Backups</div>
+    <BackupTable
+      :backupList="backupList"
+    />
+  </div>
+</template>
+
+<script lang="ts">
+import { computed, reactive, PropType, ComputedRef } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { uuid } from 'vue-uuid';
+import { Backup } from "../types";
+import BackupTable from "../components/BackupTable.vue";
+
+interface LocalState {
+  backupName: string;
+  backupPath: string;
+}
+
+export default {
+  name: "DatabaseBackupPanel",
+  props: {
+  },
+  components: {
+    BackupTable,
+  },
+  setup(props, ctx) {
+    const store = useStore();
+    const router = useRouter();
+
+    const state = reactive<LocalState>({
+      backupName: uuid.v1(),
+      backupPath: "backup.sql",
+    });
+
+    const backupList = <Backup[]>[
+      {id: 1, database: {}, creator: {}, createdTs: 123, name: "777a8cc0-edd1-11eb-af34-7f52646e3685", path: "1.sql",},
+      {id: 2, database: {}, creator: {}, createdTs: 123, name: "777a8cc0-edd1-11eb-af34-7f52646e3685", path: "/home/hello/world/1.sql",},
+    ];
+
+    const updateInstance = (field: string, value: string) => {
+      (state as any)[field] = value;
+    };
+
+    return {
+      state,
+      backupList,
+      updateInstance,
+    };
+},
+}
+</script>

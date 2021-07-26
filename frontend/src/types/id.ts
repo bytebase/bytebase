@@ -49,6 +49,8 @@ export type RepositoryId = IdType;
 
 export type MigrationHistoryId = IdType;
 
+export type BackupId = IdType;
+
 export type CommandId = IdType;
 export type CommandRegisterId = IdType;
 

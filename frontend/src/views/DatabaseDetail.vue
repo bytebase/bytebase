@@ -176,6 +176,9 @@
     <template v-if="state.selectedIndex == OVERVIEW_TAB">
       <DatabaseOverviewPanel id="overview" :database="database" />
     </template>
+    <template v-if="state.selectedIndex == BACKUP_TAB">
+      <DatabaseBackupPanel />
+    </template>
   </div>
 </template>
 
@@ -185,12 +188,14 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
+import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import { consoleLink, idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
 import { ProjectId, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 import { isEmpty } from "lodash";
 
 const OVERVIEW_TAB = 0;
+const BACKUP_TAB = 1;
 
 type DatabaseTabItem = {
   name: string;
@@ -199,6 +204,7 @@ type DatabaseTabItem = {
 
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: "Overview", hash: "overview" },
+  // TODO: implement backup component. { name: "Backup", hash: "backup" },
 ];
 
 interface LocalState {
@@ -219,6 +225,7 @@ export default {
     MemberSelect,
     ProjectSelect,
     DatabaseOverviewPanel,
+    DatabaseBackupPanel,
   },
   setup(props, ctx) {
     const store = useStore();
@@ -336,6 +343,7 @@ export default {
 
     return {
       OVERVIEW_TAB,
+      BACKUP_TAB,
       state,
       database,
       databaseConsoleLink,
