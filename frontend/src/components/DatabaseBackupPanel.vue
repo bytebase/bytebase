@@ -51,7 +51,7 @@
 import { computed, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { uuid } from 'vue-uuid';
+import { v1 as uuidv1 } from "uuid";
 import { Backup } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 
@@ -72,7 +72,7 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      backupName: uuid.v1(),
+      backupName: uuidv1(),
       backupPath: "backup.sql",
     });
 
