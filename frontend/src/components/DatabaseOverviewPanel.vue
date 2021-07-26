@@ -67,7 +67,7 @@
         </div>
         <MigrationHistoryTable
           v-if="state.migrationSetupStatus == 'OK'"
-          :historyList="migrationHistoryList"
+          :historySectionList="migrationHistorySectionList"
         />
         <BBAttention
           v-else
@@ -200,8 +200,10 @@ import {
   DataSourcePatch,
   MigrationSchemaStatus,
   InstanceMigration,
+  MigrationHistory,
 } from "../types";
 import { cloneDeep, isEmpty, isEqual } from "lodash";
+import { BBTableSectionDataSource } from "../bbkit/types";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -244,7 +246,7 @@ export default {
         .then((migration: InstanceMigration) => {
           state.migrationSetupStatus = migration.status;
           if (state.migrationSetupStatus == "OK") {
-            store.dispatch("instance/migrationHistory", {
+            store.dispatch("instance/fetchMigrationHistory", {
               instanceId: props.database.instance.id,
               databaseName: props.database.name,
             });
@@ -271,11 +273,18 @@ export default {
       return "";
     });
 
-    const migrationHistoryList = computed(() => {
-      return store.getters[
-        "instance/migrationHistoryListByInstanceIdAndDatabaseName"
-      ](props.database.instance.id, props.database.name);
-    });
+    const migrationHistorySectionList = computed(
+      (): BBTableSectionDataSource<MigrationHistory>[] => {
+        return [
+          {
+            title: "",
+            list: store.getters[
+              "instance/migrationHistoryListByInstanceIdAndDatabaseName"
+            ](props.database.instance.id, props.database.name),
+          },
+        ];
+      }
+    );
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -362,7 +371,7 @@ export default {
       state,
       tableList,
       attentionTitle,
-      migrationHistoryList,
+      migrationHistorySectionList,
       hasDataSourceFeature,
       allowViewDataSource,
       allowChangeDataSource,

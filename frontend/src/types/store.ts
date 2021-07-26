@@ -101,11 +101,12 @@ export interface DataSourceState {
 export interface DatabaseState {
   // UI may fetch the database list from different dimension (by user, by environment).
   // In those cases, we will iterate through this map and compute the list on the fly.
-  // By keeping a single map, we avoid caching inconsistency issue.
   // We save it by instance because database belongs to instance and saving this way
   // follows that hierarchy.
-  // If this causes performance issue, we will add caching later (and deal with the consistency)
   databaseListByInstanceId: Map<InstanceId, Database[]>;
+  // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceId
+  // where updating databaseListByInstanceId will cause reloading project related UI due to reactivity
+  databaseListByProjectId: Map<ProjectId, Database[]>;
 }
 
 export interface TableState {

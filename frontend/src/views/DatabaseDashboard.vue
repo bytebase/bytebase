@@ -39,6 +39,7 @@ import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
+import { cloneDeep } from "lodash";
 
 interface LocalState {
   searchText: string;
@@ -94,14 +95,12 @@ export default {
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch(
-            "database/fetchDatabaseListByPrincipalId",
-            currentUser.value.id
-          )
-          .then((list) => {
-            state.databaseList = sortDatabaseList(list, environmentList.value);
-          });
+        store.dispatch("database/fetchDatabaseList").then((list) => {
+          state.databaseList = sortDatabaseList(
+            cloneDeep(list),
+            environmentList.value
+          );
+        });
       }
     };
 

@@ -33,10 +33,7 @@ export default {
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch(
-          "database/fetchDatabaseListByPrincipalId",
-          currentUser.value.id
-        );
+        store.dispatch("database/fetchDatabaseList");
       }
     };
 

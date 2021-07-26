@@ -122,6 +122,8 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}
 
+	defer driver.Close(context.Background())
+
 	exec.l.Debug("Start sql migration...",
 		zap.String("instance", instance.Name),
 		zap.String("database", databaseName),

@@ -64,7 +64,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		filteredList := []*api.Database{}
 		role := c.Get(GetRoleContextKey()).(api.Role)
-		if role == api.Developer {
+		// If caller is NOT requesting for a paritcular instance or the caller is a Developer,
+		// then we will only return databases belonging to the project where the caller is a member of.
+		// Looking from the UI perspective:
+		// - The database list left sidebar will only return databases related to the caller regardless of the caller's role.
+		// - The database list on the instance page will return all databases if the caller is Owner or DBA, but will only return
+		//   related databases if the caller is Developer.
+		if databaseFind.InstanceId == nil || role == api.Developer {
 			principalId := c.Get(GetPrincipalIdContextKey()).(int)
 			for _, database := range list {
 				for _, projectMember := range database.Project.ProjectMemberList {
