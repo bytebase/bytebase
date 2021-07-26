@@ -505,6 +505,24 @@ WHERE
 
 END;
 
+-- backup stores the backups for a particular database.
+CREATE TABLE backup (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'PENDING_CREATE', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL REFERENCES db (id),
+    name TEXT NOT NULL,
+    path TEXT NOT NULL,
+    UNIQUE(database_id, name)
+);
+
+CREATE INDEX idx_backup_database_id ON backup(database_id);
+
 -----------------------
 -- Pipeline related BEGIN
 -- pipeline table
