@@ -2,7 +2,7 @@
   <div class="py-2">
     <ArchiveBanner v-if="project.rowStatus == 'ARCHIVED'" />
   </div>
-  <h1 class="px-4 pb-4 text-xl font-bold leading-6 text-main truncate">
+  <h1 class="px-6 pb-4 text-xl font-bold leading-6 text-main truncate">
     {{ project.name }}
   </h1>
   <BBTabFilter
@@ -16,9 +16,20 @@
       }
     "
   />
-  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto py-6 px-6">
     <template v-if="state.selectedIndex == OVERVIEW_TAB">
-      <ProjectOverviewPanel id="overview" :project="project" />
+      <ProjectOverviewPanel
+        id="overview"
+        :project="project"
+        :databaseList="databaseList"
+      />
+    </template>
+    <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
+      <ProjectMigrationHistoryPanel
+        id="migration-history"
+        :project="project"
+        :databaseList="databaseList"
+      />
     </template>
     <template v-else-if="state.selectedIndex == VERSION_CONTROL_TAB">
       <ProjectVersionControlPanel
@@ -38,18 +49,21 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { idFromSlug, isProjectOwner } from "../utils";
+import { idFromSlug, isProjectOwner, sortDatabaseList } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
+import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
+import { cloneDeep } from "lodash";
 
 const OVERVIEW_TAB = 0;
-const VERSION_CONTROL_TAB = 1;
-const SETTING_TAB = 2;
+const MIGRATION_HISTORY_TAB = 1;
+const VERSION_CONTROL_TAB = 2;
+const SETTING_TAB = 3;
 
 type ProjectTabItem = {
   name: string;
@@ -58,6 +72,7 @@ type ProjectTabItem = {
 
 const projectTabItemList: ProjectTabItem[] = [
   { name: "Overview", hash: "overview" },
+  { name: "Migration History", hash: "migration-history" },
   { name: "Version Control", hash: "version-control" },
   { name: "Settings", hash: "setting" },
 ];
@@ -70,6 +85,7 @@ export default {
   name: "ProjectDetail",
   components: {
     ArchiveBanner,
+    ProjectMigrationHistoryPanel,
     ProjectOverviewPanel,
     ProjectVersionControlPanel,
     ProjectSettingPanel,
@@ -88,6 +104,29 @@ export default {
 
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
+    });
+
+    const project = computed(() => {
+      return store.getters["project/projectById"](
+        idFromSlug(props.projectSlug)
+      );
+    });
+
+    const environmentList = computed(() => {
+      return store.getters["environment/environmentList"](["NORMAL"]);
+    });
+
+    const prepareDatabaseList = () => {
+      store.dispatch("database/fetchDatabaseListByProjectId", project.value.id);
+    };
+
+    watchEffect(prepareDatabaseList);
+
+    const databaseList = computed(() => {
+      const list = cloneDeep(
+        store.getters["database/databaseListByProjectId"](project.value.id)
+      );
+      return sortDatabaseList(list, environmentList.value);
     });
 
     const selectProjectTabOnHash = () => {
@@ -119,12 +158,6 @@ export default {
       }
     );
 
-    const project = computed(() => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
-    });
-
     // Only the project owner can edit the project general info and configure version control.
     // This means even the workspace owner won't be able to edit it.
     // On the other hand, we allow workspace owner to change project membership in case
@@ -154,10 +187,12 @@ export default {
 
     return {
       OVERVIEW_TAB,
+      MIGRATION_HISTORY_TAB,
       VERSION_CONTROL_TAB,
       SETTING_TAB,
       state,
       project,
+      databaseList,
       allowEdit,
       selectTab,
       projectTabItemList,

@@ -53,6 +53,8 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}
 
+	defer driver.Close(context.Background())
+
 	exec.l.Debug("Start creating database...",
 		zap.String("instance", instance.Name),
 		zap.String("database", payload.DatabaseName),

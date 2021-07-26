@@ -204,7 +204,6 @@ import { useRouter } from "vue-router";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import {
   baseDirectoryWebURL,
-  Database,
   DatabaseId,
   EnvironmentId,
   Project,
@@ -212,6 +211,7 @@ import {
   Repository,
 } from "../types";
 import { sortDatabaseList } from "../utils";
+import { cloneDeep } from "lodash";
 
 type AlterType = "SINGLE_DB" | "MULTI_DB";
 
@@ -276,7 +276,7 @@ export default {
         );
       }
 
-      return sortDatabaseList(list, environmentList.value);
+      return sortDatabaseList(cloneDeep(list), environmentList.value);
     });
 
     const allowGenerateMultiDb = computed(() => {

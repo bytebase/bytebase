@@ -114,6 +114,7 @@ const databaseSorter = (a: Database, b: Database): number => {
 
 const state: () => DatabaseState = () => ({
   databaseListByInstanceId: new Map(),
+  databaseListByProjectId: new Map(),
 });
 
 const getters = {
@@ -163,15 +164,7 @@ const getters = {
   databaseListByProjectId:
     (state: DatabaseState) =>
     (projectId: ProjectId): Database[] => {
-      const list: Database[] = [];
-      for (let [_, databaseList] of state.databaseListByInstanceId) {
-        databaseList.forEach((item: Database) => {
-          if (item.project.id == projectId) {
-            list.push(item);
-          }
-        });
-      }
-      return list;
+      return state.databaseListByProjectId.get(projectId) || [];
     },
 
   databaseById:
@@ -226,16 +219,14 @@ const actions = {
     });
     databaseList.sort(databaseSorter);
 
-    commit("upsertDatabaseList", { databaseList });
+    commit("setDatabaseListByProjectId", { databaseList, projectId });
 
     return databaseList;
   },
 
-  async fetchDatabaseListByPrincipalId(
-    { commit, rootGetters }: any,
-    userId: PrincipalId
-  ) {
-    const data = (await axios.get(`/api/database?user=${userId}`)).data;
+  // Server uses the caller identity to fetch the database list related to the caller.
+  async fetchDatabaseList({ commit, rootGetters }: any) {
+    const data = (await axios.get(`/api/database`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
@@ -342,6 +333,19 @@ const actions = {
 };
 
 const mutations = {
+  setDatabaseListByProjectId(
+    state: DatabaseState,
+    {
+      databaseList,
+      projectId,
+    }: {
+      databaseList: Database[];
+      projectId: ProjectId;
+    }
+  ) {
+    state.databaseListByProjectId.set(projectId, databaseList);
+  },
+
   upsertDatabaseList(
     state: DatabaseState,
     {
