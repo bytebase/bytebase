@@ -14,7 +14,7 @@
         {{ backup.path }}
       </BBTableCell>
       <BBTableCell class="w-4">
-        {{ backup.time }}
+        {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
       <BBTableCell class="w-4">
         {{ backup.creator }}

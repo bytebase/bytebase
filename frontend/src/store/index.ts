@@ -28,6 +28,7 @@ import sql from "./modules/sql";
 import stage from "./modules/stage";
 import table from "./modules/table";
 import task from "./modules/task";
+import backup from "./modules/backup";
 // Following states are persisted in local storage
 import uistate from "./modules/uistate";
 import vcs from "./modules/vcs";
@@ -61,6 +62,7 @@ export const store: Store<any> = createStore({
     sql,
     stage,
     table,
+    backup,
     task,
     uistate,
     vcs,

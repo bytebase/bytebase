@@ -48,11 +48,11 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, ComputedRef } from "vue";
+import { computed, watchEffect, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { v1 as uuidv1 } from "uuid";
-import { Backup } from "../types";
+import { Backup, Database } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 
 interface LocalState {
@@ -63,6 +63,10 @@ interface LocalState {
 export default {
   name: "DatabaseBackupPanel",
   props: {
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
+    },
   },
   components: {
     BackupTable,
@@ -76,10 +80,15 @@ export default {
       backupPath: "backup.sql",
     });
 
-    const backupList = <Backup[]>[
-      {id: 1, database: {}, creator: {}, createdTs: 123, name: "777a8cc0-edd1-11eb-af34-7f52646e3685", path: "1.sql",},
-      {id: 2, database: {}, creator: {}, createdTs: 123, name: "777a8cc0-edd1-11eb-af34-7f52646e3685", path: "/home/hello/world/1.sql",},
-    ];
+    const prepareBackupList = () => {
+      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
+    };
+
+    watchEffect(prepareBackupList);
+
+    const backupList = computed(() => {
+      return store.getters["backup/backupListByDatabaseId"](props.database.id);
+    });
 
     const updateInstance = (field: string, value: string) => {
       (state as any)[field] = value;
