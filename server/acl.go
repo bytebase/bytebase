@@ -101,6 +101,27 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 						method = method + "_SELF"
 					}
 				}
+			} else if strings.HasPrefix(c.Path(), "/api/inbox") {
+				inboxIdStr := c.Param("inboxId")
+				if inboxIdStr != "" {
+					inboxId, err := strconv.Atoi(inboxIdStr)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIdStr))
+					}
+					inboxFind := &api.InboxFind{
+						ID: &inboxId,
+					}
+					inbox, err := s.InboxService.FindInbox(context.Background(), inboxFind)
+					if err != nil {
+						if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Inbox ID not found: %d", inboxId))
+						}
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+					}
+					if inbox.ReceiverId == principalId {
+						method = method + "_SELF"
+					}
+				}
 			}
 		}
 

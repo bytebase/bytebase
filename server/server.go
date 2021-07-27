@@ -43,6 +43,7 @@ type Server struct {
 	StageService           api.StageService
 	TaskService            api.TaskService
 	ActivityService        api.ActivityService
+	InboxService           api.InboxService
 	BookmarkService        api.BookmarkService
 	VCSService             api.VCSService
 	RepositoryService      api.RepositoryService
@@ -159,6 +160,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, mode s
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
+	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSqlRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
