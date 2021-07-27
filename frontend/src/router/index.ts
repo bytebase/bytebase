@@ -178,19 +178,19 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: true,
             },
           },
-          // {
-          //   path: "inbox",
-          //   name: "workspace.inbox",
-          //   meta: { title: () => "Inbox" },
-          //   components: {
-          //     content: () => import("../views/Inbox.vue"),
-          //     leftSidebar: DashboardSidebar,
-          //   },
-          //   props: {
-          //     content: true,
-          //     leftSidebar: true,
-          //   },
-          // },
+          {
+            path: "inbox",
+            name: "workspace.inbox",
+            meta: { title: () => "Inbox" },
+            components: {
+              content: () => import("../views/Inbox.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
           {
             path: "archive",
             name: "workspace.archive",
@@ -768,7 +768,7 @@ router.beforeEach((to, from, next) => {
     to.name === "error.500" ||
     to.name === "oauth-callback" ||
     to.name === "workspace.home" ||
-    // to.name === "workspace.inbox" ||
+    to.name === "workspace.inbox" ||
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||

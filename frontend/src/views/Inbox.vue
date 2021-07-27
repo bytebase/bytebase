@@ -15,7 +15,7 @@
     <div>
       <div class="px-4 py-2 flex justify-between">
         <BBSwitch
-          :label="'Display all messages'"
+          :label="'Display all inboxs'"
           :value="state.showAll"
           @toggle="
             (on) => {
@@ -24,7 +24,6 @@
           "
         />
         <button type="button" class="btn-normal" @click.prevent="markAllAsRead">
-          <!-- Heroicon name: solid/pencil -->
           <svg
             class="-ml-1 mr-2 h-5 w-5 text-control-light"
             fill="currentColor"
@@ -40,13 +39,16 @@
       </div>
       <ul class="divide-y divide-block-border">
         <li
-          v-for="(message, index) in effectiveMessageList"
+          v-for="(inbox, index) in effectiveInboxList"
           :key="index"
           class="p-3 hover:bg-control-bg-hover cursor-default"
-          @click.prevent="clickMessage(message)"
+          @click.prevent="clickInbox(inbox)"
         >
           <div class="flex space-x-3">
-            <PrincipalAvatar :principal="message.creator" :size="'SMALL'" />
+            <PrincipalAvatar
+              :principal="inbox.activity.creator"
+              :size="'SMALL'"
+            />
             <div class="flex-1 space-y-1">
               <div class="flex w-full items-center justify-between space-x-2">
                 <h3
@@ -59,99 +61,95 @@
                   "
                 >
                   <router-link
-                    :to="`/u/${message.creator.id}`"
+                    :to="`/u/${inbox.activity.creator.id}`"
                     class="font-medium text-main hover:underline"
-                    >{{ message.creator.name }}</router-link
+                    >{{ inbox.activity.creator.name }}</router-link
                   >
-                  <span class="ml-1"> {{ actionSentence(message) }}</span>
-                  <template
+                  <span class="ml-1"> {{ actionSentence(inbox) }}</span>
+                  <!-- <template
                     v-if="
-                      message.type == 'bb.message.member.create' ||
-                      message.type == 'bb.message.member.add' ||
-                      message.type == 'bb.message.member.join' ||
-                      message.type == 'bb.message.member.revoke' ||
-                      message.type == 'bb.message.member.updaterole'
+                      inbox.type == 'bb.inbox.member.create' ||
+                      inbox.type == 'bb.inbox.member.add' ||
+                      inbox.type == 'bb.inbox.member.join' ||
+                      inbox.type == 'bb.inbox.member.revoke' ||
+                      inbox.type == 'bb.inbox.member.updaterole'
                     "
                   >
                   </template>
                   <template
                     v-else-if="
-                      message.type == 'bb.message.environment.create' ||
-                      message.type == 'bb.message.environment.update' ||
-                      message.type == 'bb.message.environment.archive' ||
-                      message.type == 'bb.message.environment.restore'
+                      inbox.type == 'bb.inbox.environment.create' ||
+                      inbox.type == 'bb.inbox.environment.update' ||
+                      inbox.type == 'bb.inbox.environment.archive' ||
+                      inbox.type == 'bb.inbox.environment.restore'
                     "
                   >
                     <router-link
-                      :to="`/environment#${message.containerId}`"
+                      :to="`/environment#${inbox.containerId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.environmentName }}
+                      {{ inbox.payload.environmentName }}
                     </router-link>
                   </template>
                   <template
-                    v-else-if="message.type == 'bb.message.environment.delete'"
+                    v-else-if="inbox.type == 'bb.inbox.environment.delete'"
                   >
                     <span class="font-medium text-main ml-1">
-                      {{ message.payload.environmentName }}
+                      {{ inbox.payload.environmentName }}
                     </span>
                   </template>
                   <template
                     v-else-if="
-                      message.type == 'bb.message.instance.create' ||
-                      message.type == 'bb.message.instance.update' ||
-                      message.type == 'bb.message.instance.archive' ||
-                      message.type == 'bb.message.instance.restore'
+                      inbox.type == 'bb.inbox.instance.create' ||
+                      inbox.type == 'bb.inbox.instance.update' ||
+                      inbox.type == 'bb.inbox.instance.archive' ||
+                      inbox.type == 'bb.inbox.instance.restore'
                     "
                   >
                     <router-link
-                      :to="`/instance/${message.containerId}`"
+                      :to="`/instance/${inbox.containerId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.instanceName }}
+                      {{ inbox.payload.instanceName }}
+                    </router-link>
+                  </template> -->
+                  <!-- <template v-if="inbox.activity.type.startsWith('bb.issue.')">
+                    <router-link
+                      :to="`/issue/${inbox.containerId}`"
+                      class="normal-link ml-1"
+                    >
+                      {{ inbox.activity.issueName }}
                     </router-link>
                   </template>
                   <template
-                    v-else-if="message.type == 'bb.message.issue.assign'"
+                    v-else-if="inbox.type == 'bb.inbox.issue.status.update'"
                   >
                     <router-link
-                      :to="`/issue/${message.containerId}`"
+                      :to="`/issue/${inbox.containerId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.issueName }}
+                      {{ inbox.payload.issueName }}
                     </router-link>
                   </template>
-                  <template
-                    v-else-if="message.type == 'bb.message.issue.status.update'"
-                  >
+                  <template v-else-if="inbox.type == 'bb.inbox.issue.comment'">
                     <router-link
-                      :to="`/issue/${message.containerId}`"
+                      :to="`/issue/${inbox.containerId}#activity${inbox.payload.commentId}`"
                       class="normal-link ml-1"
                     >
-                      {{ message.payload.issueName }}
+                      {{ inbox.payload.issueName }}
                     </router-link>
-                  </template>
-                  <template
-                    v-else-if="message.type == 'bb.message.issue.comment'"
-                  >
-                    <router-link
-                      :to="`/issue/${message.containerId}#activity${message.payload.commentId}`"
-                      class="normal-link ml-1"
-                    >
-                      {{ message.payload.issueName }}
-                    </router-link>
-                  </template>
+                  </template> -->
                   <span
-                    v-if="message.status == 'DELIVERED'"
+                    v-if="inbox.status == 'UNREAD'"
                     class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"
                   ></span>
                 </h3>
                 <p class="text-sm text-control">
-                  {{ humanizeTs(message.createdTs) }}
+                  {{ humanizeTs(inbox.activity.createdTs) }}
                 </p>
               </div>
-              <div v-if="message.description" class="text-sm text-control">
-                {{ message.description }}
+              <div v-if="inbox.activity.comment" class="text-sm text-control">
+                {{ inbox.activity.comment }}
               </div>
             </div>
           </div>
@@ -166,16 +164,8 @@
 import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import {
-  MemberMessagePayload,
-  Message,
-  Principal,
-  PrincipalId,
-  IssueAssignMessagePayload,
-  IssueUpdateStatusMessagePayload,
-  UNKNOWN_ID,
-} from "../types";
-import { isDBAOrOwner, roleName } from "../utils";
+import { Inbox, UNKNOWN_ID } from "../types";
+import { isDBAOrOwner, issueActivityActionSentence } from "../utils";
 
 const GENERAL_TAB = 0;
 const MEMBERSHIP_TAB = 1;
@@ -183,12 +173,12 @@ const MEMBERSHIP_TAB = 1;
 interface LocalState {
   selectedIndex: number;
   showAll: boolean;
-  messageList: Message[];
+  inboxList: Inbox[];
   // To maintain a stable view when user clicks an item.
   // When user clicks an item, we will set the item as "CONSUMED".
   // Without this logic, if the user stays on the display unread item view,
   // that item will suddenly be removed from the list, which is not ideal for UX.
-  whitelist: Message[];
+  whitelist: Inbox[];
 }
 
 export default {
@@ -200,24 +190,24 @@ export default {
     const state = reactive<LocalState>({
       selectedIndex: 0,
       showAll: false,
-      messageList: [],
+      inboxList: [],
       whitelist: [],
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const prepareMessageList = () => {
+    const prepareInboxList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
         store
-          .dispatch("message/fetchMessageListByUser", currentUser.value.id)
-          .then((list: Message[]) => {
-            state.messageList = list;
+          .dispatch("inbox/fetchInboxListByUser", currentUser.value.id)
+          .then((list: Inbox[]) => {
+            state.inboxList = list;
           });
       }
     };
 
-    watchEffect(prepareMessageList);
+    watchEffect(prepareInboxList);
 
     onMounted(() => {
       state.whitelist = [];
@@ -227,139 +217,38 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
-    const effectiveMessageList = computed(() => {
-      return state.messageList.filter((message: Message) => {
+    const effectiveInboxList = computed(() => {
+      return state.inboxList.filter((inbox: Inbox) => {
         if (
           (state.selectedIndex == GENERAL_TAB &&
-            message.type.startsWith("bb.message.member.")) ||
+            inbox.activity.actionType.startsWith("bb.inbox.member.")) ||
           (state.selectedIndex == MEMBERSHIP_TAB &&
-            !message.type.startsWith("bb.message.member."))
+            !inbox.activity.actionType.startsWith("bb.inbox.member."))
         ) {
           return false;
         }
 
         return (
           state.showAll ||
-          message.status == "DELIVERED" ||
-          state.whitelist.find((item: Message) => {
-            return item.id == message.id;
+          inbox.status == "UNREAD" ||
+          state.whitelist.find((item: Inbox) => {
+            return item.id == inbox.id;
           })
         );
       });
     });
 
-    const principalFromId = (principalId: PrincipalId): Principal => {
-      return store.getters["principal/principalById"](principalId);
+    const actionSentence = (inbox: Inbox): string => {
+      return issueActivityActionSentence(inbox.activity);
     };
 
-    const actionSentence = (message: Message): string => {
-      switch (message.type) {
-        case "bb.message.member.create": {
-          const payload = message.payload as MemberMessagePayload;
-          return `added ${
-            principalFromId(payload.principalId).email
-          } as ${roleName(payload.newRole!)}`;
-        }
-        case "bb.message.member.add": {
-          const payload = message.payload as MemberMessagePayload;
-          return `invited ${
-            principalFromId(payload.principalId).email
-          } as ${roleName(payload.newRole!)}`;
-        }
-        case "bb.message.member.join": {
-          const payload = message.payload as MemberMessagePayload;
-          return `joined as ${roleName(payload.newRole!)}`;
-        }
-        case "bb.message.member.revoke": {
-          const payload = message.payload as MemberMessagePayload;
-          return `revoked ${roleName(payload.oldRole!)} from ${
-            principalFromId(payload.principalId).name
-          }`;
-        }
-        case "bb.message.member.updaterole":
-          const payload = message.payload as MemberMessagePayload;
-          return `changed ${
-            principalFromId(payload.principalId).name
-          } role from ${roleName(payload.oldRole!)} to ${roleName(
-            payload.newRole!
-          )}`;
-        case "bb.message.environment.create":
-          return "created environment";
-        case "bb.message.environment.update":
-          return "updated environment";
-        case "bb.message.environment.delete":
-          return "deleted environment";
-        case "bb.message.environment.archive":
-          return "archived environment";
-        case "bb.message.environment.restore":
-          return "restored environment";
-        case "bb.message.environment.reorder":
-          return "reordered environment";
-        case "bb.message.instance.create":
-          return "created instance";
-        case "bb.message.instance.update":
-          return "updated instance";
-        case "bb.message.instance.archive":
-          return "archived instance";
-        case "bb.message.instance.restore":
-          return "restored instance";
-        case "bb.message.issue.assign": {
-          const payload = message.payload as IssueAssignMessagePayload;
-          if (
-            payload.oldAssigneeId == UNKNOWN_ID &&
-            payload.newAssigneeId != UNKNOWN_ID
-          ) {
-            const newName =
-              currentUser.value.id == payload.newAssigneeId
-                ? "you"
-                : principalFromId(payload.newAssigneeId).name;
-            return `assigned issue to ${newName}`;
-          } else if (
-            payload.oldAssigneeId != UNKNOWN_ID &&
-            payload.newAssigneeId == UNKNOWN_ID
-          ) {
-            const oldName =
-              currentUser.value.id == payload.oldAssigneeId
-                ? "you"
-                : principalFromId(payload.oldAssigneeId).name;
-            return `un-assigned issue from ${oldName}`;
-          } else if (
-            payload.oldAssigneeId != UNKNOWN_ID &&
-            payload.newAssigneeId != UNKNOWN_ID
-          ) {
-            const oldName =
-              currentUser.value.id == payload.oldAssigneeId
-                ? "you"
-                : principalFromId(payload.oldAssigneeId).name;
-            const newName =
-              currentUser.value.id == payload.newAssigneeId
-                ? "you"
-                : principalFromId(payload.newAssigneeId).name;
-            return `re-assigned from ${oldName} to ${newName}`;
-          }
-          return "assigned issue";
-        }
-        case "bb.message.issue.status.update": {
-          const payload = message.payload as IssueUpdateStatusMessagePayload;
-          return (
-            "changed issue status from " +
-            payload.oldStatus +
-            " to " +
-            payload.newStatus
-          );
-        }
-        case "bb.message.issue.comment":
-          return "commented issue";
-      }
-    };
-
-    const clickMessage = (message: Message) => {
-      if (message.status == "DELIVERED") {
-        state.whitelist.push(message);
-        store.dispatch("message/patchMessage", {
-          messageId: message.id,
-          messagePatch: {
-            status: "CONSUMED",
+    const clickInbox = (inbox: Inbox) => {
+      if (inbox.status == "UNREAD") {
+        state.whitelist.push(inbox);
+        store.dispatch("inbox/patchInbox", {
+          inboxId: inbox.id,
+          inboxPatch: {
+            status: "READ",
           },
         });
       }
@@ -371,13 +260,13 @@ export default {
     };
 
     const markAllAsRead = () => {
-      state.messageList.forEach((item: Message) => {
-        if (item.status == "DELIVERED") {
+      state.inboxList.forEach((item: Inbox) => {
+        if (item.status == "UNREAD") {
           state.whitelist.push(item);
-          store.dispatch("message/patchMessage", {
-            messageId: item.id,
-            messagePatch: {
-              status: "CONSUMED",
+          store.dispatch("inbox/patchInbox", {
+            inboxId: item.id,
+            inboxPatch: {
+              status: "READ",
             },
           });
         }
@@ -387,11 +276,10 @@ export default {
     return {
       state,
       currentUser,
-      principalFromId,
       isCurrentUserDBAOrOwner,
-      effectiveMessageList,
+      effectiveInboxList,
       actionSentence,
-      clickMessage,
+      clickInbox,
       showAll,
       markAllAsRead,
     };

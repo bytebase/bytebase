@@ -562,7 +562,13 @@ import {
   ActivityCreate,
   IssueSubscriber,
 } from "../types";
-import { findTaskById, issueActivityActionSentence, issueSlug, sizeToFit, stageSlug } from "../utils";
+import {
+  findTaskById,
+  issueActivityActionSentence,
+  issueSlug,
+  sizeToFit,
+  stageSlug,
+} from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
@@ -818,8 +824,8 @@ export default {
     };
 
     const actionSentence = (activity: Activity): string => {
-      if (activity.actionType.startsWith("bb.issue")) {
-        return issueActivityActionSentence(activity)
+      if (activity.actionType.startsWith("bb.issue.")) {
+        return issueActivityActionSentence(activity);
       }
       switch (activity.actionType) {
         case "bb.pipeline.task.status.update": {
@@ -856,6 +862,7 @@ export default {
           return str;
         }
       }
+      return "";
     };
 
     return {

@@ -27,7 +27,6 @@ export default {
       store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
-      store.dispatch("message/fetchMessageListByUser", currentUser.value.id),
       store.dispatch("uistate/restoreState"),
     ]);
   },

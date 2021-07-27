@@ -45,12 +45,14 @@ import {
   isRelease,
   projectName,
   projectSlug,
+  registerStoreWithActivityUtil,
   registerStoreWithRoleUtil,
   sizeToFit,
   urlfy,
 } from "./utils";
 
 registerStoreWithRoleUtil(store);
+registerStoreWithActivityUtil(store);
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
