@@ -138,7 +138,13 @@ CREATE TABLE environment (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL UNIQUE,
-    `order` INTEGER NOT NULL
+    `order` INTEGER NOT NULL,
+    approval_policy TEXT NOT NULL CHECK (
+        approval_policy IN (
+            'MANUAL_APPROVAL_NEVER',
+            'MANUAL_APPROVAL_ALWAYS'
+        )
+    )
 );
 
 INSERT INTO

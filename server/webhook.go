@@ -203,11 +203,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					stageList := []api.StageCreate{}
 					for _, database := range filterdDatabaseList {
 						databaseID := database.ID
+						taskStatus := api.TaskPendingApproval
+						if database.Instance.Environment.ApprovalPolicy == api.ManualApprovalNever {
+							taskStatus = api.TaskPending
+						}
 						task := &api.TaskCreate{
 							InstanceId:   database.InstanceId,
 							DatabaseId:   &databaseID,
 							Name:         mi.Description,
-							Status:       "PENDING",
+							Status:       taskStatus,
 							Type:         api.TaskDatabaseSchemaUpdate,
 							Statement:    string(b),
 							VCSPushEvent: &vcsPushEvent,

@@ -5,7 +5,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`
+        `order`,
+        approval_policy
     )
 VALUES
     (
@@ -13,7 +14,8 @@ VALUES
         1,
         1,
         'Test',
-        0
+        0,
+        "MANUAL_APPROVAL_NEVER"
     );
 
 INSERT INTO
@@ -22,7 +24,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`
+        `order`,
+        approval_policy
     )
 VALUES
     (
@@ -30,7 +33,8 @@ VALUES
         1,
         1,
         'Prod',
-        1
+        1,
+        "MANUAL_APPROVAL_ALWAYS"
     );
 
 -- Create 1 "test", 1 "prod" instance (including * database and admin data source)
