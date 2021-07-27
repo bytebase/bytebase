@@ -285,6 +285,7 @@ func (m *main) Run() error {
 	server.StageService = store.NewStageService(m.l, db)
 	server.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db))
 	server.ActivityService = store.NewActivityService(m.l, db)
+	server.InboxService = store.NewInboxService(m.l, db, server.ActivityService)
 	server.BookmarkService = store.NewBookmarkService(m.l, db)
 	server.VCSService = store.NewVCSService(m.l, db)
 	server.RepositoryService = store.NewRepositoryService(m.l, db, server.ProjectService)
