@@ -36,6 +36,7 @@ type Server struct {
 	ColumnService          api.ColumnService
 	IndexService           api.IndexService
 	DataSourceService      api.DataSourceService
+	BackupService          api.BackupService
 	IssueService           api.IssueService
 	IssueSubscriberService api.IssueSubscriberService
 	PipelineService        api.PipelineService

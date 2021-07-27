@@ -27,6 +27,7 @@ import { Project } from "./project";
 import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
+import { Backup } from "./backup";
 import { VCS } from "./vcs";
 
 export interface ActuatorState {
@@ -111,6 +112,10 @@ export interface DatabaseState {
 
 export interface TableState {
   tableListByDatabaseId: Map<DatabaseId, Table[]>;
+}
+
+export interface BackupState {
+  backupListByDatabaseId: Map<DatabaseId, Backup[]>;
 }
 
 export interface VCSState {

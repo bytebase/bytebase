@@ -48,6 +48,9 @@ DELETE FROM
     tbl;
 
 DELETE FROM
+    backup;
+
+DELETE FROM
     db;
 
 DELETE FROM

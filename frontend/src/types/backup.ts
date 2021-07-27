@@ -12,7 +12,13 @@ export type Backup = {
   // Standard fields
   creator: Principal;
   createdTs: number;
+  updater: Principal;
+  updatedTs: number;
 
   name: string;
+  status: string;
+  type: string;
+  storageBackend: string;
   path: string;
+  comment: string;
 };
