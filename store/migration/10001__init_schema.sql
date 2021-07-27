@@ -517,8 +517,11 @@ CREATE TABLE backup (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    `status` TEXT NOT NULL CHECK (`status` IN ('PENDING', 'DONE')),
+    `status` TEXT NOT NULL CHECK (`status` IN ('PENDING_CREATE', 'DONE')),
+    `type` TEXT NOT NULL CHECK (`type` IN ('MANUAL', 'AUTOMATIC')),
+    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL')),
     path TEXT NOT NULL,
+    `comment` TEXT NOT NULL DEFAULT '',
     UNIQUE(database_id, name)
 );
 
