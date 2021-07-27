@@ -15,6 +15,9 @@ DELETE FROM
     bookmark;
 
 DELETE FROM
+    inbox;
+
+DELETE FROM
     activity;
 
 DELETE FROM

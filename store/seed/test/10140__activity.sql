@@ -18,6 +18,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         updater_id,
         container_id,
@@ -26,6 +27,7 @@ INSERT INTO
     )
 VALUES
     (
+        14002,
         101,
         101,
         13001,
@@ -35,6 +37,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         updater_id,
         container_id,
@@ -43,6 +46,7 @@ INSERT INTO
     )
 VALUES
     (
+        14003,
         102,
         102,
         13001,
@@ -52,6 +56,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         updater_id,
         container_id,
@@ -60,6 +65,7 @@ INSERT INTO
     )
 VALUES
     (
+        14004,
         103,
         103,
         13001,
@@ -70,6 +76,7 @@ VALUES
 -- Activity for issue 13002
 INSERT INTO
     activity (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -79,6 +86,7 @@ INSERT INTO
     )
 VALUES
     (
+        14005,
         1,
         1624873710,
         1,
@@ -89,6 +97,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -100,6 +109,7 @@ INSERT INTO
     )
 VALUES
     (
+        14006,
         1,
         1624873710,
         1,
@@ -112,6 +122,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -123,6 +134,7 @@ INSERT INTO
     )
 VALUES
     (
+        14007,
         1,
         1624873710,
         1,
@@ -135,6 +147,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -146,6 +159,7 @@ INSERT INTO
     )
 VALUES
     (
+        14008,
         1,
         1624873710,
         1,
@@ -158,6 +172,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -169,6 +184,7 @@ INSERT INTO
     )
 VALUES
     (
+        14009,
         1,
         1624873710,
         1,
@@ -182,6 +198,7 @@ VALUES
 -- Activity for issue 13003
 INSERT INTO
     activity (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -191,6 +208,7 @@ INSERT INTO
     )
 VALUES
     (
+        14010,
         103,
         1624873710,
         103,
@@ -202,6 +220,7 @@ VALUES
 -- Activity for failed task_run 12001
 INSERT INTO
     activity (
+        id,
         creator_id,
         updater_id,
         container_id,
@@ -211,6 +230,7 @@ INSERT INTO
     )
 VALUES
     (
+        14011,
         1,
         1,
         13003,
@@ -221,6 +241,7 @@ VALUES
 
 INSERT INTO
     activity (
+        id,
         creator_id,
         updater_id,
         container_id,
@@ -229,6 +250,7 @@ INSERT INTO
     )
 VALUES
     (
+        14012,
         102,
         102,
         13003,

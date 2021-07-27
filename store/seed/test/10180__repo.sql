@@ -22,10 +22,10 @@ INSERT INTO
     )
 VALUES
     (
+        18001,
+        101,
+        101,
         17001,
-        101,
-        101,
-        16001,
         3003,
         "Blog",
         "bytebase-demo/blog",
@@ -67,10 +67,10 @@ INSERT INTO
     )
 VALUES
     (
-        17002,
+        18002,
         101,
         101,
-        16001,
+        17001,
         3002,
         "Shop",
         "bytebase-demo/shop",

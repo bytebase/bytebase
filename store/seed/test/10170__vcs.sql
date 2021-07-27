@@ -13,7 +13,7 @@ INSERT INTO
     )
 VALUES
     (
-        16001,
+        17001,
         101,
         101,
         'bytebase.gitlab.com',
