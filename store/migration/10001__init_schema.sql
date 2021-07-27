@@ -814,6 +814,25 @@ WHERE
 
 END;
 
+-- inbox table stores the inbox entry for the corresponding activity.
+-- Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
+-- We design in this way because:
+-- 1. The table may potentially contain a lot of rows (an issue activity will generate one inbox record per issue subscriber)
+-- 2. Does not provide much value besides what's contained in the related activity record.
+CREATE TABLE inbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    receiver_id INTEGER NOT NULL REFERENCES principal (id),
+    activity_id INTEGER NOT NULL REFERENCES activity (id),
+    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ', 'PINNED'))
+);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id_status ON inbox(receiver_id, activity_id, `status`);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('inbox', 100);
+
 -- bookmark table stores the bookmark for the user
 CREATE TABLE bookmark (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
