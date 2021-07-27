@@ -509,7 +509,7 @@ END;
 CREATE TABLE backup (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'PENDING_CREATE', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -517,11 +517,30 @@ CREATE TABLE backup (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (`status` IN ('PENDING', 'DONE')),
     path TEXT NOT NULL,
     UNIQUE(database_id, name)
 );
 
 CREATE INDEX idx_backup_database_id ON backup(database_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('backup', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_backup_modification_time`
+AFTER
+UPDATE
+    ON `backup` FOR EACH ROW BEGIN
+UPDATE
+    `backup`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
 
 -----------------------
 -- Pipeline related BEGIN
