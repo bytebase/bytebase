@@ -1,11 +1,5 @@
-
-
-import {
-  IssueTemplate,
-  TemplateContext,
-} from "../types";
-
-import { StageCreate, IssueCreate } from "../../types";
+import { IssueCreate, StageCreate } from "../../types";
+import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
   type: "bb.issue.database.schema.update",
@@ -21,7 +15,10 @@ const template: IssueTemplate = {
         taskList: [
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
-            status: "PENDING_APPROVAL",
+            status:
+              ctx.environmentList[i].approvalPolicy == "MANUAL_APPROVAL_ALWAYS"
+                ? "PENDING_APPROVAL"
+                : "PENDING",
             type: "bb.task.database.schema.update",
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,

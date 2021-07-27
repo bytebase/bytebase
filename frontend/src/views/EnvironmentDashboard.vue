@@ -44,9 +44,7 @@
   >
     <EnvironmentForm
       :create="true"
-      :environment="{
-        name: 'New Env',
-      }"
+      :environment="DEFAULT_NEW_ENVIRONMENT"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -85,6 +83,11 @@ import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { Environment, EnvironmentCreate, Principal } from "../types";
 import { BBTabItem } from "../bbkit/types";
+
+const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
+  name: "New Env",
+  approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
+};
 
 interface LocalState {
   reorderedEnvironmentList: Environment[];
@@ -283,6 +286,7 @@ export default {
     const tabClass = computed(() => "w-1/" + environmentList.value.length);
 
     return {
+      DEFAULT_NEW_ENVIRONMENT,
       state,
       environmentList,
       tabItemList,

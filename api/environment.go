@@ -5,6 +5,26 @@ import (
 	"encoding/json"
 )
 
+// Approval policy only controls updating schema on the existing database.
+// For creating new database, Developer always requires manual approval, while Owner and DBA doesn't
+type ApprovalPolicy string
+
+const (
+	// We name this way because we may add approval policy lying in between. (e.g. only DDL change requires manual approval)
+	ManualApprovalNever  ApprovalPolicy = "MANUAL_APPROVAL_NEVER"
+	ManualApprovalAlways ApprovalPolicy = "MANUAL_APPROVAL_ALWAYS"
+)
+
+func (e ApprovalPolicy) String() string {
+	switch e {
+	case ManualApprovalNever:
+		return "MANUAL_APPROVAL_NEVER"
+	case ManualApprovalAlways:
+		return "MANUAL_APPROVAL_ALWAYS"
+	}
+	return "UNKNOWN"
+}
+
 type Environment struct {
 	ID int `jsonapi:"primary,environment"`
 
@@ -18,8 +38,9 @@ type Environment struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Name  string `jsonapi:"attr,name"`
-	Order int    `jsonapi:"attr,order"`
+	Name           string         `jsonapi:"attr,name"`
+	Order          int            `jsonapi:"attr,order"`
+	ApprovalPolicy ApprovalPolicy `jsonapi:"attr,approvalPolicy"`
 }
 
 type EnvironmentCreate struct {
@@ -28,7 +49,8 @@ type EnvironmentCreate struct {
 	CreatorId int
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
+	Name           string         `jsonapi:"attr,name"`
+	ApprovalPolicy ApprovalPolicy `jsonapi:"attr,approvalPolicy"`
 }
 
 type EnvironmentFind struct {
@@ -55,8 +77,9 @@ type EnvironmentPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name  *string `jsonapi:"attr,name"`
-	Order *int    `jsonapi:"attr,order"`
+	Name           *string `jsonapi:"attr,name"`
+	Order          *int    `jsonapi:"attr,order"`
+	ApprovalPolicy *string `jsonapi:"attr,approvalPolicy"`
 }
 
 type EnvironmentDelete struct {

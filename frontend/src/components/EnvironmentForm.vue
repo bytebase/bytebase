@@ -13,6 +13,65 @@
           @input="state.environment.name = $event.target.value"
         />
       </div>
+      <div class="col-span-1">
+        <label class="textlabel"> Approval Policy </label>
+        <div class="mt-1 textinfolabel">
+          For updating schema on the existing database, this setting controls
+          whether the task requires manual approval
+          <a
+            href="https://docs.bytebase.com/use-bytebase/approval-policy?ref=console"
+            target="_blank"
+            class="normal-link"
+          >
+            detailed guide</a
+          >.
+        </div>
+        <div class="mt-4 flex flex-col space-y-4">
+          <div class="flex space-x-4">
+            <input
+              name="manual-approval-always"
+              tabindex="-1"
+              type="radio"
+              class="
+                text-accent
+                disabled:text-accent-disabled
+                focus:ring-accent
+              "
+              value="MANUAL_APPROVAL_ALWAYS"
+              :disabled="!allowEdit"
+              v-model="state.environment.approvalPolicy"
+            />
+            <div class="-mt-0.5">
+              <div class="textlabel">Require manual approval</div>
+              <div class="mt-1 textinfolabel">
+                Pending schema migration task will only be executed after it's
+                manually approved.
+              </div>
+            </div>
+          </div>
+          <div class="flex space-x-4">
+            <input
+              name="manual-approval-never"
+              tabindex="-1"
+              type="radio"
+              class="
+                text-accent
+                disabled:text-accent-disabled
+                focus:ring-accent
+              "
+              value="MANUAL_APPROVAL_NEVER"
+              :disabled="!allowEdit"
+              v-model="state.environment.approvalPolicy"
+            />
+            <div class="-mt-0.5">
+              <div class="textlabel">Skip manual approval</div>
+              <div class="mt-1 textinfolabel">
+                Pending schema migration task will be executed automatically.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Create button group -->
     <div v-if="create" class="flex justify-end pt-5">
@@ -163,6 +222,11 @@ export default {
 
       if (state.environment.name != props.environment!.name) {
         patchedEnvironment.name = state.environment.name;
+      }
+      if (
+        state.environment.approvalPolicy != props.environment!.approvalPolicy
+      ) {
+        patchedEnvironment.approvalPolicy = state.environment.approvalPolicy;
       }
       emit("update", patchedEnvironment);
     };
