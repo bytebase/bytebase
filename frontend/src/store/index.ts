@@ -10,11 +10,11 @@ import database from "./modules/database";
 import dataSource from "./modules/dataSource";
 import environment from "./modules/environment";
 import gitlab from "./modules/gitlab";
+import inbox from "./modules/inbox";
 import instance from "./modules/instance";
 import issue from "./modules/issue";
 import issueSubscriber from "./modules/issueSubscriber";
 import member from "./modules/member";
-import message from "./modules/message";
 import notification from "./modules/notification";
 import pipeline from "./modules/pipeline";
 import plan from "./modules/plan";
@@ -50,7 +50,7 @@ export const store: Store<any> = createStore({
     issue,
     issueSubscriber,
     member,
-    message,
+    inbox,
     notification,
     pipeline,
     plan,

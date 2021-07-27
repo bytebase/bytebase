@@ -1,13 +1,13 @@
 import axios from "axios";
 import {
-  PrincipalId,
-  IssueId,
-  ActivityId,
   Activity,
   ActivityCreate,
-  ActivityState,
-  ResourceObject,
+  ActivityId,
   ActivityPatch,
+  ActivityState,
+  IssueId,
+  PrincipalId,
+  ResourceObject,
 } from "../../types";
 
 function convert(
@@ -32,6 +32,12 @@ const state: () => ActivityState = () => ({
 });
 
 const getters = {
+  convert:
+    (state: ActivityState, getters: any, rootState: any, rootGetters: any) =>
+    (activity: ResourceObject, includedList: ResourceObject[]): Activity => {
+      return convert(activity, includedList || [], rootGetters);
+    },
+
   activityListByUser:
     (state: ActivityState) =>
     (userId: PrincipalId): Activity[] => {

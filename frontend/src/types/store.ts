@@ -15,11 +15,11 @@ import {
   ProjectId,
   VCSId,
 } from "./id";
+import { Inbox } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
 import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
 import { Member } from "./member";
-import { Message } from "./message";
 import { Notification } from "./notification";
 import { PlanType } from "./plan";
 import { Principal } from "./principal";
@@ -63,8 +63,8 @@ export interface ActivityState {
   activityListByIssue: Map<IssueId, Activity[]>;
 }
 
-export interface MessageState {
-  messageListByUser: Map<PrincipalId, Message[]>;
+export interface InboxState {
+  inboxListByUser: Map<PrincipalId, Inbox[]>;
 }
 
 export interface IssueState {
