@@ -248,7 +248,8 @@ export default {
       if (activity.actionType.startsWith("bb.issue.")) {
         return `/issue/${activity.containerId}`;
       } else if (activity.actionType == "bb.pipeline.task.status.update") {
-        return `/issue/${activity.containerId}`;
+        const payload = activity.payload as ActionTaskStatusUpdatePayload;
+        return `/issue/${activity.containerId}?task=${payload.taskId}`;
       }
 
       return "";
@@ -266,9 +267,7 @@ export default {
       }
       const link = actionLink(inbox.activity);
       if (!isEmpty(link)) {
-        router.push({
-          path: link,
-        });
+        router.push(link);
       }
     };
 

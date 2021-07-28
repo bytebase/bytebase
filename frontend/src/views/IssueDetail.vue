@@ -245,6 +245,7 @@ import {
   activeStage,
   stageSlug,
   activeTask,
+  findTaskById,
 } from "../utils";
 import IssueHighlightPanel from "../components/IssueHighlightPanel.vue";
 import IssueStagePanel from "../components/IssueStagePanel.vue";
@@ -654,9 +655,20 @@ export default {
 
     const selectedStage = computed((): Stage | StageCreate => {
       const stageSlug = router.currentRoute.value.query.stage as string;
+      const taskSlug = router.currentRoute.value.query.task as string;
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
         return issue.value.pipeline.stageList[index];
+      } else if (!state.create && taskSlug) {
+        const taskId = idFromSlug(taskSlug);
+        const stageList = (issue.value as Issue).pipeline.stageList;
+        for (const stage of stageList) {
+          for (const task of stage.taskList) {
+            if (task.id == taskId) {
+              return stage;
+            }
+          }
+        }
       }
 
       if (state.create) {
@@ -677,6 +689,7 @@ export default {
         name: "workspace.issue.detail",
         query: {
           ...router.currentRoute.value.query,
+          task: undefined,
           stage: stageSlug(stageList[index].name, index),
         },
       });
