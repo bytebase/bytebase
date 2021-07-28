@@ -148,9 +148,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		payloadList := [][]byte{}
 		if issuePatch.Name != nil && *issuePatch.Name != issue.Name {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-				FieldId:  api.IssueFieldName,
-				OldValue: issue.Name,
-				NewValue: *issuePatch.Name,
+				FieldId:   api.IssueFieldName,
+				OldValue:  issue.Name,
+				NewValue:  *issuePatch.Name,
+				IssueName: issue.Name,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue name: %v", updatedIssue.Name)).SetInternal(err)
@@ -159,9 +160,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		if issuePatch.Description != nil && *issuePatch.Description != issue.Description {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-				FieldId:  api.IssueFieldDescription,
-				OldValue: issue.Description,
-				NewValue: *issuePatch.Description,
+				FieldId:   api.IssueFieldDescription,
+				OldValue:  issue.Description,
+				NewValue:  *issuePatch.Description,
+				IssueName: issue.Name,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue description: %v", updatedIssue.Name)).SetInternal(err)
@@ -170,9 +172,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		if issuePatch.AssigneeId != nil && *issuePatch.AssigneeId != issue.AssigneeId {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-				FieldId:  api.IssueFieldAssignee,
-				OldValue: strconv.Itoa(issue.AssigneeId),
-				NewValue: strconv.Itoa(*issuePatch.AssigneeId),
+				FieldId:   api.IssueFieldAssignee,
+				OldValue:  strconv.Itoa(issue.AssigneeId),
+				NewValue:  strconv.Itoa(*issuePatch.AssigneeId),
+				IssueName: issue.Name,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity after changing issue assignee: %v", updatedIssue.Name)).SetInternal(err)
@@ -382,10 +385,17 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to create issue. Error %w", err)
 	}
 
+	bytes, err := json.Marshal(api.ActivityIssueCreatePayload{
+		IssueName: issue.Name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+	}
 	activityCreate := &api.ActivityCreate{
 		CreatorId:   creatorId,
 		ContainerId: issue.ID,
 		Type:        api.ActivityIssueCreate,
+		Payload:     string(bytes),
 	}
 	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
 	if err != nil {
@@ -459,6 +469,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
 		OldStatus: issue.Status,
 		NewStatus: newStatus,
+		IssueName: updatedIssue.Name,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal activity after changing the issue status: %v, error: %w", issue.Name, err)

@@ -15,7 +15,7 @@
     <div>
       <div class="px-4 py-2 flex justify-between">
         <BBSwitch
-          :label="'Display all inboxs'"
+          :label="'Display all messages'"
           :value="state.showAll"
           @toggle="
             (on) => {
@@ -42,12 +42,16 @@
           v-for="(inbox, index) in effectiveInboxList"
           :key="index"
           class="p-3 hover:bg-control-bg-hover cursor-default"
+          :class="
+            actionLink(inbox.activity) ? 'cursor-pointer' : 'cursor-default'
+          "
           @click.prevent="clickInbox(inbox)"
         >
           <div class="flex space-x-3">
             <PrincipalAvatar
               :principal="inbox.activity.creator"
               :size="'SMALL'"
+              :class="inbox.activity.comment ? '' : '-mt-0.5'"
             />
             <div class="flex-1 space-y-1">
               <div class="flex w-full items-center justify-between space-x-2">
@@ -57,91 +61,21 @@
                     font-base
                     text-control-light
                     flex flex-row
+                    items-center
                     whitespace-nowrap
                   "
                 >
-                  <router-link
-                    :to="`/u/${inbox.activity.creator.id}`"
-                    class="font-medium text-main hover:underline"
-                    >{{ inbox.activity.creator.name }}</router-link
-                  >
-                  <span class="ml-1"> {{ actionSentence(inbox) }}</span>
-                  <!-- <template
-                    v-if="
-                      inbox.type == 'bb.inbox.member.create' ||
-                      inbox.type == 'bb.inbox.member.add' ||
-                      inbox.type == 'bb.inbox.member.join' ||
-                      inbox.type == 'bb.inbox.member.revoke' ||
-                      inbox.type == 'bb.inbox.member.updaterole'
-                    "
-                  >
-                  </template>
-                  <template
-                    v-else-if="
-                      inbox.type == 'bb.inbox.environment.create' ||
-                      inbox.type == 'bb.inbox.environment.update' ||
-                      inbox.type == 'bb.inbox.environment.archive' ||
-                      inbox.type == 'bb.inbox.environment.restore'
-                    "
-                  >
+                  <template v-if="showCreator(inbox.activity)">
                     <router-link
-                      :to="`/environment#${inbox.containerId}`"
-                      class="normal-link ml-1"
+                      :to="`/u/${inbox.activity.creator.id}`"
+                      class="mr-1 font-medium text-main hover:underline"
+                      >{{ inbox.activity.creator.name }}</router-link
                     >
-                      {{ inbox.payload.environmentName }}
-                    </router-link>
                   </template>
-                  <template
-                    v-else-if="inbox.type == 'bb.inbox.environment.delete'"
-                  >
-                    <span class="font-medium text-main ml-1">
-                      {{ inbox.payload.environmentName }}
-                    </span>
-                  </template>
-                  <template
-                    v-else-if="
-                      inbox.type == 'bb.inbox.instance.create' ||
-                      inbox.type == 'bb.inbox.instance.update' ||
-                      inbox.type == 'bb.inbox.instance.archive' ||
-                      inbox.type == 'bb.inbox.instance.restore'
-                    "
-                  >
-                    <router-link
-                      :to="`/instance/${inbox.containerId}`"
-                      class="normal-link ml-1"
-                    >
-                      {{ inbox.payload.instanceName }}
-                    </router-link>
-                  </template> -->
-                  <!-- <template v-if="inbox.activity.type.startsWith('bb.issue.')">
-                    <router-link
-                      :to="`/issue/${inbox.containerId}`"
-                      class="normal-link ml-1"
-                    >
-                      {{ inbox.activity.issueName }}
-                    </router-link>
-                  </template>
-                  <template
-                    v-else-if="inbox.type == 'bb.inbox.issue.status.update'"
-                  >
-                    <router-link
-                      :to="`/issue/${inbox.containerId}`"
-                      class="normal-link ml-1"
-                    >
-                      {{ inbox.payload.issueName }}
-                    </router-link>
-                  </template>
-                  <template v-else-if="inbox.type == 'bb.inbox.issue.comment'">
-                    <router-link
-                      :to="`/issue/${inbox.containerId}#activity${inbox.payload.commentId}`"
-                      class="normal-link ml-1"
-                    >
-                      {{ inbox.payload.issueName }}
-                    </router-link>
-                  </template> -->
+                  <span> {{ actionSentence(inbox.activity) }}</span>
                   <span
                     v-if="inbox.status == 'UNREAD'"
-                    class="ml-2 mt-1 h-3 w-3 rounded-full bg-accent"
+                    class="ml-2 h-3 w-3 rounded-full bg-accent"
                   ></span>
                 </h3>
                 <p class="text-sm text-control">
@@ -164,8 +98,20 @@
 import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import { Inbox, UNKNOWN_ID } from "../types";
-import { isDBAOrOwner, issueActivityActionSentence } from "../utils";
+import {
+  ActionIssueCommentCreatePayload,
+  ActionIssueCreatePayload,
+  ActionIssueFieldUpdatePayload,
+  ActionIssueStatusUpdatePayload,
+  ActionTaskStatusUpdatePayload,
+  Activity,
+  Inbox,
+  UNKNOWN_ID,
+} from "../types";
+import { isDBAOrOwner, issueActivityActionSentence, issueSlug } from "../utils";
+import { isEmpty } from "lodash";
+import { useRouter } from "vue-router";
+import activity from "../store/modules/activity";
 
 const GENERAL_TAB = 0;
 const MEMBERSHIP_TAB = 1;
@@ -186,6 +132,7 @@ export default {
   components: { PrincipalAvatar },
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       selectedIndex: 0,
@@ -238,8 +185,73 @@ export default {
       });
     });
 
-    const actionSentence = (inbox: Inbox): string => {
-      return issueActivityActionSentence(inbox.activity);
+    const showCreator = (activity: Activity): boolean => {
+      return activity.actionType.startsWith("bb.issue.");
+    };
+
+    const actionSentence = (activity: Activity): string => {
+      if (activity.actionType.startsWith("bb.issue.")) {
+        const actionStr = issueActivityActionSentence(activity);
+        switch (activity.actionType) {
+          case "bb.issue.create": {
+            const payload = activity.payload as ActionIssueCreatePayload;
+            return `${actionStr} - '${payload?.issueName || ""}'`;
+          }
+          case "bb.issue.comment.create": {
+            const payload = activity.payload as ActionIssueCommentCreatePayload;
+            return `${actionStr} - '${payload?.issueName || ""}'`;
+          }
+          case "bb.issue.field.update": {
+            const payload = activity.payload as ActionIssueFieldUpdatePayload;
+            return `${actionStr} - '${payload?.issueName || ""}'`;
+          }
+          case "bb.issue.status.update": {
+            const payload = activity.payload as ActionIssueStatusUpdatePayload;
+            return `${actionStr} - '${payload?.issueName || ""}'`;
+          }
+        }
+        return actionStr;
+      } else if (activity.actionType == "bb.pipeline.task.status.update") {
+        const payload = activity.payload as ActionTaskStatusUpdatePayload;
+        var actionStr = `changed`;
+        switch (payload.newStatus) {
+          case "PENDING": {
+            if (payload.oldStatus == "RUNNING") {
+              actionStr = `canceled`;
+            } else if (payload.oldStatus == "PENDING_APPROVAL") {
+              actionStr = `approved`;
+            }
+            break;
+          }
+          case "RUNNING": {
+            actionStr = `started`;
+            break;
+          }
+          case "DONE": {
+            actionStr = `completed`;
+            break;
+          }
+          case "FAILED": {
+            actionStr = `failed`;
+            break;
+          }
+        }
+        return `Task '${payload.taskName}' ${actionStr} - '${
+          payload?.issueName || ""
+        }'`;
+      }
+
+      return "";
+    };
+
+    const actionLink = (activity: Activity): string => {
+      if (activity.actionType.startsWith("bb.issue.")) {
+        return `/issue/${activity.containerId}`;
+      } else if (activity.actionType == "bb.pipeline.task.status.update") {
+        return `/issue/${activity.containerId}`;
+      }
+
+      return "";
     };
 
     const clickInbox = (inbox: Inbox) => {
@@ -250,6 +262,12 @@ export default {
           inboxPatch: {
             status: "READ",
           },
+        });
+      }
+      const link = actionLink(inbox.activity);
+      if (!isEmpty(link)) {
+        router.push({
+          path: link,
         });
       }
     };
@@ -278,7 +296,9 @@ export default {
       currentUser,
       isCurrentUserDBAOrOwner,
       effectiveInboxList,
+      showCreator,
       actionSentence,
+      actionLink,
       clickInbox,
       showAll,
       markAllAsRead,

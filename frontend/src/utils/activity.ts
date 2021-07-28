@@ -1,7 +1,7 @@
 import { Store } from "vuex";
 import { IssueBuiltinFieldId } from "../plugins";
 import {
-  ActionFieldUpdatePayload,
+  ActionIssueFieldUpdatePayload,
   ActionIssueStatusUpdatePayload,
   Activity,
 } from "../types";
@@ -19,7 +19,7 @@ export function issueActivityActionSentence(activity: Activity): string {
     case "bb.issue.comment.create":
       return "commented";
     case "bb.issue.field.update": {
-      const update = activity.payload as ActionFieldUpdatePayload;
+      const update = activity.payload as ActionIssueFieldUpdatePayload;
 
       let name = "Unknown Field";
       let oldValue = undefined;
@@ -99,4 +99,5 @@ export function issueActivityActionSentence(activity: Activity): string {
       }
     }
   }
+  return "";
 }

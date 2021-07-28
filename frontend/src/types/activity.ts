@@ -13,25 +13,39 @@ export type IssueActionType =
 
 export type ActionType = IssueActionType;
 
-export type ActionFieldUpdatePayload = {
+export type ActionIssueCreatePayload = {
+  issueName: string;
+};
+
+export type ActionIssueCommentCreatePayload = {
+  issueName: string;
+};
+
+export type ActionIssueFieldUpdatePayload = {
   fieldId: FieldId;
   oldValue?: string;
   newValue?: string;
+  issueName: string;
 };
 
 export type ActionIssueStatusUpdatePayload = {
   oldStatus: IssueStatus;
   newStatus: IssueStatus;
+  issueName: string;
 };
 
 export type ActionTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
+  issueName: string;
+  taskName: string;
 };
 
 export type ActionPayloadType =
-  | ActionFieldUpdatePayload
+  | ActionIssueCreatePayload
+  | ActionIssueCommentCreatePayload
+  | ActionIssueFieldUpdatePayload
   | ActionIssueStatusUpdatePayload
   | ActionTaskStatusUpdatePayload;
 

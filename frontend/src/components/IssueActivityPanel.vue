@@ -554,7 +554,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   Issue,
   Activity,
-  ActionFieldUpdatePayload,
+  ActionIssueFieldUpdatePayload,
   ActionTaskStatusUpdatePayload,
   UNKNOWN_ID,
   EMPTY_ID,
@@ -676,7 +676,7 @@ export default {
       return list.filter((activity: Activity) => {
         if (activity.actionType == "bb.issue.field.update") {
           let containUserVisibleChange =
-            (activity.payload as ActionFieldUpdatePayload).fieldId !=
+            (activity.payload as ActionIssueFieldUpdatePayload).fieldId !=
             IssueBuiltinFieldId.SUBSCRIBER_LIST;
           return containUserVisibleChange;
         }
