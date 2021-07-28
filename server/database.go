@@ -255,6 +255,45 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.POST("/database/:id/backup", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		backupCreate := &api.BackupCreate{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupCreate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
+		}
+		backupCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+
+		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
+		}
+		backup.Database = database
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create backup response").SetInternal(err)
+		}
+		return nil
+	})
+
 	g.GET("/database/:id/backup", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
