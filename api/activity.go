@@ -36,21 +36,38 @@ func (e ActivityType) String() string {
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
 // convert to the expected struct there.
+type ActivityIssueCreatePayload struct {
+	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	IssueName string `json:"issueName"`
+}
+
+type ActivityIssueCommentCreatePayload struct {
+	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	IssueName string `json:"issueName"`
+}
+
 type ActivityIssueFieldUpdatePayload struct {
 	FieldId  IssueFieldId `json:"fieldId"`
 	OldValue string       `json:"oldValue,omitempty"`
 	NewValue string       `json:"newValue,omitempty"`
+	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	IssueName string `json:"issueName"`
 }
 
 type ActivityIssueStatusUpdatePayload struct {
 	OldStatus IssueStatus `json:"oldStatus,omitempty"`
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
+	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	IssueName string `json:"issueName"`
 }
 
 type ActivityPipelineTaskStatusUpdatePayload struct {
 	TaskId    int        `json:"taskId"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskStatus `json:"newStatus,omitempty"`
+	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	IssueName string `json:"issueName"`
+	TaskName  string `json:"taskName"`
 }
 
 type Activity struct {

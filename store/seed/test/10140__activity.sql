@@ -5,7 +5,8 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`
+        `type`,
+        payload
     )
 VALUES
     (
@@ -13,7 +14,8 @@ VALUES
         1,
         1,
         13001,
-        'bb.issue.create'
+        'bb.issue.create',
+        '{"issueName":"Hello world!"}'
     );
 
 INSERT INTO
@@ -23,7 +25,8 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
-        `comment`
+        `comment`,
+        payload
     )
 VALUES
     (
@@ -32,7 +35,8 @@ VALUES
         101,
         13001,
         'bb.issue.comment.create',
-        'Welcome!'
+        'Welcome!',
+        '{"issueName":"Hello world!"}'
     );
 
 INSERT INTO
@@ -42,7 +46,8 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
-        `comment`
+        `comment`,
+        payload
     )
 VALUES
     (
@@ -51,7 +56,8 @@ VALUES
         102,
         13001,
         'bb.issue.comment.create',
-        'Let''s rock!'
+        'Let''s rock!',
+        '{"issueName":"Hello world!"}'
     );
 
 INSERT INTO
@@ -61,7 +67,8 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
-        `comment`
+        `comment`,
+        payload
     )
 VALUES
     (
@@ -70,7 +77,8 @@ VALUES
         103,
         13001,
         'bb.issue.comment.create',
-        'Go fish!'
+        'Go fish!',
+        '{"issueName":"Hello world!"}'
     );
 
 -- Activity for issue 13002
@@ -82,7 +90,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`
+        `type`,
+        payload
     )
 VALUES
     (
@@ -92,7 +101,8 @@ VALUES
         1,
         1624873710,
         13002,
-        'bb.issue.create'
+        'bb.issue.create',
+        '{"issueName":"Create product table"}'
     );
 
 INSERT INTO
@@ -117,7 +127,7 @@ VALUES
         13002,
         'bb.pipeline.task.status.update',
         '',
-        '{"taskId":11002,"oldStatus":"PENDING","newStatus":"RUNNING"}'
+        '{"taskId":11002,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create product table","taskName":"Add initial schema"}'
     );
 
 INSERT INTO
@@ -195,6 +205,29 @@ VALUES
         '{"taskId":11003,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
+INSERT INTO
+    activity (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        payload
+    )
+VALUES
+    (
+        14010,
+        1,
+        1624873710,
+        1,
+        1624873710,
+        13002,
+        'bb.issue.field.update',
+        '{"fieldId":"3","oldValue":"1","newValue":"101","issueName":"Create product table"}'
+    );
+
 -- Activity for issue 13003
 INSERT INTO
     activity (
@@ -204,17 +237,19 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`
+        `type`,
+        payload
     )
 VALUES
     (
-        14010,
+        14011,
         103,
         1624873710,
         103,
         1624873710,
         13003,
-        'bb.issue.create'
+        'bb.issue.create',
+        '{"issueName":"CREATE a new TABLE ''tbl1''"}'
     );
 
 -- Activity for failed task_run 12001
@@ -230,13 +265,13 @@ INSERT INTO
     )
 VALUES
     (
-        14011,
+        14012,
         1,
         1,
         13003,
         'bb.pipeline.task.status.update',
         'table "tbl1" already exists',
-        '{"taskId":11006,"oldStatus":"RUNNING","newStatus":"FAILED"}'
+        '{"taskId":11006,"oldStatus":"RUNNING","newStatus":"FAILED","issueName":"Create a new table ''tbl1''","taskName":"Update testdb_dev"}'
     );
 
 INSERT INTO
@@ -250,12 +285,12 @@ INSERT INTO
     )
 VALUES
     (
-        14012,
+        14013,
         102,
         102,
         13003,
         'bb.issue.status.update',
-        '{"oldStatus":"OPEN","newStatus":"CANCELED"}'
+        '{"oldStatus":"OPEN","newStatus":"CANCELED","issueName":"Create a new table ''tbl1''"}'
     );
 
 -- Activity for issue 13004
@@ -279,7 +314,7 @@ VALUES
         13004,
         'bb.issue.create',
         '',
-        ''
+        '{"issueName":"Create user, post, comment table for dev environment"}'
     );
 
 INSERT INTO
@@ -348,7 +383,7 @@ VALUES
         13004,
         'bb.issue.status.update',
         '',
-        '{"oldStatus":"RUNNING","newStatus":"DONE"}'
+        '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for dev environment"}'
     );
 
 -- Activity for issue 13005
@@ -372,7 +407,7 @@ VALUES
         13005,
         'bb.issue.create',
         '',
-        ''
+        '{"issueName":"Create user, post, comment table for integration environment"}'
     );
 
 INSERT INTO
@@ -441,7 +476,7 @@ VALUES
         13005,
         'bb.issue.status.update',
         '',
-        '{"oldStatus":"RUNNING","newStatus":"DONE"}'
+        '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for integration environment"}'
     );
 
 -- Activity for issue 13006
@@ -465,7 +500,7 @@ VALUES
         13006,
         'bb.issue.create',
         '',
-        ''
+        '{"issueName":"Create user, post, comment table for staging environment"}'
     );
 
 INSERT INTO
@@ -534,7 +569,7 @@ VALUES
         13006,
         'bb.issue.status.update',
         '',
-        '{"oldStatus":"RUNNING","newStatus":"DONE"}'
+        '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for staging environment"}'
     );
 
 -- Activity for issue 13007
@@ -558,7 +593,7 @@ VALUES
         13007,
         'bb.issue.create',
         '',
-        ''
+        '{"issueName":"Create user, post, comment table for prod environment"}'
     );
 
 INSERT INTO
@@ -627,7 +662,7 @@ VALUES
         13007,
         'bb.issue.status.update',
         '',
-        '{"oldStatus":"RUNNING","newStatus":"DONE"}'
+        '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for prod environment"}'
     );
 
 -- Activity for issue 13008
@@ -651,7 +686,7 @@ VALUES
         13008,
         'bb.issue.create',
         '',
-        ''
+        '{"issueName":"Add created_at column to user,post,comment table for dev environment"}'
     );
 
 INSERT INTO

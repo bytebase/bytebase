@@ -48,7 +48,7 @@ INSERT INTO
         `status`
     )
 VALUES
-    (101, 14006, 'UNREAD');
+    (101, 14010, 'UNREAD');
 
 INSERT INTO
     inbox (
@@ -58,6 +58,15 @@ INSERT INTO
     )
 VALUES
     (101, 14012, 'UNREAD');
+
+INSERT INTO
+    inbox (
+        receiver_id,
+        activity_id,
+        `status`
+    )
+VALUES
+    (101, 14013, 'UNREAD');
 
 -- Inbox for receiver 102
 INSERT INTO
@@ -112,7 +121,7 @@ INSERT INTO
         `status`
     )
 VALUES
-    (102, 14012, 'UNREAD');
+    (102, 14013, 'UNREAD');
 
 -- Inbox for receiver 103
 INSERT INTO
@@ -167,4 +176,4 @@ INSERT INTO
         `status`
     )
 VALUES
-    (103, 14012, 'UNREAD');
+    (103, 14013, 'UNREAD');

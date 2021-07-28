@@ -188,16 +188,6 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, fmt.Errorf("failed to change task %v(%v) status: %w", task.ID, task.Name, err)
 	}
 
-	// Create an activity
-	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
-		TaskId:    task.ID,
-		OldStatus: task.Status,
-		NewStatus: updatedTask.Status,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
-	}
-
 	// TODO(tianzhou): This indiciates a coupling that pipeline belongs to an issue.
 	// A better way is to implement this as an onTaskStatusChange callback
 	issueFind := &api.IssueFind{
@@ -206,6 +196,18 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	issue, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch containing issue for creating activity after changing the task status: %v, err: %w", task.Name, err)
+	}
+
+	// Create an activity
+	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+		TaskId:    task.ID,
+		OldStatus: task.Status,
+		NewStatus: updatedTask.Status,
+		IssueName: issue.Name,
+		TaskName:  task.Name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
 	}
 
 	activityCreate := &api.ActivityCreate{

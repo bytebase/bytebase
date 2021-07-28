@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -20,6 +21,26 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		activityCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		if activityCreate.Type == api.ActivityIssueCommentCreate {
+			issueFind := &api.IssueFind{
+				ID: &activityCreate.ContainerId,
+			}
+			issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
+			if err != nil {
+				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerId))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerId)).SetInternal(err)
+			}
+
+			bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
+				IssueName: issue.Name,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct comment payload").SetInternal(err)
+			}
+			activityCreate.Payload = string(bytes)
+		}
 
 		activity, err := s.ActivityService.CreateActivity(context.Background(), activityCreate)
 		if err != nil {
