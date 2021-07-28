@@ -1,39 +1,39 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="my-2 space-y-2 divide-y divide-block-border">
-    <BBTabFilter
-      v-if="isCurrentUserDBAOrOwner"
-      class="mx-2"
-      :tabList="['General', 'Membership']"
-      :selectedIndex="state.selectedIndex"
-      @select-index="
-        (index) => {
-          state.selectedIndex = index;
-        }
-      "
-    />
+    <div class="flex items-center justify-between">
+      <BBTabFilter
+        v-if="isCurrentUserDBAOrOwner"
+        class="mx-2"
+        :tabList="['General', 'Membership']"
+        :selectedIndex="state.selectedIndex"
+        @select-index="
+          (index) => {
+            state.selectedIndex = index;
+          }
+        "
+      />
+      <button
+        type="button"
+        class="mr-4 btn-normal"
+        @click.prevent="markAllAsRead"
+      >
+        <svg
+          class="-ml-1 mr-2 h-5 w-5 text-control-light"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+          ></path>
+        </svg>
+        <span>Mark all as read</span>
+      </button>
+    </div>
     <div>
       <div class="mt-6 mx-6 space-y-2">
-        <div class="flex justify-between">
-          <div class="text-lg leading-6 font-medium text-main mb-4">Unread</div>
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="markAllAsRead"
-          >
-            <svg
-              class="-ml-1 mr-2 h-5 w-5 text-control-light"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-              ></path>
-            </svg>
-            <span>Mark all as read</span>
-          </button>
-        </div>
+        <div class="text-lg leading-6 font-medium text-main mb-4">Unread</div>
         <InboxList :inboxList="effectiveInboxList(state.unreadList)" />
       </div>
       <div class="mt-6 mx-6">
