@@ -568,6 +568,7 @@ import {
   issueSlug,
   sizeToFit,
   stageSlug,
+  taskSlug,
 } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
@@ -801,14 +802,10 @@ export default {
             const task = findTaskById(props.issue.pipeline, payload.taskId);
             var link = "";
             if (task.id != UNKNOWN_ID) {
-              const stageList = props.issue.pipeline.stageList;
-              const index = stageList.findIndex((item) => {
-                return item.id == task.stage.id;
-              });
               link = `/issue/${issueSlug(
                 props.issue.name,
                 props.issue.id
-              )}?stage=${stageSlug(stageList[index].name, index)}`;
+              )}?task=${taskSlug(task)}`;
             }
             return {
               name: `${task.name} (${task.stage.name})`,

@@ -1,13 +1,14 @@
+import slug from "slug";
 import {
   Database,
   DataSource,
   Environment,
   Instance,
-  Project,
-  VCS,
   IssueId,
+  Project,
+  Task,
+  VCS,
 } from "../types";
-import slug from "slug";
 import { IdType } from "../types/id";
 
 export function idFromSlug(slug: string): IdType {
@@ -43,6 +44,10 @@ export function instanceSlug(instance: Instance): string {
 
 export function stageSlug(stageName: string, stageIndex: number): string {
   return [slug(stageName), stageIndex + 1].join("-");
+}
+
+export function taskSlug(task: Task): string {
+  return [slug(task.name), task.id].join("-");
 }
 
 export function databaseSlug(database: Database): string {
