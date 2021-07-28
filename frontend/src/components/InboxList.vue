@@ -14,14 +14,13 @@
           :class="inbox.activity.comment ? '' : '-mt-0.5'"
         />
         <div class="flex-1 space-y-1">
-          <div class="flex w-full items-center justify-between space-x-2">
+          <div class="flex w-full justify-between space-x-2">
             <h3
               class="
                 text-sm
                 font-base
                 text-control-light
                 flex flex-row
-                items-center
                 whitespace-nowrap
               "
             >
@@ -34,7 +33,7 @@
               </template>
               <span> {{ actionSentence(inbox.activity) }}</span>
             </h3>
-            <p class="text-sm text-control">
+            <p class="text-sm text-control whitespace-nowrap">
               {{ humanizeTs(inbox.activity.createdTs) }}
             </p>
           </div>
