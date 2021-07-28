@@ -29,6 +29,23 @@ type Backup struct {
 	Comment        string `jsonapi:"attr,comment"`
 }
 
+type BackupCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorId int
+
+	// Related fields
+	DatabaseId int `jsonapi:"attr,databaseId"`
+
+	// Domain specific fields
+	Name           string `jsonapi:"attr,name"`
+	Status         string `jsonapi:"attr,status"`
+	Type           string `jsonapi:"attr,type"`
+	StorageBackend string `jsonapi:"attr,storageBackend"`
+	Path           string `jsonapi:"attr,path"`
+	Comment        string `jsonapi:"attr,comment"`
+}
+
 type BackupFind struct {
 	ID *int
 
@@ -47,6 +64,19 @@ func (find *BackupFind) String() string {
 	return string(str)
 }
 
+type BackupPatch struct {
+	ID int
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterId int
+
+	// Domain specific fields
+	Status string
+}
+
 type BackupService interface {
+	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
 	FindBackupList(ctx context.Context, find *BackupFind) ([]*Backup, error)
+	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
 }

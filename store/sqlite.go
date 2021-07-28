@@ -343,6 +343,8 @@ func FormatError(err error) error {
 		return bytebase.Errorf(bytebase.ECONFLICT, "database name already exists")
 	case "UNIQUE constraint failed: data_source.instance_id, data_source.name":
 		return bytebase.Errorf(bytebase.ECONFLICT, "data source name already exists")
+	case "UNIQUE constraint failed: backup.database_id, backup.name":
+		return bytebase.Errorf(bytebase.ECONFLICT, "backup name already exists")
 	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
 		return bytebase.Errorf(bytebase.ECONFLICT, "bookmark already exists")
 	case "UNIQUE constraint failed: repo.project_id":
