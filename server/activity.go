@@ -38,7 +38,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 				IssueName: issue.Name,
 			})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct comment payload").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
 			activityCreate.Payload = string(bytes)
 			foundIssue = issue
@@ -50,8 +50,8 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
-			if err := s.PostInboxIssueActivity(context.Background(), foundIssue, activity.ID, api.INBOX_ERROR); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to point activity to inbox").SetInternal(err)
+			if err := s.PostInboxIssueActivity(context.Background(), foundIssue, activity.ID, api.INBOX_INFO); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}
 
