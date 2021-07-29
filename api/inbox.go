@@ -81,10 +81,19 @@ type InboxPatch struct {
 	Status InboxStatus `jsonapi:"attr,status"`
 }
 
+// Contains the inbox summary info.
+// This is used by the frontend to render the inbox sidebar item without fetching the actual inbox items.
+// This returns json instead of jsonapi since it't not dealing with a particular resource.
+type InboxSummary struct {
+	HasUnread      bool `json:"hasUnread"`
+	HasUnreadError bool `json:"hasUnreadError"`
+}
+
 type InboxService interface {
 	CreateInbox(ctx context.Context, create *InboxCreate) (*Inbox, error)
 	// Find the inbox list and return most recent created item first.
 	FindInboxList(ctx context.Context, find *InboxFind) ([]*Inbox, error)
 	FindInbox(ctx context.Context, find *InboxFind) (*Inbox, error)
 	PatchInbox(ctx context.Context, patch *InboxPatch) (*Inbox, error)
+	FindInboxSummary(ctx context.Context, principalId int) (*InboxSummary, error)
 }

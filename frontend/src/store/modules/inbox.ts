@@ -5,6 +5,7 @@ import {
   InboxId,
   InboxPatch,
   InboxState,
+  InboxSummary,
   PrincipalId,
   ResourceIdentifier,
   ResourceObject,
@@ -34,8 +35,15 @@ function convert(
   };
 }
 
+function convertSummary(inboxSummary: ResourceObject): InboxSummary {
+  return {
+    ...(inboxSummary.attributes as InboxSummary),
+  };
+}
+
 const state: () => InboxState = () => ({
   inboxListByUser: new Map(),
+  inboxSummaryByUser: new Map(),
 });
 
 const getters = {
@@ -43,6 +51,17 @@ const getters = {
     (state: InboxState) =>
     (userId: PrincipalId): Inbox[] => {
       return state.inboxListByUser.get(userId) || [];
+    },
+
+  inboxSummaryByUser:
+    (state: InboxState) =>
+    (userId: PrincipalId): InboxSummary => {
+      return (
+        state.inboxSummaryByUser.get(userId) || {
+          hasUnread: false,
+          hasUnreadError: false,
+        }
+      );
     },
 };
 
@@ -58,6 +77,14 @@ const actions = {
 
     commit("setInboxListByUser", { userId, inboxList });
     return inboxList;
+  },
+
+  async fetchInboxSummaryByUser({ commit }: any, userId: PrincipalId) {
+    const inboxSummary = (await axios.get(`/api/inbox/summary?user=${userId}`))
+      .data;
+
+    commit("setInboxSummaryByUser", { userId, inboxSummary });
+    return inboxSummary;
   },
 
   async patchInbox(
@@ -92,6 +119,19 @@ const mutations = {
     }
   ) {
     state.inboxListByUser.set(userId, inboxList);
+  },
+
+  setInboxSummaryByUser(
+    state: InboxState,
+    {
+      userId,
+      inboxSummary,
+    }: {
+      userId: PrincipalId;
+      inboxSummary: InboxSummary;
+    }
+  ) {
+    state.inboxSummaryByUser.set(userId, inboxSummary);
   },
 
   updateInboxById(

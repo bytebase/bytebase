@@ -18,3 +18,8 @@ export type Inbox = {
 export type InboxPatch = {
   status: InboxStatus;
 };
+
+export type InboxSummary = {
+  hasUnread: boolean;
+  hasUnreadError: boolean;
+};

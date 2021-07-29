@@ -1,5 +1,6 @@
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
+import { Backup } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
@@ -15,7 +16,7 @@ import {
   ProjectId,
   VCSId,
 } from "./id";
-import { Inbox } from "./inbox";
+import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
 import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
@@ -27,7 +28,6 @@ import { Project } from "./project";
 import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
-import { Backup } from "./backup";
 import { VCS } from "./vcs";
 
 export interface ActuatorState {
@@ -65,6 +65,7 @@ export interface ActivityState {
 
 export interface InboxState {
   inboxListByUser: Map<PrincipalId, Inbox[]>;
+  inboxSummaryByUser: Map<PrincipalId, InboxSummary>;
 }
 
 export interface IssueState {

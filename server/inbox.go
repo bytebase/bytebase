@@ -41,6 +41,24 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/inbox/summary", func(c echo.Context) error {
+		userIdStr := c.QueryParams().Get("user")
+		if userIdStr == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing query parameter user")
+		}
+		userId, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIdStr)).SetInternal(err)
+		}
+
+		summary, err := s.InboxService.FindInboxSummary(context.Background(), userId)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox summary for user ID: %d", userId)).SetInternal(err)
+		}
+
+		return c.JSON(http.StatusOK, summary)
+	})
+
 	g.PATCH("/inbox/:inboxId", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("inboxId"))
 		if err != nil {

@@ -105,6 +105,58 @@ func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*
 	return inbox, nil
 }
 
+// FindInboxSummary returns the inbox summary for a particular principal
+func (s *InboxService) FindInboxSummary(ctx context.Context, principalId int) (*api.InboxSummary, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	row, err := tx.QueryContext(ctx, `
+		SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = ? AND status = 'UNREAD')
+	`,
+		principalId,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var inboxSummary api.InboxSummary
+	if err := row.Scan(
+		&inboxSummary.HasUnread,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if inboxSummary.HasUnread {
+		row2, err := tx.QueryContext(ctx, `
+		SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = ? AND status = 'UNREAD' AND level = 'ERROR')
+	`,
+			principalId,
+		)
+
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer row2.Close()
+
+		row2.Next()
+		if err := row2.Scan(
+			&inboxSummary.HasUnreadError,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+	} else {
+		inboxSummary.HasUnreadError = false
+	}
+
+	return &inboxSummary, nil
+}
+
 // createInbox creates a new inbox.
 func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.InboxCreate) (*api.Inbox, error) {
 	// Insert row into database.

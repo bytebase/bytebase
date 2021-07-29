@@ -60,7 +60,10 @@
         >
           Read
         </div>
-        <InboxList :inboxList="effectiveInboxList(state.readList)" />
+        <InboxList
+          class="opacity-70"
+          :inboxList="effectiveInboxList(state.readList)"
+        />
       </div>
     </div>
   </div>
@@ -174,6 +177,7 @@ export default {
     };
 
     const markAllAsRead = () => {
+      var count = state.unreadList.length;
       state.unreadList.forEach((item: Inbox) => {
         store
           .dispatch("inbox/patchInbox", {
@@ -183,6 +187,13 @@ export default {
             },
           })
           .then(() => {
+            count--;
+            if (count == 0) {
+              store.dispatch(
+                "inbox/fetchInboxSummaryByUser",
+                currentUser.value.id
+              );
+            }
             state.readList.push(item);
           });
       });

@@ -82,7 +82,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "@vue/runtime-core";
+import { computed, PropType } from "@vue/runtime-core";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ActionIssueCommentCreatePayload,
@@ -114,6 +114,8 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const actionLink = (activity: Activity): string => {
       if (activity.actionType.startsWith("bb.issue.")) {
@@ -233,12 +235,19 @@ export default {
 
     const clickInbox = (inbox: Inbox) => {
       if (inbox.status == "UNREAD") {
-        store.dispatch("inbox/patchInbox", {
-          inboxId: inbox.id,
-          inboxPatch: {
-            status: "READ",
-          },
-        });
+        store
+          .dispatch("inbox/patchInbox", {
+            inboxId: inbox.id,
+            inboxPatch: {
+              status: "READ",
+            },
+          })
+          .then(() => {
+            store.dispatch(
+              "inbox/fetchInboxSummaryByUser",
+              currentUser.value.id
+            );
+          });
       }
       const link = actionLink(inbox.activity);
       if (!isEmpty(link)) {
