@@ -228,7 +228,7 @@ type Driver interface {
 	SetupMigrationIfNeeded(ctx context.Context) error
 	// Execute migration will apply the statement and record the migration history on success.
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error
-	// Find the migration history list
+	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 }
 
