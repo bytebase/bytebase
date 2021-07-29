@@ -262,7 +262,7 @@ export default {
         name: `Create database ${state.databaseName}`,
         type: "bb.issue.database.create",
         description: "",
-        assigneeId: state.assigneeId,
+        assigneeId: state.assigneeId!,
         projectId: state.projectId!,
         pipeline: {
           stageList: [

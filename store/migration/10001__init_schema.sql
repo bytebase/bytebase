@@ -735,7 +735,8 @@ CREATE TABLE issue (
     `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED')),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
-    assignee_id INTEGER REFERENCES principal (id),
+    -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
+    assignee_id INTEGER NOT NULL REFERENCES principal (id),
     payload TEXT NOT NULL DEFAULT ''
 );
 
