@@ -5,11 +5,11 @@
       <BBTabFilter
         v-if="isCurrentUserDBAOrOwner"
         class="mx-2"
-        :tabList="['General', 'Members']"
+        :tabList="tabItemList.map((item) => item.name)"
         :selectedIndex="state.selectedIndex"
         @select-index="
           (index) => {
-            state.selectedIndex = index;
+            selectTab(index);
           }
         "
       />
@@ -67,15 +67,25 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, onMounted, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import InboxList from "../components/InboxList.vue";
 import { Inbox, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
 
-const GENERAL_TAB = 0;
-const MEMBERSHIP_TAB = 1;
+const ISSUE_TAB = 0;
+const MEMBER_TAB = 1;
+
+type TabItem = {
+  name: string;
+  hash: string;
+};
+
+const tabItemList: TabItem[] = [
+  { name: "Issue", hash: "issue" },
+  { name: "Member", hash: "member" },
+];
 
 interface LocalState {
   selectedIndex: number;
@@ -97,6 +107,31 @@ export default {
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const selectTabOnHash = () => {
+      if (router.currentRoute.value.hash) {
+        for (let i = 0; i < tabItemList.length; i++) {
+          if (tabItemList[i].hash == router.currentRoute.value.hash.slice(1)) {
+            selectTab(i);
+            break;
+          }
+        }
+      } else {
+        selectTab(ISSUE_TAB);
+      }
+    };
+
+    const selectTab = (index: number) => {
+      state.selectedIndex = index;
+      router.replace({
+        name: "workspace.inbox",
+        hash: "#" + tabItemList[index].hash,
+      });
+    };
+
+    onMounted(() => {
+      selectTabOnHash();
+    });
 
     const prepareInboxList = () => {
       // It will also be called when user logout
@@ -127,9 +162,9 @@ export default {
     const effectiveInboxList = (inboxList: Inbox[]) => {
       return inboxList.filter((inbox: Inbox) => {
         if (
-          (state.selectedIndex == GENERAL_TAB &&
+          (state.selectedIndex == ISSUE_TAB &&
             inbox.activity.actionType.startsWith("bb.member.")) ||
-          (state.selectedIndex == MEMBERSHIP_TAB &&
+          (state.selectedIndex == MEMBER_TAB &&
             !inbox.activity.actionType.startsWith("bb.member."))
         ) {
           return false;
@@ -155,6 +190,8 @@ export default {
     };
 
     return {
+      tabItemList,
+      selectTab,
       state,
       isCurrentUserDBAOrOwner,
       effectiveInboxList,
