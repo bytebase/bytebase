@@ -39,7 +39,7 @@ export type Issue = {
   status: IssueStatus;
   type: IssueType;
   description: string;
-  assignee?: Principal;
+  assignee: Principal;
   subscriberIdList: PrincipalId[];
   payload: IssuePayload;
 };
@@ -53,7 +53,7 @@ export type IssueCreate = {
   name: string;
   type: IssueType;
   description: string;
-  assigneeId?: PrincipalId;
+  assigneeId: PrincipalId;
   payload: IssuePayload;
 };
 
