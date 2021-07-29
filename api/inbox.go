@@ -10,7 +10,6 @@ type InboxStatus string
 const (
 	UNREAD InboxStatus = "UNREAD"
 	READ   InboxStatus = "READ"
-	PINNED InboxStatus = "PINNED"
 )
 
 func (e InboxStatus) String() string {
@@ -19,8 +18,6 @@ func (e InboxStatus) String() string {
 		return "UNREAD"
 	case READ:
 		return "READ"
-	case PINNED:
-		return "PINNED"
 	}
 	return "UNKNOWN"
 }

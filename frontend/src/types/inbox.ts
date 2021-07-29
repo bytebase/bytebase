@@ -1,7 +1,7 @@
 import { Activity } from "./activity";
 import { InboxId, PrincipalId } from "./id";
 
-export type InboxStatus = "UNREAD" | "READ" | "PINNED";
+export type InboxStatus = "UNREAD" | "READ";
 
 export type InboxLevel = "INFO" | "WARNING" | "ERROR";
 
