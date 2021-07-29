@@ -184,7 +184,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, payload := range payloadList {
-			_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+			activity, err := s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
 				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 				ContainerId: issue.ID,
 				Type:        api.ActivityIssueFieldUpdate,
@@ -192,6 +192,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
+			}
+
+			if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID, api.INBOX_INFO); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to post activity to inbox after updating issue: %v", updatedIssue.Name)).SetInternal(err)
 			}
 		}
 
@@ -397,9 +401,13 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Type:        api.ActivityIssueCreate,
 		Payload:     string(bytes),
 	}
-	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+	activity, err := s.ActivityService.CreateActivity(context.Background(), activityCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+	}
+
+	if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID, api.INBOX_INFO); err != nil {
+		return nil, err
 	}
 
 	if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {
@@ -482,10 +490,56 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Comment:     comment,
 		Payload:     string(payload),
 	}
-	_, err = s.ActivityService.CreateActivity(context.Background(), activityCreate)
+	activity, err := s.ActivityService.CreateActivity(context.Background(), activityCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after changing the issue status: %v, error: %w", issue.Name, err)
 	}
 
+	if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID, api.INBOX_INFO); err != nil {
+		return nil, err
+	}
+
 	return updatedIssue, nil
+}
+
+func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, activity_id int, level api.InboxLevel) error {
+	if issue.CreatorId != api.SYSTEM_BOT_ID {
+		inboxCreate := &api.InboxCreate{
+			ReceiverId: issue.CreatorId,
+			ActivityId: activity_id,
+			Level:      level,
+		}
+		_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
+		if err != nil {
+			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorId, err)
+		}
+	}
+
+	if issue.AssigneeId != api.SYSTEM_BOT_ID && issue.AssigneeId != issue.CreatorId {
+		inboxCreate := &api.InboxCreate{
+			ReceiverId: issue.AssigneeId,
+			ActivityId: activity_id,
+			Level:      level,
+		}
+		_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
+		if err != nil {
+			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeId, err)
+		}
+	}
+
+	for _, subscriberId := range issue.SubscriberIdList {
+		if subscriberId != api.SYSTEM_BOT_ID && subscriberId != issue.CreatorId && subscriberId != issue.AssigneeId {
+			inboxCreate := &api.InboxCreate{
+				ReceiverId: subscriberId,
+				ActivityId: activity_id,
+				Level:      level,
+			}
+			_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
+			if err != nil {
+				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriberId, err)
+			}
+		}
+	}
+
+	return nil
 }
