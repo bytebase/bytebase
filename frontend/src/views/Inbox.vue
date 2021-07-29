@@ -5,7 +5,7 @@
       <BBTabFilter
         v-if="isCurrentUserDBAOrOwner"
         class="mx-2"
-        :tabList="['General', 'Membership']"
+        :tabList="['General', 'Members']"
         :selectedIndex="state.selectedIndex"
         @select-index="
           (index) => {
@@ -128,9 +128,9 @@ export default {
       return inboxList.filter((inbox: Inbox) => {
         if (
           (state.selectedIndex == GENERAL_TAB &&
-            inbox.activity.actionType.startsWith("bb.inbox.member.")) ||
+            inbox.activity.actionType.startsWith("bb.member.")) ||
           (state.selectedIndex == MEMBERSHIP_TAB &&
-            !inbox.activity.actionType.startsWith("bb.inbox.member."))
+            !inbox.activity.actionType.startsWith("bb.member."))
         ) {
           return false;
         }

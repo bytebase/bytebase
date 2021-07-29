@@ -9,11 +9,18 @@ import (
 type ActivityType string
 
 const (
+	// Issue related
 	ActivityIssueCreate              ActivityType = "bb.issue.create"
 	ActivityIssueCommentCreate       ActivityType = "bb.issue.comment.create"
 	ActivityIssueFieldUpdate         ActivityType = "bb.issue.field.update"
 	ActivityIssueStatusUpdate        ActivityType = "bb.issue.status.update"
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
+
+	// Member related
+	ActivityMemberCreate     ActivityType = "bb.member.create"
+	ActivityMemberRoleUpdate ActivityType = "bb.member.role.update"
+	ActivityMemberActivate   ActivityType = "bb.member.activate"
+	ActivityMemberDeactivate ActivityType = "bb.member.deactivate"
 )
 
 func (e ActivityType) String() string {
@@ -28,6 +35,14 @@ func (e ActivityType) String() string {
 		return "bb.issue.status.update"
 	case ActivityPipelineTaskStatusUpdate:
 		return "bb.pipeline.task.status.update"
+	case ActivityMemberCreate:
+		return "bb.member.create"
+	case ActivityMemberRoleUpdate:
+		return "bb.member.role.update"
+	case ActivityMemberActivate:
+		return "bb.member.activate"
+	case ActivityMemberDeactivate:
+		return "bb.member.deactivate"
 	}
 	return "bb.activity.unknown"
 }
@@ -37,12 +52,12 @@ func (e ActivityType) String() string {
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
 // convert to the expected struct there.
 type ActivityIssueCreatePayload struct {
-	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
 type ActivityIssueCommentCreatePayload struct {
-	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
@@ -50,14 +65,14 @@ type ActivityIssueFieldUpdatePayload struct {
 	FieldId  IssueFieldId `json:"fieldId"`
 	OldValue string       `json:"oldValue,omitempty"`
 	NewValue string       `json:"newValue,omitempty"`
-	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
 type ActivityIssueStatusUpdatePayload struct {
 	OldStatus IssueStatus `json:"oldStatus,omitempty"`
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
-	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
@@ -65,9 +80,35 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 	TaskId    int        `json:"taskId"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskStatus `json:"newStatus,omitempty"`
-	// This is used by inbox to display the issue name and avoid the join cost to fetch the name via container_id
+	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`
+}
+
+type ActivityMemberCreatePayload struct {
+	// Used by inbox to display info without paying the join cost
+	PrincipalId    int          `json:"principalId"`
+	PrincipalName  string       `json:"principalName"`
+	PrincipalEmail string       `json:"principalEmail"`
+	MemberStatus   MemberStatus `json:"memberStatus"`
+	Role           Role         `json:"role"`
+}
+
+type ActivityMemberRoleUpdatePayload struct {
+	// Used by inbox to display info without paying the join cost
+	PrincipalId    int    `json:"principalId"`
+	PrincipalName  string `json:"principalName"`
+	PrincipalEmail string `json:"principalEmail"`
+	OldRole        Role   `json:"oldRole"`
+	NewRole        Role   `json:"newRole"`
+}
+
+type ActivityMemberActivateDeactivatePayload struct {
+	// Used by inbox to display info without paying the join cost
+	PrincipalId    int    `json:"principalId"`
+	PrincipalName  string `json:"principalName"`
+	PrincipalEmail string `json:"principalEmail"`
+	Role           Role   `json:"role"`
 }
 
 type Activity struct {

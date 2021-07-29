@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -114,18 +115,44 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			role = api.Owner
 		}
 		memberCreate := &api.MemberCreate{
-			CreatorId:   api.SYSTEM_BOT_ID,
+			CreatorId:   user.ID,
 			Status:      api.Active,
 			Role:        role,
 			PrincipalId: user.ID,
 		}
 
-		_, err = s.MemberService.CreateMember(context.Background(), memberCreate)
+		member, err := s.MemberService.CreateMember(context.Background(), memberCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signup.Email))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
+		}
+
+		{
+			bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
+				PrincipalId:    member.PrincipalId,
+				PrincipalName:  user.Name,
+				PrincipalEmail: user.Email,
+				MemberStatus:   member.Status,
+				Role:           member.Role,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+			}
+			activity, err := s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+				CreatorId:   user.ID,
+				ContainerId: member.ID,
+				Type:        api.ActivityMemberCreate,
+				Payload:     string(bytes),
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create member: %d", member.ID)).SetInternal(err)
+			}
+
+			if err := s.PostInboxMemberActivity(context.Background(), member, activity.ID, api.INBOX_INFO); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
+			}
 		}
 
 		if err := GenerateTokensAndSetCookies(c, user, s.mode, s.secret); err != nil {
