@@ -826,7 +826,7 @@ CREATE TABLE inbox (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ', 'PINNED')),
+    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ')),
     `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARNING', 'ERROR'))
 );
 
