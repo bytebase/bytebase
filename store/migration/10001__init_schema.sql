@@ -823,7 +823,8 @@ CREATE TABLE inbox (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ', 'PINNED'))
+    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ', 'PINNED')),
+    `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARNING', 'ERROR'))
 );
 
 CREATE INDEX idx_inbox_receiver_id_activity_id_status ON inbox(receiver_id, activity_id, `status`);

@@ -112,13 +112,15 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 		INSERT INTO inbox (
 			receiver_id,
 			activity_id,
-			`+"`status`"+`
+			`+"`status`,"+`
+			`+"`level`"+`
 		)
-		VALUES (?, ?, 'UNREAD')
-		RETURNING id, receiver_id, activity_id, `+"`status`"+`
+		VALUES (?, ?, 'UNREAD', ?)
+		RETURNING id, receiver_id, activity_id, `+"`status`, `level`"+`
 	`,
 		create.ReceiverId,
 		create.ActivityId,
+		create.Level,
 	)
 
 	if err != nil {
@@ -134,6 +136,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 		&inbox.ReceiverId,
 		&activityId,
 		&inbox.Status,
+		&inbox.Level,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -165,6 +168,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 		    inbox.id,
 		    receiver_id,
 			`+"`status`,"+`
+			`+"`level`,"+`
 			activity.id,
 			activity.creator_id,
 		    activity.created_ts,
@@ -192,6 +196,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 			&inbox.ID,
 			&inbox.ReceiverId,
 			&inbox.Status,
+			&inbox.Level,
 			&inbox.Activity.ID,
 			&inbox.Activity.CreatorId,
 			&inbox.Activity.CreatedTs,
@@ -225,7 +230,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 		UPDATE inbox
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, receiver_id, activity_id, `+"`status`"+`
+		RETURNING id, receiver_id, activity_id, `+"`status`, `level`"+`
 	`,
 		args...,
 	)
@@ -242,6 +247,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 			&inbox.ReceiverId,
 			&activityId,
 			&inbox.Status,
+			&inbox.Level,
 		); err != nil {
 			return nil, FormatError(err)
 		}
