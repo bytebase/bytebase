@@ -1,6 +1,7 @@
 import { FieldId } from "../plugins";
-import { ActivityId, ContainerId, TaskId } from "./id";
+import { ActivityId, ContainerId, PrincipalId, TaskId } from "./id";
 import { IssueStatus } from "./issue";
+import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 
@@ -11,7 +12,13 @@ export type IssueActionType =
   | "bb.issue.status.update"
   | "bb.pipeline.task.status.update";
 
-export type ActionType = IssueActionType;
+export type MemberActionType =
+  | "bb.member.create"
+  | "bb.member.role.update"
+  | "bb.member.activate"
+  | "bb.member.deactivate";
+
+export type ActionType = IssueActionType | MemberActionType;
 
 export type ActionIssueCreatePayload = {
   issueName: string;
@@ -42,12 +49,38 @@ export type ActionTaskStatusUpdatePayload = {
   taskName: string;
 };
 
+export type ActionMemberCreatePayload = {
+  principalId: PrincipalId;
+  principalName: string;
+  principalEmail: string;
+  memberStatus: MemberStatus;
+  role: RoleType;
+};
+
+export type ActionMemberRoleUpdatePayload = {
+  principalId: PrincipalId;
+  principalName: string;
+  principalEmail: string;
+  oldRole: RoleType;
+  newRole: RoleType;
+};
+
+export type ActionMemberActivateDeactivatePayload = {
+  principalId: PrincipalId;
+  principalName: string;
+  principalEmail: string;
+  role: RoleType;
+};
+
 export type ActionPayloadType =
   | ActionIssueCreatePayload
   | ActionIssueCommentCreatePayload
   | ActionIssueFieldUpdatePayload
   | ActionIssueStatusUpdatePayload
-  | ActionTaskStatusUpdatePayload;
+  | ActionTaskStatusUpdatePayload
+  | ActionMemberCreatePayload
+  | ActionMemberRoleUpdatePayload
+  | ActionMemberActivateDeactivatePayload;
 
 export type Activity = {
   id: ActivityId;
