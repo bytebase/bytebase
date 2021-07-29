@@ -38,6 +38,9 @@ module.exports = {
         error: "var(--color-error)",
         "error-hover": "var(--color-error-hover)",
 
+        warning: "var(--color-warning)",
+        "warning-hover": "var(--color-warning-hover)",
+
         success: "var(--color-success)",
         "success-hover": "var(--color-success-hover)",
 
