@@ -65,9 +65,6 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 		if username == "" {
 			username = "root"
 		}
-		if port == "" {
-			port = "3306"
-		}
 		tlsConfig, err := tlsCfg.GetSslConfig()
 		if err != nil {
 			return fmt.Errorf("TlsConfig.GetSslConfig() got error: %v", err)
