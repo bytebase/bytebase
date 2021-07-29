@@ -797,6 +797,8 @@ CREATE TABLE activity (
 
 CREATE INDEX idx_activity_container_id ON activity(container_id);
 
+CREATE INDEX idx_activity_created_ts ON activity(created_ts);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES

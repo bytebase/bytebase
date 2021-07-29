@@ -179,7 +179,8 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 		    activity.comment,
 			activity.payload
 		FROM inbox, activity
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+`
+		ORDER BY activity.created_ts DESC`,
 		args...,
 	)
 	if err != nil {

@@ -86,6 +86,7 @@ type InboxPatch struct {
 
 type InboxService interface {
 	CreateInbox(ctx context.Context, create *InboxCreate) (*Inbox, error)
+	// Find the inbox list and return most recent created item first.
 	FindInboxList(ctx context.Context, find *InboxFind) ([]*Inbox, error)
 	FindInbox(ctx context.Context, find *InboxFind) (*Inbox, error)
 	PatchInbox(ctx context.Context, patch *InboxPatch) (*Inbox, error)
