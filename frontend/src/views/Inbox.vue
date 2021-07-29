@@ -33,11 +33,33 @@
     </div>
     <div>
       <div class="mt-6 mx-6 space-y-2">
-        <div class="text-lg leading-6 font-medium text-main mb-4">Unread</div>
+        <div
+          class="
+            text-lg
+            leading-6
+            font-medium
+            text-main
+            pb-4
+            border-b border-block-border
+          "
+        >
+          Unread
+        </div>
         <InboxList :inboxList="effectiveInboxList(state.unreadList)" />
       </div>
-      <div class="mt-6 mx-6">
-        <div class="text-lg leading-6 font-medium text-main mb-4">Read</div>
+      <div class="mt-6 mx-6 space-y-2">
+        <div
+          class="
+            text-lg
+            leading-6
+            font-medium
+            text-main
+            pb-4
+            border-b border-block-border
+          "
+        >
+          Read
+        </div>
         <InboxList :inboxList="effectiveInboxList(state.readList)" />
       </div>
     </div>
