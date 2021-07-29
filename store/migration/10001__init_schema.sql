@@ -830,7 +830,9 @@ CREATE TABLE inbox (
     `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARNING', 'ERROR'))
 );
 
-CREATE INDEX idx_inbox_receiver_id_activity_id_status ON inbox(receiver_id, activity_id, `status`);
+CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON inbox(receiver_id, `status`);
 
 INSERT INTO
     sqlite_sequence (name, seq)
