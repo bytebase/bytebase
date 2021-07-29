@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/bin/bb/connect"
+	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -287,6 +290,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backup.Database = database
 
+		if err := s.BackupDatabase(backup); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup %q.", backup.Name)).SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create backup response").SetInternal(err)
@@ -383,6 +390,29 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	database.DataSourceList = []*api.DataSource{}
+
+	return nil
+}
+
+// BackupDatabase will take a backup of a database.
+func (s *Server) BackupDatabase(backup *api.Backup) error {
+	instance := backup.Database.Instance
+	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, backup.Database.Name, nil /* tlsConfig */)
+	if err != nil {
+		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
+	}
+	defer conn.Close()
+	dp := mysqldump.New(conn)
+
+	f, err := os.Create(backup.Path)
+	if err != nil {
+		return fmt.Errorf("Failed to open backup path: %s", backup.Path)
+	}
+	defer f.Close()
+
+	if err := dp.Dump(backup.Database.Name, f, false /* schemaOnly */); err != nil {
+		return err
+	}
 
 	return nil
 }

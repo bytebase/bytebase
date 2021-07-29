@@ -14,9 +14,13 @@ type MysqlConnect struct {
 	DB *sql.DB
 }
 
-// New creates a new MySQL connection.
+// NewMysql creates a new MySQL connection.
 func NewMysql(username, password, hostname, port, database string, tlsCfg *tls.Config) (*MysqlConnect, error) {
-	dns := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, database)
+	portPart := ""
+	if port != "" {
+		portPart = fmt.Sprintf(":%s", port)
+	}
+	dns := fmt.Sprintf("%s:%s@tcp(%s%s)/%s", username, password, hostname, portPart, database)
 	if tlsCfg != nil {
 		mysql.RegisterTLSConfig("custom", tlsCfg)
 		dns += "?tls=custom"
