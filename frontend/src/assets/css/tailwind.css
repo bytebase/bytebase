@@ -33,6 +33,11 @@
   /* gray-400 */
   --color-control-placeholder: #a1a1aa;
 
+  /* yellow-600 */
+  --color-warning: #d97706;
+  /* yellow-700 */
+  --color-warning-hover: #b45309;
+
   /* red-600 */
   --color-error: #dc2626;
   /* red-700 */
