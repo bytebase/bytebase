@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  BackupCreate,
   Database,
   DatabaseId,
   ResourceIdentifier,
@@ -44,6 +45,33 @@ const getters = {
 };
 
 const actions = {
+  async createBackup(
+    { commit, rootGetters }: any,
+    { databaseId, newBackup }: { databaseId: DatabaseId; newBackup: BackupCreate }
+  ) {
+    const data = (
+      await axios.post(`/api/database/${newBackup.databaseId}/backup`, {
+        data: {
+          type: "BackupCreate",
+          attributes: newBackup,
+        },
+      })
+    ).data;
+    const createdBackup: Backup = convert(
+      data.data,
+      data.included,
+      rootGetters
+    );
+
+    commit("setBackupByDatabaseIdAndBackupName", {
+      databaseId: databaseId,
+      backupName: createdBackup.name,
+      backup: createdBackup
+    });
+
+    return createdBackup;
+  },
+
   async fetchBackupListByDatabaseId(
     { commit, rootGetters }: any,
     databaseId: DatabaseId
@@ -70,6 +98,31 @@ const mutations = {
     }
   ) {
     state.backupListByDatabaseId.set(databaseId, backupList);
+  },
+
+  setBackupByDatabaseIdAndBackupName(
+    state: BackupState,
+    {
+      databaseId,
+      backupName,
+      backup,
+    }: {
+      databaseId: DatabaseId;
+      backupName: string;
+      backup: Backup;
+    }
+  ) {
+    const list = state.backupListByDatabaseId.get(databaseId);
+    if (list) {
+      const i = list.findIndex((item: Backup) => item.name == backupName);
+      if (i != -1) {
+        list[i] = backup;
+      } else {
+        list.push(backup);
+      }
+    } else {
+      state.backupListByDatabaseId.set(databaseId, [backup]);
+    }
   },
 };
 

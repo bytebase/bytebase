@@ -28,9 +28,9 @@
         />
       </div>
       <div class="sm:col-span-1">
-        <label> Click </label>
+        <label> Backup </label>
         <button
-          @click.prevent="testConnection"
+          @click.prevent="createBackup"
           type="button"
           class="btn-normal whitespace-nowrap items-center"
         >
@@ -52,7 +52,7 @@ import { computed, watchEffect, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { v1 as uuidv1 } from "uuid";
-import { Backup, Database } from "../types";
+import { BackupCreate, Database } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 
 interface LocalState {
@@ -94,10 +94,28 @@ export default {
       (state as any)[field] = value;
     };
 
+    const createBackup = () => {
+      // Create backup
+      const newBackup: BackupCreate = {
+        databaseId: props.database.id!,
+        name: state.backupName!,
+        status: "PENDING_CREATE",
+        type: "MANUAL",
+        storageBackend: "LOCAL",
+        path: state.backupPath!,
+        comment: "",
+      };
+      store.dispatch("backup/createBackup", {
+        databaseId: props.database.id,
+        newBackup: newBackup
+      });
+    };
+
     return {
       state,
       backupList,
       updateInstance,
+      createBackup,
     };
 },
 }
