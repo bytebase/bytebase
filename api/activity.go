@@ -106,7 +106,6 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 }
 
 type ActivityMemberCreatePayload struct {
-	// Used by inbox to display info without paying the join cost
 	PrincipalId    int          `json:"principalId"`
 	PrincipalName  string       `json:"principalName"`
 	PrincipalEmail string       `json:"principalEmail"`
@@ -115,7 +114,6 @@ type ActivityMemberCreatePayload struct {
 }
 
 type ActivityMemberRoleUpdatePayload struct {
-	// Used by inbox to display info without paying the join cost
 	PrincipalId    int    `json:"principalId"`
 	PrincipalName  string `json:"principalName"`
 	PrincipalEmail string `json:"principalEmail"`
@@ -124,7 +122,6 @@ type ActivityMemberRoleUpdatePayload struct {
 }
 
 type ActivityMemberActivateDeactivatePayload struct {
-	// Used by inbox to display info without paying the join cost
 	PrincipalId    int    `json:"principalId"`
 	PrincipalName  string `json:"principalName"`
 	PrincipalEmail string `json:"principalEmail"`

@@ -1,81 +1,62 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
-  <div class="my-2 space-y-2 divide-y divide-block-border">
-    <div class="flex items-center justify-between">
-      <BBTabFilter
-        v-if="isCurrentUserDBAOrOwner"
-        class="mx-2"
-        :tabList="tabItemList.map((item) => item.name)"
-        :selectedIndex="state.selectedIndex"
-        @select-index="
-          (index) => {
-            selectTab(index);
-          }
+  <div class="space-y-4">
+    <div class="mt-6 mx-6 space-y-2">
+      <div
+        class="
+          flex
+          items-center
+          justify-between
+          pb-2
+          border-b border-block-border
         "
-      />
-      <button
-        type="button"
-        class="mr-4 btn-normal"
-        @click.prevent="markAllAsRead"
       >
-        <svg
-          class="-ml-1 mr-2 h-5 w-5 text-control-light"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-          ></path>
-        </svg>
-        <span>Mark all as read</span>
-      </button>
-    </div>
-    <div>
-      <div class="mt-6 mx-6 space-y-2">
-        <div
-          class="
-            text-lg
-            leading-6
-            font-medium
-            text-main
-            pb-4
-            border-b border-block-border
-          "
-        >
-          Unread
-        </div>
-        <InboxList :inboxList="effectiveInboxList(state.unreadList)" />
+        <div class="text-lg leading-6 font-medium text-main">Unread</div>
+        <button type="button" class="btn-normal" @click.prevent="markAllAsRead">
+          <svg
+            class="-ml-1 mr-2 h-5 w-5 text-control-light"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            ></path>
+          </svg>
+          <span>Mark all as read</span>
+        </button>
       </div>
-      <div class="mt-6 mx-6 space-y-2">
-        <div
-          class="
-            text-lg
-            leading-6
-            font-medium
-            text-main
-            pb-4
-            border-b border-block-border
-          "
-        >
-          Read
-        </div>
-        <InboxList
-          class="opacity-70"
-          :inboxList="effectiveInboxList(state.readList)"
-        />
-        <div class="mt-2 flex justify-end">
-          <button type="button" class="normal-link" @click.prevent="viewOlder">
-            View older
-          </button>
-        </div>
+      <InboxList :inboxList="state.unreadList" />
+    </div>
+    <div class="mt-6 mx-6 space-y-2">
+      <div
+        class="
+          text-lg
+          leading-6
+          font-medium
+          text-main
+          pb-2
+          border-b border-block-border
+        "
+      >
+        Read
+      </div>
+      <InboxList class="opacity-70" :inboxList="state.readList" />
+      <div class="mt-2 flex justify-end">
+        <button type="button" class="normal-link" @click.prevent="viewOlder">
+          View older
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import InboxList from "../components/InboxList.vue";
 import { Inbox, UNKNOWN_ID } from "../types";
@@ -86,21 +67,7 @@ import { useRouter } from "vue-router";
 // And each time clicking "View older" will extend 7 days further.
 const READ_INBOX_DURATION_STEP = 3600 * 24 * 7;
 
-const ISSUE_TAB = 0;
-const MEMBER_TAB = 1;
-
-type TabItem = {
-  name: string;
-  hash: string;
-};
-
-const tabItemList: TabItem[] = [
-  { name: "Issue", hash: "issue" },
-  { name: "Member", hash: "member" },
-];
-
 interface LocalState {
-  selectedIndex: number;
   readList: Inbox[];
   unreadList: Inbox[];
   readCreatedAfterTs: number;
@@ -114,7 +81,6 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
-      selectedIndex: 0,
       readList: [],
       unreadList: [],
       readCreatedAfterTs:
@@ -123,32 +89,6 @@ export default {
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    const selectTabOnHash = () => {
-      if (router.currentRoute.value.hash) {
-        for (let i = 0; i < tabItemList.length; i++) {
-          if (tabItemList[i].hash == router.currentRoute.value.hash.slice(1)) {
-            selectTab(i);
-            break;
-          }
-        }
-      } else {
-        selectTab(ISSUE_TAB);
-      }
-    };
-
-    const selectTab = (index: number) => {
-      state.selectedIndex = index;
-      router.replace({
-        name: "workspace.inbox",
-        hash: "#" + tabItemList[index].hash,
-        query: router.currentRoute.value.query,
-      });
-    };
-
-    onMounted(() => {
-      selectTabOnHash();
-    });
 
     const prepareInboxList = () => {
       // It will also be called when user logout
@@ -174,24 +114,6 @@ export default {
     };
 
     watchEffect(prepareInboxList);
-
-    const isCurrentUserDBAOrOwner = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
-    const effectiveInboxList = (inboxList: Inbox[]) => {
-      return inboxList.filter((inbox: Inbox) => {
-        if (
-          (state.selectedIndex == ISSUE_TAB &&
-            inbox.activity.actionType.startsWith("bb.member.")) ||
-          (state.selectedIndex == MEMBER_TAB &&
-            !inbox.activity.actionType.startsWith("bb.member."))
-        ) {
-          return false;
-        }
-        return true;
-      });
-    };
 
     const markAllAsRead = () => {
       var count = state.unreadList.length;
@@ -233,11 +155,7 @@ export default {
     };
 
     return {
-      tabItemList,
-      selectTab,
       state,
-      isCurrentUserDBAOrOwner,
-      effectiveInboxList,
       markAllAsRead,
       viewOlder,
     };
