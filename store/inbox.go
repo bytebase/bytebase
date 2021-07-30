@@ -214,6 +214,9 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 	if v := find.ReceiverId; v != nil {
 		where, args = append(where, "receiver_id = ?"), append(args, *v)
 	}
+	if v := find.ReadCreatedAfterTs; v != nil {
+		where, args = append(where, "(status != 'READ' OR created_ts >= ?)"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 

@@ -64,6 +64,8 @@ type InboxFind struct {
 
 	// Domain specific fields
 	ReceiverId *int
+	// If specified, then it will only fetch "UNREAD" item or "READ" item whose activity created after "CreatedAfterTs"
+	ReadCreatedAfterTs *int64
 }
 
 func (find *InboxFind) String() string {

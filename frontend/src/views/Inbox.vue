@@ -64,6 +64,11 @@
           class="opacity-70"
           :inboxList="effectiveInboxList(state.readList)"
         />
+        <div class="mt-2 flex justify-end">
+          <button type="button" class="normal-link" @click.prevent="viewOlder">
+            View older
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -76,6 +81,10 @@ import InboxList from "../components/InboxList.vue";
 import { Inbox, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
+
+// We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
+// And each time clicking "View older" will extend 7 days further.
+const READ_INBOX_DURATION_STEP = 3600 * 24 * 7;
 
 const ISSUE_TAB = 0;
 const MEMBER_TAB = 1;
@@ -94,6 +103,7 @@ interface LocalState {
   selectedIndex: number;
   readList: Inbox[];
   unreadList: Inbox[];
+  readCreatedAfterTs: number;
 }
 
 export default {
@@ -107,6 +117,9 @@ export default {
       selectedIndex: 0,
       readList: [],
       unreadList: [],
+      readCreatedAfterTs:
+        parseInt(router.currentRoute.value.query.created as string) ||
+        Math.ceil(Date.now() / 1000) - READ_INBOX_DURATION_STEP,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -129,6 +142,7 @@ export default {
       router.replace({
         name: "workspace.inbox",
         hash: "#" + tabItemList[index].hash,
+        query: router.currentRoute.value.query,
       });
     };
 
@@ -140,7 +154,10 @@ export default {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
         store
-          .dispatch("inbox/fetchInboxListByUser", currentUser.value.id)
+          .dispatch("inbox/fetchInboxListByUser", {
+            userId: currentUser.value.id,
+            readCreatedAfterTs: state.readCreatedAfterTs,
+          })
           .then((list: Inbox[]) => {
             state.readList = [];
             state.unreadList = [];
@@ -200,6 +217,21 @@ export default {
       state.unreadList = [];
     };
 
+    const viewOlder = () => {
+      state.readCreatedAfterTs -= READ_INBOX_DURATION_STEP;
+      router
+        .replace({
+          name: "workspace.inbox",
+          query: {
+            ...router.currentRoute.value.query,
+            created: state.readCreatedAfterTs,
+          },
+        })
+        .then(() => {
+          prepareInboxList();
+        });
+    };
+
     return {
       tabItemList,
       selectTab,
@@ -207,6 +239,7 @@ export default {
       isCurrentUserDBAOrOwner,
       effectiveInboxList,
       markAllAsRead,
+      viewOlder,
     };
   },
 };

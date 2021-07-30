@@ -35,12 +35,6 @@ function convert(
   };
 }
 
-function convertSummary(inboxSummary: ResourceObject): InboxSummary {
-  return {
-    ...(inboxSummary.attributes as InboxSummary),
-  };
-}
-
 const state: () => InboxState = () => ({
   inboxListByUser: new Map(),
   inboxSummaryByUser: new Map(),
@@ -68,9 +62,16 @@ const getters = {
 const actions = {
   async fetchInboxListByUser(
     { commit, rootGetters }: any,
-    userId: PrincipalId
+    {
+      userId,
+      readCreatedAfterTs,
+    }: { userId: PrincipalId; readCreatedAfterTs?: number }
   ) {
-    const data = (await axios.get(`/api/inbox?user=${userId}`)).data;
+    var url = `/api/inbox?user=${userId}`;
+    if (readCreatedAfterTs) {
+      url += `&created=${readCreatedAfterTs}`;
+    }
+    const data = (await axios.get(url)).data;
     const inboxList = data.data.map((inbox: ResourceObject) => {
       return convert(inbox, data.included, rootGetters);
     });
