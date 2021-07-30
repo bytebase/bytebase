@@ -406,7 +406,7 @@ func (s *Server) BackupDatabase(backup *api.Backup) error {
 
 	f, err := os.Create(backup.Path)
 	if err != nil {
-		return fmt.Errorf("Failed to open backup path: %s", backup.Path)
+		return fmt.Errorf("failed to open backup path: %s", backup.Path)
 	}
 	defer f.Close()
 
