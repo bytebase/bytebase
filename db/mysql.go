@@ -97,6 +97,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer indexRows.Close()
 
 	// dbName/tableName -> indexList map
 	indexMap := make(map[string][]DBIndex)
@@ -136,7 +137,6 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			indexMap[key] = append(list, index)
 		}
 	}
-	indexRows.Close()
 
 	// Query column info
 	columnWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
@@ -158,6 +158,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer columnRows.Close()
 
 	// dbName/tableName -> columnList map
 	columnMap := make(map[string][]DBColumn)
@@ -195,7 +196,6 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			columnMap[key] = append(list, column)
 		}
 	}
-	columnRows.Close()
 
 	// Query table info
 	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
@@ -220,6 +220,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer tableRows.Close()
 
 	// dbName -> tableList map
 	tableMap := make(map[string][]DBTable)
@@ -256,7 +257,6 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			tableMap[dbName] = append(list, table)
 		}
 	}
-	tableRows.Close()
 
 	// Query db info
 	where := fmt.Sprintf("SCHEMA_NAME NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
