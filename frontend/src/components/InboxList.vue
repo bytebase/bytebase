@@ -89,18 +89,14 @@ import {
   ActionIssueCreatePayload,
   ActionIssueFieldUpdatePayload,
   ActionIssueStatusUpdatePayload,
-  ActionMemberActivateDeactivatePayload,
-  ActionMemberCreatePayload,
-  ActionMemberRoleUpdatePayload,
   ActionTaskStatusUpdatePayload,
   Activity,
   Inbox,
-  Principal,
 } from "../types";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash";
-import { issueActivityActionSentence, roleName } from "../utils";
+import { issueActivityActionSentence } from "../utils";
 
 export default {
   name: "InboxList",
@@ -123,18 +119,13 @@ export default {
       } else if (activity.actionType == "bb.pipeline.task.status.update") {
         const payload = activity.payload as ActionTaskStatusUpdatePayload;
         return `/issue/${activity.containerId}?task=${payload.taskId}`;
-      } else if (activity.actionType.startsWith("bb.member.")) {
-        return `/setting/member`;
       }
 
       return "";
     };
 
     const showCreator = (activity: Activity): boolean => {
-      return (
-        activity.actionType.startsWith("bb.issue.") ||
-        activity.actionType.startsWith("bb.member.")
-      );
+      return activity.actionType.startsWith("bb.issue.");
     };
 
     const actionSentence = (activity: Activity): string => {
@@ -187,47 +178,6 @@ export default {
         return `Task '${payload.taskName}' ${actionStr} - '${
           payload?.issueName || ""
         }'`;
-      } else if (activity.actionType.startsWith("bb.member.")) {
-        switch (activity.actionType) {
-          case "bb.member.create": {
-            const payload = activity.payload as ActionMemberCreatePayload;
-            if (payload.principalId == activity.creator.id) {
-              return `(${payload.principalEmail}) joined as a ${roleName(
-                payload.role
-              )}`;
-            }
-            var verb = "added";
-            if (payload.memberStatus == "INVITED") {
-              verb = "invited";
-            }
-            return `${verb} ${payload.principalName} (${
-              payload.principalEmail
-            }) as a ${roleName(payload.role)}`;
-          }
-          case "bb.member.role.update": {
-            const payload = activity.payload as ActionMemberRoleUpdatePayload;
-            return `changed ${payload.principalName} (${
-              payload.principalEmail
-            }) from ${roleName(payload.oldRole)} to ${roleName(
-              payload.newRole
-            )}`;
-          }
-          case "bb.member.activate": {
-            const payload =
-              activity.payload as ActionMemberActivateDeactivatePayload;
-            return `activated ${roleName(payload.role)} ${
-              payload.principalName
-            } (${payload.principalEmail})`;
-          }
-          case "bb.member.deactivate": {
-            const payload =
-              activity.payload as ActionMemberActivateDeactivatePayload;
-            return `deactivated ${roleName(payload.role)} ${
-              payload.principalName
-            } (${payload.principalEmail})`;
-          }
-        }
-        return "";
       }
 
       return "";

@@ -53,7 +53,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
-			activity, err := s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+			_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
 				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 				ContainerId: member.ID,
 				Type:        api.ActivityMemberCreate,
@@ -62,10 +62,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating member: %d", member.ID)).SetInternal(err)
-			}
-
-			if err := s.PostInboxMemberActivity(context.Background(), member, activity.ID); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}
 
@@ -146,7 +142,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", updatedMember.PrincipalId)).SetInternal(err)
 			}
 
-			var activity *api.Activity
 			if memberPatch.Role != nil {
 				bytes, err := json.Marshal(api.ActivityMemberRoleUpdatePayload{
 					PrincipalId:    updatedMember.PrincipalId,
@@ -158,7 +153,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 				}
-				createdActivity, err := s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+				_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 					ContainerId: updatedMember.ID,
 					Type:        api.ActivityMemberRoleUpdate,
@@ -167,7 +162,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
-				activity = createdActivity
 			} else if memberPatch.RowStatus != nil {
 				bytes, err := json.Marshal(api.ActivityMemberActivateDeactivatePayload{
 					PrincipalId:    updatedMember.PrincipalId,
@@ -182,7 +176,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if *memberPatch.RowStatus == "ARCHIVED" {
 					theType = api.ActivityMemberDeactivate
 				}
-				createdActivity, err := s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+				_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 					ContainerId: updatedMember.ID,
 					Type:        theType,
@@ -192,11 +186,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
-				activity = createdActivity
-			}
-
-			if err := s.PostInboxMemberActivity(context.Background(), updatedMember, activity.ID); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}
 
@@ -228,31 +217,6 @@ func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Memb
 	member.Principal, err = s.ComposePrincipalById(context.Background(), member.PrincipalId)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// Post member activity to owner inbox
-func (s *Server) PostInboxMemberActivity(ctx context.Context, member *api.Member, activity_id int) error {
-	role := api.Owner
-	memberFind := &api.MemberFind{
-		Role: &role,
-	}
-	list, err := s.MemberService.FindMemberList(context.Background(), memberFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch owner member list").SetInternal(err)
-	}
-
-	for _, member := range list {
-		inboxCreate := &api.InboxCreate{
-			ReceiverId: member.PrincipalId,
-			ActivityId: activity_id,
-		}
-		_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
-		if err != nil {
-			return fmt.Errorf("failed to post activity to owner inbox: %d, error: %w", member.PrincipalId, err)
-		}
 	}
 
 	return nil
