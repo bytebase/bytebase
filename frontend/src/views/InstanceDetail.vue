@@ -20,7 +20,6 @@
         <div class="mb-4 flex items-center justify-between">
           <div class="inline-flex space-x-2">
             <div class="text-lg leading-6 font-medium text-main">Databases</div>
-            <BBButtonAdd v-if="allowEdit" @add="tryAddDatabase" />
           </div>
           <button
             v-if="allowEdit"
@@ -206,16 +205,6 @@ export default {
       );
     });
 
-    const tryAddDatabase = () => {
-      router.push({
-        name: "workspace.database.create",
-        query: {
-          environment: instance.value.environment.id,
-          instance: instance.value.id,
-        },
-      });
-    };
-
     const doArchive = () => {
       store
         .dispatch("instance/patchInstance", {
@@ -303,7 +292,6 @@ export default {
       instance,
       databaseList,
       allowEdit,
-      tryAddDatabase,
       doArchive,
       doRestore,
       doCreateMigrationSchema,
