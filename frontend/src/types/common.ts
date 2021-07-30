@@ -93,7 +93,7 @@ export type ResourceType =
   | "STAGE"
   | "TASK"
   | "ACTIVITY"
-  | "MESSAGE"
+  | "INBOX"
   | "BOOKMARK"
   | "VCS"
   | "REPOSITORY";
@@ -152,6 +152,7 @@ export const unknown = (
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
+    approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
   };
 
   const UNKNOWN_PROJECT: Project = {
@@ -244,6 +245,7 @@ export const unknown = (
     status: "DONE",
     type: "bb.issue.general",
     description: "",
+    assignee: UNKNOWN_PRINCIPAL,
     subscriberIdList: [],
     payload: {},
   };
@@ -278,26 +280,21 @@ export const unknown = (
 
   const UNKNOWN_ACTIVITY: Activity = {
     id: UNKNOWN_ID,
-    containerId: UNKNOWN_ID,
-    createdTs: 0,
-    updatedTs: 0,
-    actionType: "bb.issue.create",
     creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    containerId: UNKNOWN_ID,
+    actionType: "bb.issue.create",
+    level: "INFO",
     comment: "<<Unknown comment>>",
   };
 
-  const UNKNOWN_MESSAGE: Message = {
+  const UNKNOWN_INBOX: Inbox = {
     id: UNKNOWN_ID,
-    containerId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    type: "bb.message.issue.assign",
-    status: "CONSUMED",
-    description: "",
-    receiver: UNKNOWN_PRINCIPAL,
+    receiver_id: UNKNOWN_ID,
+    activity: UNKNOWN_ACTIVITY,
+    status: "READ",
   };
 
   const UNKNOWN_BOOKMARK: Bookmark = {
@@ -367,8 +364,8 @@ export const unknown = (
       return UNKNOWN_TASK;
     case "ACTIVITY":
       return UNKNOWN_ACTIVITY;
-    case "MESSAGE":
-      return UNKNOWN_MESSAGE;
+    case "INBOX":
+      return UNKNOWN_INBOX;
     case "BOOKMARK":
       return UNKNOWN_BOOKMARK;
     case "VCS":
@@ -395,7 +392,7 @@ export const empty = (
   | Stage
   | Task
   | Activity
-  | Message
+  | Inbox
   | Bookmark
   | VCS
   | Repository => {
@@ -431,6 +428,7 @@ export const empty = (
     rowStatus: "NORMAL",
     name: "",
     order: 0,
+    approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
   };
 
   const EMPTY_PROJECT: Project = {
@@ -523,6 +521,7 @@ export const empty = (
     status: "DONE",
     type: "bb.issue.general",
     description: "",
+    assignee: EMPTY_PRINCIPAL,
     subscriberIdList: [],
     payload: {},
   };
@@ -557,26 +556,21 @@ export const empty = (
 
   const EMPTY_ACTIVITY: Activity = {
     id: EMPTY_ID,
-    containerId: EMPTY_ID,
-    createdTs: 0,
-    updatedTs: 0,
-    actionType: "bb.issue.create",
     creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
     updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    containerId: EMPTY_ID,
+    actionType: "bb.issue.create",
+    level: "INFO",
     comment: "",
   };
 
-  const EMPTY_MESSAGE: Message = {
+  const EMPTY_INBOX: Inbox = {
     id: EMPTY_ID,
-    containerId: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    type: "bb.message.issue.assign",
-    status: "DELIVERED",
-    description: "",
-    receiver: EMPTY_PRINCIPAL,
+    receiver_id: EMPTY_ID,
+    activity: EMPTY_ACTIVITY,
+    status: "READ",
   };
 
   const EMPTY_BOOKMARK: Bookmark = {
@@ -646,8 +640,8 @@ export const empty = (
       return EMPTY_TASK;
     case "ACTIVITY":
       return EMPTY_ACTIVITY;
-    case "MESSAGE":
-      return EMPTY_MESSAGE;
+    case "INBOX":
+      return EMPTY_INBOX;
     case "BOOKMARK":
       return EMPTY_BOOKMARK;
     case "VCS":
