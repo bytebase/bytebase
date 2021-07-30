@@ -23,6 +23,14 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			}
 			inboxFind.ReceiverId = &userId
 		}
+		createdAfterStr := c.QueryParams().Get("created")
+		if createdAfterStr != "" {
+			createdTs, err := strconv.ParseInt(createdAfterStr, 10, 64)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter created is not a number: %s", createdAfterStr)).SetInternal(err)
+			}
+			inboxFind.ReadCreatedAfterTs = &createdTs
+		}
 		list, err := s.InboxService.FindInboxList(context.Background(), inboxFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch inbox list").SetInternal(err)
