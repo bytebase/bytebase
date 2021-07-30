@@ -6,6 +6,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        `level`,
         payload
     )
 VALUES
@@ -15,6 +16,7 @@ VALUES
         1,
         13001,
         'bb.issue.create',
+        'INFO',
         '{"issueName":"Hello world!"}'
     );
 
@@ -25,6 +27,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        `level`,
         `comment`,
         payload
     )
@@ -35,6 +38,7 @@ VALUES
         101,
         13001,
         'bb.issue.comment.create',
+        'INFO',
         'Welcome!',
         '{"issueName":"Hello world!"}'
     );
@@ -46,6 +50,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        `level`,
         `comment`,
         payload
     )
@@ -56,6 +61,7 @@ VALUES
         102,
         13001,
         'bb.issue.comment.create',
+        'INFO',
         'Let''s rock!',
         '{"issueName":"Hello world!"}'
     );
@@ -67,6 +73,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        `level`,
         `comment`,
         payload
     )
@@ -77,6 +84,7 @@ VALUES
         103,
         13001,
         'bb.issue.comment.create',
+        'INFO',
         'Go fish!',
         '{"issueName":"Hello world!"}'
     );
@@ -91,6 +99,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         payload
     )
 VALUES
@@ -102,6 +111,7 @@ VALUES
         1624873710,
         13002,
         'bb.issue.create',
+        'INFO',
         '{"issueName":"Create product table"}'
     );
 
@@ -114,6 +124,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -126,6 +137,7 @@ VALUES
         1624873710,
         13002,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11002,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create product table","taskName":"Add initial schema"}'
     );
@@ -139,6 +151,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -151,6 +164,7 @@ VALUES
         1624873710,
         13002,
         'bb.pipeline.task.status.update',
+        'INFO',
         'Established baseline version %s for database ''shop''',
         '{"taskId":11002,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
@@ -164,6 +178,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -176,6 +191,7 @@ VALUES
         1624873710,
         13002,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11003,"oldStatus":"PENDING","newStatus":"RUNNING"}'
     );
@@ -189,6 +205,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -201,6 +218,7 @@ VALUES
         1624873710,
         13002,
         'bb.pipeline.task.status.update',
+        'INFO',
         'Established baseline version %s for database ''shop''',
         '{"taskId":11003,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
@@ -214,6 +232,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         payload
     )
 VALUES
@@ -225,6 +244,7 @@ VALUES
         1624873710,
         13002,
         'bb.issue.field.update',
+        'INFO',
         '{"fieldId":"3","oldValue":"1","newValue":"101","issueName":"Create product table"}'
     );
 
@@ -238,6 +258,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         payload
     )
 VALUES
@@ -249,6 +270,7 @@ VALUES
         1624873710,
         13003,
         'bb.issue.create',
+        'INFO',
         '{"issueName":"CREATE a new TABLE ''tbl1''"}'
     );
 
@@ -260,6 +282,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -270,6 +293,7 @@ VALUES
         1,
         13003,
         'bb.pipeline.task.status.update',
+        'ERROR',
         'table "tbl1" already exists',
         '{"taskId":11006,"oldStatus":"RUNNING","newStatus":"FAILED","issueName":"Create a new table ''tbl1''","taskName":"Update testdb_dev"}'
     );
@@ -281,6 +305,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        `level`,
         payload
     )
 VALUES
@@ -290,6 +315,7 @@ VALUES
         102,
         13003,
         'bb.issue.status.update',
+        'INFO',
         '{"oldStatus":"OPEN","newStatus":"CANCELED","issueName":"Create a new table ''tbl1''"}'
     );
 
@@ -302,6 +328,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -313,6 +340,7 @@ VALUES
         1624865387,
         13004,
         'bb.issue.create',
+        'INFO',
         '',
         '{"issueName":"Create user, post, comment table for dev environment"}'
     );
@@ -325,6 +353,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -336,6 +365,7 @@ VALUES
         1624865388,
         13004,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11008,"oldStatus":"PENDING","newStatus":"RUNNING"}'
     );
@@ -348,6 +378,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -359,6 +390,7 @@ VALUES
         1624865388,
         13004,
         'bb.pipeline.task.status.update',
+        'INFO',
         'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11008,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
@@ -371,6 +403,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -382,6 +415,7 @@ VALUES
         1624865388,
         13004,
         'bb.issue.status.update',
+        'INFO',
         '',
         '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for dev environment"}'
     );
@@ -395,6 +429,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -406,6 +441,7 @@ VALUES
         1624866790,
         13005,
         'bb.issue.create',
+        'INFO',
         '',
         '{"issueName":"Create user, post, comment table for integration environment"}'
     );
@@ -418,6 +454,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -429,6 +466,7 @@ VALUES
         1624866791,
         13005,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11009,"oldStatus":"PENDING","newStatus":"RUNNING"}'
     );
@@ -441,6 +479,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -452,6 +491,7 @@ VALUES
         1624866791,
         13005,
         'bb.pipeline.task.status.update',
+        'INFO',
         'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11009,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
@@ -464,6 +504,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -475,6 +516,7 @@ VALUES
         1624866791,
         13005,
         'bb.issue.status.update',
+        'INFO',
         '',
         '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for integration environment"}'
     );
@@ -488,6 +530,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -499,6 +542,7 @@ VALUES
         1624868407,
         13006,
         'bb.issue.create',
+        'INFO',
         '',
         '{"issueName":"Create user, post, comment table for staging environment"}'
     );
@@ -511,6 +555,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -522,6 +567,7 @@ VALUES
         1624868408,
         13006,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11010,"oldStatus":"PENDING","newStatus":"RUNNING"}'
     );
@@ -534,6 +580,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -545,6 +592,7 @@ VALUES
         1624868408,
         13006,
         'bb.pipeline.task.status.update',
+        'INFO',
         'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11010,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
@@ -557,6 +605,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -568,6 +617,7 @@ VALUES
         1624868408,
         13006,
         'bb.issue.status.update',
+        'INFO',
         '',
         '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for staging environment"}'
     );
@@ -581,6 +631,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -592,6 +643,7 @@ VALUES
         1624868680,
         13007,
         'bb.issue.create',
+        'INFO',
         '',
         '{"issueName":"Create user, post, comment table for prod environment"}'
     );
@@ -604,6 +656,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -615,6 +668,7 @@ VALUES
         1624868681,
         13007,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11011,"oldStatus":"PENDING","newStatus":"RUNNING"}'
     );
@@ -627,6 +681,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -638,6 +693,7 @@ VALUES
         1624868681,
         13007,
         'bb.pipeline.task.status.update',
+        'INFO',
         'Established baseline version 202106280000 for database ''blog''',
         '{"taskId":11011,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
@@ -650,6 +706,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -661,6 +718,7 @@ VALUES
         1624868681,
         13007,
         'bb.issue.status.update',
+        'INFO',
         '',
         '{"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create user, post, comment table for prod environment"}'
     );
@@ -674,6 +732,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -685,6 +744,7 @@ VALUES
         1624869944,
         13008,
         'bb.issue.create',
+        'INFO',
         '',
         '{"issueName":"Add created_at column to user,post,comment table for dev environment"}'
     );
@@ -697,6 +757,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -708,6 +769,7 @@ VALUES
         1624869945,
         13008,
         'bb.pipeline.task.status.update',
+        'INFO',
         '',
         '{"taskId":11012,"oldStatus":"PENDING","newStatus":"RUNNING"}'
     );
@@ -720,6 +782,7 @@ INSERT INTO
         updated_ts,
         container_id,
         `type`,
+        `level`,
         COMMENT,
         payload
     )
@@ -731,6 +794,7 @@ VALUES
         1624869945,
         13008,
         'bb.pipeline.task.status.update',
+        'ERROR',
         'database ''blog'' has already applied version 202106280100',
         '{"taskId":11012,"oldStatus":"RUNNING","newStatus":"FAILED"}'
     );

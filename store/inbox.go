@@ -134,7 +134,7 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalId int) (*
 
 	if inboxSummary.HasUnread {
 		row2, err := tx.QueryContext(ctx, `
-		SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = ? AND status = 'UNREAD' AND level = 'ERROR')
+		SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = ? AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')
 	`,
 			principalId,
 		)
@@ -164,15 +164,13 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 		INSERT INTO inbox (
 			receiver_id,
 			activity_id,
-			`+"`status`,"+`
-			`+"`level`"+`
+			`+"`status`"+`
 		)
-		VALUES (?, ?, 'UNREAD', ?)
-		RETURNING id, receiver_id, activity_id, `+"`status`, `level`"+`
+		VALUES (?, ?, 'UNREAD')
+		RETURNING id, receiver_id, activity_id, `+"`status`"+`
 	`,
 		create.ReceiverId,
 		create.ActivityId,
-		create.Level,
 	)
 
 	if err != nil {
@@ -188,7 +186,6 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 		&inbox.ReceiverId,
 		&activityId,
 		&inbox.Status,
-		&inbox.Level,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -223,7 +220,6 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 		    inbox.id,
 		    receiver_id,
 			`+"`status`,"+`
-			`+"`level`,"+`
 			activity.id,
 			activity.creator_id,
 		    activity.created_ts,
@@ -231,6 +227,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 		    activity.updated_ts,
 			activity.container_id,
 		    activity.type,
+			activity.level,
 		    activity.comment,
 			activity.payload
 		FROM inbox, activity
@@ -252,7 +249,6 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 			&inbox.ID,
 			&inbox.ReceiverId,
 			&inbox.Status,
-			&inbox.Level,
 			&inbox.Activity.ID,
 			&inbox.Activity.CreatorId,
 			&inbox.Activity.CreatedTs,
@@ -260,6 +256,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 			&inbox.Activity.UpdatedTs,
 			&inbox.Activity.ContainerId,
 			&inbox.Activity.Type,
+			&inbox.Activity.Level,
 			&inbox.Activity.Comment,
 			&inbox.Activity.Payload,
 		); err != nil {
@@ -286,7 +283,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 		UPDATE inbox
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, receiver_id, activity_id, `+"`status`, `level`"+`
+		RETURNING id, receiver_id, activity_id, `+"`status`"+`
 	`,
 		args...,
 	)
@@ -303,7 +300,6 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 			&inbox.ReceiverId,
 			&activityId,
 			&inbox.Status,
-			&inbox.Level,
 		); err != nil {
 			return nil, FormatError(err)
 		}

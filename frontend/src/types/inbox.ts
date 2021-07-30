@@ -3,8 +3,6 @@ import { InboxId, PrincipalId } from "./id";
 
 export type InboxStatus = "UNREAD" | "READ";
 
-export type InboxLevel = "INFO" | "WARNING" | "ERROR";
-
 export type Inbox = {
   id: InboxId;
 
@@ -12,7 +10,6 @@ export type Inbox = {
   receiver_id: PrincipalId;
   activity: Activity;
   status: InboxStatus;
-  level: InboxLevel;
 };
 
 export type InboxPatch = {

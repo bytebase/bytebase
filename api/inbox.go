@@ -22,26 +22,6 @@ func (e InboxStatus) String() string {
 	return "UNKNOWN"
 }
 
-type InboxLevel string
-
-const (
-	INBOX_INFO    InboxLevel = "INFO"
-	INBOX_WARNING InboxLevel = "WARNING"
-	INBOX_ERROR   InboxLevel = "ERROR"
-)
-
-func (e InboxLevel) String() string {
-	switch e {
-	case INBOX_INFO:
-		return "INFO"
-	case INBOX_WARNING:
-		return "WARNING"
-	case INBOX_ERROR:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
-
 type Inbox struct {
 	ID int `jsonapi:"primary,inbox"`
 
@@ -49,14 +29,12 @@ type Inbox struct {
 	ReceiverId int         `jsonapi:"attr,receiverId"`
 	Activity   *Activity   `jsonapi:"relation,activity"`
 	Status     InboxStatus `jsonapi:"attr,status"`
-	Level      InboxLevel  `jsonapi:"attr,level"`
 }
 
 type InboxCreate struct {
 	// Domain specific fields
 	ReceiverId int
 	ActivityId int
-	Level      InboxLevel
 }
 
 type InboxFind struct {
