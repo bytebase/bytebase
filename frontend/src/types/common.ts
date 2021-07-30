@@ -4,7 +4,7 @@ import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
 import { CommandId, CommandRegisterId, PrincipalId } from "./id";
-import { Message } from "./inbox";
+import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
 import { Member } from "./member";
@@ -114,7 +114,7 @@ export const unknown = (
   | Stage
   | Task
   | Activity
-  | Message
+  | Inbox
   | Bookmark
   | VCS
   | Repository => {

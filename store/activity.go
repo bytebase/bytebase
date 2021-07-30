@@ -133,16 +133,18 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 			updater_id,
 			container_id,
 			`+"`type`,"+`
+			`+"`level`,"+`
 			comment,
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, comment, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, level, comment, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.ContainerId,
 		create.Type,
+		create.Level,
 		create.Comment,
 		create.Payload,
 	)
@@ -162,6 +164,7 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 		&activity.UpdatedTs,
 		&activity.ContainerId,
 		&activity.Type,
+		&activity.Level,
 		&activity.Comment,
 		&activity.Payload,
 	); err != nil {
@@ -190,6 +193,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		    updated_ts,
 			container_id,
 		    `+"`type`,"+`
+			`+"`level`,"+`
 		    comment,
 			payload
 		FROM activity
@@ -213,6 +217,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 			&activity.UpdatedTs,
 			&activity.ContainerId,
 			&activity.Type,
+			&activity.Level,
 			&activity.Comment,
 			&activity.Payload,
 		); err != nil {
@@ -243,7 +248,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 		UPDATE activity
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, comment, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, level, comment, payload"+`
 	`,
 		args...,
 	)
@@ -262,6 +267,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 			&activity.UpdatedTs,
 			&activity.ContainerId,
 			&activity.Type,
+			&activity.Level,
 			&activity.Comment,
 			&activity.Payload,
 		); err != nil {

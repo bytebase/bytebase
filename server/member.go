@@ -57,13 +57,14 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 				ContainerId: member.ID,
 				Type:        api.ActivityMemberCreate,
+				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating member: %d", member.ID)).SetInternal(err)
 			}
 
-			if err := s.PostInboxMemberActivity(context.Background(), member, activity.ID, api.INBOX_INFO); err != nil {
+			if err := s.PostInboxMemberActivity(context.Background(), member, activity.ID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}
@@ -185,6 +186,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 					ContainerId: updatedMember.ID,
 					Type:        theType,
+					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
 				})
 				if err != nil {
@@ -193,7 +195,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				activity = createdActivity
 			}
 
-			if err := s.PostInboxMemberActivity(context.Background(), updatedMember, activity.ID, api.INBOX_INFO); err != nil {
+			if err := s.PostInboxMemberActivity(context.Background(), updatedMember, activity.ID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}
@@ -232,7 +234,7 @@ func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Memb
 }
 
 // Post member activity to owner inbox
-func (s *Server) PostInboxMemberActivity(ctx context.Context, member *api.Member, activity_id int, level api.InboxLevel) error {
+func (s *Server) PostInboxMemberActivity(ctx context.Context, member *api.Member, activity_id int) error {
 	role := api.Owner
 	memberFind := &api.MemberFind{
 		Role: &role,
@@ -246,7 +248,6 @@ func (s *Server) PostInboxMemberActivity(ctx context.Context, member *api.Member
 		inboxCreate := &api.InboxCreate{
 			ReceiverId: member.PrincipalId,
 			ActivityId: activity_id,
-			Level:      level,
 		}
 		_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
 		if err != nil {

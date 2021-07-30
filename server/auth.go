@@ -144,13 +144,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				CreatorId:   user.ID,
 				ContainerId: member.ID,
 				Type:        api.ActivityMemberCreate,
+				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create member: %d", member.ID)).SetInternal(err)
 			}
 
-			if err := s.PostInboxMemberActivity(context.Background(), member, activity.ID, api.INBOX_INFO); err != nil {
+			if err := s.PostInboxMemberActivity(context.Background(), member, activity.ID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}

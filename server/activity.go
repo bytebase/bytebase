@@ -20,6 +20,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create activity request").SetInternal(err)
 		}
 
+		activityCreate.Level = api.ACTIVITY_INFO
 		activityCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		var foundIssue *api.Issue
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
@@ -50,7 +51,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
-			if err := s.PostInboxIssueActivity(context.Background(), foundIssue, activity.ID, api.INBOX_INFO); err != nil {
+			if err := s.PostInboxIssueActivity(context.Background(), foundIssue, activity.ID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
 			}
 		}

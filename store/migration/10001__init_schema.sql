@@ -791,6 +791,7 @@ CREATE TABLE activity (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     container_id INTEGER NOT NULL CHECK (container_id != 0),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
+    `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARNING', 'ERROR')),
     `comment` TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );
@@ -826,8 +827,7 @@ CREATE TABLE inbox (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ')),
-    `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARNING', 'ERROR'))
+    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ'))
 );
 
 CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);

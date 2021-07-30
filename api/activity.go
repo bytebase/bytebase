@@ -47,6 +47,26 @@ func (e ActivityType) String() string {
 	return "bb.activity.unknown"
 }
 
+type ActivityLevel string
+
+const (
+	ACTIVITY_INFO    ActivityLevel = "INFO"
+	ACTIVITY_WARNING ActivityLevel = "WARNING"
+	ACTIVITY_ERROR   ActivityLevel = "ERROR"
+)
+
+func (e ActivityLevel) String() string {
+	switch e {
+	case ACTIVITY_INFO:
+		return "INFO"
+	case ACTIVITY_WARNING:
+		return "WARNING"
+	case ACTIVITY_ERROR:
+		return "ERROR"
+	}
+	return "UNKNOWN"
+}
+
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
@@ -127,9 +147,10 @@ type Activity struct {
 	ContainerId int `jsonapi:"attr,containerId"`
 
 	// Domain specific fields
-	Type    ActivityType `jsonapi:"attr,actionType"`
-	Comment string       `jsonapi:"attr,comment"`
-	Payload string       `jsonapi:"attr,payload"`
+	Type    ActivityType  `jsonapi:"attr,actionType"`
+	Level   ActivityLevel `jsonapi:"attr,level"`
+	Comment string        `jsonapi:"attr,comment"`
+	Payload string        `jsonapi:"attr,payload"`
 }
 
 type ActivityCreate struct {
@@ -140,8 +161,9 @@ type ActivityCreate struct {
 	// Domain specific fields
 	ContainerId int          `jsonapi:"attr,containerId"`
 	Type        ActivityType `jsonapi:"attr,actionType"`
-	Comment     string       `jsonapi:"attr,comment"`
-	Payload     string       `jsonapi:"attr,payload"`
+	Level       ActivityLevel
+	Comment     string `jsonapi:"attr,comment"`
+	Payload     string `jsonapi:"attr,payload"`
 }
 
 type ActivityFind struct {

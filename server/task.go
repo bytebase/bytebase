@@ -210,11 +210,16 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
 	}
 
+	level := api.ACTIVITY_INFO
+	if updatedTask.Status == api.TaskFailed {
+		level = api.ACTIVITY_ERROR
+	}
 	activityCreate := &api.ActivityCreate{
 		CreatorId:   taskStatusPatch.UpdaterId,
 		ContainerId: issue.ID,
 		Type:        api.ActivityPipelineTaskStatusUpdate,
 		Comment:     taskStatusPatch.Comment,
+		Level:       level,
 		Payload:     string(payload),
 	}
 	activity, err := s.ActivityService.CreateActivity(ctx, activityCreate)
@@ -224,7 +229,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 
 	// To reduce noise, for now we only post status update to inbox upon task failure.
 	if updatedTask.Status == api.TaskFailed {
-		if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID, api.INBOX_ERROR); err != nil {
+		if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID); err != nil {
 			return nil, err
 		}
 	}

@@ -20,6 +20,8 @@ export type MemberActionType =
 
 export type ActionType = IssueActionType | MemberActionType;
 
+export type ActivityLevel = "INFO" | "WARNING" | "ERROR";
+
 export type ActionIssueCreatePayload = {
   issueName: string;
 };
@@ -96,6 +98,7 @@ export type Activity = {
   // e.g if actionType is "bb.issue.xxx", then this field refers to the corresponding issue's id.
   containerId: ContainerId;
   actionType: ActionType;
+  level: ActivityLevel;
   comment: string;
   payload?: ActionPayloadType;
 };
