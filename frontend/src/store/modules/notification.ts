@@ -1,10 +1,10 @@
+import { v1 as uuidv1 } from "uuid";
 import {
   Notification,
   NotificationCreate,
   NotificationFilter,
   NotificationState,
 } from "../../types";
-import { v1 as uuidv1 } from "uuid";
 
 const state: () => NotificationState = () => ({
   notificationByModule: new Map(),
@@ -30,7 +30,7 @@ const actions = {
   pushNotification({ commit }: any, NotificationCreate: NotificationCreate) {
     const notification: Notification = {
       id: uuidv1(),
-      createdTs: Date.now(),
+      createdTs: Date.now() / 1000,
       ...NotificationCreate,
     };
     commit("appendNotification", notification);
