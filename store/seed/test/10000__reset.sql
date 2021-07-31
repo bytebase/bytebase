@@ -57,6 +57,9 @@ DELETE FROM
     db;
 
 DELETE FROM
+    instance_user;
+
+DELETE FROM
     instance;
 
 DELETE FROM

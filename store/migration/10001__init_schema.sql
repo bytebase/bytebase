@@ -292,6 +292,40 @@ WHERE
 
 END;
 
+-- Instance user stores the users for a particular instance
+CREATE TABLE instance_user (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    name TEXT NOT NULL,
+    grant TEXT NOT NULL,
+    UNIQUE(instance_id, name)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('instance_user', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_instance_user_modification_time`
+AFTER
+UPDATE
+    ON `instance_user` FOR EACH ROW BEGIN
+UPDATE
+    `instance_user`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
 CREATE TABLE db (

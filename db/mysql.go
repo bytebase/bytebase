@@ -67,7 +67,7 @@ func (driver *MySQLDriver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) {
+func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error) {
 	excludedDatabaseList := []string{
 		"'mysql'",
 		"'information_schema'",
@@ -75,6 +75,55 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		"'sys'",
 		// Skip our internal "bytebase" database
 		"'bytebase'",
+	}
+
+	// Query user info
+	userList := make([]*DBUser, 0)
+	userRows, err := driver.db.QueryContext(ctx, `
+	    SELECT
+			user,
+			host
+		FROM mysql.user
+		WHERE user NOT LIKE 'mysql.%'
+	`)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	defer userRows.Close()
+
+	for userRows.Next() {
+		var user string
+		var host string
+		if err := userRows.Scan(
+			&user,
+			&host,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		name := fmt.Sprintf("`%s`@`%s`", user, host)
+		grantRows, err := driver.db.QueryContext(ctx,
+			fmt.Sprintf("SHOW GRANTS FOR %s", name),
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer grantRows.Close()
+
+		grantList := []string{}
+		for grantRows.Next() {
+			var grant string
+			if err := grantRows.Scan(&grant); err != nil {
+				return nil, nil, err
+			}
+			grantList = append(grantList, grant)
+		}
+
+		userList = append(userList, &DBUser{
+			Name:  name,
+			Grant: strings.Join(grantList, "\n"),
+		})
 	}
 
 	// Query index info
@@ -95,7 +144,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			WHERE `+indexWhere,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer indexRows.Close()
 
@@ -119,7 +168,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			&index.Visible,
 			&index.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if columnName.Valid {
@@ -156,7 +205,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			WHERE `+columnWhere,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer columnRows.Close()
 
@@ -180,7 +229,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			&column.Collation,
 			&column.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if defaultStr.Valid {
@@ -218,7 +267,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			WHERE `+tableWhere,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer tableRows.Close()
 
@@ -242,7 +291,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			&table.CreateOptions,
 			&table.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, table.Name)
@@ -269,11 +318,11 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 		WHERE `+where,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 
-	list := make([]*DBSchema, 0)
+	schemaList := make([]*DBSchema, 0)
 	for rows.Next() {
 		var schema DBSchema
 		if err := rows.Scan(
@@ -281,18 +330,18 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBSchema, error) 
 			&schema.CharacterSet,
 			&schema.Collation,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		schema.TableList = tableMap[schema.Name]
 
-		list = append(list, &schema)
+		schemaList = append(schemaList, &schema)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return list, err
+	return userList, schemaList, err
 }
 
 func (driver *MySQLDriver) Execute(ctx context.Context, statement string) error {

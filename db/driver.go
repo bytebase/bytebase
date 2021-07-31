@@ -25,6 +25,11 @@ func (e Type) String() string {
 	return "UNKNOWN"
 }
 
+type DBUser struct {
+	Name  string
+	Grant string
+}
+
 type DBIndex struct {
 	Name string
 	// This could refer to a column or an expression
@@ -68,6 +73,7 @@ type DBSchema struct {
 	Name         string
 	CharacterSet string
 	Collation    string
+	UserList     []DBUser
 	TableList    []DBTable
 }
 
@@ -218,7 +224,7 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	SyncSchema(ctx context.Context) ([]*DBSchema, error)
+	SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error)
 	Execute(ctx context.Context, statement string) error
 
 	// Migration related

@@ -18,6 +18,7 @@ import {
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
+import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
 import { Member } from "./member";
@@ -92,6 +93,7 @@ export interface EnvironmentState {
 
 export interface InstanceState {
   instanceById: Map<InstanceId, Instance>;
+  instanceUserListById: Map<InstanceId, InstanceUser[]>;
   // The key is a concatenation of instance id and database name
   migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }

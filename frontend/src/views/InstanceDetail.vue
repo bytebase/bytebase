@@ -18,9 +18,15 @@
       </div>
       <div v-else>
         <div class="mb-4 flex items-center justify-between">
-          <div class="inline-flex space-x-2">
-            <div class="text-lg leading-6 font-medium text-main">Databases</div>
-          </div>
+          <BBTabFilter
+            :tabList="['Databases', 'Users']"
+            :selectedIndex="state.selectedIndex"
+            @select-index="
+              (index) => {
+                state.selectedIndex = index;
+              }
+            "
+          />
           <button
             v-if="allowEdit"
             type="button"
@@ -30,7 +36,15 @@
             Sync Now
           </button>
         </div>
-        <DatabaseTable :mode="'INSTANCE'" :databaseList="databaseList" />
+        <DatabaseTable
+          v-if="state.selectedIndex == DATABASE_TAB"
+          :mode="'INSTANCE'"
+          :databaseList="databaseList"
+        />
+        <InstanceUserTable
+          v-else-if="state.selectedIndex == USER_TAB"
+          :instanceUserList="instanceUserList"
+        />
       </div>
       <template v-if="allowEdit">
         <template v-if="instance.rowStatus == 'NORMAL'">
@@ -78,12 +92,12 @@
 
 <script lang="ts">
 import { computed, reactive, watchEffect } from "vue";
-import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
+import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import {
   Database,
@@ -93,7 +107,11 @@ import {
   SqlResultSet,
 } from "../types";
 
+const DATABASE_TAB = 0;
+const USER_TAB = 1;
+
 interface LocalState {
+  selectedIndex: number;
   migrationSetupStatus: MigrationSchemaStatus;
   showCreateMigrationSchemaModal: boolean;
 }
@@ -104,6 +122,7 @@ export default {
     ArchiveBanner,
     DatabaseTable,
     DataSourceTable,
+    InstanceUserTable,
     InstanceForm,
   },
   props: {
@@ -113,12 +132,12 @@ export default {
     },
   },
   setup(props, { emit }) {
-    const router = useRouter();
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const state = reactive<LocalState>({
+      selectedIndex: DATABASE_TAB,
       migrationSetupStatus: "OK",
       showCreateMigrationSchemaModal: false,
     });
@@ -196,6 +215,10 @@ export default {
         }
       }
       return filteredList;
+    });
+
+    const instanceUserList = computed(() => {
+      return store.getters["instance/instanceUserListById"](instance.value.id);
     });
 
     const allowEdit = computed(() => {
@@ -284,6 +307,8 @@ export default {
     };
 
     return {
+      DATABASE_TAB,
+      USER_TAB,
       state,
       attentionTitle,
       attentionText,
@@ -291,6 +316,7 @@ export default {
       hasDataSourceFeature,
       instance,
       databaseList,
+      instanceUserList,
       allowEdit,
       doArchive,
       doRestore,
