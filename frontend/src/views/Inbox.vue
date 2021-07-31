@@ -117,7 +117,9 @@ export default {
 
     const markAllAsRead = () => {
       var count = state.unreadList.length;
-      state.unreadList.forEach((item: Inbox) => {
+      const inboxList = state.unreadList.map((item) => item);
+
+      inboxList.forEach((item: Inbox) => {
         store
           .dispatch("inbox/patchInbox", {
             inboxId: item.id,
@@ -126,6 +128,12 @@ export default {
             },
           })
           .then(() => {
+            const i = state.unreadList.findIndex(
+              (unreadItem) => unreadItem.id == item.id
+            );
+            if (i >= 0) {
+              state.unreadList.splice(i, 1);
+            }
             count--;
             if (count == 0) {
               store.dispatch(
@@ -136,7 +144,6 @@ export default {
             state.readList.push(item);
           });
       });
-      state.unreadList = [];
     };
 
     const viewOlder = () => {
