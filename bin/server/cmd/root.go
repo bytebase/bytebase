@@ -275,6 +275,7 @@ func (m *main) Run() error {
 	server.DataSourceService = store.NewDataSourceService(m.l, db)
 	server.DatabaseService = store.NewDatabaseService(m.l, db, server.CacheService)
 	server.InstanceService = store.NewInstanceService(m.l, db, server.CacheService, server.DatabaseService, server.DataSourceService)
+	server.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	server.TableService = store.NewTableService(m.l, db)
 	server.ColumnService = store.NewColumnService(m.l, db)
 	server.IndexService = store.NewIndexService(m.l, db)

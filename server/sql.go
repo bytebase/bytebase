@@ -104,7 +104,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 
 		defer driver.Close(context.Background())
 
-		schemaList, err := driver.SyncSchema(context.Background())
+		userList, schemaList, err := driver.SyncSchema(context.Background())
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -139,6 +139,49 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to import new index and expression: %s(%s). Error %w", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression, err)
 				}
 				return nil
+			}
+
+			instanceUserFind := &api.InstanceUserFind{
+				InstanceId: instance.ID,
+			}
+			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(context.Background(), instanceUserFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
+			}
+
+			// Upsert user found in the instance
+			for _, user := range userList {
+				userUpsert := &api.InstanceUserUpsert{
+					CreatorId:  api.SYSTEM_BOT_ID,
+					InstanceId: instance.ID,
+					Name:       user.Name,
+					Grant:      user.Grant,
+				}
+				_, err := s.InstanceUserService.UpsertInstanceUser(context.Background(), userUpsert)
+				if err != nil {
+					return fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
+				}
+			}
+
+			// Delete user no longer found in the instance
+			for _, user := range instanceUserList {
+				found := false
+				for _, dbUser := range userList {
+					if user.Name == dbUser.Name {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					userDelete := &api.InstanceUserDelete{
+						ID: user.ID,
+					}
+					err := s.InstanceUserService.DeleteInstanceUser(context.Background(), userDelete)
+					if err != nil {
+						return fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
+					}
+				}
 			}
 
 			// Compare the stored db info with the just synced db schema.

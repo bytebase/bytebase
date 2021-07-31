@@ -24,6 +24,10 @@ export default {
           "database/fetchDatabaseListByInstanceId",
           idFromSlug(props.instanceSlug)
         ),
+        store.dispatch(
+          "instance/fetchInstanceUserListById",
+          idFromSlug(props.instanceSlug)
+        ),
       ]);
     };
 

@@ -157,6 +157,27 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/instance/:instanceId/user", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("instanceId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
+		}
+
+		instanceUserFind := &api.InstanceUserFind{
+			InstanceId: id,
+		}
+		list, err := s.InstanceUserService.FindInstanceUserList(context.Background(), instanceUserFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.POST("/instance/:instanceId/migration", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("instanceId"))
 		if err != nil {

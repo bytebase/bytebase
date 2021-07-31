@@ -31,6 +31,7 @@ type Server struct {
 	ProjectMemberService   api.ProjectMemberService
 	EnvironmentService     api.EnvironmentService
 	InstanceService        api.InstanceService
+	InstanceUserService    api.InstanceUserService
 	DatabaseService        api.DatabaseService
 	TableService           api.TableService
 	ColumnService          api.ColumnService

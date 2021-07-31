@@ -17,6 +17,7 @@ import {
   SqlResultSet,
   unknown,
 } from "../../types";
+import { InstanceUser } from "../../types/InstanceUser";
 
 function convert(
   instance: ResourceObject,
@@ -48,6 +49,17 @@ function convert(
   };
 }
 
+function convertUser(
+  instanceUser: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): InstanceUser {
+  return {
+    ...(instanceUser.attributes as Omit<InstanceUser, "id">),
+    id: parseInt(instanceUser.id),
+  };
+}
+
 function convertMigrationHistory(history: ResourceObject): MigrationHistory {
   return {
     ...(history.attributes as Omit<MigrationHistory, "id" | "issueId">),
@@ -60,6 +72,7 @@ function convertMigrationHistory(history: ResourceObject): MigrationHistory {
 
 const state: () => InstanceState = () => ({
   instanceById: new Map(),
+  instanceUserListById: new Map(),
   migrationHistoryListByIdAndDatabaseName: new Map(),
 });
 
@@ -106,6 +119,12 @@ const getters = {
       return (
         state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
       );
+    },
+
+  instanceUserListById:
+    (state: InstanceState) =>
+    (instanceId: InstanceId): InstanceUser[] => {
+      return state.instanceUserListById.get(instanceId) || [];
     },
 
   migrationHistoryListByInstanceIdAndDatabaseName:
@@ -210,6 +229,22 @@ const actions = {
     commit("deleteInstanceById", instanceId);
   },
 
+  async fetchInstanceUserListById(
+    { commit, rootGetters }: any,
+    instanceId: InstanceId
+  ) {
+    const data = (await axios.get(`/api/instance/${instanceId}/user`)).data;
+    const instanceUserList = data.data.map((instanceUser: ResourceObject) => {
+      return convertUser(instanceUser, data.included, rootGetters);
+    });
+
+    commit("setInstanceUserListById", {
+      instanceId,
+      instanceUserList,
+    });
+    return instanceUserList;
+  },
+
   async checkMigrationSetup(
     {}: any,
     instanceId: InstanceId
@@ -287,6 +322,19 @@ const mutations = {
 
   deleteInstanceById(state: InstanceState, instanceId: InstanceId) {
     state.instanceById.delete(instanceId);
+  },
+
+  setInstanceUserListById(
+    state: InstanceState,
+    {
+      instanceId,
+      instanceUserList,
+    }: {
+      instanceId: InstanceId;
+      instanceUserList: InstanceUser[];
+    }
+  ) {
+    state.instanceUserListById.set(instanceId, instanceUserList);
   },
 
   setMigrationHistoryListByInstanceIdAndDatabaseName(

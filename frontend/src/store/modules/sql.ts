@@ -1,9 +1,9 @@
 import axios from "axios";
 import {
-  ResourceObject,
-  SqlResultSet,
   ConnectionInfo,
   InstanceId,
+  ResourceObject,
+  SqlResultSet,
 } from "../../types";
 
 function convert(resultSet: ResourceObject): SqlResultSet {
@@ -47,8 +47,12 @@ const actions = {
 
     const resultSet = convert(data);
     if (!resultSet.error) {
-      // Refresh the corresponding database list.
+      // Refresh the corresponding list.
       dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
+        root: true,
+      });
+
+      dispatch("instance/fetchInstanceUserListById", instanceId, {
         root: true,
       });
     }
