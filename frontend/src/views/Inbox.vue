@@ -1,7 +1,7 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="space-y-4">
-    <div class="mt-6 mx-6 space-y-2">
+    <div class="mx-6 space-y-2">
       <div
         class="
           flex
