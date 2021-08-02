@@ -77,6 +77,7 @@ type BackupPatch struct {
 
 type BackupService interface {
 	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
+	FindBackup(ctx context.Context, find *BackupFind) (*Backup, error)
 	FindBackupList(ctx context.Context, find *BackupFind) ([]*Backup, error)
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
 }

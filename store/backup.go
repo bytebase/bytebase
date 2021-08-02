@@ -45,6 +45,28 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 	return backup, nil
 }
 
+// FindBackup retrieves a single backup based on find.
+// Returns ENOTFOUND if no matching record.
+// Returns ECONFLICT if finding more than 1 matching records.
+func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*api.Backup, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := s.findBackupList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup not found: %+v", find)}
+	} else if len(list) > 1 {
+		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d backups with filter %+v, expect 1. ", len(list), find)}
+	}
+
+	return list[0], nil
+}
+
 // FindBackupList retrieves a list of backups based on find.
 func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
