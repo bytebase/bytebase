@@ -7,7 +7,9 @@ assignees: ''
 
 ---
 
-**Provide the version you are using**
+**Provide the MySQL version you are using (if related with instance/database operation)**
+
+**Provide the Bytebase version you are using**
 
 The version info is shown on the bottom left of the console.
 
