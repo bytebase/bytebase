@@ -360,7 +360,11 @@ export default {
     });
 
     const version = computed(() => {
-      return store.getters["actuator/version"]();
+      const v = store.getters["actuator/version"]();
+      if (v.split(".").length == 3) {
+        return `v${v}`;
+      }
+      return v;
     });
 
     return {
