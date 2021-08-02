@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+**Provide the version you are using**
+
+The version info is shown on the bottom left of the console.
+
 **Describe the bug**
 
 A clear and concise description of what the bug is.
