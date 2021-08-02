@@ -397,7 +397,8 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`
+        `type`,
+        level
     )
 VALUES
     (
@@ -405,7 +406,8 @@ VALUES
         1,
         1,
         101,
-        'bb.issue.create'
+        'bb.issue.create',
+        'INFO'
     );
 
 INSERT INTO
@@ -414,6 +416,7 @@ INSERT INTO
         updater_id,
         container_id,
         `type`,
+        level,
         `comment`
     )
 VALUES
@@ -422,5 +425,6 @@ VALUES
         1,
         101,
         'bb.issue.comment.create',
+        'INFO',
         'Go fish!'
     );
