@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -20,7 +21,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
 		}
 
+		z, offset := time.Now().Zone()
 		databaseCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		databaseCreate.TimezoneName = z
+		databaseCreate.TimezoneOffset = offset
 
 		database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 		if err != nil {

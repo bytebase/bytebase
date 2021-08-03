@@ -328,6 +328,9 @@ END;
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
+-- db table also stores the timezone info, this is used for features like backup and maintenance window
+-- where only hour of day, day of week instead of absolute timestamp are specified. We need timezone
+-- info to calculate the exact time and avoid time drift due to daylight saving change.
 CREATE TABLE db (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -344,6 +347,10 @@ CREATE TABLE db (
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
     `collation` TEXT NOT NULL,
+    -- abbreviated name of the timezone
+    timezone_name TEXT NOT NULL,
+    -- timezone offset in seconds east of UTC
+    timezone_offset INTEGER NOT NULL,
     UNIQUE(instance_id, name)
 );
 

@@ -366,13 +366,16 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 				} else {
 					// Case 2
+					z, offset := time.Now().Zone()
 					databaseCreate := &api.DatabaseCreate{
-						CreatorId:    api.SYSTEM_BOT_ID,
-						ProjectId:    api.DEFAULT_PROJECT_ID,
-						InstanceId:   instance.ID,
-						Name:         schema.Name,
-						CharacterSet: schema.CharacterSet,
-						Collation:    schema.Collation,
+						CreatorId:      api.SYSTEM_BOT_ID,
+						ProjectId:      api.DEFAULT_PROJECT_ID,
+						InstanceId:     instance.ID,
+						Name:           schema.Name,
+						CharacterSet:   schema.CharacterSet,
+						Collation:      schema.Collation,
+						TimezoneName:   z,
+						TimezoneOffset: offset,
 					}
 					database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 					if err != nil {
