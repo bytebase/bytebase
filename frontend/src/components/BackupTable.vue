@@ -43,6 +43,9 @@ const columnList: BBTableColumn[] =
         title: "Path",
       },
       {
+        title: "Status",
+      },
+      {
         title: "Time",
       },
       {
