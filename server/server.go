@@ -102,9 +102,11 @@ func NewServer(logger *zap.Logger, version string, host string, port int, mode s
 		defaultExecutor := NewDefaultTaskExecutor(logger)
 		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
 		sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
+		backupDBExecutor := NewDatabaseBackupTaskExecutor(logger)
 		scheduler.Register(string(api.TaskGeneral), defaultExecutor)
 		scheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
 		scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+		scheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
 		s.TaskScheduler = scheduler
 
 		schemaSyncer := NewSchemaSyncer(logger, s)
