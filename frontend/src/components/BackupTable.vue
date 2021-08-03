@@ -14,6 +14,9 @@
         {{ backup.path }}
       </BBTableCell>
       <BBTableCell class="w-4">
+        {{ backup.status }}
+      </BBTableCell>
+      <BBTableCell class="w-4">
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
       <BBTableCell class="w-4">
