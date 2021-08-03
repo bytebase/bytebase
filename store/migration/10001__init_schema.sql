@@ -592,6 +592,43 @@ WHERE
 
 END;
 
+-- backup_setting stores the backup settings for a particular database.
+-- This is a strict version of cron expression using UTC timezone uniformly.
+CREATE TABLE backup_setting (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
+    `enabled` INTEGER NOT NULL CHECK (`enabled` IN (0, 1)),
+    hour INTEGER NOT NULL CHECK (0 <= hour AND hour < 24),
+    day_of_week INTEGER NOT NULL CHECK (0 <= day_of_week AND day_of_week < 7)
+);
+
+CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('backup_setting', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_backup_setting_modification_time`
+AFTER
+UPDATE
+    ON `backup_setting` FOR EACH ROW BEGIN
+UPDATE
+    `backup_setting`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -----------------------
 -- Pipeline related BEGIN
 -- pipeline table
