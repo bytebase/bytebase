@@ -54,6 +54,9 @@ DELETE FROM
     backup;
 
 DELETE FROM
+    backup_setting;
+
+DELETE FROM
     db;
 
 DELETE FROM
