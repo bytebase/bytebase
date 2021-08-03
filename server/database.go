@@ -2,15 +2,13 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/bin/bb/connect"
-	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -290,8 +288,45 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backup.Database = database
 
-		if err := s.BackupDatabase(backup); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup %q.", backup.Name)).SetInternal(err)
+		payload := api.TaskDatabaseBackupPayload{
+			BackupID: backup.ID,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task payload").SetInternal(err)
+		}
+
+		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
+			Name:      fmt.Sprintf("backup-pipeline-%s", backup.Name),
+			CreatorId: backupCreate.CreatorId,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create pipeline").SetInternal(err)
+		}
+
+		createdStage, err := s.StageService.CreateStage(context.Background(), &api.StageCreate{
+			Name:          fmt.Sprintf("backup-stage-%s", backup.Name),
+			EnvironmentId: database.Instance.EnvironmentId,
+			PipelineId:    createdPipeline.ID,
+			CreatorId:     backupCreate.CreatorId,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create stage").SetInternal(err)
+		}
+
+		_, err = s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
+			Name:       fmt.Sprintf("backup-%s-task", backup.Name),
+			PipelineId: createdPipeline.ID,
+			StageId:    createdStage.ID,
+			InstanceId: database.InstanceId,
+			DatabaseId: &database.ID,
+			Status:     api.TaskPending,
+			Type:       api.TaskDatabaseBackup,
+			Payload:    string(bytes),
+			CreatorId:  backupCreate.CreatorId,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -390,29 +425,6 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	database.DataSourceList = []*api.DataSource{}
-
-	return nil
-}
-
-// BackupDatabase will take a backup of a database.
-func (s *Server) BackupDatabase(backup *api.Backup) error {
-	instance := backup.Database.Instance
-	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, backup.Database.Name, nil /* tlsConfig */)
-	if err != nil {
-		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
-	}
-	defer conn.Close()
-	dp := mysqldump.New(conn)
-
-	f, err := os.Create(backup.Path)
-	if err != nil {
-		return fmt.Errorf("failed to open backup path: %s", backup.Path)
-	}
-	defer f.Close()
-
-	if err := dp.Dump(backup.Database.Name, f, false /* schemaOnly */); err != nil {
-		return err
-	}
 
 	return nil
 }

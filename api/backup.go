@@ -5,6 +5,16 @@ import (
 	"encoding/json"
 )
 
+// BackupStatus is the status of a backup.
+type BackupStatus string
+
+const (
+	// BackupStatusPendingCreate is the status for PENDING_CREATE.
+	BackupStatusPendingCreate BackupStatus = "PENDING_CREATE"
+	// BackupStatusDone is the status for DONE.
+	BackupStatusDone BackupStatus = "DONE"
+)
+
 type Backup struct {
 	ID int `jsonapi:"primary,table"`
 

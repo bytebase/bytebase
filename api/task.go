@@ -45,6 +45,7 @@ const (
 	TaskGeneral              TaskType = "bb.task.general"
 	TaskDatabaseCreate       TaskType = "bb.task.database.create"
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	TaskDatabaseBackup       TaskType = "bb.task.database.backup"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -57,10 +58,16 @@ type TaskDatabaseCreatePayload struct {
 	Collation    string `json:"collation,omitempty"`
 }
 
+// TaskDatabaseSchemaUpdatePayload is the task payload for database schema update.
 type TaskDatabaseSchemaUpdatePayload struct {
 	Statement         string               `json:"statement,omitempty"`
 	RollbackStatement string               `json:"rollbackStatement,omitempty"`
 	VCSPushEvent      *common.VCSPushEvent `json:"pushEvent,omitempty"`
+}
+
+// TaskDatabaseBackupPayload is the task payload for database backup.
+type TaskDatabaseBackupPayload struct {
+	BackupID int `jsonapi:"primary,table"`
 }
 
 type Task struct {
