@@ -55,6 +55,8 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
+	TimezoneName         string     `jsonapi:"attr,timezoneName"`
+	TimezoneOffset       int        `jsonapi:"attr,timezoneOffset"`
 }
 
 type DatabaseCreate struct {
@@ -67,10 +69,12 @@ type DatabaseCreate struct {
 	InstanceId int `jsonapi:"attr,instanceId"`
 
 	// Domain specific fields
-	Name         string `jsonapi:"attr,name"`
-	CharacterSet string `jsonapi:"attr,characterSet"`
-	Collation    string `jsonapi:"attr,collation"`
-	IssueId      int    `jsonapi:"attr,issueId"`
+	Name           string `jsonapi:"attr,name"`
+	CharacterSet   string `jsonapi:"attr,characterSet"`
+	Collation      string `jsonapi:"attr,collation"`
+	IssueId        int    `jsonapi:"attr,issueId"`
+	TimezoneName   string
+	TimezoneOffset int
 }
 
 type DatabaseFind struct {

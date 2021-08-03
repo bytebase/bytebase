@@ -38,6 +38,18 @@ export function secondsToString(second: number): string {
   return moment.duration(second).humanize();
 }
 
+export function timezoneString(zoneName: string, offset: number): string {
+  var sign = "+";
+  if (offset < 0) {
+    sign = "-";
+  }
+  const hour = Math.abs(offset) / 3600;
+  const minutes = Math.abs(offset) & (3600 / 60);
+  return `${zoneName}${sign}${String(hour).padStart(2, "0")}:${String(
+    minutes
+  ).padStart(2, "0")}`;
+}
+
 export function urlfy(str: string): string {
   let result = str.trim();
   if (result.search(/^http[s]?\:\/\//) == -1) {
