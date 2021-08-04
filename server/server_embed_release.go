@@ -11,13 +11,13 @@ import (
 )
 
 //go:embed dist
-var embededFiles embed.FS
+var embeddedFiles embed.FS
 
 //go:embed dist/index.html
 var indexContent string
 
 func getFileSystem() http.FileSystem {
-	fsys, err := fs.Sub(embededFiles, "dist")
+	fsys, err := fs.Sub(embeddedFiles, "dist")
 	if err != nil {
 		panic(err)
 	}
