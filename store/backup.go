@@ -271,3 +271,153 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 
 	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup ID not found: %d", patch.ID)}
 }
+
+// GetBackupSetting gets the backup setting for a database.
+// Returns ENOTFOUND if no matching record.
+// Returns ECONFLICT if finding more than 1 matching records.
+func (s *BackupService) GetBackupSetting(ctx context.Context, get *api.BackupSettingGet) (*api.BackupSetting, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := s.getBackupSetting(ctx, tx, get)
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup setting not found: %+v", get)}
+	} else if len(list) > 1 {
+		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), get)}
+	}
+
+	return list[0], nil
+}
+
+func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.BackupSettingGet) (_ []*api.BackupSetting, err error) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := get.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := get.DatabaseId; v != nil {
+		where, args = append(where, "database_id = ?"), append(args, *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+		  id,
+		  creator_id,
+		  created_ts,
+		  updater_id,
+		  updated_ts,
+			database_id,
+		  enabled,
+			hour,
+			day_of_week
+		FROM backup_setting
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	list := make([]*api.BackupSetting, 0)
+	for rows.Next() {
+		var backupSetting api.BackupSetting
+		if err := rows.Scan(
+			&backupSetting.ID,
+			&backupSetting.CreatorId,
+			&backupSetting.CreatedTs,
+			&backupSetting.UpdaterId,
+			&backupSetting.UpdatedTs,
+			&backupSetting.DatabaseId,
+			&backupSetting.Enabled,
+			&backupSetting.Hour,
+			&backupSetting.DayOfWeek,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		list = append(list, &backupSetting)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return list, nil
+}
+
+// SetBackupSetting sets the backup settings for a database.
+func (s *BackupService) SetBackupSetting(ctx context.Context, setting *api.BackupSettingSet) (*api.BackupSetting, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	backup, err := s.setBackupSetting(ctx, tx, setting)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return backup, nil
+}
+
+// createBackup creates a new backup.
+func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *api.BackupSettingSet) (*api.BackupSetting, error) {
+	// Upsert row into backup_setting.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO backup_setting (
+			creator_id,
+			updater_id,
+			database_id,
+			`+"`enabled`,"+`
+			hour,
+			day_of_week
+		)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(database_id) DO UPDATE SET
+		  enabled=excluded.enabled,
+		  hour=excluded.hour,
+		  day_of_week=excluded.day_of_week
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`
+	`,
+		setting.CreatorId,
+		setting.CreatorId,
+		setting.DatabaseId,
+		setting.Enabled,
+		setting.Hour,
+		setting.DayOfWeek,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var backupSetting api.BackupSetting
+	if err := row.Scan(
+		&backupSetting.ID,
+		&backupSetting.CreatorId,
+		&backupSetting.CreatedTs,
+		&backupSetting.UpdaterId,
+		&backupSetting.UpdatedTs,
+		&backupSetting.DatabaseId,
+		&backupSetting.Enabled,
+		&backupSetting.Hour,
+		&backupSetting.DayOfWeek,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &backupSetting, nil
+}

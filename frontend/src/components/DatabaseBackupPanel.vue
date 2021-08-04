@@ -1,5 +1,54 @@
 <template>
   <div class="pt-6">
+    <div class="text-lg leading-6 font-medium text-main mb-4">Automatic backup settings</div>
+    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
+      <div class="sm:col-span-3 sm:col-start-1">
+        <label for="backupName" class="textlabel block"> Hour </label>
+        <input
+        required
+        type="text"
+        id="autoBackupHour"
+        name="autoBackupHour"
+        placeholder="auto-backup-hour"
+        class="textfield mt-1 w-full"
+        :value="state.autoBackupHour"
+        @input="state.autoBackupHour=Number($event.target.value)"
+        />
+      </div>
+      <div class="sm:col-span-5">
+        <label for="autoBackupDayOfWeek" class="textlabel block"> Day of Week </label>
+        <input
+          type="text"
+          id="autoBackupDayOfWeek"
+          name="autoBackupDayOfWeek"
+          placeholder="e.g. 0"
+          class="textfield mt-1 w-full"
+          :value="state.autoBackupDayOfWeek"
+          @input="state.autoBackupDayOfWeek=Number($event.target.value)"
+        />
+      </div>
+      <div class="sm:col-span-1">
+        <label for="autoBackupEnabled" class="textlabel block"> Enabled </label>
+        <input
+          type="checkbox"
+          id="autoBackupEnabled"
+          :checked="state.autoBackupEnabled"
+          @change="state.autoBackupEnabled = $event.target.checked"
+        />
+      </div>
+      <div class="sm:col-span-1">
+        <label> Update </label>
+        <button
+          @click.prevent="setAutoBackupSetting"
+          type="button"
+          class="btn-normal whitespace-nowrap items-center"
+        >
+          Set
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="pt-6">
     <div class="text-lg leading-6 font-medium text-main mb-4">Take a backup</div>
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
       <div class="sm:col-span-3 sm:col-start-1">
@@ -52,12 +101,15 @@ import { computed, watchEffect, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { v1 as uuidv1 } from "uuid";
-import { BackupCreate, Database } from "../types";
+import { BackupCreate, BackupSettingSet, Database } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 
 interface LocalState {
   backupName: string;
   backupPath: string;
+  autoBackupEnabled: boolean;
+  autoBackupHour: number;
+  autoBackupDayOfWeek: number;
 }
 
 export default {
@@ -78,6 +130,9 @@ export default {
     const state = reactive<LocalState>({
       backupName: uuidv1(),
       backupPath: "backup.sql",
+      autoBackupEnabled: false,
+      autoBackupHour: 0,
+      autoBackupDayOfWeek: 0,
     });
 
     const prepareBackupList = () => {
@@ -111,11 +166,24 @@ export default {
       });
     };
 
+    const setAutoBackupSetting = () => {
+      const newBackupSetting: BackupSettingSet = {
+        databaseId: props.database.id!,
+        enabled: state.autoBackupEnabled! ? 1 : 0,
+        hour: state.autoBackupHour!,
+        dayOfWeek: state.autoBackupDayOfWeek!,
+      };
+      store.dispatch("backup/setBackupSetting", {
+        newBackupSetting: newBackupSetting,
+      });
+    };
+
     return {
       state,
       backupList,
       updateInstance,
       createBackup,
+      setAutoBackupSetting,
     };
 },
 }

@@ -1,6 +1,6 @@
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
-import { Backup } from "./backup";
+import { Backup, BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
@@ -119,6 +119,10 @@ export interface TableState {
 
 export interface BackupState {
   backupListByDatabaseId: Map<DatabaseId, Backup[]>;
+}
+
+export interface BackupSettingState {
+  backupSettingByDatabaseId: Map<DatabaseId, BackupSetting>;
 }
 
 export interface VCSState {
