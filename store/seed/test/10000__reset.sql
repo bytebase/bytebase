@@ -69,6 +69,9 @@ DELETE FROM
     environment;
 
 DELETE FROM
+    project_hook;
+
+DELETE FROM
     project_member;
 
 -- Project 1 refers to DEFAULT project which is considered as part of schema

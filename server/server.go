@@ -29,6 +29,7 @@ type Server struct {
 	MemberService          api.MemberService
 	ProjectService         api.ProjectService
 	ProjectMemberService   api.ProjectMemberService
+	ProjectHookService     api.ProjectHookService
 	EnvironmentService     api.EnvironmentService
 	InstanceService        api.InstanceService
 	InstanceUserService    api.InstanceUserService
@@ -51,16 +52,18 @@ type Server struct {
 
 	e *echo.Echo
 
-	l         *zap.Logger
-	version   string
-	mode      string
-	host      string
-	port      int
-	startedTs int64
-	secret    string
-	readonly  bool
-	demo      bool
-	plan      api.PlanType
+	l            *zap.Logger
+	version      string
+	mode         string
+	host         string
+	port         int
+	frontendHost string
+	frontendPort int
+	startedTs    int64
+	secret       string
+	readonly     bool
+	demo         bool
+	plan         api.PlanType
 }
 
 //go:embed acl_casbin_model.conf
@@ -75,7 +78,7 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
-func NewServer(logger *zap.Logger, version string, host string, port int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -90,6 +93,8 @@ func NewServer(logger *zap.Logger, version string, host string, port int, mode s
 		mode:         mode,
 		host:         host,
 		port:         port,
+		frontendHost: frontendHost,
+		frontendPort: frontendPort,
 		startedTs:    time.Now().Unix(),
 		secret:       secret,
 		readonly:     readonly,
