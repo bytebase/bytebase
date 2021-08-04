@@ -124,7 +124,6 @@
             <dt class="text-sm font-medium text-control-light">Role</dt>
             <dd class="mt-1 text-sm text-main">
               <router-link
-                v-if="hasAdminFeature"
                 :to="'/setting/member'"
                 class="normal-link capitalize"
               >
@@ -134,8 +133,8 @@
                     : principal.role.toLowerCase()
                 }}
               </router-link>
-              <router-link v-else :to="'/setting/plan'" class="normal-link">
-                Upgrade to Team plan to enable admin management
+              <router-link :to="'/setting/plan'" class="normal-link">
+                (Upgrade to Team plan to enable role management)
               </router-link>
             </dd>
           </div>
