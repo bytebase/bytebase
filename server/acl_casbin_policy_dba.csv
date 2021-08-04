@@ -32,6 +32,8 @@ p, DBA, /database/{id}/table, GET
 p, DBA, /database/{id}/table/{tableName}, GET
 p, DBA, /database/{id}/backup, GET
 p, DBA, /database/{id}/backup, POST
+p, DBA, /database/{id}/backupSetting, GET
+p, DBA, /database/{id}/backupSetting, POST
 p, DBA, /issue, POST
 p, DBA, /issue, GET
 p, DBA, /issue/{id}, GET

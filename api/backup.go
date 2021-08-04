@@ -85,9 +85,60 @@ type BackupPatch struct {
 	Status string
 }
 
+// BackupSetting is the backup setting for a database.
+type BackupSetting struct {
+	ID int `jsonapi:"primary,table"`
+
+	// Standard fields
+	CreatorId int
+	Creator   *Principal `jsonapi:"attr,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterId int
+	Updater   *Principal `jsonapi:"attr,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+
+	// Related fields
+	DatabaseId int
+	Database   *Database `jsonapi:"relation,database"`
+
+	// Domain specific fields
+	Enabled   int `jsonapi:"attr,enabled"`
+	Hour      int `jsonapi:"attr,hour"`
+	DayOfWeek int `jsonapi:"attr,dayOfWeek"`
+}
+
+// BackupSettingGet is the message to get a backup settings.
+type BackupSettingGet struct {
+	ID *int
+
+	// Related fields
+	DatabaseId *int
+
+	// Domain specific fields
+}
+
+// BackupSettingSet is the message to set a backup settings.
+type BackupSettingSet struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	// CreatorId is the ID of the creator.
+	CreatorId int
+
+	// Related fields
+	DatabaseId int `jsonapi:"attr,databaseId"`
+
+	// Domain specific fields
+	Enabled   int `jsonapi:"attr,enabled"`
+	Hour      int `jsonapi:"attr,hour"`
+	DayOfWeek int `jsonapi:"attr,dayOfWeek"`
+}
+
+// BackupService is the backend for backups.
 type BackupService interface {
 	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
 	FindBackup(ctx context.Context, find *BackupFind) (*Backup, error)
 	FindBackupList(ctx context.Context, find *BackupFind) ([]*Backup, error)
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
+	GetBackupSetting(ctx context.Context, get *BackupSettingGet) (*BackupSetting, error)
+	SetBackupSetting(ctx context.Context, setting *BackupSettingSet) (*BackupSetting, error)
 }

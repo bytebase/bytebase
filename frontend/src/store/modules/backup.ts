@@ -1,11 +1,14 @@
 import axios from "axios";
 import {
   BackupCreate,
+  BackupSetting,
+  BackupSettingSet,
   Database,
   DatabaseId,
   ResourceIdentifier,
   ResourceObject,
   Backup,
+  BackupSettingState,
   BackupState,
   unknown,
 } from "../../types";
@@ -32,8 +35,31 @@ function convert(
   };
 }
 
+function convertBackupSetting(
+  backupSetting: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): BackupSetting {
+  const databaseId = (backupSetting.relationships!.database.data as ResourceIdentifier)
+    .id;
+
+  let database: Database = unknown("DATABASE") as Database;
+  for (const item of includedList || []) {
+    if (item.type == "database" && item.id == databaseId) {
+      database = rootGetters["database/convert"](item, includedList);
+      break;
+    }
+  }
+  return {
+    ...(backupSetting.attributes as Omit<BackupSetting, "id" | "database">),
+    id: parseInt(backupSetting.id),
+    database,
+  };
+}
+
 const state: () => BackupState = () => ({
   backupListByDatabaseId: new Map(),
+  backupSettingByDatabaseId: new Map(),
 });
 
 const getters = {
@@ -41,6 +67,11 @@ const getters = {
     (state: BackupState) =>
     (databaseId: DatabaseId): Backup[] => {
       return state.backupListByDatabaseId.get(databaseId) || [];
+    },
+  backupSettingByDatabaseId:
+    (state: BackupSettingState) =>
+    (databaseId: DatabaseId): BackupSetting => {
+      return state.backupSettingByDatabaseId.get(databaseId) || unknown("BACKUP_SETTING") as BackupSetting;
     },
 };
 
@@ -84,6 +115,32 @@ const actions = {
     commit("setTableListByDatabaseId", { databaseId, backupList });
     return backupList;
   },
+
+  async setBackupSetting(
+    { commit, rootGetters }: any,
+    { newBackupSetting }: { newBackupSetting: BackupSettingSet }
+  ) {
+    const data = (
+      await axios.post(`/api/database/${newBackupSetting.databaseId}/backupSetting`, {
+        data: {
+          type: "BackupSettingSet",
+          attributes: newBackupSetting,
+        },
+      })
+    ).data;
+    const updatedBackupSetting: BackupSetting = convertBackupSetting(
+      data.data,
+      data.included,
+      rootGetters
+    );
+
+    commit("setBackupSettingByDatabaseId", {
+      databaseId: newBackupSetting.databaseId,
+      backup: updatedBackupSetting
+    });
+
+    return updatedBackupSetting;
+  },
 };
 
 const mutations = {
@@ -123,6 +180,19 @@ const mutations = {
     } else {
       state.backupListByDatabaseId.set(databaseId, [backup]);
     }
+  },
+
+  setBackupSettingByDatabaseId(
+    state: BackupSettingState,
+    {
+      databaseId,
+      backupSetting,
+    }: {
+      databaseId: DatabaseId;
+      backupSetting: BackupSetting;
+    }
+  ) {
+    state.backupSettingByDatabaseId.set(databaseId, backupSetting);
   },
 };
 

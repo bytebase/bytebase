@@ -2,6 +2,7 @@ import { Activity } from "./activity";
 import { Bookmark } from "./bookmark";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
+import { BackupSetting } from "./backup";
 import { Environment } from "./environment";
 import { CommandId, CommandRegisterId, PrincipalId } from "./id";
 import { Inbox } from "./inbox";
@@ -88,6 +89,7 @@ export type ResourceType =
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
+  | "BACKUP_SETTING"
   | "ISSUE"
   | "PIPELINE"
   | "STAGE"
@@ -109,6 +111,7 @@ export const unknown = (
   | Instance
   | Database
   | DataSource
+  | BackupSetting
   | Issue
   | Pipeline
   | Stage
@@ -222,6 +225,18 @@ export const unknown = (
     memberList: [],
     name: "<<Unknown data source>>",
     type: "RO",
+  };
+
+  const UNKNOWN_BACKUP_SETTING: BackupSetting = {
+    id: UNKNOWN_ID,
+    database: UNKNOWN_DATABASE,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    enabled: false,
+    hour: 0,
+    dayOfWeek: 0,
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -356,6 +371,8 @@ export const unknown = (
       return UNKNOWN_DATABASE;
     case "DATA_SOURCE":
       return UNKNOWN_DATA_SOURCE;
+    case "BACKUP_SETTING":
+      return UNKNOWN_BACKUP_SETTING;
     case "ISSUE":
       return UNKNOWN_ISSUE;
     case "PIPELINE":
@@ -389,6 +406,7 @@ export const empty = (
   | Instance
   | Database
   | DataSource
+  | BackupSetting
   | Issue
   | Pipeline
   | Stage
@@ -500,6 +518,18 @@ export const empty = (
     memberList: [],
     name: "",
     type: "RO",
+  };
+
+  const EMPTY_BACKUP_SETTING: BackupSetting = {
+    id: EMPTY_ID,
+    database: EMPTY_DATABASE,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    enabled: false,
+    hour: 0,
+    dayOfWeek: 0,
   };
 
   const EMPTY_PIPELINE: Pipeline = {
@@ -634,6 +664,8 @@ export const empty = (
       return EMPTY_DATABASE;
     case "DATA_SOURCE":
       return EMPTY_DATA_SOURCE;
+    case "BACKUP_SETTING":
+      return EMPTY_BACKUP_SETTING;
     case "ISSUE":
       return EMPTY_ISSUE;
     case "PIPELINE":

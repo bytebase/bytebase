@@ -268,7 +268,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backupCreate := &api.BackupCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create backup request").SetInternal(err)
 		}
 		backupCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 
@@ -372,6 +372,75 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, backupList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch table list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/database/:id/backupSetting", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		backupSettingSet := &api.BackupSettingSet{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingSet); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set backup setting request").SetInternal(err)
+		}
+		backupSettingSet.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+
+		backupSetting, err := s.BackupService.SetBackupSetting(context.Background(), backupSettingSet)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
+		}
+		backupSetting.Database = database
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create set backup setting response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/database/:id/backupSetting", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+
+		backupSettingGet := &api.BackupSettingGet{
+			DatabaseId: &id,
+		}
+		backupSetting, err := s.BackupService.GetBackupSetting(context.Background(), backupSettingGet)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
+		}
+		backupSetting.Database = database
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get backup setting response: %v", id)).SetInternal(err)
 		}
 		return nil
 	})
