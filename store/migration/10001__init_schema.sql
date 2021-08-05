@@ -644,8 +644,9 @@ CREATE TABLE backup_setting (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
     `enabled` INTEGER NOT NULL CHECK (`enabled` IN (0, 1)),
-    hour INTEGER NOT NULL CHECK (0 <= hour AND hour < 24),
-    day_of_week INTEGER NOT NULL CHECK (0 <= day_of_week AND day_of_week < 7)
+    -- hour and day_of_week can be -1 which is unset.
+    hour INTEGER NOT NULL CHECK (-1 <= hour AND hour < 24),
+    day_of_week INTEGER NOT NULL CHECK (-1 <= day_of_week AND day_of_week < 7)
 );
 
 CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
