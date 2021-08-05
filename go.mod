@@ -10,7 +10,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
-	github.com/gosimple/slug v1.10.0 // indirect
+	github.com/gosimple/slug v1.10.0
 	github.com/labstack/echo/v4 v4.2.2
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.7
