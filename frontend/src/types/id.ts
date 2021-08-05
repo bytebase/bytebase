@@ -15,6 +15,8 @@ export type BookmarkId = IdType;
 
 export type ProjectId = IdType;
 
+export type ProjectHookId = IdType;
+
 export type IssueId = IdType;
 
 export type PipelineId = IdType;

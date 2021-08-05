@@ -4,6 +4,7 @@ import activity from "./modules/activity";
 // Actuator module
 import actuator from "./modules/actuator";
 import auth from "./modules/auth";
+import backup from "./modules/backup";
 import bookmark from "./modules/bookmark";
 import command from "./modules/command";
 import database from "./modules/database";
@@ -20,6 +21,7 @@ import pipeline from "./modules/pipeline";
 import plan from "./modules/plan";
 import principal from "./modules/principal";
 import project from "./modules/project";
+import projectHook from "./modules/projectHook";
 import repository from "./modules/repository";
 // Following states are only stored in memory
 import router from "./modules/router";
@@ -28,7 +30,6 @@ import sql from "./modules/sql";
 import stage from "./modules/stage";
 import table from "./modules/table";
 import task from "./modules/task";
-import backup from "./modules/backup";
 // Following states are persisted in local storage
 import uistate from "./modules/uistate";
 import vcs from "./modules/vcs";
@@ -56,6 +57,7 @@ export const store: Store<any> = createStore({
     plan,
     principal,
     project,
+    projectHook,
     repository,
     router,
     setting,

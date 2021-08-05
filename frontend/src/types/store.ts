@@ -26,6 +26,7 @@ import { Notification } from "./notification";
 import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
+import { ProjectHook } from "./projectHook";
 import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
@@ -85,6 +86,10 @@ export interface TaskState {}
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
+}
+
+export interface ProjectHookState {
+  projectHookListByProjectId: Map<ProjectId, ProjectHook[]>;
 }
 
 export interface EnvironmentState {
