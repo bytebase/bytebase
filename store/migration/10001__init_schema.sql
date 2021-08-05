@@ -256,6 +256,45 @@ WHERE
 
 END;
 
+-- Project Hook
+CREATE TABLE project_hook (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL,
+    -- Comma separated list of activity triggers.
+    activity_list TEXT NOT NULL,
+    UNIQUE(project_id, url)
+);
+
+CREATE INDEX idx_project_hook_project_id ON project_hook(project_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('project_hook', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_project_hook_modification_time`
+AFTER
+UPDATE
+    ON `project_hook` FOR EACH ROW BEGIN
+UPDATE
+    `project_hook`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Instance
 CREATE TABLE instance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

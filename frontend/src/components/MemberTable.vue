@@ -1,7 +1,7 @@
 <template>
   <BBTable
     class="mt-2"
-    :columnList="columnList"
+    :columnList="COLUMN_LIST"
     :sectionDataSource="dataSource"
     :compactSection="true"
     :showHeader="true"
@@ -11,32 +11,17 @@
       <BBTableHeaderCell
         :leftPadding="4"
         class="w-auto table-cell"
-        :title="columnList[0].title"
+        :title="COLUMN_LIST[0].title"
       />
-      <template v-if="hasAdminFeature">
-        <BBTableHeaderCell
-          class="w-8 table-cell"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell
-          class="w-72 table-cell"
-          :title="columnList[2].title"
-        />
-        <BBTableHeaderCell
-          class="w-auto table-cell"
-          :title="columnList[3].title"
-        />
-      </template>
-      <template v-else>
-        <BBTableHeaderCell
-          class="w-72 table-cell"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell
-          class="w-auto table-cell"
-          :title="columnList[2].title"
-        />
-      </template>
+      <BBTableHeaderCell class="w-8 table-cell" :title="COLUMN_LIST[1].title" />
+      <BBTableHeaderCell
+        class="w-72 table-cell"
+        :title="COLUMN_LIST[2].title"
+      />
+      <BBTableHeaderCell
+        class="w-auto table-cell"
+        :title="COLUMN_LIST[3].title"
+      />
     </template>
     <template v-slot:body="{ rowData: member }">
       <BBTableCell :leftPadding="4" class="table-cell">
@@ -94,7 +79,8 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="hasAdminFeature" class="">
+      <BBTableCell class="tooltip-wrapper">
+        <span class="tooltip">{{ changeRoleTooltip(member) }}</span>
         <RoleSelect
           :selectedRole="member.role"
           :disabled="!allowChangeRole(member)"
@@ -169,6 +155,21 @@ import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 
+const COLUMN_LIST: BBTableColumn[] = [
+  {
+    title: "Account",
+  },
+  {
+    title: "Role",
+  },
+  {
+    title: "Updated Time",
+  },
+  {
+    title: "",
+  },
+];
+
 interface LocalState {}
 
 export default {
@@ -210,60 +211,22 @@ export default {
       }
 
       const dataSource: BBTableSectionDataSource<Member>[] = [];
-      if (hasAdminFeature.value) {
-        dataSource.push({
-          title: "Owner",
-          list: ownerList,
-        });
+      dataSource.push({
+        title: "Owner",
+        list: ownerList,
+      });
 
-        dataSource.push({
-          title: "DBA",
-          list: dbaList,
-        });
+      dataSource.push({
+        title: "DBA",
+        list: dbaList,
+      });
 
-        dataSource.push({
-          title: "Developer",
-          list: developerList,
-        });
-      } else {
-        ownerList.push(...dbaList);
-        ownerList.push(...developerList);
+      dataSource.push({
+        title: "Developer",
+        list: developerList,
+      });
 
-        dataSource.push({
-          title: "Member",
-          list: ownerList,
-        });
-      }
       return dataSource;
-    });
-
-    const columnList = computed((): BBTableColumn[] => {
-      return hasAdminFeature.value
-        ? [
-            {
-              title: "Account",
-            },
-            {
-              title: "Role",
-            },
-            {
-              title: "Updated Time",
-            },
-            {
-              title: "",
-            },
-          ]
-        : [
-            {
-              title: "Account",
-            },
-            {
-              title: "Updated Time",
-            },
-            {
-              title: "",
-            },
-          ];
     });
 
     const allowEdit = computed(() => {
@@ -272,10 +235,27 @@ export default {
 
     const allowChangeRole = (member: Member) => {
       return (
+        hasAdminFeature.value &&
         allowEdit.value &&
         member.rowStatus == "NORMAL" &&
         (member.role != "OWNER" || dataSource.value[0].list.length > 1)
       );
+    };
+
+    const changeRoleTooltip = (member: Member): string => {
+      if (allowChangeRole(member)) {
+        return "";
+      }
+
+      if (!hasAdminFeature.value) {
+        return "Upgrade to Team plan to enable role management";
+      }
+
+      if (!allowEdit.value) {
+        return "Only Owner can change the role";
+      }
+
+      return "Can not remove the last Owner";
     };
 
     const allowDeactivateMember = (member: Member) => {
@@ -316,14 +296,15 @@ export default {
     };
 
     return {
+      COLUMN_LIST,
       state,
       currentUser,
       hasAdminFeature,
       showUpgradeInfo,
-      columnList,
       dataSource,
       allowEdit,
       allowChangeRole,
+      changeRoleTooltip,
       allowDeactivateMember,
       allowActivateMember,
       changeRole,

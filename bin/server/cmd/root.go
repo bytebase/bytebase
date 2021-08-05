@@ -53,9 +53,11 @@ ________________________________________________________________________________
 // -----------------------------------Command Line Config BEGIN------------------------------------
 var (
 	// Used for flags.
-	host    string
-	port    int
-	dataDir string
+	host         string
+	port         int
+	frontendHost string
+	frontendPort int
+	dataDir      string
 	// When we are running in readonly mode:
 	// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
 	// - Requests other than GET will be rejected
@@ -93,6 +95,13 @@ var (
 				os.Exit(1)
 			}
 
+			if frontendHost == "" {
+				frontendHost = host
+			}
+			if frontendPort == 0 {
+				frontendPort = port
+			}
+
 			start()
 
 			fmt.Print(BYE_BANNER)
@@ -106,8 +115,10 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().IntVar(&port, "port", 80, "port where Bytebase is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().IntVar(&port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().StringVar(&frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
+	rootCmd.PersistentFlags().IntVar(&frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
@@ -204,8 +215,8 @@ func newMain() *main {
 
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
-	fmt.Printf("host=%s\n", host)
-	fmt.Printf("port=%d\n", port)
+	fmt.Printf("server=%s:%d\n", host, port)
+	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
 	fmt.Printf("readonly=%t\n", readonly)
@@ -265,12 +276,13 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, version, host, port, m.profile.mode, config.secret, readonly, demo, debug)
+	server := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, config.secret, readonly, demo, debug)
 	server.SettingService = settingService
 	server.PrincipalService = store.NewPrincipalService(m.l, db, server.CacheService)
 	server.MemberService = store.NewMemberService(m.l, db, server.CacheService)
 	server.ProjectService = store.NewProjectService(m.l, db, server.CacheService)
 	server.ProjectMemberService = store.NewProjectMemberService(m.l, db)
+	server.ProjectHookService = store.NewProjectHookService(m.l, db)
 	server.EnvironmentService = store.NewEnvironmentService(m.l, db, server.CacheService)
 	server.DataSourceService = store.NewDataSourceService(m.l, db)
 	server.DatabaseService = store.NewDatabaseService(m.l, db, server.CacheService)
