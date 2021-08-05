@@ -15,6 +15,7 @@ p, DBA, /project/{projectId}/member/{memberId}, PATCH
 p, DBA, /project/{projectId}/member/{memberId}, DELETE
 p, DBA, /project/{projectId}/hook, GET
 p, DBA, /project/{projectId}/hook, POST
+p, DBA, /project/{projectId}/hook/{hookId}, GET
 p, DBA, /project/{projectId}/hook/{hookId}, PATCH
 p, DBA, /project/{projectId}/hook/{hookId}, DELETE
 p, DBA, /environment, POST
