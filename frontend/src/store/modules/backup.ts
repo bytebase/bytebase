@@ -116,6 +116,21 @@ const actions = {
     return backupList;
   },
 
+  async fetchBackupSettingByDatabaseId(
+    { commit, rootGetters }: any,
+    databaseId: DatabaseId
+  ) {
+    const data = (await axios.get(`/api/database/${databaseId}/backupSetting`)).data;
+    const backupSetting: BackupSetting = convertBackupSetting(
+      data.data,
+      data.included,
+      rootGetters
+    );
+
+    commit("setBackupSettingByDatabaseId", { databaseId, backupSetting });
+    return backupSetting;
+  },
+
   async setBackupSetting(
     { commit, rootGetters }: any,
     { newBackupSetting }: { newBackupSetting: BackupSettingSet }

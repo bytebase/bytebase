@@ -3,7 +3,7 @@
     <div class="text-lg leading-6 font-medium text-main mb-4">Automatic backup settings</div>
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
       <div class="sm:col-span-3 sm:col-start-1">
-        <label for="backupName" class="textlabel block"> Hour </label>
+        <label for="autoBackupHour" class="textlabel block"> Hour </label>
         <input
         required
         type="text"
@@ -33,7 +33,7 @@
           type="checkbox"
           id="autoBackupEnabled"
           :checked="state.autoBackupEnabled"
-          @change="state.autoBackupEnabled = $event.target.checked"
+          @change="state.autoBackupEnabled=$event.target.checked"
         />
       </div>
       <div class="sm:col-span-1">
@@ -97,7 +97,7 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, reactive, PropType, ComputedRef } from "vue";
+import { computed, watchEffect, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { v1 as uuidv1 } from "uuid";
@@ -165,6 +165,17 @@ export default {
         newBackup: newBackup
       });
     };
+
+    const prepareBackupSetting = () => {
+      store.dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
+        .then(setting => {
+          state.autoBackupEnabled = setting.enabled;
+          state.autoBackupHour = setting.hour;
+          state.autoBackupDayOfWeek = setting.dayOfWeek;
+        });
+    };
+
+    watchEffect(prepareBackupSetting);
 
     const setAutoBackupSetting = () => {
       const newBackupSetting: BackupSettingSet = {
