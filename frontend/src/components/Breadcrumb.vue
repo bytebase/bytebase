@@ -132,6 +132,7 @@ export default {
       );
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
+      const projectHookSlug = routeSlug.projectHookSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
       const tableName = routeSlug.tableName;
@@ -149,6 +150,16 @@ export default {
           name: "Project",
           path: "/project",
         });
+
+        if (projectHookSlug) {
+          const project = store.getters["project/projectById"](
+            idFromSlug(projectSlug)
+          );
+          list.push({
+            name: `${project.name}`,
+            path: `/project/${projectSlug}`,
+          });
+        }
       } else if (instanceSlug) {
         list.push({
           name: "Instance",

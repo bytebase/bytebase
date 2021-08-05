@@ -38,6 +38,23 @@ const getters = {
       }
 
       {
+        // /project/:projectSlug/hook/:hookSlug
+        // Total 3 elements, 2nd element is the project slug, 3rd element is the project webhook slug
+        const projectComponents = currentRoute.path.match(
+          "/project/([0-9a-zA-Z_-]+)/hook/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined, undefined];
+        if (projectComponents[1] && projectComponents[2]) {
+          return {
+            projectSlug: projectComponents[1],
+            projectHookSlug:
+              projectComponents[2].toLowerCase() == "new"
+                ? undefined
+                : projectComponents[2],
+          };
+        }
+      }
+
+      {
         // /project/:projectSlug
         // Total 2 elements, 2nd element is the project slug
         const projectComponents = currentRoute.path.match(
