@@ -6,6 +6,7 @@ import {
   Instance,
   IssueId,
   Project,
+  ProjectHook,
   Task,
   VCS,
 } from "../types";
@@ -32,6 +33,10 @@ export function environmentSlug(environment: Environment): string {
 
 export function projectSlug(project: Project): string {
   return [slug(project.name), project.id].join("-");
+}
+
+export function projectHookSlug(projectHook: ProjectHook): string {
+  return [slug(projectHook.name), projectHook.id].join("-");
 }
 
 export function instanceSlug(instance: Instance): string {

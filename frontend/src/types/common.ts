@@ -1,8 +1,8 @@
 import { Activity } from "./activity";
+import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
-import { BackupSetting } from "./backup";
 import { Environment } from "./environment";
 import { CommandId, CommandRegisterId, PrincipalId } from "./id";
 import { Inbox } from "./inbox";
@@ -38,6 +38,7 @@ export type RouterSlug = {
   principalId?: PrincipalId;
   environmentSlug?: string;
   projectSlug?: string;
+  projectHookSlug?: string;
   issueSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
