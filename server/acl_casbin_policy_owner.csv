@@ -19,6 +19,7 @@ p, OWNER, /project/{projectId}/member/{memberId}, PATCH
 p, OWNER, /project/{projectId}/member/{memberId}, DELETE
 p, OWNER, /project/{projectId}/hook, GET
 p, OWNER, /project/{projectId}/hook, POST
+p, OWNER, /project/{projectId}/hook/{hookId}, GET
 p, OWNER, /project/{projectId}/hook/{hookId}, PATCH
 p, OWNER, /project/{projectId}/hook/{hookId}, DELETE
 p, OWNER, /environment, POST

@@ -73,6 +73,39 @@ func (s *Server) registerProjectHookRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/project/:projectId/hook/:hookId", func(c echo.Context) error {
+		_, err := strconv.Atoi(c.Param("projectId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+		}
+
+		id, err := strconv.Atoi(c.Param("hookId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project webhook ID is not a number: %s", c.Param("hookId"))).SetInternal(err)
+		}
+
+		find := &api.ProjectHookFind{
+			ID: &id,
+		}
+		hook, err := s.ProjectHookService.FindProjectHook(context.Background(), find)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
+		}
+
+		if err := s.ComposeProjectHookRelationship(context.Background(), hook); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch webhook relationship").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, hook); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project webhook ID response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.PATCH("/project/:projectId/hook/:hookId", func(c echo.Context) error {
 		_, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
@@ -81,7 +114,7 @@ func (s *Server) registerProjectHookRoutes(g *echo.Group) {
 
 		id, err := strconv.Atoi(c.Param("hookId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Webhook ID is not a number: %s", c.Param("hookId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project webhook ID is not a number: %s", c.Param("hookId"))).SetInternal(err)
 		}
 
 		hookPatch := &api.ProjectHookPatch{
@@ -98,7 +131,7 @@ func (s *Server) registerProjectHookRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 			}
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Webhook url already exists in the project: %s", *hookPatch.URL))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Hook url already exists in the project: %s", *hookPatch.URL))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project webhook ID: %v", id)).SetInternal(err)
 		}

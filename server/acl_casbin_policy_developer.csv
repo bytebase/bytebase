@@ -15,6 +15,7 @@ p, DEVELOPER, /project/{projectId}/member/{memberId}, PATCH
 p, DEVELOPER, /project/{projectId}/member/{memberId}, DELETE
 p, DEVELOPER, /project/{projectId}/hook, GET
 p, DEVELOPER, /project/{projectId}/hook, POST
+p, DEVELOPER, /project/{projectId}/hook/{hookId}, GET
 p, DEVELOPER, /project/{projectId}/hook/{hookId}, PATCH
 p, DEVELOPER, /project/{projectId}/hook/{hookId}, DELETE
 p, DEVELOPER, /environment, GET
