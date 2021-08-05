@@ -6,7 +6,7 @@ import (
 )
 
 type ProjectHook struct {
-	ID int `jsonapi:"primary,projectWebhookMember"`
+	ID int `jsonapi:"primary,projectHookMember"`
 
 	// Standard fields
 	CreatorId int
