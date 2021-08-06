@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 )
 
 func activeProfile(dataDir string, isDemo bool) profile {
@@ -16,9 +17,10 @@ func activeProfile(dataDir string, isDemo bool) profile {
 		forceResetSeed = true
 	}
 	return profile{
-		mode:           "release",
-		dsn:            dsn,
-		seedDir:        seedDir,
-		forceResetSeed: forceResetSeed,
+		mode:                 "release",
+		dsn:                  dsn,
+		seedDir:              seedDir,
+		forceResetSeed:       forceResetSeed,
+		backupRunnerInterval: 10 * time.Minute,
 	}
 }

@@ -137,6 +137,8 @@ type profile struct {
 	seedDir string
 	// force reset seed, true for testing and demo
 	forceResetSeed bool
+	// backupRunnerInterval is the interval for backup runner.
+	backupRunnerInterval time.Duration
 }
 
 // retrieved via the SettingService upon startup
@@ -276,7 +278,7 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, config.secret, readonly, demo, debug)
+	server := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	server.SettingService = settingService
 	server.PrincipalService = store.NewPrincipalService(m.l, db, server.CacheService)
 	server.MemberService = store.NewMemberService(m.l, db, server.CacheService)

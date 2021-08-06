@@ -11,22 +11,20 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	backupRunnerInterval = time.Duration(10) * time.Minute
-)
-
 // NewBackupRunner creates a new backup runner.
-func NewBackupRunner(logger *zap.Logger, server *Server) *BackupRunner {
+func NewBackupRunner(logger *zap.Logger, server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
-		l:      logger,
-		server: server,
+		l:                    logger,
+		server:               server,
+		backupRunnerInterval: backupRunnerInterval,
 	}
 }
 
 // BackupRunner is the backup runner scheduling automatic backups.
 type BackupRunner struct {
-	l      *zap.Logger
-	server *Server
+	l                    *zap.Logger
+	server               *Server
+	backupRunnerInterval time.Duration
 }
 
 // Run is the runner for backup runner.
@@ -81,7 +79,7 @@ func (s *BackupRunner) Run() error {
 				}
 			}()
 
-			time.Sleep(backupRunnerInterval)
+			time.Sleep(s.backupRunnerInterval)
 		}
 	}()
 
