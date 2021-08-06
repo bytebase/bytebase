@@ -133,18 +133,16 @@ func createProjectHook(ctx context.Context, tx *Tx, create *api.ProjectHookCreat
 			updater_id,
 			project_id,
 			name,
-			description,
 			url,
 			activity_list
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, description, url, activity_list
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, url, activity_list
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.ProjectId,
 		create.Name,
-		create.Description,
 		create.URL,
 		strings.Join(create.ActivityList, ","),
 	)
@@ -165,7 +163,6 @@ func createProjectHook(ctx context.Context, tx *Tx, create *api.ProjectHookCreat
 		&projectHook.UpdatedTs,
 		&projectHook.ProjectId,
 		&projectHook.Name,
-		&projectHook.Description,
 		&projectHook.URL,
 		&activityList,
 	); err != nil {
@@ -195,7 +192,6 @@ func findProjectHookList(ctx context.Context, tx *Tx, find *api.ProjectHookFind)
 		    updated_ts,
 			project_id,
 		    name,
-		    description,
 			url,
 			activity_list
 		FROM project_hook
@@ -220,7 +216,6 @@ func findProjectHookList(ctx context.Context, tx *Tx, find *api.ProjectHookFind)
 			&projectHook.UpdatedTs,
 			&projectHook.ProjectId,
 			&projectHook.Name,
-			&projectHook.Description,
 			&projectHook.URL,
 			&activityList,
 		); err != nil {
@@ -253,9 +248,6 @@ func patchProjectHook(ctx context.Context, tx *Tx, patch *api.ProjectHookPatch) 
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
-	if v := patch.Description; v != nil {
-		set, args = append(set, "description = ?"), append(args, *v)
-	}
 	if v := patch.URL; v != nil {
 		set, args = append(set, "url = ?"), append(args, *v)
 	}
@@ -271,7 +263,7 @@ func patchProjectHook(ctx context.Context, tx *Tx, patch *api.ProjectHookPatch) 
 		UPDATE project_hook
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, description, url, activity_list
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, url, activity_list
 	`,
 		args...,
 	)
@@ -291,7 +283,6 @@ func patchProjectHook(ctx context.Context, tx *Tx, patch *api.ProjectHookPatch) 
 			&projectHook.UpdatedTs,
 			&projectHook.ProjectId,
 			&projectHook.Name,
-			&projectHook.Description,
 			&projectHook.URL,
 			&activityList,
 		); err != nil {

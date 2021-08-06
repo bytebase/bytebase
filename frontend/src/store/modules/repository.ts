@@ -1,29 +1,29 @@
 import axios from "axios";
 import {
-  VCSId,
-  RepositoryState,
-  ResourceObject,
-  ResourceIdentifier,
-  unknown,
-  Repository,
-  RepositoryCreate,
   Project,
   ProjectId,
-  VCS,
+  Repository,
+  RepositoryCreate,
   RepositoryPatch,
+  RepositoryState,
+  ResourceIdentifier,
+  ResourceObject,
+  unknown,
+  VCS,
+  VCSId,
 } from "../../types";
 
 function convert(
-  respository: ResourceObject,
+  repository: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
 ): Repository {
-  const vcsId = (respository.relationships!.vcs.data as ResourceIdentifier).id;
+  const vcsId = (repository.relationships!.vcs.data as ResourceIdentifier).id;
   let vcs: VCS = unknown("VCS") as VCS;
   vcs.id = parseInt(vcsId);
 
   const projectId = (
-    respository.relationships!.project.data as ResourceIdentifier
+    repository.relationships!.project.data as ResourceIdentifier
   ).id;
   let project: Project = unknown("PROJECT") as Project;
   project.id = parseInt(projectId);
@@ -38,8 +38,8 @@ function convert(
   }
 
   return {
-    ...(respository.attributes as Omit<Repository, "id" | "vcs" | "project">),
-    id: parseInt(respository.id),
+    ...(repository.attributes as Omit<Repository, "id" | "vcs" | "project">),
+    id: parseInt(repository.id),
     vcs,
     project,
   };

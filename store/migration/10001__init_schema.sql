@@ -268,7 +268,6 @@ CREATE TABLE project_hook (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
     activity_list TEXT NOT NULL,
@@ -645,8 +644,14 @@ CREATE TABLE backup_setting (
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
     `enabled` INTEGER NOT NULL CHECK (`enabled` IN (0, 1)),
     -- hour and day_of_week can be -1 which is unset.
-    hour INTEGER NOT NULL CHECK (-1 <= hour AND hour < 24),
-    day_of_week INTEGER NOT NULL CHECK (-1 <= day_of_week AND day_of_week < 7)
+    hour INTEGER NOT NULL CHECK (
+        -1 <= hour
+        AND hour < 24
+    ),
+    day_of_week INTEGER NOT NULL CHECK (
+        -1 <= day_of_week
+        AND day_of_week < 7
+    )
 );
 
 CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
