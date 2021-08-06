@@ -79,7 +79,7 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
-func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -117,7 +117,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 
 		schemaSyncer := NewSchemaSyncer(logger, s)
 		s.SchemaSyncer = schemaSyncer
-		s.BackupRunner = NewBackupRunner(logger, s)
+		s.BackupRunner = NewBackupRunner(logger, s, backupRunnerInterval)
 	}
 
 	// Middleware
