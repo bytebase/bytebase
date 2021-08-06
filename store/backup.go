@@ -314,7 +314,8 @@ func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.B
 			database_id,
 		  enabled,
 			hour,
-			day_of_week
+			day_of_week,
+			path
 		FROM backup_setting
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -338,6 +339,7 @@ func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.B
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
+			&backupSetting.Path,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -381,21 +383,24 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 			database_id,
 			`+"`enabled`,"+`
 			hour,
-			day_of_week
+			day_of_week,
+			path
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(database_id) DO UPDATE SET
 		  enabled=excluded.enabled,
 		  hour=excluded.hour,
-		  day_of_week=excluded.day_of_week
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`
-	`,
+		  day_of_week=excluded.day_of_week,
+			path=excluded.path
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path"+`
+			`,
 		setting.CreatorId,
 		setting.CreatorId,
 		setting.DatabaseId,
 		setting.Enabled,
 		setting.Hour,
 		setting.DayOfWeek,
+		setting.Path,
 	)
 
 	if err != nil {
@@ -415,6 +420,7 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 		&backupSetting.Enabled,
 		&backupSetting.Hour,
 		&backupSetting.DayOfWeek,
+		&backupSetting.Path,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -440,7 +446,8 @@ func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.B
 			database_id,
 		  enabled,
 			hour,
-			day_of_week
+			day_of_week,
+			path
 		FROM backup_setting
 		WHERE
 			enabled = 1
@@ -473,6 +480,7 @@ func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.B
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
+			&backupSetting.Path,
 		); err != nil {
 			return nil, FormatError(err)
 		}
