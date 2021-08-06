@@ -643,11 +643,11 @@ CREATE TABLE backup_setting (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
     `enabled` INTEGER NOT NULL CHECK (`enabled` IN (0, 1)),
-    -- hour and day_of_week can be -1 which is unset.
     hour INTEGER NOT NULL CHECK (
-        -1 <= hour
+        0 <= hour
         AND hour < 24
     ),
+    -- day_of_week can be -1 which is wildcard (daily automatic backup).
     day_of_week INTEGER NOT NULL CHECK (
         -1 <= day_of_week
         AND day_of_week < 7
