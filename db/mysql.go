@@ -102,7 +102,10 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 			return nil, nil, err
 		}
 
-		name := fmt.Sprintf("`%s`@`%s`", user, host)
+		// Uses single quote instead of backtick to escape because this is a string
+		// instead of table (which should use backtick instead). MySQL actually works
+		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
+		name := fmt.Sprintf("'%s'@'%s'", user, host)
 		grantRows, err := driver.db.QueryContext(ctx,
 			fmt.Sprintf("SHOW GRANTS FOR %s", name),
 		)
