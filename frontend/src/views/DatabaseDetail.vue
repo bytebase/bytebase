@@ -204,7 +204,7 @@ type DatabaseTabItem = {
 
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: "Overview", hash: "overview" },
-  // TODO: implement backup component. { name: "Backup", hash: "backup" },
+  { name: "Backup", hash: "backup" },
 ];
 
 interface LocalState {
