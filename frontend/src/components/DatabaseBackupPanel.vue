@@ -109,11 +109,11 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, reactive, PropType } from "vue";
+import { computed, watchEffect, reactive, onUnmounted, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { v1 as uuidv1 } from "uuid";
-import { BackupCreate, BackupSettingSet, Database } from "../types";
+import { Backup, BackupCreate, BackupSettingSet, Database } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 
 interface LocalState {
@@ -123,6 +123,7 @@ interface LocalState {
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
   autoBackupPath: string;
+  pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
 export default {
@@ -139,6 +140,9 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
+    const NORMAL_BACKUPS_POLL_INTERVAL = 10000;
+    // Add jitter to avoid timer from different clients converging to the same polling frequency.
+    const POLL_JITTER = 500;
 
     const state = reactive<LocalState>({
       backupName: uuidv1(),
@@ -147,6 +151,12 @@ export default {
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
       autoBackupPath: "",
+    });
+
+    onUnmounted(() => {
+      if (state.pollBackupsTimer) {
+        clearInterval(state.pollBackupsTimer);
+      }
     });
 
     const prepareBackupList = () => {
@@ -178,6 +188,28 @@ export default {
         databaseId: props.database.id,
         newBackup: newBackup
       });
+      pollBackups(NORMAL_BACKUPS_POLL_INTERVAL);
+    };
+
+    // pollBackups invalidates the current timer and schedule a new timer in <<interval>> microseconds
+    const pollBackups = (interval: number) => {
+      if (state.pollBackupsTimer) {
+        clearInterval(state.pollBackupsTimer);
+      }
+      state.pollBackupsTimer = setTimeout(() => {
+        store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id).then((backups : Backup[]) => {
+          var pending = false;
+          for (let idx in backups) {
+            if (backups[idx].status.includes("PENDING")) {
+              pending = true;
+              continue;
+            }
+          }
+          if (pending) {
+            pollBackups(Math.min(interval * 2, NORMAL_BACKUPS_POLL_INTERVAL));
+          }
+        });
+      }, Math.max(1000, Math.min(interval, NORMAL_BACKUPS_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
     const prepareBackupSetting = () => {
