@@ -177,7 +177,7 @@
       <DatabaseOverviewPanel id="overview" :database="database" />
     </template>
     <template v-if="state.selectedIndex == BACKUP_TAB">
-      <DatabaseBackupPanel />
+      <DatabaseBackupPanel :database="database" />
     </template>
   </div>
 </template>
