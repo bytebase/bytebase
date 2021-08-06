@@ -178,11 +178,28 @@ export default {
     watchEffect(prepareBackupSetting);
 
     const setAutoBackupSetting = () => {
+      var hour = state.autoBackupHour!;
+      var dayOfWeek = state.autoBackupDayOfWeek!;
+      if (hour != -1) {
+        hour = hour + props.database.timezoneOffset / 60 / 60;
+        var dayOffset = 0;
+        if (hour > 23) {
+          hour = hour - 24;
+          dayOffset = 1;
+        }
+        if (hour < 0) {
+          hour = hour + 24;
+          dayOffset = -1;
+        }
+        if (dayOfWeek != -1) {
+          dayOfWeek = (7 + dayOfWeek + dayOffset) % 7;
+        }
+      }
       const newBackupSetting: BackupSettingSet = {
         databaseId: props.database.id!,
         enabled: state.autoBackupEnabled! ? 1 : 0,
-        hour: state.autoBackupHour!,
-        dayOfWeek: state.autoBackupDayOfWeek!,
+        hour: hour,
+        dayOfWeek: dayOfWeek,
       };
       store.dispatch("backup/setBackupSetting", {
         newBackupSetting: newBackupSetting,
