@@ -21,6 +21,7 @@ import (
 type Server struct {
 	TaskScheduler *TaskScheduler
 	SchemaSyncer  *SchemaSyncer
+	BackupRunner  *BackupRunner
 
 	CacheService api.CacheService
 
@@ -116,6 +117,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 
 		schemaSyncer := NewSchemaSyncer(logger, s)
 		s.SchemaSyncer = schemaSyncer
+		s.BackupRunner = NewBackupRunner(logger, s)
 	}
 
 	// Middleware
@@ -191,6 +193,10 @@ func (server *Server) Run() error {
 		}
 
 		if err := server.SchemaSyncer.Run(); err != nil {
+			return err
+		}
+
+		if err := server.BackupRunner.Run(); err != nil {
 			return err
 		}
 	}

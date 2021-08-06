@@ -8,11 +8,23 @@ import (
 // BackupStatus is the status of a backup.
 type BackupStatus string
 
+// BackupType is the type of a backup.
+type BackupType string
+
+// BackupStorageBackend is the storage backend of a backup.
+type BackupStorageBackend string
+
 const (
 	// BackupStatusPendingCreate is the status for PENDING_CREATE.
 	BackupStatusPendingCreate BackupStatus = "PENDING_CREATE"
 	// BackupStatusDone is the status for DONE.
 	BackupStatusDone BackupStatus = "DONE"
+	// BackupTypeAutomatic is the type for automatic backup.
+	BackupTypeAutomatic BackupType = "AUTOMATIC"
+	// BackupTypeManual is the type for manual backup.
+	BackupTypeManual BackupType = "MANUAL"
+	// BackupStorageBackendLocal is the local storage backend for a backup.
+	BackupStorageBackendLocal BackupStorageBackend = "LOCAL"
 )
 
 type Backup struct {
@@ -133,6 +145,12 @@ type BackupSettingSet struct {
 	DayOfWeek int `jsonapi:"attr,dayOfWeek"`
 }
 
+// BackupSettingsMatch is the message to find backup settings matching the conditions.
+type BackupSettingsMatch struct {
+	Hour      int
+	DayOfWeek int
+}
+
 // BackupService is the backend for backups.
 type BackupService interface {
 	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
@@ -141,4 +159,5 @@ type BackupService interface {
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
 	GetBackupSetting(ctx context.Context, get *BackupSettingGet) (*BackupSetting, error)
 	SetBackupSetting(ctx context.Context, setting *BackupSettingSet) (*BackupSetting, error)
+	GetBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSetting, error)
 }
