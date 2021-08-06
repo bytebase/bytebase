@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase"
@@ -49,6 +50,7 @@ func (s *BackupRunner) Run() error {
 					DayOfWeek: int(t.Weekday()),
 				}
 				uniqueKey := fmt.Sprintf("%v", t.Unix())
+				epoch := time.Now().UTC().Unix()
 				list, err := s.server.BackupService.GetBackupSettingsMatch(context.Background(), match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
@@ -68,14 +70,14 @@ func (s *BackupRunner) Run() error {
 					}
 					backupSetting.Database = database
 
-					go func(backupSetting *api.BackupSetting, uniqueKey string) {
-						if err := s.scheduleBackupTask(backupSetting, uniqueKey); err != nil {
+					go func(backupSetting *api.BackupSetting, uniqueKey string, epoch int64) {
+						if err := s.scheduleBackupTask(backupSetting, uniqueKey, epoch); err != nil {
 							s.l.Error("Failed to create automatic backup for database",
 								zap.Int("id", backupSetting.ID),
 								zap.String("databaseID", fmt.Sprintf("%v", backupSetting.DatabaseId)),
 								zap.String("error", err.Error()))
 						}
-					}(backupSetting, uniqueKey)
+					}(backupSetting, uniqueKey, epoch)
 				}
 			}()
 
@@ -86,8 +88,12 @@ func (s *BackupRunner) Run() error {
 	return nil
 }
 
-func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniqueKey string) error {
+func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniqueKey string, epoch int64) error {
 	key := fmt.Sprintf("auto-backup-%s-%v", uniqueKey, backupSetting.DatabaseId)
+	path := fmt.Sprintf("%s-%s-%v.sql", backupSetting.Database.Instance.Environment.Name, backupSetting.Database.Name, epoch)
+	if backupSetting.Path != "" {
+		path = strings.ReplaceAll(backupSetting.Path, "{{TIME}}", fmt.Sprintf("%v", epoch))
+	}
 	backupCreate := &api.BackupCreate{
 		CreatorId:      api.SYSTEM_BOT_ID,
 		DatabaseId:     backupSetting.DatabaseId,
@@ -95,8 +101,8 @@ func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniq
 		Status:         string(api.BackupStatusPendingCreate),
 		Type:           string(api.BackupTypeAutomatic),
 		StorageBackend: string(api.BackupStorageBackendLocal),
-		Path:           fmt.Sprintf("%s.sql", key),
-		Comment:        fmt.Sprintf("Automatic backup for database %s at %s", backupSetting.Database.Name, uniqueKey),
+		Path:           path,
+		Comment:        fmt.Sprintf("Automatic backup for database %s at %v", backupSetting.Database.Name, epoch),
 	}
 
 	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)

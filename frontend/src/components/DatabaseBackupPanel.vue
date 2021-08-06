@@ -183,9 +183,10 @@ export default {
     const prepareBackupSetting = () => {
       store.dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
         .then(setting => {
+          var {hour, dayOfWeek} = alignUTC(setting.hour, setting.dayOfWeek, props.database.timezoneOffset);
           state.autoBackupEnabled = setting.enabled;
-          state.autoBackupHour = setting.hour;
-          state.autoBackupDayOfWeek = setting.dayOfWeek;
+          state.autoBackupHour = hour;
+          state.autoBackupDayOfWeek = dayOfWeek;
           state.autoBackupPath = setting.path;
         });
     };
@@ -193,10 +194,22 @@ export default {
     watchEffect(prepareBackupSetting);
 
     const setAutoBackupSetting = () => {
-      var hour = state.autoBackupHour!;
-      var dayOfWeek = state.autoBackupDayOfWeek!;
+      var {hour, dayOfWeek} = alignUTC(state.autoBackupHour!, state.autoBackupDayOfWeek!, -props.database.timezoneOffset);
+      const newBackupSetting: BackupSettingSet = {
+        databaseId: props.database.id!,
+        enabled: state.autoBackupEnabled! ? 1 : 0,
+        hour: hour,
+        dayOfWeek: dayOfWeek,
+        path: state.autoBackupPath!,
+      };
+      store.dispatch("backup/setBackupSetting", {
+        newBackupSetting: newBackupSetting,
+      });
+    };
+
+    function alignUTC(hour : number, dayOfWeek : number, offsetInSecond : number) {
       if (hour != -1) {
-        hour = hour + props.database.timezoneOffset / 60 / 60;
+        hour = hour + offsetInSecond / 60 / 60;
         var dayOffset = 0;
         if (hour > 23) {
           hour = hour - 24;
@@ -210,17 +223,8 @@ export default {
           dayOfWeek = (7 + dayOfWeek + dayOffset) % 7;
         }
       }
-      const newBackupSetting: BackupSettingSet = {
-        databaseId: props.database.id!,
-        enabled: state.autoBackupEnabled! ? 1 : 0,
-        hour: hour,
-        dayOfWeek: dayOfWeek,
-        path: state.autoBackupPath!,
-      };
-      store.dispatch("backup/setBackupSetting", {
-        newBackupSetting: newBackupSetting,
-      });
-    };
+      return {hour, dayOfWeek};
+    }
 
     return {
       state,
