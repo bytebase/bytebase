@@ -34,22 +34,22 @@
           </dd>
         </div>
         <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">Created</dt>
-          <dd class="py-0.5 flex text-sm text-main col-span-4">
-            {{ humanizeTs(projectHook.createdTs) }}
-          </dd>
-        </div>
-        <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">Created by</dt>
-          <dd class="py-0.5 flex space-x-2 text-sm col-span-4">
-            <PrincipalAvatar :principal="projectHook.creator" :size="'SMALL'" />
-            <div class="flex flex-row items-center space-x-2">
-              <router-link
-                :to="`/u/${projectHook.creator.id}`"
-                class="normal-link"
-                >{{ projectHook.creator.name }}
-              </router-link>
+          <dd class="py-0.5 flex items-center text-sm text-main col-span-4">
+            <div class="flex flex-row items-center space-x-2 mr-1">
+              <div class="flex flex-row items-center space-x-1">
+                <PrincipalAvatar
+                  :principal="projectHook.creator"
+                  :size="'SMALL'"
+                />
+                <router-link
+                  :to="`/u/${projectHook.creator.id}`"
+                  class="normal-link"
+                  >{{ projectHook.creator.name }}
+                </router-link>
+              </div>
             </div>
+            at {{ humanizeTs(projectHook.createdTs) }}
           </dd>
         </div>
       </dl>
