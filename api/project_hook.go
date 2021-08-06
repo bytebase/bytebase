@@ -6,7 +6,7 @@ import (
 )
 
 type ProjectHook struct {
-	ID int `jsonapi:"primary,projectWebhookMember"`
+	ID int `jsonapi:"primary,projectHookMember"`
 
 	// Standard fields
 	CreatorId int
@@ -22,7 +22,6 @@ type ProjectHook struct {
 
 	// Domain specific fields
 	Name         string   `jsonapi:"attr,name"`
-	Description  string   `jsonapi:"attr,description"`
 	URL          string   `jsonapi:"attr,url"`
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
@@ -37,7 +36,6 @@ type ProjectHookCreate struct {
 
 	// Domain specific fields
 	Name         string   `jsonapi:"attr,name"`
-	Description  string   `jsonapi:"attr,description"`
 	URL          string   `jsonapi:"attr,url"`
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
@@ -67,7 +65,6 @@ type ProjectHookPatch struct {
 
 	// Domain specific fields
 	Name         *string   `jsonapi:"attr,name"`
-	Description  *string   `jsonapi:"attr,description"`
 	URL          *string   `jsonapi:"attr,url"`
 	ActivityList *[]string `jsonapi:"attr,activityList"`
 }

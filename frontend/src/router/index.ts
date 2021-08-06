@@ -401,13 +401,11 @@ const routes: Array<RouteRecordRaw> = [
           },
           {
             path: "project/:projectSlug",
-            name: "workspace.project.detail",
+            components: {
+              content: () => import("../layouts/ProjectLayout.vue"),
+              leftSidebar: DashboardSidebar,
+            },
             meta: {
-              title: (route: RouteLocationNormalized) => {
-                const slug = route.params.projectSlug as string;
-                return store.getters["project/projectById"](idFromSlug(slug))
-                  .name;
-              },
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
                 const project = store.getters["project/projectById"](
@@ -428,13 +426,55 @@ const routes: Array<RouteRecordRaw> = [
                 }
                 return new Map();
               },
-              allowBookmark: true,
-            },
-            components: {
-              content: () => import("../views/ProjectDetail.vue"),
-              leftSidebar: DashboardSidebar,
             },
             props: { content: true },
+            children: [
+              {
+                path: "",
+                name: "workspace.project.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.projectSlug as string;
+                    return store.getters["project/projectById"](
+                      idFromSlug(slug)
+                    ).name;
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/ProjectDetail.vue"),
+                props: true,
+              },
+              {
+                path: "hook/new",
+                name: "workspace.project.hook.create",
+                meta: {
+                  title: () => "Create webhook",
+                },
+                component: () => import("../views/ProjectWebhookCreate.vue"),
+                props: true,
+              },
+              {
+                path: "hook/:projectHookSlug",
+                name: "workspace.project.hook.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const projectSlug = route.params.projectSlug as string;
+                    const projectHookSlug = route.params
+                      .projectHookSlug as string;
+                    return (
+                      "Webhook - " +
+                      store.getters["projectHook/projectHookById"](
+                        idFromSlug(projectSlug),
+                        idFromSlug(projectHookSlug)
+                      ).name
+                    );
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/ProjectWebhookDetail.vue"),
+                props: true,
+              },
+            ],
           },
           {
             path: "instance",
@@ -792,6 +832,7 @@ router.beforeEach((to, from, next) => {
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
+  const projectHookSlug = routerSlug.projectHookSlug;
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
@@ -832,7 +873,25 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
       .then(() => {
-        next();
+        if (!projectHookSlug) {
+          next();
+        } else {
+          store
+            .dispatch("projectHook/fetchProjectHookById", {
+              projectId: idFromSlug(projectSlug),
+              projectHookId: idFromSlug(projectHookSlug),
+            })
+            .then(() => {
+              next();
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+              throw error;
+            });
+        }
       })
       .catch((error) => {
         next({
