@@ -421,3 +421,67 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 
 	return &backupSetting, nil
 }
+
+// GetBackupSettingsMatch retrieves a list of backup settings based on match condition.
+func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+		  id,
+		  creator_id,
+		  created_ts,
+		  updater_id,
+		  updated_ts,
+			database_id,
+		  enabled,
+			hour,
+			day_of_week
+		FROM backup_setting
+		WHERE
+			enabled = 1
+			AND (
+				(hour = ? AND day_of_week = ?)
+				OR
+				(hour = ? AND day_of_week = -1)
+				OR
+				(hour = -1 AND day_of_week = ?)
+			)
+		`,
+		match.Hour, match.DayOfWeek, match.Hour, match.DayOfWeek,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	list := make([]*api.BackupSetting, 0)
+	for rows.Next() {
+		var backupSetting api.BackupSetting
+		if err := rows.Scan(
+			&backupSetting.ID,
+			&backupSetting.CreatorId,
+			&backupSetting.CreatedTs,
+			&backupSetting.UpdaterId,
+			&backupSetting.UpdatedTs,
+			&backupSetting.DatabaseId,
+			&backupSetting.Enabled,
+			&backupSetting.Hour,
+			&backupSetting.DayOfWeek,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		list = append(list, &backupSetting)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return list, nil
+}
