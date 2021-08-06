@@ -2,7 +2,7 @@
   <div class="pt-6">
     <div class="text-lg leading-6 font-medium text-main mb-4">Automatic backup settings</div>
     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
-      <div class="sm:col-span-3 sm:col-start-1">
+      <div class="sm:col-span-1 sm:col-start-1">
         <label for="autoBackupHour" class="textlabel block"> Hour </label>
         <input
         required
@@ -15,7 +15,7 @@
         @input="state.autoBackupHour=Number($event.target.value)"
         />
       </div>
-      <div class="sm:col-span-5">
+      <div class="sm:col-span-1">
         <label for="autoBackupDayOfWeek" class="textlabel block"> Day of Week </label>
         <input
           type="text"
@@ -25,6 +25,18 @@
           class="textfield mt-1 w-full"
           :value="state.autoBackupDayOfWeek"
           @input="state.autoBackupDayOfWeek=Number($event.target.value)"
+        />
+      </div>
+      <div class="sm:col-span-6">
+        <label for="autoBackupPath" class="textlabel block"> Path Template </label>
+        <input
+          type="text"
+          id="autoBackupPath"
+          name="autoBackupPath"
+          placeholder="e.g. 0"
+          class="textfield mt-1 w-full"
+          :value="state.autoBackupPath"
+          @input="state.autoBackupPath=$event.target.value"
         />
       </div>
       <div class="sm:col-span-1">
@@ -110,6 +122,7 @@ interface LocalState {
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
+  autoBackupPath: string;
 }
 
 export default {
@@ -133,6 +146,7 @@ export default {
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
+      autoBackupPath: "",
     });
 
     const prepareBackupList = () => {
@@ -172,6 +186,7 @@ export default {
           state.autoBackupEnabled = setting.enabled;
           state.autoBackupHour = setting.hour;
           state.autoBackupDayOfWeek = setting.dayOfWeek;
+          state.autoBackupPath = setting.path;
         });
     };
 
@@ -200,6 +215,7 @@ export default {
         enabled: state.autoBackupEnabled! ? 1 : 0,
         hour: hour,
         dayOfWeek: dayOfWeek,
+        path: state.autoBackupPath!,
       };
       store.dispatch("backup/setBackupSetting", {
         newBackupSetting: newBackupSetting,

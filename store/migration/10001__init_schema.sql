@@ -651,7 +651,8 @@ CREATE TABLE backup_setting (
     day_of_week INTEGER NOT NULL CHECK (
         -1 <= day_of_week
         AND day_of_week < 7
-    )
+    ),
+    path TEXT
 );
 
 CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
