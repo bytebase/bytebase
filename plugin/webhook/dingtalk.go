@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type DingTalkWebhookMarkdown struct {
@@ -25,31 +26,34 @@ func init() {
 type DingTalkReceiver struct {
 }
 
-func (receiver *DingTalkReceiver) post(url string, title string, description string, metaList []WebHookMeta, link string) error {
+func (receiver *DingTalkReceiver) post(context WebhookContext) error {
 	metaStrList := []string{}
-	for _, meta := range metaList {
+	for _, meta := range context.MetaList {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
-	text := fmt.Sprintf("# %s\n%s\n##### [View in Bytebase](%s)", title, strings.Join(metaStrList, "\n"), link)
-	if description != "" {
-		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [View in Bytebase](%s)", title, description, strings.Join(metaStrList, "\n"), link)
+	metaStrList = append(metaStrList, fmt.Sprintf("##### **By:** %s (%s)", context.CreatorName, context.CreatorEmail))
+	metaStrList = append(metaStrList, fmt.Sprintf("##### **At:** %s", time.Unix(context.CreatedTs, 0).Format(timeFormat)))
+
+	text := fmt.Sprintf("# %s\n%s\n##### [View in Bytebase](%s)", context.Title, strings.Join(metaStrList, "\n"), context.Link)
+	if context.Description != "" {
+		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [View in Bytebase](%s)", context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
 
 	post := DingTalkWebhook{
 		MessageType: "markdown",
 		Markdown: DingTalkWebhookMarkdown{
-			Title: title,
+			Title: context.Title,
 			Text:  text,
 		},
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", url)
+		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
 	}
 	req, err := http.NewRequest("POST",
-		url, bytes.NewBuffer(body))
+		context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct webhook POST request %v (%w)", url, err)
+		return fmt.Errorf("failed to construct webhook POST request %v (%w)", context.URL, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -58,7 +62,7 @@ func (receiver *DingTalkReceiver) post(url string, title string, description str
 	}
 	_, err = client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %v (%w)", url, err)
+		return fmt.Errorf("failed to POST webhook %v (%w)", context.URL, err)
 	}
 
 	return nil

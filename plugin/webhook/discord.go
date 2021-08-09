@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type DiscordWebhookEmbedField struct {
@@ -12,11 +13,17 @@ type DiscordWebhookEmbedField struct {
 	Value string `json:"value"`
 }
 
+type DiscordWebhookEmbedAuthor struct {
+	Name string `json:"name"`
+}
+
 type DiscordWebhookEmbed struct {
 	Title       string                     `json:"title"`
 	Type        string                     `json:"type"`
 	Description string                     `json:"description,omitempty"`
 	URL         string                     `json:"url,omitempty"`
+	Timestamp   string                     `json:"timestamp"`
+	Author      DiscordWebhookEmbedAuthor  `json:"author"`
 	FieldList   []DiscordWebhookEmbedField `json:"fields,omitempty"`
 }
 
@@ -31,20 +38,24 @@ func init() {
 type DiscordReceiver struct {
 }
 
-func (receiver *DiscordReceiver) post(url string, title string, description string, metaList []WebHookMeta, link string) error {
+func (receiver *DiscordReceiver) post(context WebhookContext) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}
-	for _, meta := range metaList {
+	for _, meta := range context.MetaList {
 		fieldList = append(fieldList, DiscordWebhookEmbedField(meta))
 	}
 
 	embedList = append(embedList, DiscordWebhookEmbed{
-		Title:       title,
+		Title:       context.Title,
 		Type:        "rich",
-		Description: description,
-		URL:         link,
-		FieldList:   fieldList,
+		Description: context.Description,
+		URL:         context.Link,
+		Timestamp:   time.Unix(context.CreatedTs, 0).Format(timeFormat),
+		Author: DiscordWebhookEmbedAuthor{
+			Name: fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
+		},
+		FieldList: fieldList,
 	})
 
 	post := DiscordWebhook{
@@ -52,12 +63,12 @@ func (receiver *DiscordReceiver) post(url string, title string, description stri
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", url)
+		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
 	}
 	req, err := http.NewRequest("POST",
-		url, bytes.NewBuffer(body))
+		context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct webhook POST request %v (%w)", url, err)
+		return fmt.Errorf("failed to construct webhook POST request %v (%w)", context.URL, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -66,7 +77,7 @@ func (receiver *DiscordReceiver) post(url string, title string, description stri
 	}
 	_, err = client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %+v (%w)", url, err)
+		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
 	}
 
 	return nil
