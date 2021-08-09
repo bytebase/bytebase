@@ -19,7 +19,7 @@ type DingTalkWebhook struct {
 }
 
 func init() {
-	register("oapi.dingtalk.com", &DingTalkReceiver{})
+	register("bb.plugin.webhook.dingtalk", &DingTalkReceiver{})
 }
 
 type DingTalkReceiver struct {

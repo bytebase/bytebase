@@ -547,6 +547,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 
 			err := webhook.Post(
+				hook.Type,
 				hook.URL,
 				title,
 				comment,

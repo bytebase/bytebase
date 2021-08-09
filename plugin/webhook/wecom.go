@@ -18,7 +18,7 @@ type WeComWebhook struct {
 }
 
 func init() {
-	register("qyapi.weixin.qq.com", &WeComReceiver{})
+	register("bb.plugin.webhook.wecom", &WeComReceiver{})
 }
 
 type WeComReceiver struct {

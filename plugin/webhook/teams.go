@@ -41,7 +41,7 @@ type TeamsWebhook struct {
 }
 
 func init() {
-	register("webhook.office.com", &TeamsReceiver{})
+	register("bb.plugin.webhook.teams", &TeamsReceiver{})
 }
 
 type TeamsReceiver struct {

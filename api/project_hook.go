@@ -21,6 +21,7 @@ type ProjectHook struct {
 	ProjectId int `jsonapi:"attr,projecId"`
 
 	// Domain specific fields
+	Type         string   `jsonapi:"attr,type"`
 	Name         string   `jsonapi:"attr,name"`
 	URL          string   `jsonapi:"attr,url"`
 	ActivityList []string `jsonapi:"attr,activityList"`
@@ -35,6 +36,7 @@ type ProjectHookCreate struct {
 	ProjectId int
 
 	// Domain specific fields
+	Type         string   `jsonapi:"attr,type"`
 	Name         string   `jsonapi:"attr,name"`
 	URL          string   `jsonapi:"attr,url"`
 	ActivityList []string `jsonapi:"attr,activityList"`
@@ -64,9 +66,9 @@ type ProjectHookPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name         *string   `jsonapi:"attr,name"`
-	URL          *string   `jsonapi:"attr,url"`
-	ActivityList *[]string `jsonapi:"attr,activityList"`
+	Name         *string `jsonapi:"attr,name"`
+	URL          *string `jsonapi:"attr,url"`
+	ActivityList *string `jsonapi:"attr,activityList"`
 }
 
 type ProjectHookDelete struct {

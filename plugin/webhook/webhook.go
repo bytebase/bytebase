@@ -2,8 +2,6 @@ package webhook
 
 import (
 	"fmt"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 )
@@ -38,25 +36,12 @@ func register(host string, r WebhookReceiver) {
 	receivers[host] = r
 }
 
-func Post(urlstr string, title string, description string, metaList []WebHookMeta, link string) error {
-	u, err := url.Parse(urlstr)
-	if err != nil {
-		return fmt.Errorf("webhook: invalid url: %v", urlstr)
-	}
-
+func Post(webhookType string, urlstr string, title string, description string, metaList []WebHookMeta, link string) error {
 	receiverMu.RLock()
-	var r WebhookReceiver
-	for key, value := range receivers {
-		// Microsfot Teams webhook host is like https://xxx.webhook.office.com where xxx is the team.
-		// So we use contains instead of exact match
-		if strings.Contains(u.Host, key) {
-			r = value
-			break
-		}
-	}
+	r, ok := receivers[webhookType]
 	receiverMu.RUnlock()
-	if r == nil {
-		return fmt.Errorf("webhook: no applicable receiver for host: %v", u.Host)
+	if !ok {
+		return fmt.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
 
 	return r.post(urlstr, title, description, metaList, link)

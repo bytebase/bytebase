@@ -23,7 +23,7 @@ type SlackWebhook struct {
 }
 
 func init() {
-	register("hooks.slack.com", &SlackReceiver{})
+	register("bb.plugin.webhook.slack", &SlackReceiver{})
 }
 
 type SlackReceiver struct {
