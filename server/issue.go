@@ -426,7 +426,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updatorId int, comment string) (*api.Issue, error) {
+func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterId int, comment string) (*api.Issue, error) {
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.Issue_Open:
@@ -448,7 +448,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, updatorId); err != nil {
+					if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, updaterId); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
@@ -459,7 +459,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 
 	pipelinePatch := &api.PipelinePatch{
 		ID:        issue.PipelineId,
-		UpdaterId: updatorId,
+		UpdaterId: updaterId,
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
@@ -468,7 +468,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 
 	issuePatch := &api.IssuePatch{
 		ID:        issue.ID,
-		UpdaterId: updatorId,
+		UpdaterId: updaterId,
 		Status:    &newStatus,
 	}
 	updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
@@ -489,7 +489,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 
 	activityCreate := &api.ActivityCreate{
-		CreatorId:   updatorId,
+		CreatorId:   updaterId,
 		ContainerId: issue.ID,
 		Type:        api.ActivityIssueStatusUpdate,
 		Level:       api.ACTIVITY_INFO,
@@ -528,7 +528,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		}
 
 		principalFind := &api.PrincipalFind{
-			ID: &updatorId,
+			ID: &updaterId,
 		}
 		updater, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 		if err != nil {
