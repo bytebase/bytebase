@@ -1,15 +1,19 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/bin/bb/connect"
+	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -376,6 +380,46 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.POST("/database/:id/backup/:backupName/restore", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+		backupName := c.Param("backupName")
+
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+
+		backupFind := &api.BackupFind{
+			DatabaseId: &id,
+			Name:       &backupName,
+		}
+		backup, err := s.BackupService.FindBackup(context.Background(), backupFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
+		}
+		backup.Database = database
+
+		// TODO(spinningbot): move restore to a task.
+		if err := restoreDatabase(database, backup); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to restore the backup %s database id: %d", backupName, id)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch backup response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.POST("/database/:id/backupSetting", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -504,5 +548,24 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 
 	database.DataSourceList = []*api.DataSource{}
 
+	return nil
+}
+
+func restoreDatabase(database *api.Database, backup *api.Backup) error {
+	instance := database.Instance
+	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
+	if err != nil {
+		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
+	}
+	defer conn.Close()
+	f, err := os.OpenFile(backup.Path, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("os.OpenFile(%q) error: %v", backup.Path, err)
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	if err := mysqlrestore.Restore(conn, sc); err != nil {
+		return fmt.Errorf("mysqlrestore.Restore() got error: %v", err)
+	}
 	return nil
 }

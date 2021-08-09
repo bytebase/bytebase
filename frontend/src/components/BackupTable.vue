@@ -5,6 +5,7 @@
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
+    @click-row="clickBackup"
   >
     <template v-slot:body="{ rowData: backup }">
       <BBTableCell :leftPadding="4" class="w-8">
@@ -66,9 +67,18 @@ export default {
     const store = useStore();
     const router = useRouter();
 
+    const clickBackup = (section: number, row: number) => {
+      const backup = props.backupList[row];
+      store.dispatch("backup/restoreFromBackup", {
+        databaseId: backup.database.id,
+        backupName: backup.name,
+      });
+    };
+
     return {
       columnList,
       bytesToString,
+      clickBackup,
     };
   },
 };

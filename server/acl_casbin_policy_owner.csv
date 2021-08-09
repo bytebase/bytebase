@@ -41,6 +41,7 @@ p, OWNER, /database/{id}/table, GET
 p, OWNER, /database/{id}/table/{tableName}, GET
 p, OWNER, /database/{id}/backup, GET
 p, OWNER, /database/{id}/backup, POST
+p, OWNER, /database/{id}/backup/{backupName}/restore, POST
 p, OWNER, /database/{id}/backupSetting, GET
 p, OWNER, /database/{id}/backupSetting, POST
 p, OWNER, /issue, POST
