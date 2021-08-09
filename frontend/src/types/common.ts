@@ -12,7 +12,7 @@ import { Member } from "./member";
 import { Pipeline, Stage, Task } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
-import { ProjectHook } from "./projectHook";
+import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 
@@ -39,7 +39,7 @@ export type RouterSlug = {
   principalId?: PrincipalId;
   environmentSlug?: string;
   projectSlug?: string;
-  projectHookSlug?: string;
+  projectWebhookSlug?: string;
   issueSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
@@ -110,7 +110,7 @@ export const unknown = (
   | Member
   | Environment
   | Project
-  | ProjectHook
+  | ProjectWebhook
   | ProjectMember
   | Instance
   | Database
@@ -176,7 +176,7 @@ export const unknown = (
     visibility: "PUBLIC",
   };
 
-  const UNKNOWN_PROJECT_HOOK: ProjectHook = {
+  const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
     id: UNKNOWN_ID,
     projectId: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
@@ -422,7 +422,7 @@ export const empty = (
   | Member
   | Environment
   | Project
-  | ProjectHook
+  | ProjectWebhook
   | ProjectMember
   | Instance
   | Database
@@ -486,7 +486,7 @@ export const empty = (
     visibility: "PUBLIC",
   };
 
-  const EMPTY_PROJECT_HOOK: ProjectHook = {
+  const EMPTY_PROJECT_HOOK: ProjectWebhook = {
     id: EMPTY_ID,
     projectId: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,

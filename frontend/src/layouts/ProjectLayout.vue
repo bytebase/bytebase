@@ -20,7 +20,7 @@
   <div class="max-w-7xl mx-auto py-6 px-6">
     <router-view
       :projectSlug="projectSlug"
-      :projectHookSlug="projectHookSlug"
+      :projectWebhookSlug="projectWebhookSlug"
       :selectedTab="state.selectedIndex"
       :allowEdit="allowEdit"
     />
@@ -46,7 +46,7 @@ const projectTabItemList: ProjectTabItem[] = [
   { name: "Overview", hash: "overview" },
   { name: "Migration History", hash: "migration-history" },
   { name: "Version Control", hash: "version-control" },
-  { name: "Webhooks", hash: "hook" },
+  { name: "Webhooks", hash: "webhook" },
   { name: "Settings", hash: "setting" },
 ];
 
@@ -64,7 +64,7 @@ export default {
       required: true,
       type: String,
     },
-    projectHookSlug: {
+    projectWebhookSlug: {
       type: String,
     },
   },

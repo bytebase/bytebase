@@ -454,18 +454,18 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "hook/:projectHookSlug",
+                path: "hook/:projectWebhookSlug",
                 name: "workspace.project.hook.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const projectSlug = route.params.projectSlug as string;
-                    const projectHookSlug = route.params
-                      .projectHookSlug as string;
+                    const projectWebhookSlug = route.params
+                      .projectWebhookSlug as string;
                     return (
                       "Webhook - " +
-                      store.getters["projectHook/projectHookById"](
+                      store.getters["projectWebhook/projectWebhookById"](
                         idFromSlug(projectSlug),
-                        idFromSlug(projectHookSlug)
+                        idFromSlug(projectWebhookSlug)
                       ).name
                     );
                   },
@@ -832,7 +832,7 @@ router.beforeEach((to, from, next) => {
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
-  const projectHookSlug = routerSlug.projectHookSlug;
+  const projectWebhookSlug = routerSlug.projectWebhookSlug;
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
@@ -873,13 +873,13 @@ router.beforeEach((to, from, next) => {
     store
       .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
       .then(() => {
-        if (!projectHookSlug) {
+        if (!projectWebhookSlug) {
           next();
         } else {
           store
-            .dispatch("projectHook/fetchProjectHookById", {
+            .dispatch("projectWebhook/fetchProjectWebhookById", {
               projectId: idFromSlug(projectSlug),
-              projectHookId: idFromSlug(projectHookSlug),
+              projectWebhookId: idFromSlug(projectWebhookSlug),
             })
             .then(() => {
               next();

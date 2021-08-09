@@ -2,14 +2,14 @@ import { ActionType } from "./activity";
 import { MemberId, ProjectId } from "./id";
 import { Principal } from "./principal";
 
-type ProjectHookTypeItem = {
+type ProjectWebhookTypeItem = {
   type: string;
   name: string;
   logo: string;
   urlPrefix: string;
 };
 
-export const PROJECT_HOOK_TYPE_ITEM_LIST: ProjectHookTypeItem[] = [
+export const PROJECT_HOOK_TYPE_ITEM_LIST: ProjectWebhookTypeItem[] = [
   {
     type: "bb.plugin.webhook.slack",
     name: "Slack",
@@ -48,13 +48,13 @@ export const PROJECT_HOOK_TYPE_ITEM_LIST: ProjectHookTypeItem[] = [
   },
 ];
 
-type ProjectHookEventItem = {
+type ProjectWebhookEventItem = {
   title: string;
   label: string;
   event: ActionType;
 };
 
-export const PROJECT_HOOK_EVENT_ITEM_LIST: ProjectHookEventItem[] = [
+export const PROJECT_HOOK_EVENT_ITEM_LIST: ProjectWebhookEventItem[] = [
   {
     title: "Issue status change",
     label: "When issue status has changed",
@@ -78,7 +78,7 @@ export const PROJECT_HOOK_EVENT_ITEM_LIST: ProjectHookEventItem[] = [
 ];
 
 // Project Member
-export type ProjectHook = {
+export type ProjectWebhook = {
   id: MemberId;
 
   // Related fields
@@ -97,7 +97,7 @@ export type ProjectHook = {
   activityList: ActionType[];
 };
 
-export type ProjectHookCreate = {
+export type ProjectWebhookCreate = {
   // Domain specific fields
   type: string;
   name: string;
@@ -105,7 +105,7 @@ export type ProjectHookCreate = {
   activityList: ActionType[];
 };
 
-export type ProjectHookPatch = {
+export type ProjectWebhookPatch = {
   // Domain specific fields
   name?: string;
   url?: string;

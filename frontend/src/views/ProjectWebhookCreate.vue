@@ -15,9 +15,9 @@ import { computed } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import { ProjectHookCreate } from "../types";
+import { ProjectWebhookCreate } from "../types";
 
-const DEFAULT_NEW_WEBHOOK: ProjectHookCreate = {
+const DEFAULT_NEW_WEBHOOK: ProjectWebhookCreate = {
   type: "bb.plugin.webhook.slack",
   name: "",
   url: "",

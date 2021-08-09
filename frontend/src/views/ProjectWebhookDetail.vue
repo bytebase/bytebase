@@ -3,7 +3,7 @@
     <div class="flex flex-row space-x-2 items-center">
       <img class="h-6 w-6" :src="`/src/assets/${logo}`" />
       <h3 class="text-xl leading-6 font-medium text-main">
-        {{ projectHook.name }}
+        {{ projectWebhook.name }}
       </h3>
     </div>
     <ProjectWebhookForm
@@ -11,7 +11,7 @@
       :allowEdit="allowEdit"
       :create="false"
       :project="project"
-      :webhook="projectHook"
+      :webhook="projectWebhook"
     />
   </div>
 </template>
@@ -30,7 +30,7 @@ export default {
       required: true,
       type: String,
     },
-    projectHookSlug: {
+    projectWebhookSlug: {
       required: true,
       type: String,
     },
@@ -49,16 +49,16 @@ export default {
       );
     });
 
-    const projectHook = computed(() => {
-      return store.getters["projectHook/projectHookById"](
+    const projectWebhook = computed(() => {
+      return store.getters["projectWebhook/projectWebhookById"](
         idFromSlug(props.projectSlug),
-        idFromSlug(props.projectHookSlug)
+        idFromSlug(props.projectWebhookSlug)
       );
     });
 
     const logo = computed(() => {
       for (const item of PROJECT_HOOK_TYPE_ITEM_LIST) {
-        if (item.type == projectHook.value.type) {
+        if (item.type == projectWebhook.value.type) {
           return item.logo;
         }
       }
@@ -68,7 +68,7 @@ export default {
 
     return {
       project,
-      projectHook,
+      projectWebhook,
       logo,
     };
   },

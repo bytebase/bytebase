@@ -139,19 +139,19 @@ import { computed, PropType, watch } from "@vue/runtime-core";
 import {
   ActionType,
   Project,
-  ProjectHook,
-  ProjectHookCreate,
-  ProjectHookPatch,
+  ProjectWebhook,
+  ProjectWebhookCreate,
+  ProjectWebhookPatch,
   PROJECT_HOOK_TYPE_ITEM_LIST,
   PROJECT_HOOK_EVENT_ITEM_LIST,
 } from "../types";
 import { cloneDeep, isEmpty, isEqual } from "lodash";
 import { useRouter } from "vue-router";
-import { projectHookSlug, projectSlug } from "../utils";
+import { projectWebhookSlug, projectSlug } from "../utils";
 import { useStore } from "vuex";
 
 interface LocalState {
-  webhook: ProjectHook | ProjectHookCreate;
+  webhook: ProjectWebhook | ProjectWebhookCreate;
 }
 
 export default {
@@ -172,7 +172,7 @@ export default {
     },
     webhook: {
       required: true,
-      type: Object as PropType<ProjectHook | ProjectHookCreate>,
+      type: Object as PropType<ProjectWebhook | ProjectWebhookCreate>,
     },
   },
   components: {},
@@ -186,7 +186,7 @@ export default {
 
     watch(
       () => props.webhook,
-      (cur: ProjectHook | ProjectHookCreate) => {
+      (cur: ProjectWebhook | ProjectWebhookCreate) => {
         state.webhook = cloneDeep(cur);
       }
     );
@@ -274,17 +274,17 @@ export default {
         params: {
           projectSlug: projectSlug(props.project),
         },
-        hash: "#hook",
+        hash: "#webhook",
       });
     };
 
     const createWebhook = () => {
       store
-        .dispatch("projectHook/createProjectHook", {
+        .dispatch("projectWebhook/createProjectWebhook", {
           projectId: props.project.id,
-          projectHookCreate: state.webhook,
+          projectWebhookCreate: state.webhook,
         })
-        .then((webhook: ProjectHook) => {
+        .then((webhook: ProjectWebhook) => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
@@ -293,30 +293,30 @@ export default {
           router.push({
             name: "workspace.project.hook.detail",
             params: {
-              projectHookSlug: projectHookSlug(webhook),
+              projectWebhookSlug: projectWebhookSlug(webhook),
             },
           });
         });
     };
 
     const updateWebhook = () => {
-      const projectHookPatch: ProjectHookPatch = {};
+      const projectWebhookPatch: ProjectWebhookPatch = {};
       if (props.webhook.name != state.webhook.name) {
-        projectHookPatch.name = state.webhook.name;
+        projectWebhookPatch.name = state.webhook.name;
       }
       if (props.webhook.url != state.webhook.url) {
-        projectHookPatch.url = state.webhook.url;
+        projectWebhookPatch.url = state.webhook.url;
       }
       if (props.webhook.activityList != state.webhook.activityList) {
-        projectHookPatch.activityList = state.webhook.activityList.join(",");
+        projectWebhookPatch.activityList = state.webhook.activityList.join(",");
       }
       store
-        .dispatch("projectHook/updateProjectHookById", {
+        .dispatch("projectWebhook/updateProjectWebhookById", {
           projectId: props.project.id,
-          projectHookId: (state.webhook as ProjectHook).id,
-          projectHookPatch,
+          projectWebhookId: (state.webhook as ProjectWebhook).id,
+          projectWebhookPatch,
         })
-        .then((webhook: ProjectHook) => {
+        .then((webhook: ProjectWebhook) => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
@@ -328,9 +328,9 @@ export default {
     const deleteWebhook = () => {
       const name = state.webhook.name;
       store
-        .dispatch("projectHook/deleteProjectHookById", {
+        .dispatch("projectWebhook/deleteProjectWebhookById", {
           projectId: props.project.id,
-          projectHookId: (state.webhook as ProjectHook).id,
+          projectWebhookId: (state.webhook as ProjectWebhook).id,
         })
         .then(() => {
           store.dispatch("notification/pushNotification", {

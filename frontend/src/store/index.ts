@@ -21,7 +21,7 @@ import pipeline from "./modules/pipeline";
 import plan from "./modules/plan";
 import principal from "./modules/principal";
 import project from "./modules/project";
-import projectHook from "./modules/projectHook";
+import projectWebhook from "./modules/projectWebhook";
 import repository from "./modules/repository";
 // Following states are only stored in memory
 import router from "./modules/router";
@@ -57,7 +57,7 @@ export const store: Store<any> = createStore({
     plan,
     principal,
     project,
-    projectHook,
+    projectWebhook,
     repository,
     router,
     setting,
