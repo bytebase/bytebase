@@ -5,16 +5,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
-type SlackWebhookBlockText struct {
+type SlackWebhookBlockMarkdown struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 }
 
+type SlackWebhookElementButton struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+}
+
+type SlackWebhookElement struct {
+	Type   string                    `json:"type"`
+	Button SlackWebhookElementButton `json:"text,omitempty"`
+	URL    string                    `json:"url,omitempty"`
+}
+
 type SlackWebhookBlock struct {
-	Type string                `json:"type"`
-	Text SlackWebhookBlockText `json:"text"`
+	Type        string                     `json:"type"`
+	Text        *SlackWebhookBlockMarkdown `json:"text,omitempty"`
+	ElementList []SlackWebhookElement      `json:"elements,omitempty"`
 }
 
 type SlackWebhook struct {
@@ -29,30 +42,30 @@ func init() {
 type SlackReceiver struct {
 }
 
-func (receiver *SlackReceiver) post(url string, title string, description string, metaList []WebHookMeta, link string) error {
+func (receiver *SlackReceiver) post(context WebhookContext) error {
 	blockList := []SlackWebhookBlock{}
 	blockList = append(blockList, SlackWebhookBlock{
 		Type: "section",
-		Text: SlackWebhookBlockText{
+		Text: &SlackWebhookBlockMarkdown{
 			Type: "mrkdwn",
-			Text: fmt.Sprintf("*%s*", title),
+			Text: fmt.Sprintf("*%s*", context.Title),
 		},
 	})
 
-	if description != "" {
+	if context.Description != "" {
 		blockList = append(blockList, SlackWebhookBlock{
 			Type: "section",
-			Text: SlackWebhookBlockText{
+			Text: &SlackWebhookBlockMarkdown{
 				Type: "mrkdwn",
-				Text: fmt.Sprintf("```%s```", description),
+				Text: fmt.Sprintf("```%s```", context.Description),
 			},
 		})
 	}
 
-	for _, meta := range metaList {
+	for _, meta := range context.MetaList {
 		blockList = append(blockList, SlackWebhookBlock{
 			Type: "section",
-			Text: SlackWebhookBlockText{
+			Text: &SlackWebhookBlockMarkdown{
 				Type: "mrkdwn",
 				Text: fmt.Sprintf("*%s:* %s", meta.Name, meta.Value),
 			},
@@ -61,24 +74,46 @@ func (receiver *SlackReceiver) post(url string, title string, description string
 
 	blockList = append(blockList, SlackWebhookBlock{
 		Type: "section",
-		Text: SlackWebhookBlockText{
+		Text: &SlackWebhookBlockMarkdown{
 			Type: "mrkdwn",
-			Text: fmt.Sprintf("<%s|View in Bytebase>", link),
+			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
+		},
+	})
+
+	blockList = append(blockList, SlackWebhookBlock{
+		Type: "section",
+		Text: &SlackWebhookBlockMarkdown{
+			Type: "mrkdwn",
+			Text: fmt.Sprintf("At: %s", time.Unix(context.CreatedTs, 0).Format(timeFormat)),
+		},
+	})
+
+	blockList = append(blockList, SlackWebhookBlock{
+		Type: "actions",
+		ElementList: []SlackWebhookElement{
+			{
+				Type: "button",
+				Button: SlackWebhookElementButton{
+					Type: "plain_text",
+					Text: "View in Bytebase",
+				},
+				URL: context.Link,
+			},
 		},
 	})
 
 	post := SlackWebhook{
-		Text:      title,
+		Text:      context.Title,
 		BlockList: blockList,
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", url)
+		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
 	}
 	req, err := http.NewRequest("POST",
-		url, bytes.NewBuffer(body))
+		context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct webhook POST request %v (%w)", url, err)
+		return fmt.Errorf("failed to construct webhook POST request %v (%w)", context.URL, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -87,7 +122,7 @@ func (receiver *SlackReceiver) post(url string, title string, description string
 	}
 	_, err = client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %+v (%w)", url, err)
+		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
 	}
 
 	return nil

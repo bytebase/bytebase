@@ -10,15 +10,27 @@ var (
 	receiverMu sync.RWMutex
 	receivers  = make(map[string]WebhookReceiver)
 	timeout    = 1 * time.Second
+	timeFormat = "2006-01-02 15:04:05"
 )
 
-type WebHookMeta struct {
+type WebhookMeta struct {
 	Name  string
 	Value string
 }
 
+type WebhookContext struct {
+	URL          string
+	Title        string
+	Description  string
+	Link         string
+	CreatorName  string
+	CreatorEmail string
+	CreatedTs    int64
+	MetaList     []WebhookMeta
+}
+
 type WebhookReceiver interface {
-	post(url string, title string, description string, metaList []WebHookMeta, link string) error
+	post(context WebhookContext) error
 }
 
 // Register makes a receiver available by the url host
@@ -36,7 +48,7 @@ func register(host string, r WebhookReceiver) {
 	receivers[host] = r
 }
 
-func Post(webhookType string, urlstr string, title string, description string, metaList []WebHookMeta, link string) error {
+func Post(webhookType string, context WebhookContext) error {
 	receiverMu.RLock()
 	r, ok := receivers[webhookType]
 	receiverMu.RUnlock()
@@ -44,5 +56,5 @@ func Post(webhookType string, urlstr string, title string, description string, m
 		return fmt.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
 
-	return r.post(urlstr, title, description, metaList, link)
+	return r.post(context)
 }

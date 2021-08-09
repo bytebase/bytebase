@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
@@ -550,20 +551,21 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 
 				err := webhook.Post(
 					hook.Type,
-					hook.URL,
-					title,
-					comment,
-					[]webhook.WebHookMeta{
-						{
-							Name:  "Project",
-							Value: issue.Project.Name,
-						},
-						{
-							Name:  "By",
-							Value: updater.Name,
+					webhook.WebhookContext{
+						URL:          hook.URL,
+						Title:        title,
+						Description:  comment,
+						Link:         fmt.Sprintf("%s:%d/issue/%s", s.frontendHost, s.frontendPort, api.IssueSlug(issue)),
+						CreatorName:  updater.Name,
+						CreatorEmail: updater.Email,
+						CreatedTs:    time.Now().Unix(),
+						MetaList: []webhook.WebhookMeta{
+							{
+								Name:  "Project",
+								Value: issue.Project.Name,
+							},
 						},
 					},
-					fmt.Sprintf("%s:%d/issue/%s", s.frontendHost, s.frontendPort, api.IssueSlug(issue)),
 				)
 				if err != nil {
 					// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
