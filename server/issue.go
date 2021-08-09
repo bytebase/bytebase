@@ -534,44 +534,47 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", issue.Name, err)
 		}
 
-		for _, hook := range hookList {
-			s.l.Info(fmt.Sprintf("hook name: %s, %s", hook.Name, hook.URL))
-			title := ""
-			switch newStatus {
-			case "OPEN":
-				title = fmt.Sprintf("Issue reopened - %s", issue.Name)
-			case "DONE":
-				title = fmt.Sprintf("Issue resolved - %s", issue.Name)
-			case "CANCELED":
-				title = fmt.Sprintf("Issue canceled - %s", issue.Name)
-			}
+		// Call exteranl webhook endpoint in Go routine to avoid blocking web serveing thread.
+		go func() {
+			for _, hook := range hookList {
+				s.l.Info(fmt.Sprintf("hook name: %s, %s", hook.Name, hook.URL))
+				title := ""
+				switch newStatus {
+				case "OPEN":
+					title = fmt.Sprintf("Issue reopened - %s", issue.Name)
+				case "DONE":
+					title = fmt.Sprintf("Issue resolved - %s", issue.Name)
+				case "CANCELED":
+					title = fmt.Sprintf("Issue canceled - %s", issue.Name)
+				}
 
-			err := webhook.Post(
-				hook.Type,
-				hook.URL,
-				title,
-				comment,
-				[]webhook.WebHookMeta{
-					{
-						Name:  "Project",
-						Value: issue.Project.Name,
+				err := webhook.Post(
+					hook.Type,
+					hook.URL,
+					title,
+					comment,
+					[]webhook.WebHookMeta{
+						{
+							Name:  "Project",
+							Value: issue.Project.Name,
+						},
+						{
+							Name:  "By",
+							Value: updater.Name,
+						},
 					},
-					{
-						Name:  "By",
-						Value: updater.Name,
-					},
-				},
-				fmt.Sprintf("%s:%d/issue/%s", s.frontendHost, s.frontendPort, api.IssueSlug(issue)),
-			)
-			if err != nil {
-				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				s.l.Warn("Failed to post webhook event after changing the issue status",
-					zap.String("issue_name", issue.Name),
-					zap.String("old_status", string(issue.Status)),
-					zap.String("new_status", string(newStatus)),
-					zap.Error(err))
+					fmt.Sprintf("%s:%d/issue/%s", s.frontendHost, s.frontendPort, api.IssueSlug(issue)),
+				)
+				if err != nil {
+					// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
+					s.l.Warn("Failed to post webhook event after changing the issue status",
+						zap.String("issue_name", issue.Name),
+						zap.String("old_status", string(issue.Status)),
+						zap.String("new_status", string(newStatus)),
+						zap.Error(err))
+				}
 			}
-		}
+		}()
 	}
 
 	return updatedIssue, nil
