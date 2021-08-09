@@ -57,7 +57,7 @@ func (s *Server) registerProjectHookRoutes(g *echo.Group) {
 		hook, err := s.ProjectHookService.CreateProjectHook(context.Background(), hookCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Webhook url already exists in the project: %s", hook.URL))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Webhook url already exists in the project: %s", hookCreate.URL))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project webhook").SetInternal(err)
 		}
