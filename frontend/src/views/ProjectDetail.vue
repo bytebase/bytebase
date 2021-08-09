@@ -63,19 +63,21 @@ export default {
     ProjectSettingPanel,
   },
   props: {
-    selectedTab: {
-      required: true,
-      type: Number,
-    },
     projectSlug: {
       required: true,
       type: String,
     },
+    selectedTab: {
+      required: true,
+      type: Number,
+    },
+    allowEdit: {
+      required: true,
+      type: Boolean,
+    },
   },
   setup(props, { emit }) {
     const store = useStore();
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const project = computed(() => {
       return store.getters["project/projectById"](
@@ -100,25 +102,6 @@ export default {
       return sortDatabaseList(list, environmentList.value);
     });
 
-    // Only the project owner can edit the project general info and configure version control.
-    // This means even the workspace owner won't be able to edit it.
-    // On the other hand, we allow workspace owner to change project membership in case
-    // project is locked somehow. See the relevant method in ProjectMemberTable for more info.
-    const allowEdit = computed(() => {
-      if (project.value.rowStatus == "ARCHIVED") {
-        return false;
-      }
-
-      for (const member of project.value.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    });
-
     return {
       OVERVIEW_TAB,
       MIGRATION_HISTORY_TAB,
@@ -127,7 +110,6 @@ export default {
       SETTING_TAB,
       project,
       databaseList,
-      allowEdit,
     };
   },
 };

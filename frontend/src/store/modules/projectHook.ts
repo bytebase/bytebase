@@ -7,6 +7,7 @@ import {
   ProjectHookState,
   ProjectId,
   ResourceObject,
+  unknown,
 } from "../../types";
 
 function convert(
@@ -33,10 +34,7 @@ const getters = {
 
   projectHookById:
     (state: ProjectHookState) =>
-    (
-      projectId: ProjectId,
-      projectHookId: ProjectHookId
-    ): ProjectHook | undefined => {
+    (projectId: ProjectId, projectHookId: ProjectHookId): ProjectHook => {
       const list = state.projectHookListByProjectId.get(projectId);
       if (list) {
         for (const hook of list) {
@@ -45,7 +43,7 @@ const getters = {
           }
         }
       }
-      return undefined;
+      return unknown("PROJECT_HOOK") as ProjectHook;
     },
 };
 
