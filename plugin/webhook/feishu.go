@@ -36,7 +36,7 @@ type FeishuWebhook struct {
 }
 
 func init() {
-	register("open.feishu.cn", &FeishuReceiver{})
+	register("bb.plugin.webhook.feishu", &FeishuReceiver{})
 }
 
 type FeishuReceiver struct {

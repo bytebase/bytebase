@@ -25,7 +25,7 @@ type DiscordWebhook struct {
 }
 
 func init() {
-	register("discord.com", &DiscordReceiver{})
+	register("bb.plugin.webhook.discord", &DiscordReceiver{})
 }
 
 type DiscordReceiver struct {
