@@ -19,6 +19,8 @@ const (
 	BackupStatusPendingCreate BackupStatus = "PENDING_CREATE"
 	// BackupStatusDone is the status for DONE.
 	BackupStatusDone BackupStatus = "DONE"
+	// BackupStatusFailed is the status for FAILED.
+	BackupStatusFailed BackupStatus = "FAILED"
 	// BackupTypeAutomatic is the type for automatic backup.
 	BackupTypeAutomatic BackupType = "AUTOMATIC"
 	// BackupTypeManual is the type for manual backup.

@@ -69,17 +69,22 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	// TODO(spinningbot): handle backup failure.
-	if err := backupDatabase(task.Instance, task.Database, backup); err != nil {
-		return true, "", err
+	backupErr := backupDatabase(task.Instance, task.Database, backup)
+	// Update the status of the backup.
+	newBackupStatus := string(api.BackupStatusDone)
+	if backupErr != nil {
+		newBackupStatus = string(api.BackupStatusFailed)
 	}
-
 	if _, err = server.BackupService.PatchBackup(ctx, &api.BackupPatch{
 		ID:        backup.ID,
-		Status:    string(api.BackupStatusDone),
+		Status:    newBackupStatus,
 		UpdaterId: api.SYSTEM_BOT_ID,
 	}); err != nil {
 		return true, "", fmt.Errorf("failed to patch backup: %w", err)
+	}
+
+	if backupErr != nil {
+		return true, "", err
 	}
 
 	return true, fmt.Sprintf("Backup database '%s'", task.Database.Name), nil
