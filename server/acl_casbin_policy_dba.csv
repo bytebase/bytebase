@@ -13,11 +13,11 @@ p, DBA, /project/{id}/repository, DELETE
 p, DBA, /project/{projectId}/member, POST
 p, DBA, /project/{projectId}/member/{memberId}, PATCH
 p, DBA, /project/{projectId}/member/{memberId}, DELETE
-p, DBA, /project/{projectId}/hook, GET
-p, DBA, /project/{projectId}/hook, POST
-p, DBA, /project/{projectId}/hook/{hookId}, GET
-p, DBA, /project/{projectId}/hook/{hookId}, PATCH
-p, DBA, /project/{projectId}/hook/{hookId}, DELETE
+p, DBA, /project/{projectId}/webhook, GET
+p, DBA, /project/{projectId}/webhook, POST
+p, DBA, /project/{projectId}/webhook/{hookId}, GET
+p, DBA, /project/{projectId}/webhook/{hookId}, PATCH
+p, DBA, /project/{projectId}/webhook/{hookId}, DELETE
 p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH

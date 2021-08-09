@@ -69,7 +69,7 @@ DELETE FROM
     environment;
 
 DELETE FROM
-    project_hook;
+    project_webhook;
 
 DELETE FROM
     project_member;

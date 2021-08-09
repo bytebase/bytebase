@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 var THEME_COLOR = "4f46e5"
@@ -26,8 +27,10 @@ type TeamsWebhookSectionFact struct {
 }
 
 type TeamsWebhookSection struct {
-	FactList []TeamsWebhookSectionFact `json:"facts"`
-	Text     string                    `json:"text"`
+	ActivityTitle    string                    `json:"activityTitle"`
+	ActivitySubtitle string                    `json:"activitySubtitle"`
+	FactList         []TeamsWebhookSectionFact `json:"facts"`
+	Text             string                    `json:"text"`
 }
 
 type TeamsWebhook struct {
@@ -41,28 +44,30 @@ type TeamsWebhook struct {
 }
 
 func init() {
-	register("webhook.office.com", &TeamsReceiver{})
+	register("bb.plugin.webhook.teams", &TeamsReceiver{})
 }
 
 type TeamsReceiver struct {
 }
 
-func (receiver *TeamsReceiver) post(url string, title string, description string, metaList []WebHookMeta, link string) error {
+func (receiver *TeamsReceiver) post(context WebhookContext) error {
 	factList := []TeamsWebhookSectionFact{}
-	for _, meta := range metaList {
+	for _, meta := range context.MetaList {
 		factList = append(factList, TeamsWebhookSectionFact(meta))
 	}
 
 	post := TeamsWebhook{
 		Type:       "MessageCard",
 		Context:    "https://schema.org/extensions",
-		Summary:    title,
+		Summary:    context.Title,
 		ThemeColor: THEME_COLOR,
-		Title:      title,
+		Title:      context.Title,
 		SectionList: []TeamsWebhookSection{
 			{
-				FactList: factList,
-				Text:     description,
+				ActivityTitle:    fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
+				ActivitySubtitle: time.Unix(context.CreatedTs, 0).Format(timeFormat),
+				FactList:         factList,
+				Text:             context.Description,
 			},
 		},
 		ActionList: []TeamsWebhookAction{
@@ -72,7 +77,7 @@ func (receiver *TeamsReceiver) post(url string, title string, description string
 				TargetList: []TeamsWebhookActionTarget{
 					{
 						OS:  "default",
-						URI: link,
+						URI: context.Link,
 					},
 				},
 			},
@@ -80,12 +85,12 @@ func (receiver *TeamsReceiver) post(url string, title string, description string
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", url)
+		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
 	}
 	req, err := http.NewRequest("POST",
-		url, bytes.NewBuffer(body))
+		context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct webhook POST request %v (%w)", url, err)
+		return fmt.Errorf("failed to construct webhook POST request %v (%w)", context.URL, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -94,7 +99,7 @@ func (receiver *TeamsReceiver) post(url string, title string, description string
 	}
 	_, err = client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %+v (%w)", url, err)
+		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
 	}
 
 	return nil

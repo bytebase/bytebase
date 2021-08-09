@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type FeishuWebhookPostSection struct {
@@ -36,19 +37,19 @@ type FeishuWebhook struct {
 }
 
 func init() {
-	register("open.feishu.cn", &FeishuReceiver{})
+	register("bb.plugin.webhook.feishu", &FeishuReceiver{})
 }
 
 type FeishuReceiver struct {
 }
 
-func (receiver *FeishuReceiver) post(url string, title string, description string, metaList []WebHookMeta, link string) error {
+func (receiver *FeishuReceiver) post(context WebhookContext) error {
 	contentList := [][]FeishuWebhookPostSection{}
-	if description != "" {
+	if context.Description != "" {
 		sectionList := []FeishuWebhookPostSection{}
 		sectionList = append(sectionList, FeishuWebhookPostSection{
 			Tag:  "text",
-			Text: description,
+			Text: context.Description,
 		})
 		contentList = append(contentList, sectionList)
 
@@ -60,7 +61,7 @@ func (receiver *FeishuReceiver) post(url string, title string, description strin
 		contentList = append(contentList, sectionList)
 	}
 
-	for _, meta := range metaList {
+	for _, meta := range context.MetaList {
 		sectionList := []FeishuWebhookPostSection{}
 		sectionList = append(sectionList, FeishuWebhookPostSection{
 			Tag:  "text",
@@ -69,20 +70,40 @@ func (receiver *FeishuReceiver) post(url string, title string, description strin
 		contentList = append(contentList, sectionList)
 	}
 
-	sectionList := []FeishuWebhookPostSection{}
-	sectionList = append(sectionList, FeishuWebhookPostSection{
-		Tag:  "a",
-		Text: "View in Bytebase",
-		Href: link,
-	})
-	contentList = append(contentList, sectionList)
+	{
+		sectionList := []FeishuWebhookPostSection{}
+		sectionList = append(sectionList, FeishuWebhookPostSection{
+			Tag:  "text",
+			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
+		})
+		contentList = append(contentList, sectionList)
+	}
+
+	{
+		sectionList := []FeishuWebhookPostSection{}
+		sectionList = append(sectionList, FeishuWebhookPostSection{
+			Tag:  "text",
+			Text: fmt.Sprintf("At: %s", time.Unix(context.CreatedTs, 0).Format(timeFormat)),
+		})
+		contentList = append(contentList, sectionList)
+	}
+
+	{
+		sectionList := []FeishuWebhookPostSection{}
+		sectionList = append(sectionList, FeishuWebhookPostSection{
+			Tag:  "a",
+			Text: "View in Bytebase",
+			Href: context.Link,
+		})
+		contentList = append(contentList, sectionList)
+	}
 
 	post := FeishuWebhook{
 		MessageType: "post",
 		Content: FeishuWebhookContent{
 			Post: FeishuWebhookPostLanguage{
 				English: FeishuWebhookPost{
-					Title:       title,
+					Title:       context.Title,
 					ContentList: contentList,
 				},
 			},
@@ -90,12 +111,12 @@ func (receiver *FeishuReceiver) post(url string, title string, description strin
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", url)
+		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
 	}
 	req, err := http.NewRequest("POST",
-		url, bytes.NewBuffer(body))
+		context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct webhook POST request %v (%w)", url, err)
+		return fmt.Errorf("failed to construct webhook POST request %v (%w)", context.URL, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -104,7 +125,7 @@ func (receiver *FeishuReceiver) post(url string, title string, description strin
 	}
 	_, err = client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %+v (%w)", url, err)
+		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
 	}
 
 	return nil

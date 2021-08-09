@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 )
 
-type ProjectHook struct {
-	ID int `jsonapi:"primary,projectHookMember"`
+type ProjectWebhook struct {
+	ID int `jsonapi:"primary,projectWebhookMember"`
 
 	// Standard fields
 	CreatorId int
@@ -21,12 +21,13 @@ type ProjectHook struct {
 	ProjectId int `jsonapi:"attr,projecId"`
 
 	// Domain specific fields
+	Type         string   `jsonapi:"attr,type"`
 	Name         string   `jsonapi:"attr,name"`
 	URL          string   `jsonapi:"attr,url"`
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
 
-type ProjectHookCreate struct {
+type ProjectWebhookCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	CreatorId int
@@ -35,12 +36,13 @@ type ProjectHookCreate struct {
 	ProjectId int
 
 	// Domain specific fields
+	Type         string   `jsonapi:"attr,type"`
 	Name         string   `jsonapi:"attr,name"`
 	URL          string   `jsonapi:"attr,url"`
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
 
-type ProjectHookFind struct {
+type ProjectWebhookFind struct {
 	ID *int
 
 	// Related fields
@@ -48,7 +50,7 @@ type ProjectHookFind struct {
 	ActivityType *ActivityType
 }
 
-func (find *ProjectHookFind) String() string {
+func (find *ProjectWebhookFind) String() string {
 	str, err := json.Marshal(*find)
 	if err != nil {
 		return err.Error()
@@ -56,7 +58,7 @@ func (find *ProjectHookFind) String() string {
 	return string(str)
 }
 
-type ProjectHookPatch struct {
+type ProjectWebhookPatch struct {
 	ID int
 
 	// Standard fields
@@ -64,12 +66,12 @@ type ProjectHookPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name         *string   `jsonapi:"attr,name"`
-	URL          *string   `jsonapi:"attr,url"`
-	ActivityList *[]string `jsonapi:"attr,activityList"`
+	Name         *string `jsonapi:"attr,name"`
+	URL          *string `jsonapi:"attr,url"`
+	ActivityList *string `jsonapi:"attr,activityList"`
 }
 
-type ProjectHookDelete struct {
+type ProjectWebhookDelete struct {
 	ID int
 
 	// Standard fields
@@ -77,10 +79,10 @@ type ProjectHookDelete struct {
 	DeleterId int
 }
 
-type ProjectHookService interface {
-	CreateProjectHook(ctx context.Context, create *ProjectHookCreate) (*ProjectHook, error)
-	FindProjectHookList(ctx context.Context, find *ProjectHookFind) ([]*ProjectHook, error)
-	FindProjectHook(ctx context.Context, find *ProjectHookFind) (*ProjectHook, error)
-	PatchProjectHook(ctx context.Context, patch *ProjectHookPatch) (*ProjectHook, error)
-	DeleteProjectHook(ctx context.Context, delete *ProjectHookDelete) error
+type ProjectWebhookService interface {
+	CreateProjectWebhook(ctx context.Context, create *ProjectWebhookCreate) (*ProjectWebhook, error)
+	FindProjectWebhookList(ctx context.Context, find *ProjectWebhookFind) ([]*ProjectWebhook, error)
+	FindProjectWebhook(ctx context.Context, find *ProjectWebhookFind) (*ProjectWebhook, error)
+	PatchProjectWebhook(ctx context.Context, patch *ProjectWebhookPatch) (*ProjectWebhook, error)
+	DeleteProjectWebhook(ctx context.Context, delete *ProjectWebhookDelete) error
 }

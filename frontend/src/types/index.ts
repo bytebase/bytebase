@@ -21,7 +21,7 @@ export * from "./pipeline";
 export * from "./plan";
 export * from "./principal";
 export * from "./project";
-export * from "./projectHook";
+export * from "./projectWebhook";
 export * from "./repository";
 export * from "./sql";
 export * from "./store";

@@ -15,7 +15,7 @@ export type BookmarkId = IdType;
 
 export type ProjectId = IdType;
 
-export type ProjectHookId = IdType;
+export type ProjectWebhookId = IdType;
 
 export type IssueId = IdType;
 

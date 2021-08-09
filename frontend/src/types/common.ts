@@ -12,6 +12,7 @@ import { Member } from "./member";
 import { Pipeline, Stage, Task } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
+import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 
@@ -38,7 +39,7 @@ export type RouterSlug = {
   principalId?: PrincipalId;
   environmentSlug?: string;
   projectSlug?: string;
-  projectHookSlug?: string;
+  projectWebhookSlug?: string;
   issueSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
@@ -86,6 +87,7 @@ export type ResourceType =
   | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
+  | "PROJECT_HOOK"
   | "PROJECT_MEMBER"
   | "INSTANCE"
   | "DATABASE"
@@ -108,6 +110,7 @@ export const unknown = (
   | Member
   | Environment
   | Project
+  | ProjectWebhook
   | ProjectMember
   | Instance
   | Database
@@ -171,6 +174,19 @@ export const unknown = (
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
+  };
+
+  const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
+    id: UNKNOWN_ID,
+    projectId: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    type: "",
+    name: "",
+    url: "",
+    activityList: [],
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -365,6 +381,8 @@ export const unknown = (
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
       return UNKNOWN_PROJECT;
+    case "PROJECT_HOOK":
+      return UNKNOWN_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return UNKNOWN_PROJECT_MEMBER;
     case "INSTANCE":
@@ -404,6 +422,7 @@ export const empty = (
   | Member
   | Environment
   | Project
+  | ProjectWebhook
   | ProjectMember
   | Instance
   | Database
@@ -465,6 +484,19 @@ export const empty = (
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
+  };
+
+  const EMPTY_PROJECT_HOOK: ProjectWebhook = {
+    id: EMPTY_ID,
+    projectId: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    type: "",
+    name: "",
+    url: "",
+    activityList: [],
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
@@ -659,6 +691,8 @@ export const empty = (
       return EMPTY_ENVIRONMENT;
     case "PROJECT":
       return EMPTY_PROJECT;
+    case "PROJECT_HOOK":
+      return EMPTY_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return EMPTY_PROJECT_MEMBER;
     case "INSTANCE":
