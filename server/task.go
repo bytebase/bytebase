@@ -150,10 +150,10 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task) er
 	return nil
 }
 
-func (s *Server) ChangeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updatorId int) (*api.Task, error) {
+func (s *Server) ChangeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterId int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
 		ID:        task.ID,
-		UpdaterId: updatorId,
+		UpdaterId: updaterId,
 		Status:    newStatus,
 	}
 	return s.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
