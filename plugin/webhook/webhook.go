@@ -2,8 +2,6 @@ package webhook
 
 import (
 	"fmt"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 )
@@ -12,15 +10,27 @@ var (
 	receiverMu sync.RWMutex
 	receivers  = make(map[string]WebhookReceiver)
 	timeout    = 1 * time.Second
+	timeFormat = "2006-01-02 15:04:05"
 )
 
-type WebHookMeta struct {
+type WebhookMeta struct {
 	Name  string
 	Value string
 }
 
+type WebhookContext struct {
+	URL          string
+	Title        string
+	Description  string
+	Link         string
+	CreatorName  string
+	CreatorEmail string
+	CreatedTs    int64
+	MetaList     []WebhookMeta
+}
+
 type WebhookReceiver interface {
-	post(url string, title string, description string, metaList []WebHookMeta, link string) error
+	post(context WebhookContext) error
 }
 
 // Register makes a receiver available by the url host
@@ -38,26 +48,13 @@ func register(host string, r WebhookReceiver) {
 	receivers[host] = r
 }
 
-func Post(urlstr string, title string, description string, metaList []WebHookMeta, link string) error {
-	u, err := url.Parse(urlstr)
-	if err != nil {
-		return fmt.Errorf("webhook: invalid url: %v", urlstr)
-	}
-
+func Post(webhookType string, context WebhookContext) error {
 	receiverMu.RLock()
-	var r WebhookReceiver
-	for key, value := range receivers {
-		// Microsfot Teams webhook host is like https://xxx.webhook.office.com where xxx is the team.
-		// So we use contains instead of exact match
-		if strings.Contains(u.Host, key) {
-			r = value
-			break
-		}
-	}
+	r, ok := receivers[webhookType]
 	receiverMu.RUnlock()
-	if r == nil {
-		return fmt.Errorf("webhook: no applicable receiver for host: %v", u.Host)
+	if !ok {
+		return fmt.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
 
-	return r.post(urlstr, title, description, metaList, link)
+	return r.post(context)
 }

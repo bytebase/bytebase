@@ -257,7 +257,7 @@ WHERE
 END;
 
 -- Project Hook
-CREATE TABLE project_hook (
+CREATE TABLE project_webhook (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
@@ -267,6 +267,7 @@ CREATE TABLE project_hook (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
@@ -274,19 +275,19 @@ CREATE TABLE project_hook (
     UNIQUE(project_id, url)
 );
 
-CREATE INDEX idx_project_hook_project_id ON project_hook(project_id);
+CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
 
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('project_hook', 100);
+    ('project_webhook', 100);
 
-CREATE TRIGGER IF NOT EXISTS `trigger_update_project_hook_modification_time`
+CREATE TRIGGER IF NOT EXISTS `trigger_update_project_webhook_modification_time`
 AFTER
 UPDATE
-    ON `project_hook` FOR EACH ROW BEGIN
+    ON `project_webhook` FOR EACH ROW BEGIN
 UPDATE
-    `project_hook`
+    `project_webhook`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

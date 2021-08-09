@@ -19,9 +19,10 @@
 
   <div class="max-w-7xl mx-auto py-6 px-6">
     <router-view
-      :selectedTab="state.selectedIndex"
       :projectSlug="projectSlug"
-      :projectHookSlug="projectHookSlug"
+      :projectWebhookSlug="projectWebhookSlug"
+      :selectedTab="state.selectedIndex"
+      :allowEdit="allowEdit"
     />
   </div>
 </template>
@@ -30,7 +31,7 @@
 import { computed, onMounted, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 
 const OVERVIEW_TAB = 0;
@@ -45,7 +46,7 @@ const projectTabItemList: ProjectTabItem[] = [
   { name: "Overview", hash: "overview" },
   { name: "Migration History", hash: "migration-history" },
   { name: "Version Control", hash: "version-control" },
-  { name: "Webhooks", hash: "hook" },
+  { name: "Webhooks", hash: "webhook" },
   { name: "Settings", hash: "setting" },
 ];
 
@@ -63,13 +64,15 @@ export default {
       required: true,
       type: String,
     },
-    projectHookSlug: {
+    projectWebhookSlug: {
       type: String,
     },
   },
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
@@ -79,6 +82,25 @@ export default {
       return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
       );
+    });
+
+    // Only the project owner can edit the project general info and configure version control.
+    // This means even the workspace owner won't be able to edit it.
+    // On the other hand, we allow workspace owner to change project membership in case
+    // project is locked somehow. See the relevant method in ProjectMemberTable for more info.
+    const allowEdit = computed(() => {
+      if (project.value.rowStatus == "ARCHIVED") {
+        return false;
+      }
+
+      for (const member of project.value.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          if (isProjectOwner(member.role)) {
+            return true;
+          }
+        }
+      }
+      return false;
     });
 
     const selectProjectTabOnHash = () => {
@@ -126,6 +148,7 @@ export default {
     return {
       state,
       project,
+      allowEdit,
       selectTab,
       projectTabItemList,
     };

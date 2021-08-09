@@ -68,6 +68,21 @@ func (driver *MySQLDriver) Ping(ctx context.Context) error {
 }
 
 func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error) {
+	// Query MySQL version
+	query := "SELECT VERSION()"
+	versionRow, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, formatErrorWithQuery(err, query)
+	}
+	defer versionRow.Close()
+
+	var version string
+	versionRow.Next()
+	if err := versionRow.Scan(&version); err != nil {
+		return nil, nil, err
+	}
+	isMySQL8 := strings.HasPrefix(version, "8.0")
+
 	excludedDatabaseList := []string{
 		"'mysql'",
 		"'information_schema'",
@@ -78,17 +93,18 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 	}
 
 	// Query user info
-	userList := make([]*DBUser, 0)
-	userRows, err := driver.db.QueryContext(ctx, `
+	query = `
 	    SELECT
 			user,
 			host
 		FROM mysql.user
 		WHERE user NOT LIKE 'mysql.%'
-	`)
+	`
+	userList := make([]*DBUser, 0)
+	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatErrorWithQuery(err, query)
 	}
 	defer userRows.Close()
 
@@ -106,11 +122,12 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 		// instead of table (which should use backtick instead). MySQL actually works
 		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
 		name := fmt.Sprintf("'%s'@'%s'", user, host)
+		query = fmt.Sprintf("SHOW GRANTS FOR %s", name)
 		grantRows, err := driver.db.QueryContext(ctx,
-			fmt.Sprintf("SHOW GRANTS FOR %s", name),
+			query,
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, formatErrorWithQuery(err, query)
 		}
 		defer grantRows.Close()
 
@@ -131,7 +148,22 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 
 	// Query index info
 	indexWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	indexRows, err := driver.db.QueryContext(ctx, `
+	query = `
+			SELECT
+				TABLE_SCHEMA,
+				TABLE_NAME,
+				INDEX_NAME,
+				COLUMN_NAME,
+				'',
+				SEQ_IN_INDEX,
+				INDEX_TYPE,
+				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
+				'YES',
+				INDEX_COMMENT
+			FROM information_schema.STATISTICS
+			WHERE ` + indexWhere
+	if isMySQL8 {
+		query = `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -144,10 +176,11 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
 				INDEX_COMMENT
 			FROM information_schema.STATISTICS
-			WHERE `+indexWhere,
-	)
+			WHERE ` + indexWhere
+	}
+	indexRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatErrorWithQuery(err, query)
 	}
 	defer indexRows.Close()
 
@@ -192,7 +225,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 
 	// Query column info
 	columnWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	columnRows, err := driver.db.QueryContext(ctx, `
+	query = `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -205,10 +238,10 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 				IFNULL(COLLATION_NAME, ''),
 				COLUMN_COMMENT
 			FROM information_schema.COLUMNS
-			WHERE `+columnWhere,
-	)
+			WHERE ` + columnWhere
+	columnRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatErrorWithQuery(err, query)
 	}
 	defer columnRows.Close()
 
@@ -251,7 +284,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 
 	// Query table info
 	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	tableRows, err := driver.db.QueryContext(ctx, `
+	query = `
 			SELECT
 				TABLE_SCHEMA, 
 				TABLE_NAME,
@@ -267,10 +300,10 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 				IFNULL(CREATE_OPTIONS, ''),
 				IFNULL(TABLE_COMMENT, '')
 			FROM information_schema.TABLES
-			WHERE `+tableWhere,
-	)
+			WHERE ` + tableWhere
+	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatErrorWithQuery(err, query)
 	}
 	defer tableRows.Close()
 
@@ -312,16 +345,16 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 
 	// Query db info
 	where := fmt.Sprintf("SCHEMA_NAME NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	rows, err := driver.db.QueryContext(ctx, `
-		SELECT 
+	query = `
+			SELECT 
 		    SCHEMA_NAME,
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
-		WHERE `+where,
-	)
+		WHERE ` + where
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -359,14 +392,15 @@ func (driver *MySQLDriver) Execute(ctx context.Context, statement string) error 
 }
 
 func (driver *MySQLDriver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	rows, err := driver.db.QueryContext(ctx, `
+	const query = `
 		SELECT 
 		    1
 		FROM information_schema.TABLES
-		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'`,
-	)
+		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'
+		`
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return false, err
+		return false, formatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -387,7 +421,7 @@ func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
 		driver.l.Info("Bytebase migration schema not found, creating schema...")
 		if err := driver.Execute(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.", zap.Error(err))
-			return formatError(err)
+			return formatErrorWithQuery(err, migrationSchema)
 		}
 		driver.l.Info("Successfully created migration schema.")
 	}
@@ -452,7 +486,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	}
 
 	// Phase 3 - Record migration
-	_, err = tx.ExecContext(ctx, `
+	const query = `
 		INSERT INTO bytebase.migration_history (
 			created_by,
 			created_ts,
@@ -460,8 +494,8 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 			updated_ts,
 			namespace,
 			sequence,
-			`+"`engine`,"+`
-			`+"`type`,"+`
+			` + "`engine`," + `
+			` + "`type`," + `
 			version,
 			description,
 			statement,
@@ -470,7 +504,8 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 			payload
 		)
 		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`,
+	`
+	_, err = tx.ExecContext(ctx, query,
 		m.Creator,
 		m.Creator,
 		m.Namespace,
@@ -486,7 +521,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	)
 
 	if err != nil {
-		return formatError(err)
+		return formatErrorWithQuery(err, query)
 	}
 
 	tx.Commit()
@@ -532,7 +567,7 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, formatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -570,15 +605,16 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 }
 
 func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, error) {
+	query := `
+		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND ` + "`type` = 'BASELINE'" + `
+	`
 	args := []interface{}{namespace}
-	row, err := tx.QueryContext(ctx, `
-		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND `+"`type` = 'BASELINE'"+`
-	`,
+	row, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 
 	if err != nil {
-		return false, err
+		return false, formatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -590,15 +626,16 @@ func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, erro
 }
 
 func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine MigrationEngine, version string) (bool, error) {
+	query := `
+		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND ` + "`engine` = ? AND version = ?" + `
+	`
 	args := []interface{}{namespace, engine.String(), version}
-	row, err := tx.QueryContext(ctx, `
-		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND `+"`engine` = ? AND version = ?"+`
-	`,
+	row, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 
 	if err != nil {
-		return false, err
+		return false, formatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -609,15 +646,16 @@ func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, en
 }
 
 func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine MigrationEngine, version string) (*string, error) {
+	query := `
+		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND ` + "`engine` = ? AND STRCMP(?, version) = -1" + `
+	`
 	args := []interface{}{namespace, engine.String(), version}
-	row, err := tx.QueryContext(ctx, `
-		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND `+"`engine` = ? AND STRCMP(?, version) = -1"+`
-	`,
+	row, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, formatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -635,15 +673,16 @@ func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, e
 }
 
 func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
-	args := []interface{}{namespace}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		SELECT MAX(sequence) + 1 FROM bytebase.migration_history WHERE namespace = ?
-	`,
+	`
+	args := []interface{}{namespace}
+	row, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 
 	if err != nil {
-		return -1, err
+		return -1, formatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -678,4 +717,8 @@ func formatError(err error) error {
 	}
 
 	return err
+}
+
+func formatErrorWithQuery(err error, query string) error {
+	return fmt.Errorf("failed to execute \"%s\"\n\n%w", query, err)
 }

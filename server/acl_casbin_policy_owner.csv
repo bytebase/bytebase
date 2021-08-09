@@ -17,11 +17,11 @@ p, OWNER, /project/{id}/repository, DELETE
 p, OWNER, /project/{projectId}/member, POST
 p, OWNER, /project/{projectId}/member/{memberId}, PATCH
 p, OWNER, /project/{projectId}/member/{memberId}, DELETE
-p, OWNER, /project/{projectId}/hook, GET
-p, OWNER, /project/{projectId}/hook, POST
-p, OWNER, /project/{projectId}/hook/{hookId}, GET
-p, OWNER, /project/{projectId}/hook/{hookId}, PATCH
-p, OWNER, /project/{projectId}/hook/{hookId}, DELETE
+p, OWNER, /project/{projectId}/webhook, GET
+p, OWNER, /project/{projectId}/webhook, POST
+p, OWNER, /project/{projectId}/webhook/{hookId}, GET
+p, OWNER, /project/{projectId}/webhook/{hookId}, PATCH
+p, OWNER, /project/{projectId}/webhook/{hookId}, DELETE
 p, OWNER, /environment, POST
 p, OWNER, /environment, GET
 p, OWNER, /environment/{id}, PATCH

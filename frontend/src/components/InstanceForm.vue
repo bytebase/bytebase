@@ -117,12 +117,17 @@ input[type="number"] {
               </svg>
             </button>
           </label>
+          <div class="mt-1 textinfolabel">
+            The external console URL managing this instance (e.g. AWS RDS
+            console, your in-house DB instance console)
+          </div>
           <input
             required
             id="externallink"
             name="externallink"
             type="text"
             class="textfield mt-1 w-full"
+            placeholder="https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false"
             :disabled="!allowEdit"
             :value="state.instance.externalLink"
             @input="updateInstance('externalLink', $event.target.value)"
