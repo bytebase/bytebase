@@ -132,7 +132,7 @@ export default {
       );
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
-      const projectHookSlug = routeSlug.projectHookSlug;
+      const projectWebhookSlug = routeSlug.projectWebhookSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
       const tableName = routeSlug.tableName;
@@ -151,7 +151,7 @@ export default {
           path: "/project",
         });
 
-        if (projectHookSlug) {
+        if (projectWebhookSlug) {
           const project = store.getters["project/projectById"](
             idFromSlug(projectSlug)
           );

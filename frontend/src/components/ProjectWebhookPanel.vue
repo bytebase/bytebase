@@ -4,15 +4,18 @@
       <button
         type="button"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        @click.prevent="addProjectHook"
+        @click.prevent="addProjectWebhook"
       >
         Add a webhook
       </button>
     </div>
     <div class="pt-4">
-      <div v-if="projectHookList.length > 0" class="space-y-6">
-        <template v-for="(projectHook, index) in projectHookList" :key="index">
-          <ProjectWebhookCard :projectHook="projectHook" />
+      <div v-if="projectWebhookList.length > 0" class="space-y-6">
+        <template
+          v-for="(projectWebhook, index) in projectWebhookList"
+          :key="index"
+        >
+          <ProjectWebhookCard :projectWebhook="projectWebhook" />
         </template>
       </div>
       <template v-else>
@@ -70,30 +73,30 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const prepareProjectHookList = () => {
+    const prepareProjectWebhookList = () => {
       store.dispatch(
-        "projectHook/fetchProjectHookListByProjectId",
+        "projectWebhook/fetchProjectWebhookListByProjectId",
         props.project.id
       );
     };
 
-    watchEffect(prepareProjectHookList);
+    watchEffect(prepareProjectWebhookList);
 
-    const projectHookList = computed(() => {
-      return store.getters["projectHook/projectHookListByProjectId"](
+    const projectWebhookList = computed(() => {
+      return store.getters["projectWebhook/projectWebhookListByProjectId"](
         props.project.id
       );
     });
 
-    const addProjectHook = () => {
+    const addProjectWebhook = () => {
       router.push({
         name: "workspace.project.hook.create",
       });
     };
 
     return {
-      projectHookList,
-      addProjectHook,
+      projectWebhookList,
+      addProjectWebhook,
     };
   },
 };

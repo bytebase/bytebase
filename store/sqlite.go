@@ -337,7 +337,7 @@ func FormatError(err error) error {
 		return bytebase.Errorf(bytebase.ECONFLICT, "environment name already exists")
 	case "UNIQUE constraint failed: project.key":
 		return bytebase.Errorf(bytebase.ECONFLICT, "project key already exists")
-	case "UNIQUE constraint failed: project_hook.project_id, project_hook.url":
+	case "UNIQUE constraint failed: project_webhook.project_id, project_webhook.url":
 		return bytebase.Errorf(bytebase.ECONFLICT, "webhook url already exists")
 	case "UNIQUE constraint failed: project_member.project_id, project_member.principal_id":
 		return bytebase.Errorf(bytebase.ECONFLICT, "project member already exists")

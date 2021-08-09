@@ -504,11 +504,11 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		return nil, err
 	}
 
-	hookFind := &api.ProjectHookFind{
+	hookFind := &api.ProjectWebhookFind{
 		ProjectId:    &issue.ProjectId,
 		ActivityType: &activityCreate.Type,
 	}
-	hookList, err := s.ProjectHookService.FindProjectHookList(context.Background(), hookFind)
+	hookList, err := s.ProjectWebhookService.FindProjectWebhookList(context.Background(), hookFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project webhook hook after changing the issue status: %v, error: %w", issue.Name, err)
 	}

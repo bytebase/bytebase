@@ -6,13 +6,13 @@
       <div class="flex flex-row space-x-2 items-center">
         <img class="h-5 w-5" :src="`/src/assets/${logo}`" />
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{ projectHook.name }}
+          {{ projectWebhook.name }}
         </h3>
       </div>
       <button
         type="button"
         class="btn-normal py-2 px-4"
-        @click.prevent="viewProjectHook"
+        @click.prevent="viewProjectWebhook"
       >
         View
       </button>
@@ -22,7 +22,7 @@
         <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">URL</dt>
           <dd class="py-0.5 flex text-sm text-main col-span-4">
-            {{ projectHook.url }}
+            {{ projectWebhook.url }}
           </dd>
         </div>
         <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
@@ -39,17 +39,17 @@
             <div class="flex flex-row items-center space-x-2 mr-1">
               <div class="flex flex-row items-center space-x-1">
                 <PrincipalAvatar
-                  :principal="projectHook.updater"
+                  :principal="projectWebhook.updater"
                   :size="'SMALL'"
                 />
                 <router-link
-                  :to="`/u/${projectHook.updater.id}`"
+                  :to="`/u/${projectWebhook.updater.id}`"
                   class="normal-link"
-                  >{{ projectHook.updater.name }}
+                  >{{ projectWebhook.updater.name }}
                 </router-link>
               </div>
             </div>
-            at {{ humanizeTs(projectHook.updatedTs) }}
+            at {{ humanizeTs(projectWebhook.updatedTs) }}
           </dd>
         </div>
       </dl>
@@ -62,12 +62,12 @@ import { reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
-  ProjectHook,
+  ProjectWebhook,
   PROJECT_HOOK_TYPE_ITEM_LIST,
   PROJECT_HOOK_EVENT_ITEM_LIST,
   redirectURL,
 } from "../types";
-import { projectHookSlug } from "../utils";
+import { projectWebhookSlug } from "../utils";
 
 interface LocalState {}
 
@@ -75,9 +75,9 @@ export default {
   name: "ProjectWebhookCard",
   components: { PrincipalAvatar },
   props: {
-    projectHook: {
+    projectWebhook: {
       required: true,
-      type: Object as PropType<ProjectHook>,
+      type: Object as PropType<ProjectWebhook>,
     },
   },
   setup(props, ctx) {
@@ -85,18 +85,18 @@ export default {
 
     const state = reactive<LocalState>({});
 
-    const viewProjectHook = () => {
+    const viewProjectWebhook = () => {
       router.push({
         name: "workspace.project.hook.detail",
         params: {
-          projectHookSlug: projectHookSlug(props.projectHook),
+          projectWebhookSlug: projectWebhookSlug(props.projectWebhook),
         },
       });
     };
 
     const logo = computed(() => {
       for (const item of PROJECT_HOOK_TYPE_ITEM_LIST) {
-        if (item.type == props.projectHook.type) {
+        if (item.type == props.projectWebhook.type) {
           return item.logo;
         }
       }
@@ -105,7 +105,7 @@ export default {
     });
 
     const activityListStr = computed(() => {
-      const list = props.projectHook.activityList.map((activity) => {
+      const list = props.projectWebhook.activityList.map((activity) => {
         for (const item of PROJECT_HOOK_EVENT_ITEM_LIST) {
           if (item.event == activity) {
             return item.title;
@@ -120,7 +120,7 @@ export default {
     return {
       state,
       redirectURL,
-      viewProjectHook,
+      viewProjectWebhook,
       logo,
       activityListStr,
     };
