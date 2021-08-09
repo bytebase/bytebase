@@ -131,6 +131,24 @@ const actions = {
     return backupSetting;
   },
 
+  async restoreFromBackup(
+    { commit, rootGetters }: any,
+    { databaseId, backupName }: { databaseId: DatabaseId; backupName: string }
+  ) {
+    const data = (
+      await axios.post(`/api/database/${databaseId}/backup/${backupName}/restore`, {
+        data: {},
+      })
+    ).data;
+    const restoredBackup: Backup = convert(
+      data.data,
+      data.included,
+      rootGetters
+    );
+
+    return restoredBackup;
+  },
+
   async setBackupSetting(
     { commit, rootGetters }: any,
     { newBackupSetting }: { newBackupSetting: BackupSettingSet }
