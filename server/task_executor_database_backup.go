@@ -105,7 +105,7 @@ func backupDatabase(instance *api.Instance, database *api.Database, backup *api.
 	}
 	defer f.Close()
 
-	if err := dp.Dump(database.Name, f, false /* schemaOnly */); err != nil {
+	if err := dp.Dump(database.Name, f, false /* schemaOnly */, false /* dumpAll */); err != nil {
 		return err
 	}
 

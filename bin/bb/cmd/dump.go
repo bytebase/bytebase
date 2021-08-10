@@ -80,6 +80,7 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 		if err != nil {
 			return err
 		}
+		dumpAll := database == ""
 		for _, dbName := range databases {
 			out, err := getOutFile(dbName, directory)
 			if err != nil {
@@ -87,7 +88,7 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 			}
 			defer out.Close()
 
-			if err := dp.Dump(dbName, out, schemaOnly); err != nil {
+			if err := dp.Dump(dbName, out, schemaOnly, dumpAll); err != nil {
 				return err
 			}
 		}
