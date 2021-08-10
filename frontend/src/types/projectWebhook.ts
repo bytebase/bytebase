@@ -112,3 +112,7 @@ export type ProjectWebhookPatch = {
   // Comma separated list. Server doesn't support deserialize into pointer to string array (*[]string in Golang)
   activityList?: string;
 };
+
+export type ProjectWebhookTestResult = {
+  error?: string;
+};

@@ -6,6 +6,7 @@ import {
   ProjectWebhookId,
   ProjectWebhookPatch,
   ProjectWebhookState,
+  ProjectWebhookTestResult,
   ResourceObject,
   unknown,
 } from "../../types";
@@ -18,6 +19,14 @@ function convert(
   return {
     ...(projectWebhook.attributes as Omit<ProjectWebhook, "id">),
     id: parseInt(projectWebhook.id),
+  };
+}
+
+function convertTestResult(
+  testResult: ResourceObject
+): ProjectWebhookTestResult {
+  return {
+    ...(testResult.attributes as ProjectWebhookTestResult),
   };
 }
 
@@ -178,6 +187,25 @@ const actions = {
       projectId,
       projectWebhookId,
     });
+  },
+
+  async testProjectWebhookById(
+    { dispatch, commit }: any,
+    {
+      projectId,
+      projectWebhookId,
+    }: {
+      projectId: ProjectId;
+      projectWebhookId: ProjectWebhookId;
+    }
+  ) {
+    const data = (
+      await axios.get(
+        `/api/project/${projectId}/webhook/${projectWebhookId}/test`
+      )
+    ).data;
+
+    return convertTestResult(data.data);
   },
 };
 

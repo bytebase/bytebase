@@ -18,6 +18,7 @@ p, DBA, /project/{projectId}/webhook, POST
 p, DBA, /project/{projectId}/webhook/{webhookId}, GET
 p, DBA, /project/{projectId}/webhook/{webhookId}, PATCH
 p, DBA, /project/{projectId}/webhook/{webhookId}, DELETE
+p, DBA, /project/{projectId}/webhook/{webhookId}/test, GET
 p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
