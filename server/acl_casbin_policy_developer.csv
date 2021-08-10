@@ -15,9 +15,9 @@ p, DEVELOPER, /project/{projectId}/member/{memberId}, PATCH
 p, DEVELOPER, /project/{projectId}/member/{memberId}, DELETE
 p, DEVELOPER, /project/{projectId}/webhook, GET
 p, DEVELOPER, /project/{projectId}/webhook, POST
-p, DEVELOPER, /project/{projectId}/webhook/{hookId}, GET
-p, DEVELOPER, /project/{projectId}/webhook/{hookId}, PATCH
-p, DEVELOPER, /project/{projectId}/webhook/{hookId}, DELETE
+p, DEVELOPER, /project/{projectId}/webhook/{webhookId}, GET
+p, DEVELOPER, /project/{projectId}/webhook/{webhookId}, PATCH
+p, DEVELOPER, /project/{projectId}/webhook/{webhookId}, DELETE
 p, DEVELOPER, /environment, GET
 p, DEVELOPER, /instance, GET
 p, DEVELOPER, /instance/{id}, GET
