@@ -1,4 +1,4 @@
-// mysqldump is a library for dumping MySQL database schemas provided by bytebase.com.
+// Package mysqldump is a library for dumping MySQL database schemas provided by bytebase.com.
 package mysqldump
 
 import (
@@ -22,7 +22,7 @@ var (
 const (
 	databaseHeaderFmt = "" +
 		"--\n" +
-		"-- PostgreSQL database structure for `%s`\n" +
+		"-- MySQL database structure for `%s`\n" +
 		"--\n\n"
 	settingsStmt = "" +
 		"SET character_set_client  = %s;\n" +
@@ -93,7 +93,7 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 			}
 		}
 		if !exist {
-			return nil, fmt.Errorf("database %q not found.", database)
+			return nil, fmt.Errorf("database %s not found", database)
 		}
 		dbNames = []string{database}
 	}
@@ -108,7 +108,7 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 }
 
 // Dump dumps the schema of a MySQL instance.
-func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
+func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// Database header.
@@ -127,7 +127,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 			return err
 		}
 		if !schemaOnly && tbl.tableType == "BASE TABLE" {
-			stmts, err := dp.getTableData(dbName, tbl.name)
+			stmts, err := dp.getTableData(dbName, tbl.name, dumpAll)
 			if err != nil {
 				return err
 			}
@@ -285,15 +285,15 @@ func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) 
 			}
 			return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
 		}
-		return "", fmt.Errorf("query %q returned invalid rows.", query)
+		return "", fmt.Errorf("query %q returned invalid rows", query)
 	default:
-		return "", fmt.Errorf("unrecognized table type %q for database %q table %q.", tblType, dbName, tblName)
+		return "", fmt.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
 
 }
 
 // getTableData gets the data of a table.
-func (dp *Dumper) getTableData(dbName, tblName string) ([]string, error) {
+func (dp *Dumper) getTableData(dbName, tblName string, dumpAll bool) ([]string, error) {
 	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
 	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
@@ -330,7 +330,11 @@ func (dp *Dumper) getTableData(dbName, tblName string) ([]string, error) {
 				tokens[i] = fmt.Sprintf("'%s'", v.String)
 			}
 		}
-		stmt := fmt.Sprintf("INSERT INTO `%s`.`%s` VALUES (%s);\n", dbName, tblName, strings.Join(tokens, ", "))
+		dbPrefix := ""
+		if dumpAll {
+			dbPrefix = fmt.Sprintf("`%s`.", dbName)
+		}
+		stmt := fmt.Sprintf("INSERT INTO %s`%s` VALUES (%s);\n", dbPrefix, tblName, strings.Join(tokens, ", "))
 		stmts = append(stmts, stmt)
 	}
 	return stmts, nil
@@ -396,7 +400,7 @@ func (dp *Dumper) getRoutineStmt(dbName, routineName, routineType string) (strin
 		}
 		return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned invalid rows.", query)
+	return "", fmt.Errorf("query %q returned invalid rows", query)
 
 }
 
@@ -461,7 +465,7 @@ func (dp *Dumper) getEventStmt(dbName, eventName string) (string, error) {
 		}
 		return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned invalid rows.", query)
+	return "", fmt.Errorf("query %q returned invalid rows", query)
 }
 
 // getTriggers gets all triggers of a database.
@@ -513,5 +517,5 @@ func (dp *Dumper) getTriggerStmt(dbName, triggerName string) (string, error) {
 		}
 		return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned invalid rows.", query)
+	return "", fmt.Errorf("query %q returned invalid rows", query)
 }
