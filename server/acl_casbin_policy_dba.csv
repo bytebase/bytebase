@@ -15,9 +15,9 @@ p, DBA, /project/{projectId}/member/{memberId}, PATCH
 p, DBA, /project/{projectId}/member/{memberId}, DELETE
 p, DBA, /project/{projectId}/webhook, GET
 p, DBA, /project/{projectId}/webhook, POST
-p, DBA, /project/{projectId}/webhook/{hookId}, GET
-p, DBA, /project/{projectId}/webhook/{hookId}, PATCH
-p, DBA, /project/{projectId}/webhook/{hookId}, DELETE
+p, DBA, /project/{projectId}/webhook/{webhookId}, GET
+p, DBA, /project/{projectId}/webhook/{webhookId}, PATCH
+p, DBA, /project/{projectId}/webhook/{webhookId}, DELETE
 p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
