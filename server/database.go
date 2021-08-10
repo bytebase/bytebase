@@ -1,19 +1,15 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/bin/bb/connect"
-	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -323,7 +319,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		_, err = s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
-			Name:       fmt.Sprintf("backup-%s-task", backup.Name),
+			Name:       fmt.Sprintf("backup-task-%s", backup.Name),
 			PipelineId: createdPipeline.ID,
 			StageId:    createdStage.ID,
 			InstanceId: database.InstanceId,
@@ -408,9 +404,48 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backup.Database = database
 
-		// TODO(spinningbot): move restore to a task.
-		if err := restoreDatabase(database, backup); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to restore the backup %s database id: %d", backupName, id)).SetInternal(err)
+		creatorID := c.Get(GetPrincipalIdContextKey()).(int)
+		uniqueKey := time.Now().UTC().Unix()
+
+		payload := api.TaskDatabaseRestorePayload{
+			BackupID: backup.ID,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task payload").SetInternal(err)
+		}
+
+		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
+			Name:      fmt.Sprintf("restore-pipeline-%s-%v", backup.Name, uniqueKey),
+			CreatorId: creatorID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create pipeline").SetInternal(err)
+		}
+
+		createdStage, err := s.StageService.CreateStage(context.Background(), &api.StageCreate{
+			Name:          fmt.Sprintf("restore-stage-%s-%v", backup.Name, uniqueKey),
+			EnvironmentId: database.Instance.EnvironmentId,
+			PipelineId:    createdPipeline.ID,
+			CreatorId:     creatorID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create stage").SetInternal(err)
+		}
+
+		_, err = s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
+			Name:       fmt.Sprintf("restore-task-%s-%v", backup.Name, uniqueKey),
+			PipelineId: createdPipeline.ID,
+			StageId:    createdStage.ID,
+			InstanceId: database.InstanceId,
+			DatabaseId: &database.ID,
+			Status:     api.TaskPending,
+			Type:       api.TaskDatabaseRestore,
+			Payload:    string(bytes),
+			CreatorId:  creatorID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -548,24 +583,5 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 
 	database.DataSourceList = []*api.DataSource{}
 
-	return nil
-}
-
-func restoreDatabase(database *api.Database, backup *api.Backup) error {
-	instance := database.Instance
-	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
-	if err != nil {
-		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
-	}
-	defer conn.Close()
-	f, err := os.OpenFile(backup.Path, os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("os.OpenFile(%q) error: %v", backup.Path, err)
-	}
-	defer f.Close()
-	sc := bufio.NewScanner(f)
-	if err := mysqlrestore.Restore(conn, sc); err != nil {
-		return fmt.Errorf("mysqlrestore.Restore() got error: %v", err)
-	}
 	return nil
 }

@@ -39,6 +39,7 @@ func (e TaskStatus) String() string {
 	return "UNKNOWN"
 }
 
+// TaskType is the type of a task.
 type TaskType string
 
 const (
@@ -46,6 +47,7 @@ const (
 	TaskDatabaseCreate       TaskType = "bb.task.database.create"
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
 	TaskDatabaseBackup       TaskType = "bb.task.database.backup"
+	TaskDatabaseRestore      TaskType = "bb.task.database.restore"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -67,6 +69,11 @@ type TaskDatabaseSchemaUpdatePayload struct {
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
+	BackupID int `jsonapi:"primary,table"`
+}
+
+// TaskDatabaseRestorePayload is the task payload for database restore.
+type TaskDatabaseRestorePayload struct {
 	BackupID int `jsonapi:"primary,table"`
 }
 
