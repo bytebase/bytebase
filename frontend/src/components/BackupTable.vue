@@ -21,7 +21,7 @@
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
       <BBTableCell class="w-4">
-        {{ backup.creator }}
+        {{ backup.creator.name }}
       </BBTableCell>
     </template>
   </BBTable>

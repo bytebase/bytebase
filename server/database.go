@@ -367,6 +367,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		for _, backup := range backupList {
 			backup.Database = database
+			if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -583,5 +586,19 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 
 	database.DataSourceList = []*api.DataSource{}
 
+	return nil
+}
+
+// ComposeBackupRelationship will compose the relationship of a backup.
+func (s *Server) ComposeBackupRelationship(ctx context.Context, backup *api.Backup) error {
+	var err error
+	backup.Creator, err = s.ComposePrincipalById(ctx, backup.CreatorId)
+	if err != nil {
+		return err
+	}
+	backup.Updater, err = s.ComposePrincipalById(ctx, backup.UpdaterId)
+	if err != nil {
+		return err
+	}
 	return nil
 }
