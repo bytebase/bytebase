@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/webhook"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -172,6 +174,70 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
+	g.GET("/project/:projectId/webhook/:webhookId/test", func(c echo.Context) error {
+		projectId, err := strconv.Atoi(c.Param("projectId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+		}
+
+		projectFind := &api.ProjectFind{
+			ID: &projectId,
+		}
+		project, err := s.ProjectService.FindProject(context.Background(), projectFind)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectId)).SetInternal(err)
+		}
+
+		id, err := strconv.Atoi(c.Param("webhookId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project webhook ID is not a number: %s", c.Param("webhookId"))).SetInternal(err)
+		}
+
+		find := &api.ProjectWebhookFind{
+			ID: &id,
+		}
+		hook, err := s.ProjectWebhookService.FindProjectWebhook(context.Background(), find)
+		if err != nil {
+			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
+		}
+
+		result := &api.ProjectWebhookTestResult{}
+		err = webhook.Post(
+			hook.Type,
+			webhook.WebhookContext{
+				URL:          hook.URL,
+				Title:        fmt.Sprintf("Test webhook '%s'", hook.Name),
+				Description:  "This is a test",
+				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectSlug(project), api.ProjectWebhookSlug(hook)),
+				CreatorName:  "Bytebase",
+				CreatorEmail: "support@bytebase.com",
+				CreatedTs:    time.Now().Unix(),
+				MetaList: []webhook.WebhookMeta{
+					{
+						Name:  "Project",
+						Value: project.Name,
+					},
+				},
+			},
+		)
+
+		if err != nil {
+			result.Error = err.Error()
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, result); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project webhook response: %v", projectId)).SetInternal(err)
+		}
 		return nil
 	})
 }

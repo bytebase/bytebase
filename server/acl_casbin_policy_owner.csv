@@ -22,6 +22,7 @@ p, OWNER, /project/{projectId}/webhook, POST
 p, OWNER, /project/{projectId}/webhook/{webhookId}, GET
 p, OWNER, /project/{projectId}/webhook/{webhookId}, PATCH
 p, OWNER, /project/{projectId}/webhook/{webhookId}, DELETE
+p, OWNER, /project/{projectId}/webhook/{webhookId}/test, GET
 p, OWNER, /environment, POST
 p, OWNER, /environment, GET
 p, OWNER, /environment/{id}, PATCH

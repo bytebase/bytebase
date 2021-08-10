@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -120,9 +121,19 @@ func (receiver *SlackReceiver) post(context WebhookContext) error {
 	client := &http.Client{
 		Timeout: timeout,
 	}
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
+	}
+	defer resp.Body.Close()
+
+	if string(b) != "ok" {
+		return fmt.Errorf("%s", string(b))
 	}
 
 	return nil

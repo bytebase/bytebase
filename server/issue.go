@@ -538,7 +538,6 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		// Call exteranl webhook endpoint in Go routine to avoid blocking web serveing thread.
 		go func() {
 			for _, hook := range hookList {
-				s.l.Info(fmt.Sprintf("hook name: %s, %s", hook.Name, hook.URL))
 				title := ""
 				switch newStatus {
 				case "OPEN":
