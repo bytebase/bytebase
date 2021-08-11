@@ -225,16 +225,11 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			Level:       level,
 			Payload:     string(payload),
 		}
-		activity, err := s.ActivityService.CreateActivity(ctx, activityCreate)
+		_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+			issue: issue,
+		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after changing the task status: %v, err: %w", task.Name, err)
-		}
-
-		// To reduce noise, for now we only post status update to inbox upon task failure.
-		if updatedTask.Status == api.TaskFailed {
-			if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID); err != nil {
-				return nil, err
-			}
+			return nil, err
 		}
 
 		// Schedule the task if it's being just approved
