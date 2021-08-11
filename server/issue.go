@@ -184,19 +184,18 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, payload := range payloadList {
-			activity, err := s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+			activityCreate := &api.ActivityCreate{
 				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 				ContainerId: issue.ID,
 				Type:        api.ActivityIssueFieldUpdate,
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(payload),
+			}
+			_, err := s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+				issue: issue,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
-			}
-
-			if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to post activity to inbox after updating issue: %v", updatedIssue.Name)).SetInternal(err)
 			}
 		}
 
