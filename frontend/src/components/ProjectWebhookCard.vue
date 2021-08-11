@@ -26,7 +26,9 @@
           </dd>
         </div>
         <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">Events</dt>
+          <dt class="text-sm font-medium text-control-light">
+            Triggering activities
+          </dt>
           <dd class="py-0.5 flex text-sm text-main col-span-4">
             {{ activityListStr }}
           </dd>
@@ -64,7 +66,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ProjectWebhook,
   PROJECT_HOOK_TYPE_ITEM_LIST,
-  PROJECT_HOOK_EVENT_ITEM_LIST,
+  PROJECT_HOOK_ACTIVITY_ITEM_LIST,
   redirectURL,
 } from "../types";
 import { projectWebhookSlug } from "../utils";
@@ -106,8 +108,8 @@ export default {
 
     const activityListStr = computed(() => {
       const list = props.projectWebhook.activityList.map((activity) => {
-        for (const item of PROJECT_HOOK_EVENT_ITEM_LIST) {
-          if (item.event == activity) {
+        for (const item of PROJECT_HOOK_ACTIVITY_ITEM_LIST) {
+          if (item.activity == activity) {
             return item.title;
           }
         }

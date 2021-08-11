@@ -1,4 +1,4 @@
-import { ActionType } from "./activity";
+import { ActivityType } from "./activity";
 import { MemberId, ProjectId } from "./id";
 import { Principal } from "./principal";
 
@@ -48,32 +48,32 @@ export const PROJECT_HOOK_TYPE_ITEM_LIST: ProjectWebhookTypeItem[] = [
   },
 ];
 
-type ProjectWebhookEventItem = {
+type ProjectWebhookActivityItem = {
   title: string;
   label: string;
-  event: ActionType;
+  activity: ActivityType;
 };
 
-export const PROJECT_HOOK_EVENT_ITEM_LIST: ProjectWebhookEventItem[] = [
+export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: ProjectWebhookActivityItem[] = [
   {
     title: "Issue status change",
     label: "When issue status has changed",
-    event: "bb.issue.status.update",
+    activity: "bb.issue.status.update",
   },
   {
     title: "Issue task status change",
     label: "When issue's enclosing task status has changed",
-    event: "bb.pipeline.task.status.update",
+    activity: "bb.pipeline.task.status.update",
   },
   {
     title: "Issue info change",
     label: "When issue info (e.g. assignee, title, description) has changed",
-    event: "bb.issue.field.update",
+    activity: "bb.issue.field.update",
   },
   {
     title: "Issue comment creation",
     label: "When new issue comment has been created",
-    event: "bb.issue.comment.create",
+    activity: "bb.issue.comment.create",
   },
 ];
 
@@ -94,7 +94,7 @@ export type ProjectWebhook = {
   type: string;
   name: string;
   url: string;
-  activityList: ActionType[];
+  activityList: ActivityType[];
 };
 
 export type ProjectWebhookCreate = {
@@ -102,7 +102,7 @@ export type ProjectWebhookCreate = {
   type: string;
   name: string;
   url: string;
-  activityList: ActionType[];
+  activityList: ActivityType[];
 };
 
 export type ProjectWebhookPatch = {

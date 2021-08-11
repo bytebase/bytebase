@@ -69,19 +69,21 @@
       />
     </div>
     <div>
-      <div class="text-md leading-6 font-medium text-main">Events</div>
+      <div class="text-md leading-6 font-medium text-main">
+        Triggering activities
+      </div>
       <div
-        v-for="(item, index) in PROJECT_HOOK_EVENT_ITEM_LIST"
+        v-for="(item, index) in PROJECT_HOOK_ACTIVITY_ITEM_LIST"
         :key="index"
         class="mt-4 space-y-4"
       >
         <BBCheckbox
           :title="item.title"
           :label="item.label"
-          :value="eventOn(item.event)"
+          :value="eventOn(item.activity)"
           @toggle="
             (on) => {
-              toggleEvent(item.event, on);
+              toggleEvent(item.activity, on);
             }
           "
         />
@@ -137,13 +139,13 @@
 import { reactive } from "@vue/reactivity";
 import { computed, PropType, watch } from "@vue/runtime-core";
 import {
-  ActionType,
+  ActivityType,
   Project,
   ProjectWebhook,
   ProjectWebhookCreate,
   ProjectWebhookPatch,
   PROJECT_HOOK_TYPE_ITEM_LIST,
-  PROJECT_HOOK_EVENT_ITEM_LIST,
+  PROJECT_HOOK_ACTIVITY_ITEM_LIST,
 } from "../types";
 import { cloneDeep, isEmpty, isEqual } from "lodash";
 import { useRouter } from "vue-router";
@@ -239,7 +241,7 @@ export default {
       );
     });
 
-    const eventOn = (type: ActionType) => {
+    const eventOn = (type: ActivityType) => {
       for (const activityType of props.webhook.activityList) {
         if (activityType == type) {
           return true;
@@ -248,7 +250,7 @@ export default {
       return false;
     };
 
-    const toggleEvent = (type: ActionType, on: boolean) => {
+    const toggleEvent = (type: ActivityType, on: boolean) => {
       if (on) {
         for (const activityType of state.webhook.activityList) {
           if (activityType == type) {
@@ -257,7 +259,7 @@ export default {
         }
         state.webhook.activityList.push(type);
       } else {
-        const list: ActionType[] = [];
+        const list: ActivityType[] = [];
         for (const activityType of state.webhook.activityList) {
           if (activityType != type) {
             list.push(activityType);
@@ -344,7 +346,7 @@ export default {
 
     return {
       PROJECT_HOOK_TYPE_ITEM_LIST,
-      PROJECT_HOOK_EVENT_ITEM_LIST,
+      PROJECT_HOOK_ACTIVITY_ITEM_LIST,
       state,
       namePlaceholder,
       urlPlaceholder,
