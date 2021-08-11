@@ -7,14 +7,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/webhook"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -496,86 +493,12 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Comment:     comment,
 		Payload:     string(payload),
 	}
-	activity, err := s.ActivityService.CreateActivity(context.Background(), activityCreate)
+
+	err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+		issue: updatedIssue,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after changing the issue status: %v, error: %w", issue.Name, err)
-	}
-
-	if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID); err != nil {
-		return nil, err
-	}
-
-	hookFind := &api.ProjectWebhookFind{
-		ProjectId:    &issue.ProjectId,
-		ActivityType: &activityCreate.Type,
-	}
-	hookList, err := s.ProjectWebhookService.FindProjectWebhookList(context.Background(), hookFind)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find project webhook hook after changing the issue status: %v, error: %w", issue.Name, err)
-	}
-
-	// If we need to post webhook event, then we need to make sure the project info exists since we will include
-	// the project name in the webhook event.
-	if len(hookList) > 0 {
-		if issue.Project == nil {
-			projectFind := &api.ProjectFind{
-				ID: &issue.ProjectId,
-			}
-			issue.Project, err = s.ProjectService.FindProject(ctx, projectFind)
-			if err != nil {
-				return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", issue.Name, err)
-			}
-		}
-
-		principalFind := &api.PrincipalFind{
-			ID: &updaterId,
-		}
-		updater, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", issue.Name, err)
-		}
-
-		// Call exteranl webhook endpoint in Go routine to avoid blocking web serveing thread.
-		go func() {
-			for _, hook := range hookList {
-				title := ""
-				switch newStatus {
-				case "OPEN":
-					title = fmt.Sprintf("Issue reopened - %s", issue.Name)
-				case "DONE":
-					title = fmt.Sprintf("Issue resolved - %s", issue.Name)
-				case "CANCELED":
-					title = fmt.Sprintf("Issue canceled - %s", issue.Name)
-				}
-
-				err := webhook.Post(
-					hook.Type,
-					webhook.WebhookContext{
-						URL:          hook.URL,
-						Title:        title,
-						Description:  comment,
-						Link:         fmt.Sprintf("%s:%d/issue/%s", s.frontendHost, s.frontendPort, api.IssueSlug(issue)),
-						CreatorName:  updater.Name,
-						CreatorEmail: updater.Email,
-						CreatedTs:    time.Now().Unix(),
-						MetaList: []webhook.WebhookMeta{
-							{
-								Name:  "Project",
-								Value: issue.Project.Name,
-							},
-						},
-					},
-				)
-				if err != nil {
-					// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-					s.l.Warn("Failed to post webhook event after changing the issue status",
-						zap.String("issue_name", issue.Name),
-						zap.String("old_status", string(issue.Status)),
-						zap.String("new_status", string(newStatus)),
-						zap.Error(err))
-				}
-			}
-		}()
 	}
 
 	return updatedIssue, nil

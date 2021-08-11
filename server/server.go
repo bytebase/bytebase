@@ -23,6 +23,8 @@ type Server struct {
 	SchemaSyncer  *SchemaSyncer
 	BackupRunner  *BackupRunner
 
+	ActivityManager *ActivityManager
+
 	CacheService api.CacheService
 
 	SettingService         api.SettingService

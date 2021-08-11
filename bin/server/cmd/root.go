@@ -278,38 +278,40 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	server := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
-	server.SettingService = settingService
-	server.PrincipalService = store.NewPrincipalService(m.l, db, server.CacheService)
-	server.MemberService = store.NewMemberService(m.l, db, server.CacheService)
-	server.ProjectService = store.NewProjectService(m.l, db, server.CacheService)
-	server.ProjectMemberService = store.NewProjectMemberService(m.l, db)
-	server.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	server.EnvironmentService = store.NewEnvironmentService(m.l, db, server.CacheService)
-	server.DataSourceService = store.NewDataSourceService(m.l, db)
-	server.DatabaseService = store.NewDatabaseService(m.l, db, server.CacheService)
-	server.InstanceService = store.NewInstanceService(m.l, db, server.CacheService, server.DatabaseService, server.DataSourceService)
-	server.InstanceUserService = store.NewInstanceUserService(m.l, db)
-	server.TableService = store.NewTableService(m.l, db)
-	server.ColumnService = store.NewColumnService(m.l, db)
-	server.IndexService = store.NewIndexService(m.l, db)
-	server.BackupService = store.NewBackupService(m.l, db)
-	server.IssueService = store.NewIssueService(m.l, db, server.CacheService)
-	server.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
-	server.PipelineService = store.NewPipelineService(m.l, db, server.CacheService)
-	server.StageService = store.NewStageService(m.l, db)
-	server.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db))
-	server.ActivityService = store.NewActivityService(m.l, db)
-	server.InboxService = store.NewInboxService(m.l, db, server.ActivityService)
-	server.BookmarkService = store.NewBookmarkService(m.l, db)
-	server.VCSService = store.NewVCSService(m.l, db)
-	server.RepositoryService = store.NewRepositoryService(m.l, db, server.ProjectService)
+	s := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s.SettingService = settingService
+	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
+	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
+	s.ProjectService = store.NewProjectService(m.l, db, s.CacheService)
+	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
+	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
+	s.EnvironmentService = store.NewEnvironmentService(m.l, db, s.CacheService)
+	s.DataSourceService = store.NewDataSourceService(m.l, db)
+	s.DatabaseService = store.NewDatabaseService(m.l, db, s.CacheService)
+	s.InstanceService = store.NewInstanceService(m.l, db, s.CacheService, s.DatabaseService, s.DataSourceService)
+	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
+	s.TableService = store.NewTableService(m.l, db)
+	s.ColumnService = store.NewColumnService(m.l, db)
+	s.IndexService = store.NewIndexService(m.l, db)
+	s.BackupService = store.NewBackupService(m.l, db)
+	s.IssueService = store.NewIssueService(m.l, db, s.CacheService)
+	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
+	s.PipelineService = store.NewPipelineService(m.l, db, s.CacheService)
+	s.StageService = store.NewStageService(m.l, db)
+	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db))
+	s.ActivityService = store.NewActivityService(m.l, db)
+	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
+	s.BookmarkService = store.NewBookmarkService(m.l, db)
+	s.VCSService = store.NewVCSService(m.l, db)
+	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
 
-	m.server = server
+	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
+
+	m.server = s
 
 	fmt.Printf(GREETING_BANNER, fmt.Sprintf("Version %s has started at %s:%d", version, host, port))
 
-	if err := server.Run(); err != nil {
+	if err := s.Run(); err != nil {
 		return err
 	}
 
