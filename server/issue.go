@@ -494,7 +494,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Payload:     string(payload),
 	}
 
-	err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+	_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
 		issue: updatedIssue,
 	})
 	if err != nil {
