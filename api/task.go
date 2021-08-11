@@ -69,12 +69,12 @@ type TaskDatabaseSchemaUpdatePayload struct {
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
-	BackupID int `jsonapi:"primary,table"`
+	BackupID int `jsonapi:"primary,backupId"`
 }
 
 // TaskDatabaseRestorePayload is the task payload for database restore.
 type TaskDatabaseRestorePayload struct {
-	BackupID int `jsonapi:"primary,table"`
+	BackupID int `jsonapi:"primary,backupId"`
 }
 
 type Task struct {

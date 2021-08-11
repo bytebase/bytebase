@@ -291,6 +291,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
 		}
 		backup.Database = database
+		if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
+		}
 
 		payload := api.TaskDatabaseBackupPayload{
 			BackupID: backup.ID,
@@ -379,12 +382,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/database/:id/backup/:backupName/restore", func(c echo.Context) error {
+	g.POST("/database/:id/restore", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
-		backupName := c.Param("backupName")
+
+		restoreBackup := &api.RestoreBackup{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, restoreBackup); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted restore from backup request").SetInternal(err)
+		}
 
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
@@ -396,16 +403,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
-
 		backupFind := &api.BackupFind{
 			DatabaseId: &id,
-			Name:       &backupName,
+			ID:         &restoreBackup.BackupID,
 		}
 		backup, err := s.BackupService.FindBackup(context.Background(), backupFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup find for database id: %d", id)).SetInternal(err)
 		}
-		backup.Database = database
 
 		creatorID := c.Get(GetPrincipalIdContextKey()).(int)
 		uniqueKey := time.Now().UTC().Unix()
@@ -436,7 +441,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create stage").SetInternal(err)
 		}
 
-		_, err = s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
+		task, err := s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
 			Name:       fmt.Sprintf("restore-task-%s-%v", backup.Name, uniqueKey),
 			PipelineId: createdPipeline.ID,
 			StageId:    createdStage.ID,
@@ -451,8 +456,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task").SetInternal(err)
 		}
 
+		if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backup); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, task); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch backup response: %v", id)).SetInternal(err)
 		}
 		return nil

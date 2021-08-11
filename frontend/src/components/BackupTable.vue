@@ -71,7 +71,7 @@ export default {
       const backup = props.backupList[row];
       store.dispatch("backup/restoreFromBackup", {
         databaseId: backup.database.id,
-        backupName: backup.name,
+        backupId: backup.id,
       });
     };
 
