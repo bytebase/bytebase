@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -90,6 +92,81 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 							Name:  "Issue",
 							Value: meta.issue.Name,
 						})
+					case api.ActivityIssueFieldUpdate:
+						metaList = append(metaList, webhook.WebhookMeta{
+							Name:  "Issue",
+							Value: meta.issue.Name,
+						})
+						update := &api.ActivityIssueFieldUpdatePayload{}
+						if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
+							m.s.l.Warn("Failed to post webhook event after changing the issue field",
+								zap.String("issue_name", meta.issue.Name),
+								zap.Error(err))
+							return
+						}
+						switch update.FieldId {
+						case api.IssueFieldAssignee:
+							{
+								var oldAssignee, newAssignee *api.Principal
+								if update.OldValue != "" {
+									oldId, err := strconv.Atoi(update.OldValue)
+									if err != nil {
+										m.s.l.Warn("Failed to post webhook event after changing the issue assignee, old assignee id is not number",
+											zap.String("issue_name", meta.issue.Name),
+											zap.String("old_assignee_id", update.OldValue),
+											zap.Error(err))
+										return
+									}
+									principalFind := &api.PrincipalFind{
+										ID: &oldId,
+									}
+									oldAssignee, err = m.s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+									if err != nil {
+										m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
+											zap.String("issue_name", meta.issue.Name),
+											zap.String("old_assignee_id", update.OldValue),
+											zap.Error(err))
+										return
+									}
+								}
+
+								if update.NewValue != "" {
+									newId, err := strconv.Atoi(update.NewValue)
+									if err != nil {
+										m.s.l.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
+											zap.String("issue_name", meta.issue.Name),
+											zap.String("old_assignee_id", update.NewValue),
+											zap.Error(err))
+										return
+									}
+									principalFind := &api.PrincipalFind{
+										ID: &newId,
+									}
+									newAssignee, err = m.s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+									if err != nil {
+										m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
+											zap.String("issue_name", meta.issue.Name),
+											zap.String("new_assignee_id", update.NewValue),
+											zap.Error(err))
+										return
+									}
+
+									if oldAssignee != nil && newAssignee != nil {
+										title = fmt.Sprintf("Reassigned issue from %s to %s", oldAssignee.Name, newAssignee.Name)
+									} else if newAssignee != nil {
+										title = fmt.Sprintf("Assigned issue to %s", newAssignee.Name)
+									} else if oldAssignee != nil {
+										title = fmt.Sprintf("Unassigned issue from %s", newAssignee.Name)
+									}
+								}
+							}
+						case api.IssueFieldDescription:
+							title = "Changed issue description"
+						case api.IssueFieldName:
+							title = "Changed issue name"
+						default:
+							title = "Updated issue"
+						}
 					}
 
 					metaList = append(metaList, webhook.WebhookMeta{
