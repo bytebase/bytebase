@@ -5,20 +5,20 @@ import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 
-export type IssueActionType =
+export type IssueActivityType =
   | "bb.issue.create"
   | "bb.issue.comment.create"
   | "bb.issue.field.update"
   | "bb.issue.status.update"
   | "bb.pipeline.task.status.update";
 
-export type MemberActionType =
+export type MemberActivityType =
   | "bb.member.create"
   | "bb.member.role.update"
   | "bb.member.activate"
   | "bb.member.deactivate";
 
-export type ActionType = IssueActionType | MemberActionType;
+export type ActivityType = IssueActivityType | MemberActivityType;
 
 export type ActivityLevel = "INFO" | "WARNING" | "ERROR";
 
@@ -97,7 +97,7 @@ export type Activity = {
   // The object where this activity belongs
   // e.g if actionType is "bb.issue.xxx", then this field refers to the corresponding issue's id.
   containerId: ContainerId;
-  actionType: ActionType;
+  actionType: ActivityType;
   level: ActivityLevel;
   comment: string;
   payload?: ActionPayloadType;
@@ -106,7 +106,7 @@ export type Activity = {
 export type ActivityCreate = {
   // Domain specific fields
   containerId: ContainerId;
-  actionType: ActionType;
+  actionType: ActivityType;
   comment: string;
   payload?: ActionPayloadType;
 };
