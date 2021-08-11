@@ -61,9 +61,9 @@ export default {
   setup(props, ctx) {
     const buttonClass = (selected: boolean) => {
       if (selected) {
-        return "bg-gray-200 text-gray-800";
+        return "bg-gray-200 text-gray-800 whitespace-nowrap";
       }
-      return "text-gray-500 hover:text-gray-700";
+      return "text-gray-500 hover:text-gray-700 whitespace-nowrap";
     };
 
     return { buttonClass };
