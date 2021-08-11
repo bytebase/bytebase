@@ -37,6 +37,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	if meta.issue != nil {
 		postInbox := false
 		switch create.Type {
+		case api.ActivityIssueCreate:
 		case api.ActivityIssueStatusUpdate:
 		case api.ActivityIssueCommentCreate:
 		case api.ActivityIssueFieldUpdate:
@@ -95,6 +96,8 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 					link := fmt.Sprintf("%s:%d/issue/%s", m.s.frontendHost, m.s.frontendPort, api.IssueSlug(meta.issue))
 					metaList := []webhook.WebhookMeta{}
 					switch create.Type {
+					case api.ActivityIssueCreate:
+						title = fmt.Sprintf("Issue created - %s", meta.issue.Name)
 					case api.ActivityIssueStatusUpdate:
 						switch meta.issue.Status {
 						case "OPEN":
@@ -107,15 +110,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 					case api.ActivityIssueCommentCreate:
 						title = "Comment created"
 						link += fmt.Sprintf("#activity%d", activity.ID)
-						metaList = append(metaList, webhook.WebhookMeta{
-							Name:  "Issue",
-							Value: meta.issue.Name,
-						})
 					case api.ActivityIssueFieldUpdate:
-						metaList = append(metaList, webhook.WebhookMeta{
-							Name:  "Issue",
-							Value: meta.issue.Name,
-						})
 						update := &api.ActivityIssueFieldUpdatePayload{}
 						if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
 							m.s.l.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal paylaod",
@@ -187,10 +182,6 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 							title = "Updated issue"
 						}
 					case api.ActivityPipelineTaskStatusUpdate:
-						metaList = append(metaList, webhook.WebhookMeta{
-							Name:  "Issue",
-							Value: meta.issue.Name,
-						})
 						update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 						if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
 							m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal paylaod",
@@ -228,6 +219,10 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 						}
 					}
 
+					metaList = append(metaList, webhook.WebhookMeta{
+						Name:  "Issue",
+						Value: meta.issue.Name,
+					})
 					metaList = append(metaList, webhook.WebhookMeta{
 						Name:  "Project",
 						Value: meta.issue.Project.Name,

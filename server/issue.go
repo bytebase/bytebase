@@ -402,13 +402,11 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Level:       api.ACTIVITY_INFO,
 		Payload:     string(bytes),
 	}
-	activity, err := s.ActivityService.CreateActivity(context.Background(), activityCreate)
+	_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+		issue: issue,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
-	}
-
-	if err := s.PostInboxIssueActivity(context.Background(), issue, activity.ID); err != nil {
-		return nil, err
 	}
 
 	if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {
