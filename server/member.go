@@ -157,6 +157,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 					ContainerId: updatedMember.ID,
 					Type:        api.ActivityMemberRoleUpdate,
+					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
 				})
 				if err != nil {
