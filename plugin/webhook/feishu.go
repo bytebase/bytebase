@@ -4,9 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
+
+type FeishuWebhookResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"msg"`
+}
 
 type FeishuWebhookPostSection struct {
 	Tag  string `json:"tag"`
@@ -123,9 +129,24 @@ func (receiver *FeishuReceiver) post(context WebhookContext) error {
 	client := &http.Client{
 		Timeout: timeout,
 	}
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
+	}
+	defer resp.Body.Close()
+
+	webhookResponse := &FeishuWebhookResponse{}
+	if err := json.Unmarshal(b, webhookResponse); err != nil {
+		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+	}
+
+	if webhookResponse.Code != 0 {
+		return fmt.Errorf("%s", webhookResponse.Message)
 	}
 
 	return nil

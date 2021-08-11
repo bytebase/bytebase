@@ -79,6 +79,10 @@ type ProjectWebhookDelete struct {
 	DeleterId int
 }
 
+type ProjectWebhookTestResult struct {
+	Error string `jsonapi:"attr,error"`
+}
+
 type ProjectWebhookService interface {
 	CreateProjectWebhook(ctx context.Context, create *ProjectWebhookCreate) (*ProjectWebhook, error)
 	FindProjectWebhookList(ctx context.Context, find *ProjectWebhookFind) ([]*ProjectWebhook, error)

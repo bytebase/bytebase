@@ -4,10 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 )
+
+type WeComWebhookResponse struct {
+	ErrorCode    int    `json:"errcode"`
+	ErrorMessage string `json:"errmsg"`
+}
 
 type WeComWebhookMarkdown struct {
 	Content string `json:"content"`
@@ -58,9 +64,24 @@ func (receiver *WeComReceiver) post(context WebhookContext) error {
 	client := &http.Client{
 		Timeout: timeout,
 	}
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to POST webhook %v (%w)", context.URL, err)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
+	}
+	defer resp.Body.Close()
+
+	webhookResponse := &WeComWebhookResponse{}
+	if err := json.Unmarshal(b, webhookResponse); err != nil {
+		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+	}
+
+	if webhookResponse.ErrorCode != 0 {
+		return fmt.Errorf("%s", webhookResponse.ErrorMessage)
 	}
 
 	return nil
