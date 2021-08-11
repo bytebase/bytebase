@@ -445,7 +445,7 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "hook/new",
+                path: "webhook/new",
                 name: "workspace.project.hook.create",
                 meta: {
                   title: () => "Create webhook",
@@ -454,7 +454,7 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "hook/:projectWebhookSlug",
+                path: "webhook/:projectWebhookSlug",
                 name: "workspace.project.hook.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {

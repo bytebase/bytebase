@@ -3,9 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-
-	"github.com/gosimple/slug"
 )
 
 // Issue status
@@ -173,8 +170,4 @@ type IssueService interface {
 	FindIssueList(ctx context.Context, find *IssueFind) ([]*Issue, error)
 	FindIssue(ctx context.Context, find *IssueFind) (*Issue, error)
 	PatchIssue(ctx context.Context, patch *IssuePatch) (*Issue, error)
-}
-
-func IssueSlug(issue *Issue) string {
-	return fmt.Sprintf("%s-%d", slug.Make(issue.Name), issue.ID)
 }
