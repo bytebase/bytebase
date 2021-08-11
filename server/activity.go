@@ -45,15 +45,11 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			foundIssue = issue
 		}
 
-		activity, err := s.ActivityService.CreateActivity(context.Background(), activityCreate)
+		activity, err := s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+			issue: foundIssue,
+		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
-		}
-
-		if activityCreate.Type == api.ActivityIssueCommentCreate {
-			if err := s.PostInboxIssueActivity(context.Background(), foundIssue, activity.ID); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to post activity to inbox").SetInternal(err)
-			}
 		}
 
 		if err := s.ComposeActivityRelationship(context.Background(), activity); err != nil {
