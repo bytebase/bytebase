@@ -58,6 +58,65 @@
       <label for="url" class="textlabel">
         Webhook URL <span class="text-red-600">*</span>
       </label>
+      <div class="mt-1 textinfolabel">
+        <template v-if="state.webhook.type == 'bb.plugin.webhook.slack'">
+          Create the corresponding webhook for the Slack channel receiving the
+          message.
+          <a
+            href="https://api.slack.com/messaging/webhooks"
+            target="__blank"
+            class="normal-link"
+            >View Slack's doc</a
+          >.
+        </template>
+        <template v-else-if="state.webhook.type == 'bb.plugin.webhook.discord'">
+          Create the corresponding webhook for the Discord channel receiving the
+          message.
+          <a
+            href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
+            target="__blank"
+            class="normal-link"
+            >View Discord's doc</a
+          >.
+        </template>
+        <template v-else-if="state.webhook.type == 'bb.plugin.webhook.teams'">
+          Create the corresponding webhook for the Teams channel receiving the
+          message.
+          <a
+            href="https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook"
+            target="__blank"
+            class="normal-link"
+            >View Teams's doc</a
+          >.
+        </template>
+        <template
+          v-else-if="state.webhook.type == 'bb.plugin.webhook.dingtalk'"
+        >
+          Create the corresponding webhook for the DingTalk group receiving the
+          message.
+          <a
+            href="https://developers.dingtalk.com/document/robots/custom-robot-access"
+            target="__blank"
+            class="normal-link"
+            >View DingTalk's doc</a
+          >.
+        </template>
+        <template v-else-if="state.webhook.type == 'bb.plugin.webhook.feishu'">
+          Create the corresponding webhook for the feishu group receiving the
+          message.
+          <a
+            href="https://www.feishu.cn/hc/zh-CN/articles/360024984973"
+            target="__blank"
+            class="normal-link"
+            >View Feishu's doc</a
+          >.
+        </template>
+        <!-- WeCom doesn't seem to provide official webhook setup guide for the enduser -->
+        <template v-else-if="state.webhook.type == 'bb.plugin.webhook.wecom'">
+          Create the corresponding webhook for the WeCom group receiving the
+          message.
+        </template>
+      </div>
       <input
         id="url"
         name="url"
