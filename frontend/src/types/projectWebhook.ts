@@ -56,6 +56,11 @@ type ProjectWebhookActivityItem = {
 
 export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: ProjectWebhookActivityItem[] = [
   {
+    title: "Issue creation",
+    label: "When new issue has been created",
+    activity: "bb.issue.create",
+  },
+  {
     title: "Issue status change",
     label: "When issue status has changed",
     activity: "bb.issue.status.update",
