@@ -64,14 +64,13 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	if err != nil {
 		return true, "", fmt.Errorf("failed to find backup: %w", err)
 	}
-	exec.l.Debug("Start database backup...",
+	exec.l.Debug("Start database restore...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", task.Database.Name),
 		zap.String("backup", backup.Name),
 	)
-	backup.Database = task.Database
 
-	if err := restoreDatabase(backup); err != nil {
+	if err := restoreDatabase(task.Database, backup); err != nil {
 		return true, "", err
 	}
 
@@ -79,8 +78,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 }
 
 // restoreDatabase will restore the database from a backup
-func restoreDatabase(backup *api.Backup) error {
-	database := backup.Database
+func restoreDatabase(database *api.Database, backup *api.Backup) error {
 	instance := database.Instance
 	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
 	if err != nil {

@@ -33,7 +33,7 @@ p, DEVELOPER, /database/{id}/table, GET
 p, DEVELOPER, /database/{id}/table/{tableName}, GET
 p, DEVELOPER, /database/{id}/backup, GET
 p, DEVELOPER, /database/{id}/backup, POST
-p, DEVELOPER, /database/{id}/backup/{backupName}/restore, POST
+p, DEVELOPER, /database/{id}/restore, POST
 p, DEVELOPER, /database/{id}/backupSetting, GET
 p, DEVELOPER, /database/{id}/backupSetting, POST
 p, DEVELOPER, /issue, POST
