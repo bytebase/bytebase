@@ -140,13 +140,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
-			_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+			activityCreate := &api.ActivityCreate{
 				CreatorId:   user.ID,
 				ContainerId: member.ID,
 				Type:        api.ActivityMemberCreate,
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
-			})
+			}
+			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create member: %d", member.ID)).SetInternal(err)
 			}
