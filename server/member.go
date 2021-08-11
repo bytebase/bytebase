@@ -53,13 +53,14 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
-			_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+			activityCreate := &api.ActivityCreate{
 				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 				ContainerId: member.ID,
 				Type:        api.ActivityMemberCreate,
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
-			})
+			}
+			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating member: %d", member.ID)).SetInternal(err)
 			}
@@ -153,13 +154,14 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 				}
-				_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+				activityCreate := &api.ActivityCreate{
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 					ContainerId: updatedMember.ID,
 					Type:        api.ActivityMemberRoleUpdate,
 					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
-				})
+				}
+				_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
@@ -177,13 +179,14 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				if *memberPatch.RowStatus == "ARCHIVED" {
 					theType = api.ActivityMemberDeactivate
 				}
-				_, err = s.ActivityService.CreateActivity(context.Background(), &api.ActivityCreate{
+				activityCreate := &api.ActivityCreate{
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
 					ContainerId: updatedMember.ID,
 					Type:        theType,
 					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
-				})
+				}
+				_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
