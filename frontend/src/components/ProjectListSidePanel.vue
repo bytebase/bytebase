@@ -44,7 +44,7 @@ export default {
           return {
             id: item.id.toString(),
             name: projectName(item),
-            link: `/project/${projectSlug(item)}`,
+            link: `/project/${projectSlug(item)}#overview`,
           };
         })
         .sort((a: any, b: any) => {
