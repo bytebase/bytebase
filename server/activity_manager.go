@@ -35,8 +35,27 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	}
 
 	if meta.issue != nil {
-		if err := m.s.PostInboxIssueActivity(context.Background(), meta.issue, activity.ID); err != nil {
-			return nil, err
+		postInbox := false
+		switch create.Type {
+		case api.ActivityIssueStatusUpdate:
+		case api.ActivityIssueCommentCreate:
+		case api.ActivityIssueFieldUpdate:
+			postInbox = true
+		case api.ActivityPipelineTaskStatusUpdate:
+			update := &api.ActivityPipelineTaskStatusUpdatePayload{}
+			if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
+				return nil, fmt.Errorf("failed to post webhook event after changing the issue task status: %v, error: %w", meta.issue.Name, err)
+			}
+			// To reduce noise, for now we only post status update to inbox upon task failure.
+			if update.NewStatus == api.TaskFailed {
+				postInbox = true
+			}
+		}
+
+		if postInbox {
+			if err := m.s.PostInboxIssueActivity(context.Background(), meta.issue, activity.ID); err != nil {
+				return nil, err
+			}
 		}
 
 		hookFind := &api.ProjectWebhookFind{
@@ -45,7 +64,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		}
 		hookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(context.Background(), hookFind)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find project webhook hook after changing the issue status: %v, error: %w", meta.issue.Name, err)
+			return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
 
 		// If we need to post webhook event, then we need to make sure the project info exists since we will include
@@ -79,11 +98,11 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 					case api.ActivityIssueStatusUpdate:
 						switch meta.issue.Status {
 						case "OPEN":
-							title = fmt.Sprintf("Reopened issue - %s", meta.issue.Name)
+							title = fmt.Sprintf("Issue reopened - %s", meta.issue.Name)
 						case "DONE":
-							title = fmt.Sprintf("Resolved issue - %s", meta.issue.Name)
+							title = fmt.Sprintf("Issue resolved - %s", meta.issue.Name)
 						case "CANCELED":
-							title = fmt.Sprintf("Canceled issue - %s", meta.issue.Name)
+							title = fmt.Sprintf("Issue canceled - %s", meta.issue.Name)
 						}
 					case api.ActivityIssueCommentCreate:
 						title = "Comment created"
@@ -99,7 +118,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 						})
 						update := &api.ActivityIssueFieldUpdatePayload{}
 						if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-							m.s.l.Warn("Failed to post webhook event after changing the issue field",
+							m.s.l.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal paylaod",
 								zap.String("issue_name", meta.issue.Name),
 								zap.Error(err))
 							return
@@ -166,6 +185,46 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 							title = "Changed issue name"
 						default:
 							title = "Updated issue"
+						}
+					case api.ActivityPipelineTaskStatusUpdate:
+						metaList = append(metaList, webhook.WebhookMeta{
+							Name:  "Issue",
+							Value: meta.issue.Name,
+						})
+						update := &api.ActivityPipelineTaskStatusUpdatePayload{}
+						if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
+							m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal paylaod",
+								zap.String("issue_name", meta.issue.Name),
+								zap.Error(err))
+							return
+						}
+
+						taskFind := &api.TaskFind{
+							ID: &update.TaskId,
+						}
+						task, err := m.s.TaskService.FindTask(context.Background(), taskFind)
+						if err != nil {
+							m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
+								zap.String("issue_name", meta.issue.Name),
+								zap.Int("task_id", update.TaskId),
+								zap.Error(err))
+							return
+						}
+
+						title = fmt.Sprintf("Task changed - %s", task.Name)
+						switch update.NewStatus {
+						case api.TaskPending:
+							if update.OldStatus == api.TaskRunning {
+								title = fmt.Sprintf("Task canceled - %s", task.Name)
+							} else if update.OldStatus == api.TaskPendingApproval {
+								title = fmt.Sprintf("Task approved - %s", task.Name)
+							}
+						case api.TaskRunning:
+							title = fmt.Sprintf("Task started - %s", task.Name)
+						case api.TaskDone:
+							title = fmt.Sprintf("Task completed - %s", task.Name)
+						case api.TaskFailed:
+							title = fmt.Sprintf("Task failed - %s", task.Name)
 						}
 					}
 
