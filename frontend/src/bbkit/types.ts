@@ -1,4 +1,9 @@
-export type BBButtonConfirmStyle = "DELETE" | "ARCHIVE" | "RESTORE" | "EDIT";
+export type BBButtonConfirmStyle =
+  | "DELETE"
+  | "ARCHIVE"
+  | "RESTORE"
+  | "DISABLE"
+  | "EDIT";
 
 export type BBTableColumn = {
   title: string;
