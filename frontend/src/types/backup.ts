@@ -59,7 +59,7 @@ export type BackupSetting = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
-  path: string;
+  pathTemplate: string;
 };
 
 export type BackupSettingSet = {
@@ -70,5 +70,5 @@ export type BackupSettingSet = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
-  path: string;
+  pathTemplate: string;
 };
