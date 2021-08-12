@@ -112,7 +112,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", id)).SetInternal(err)
 			}
-		} else if instancePatch.Username != nil || instancePatch.Password != nil {
+		}
+
+		if instancePatch.Username != nil || instancePatch.Password != nil {
 			instanceFind := &api.InstanceFind{
 				ID: &id,
 			}
