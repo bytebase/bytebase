@@ -67,7 +67,7 @@ export type BackupSettingSet = {
   databaseId: DatabaseId;
 
   // Domain specific fields
-  enabled: number;
+  enabled: boolean;
   hour: number;
   dayOfWeek: number;
   path: string;
