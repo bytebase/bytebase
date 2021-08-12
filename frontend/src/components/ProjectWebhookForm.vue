@@ -102,7 +102,7 @@
           >.
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.feishu'">
-          Create the corresponding webhook for the feishu group receiving the
+          Create the corresponding webhook for the Feishu group receiving the
           message.
           <a
             href="https://www.feishu.cn/hc/zh-CN/articles/360024984973"
