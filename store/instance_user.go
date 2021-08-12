@@ -94,15 +94,15 @@ func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUps
 			grant
 		)
 		VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT (instance_id, name) DO UPDATE SET updater_id = ?, grant = ?
+		ON CONFLICT (instance_id, name) DO UPDATE SET
+			updater_id = excluded.updater_id,
+			grant = excluded.grant
 		RETURNING id, instance_id, name, grant
 	`,
 		upsert.CreatorId,
 		upsert.CreatorId,
 		upsert.InstanceId,
 		upsert.Name,
-		upsert.Grant,
-		upsert.CreatorId,
 		upsert.Grant,
 	)
 
