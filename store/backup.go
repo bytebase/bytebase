@@ -391,7 +391,7 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 		  	enabled = excluded.enabled,
 		  	hour = excluded.hour,
 		  	day_of_week = excluded.day_of_week,
-			path = excluded.path
+			path_template = excluded.path_template
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path_template"+`
 		`,
 		setting.CreatorId,
