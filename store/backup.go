@@ -315,7 +315,7 @@ func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.B
 		  enabled,
 			hour,
 			day_of_week,
-			path
+			path_template
 		FROM backup_setting
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -339,7 +339,7 @@ func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.B
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
-			&backupSetting.Path,
+			&backupSetting.PathTemplate,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -384,7 +384,7 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 			`+"`enabled`,"+`
 			hour,
 			day_of_week,
-			path
+			path_template
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(database_id) DO UPDATE SET
@@ -392,7 +392,7 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 		  hour=excluded.hour,
 		  day_of_week=excluded.day_of_week,
 			path=excluded.path
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path"+`
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path_template"+`
 			`,
 		setting.CreatorId,
 		setting.CreatorId,
@@ -400,7 +400,7 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 		setting.Enabled,
 		setting.Hour,
 		setting.DayOfWeek,
-		setting.Path,
+		setting.PathTemplate,
 	)
 
 	if err != nil {
@@ -420,7 +420,7 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 		&backupSetting.Enabled,
 		&backupSetting.Hour,
 		&backupSetting.DayOfWeek,
-		&backupSetting.Path,
+		&backupSetting.PathTemplate,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -447,7 +447,7 @@ func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.B
 		  enabled,
 			hour,
 			day_of_week,
-			path
+			path_template
 		FROM backup_setting
 		WHERE
 			enabled = 1
@@ -480,7 +480,7 @@ func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.B
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
-			&backupSetting.Path,
+			&backupSetting.PathTemplate,
 		); err != nil {
 			return nil, FormatError(err)
 		}

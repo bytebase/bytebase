@@ -91,8 +91,8 @@ func (s *BackupRunner) Run() error {
 func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniqueKey string, epoch int64) error {
 	key := fmt.Sprintf("auto-backup-%s-%v", uniqueKey, backupSetting.DatabaseId)
 	path := fmt.Sprintf("%s-%s-%v.sql", backupSetting.Database.Instance.Environment.Name, backupSetting.Database.Name, epoch)
-	if backupSetting.Path != "" {
-		path = strings.ReplaceAll(backupSetting.Path, "{{TIME}}", fmt.Sprintf("%v", epoch))
+	if backupSetting.PathTemplate != "" {
+		path = strings.ReplaceAll(backupSetting.PathTemplate, "{{TIME}}", fmt.Sprintf("%v", epoch))
 	}
 	backupCreate := &api.BackupCreate{
 		CreatorId:      api.SYSTEM_BOT_ID,
