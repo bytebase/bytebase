@@ -162,18 +162,14 @@
         @confirm="deleteWebhook"
       />
       <div>
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
+        <button type="button" class="btn-normal" @click.prevent="cancel">
           {{ allowEdit ? "Cancel" : "Back" }}
         </button>
         <template v-if="allowEdit">
           <button
             v-if="create"
             type="submit"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+            class="btn-primary ml-3"
             :disabled="!allowCreate"
             @click.prevent="createWebhook"
           >
@@ -182,7 +178,7 @@
           <button
             v-else
             type="submit"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+            class="btn-primary ml-3"
             :disabled="!valueChanged"
             @click.prevent="updateWebhook"
           >
