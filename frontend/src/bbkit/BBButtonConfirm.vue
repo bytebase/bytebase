@@ -39,6 +39,14 @@
         stroke-width="2"
         d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
       ></path>
+
+      <path
+        v-if="style == 'DISABLE'"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+      ></path>
       <path
         v-if="style == 'EDIT'"
         stroke-linecap="round"
@@ -51,7 +59,11 @@
   </button>
   <BBAlert
     v-if="state.showModal"
-    :style="style == 'DELETE' || style == 'ARCHIVE' ? 'CRITICAL' : 'INFO'"
+    :style="
+      style == 'DELETE' || style == 'ARCHIVE' || style == 'DISABLE'
+        ? 'CRITICAL'
+        : 'INFO'
+    "
     :okText="okText"
     :title="confirmTitle"
     :description="confirmDescription"
