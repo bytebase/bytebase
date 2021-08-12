@@ -306,13 +306,13 @@ func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.B
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		  id,
-		  creator_id,
-		  created_ts,
-		  updater_id,
-		  updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			database_id,
-		  enabled,
+			enabled,
 			hour,
 			day_of_week,
 			path_template
@@ -388,12 +388,12 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(database_id) DO UPDATE SET
-		  enabled=excluded.enabled,
-		  hour=excluded.hour,
-		  day_of_week=excluded.day_of_week,
-			path=excluded.path
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path_template"+`
-			`,
+		  	enabled = excluded.enabled,
+		  	hour = excluded.hour,
+		  	day_of_week = excluded.day_of_week,
+			path = excluded.path
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path_template"+`
+		`,
 		setting.CreatorId,
 		setting.CreatorId,
 		setting.DatabaseId,
@@ -438,13 +438,13 @@ func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.B
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		  id,
-		  creator_id,
-		  created_ts,
-		  updater_id,
-		  updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			database_id,
-		  enabled,
+			enabled,
 			hour,
 			day_of_week,
 			path_template

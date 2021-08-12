@@ -405,7 +405,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupFind := &api.BackupFind{
 			DatabaseId: &id,
-			ID:         &restoreBackup.BackupID,
+			ID:         &restoreBackup.BackupId,
 		}
 		backup, err := s.BackupService.FindBackup(context.Background(), backupFind)
 		if err != nil {
