@@ -1,128 +1,125 @@
 <template>
-  <div class="pt-6">
-    <div class="text-lg leading-6 font-medium text-main mb-4">Automatic backup settings</div>
-    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
-      <div class="sm:col-span-1 sm:col-start-1">
-        <label for="autoBackupHour" class="textlabel block"> Hour </label>
-        <input
-        required
-        type="text"
-        id="autoBackupHour"
-        name="autoBackupHour"
-        placeholder="auto-backup-hour"
-        class="textfield mt-1 w-full"
-        :value="state.autoBackupHour"
-        @input="state.autoBackupHour=Number($event.target.value)"
-        />
+  <div class="pt-6 space-y-4">
+    <div class="flex justify-between border-b border-block-border pb-4">
+      <div v-if="state.autoBackupEnabled" class="flex flex-col">
+        <div class="flex items-center text-lg leading-6 font-medium text-main">
+          Automatic weekly backup
+          <span class="ml-1 text-success">enabled</span>
+        </div>
+        <div class="mt-2 text-control">
+          Backup will be taken on every
+          <span class="text-accent">{{ autoBackupWeekdayText }}</span> at
+          <span class="text-accent"> {{ autoBackupHourText }}</span>
+        </div>
       </div>
-      <div class="sm:col-span-1">
-        <label for="autoBackupDayOfWeek" class="textlabel block"> Day of Week </label>
-        <input
-          type="text"
-          id="autoBackupDayOfWeek"
-          name="autoBackupDayOfWeek"
-          placeholder="e.g. 0"
-          class="textfield mt-1 w-full"
-          :value="state.autoBackupDayOfWeek"
-          @input="state.autoBackupDayOfWeek=Number($event.target.value)"
-        />
-      </div>
-      <div class="sm:col-span-6">
-        <label for="autoBackupPath" class="textlabel block"> Path Template </label>
-        <input
-          type="text"
-          id="autoBackupPath"
-          name="autoBackupPath"
-          placeholder="e.g. 0"
-          class="textfield mt-1 w-full"
-          :value="state.autoBackupPath"
-          @input="state.autoBackupPath=$event.target.value"
-        />
-      </div>
-      <div class="sm:col-span-1">
-        <label for="autoBackupEnabled" class="textlabel block"> Enabled </label>
-        <input
-          type="checkbox"
-          id="autoBackupEnabled"
-          :checked="state.autoBackupEnabled"
-          @change="state.autoBackupEnabled=$event.target.checked"
-        />
-      </div>
-      <div class="sm:col-span-1">
-        <label> Update </label>
+      <div
+        v-else
+        class="flex items-center text-lg leading-6 font-medium text-control"
+      >
+        Weekly backup disabled
         <button
-          @click.prevent="setAutoBackupSetting"
+          v-if="!state.autoBackupEnabled"
           type="button"
-          class="btn-normal whitespace-nowrap items-center"
+          class="ml-4 btn-primary"
+          @click.prevent="toggleAutoBackup(true)"
         >
-          Set
+          Enable backup
+        </button>
+      </div>
+    </div>
+    <div
+      v-if="state.autoBackupEnabled"
+      class="space-y-4 border-b border-block-border pb-4"
+    >
+      <div>
+        <label for="auto-backup-path-template" class="textlabel">
+          Backup file path template
+        </label>
+        <div class="mt-1 textinfolabel">
+          Backup file path template. TODO: pointing to doc
+        </div>
+        <input
+          type="text"
+          id="auto-backup-path-template"
+          name="autoBackupPathTemplate"
+          placeholder="e.g. 0"
+          class="textfield mt-2 w-full"
+          v-model="state.autoBackupPathTemplate"
+        />
+      </div>
+      <div class="flex justify-between">
+        <BBButtonConfirm
+          :style="'DISABLE'"
+          :buttonText="'Disable weekly backup'"
+          :okText="'Disable'"
+          :confirmTitle="`Disable weekly backup for '${database.name}'?`"
+          :confirmDescription="'Existing automatic backups will be kept as is.'"
+          :requireConfirm="true"
+          @confirm="toggleAutoBackup(false)"
+        />
+        <button
+          type="button"
+          class="btn-primary"
+          :disabled="!allowUpdateAutoBackupSetting"
+          @click.prevent="updateAutoBackupSetting"
+        >
+          Update
         </button>
       </div>
     </div>
   </div>
-  <div class="pt-6">
-    <div class="text-lg leading-6 font-medium text-main mb-4">Take a backup</div>
-    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-10">
-      <div class="sm:col-span-3 sm:col-start-1">
-        <label for="backupName" class="textlabel block"> Name </label>
-        <input
-        required
-        type="text"
-        id="backupName"
-        name="backupName"
-        placeholder="backup-unique-name"
-        class="textfield mt-1 w-full"
-        :value="state.backupName"
-        @input="updateInstance('backupName', $event.target.value)"
-        />
-      </div>
-      <div class="sm:col-span-6">
-        <label for="backupPath" class="textlabel block"> Path </label>
-        <input
-          type="text"
-          id="backupPath"
-          name="backupPath"
-          placeholder="e.g. backup-1.sql | /tmp/backup-1.sql"
-          class="textfield mt-1 w-full"
-          :value="state.backupPath"
-          @input="updateInstance('backupPath', $event.target.value)"
-        />
-      </div>
-      <div class="sm:col-span-1">
-        <label> Backup </label>
-        <button
-          @click.prevent="createBackup"
-          type="button"
-          class="btn-normal whitespace-nowrap items-center"
-        >
-          Backup now
-        </button>
-      </div>
+  <div class="pt-6 space-y-4">
+    <div class="flex justify-between items-center">
+      <div class="text-lg leading-6 font-medium text-main">Backups</div>
+      <button
+        @click.prevent="state.showCreateBackupModal = true"
+        type="button"
+        class="btn-normal whitespace-nowrap items-center"
+      >
+        Backup now
+      </button>
     </div>
+    <BackupTable :backupList="backupList" />
   </div>
-  <div class="pt-6">
-    <div class="text-lg leading-6 font-medium text-main mb-4">Backups</div>
-    <BackupTable
-      :backupList="backupList"
+  <BBModal
+    v-if="state.showCreateBackupModal"
+    :title="'Create a manual backup'"
+    @close="state.showCreateBackupModal = false"
+  >
+    <DatabaseBackupCreateForm
+      :database="database"
+      @create="
+        (backupName, backupPath, comment) => {
+          createBackup(backupName, backupPath, comment);
+          state.showCreateBackupModal = false;
+        }
+      "
+      @cancel="state.showCreateBackupModal = false"
     />
-  </div>
+  </BBModal>
 </template>
 
 <script lang="ts">
 import { computed, watchEffect, reactive, onUnmounted, PropType } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
-import { v1 as uuidv1 } from "uuid";
-import { Backup, BackupCreate, BackupSettingSet, Database } from "../types";
+import {
+  Backup,
+  BackupCreate,
+  BackupSetting,
+  BackupSettingSet,
+  Database,
+} from "../types";
 import BackupTable from "../components/BackupTable.vue";
+import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
+import { isEmpty } from "lodash";
 
 interface LocalState {
-  backupName: string;
-  backupPath: string;
+  showCreateBackupModal: boolean;
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
-  autoBackupPath: string;
+  autoBackupPathTemplate: string;
+  originalAutoBackupPathTemplate: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -136,21 +133,21 @@ export default {
   },
   components: {
     BackupTable,
+    DatabaseBackupCreateForm,
   },
   setup(props, ctx) {
     const store = useStore();
-    const router = useRouter();
     const NORMAL_BACKUPS_POLL_INTERVAL = 10000;
     // Add jitter to avoid timer from different clients converging to the same polling frequency.
     const POLL_JITTER = 500;
 
     const state = reactive<LocalState>({
-      backupName: uuidv1(),
-      backupPath: "backup.sql",
+      showCreateBackupModal: false,
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
-      autoBackupPath: "",
+      autoBackupPathTemplate: "",
+      originalAutoBackupPathTemplate: "",
     });
 
     onUnmounted(() => {
@@ -165,28 +162,90 @@ export default {
 
     watchEffect(prepareBackupList);
 
+    const assignBackupSetting = (backupSetting: BackupSetting) => {
+      var { hour, dayOfWeek } = alignUTC(
+        backupSetting.hour,
+        backupSetting.dayOfWeek,
+        props.database.timezoneOffset
+      );
+      state.autoBackupEnabled = backupSetting.enabled;
+      state.autoBackupHour = hour;
+      state.autoBackupDayOfWeek = dayOfWeek;
+      state.autoBackupPathTemplate = backupSetting.pathTemplate;
+      state.originalAutoBackupPathTemplate = backupSetting.pathTemplate;
+    };
+
     const backupList = computed(() => {
       return store.getters["backup/backupListByDatabaseId"](props.database.id);
     });
 
-    const updateInstance = (field: string, value: string) => {
-      (state as any)[field] = value;
-    };
+    const autoBackupWeekdayText = computed(() => {
+      var { dayOfWeek } = alignUTC(
+        state.autoBackupHour,
+        state.autoBackupDayOfWeek,
+        -props.database.timezoneOffset
+      );
+      if (dayOfWeek == 0) {
+        return "Sunday";
+      }
+      if (dayOfWeek == 1) {
+        return "Monday";
+      }
+      if (dayOfWeek == 2) {
+        return "Tuesday";
+      }
+      if (dayOfWeek == 3) {
+        return "Wednesday";
+      }
+      if (dayOfWeek == 4) {
+        return "Thursday";
+      }
+      if (dayOfWeek == 5) {
+        return "Friday";
+      }
+      if (dayOfWeek == 6) {
+        return "Saturday";
+      }
+      return `Invalid day of week: ${dayOfWeek}`;
+    });
 
-    const createBackup = () => {
+    const autoBackupHourText = computed(() => {
+      var { hour } = alignUTC(
+        state.autoBackupHour,
+        state.autoBackupDayOfWeek,
+        -props.database.timezoneOffset
+      );
+
+      return `${String(hour).padStart(2, "0")}:00 (${
+        props.database.timezoneName
+      })`;
+    });
+
+    const allowUpdateAutoBackupSetting = computed(() => {
+      return (
+        !isEmpty(state.autoBackupPathTemplate) &&
+        state.autoBackupPathTemplate != state.originalAutoBackupPathTemplate
+      );
+    });
+
+    const createBackup = (
+      backupName: string,
+      backupPath: string,
+      comment: string
+    ) => {
       // Create backup
       const newBackup: BackupCreate = {
         databaseId: props.database.id!,
-        name: state.backupName!,
+        name: backupName,
         status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
-        path: state.backupPath!,
-        comment: "",
+        path: backupPath,
+        comment,
       };
       store.dispatch("backup/createBackup", {
         databaseId: props.database.id,
-        newBackup: newBackup
+        newBackup: newBackup,
       });
       pollBackups(NORMAL_BACKUPS_POLL_INTERVAL);
     };
@@ -197,49 +256,84 @@ export default {
         clearInterval(state.pollBackupsTimer);
       }
       state.pollBackupsTimer = setTimeout(() => {
-        store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id).then((backups : Backup[]) => {
-          var pending = false;
-          for (let idx in backups) {
-            if (backups[idx].status.includes("PENDING")) {
-              pending = true;
-              continue;
+        store
+          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
+          .then((backups: Backup[]) => {
+            var pending = false;
+            for (let idx in backups) {
+              if (backups[idx].status.includes("PENDING")) {
+                pending = true;
+                continue;
+              }
             }
-          }
-          if (pending) {
-            pollBackups(Math.min(interval * 2, NORMAL_BACKUPS_POLL_INTERVAL));
-          }
-        });
+            if (pending) {
+              pollBackups(Math.min(interval * 2, NORMAL_BACKUPS_POLL_INTERVAL));
+            }
+          });
       }, Math.max(1000, Math.min(interval, NORMAL_BACKUPS_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
     const prepareBackupSetting = () => {
-      store.dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
-        .then(setting => {
-          var {hour, dayOfWeek} = alignUTC(setting.hour, setting.dayOfWeek, props.database.timezoneOffset);
-          state.autoBackupEnabled = setting.enabled;
-          state.autoBackupHour = hour;
-          state.autoBackupDayOfWeek = dayOfWeek;
-          state.autoBackupPath = setting.path;
+      store
+        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
+        .then((backupSetting: BackupSetting) => {
+          assignBackupSetting(backupSetting);
         });
     };
 
     watchEffect(prepareBackupSetting);
 
-    const setAutoBackupSetting = () => {
-      var {hour, dayOfWeek} = alignUTC(state.autoBackupHour!, state.autoBackupDayOfWeek!, -props.database.timezoneOffset);
+    const toggleAutoBackup = (on: boolean) => {
+      var { hour, dayOfWeek } = alignUTC(
+        state.autoBackupHour,
+        state.autoBackupDayOfWeek,
+        -props.database.timezoneOffset
+      );
       const newBackupSetting: BackupSettingSet = {
-        databaseId: props.database.id!,
-        enabled: state.autoBackupEnabled! ? 1 : 0,
+        databaseId: props.database.id,
+        enabled: on,
         hour: hour,
         dayOfWeek: dayOfWeek,
-        path: state.autoBackupPath!,
+        pathTemplate: state.autoBackupPathTemplate,
       };
-      store.dispatch("backup/setBackupSetting", {
-        newBackupSetting: newBackupSetting,
-      });
+      store
+        .dispatch("backup/setBackupSetting", {
+          newBackupSetting: newBackupSetting,
+        })
+        .then((backupSetting: BackupSetting) => {
+          assignBackupSetting(backupSetting);
+          const action = on ? "Enabled" : "Disabled";
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `${action} automatic backup for database '${props.database.name}'.`,
+          });
+        });
     };
 
-    function alignUTC(hour : number, dayOfWeek : number, offsetInSecond : number) {
+    const updateAutoBackupSetting = () => {
+      var { hour, dayOfWeek } = alignUTC(
+        state.autoBackupHour,
+        state.autoBackupDayOfWeek,
+        -props.database.timezoneOffset
+      );
+      const newBackupSetting: BackupSettingSet = {
+        databaseId: props.database.id,
+        enabled: state.autoBackupEnabled,
+        hour: hour,
+        dayOfWeek: dayOfWeek,
+        pathTemplate: state.autoBackupPathTemplate,
+      };
+      store
+        .dispatch("backup/setBackupSetting", {
+          newBackupSetting: newBackupSetting,
+        })
+        .then((backupSetting: BackupSetting) => {
+          assignBackupSetting(backupSetting);
+        });
+    };
+
+    function alignUTC(hour: number, dayOfWeek: number, offsetInSecond: number) {
       if (hour != -1) {
         hour = hour + offsetInSecond / 60 / 60;
         var dayOffset = 0;
@@ -255,16 +349,19 @@ export default {
           dayOfWeek = (7 + dayOfWeek + dayOffset) % 7;
         }
       }
-      return {hour, dayOfWeek};
+      return { hour, dayOfWeek };
     }
 
     return {
       state,
       backupList,
-      updateInstance,
+      autoBackupWeekdayText,
+      autoBackupHourText,
+      allowUpdateAutoBackupSetting,
       createBackup,
-      setAutoBackupSetting,
+      toggleAutoBackup,
+      updateAutoBackupSetting,
     };
-},
-}
+  },
+};
 </script>
