@@ -8,12 +8,6 @@ import (
 // BackupStatus is the status of a backup.
 type BackupStatus string
 
-// BackupType is the type of a backup.
-type BackupType string
-
-// BackupStorageBackend is the storage backend of a backup.
-type BackupStorageBackend string
-
 const (
 	// BackupStatusPendingCreate is the status for PENDING_CREATE.
 	BackupStatusPendingCreate BackupStatus = "PENDING_CREATE"
@@ -21,13 +15,55 @@ const (
 	BackupStatusDone BackupStatus = "DONE"
 	// BackupStatusFailed is the status for FAILED.
 	BackupStatusFailed BackupStatus = "FAILED"
+)
+
+func (e BackupStatus) String() string {
+	switch e {
+	case BackupStatusPendingCreate:
+		return "PENDING_CREATE"
+	case BackupStatusDone:
+		return "DONE"
+	case BackupStatusFailed:
+		return "FAILED"
+	}
+	return "UNKNOWN"
+}
+
+// BackupType is the type of a backup.
+type BackupType string
+
+const (
 	// BackupTypeAutomatic is the type for automatic backup.
 	BackupTypeAutomatic BackupType = "AUTOMATIC"
 	// BackupTypeManual is the type for manual backup.
 	BackupTypeManual BackupType = "MANUAL"
+)
+
+func (e BackupType) String() string {
+	switch e {
+	case BackupTypeAutomatic:
+		return "AUTOMATIC"
+	case BackupTypeManual:
+		return "MANUAL"
+	}
+	return "UNKNOWN"
+}
+
+// BackupStorageBackend is the storage backend of a backup.
+type BackupStorageBackend string
+
+const (
 	// BackupStorageBackendLocal is the local storage backend for a backup.
 	BackupStorageBackendLocal BackupStorageBackend = "LOCAL"
 )
+
+func (e BackupStorageBackend) String() string {
+	switch e {
+	case BackupStorageBackendLocal:
+		return "LOCAL"
+	}
+	return "UNKNOWN"
+}
 
 type Backup struct {
 	ID int `jsonapi:"primary,backup"`
@@ -107,7 +143,7 @@ type RestoreBackup struct {
 	// Related fields
 
 	// Domain specific fields
-	BackupID int `jsonapi:"attr,backupId"`
+	BackupId int `jsonapi:"attr,backupId"`
 }
 
 // BackupSetting is the backup setting for a database.
