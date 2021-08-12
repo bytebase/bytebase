@@ -127,7 +127,7 @@ type BackupSetting struct {
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
-	Enabled   int    `jsonapi:"attr,enabled"`
+	Enabled   bool   `jsonapi:"attr,enabled"`
 	Hour      int    `jsonapi:"attr,hour"`
 	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
 	Path      string `jsonapi:"attr,path"`
@@ -154,7 +154,7 @@ type BackupSettingSet struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Enabled   int    `jsonapi:"attr,enabled"`
+	Enabled   bool   `jsonapi:"attr,enabled"`
 	Hour      int    `jsonapi:"attr,hour"`
 	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
 	Path      string `jsonapi:"attr,path"`
