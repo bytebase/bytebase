@@ -43,8 +43,8 @@ p, OWNER, /database/{id}/table/{tableName}, GET
 p, OWNER, /database/{id}/backup, GET
 p, OWNER, /database/{id}/backup, POST
 p, OWNER, /database/{id}/restore, POST
-p, OWNER, /database/{id}/backupSetting, GET
-p, OWNER, /database/{id}/backupSetting, POST
+p, OWNER, /database/{id}/backupsetting, GET
+p, OWNER, /database/{id}/backupsetting, POST
 p, OWNER, /issue, POST
 p, OWNER, /issue, GET
 p, OWNER, /issue/{id}, GET
