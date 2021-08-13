@@ -60,6 +60,16 @@
       <BBTableCell class="w-48">
         {{ backup.path }}
       </BBTableCell>
+      <BBTableCell class="w-8 whitespace-nowrap tooltip-wrapper">
+        <span v-if="backup.comment.length > 30" class="tooltip">{{
+          backup.comment
+        }}</span>
+        {{
+          backup.comment.length > 30
+            ? backup.comment.substring(0, 30) + "..."
+            : backup.comment
+        }}
+      </BBTableCell>
       <BBTableCell class="w-16">
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
@@ -97,6 +107,9 @@ const columnList: BBTableColumn[] = [
   },
   {
     title: "Path",
+  },
+  {
+    title: "Comment",
   },
   {
     title: "Time",
