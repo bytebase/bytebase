@@ -1,14 +1,27 @@
 <template>
   <BBTable
     :columnList="columnList"
-    :dataSource="backupList"
+    :sectionDataSource="backupSectionList"
     :showHeader="true"
     :rowClickable="false"
     :leftBordered="true"
     :rightBordered="true"
   >
+    <template v-slot:header>
+      <BBTableHeaderCell
+        :leftPadding="4"
+        class="w-4"
+        :title="columnList[0].title"
+      />
+      <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
+      <BBTableHeaderCell class="w-48" :title="columnList[2].title" />
+      <BBTableHeaderCell class="w-8" :title="columnList[3].title" />
+      <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+      <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
+      <BBTableHeaderCell class="w-4" :title="columnList[6].title" />
+    </template>
     <template v-slot:body="{ rowData: backup }">
-      <BBTableCell :leftPadding="4" class="w-4">
+      <BBTableCell :leftPadding="4">
         <span
           class="flex items-center justify-center rounded-full select-none"
           :class="statusIconClass(backup)"
@@ -54,13 +67,13 @@
           </template>
         </span>
       </BBTableCell>
-      <BBTableCell class="w-16 whitespace-nowrap">
+      <BBTableCell class="whitespace-nowrap">
         {{ backup.name }}
       </BBTableCell>
-      <BBTableCell class="w-48 whitespace-nowrap">
+      <BBTableCell class="whitespace-nowrap">
         {{ backup.path }}
       </BBTableCell>
-      <BBTableCell class="w-8 whitespace-nowrap tooltip-wrapper">
+      <BBTableCell class="whitespace-nowrap tooltip-wrapper">
         <span v-if="backup.comment.length > 30" class="tooltip">{{
           backup.comment
         }}</span>
@@ -70,13 +83,13 @@
             : backup.comment
         }}
       </BBTableCell>
-      <BBTableCell class="w-16 whitespace-nowrap">
+      <BBTableCell class="whitespace-nowrap">
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16 whitespace-nowrap">
+      <BBTableCell class="whitespace-nowrap">
         {{ backup.creator.name }}
       </BBTableCell>
-      <BBTableCell class="w-4">
+      <BBTableCell>
         <BBButtonConfirm
           v-if="backup.status == 'DONE'"
           :style="'RESTORE'"
@@ -92,8 +105,8 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
-import { BBTableColumn } from "../bbkit/types";
+import { computed, PropType } from "vue";
+import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { Backup, Database } from "../types";
 import { bytesToString } from "../utils";
 import { useStore } from "vuex";
@@ -138,6 +151,31 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
+    const backupSectionList = computed(() => {
+      const manualList: Backup[] = [];
+      const automaticList: Backup[] = [];
+      const sectionList: BBTableSectionDataSource<Backup>[] = [
+        {
+          title: "Manual",
+          list: manualList,
+        },
+        {
+          title: "Automatic",
+          list: automaticList,
+        },
+      ];
+
+      for (const backup of props.backupList) {
+        if (backup.type == "MANUAL") {
+          manualList.push(backup);
+        } else if (backup.type == "AUTOMATIC") {
+          automaticList.push(backup);
+        }
+      }
+
+      return sectionList;
+    });
+
     const statusIconClass = (backup: Backup) => {
       let iconClass = "w-5 h-5";
       switch (backup.status) {
@@ -166,6 +204,7 @@ export default {
     return {
       columnList,
       bytesToString,
+      backupSectionList,
       statusIconClass,
       restoreBackup,
     };

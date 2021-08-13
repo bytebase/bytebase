@@ -2,6 +2,12 @@ import { Database } from "./database";
 import { BackupId, BackupSettingId, DatabaseId } from "./id";
 import { Principal } from "./principal";
 
+export type BackupStatus = "PENDING_CREATE" | "DONE" | "FAILED";
+
+export type BackupType = "MANUAL" | "AUTOMATIC";
+
+export type BackupStorageBackend = "LOCAL";
+
 // Backup
 export type Backup = {
   id: BackupId;
@@ -16,9 +22,9 @@ export type Backup = {
   updatedTs: number;
 
   name: string;
-  status: string;
-  type: string;
-  storageBackend: string;
+  status: BackupStatus;
+  type: BackupType;
+  storageBackend: BackupStorageBackend;
   path: string;
   comment: string;
 };
@@ -29,9 +35,9 @@ export type BackupCreate = {
 
   // Domain specific fields
   name: string;
-  status: string;
-  type: string;
-  storageBackend: string;
+  status: BackupStatus;
+  type: BackupType;
+  storageBackend: BackupStorageBackend;
   path: string;
   comment: string;
 };
