@@ -162,7 +162,7 @@
     </div>
   </BBModal>
   <BBTabFilter
-    class="px-4 pb-2 border-b border-block-border"
+    class="px-3 pb-2 border-b border-block-border"
     :responsive="false"
     :tabList="databaseTabItemList.map((item) => item.name)"
     :selectedIndex="state.selectedIndex"
@@ -172,7 +172,7 @@
       }
     "
   />
-  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto py-6 px-6">
     <template v-if="state.selectedIndex == OVERVIEW_TAB">
       <DatabaseOverviewPanel id="overview" :database="database" />
     </template>
