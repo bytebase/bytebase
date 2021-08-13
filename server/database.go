@@ -526,8 +526,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		backupSetting, err := s.BackupService.FindBackupSetting(context.Background(), backupSettingFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
-				// Set the default backup setting.
-				backupSetting = &api.BackupSetting{}
+				// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
+				backupSetting = &api.BackupSetting{
+					ID: api.UNKNOWN_ID,
+				}
 			} else {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
 			}

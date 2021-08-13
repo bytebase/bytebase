@@ -108,6 +108,7 @@ import {
   BackupSetting,
   BackupSettingUpsert,
   Database,
+  UNKNOWN_ID,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
@@ -141,11 +142,19 @@ export default {
     // Add jitter to avoid timer from different clients converging to the same polling frequency.
     const POLL_JITTER = 500;
 
+    // For now, we hard code the backup time to a time between 0:00 AM ~ 6:00 AM on Sunday local time.
+    const DEFAULT_BACKUP_HOUR = Math.floor(Math.random() * 7);
+    const DEFAULT_BACKUP_DAYOFWEEK = 0;
+    const { hour, dayOfWeek } = localToUTC(
+      DEFAULT_BACKUP_HOUR,
+      DEFAULT_BACKUP_DAYOFWEEK
+    );
+
     const state = reactive<LocalState>({
       showCreateBackupModal: false,
       autoBackupEnabled: false,
-      autoBackupHour: 0,
-      autoBackupDayOfWeek: 0,
+      autoBackupHour: hour,
+      autoBackupDayOfWeek: dayOfWeek,
       autoBackupPathTemplate: "",
       originalAutoBackupPathTemplate: "",
     });
@@ -163,14 +172,9 @@ export default {
     watchEffect(prepareBackupList);
 
     const assignBackupSetting = (backupSetting: BackupSetting) => {
-      var { hour, dayOfWeek } = alignUTC(
-        backupSetting.hour,
-        backupSetting.dayOfWeek,
-        props.database.timezoneOffset
-      );
       state.autoBackupEnabled = backupSetting.enabled;
-      state.autoBackupHour = hour;
-      state.autoBackupDayOfWeek = dayOfWeek;
+      state.autoBackupHour = backupSetting.hour;
+      state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
       state.autoBackupPathTemplate = backupSetting.pathTemplate;
       state.originalAutoBackupPathTemplate = backupSetting.pathTemplate;
     };
@@ -180,10 +184,9 @@ export default {
     });
 
     const autoBackupWeekdayText = computed(() => {
-      var { dayOfWeek } = alignUTC(
+      var { dayOfWeek } = localFromUTC(
         state.autoBackupHour,
-        state.autoBackupDayOfWeek,
-        -props.database.timezoneOffset
+        state.autoBackupDayOfWeek
       );
       if (dayOfWeek == 0) {
         return "Sunday";
@@ -210,14 +213,13 @@ export default {
     });
 
     const autoBackupHourText = computed(() => {
-      var { hour } = alignUTC(
+      var { hour } = localFromUTC(
         state.autoBackupHour,
-        state.autoBackupDayOfWeek,
-        -props.database.timezoneOffset
+        state.autoBackupDayOfWeek
       );
 
       return `${String(hour).padStart(2, "0")}:00 (${
-        props.database.timezoneName
+        Intl.DateTimeFormat().resolvedOptions().timeZone
       })`;
     });
 
@@ -277,23 +279,21 @@ export default {
       store
         .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
         .then((backupSetting: BackupSetting) => {
-          assignBackupSetting(backupSetting);
+          // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
+          if (backupSetting.id != UNKNOWN_ID) {
+            assignBackupSetting(backupSetting);
+          }
         });
     };
 
     watchEffect(prepareBackupSetting);
 
     const toggleAutoBackup = (on: boolean) => {
-      var { hour, dayOfWeek } = alignUTC(
-        state.autoBackupHour,
-        state.autoBackupDayOfWeek,
-        -props.database.timezoneOffset
-      );
       const newBackupSetting: BackupSettingUpsert = {
         databaseId: props.database.id,
         enabled: on,
-        hour: hour,
-        dayOfWeek: dayOfWeek,
+        hour: state.autoBackupHour,
+        dayOfWeek: state.autoBackupDayOfWeek,
         pathTemplate: state.autoBackupPathTemplate,
       };
       store
@@ -312,16 +312,11 @@ export default {
     };
 
     const updateAutoBackupSetting = () => {
-      var { hour, dayOfWeek } = alignUTC(
-        state.autoBackupHour,
-        state.autoBackupDayOfWeek,
-        -props.database.timezoneOffset
-      );
       const newBackupSetting: BackupSettingUpsert = {
         databaseId: props.database.id,
         enabled: state.autoBackupEnabled,
-        hour: hour,
-        dayOfWeek: dayOfWeek,
+        hour: state.autoBackupHour,
+        dayOfWeek: state.autoBackupDayOfWeek,
         pathTemplate: state.autoBackupPathTemplate,
       };
       store
@@ -332,6 +327,14 @@ export default {
           assignBackupSetting(backupSetting);
         });
     };
+
+    function localToUTC(hour: number, dayOfWeek: number) {
+      return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);
+    }
+
+    function localFromUTC(hour: number, dayOfWeek: number) {
+      return alignUTC(hour, dayOfWeek, -new Date().getTimezoneOffset() * 60);
+    }
 
     function alignUTC(hour: number, dayOfWeek: number, offsetInSecond: number) {
       if (hour != -1) {
