@@ -163,7 +163,7 @@ const actions = {
     { newBackupSetting }: { newBackupSetting: BackupSettingUpsert }
   ) {
     const data = (
-      await axios.post(
+      await axios.patch(
         `/api/database/${newBackupSetting.databaseId}/backupsetting`,
         {
           data: {
