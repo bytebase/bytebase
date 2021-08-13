@@ -179,7 +179,8 @@ type BackupSettingFind struct {
 	// Domain specific fields
 }
 
-// BackupSettingUpsert is the message to set a backup settings.
+// BackupSettingUpsert is the message to upsert a backup settings.
+// NOTE: We use PATCH for Upsert, this is inspired by https://google.aip.dev/134#patch-and-put
 type BackupSettingUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
