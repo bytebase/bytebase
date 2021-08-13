@@ -98,9 +98,9 @@ func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniq
 		CreatorId:      api.SYSTEM_BOT_ID,
 		DatabaseId:     backupSetting.DatabaseId,
 		Name:           key,
-		Status:         string(api.BackupStatusPendingCreate),
-		Type:           string(api.BackupTypeAutomatic),
-		StorageBackend: string(api.BackupStorageBackendLocal),
+		Status:         api.BackupStatusPendingCreate,
+		Type:           api.BackupTypeAutomatic,
+		StorageBackend: api.BackupStorageBackendLocal,
 		Path:           path,
 		Comment:        fmt.Sprintf("Automatic backup for database %s at %v", backupSetting.Database.Name, epoch),
 	}

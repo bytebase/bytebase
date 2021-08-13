@@ -81,12 +81,12 @@ type Backup struct {
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
-	Name           string `jsonapi:"attr,name"`
-	Status         string `jsonapi:"attr,status"`
-	Type           string `jsonapi:"attr,type"`
-	StorageBackend string `jsonapi:"attr,storageBackend"`
-	Path           string `jsonapi:"attr,path"`
-	Comment        string `jsonapi:"attr,comment"`
+	Name           string               `jsonapi:"attr,name"`
+	Status         BackupStatus         `jsonapi:"attr,status"`
+	Type           BackupType           `jsonapi:"attr,type"`
+	StorageBackend BackupStorageBackend `jsonapi:"attr,storageBackend"`
+	Path           string               `jsonapi:"attr,path"`
+	Comment        string               `jsonapi:"attr,comment"`
 }
 
 type BackupCreate struct {
@@ -98,12 +98,12 @@ type BackupCreate struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name           string `jsonapi:"attr,name"`
-	Status         string `jsonapi:"attr,status"`
-	Type           string `jsonapi:"attr,type"`
-	StorageBackend string `jsonapi:"attr,storageBackend"`
-	Path           string `jsonapi:"attr,path"`
-	Comment        string `jsonapi:"attr,comment"`
+	Name           string               `jsonapi:"attr,name"`
+	Status         BackupStatus         `jsonapi:"attr,status"`
+	Type           BackupType           `jsonapi:"attr,type"`
+	StorageBackend BackupStorageBackend `jsonapi:"attr,storageBackend"`
+	Path           string               `jsonapi:"attr,path"`
+	Comment        string               `jsonapi:"attr,comment"`
 }
 
 type BackupFind struct {
