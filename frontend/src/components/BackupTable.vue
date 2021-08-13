@@ -54,10 +54,10 @@
           </template>
         </span>
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="w-16 whitespace-nowrap">
         {{ backup.name }}
       </BBTableCell>
-      <BBTableCell class="w-48">
+      <BBTableCell class="w-48 whitespace-nowrap">
         {{ backup.path }}
       </BBTableCell>
       <BBTableCell class="w-8 whitespace-nowrap tooltip-wrapper">
@@ -70,10 +70,10 @@
             : backup.comment
         }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="w-16 whitespace-nowrap">
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="w-16 whitespace-nowrap">
         {{ backup.creator.name }}
       </BBTableCell>
       <BBTableCell class="w-4">
