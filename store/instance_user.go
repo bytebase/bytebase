@@ -82,9 +82,9 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	return nil
 }
 
-// createInstanceUser upserts a new instanceUser.
+// upsertInstanceUser upserts a new instanceUser.
 func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
-	// Insert row into database.
+	// Upsert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance_user (
 			creator_id,
