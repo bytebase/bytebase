@@ -1,5 +1,7 @@
 package api
 
+const UNKNOWN_ID = -1
+
 type RowStatus string
 
 const (
