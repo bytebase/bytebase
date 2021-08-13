@@ -112,7 +112,7 @@ import {
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
-import { isEmpty } from "lodash";
+import { cloneDeep, isEmpty } from "lodash";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -179,8 +179,23 @@ export default {
       state.originalAutoBackupPathTemplate = backupSetting.pathTemplate;
     };
 
+    // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
-      return store.getters["backup/backupListByDatabaseId"](props.database.id);
+      const list = cloneDeep(
+        store.getters["backup/backupListByDatabaseId"](props.database.id)
+      );
+      return list.sort((a: Backup, b: Backup) => {
+        if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
+          return -1;
+        } else if (
+          a.status != "PENDING_CREATE" &&
+          b.status == "PENDING_CREATE"
+        ) {
+          return 1;
+        }
+
+        return b.createdTs - a.createdTs;
+      });
     });
 
     const autoBackupWeekdayText = computed(() => {
