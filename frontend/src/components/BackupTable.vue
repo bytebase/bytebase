@@ -3,9 +3,9 @@
     :columnList="columnList"
     :dataSource="backupList"
     :showHeader="true"
+    :rowClickable="false"
     :leftBordered="true"
     :rightBordered="true"
-    @click-row="clickBackup"
   >
     <template v-slot:body="{ rowData: backup }">
       <BBTableCell :leftPadding="4" class="w-4">
@@ -54,17 +54,28 @@
           </template>
         </span>
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell class="w-16">
         {{ backup.name }}
       </BBTableCell>
-      <BBTableCell class="w-48 table-cell">
+      <BBTableCell class="w-48">
         {{ backup.path }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell class="w-16">
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16 table-cell">
+      <BBTableCell class="w-16">
         {{ backup.creator.name }}
+      </BBTableCell>
+      <BBTableCell class="w-4">
+        <BBButtonConfirm
+          v-if="backup.status == 'DONE'"
+          :style="'RESTORE'"
+          :requireConfirm="true"
+          :okText="'Restore'"
+          :confirmTitle="`Are you sure to restore '${backup.name}' to database '${database.name}'?`"
+          :confirmDescription="''"
+          @confirm="restoreBackup(backup)"
+        />
       </BBTableCell>
     </template>
   </BBTable>
@@ -73,7 +84,7 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { Backup } from "../types";
+import { Backup, Database } from "../types";
 import { bytesToString } from "../utils";
 import { useStore } from "vuex";
 
@@ -93,12 +104,19 @@ const columnList: BBTableColumn[] = [
   {
     title: "Creator",
   },
+  {
+    title: "Restore",
+  },
 ];
 
 export default {
   name: "BackupTable",
   components: {},
   props: {
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
+    },
     backupList: {
       required: true,
       type: Object as PropType<Backup[]>,
@@ -125,10 +143,9 @@ export default {
       }
     };
 
-    const clickBackup = (section: number, row: number) => {
-      const backup = props.backupList[row];
+    const restoreBackup = (backup: Backup) => {
       store.dispatch("backup/restoreFromBackup", {
-        databaseId: backup.database.id,
+        databaseId: props.database.id,
         backupId: backup.id,
       });
     };
@@ -137,7 +154,7 @@ export default {
       columnList,
       bytesToString,
       statusIconClass,
-      clickBackup,
+      restoreBackup,
     };
   },
 };
