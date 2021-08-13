@@ -78,9 +78,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -93,8 +91,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
 
@@ -160,9 +156,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -175,8 +169,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
 

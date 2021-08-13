@@ -32,8 +32,6 @@ export type Database = {
   name: string;
   characterSet: string;
   collation: string;
-  timezoneName: string;
-  timezoneOffset: number;
 };
 
 export type DatabaseCreate = {

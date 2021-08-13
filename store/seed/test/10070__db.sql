@@ -10,9 +10,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -25,8 +23,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
 
@@ -41,9 +37,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -56,9 +50,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        1624558090,
-        'CST',
-        28800
+        1624558090
     );
 
 INSERT INTO
@@ -72,9 +64,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -87,9 +77,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -103,9 +91,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -118,9 +104,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 -- Database for integration environment instance 6002
@@ -135,9 +119,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -150,8 +132,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
 
@@ -166,9 +146,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -181,9 +159,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -197,9 +173,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -212,9 +186,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -228,9 +200,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -243,9 +213,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 -- Database for staging environment instance 6003
@@ -260,9 +228,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -275,8 +241,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
 
@@ -291,9 +255,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -306,9 +268,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -322,9 +282,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -337,9 +295,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -353,9 +309,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -368,9 +322,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 -- Database for prod environment instance 6004
@@ -385,9 +337,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -400,8 +350,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
 
@@ -416,9 +364,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -431,9 +377,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -447,9 +391,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -462,9 +404,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 INSERT INTO
@@ -478,9 +418,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -493,9 +431,7 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'CST',
-        28800
+        0
     );
 
 -- Database for prod environment instance 6005
@@ -510,9 +446,7 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts,
-        timezone_name,
-        timezone_offset
+        last_successful_sync_ts
     )
 VALUES
     (
@@ -525,7 +459,5 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0,
-        'UTC',
         0
     );
