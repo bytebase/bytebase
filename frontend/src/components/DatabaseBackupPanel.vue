@@ -79,7 +79,7 @@
         Backup now
       </button>
     </div>
-    <BackupTable :backupList="backupList" />
+    <BackupTable :database="database" :backupList="backupList" />
   </div>
   <BBModal
     v-if="state.showCreateBackupModal"
