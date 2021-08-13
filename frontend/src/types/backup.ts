@@ -62,7 +62,7 @@ export type BackupSetting = {
   pathTemplate: string;
 };
 
-export type BackupSettingSet = {
+export type BackupSettingUpsert = {
   // Related fields
   databaseId: DatabaseId;
 

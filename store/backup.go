@@ -272,35 +272,35 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup ID not found: %d", patch.ID)}
 }
 
-// GetBackupSetting gets the backup setting for a database.
+// FindBackupSetting finds the backup setting for a database.
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BackupService) GetBackupSetting(ctx context.Context, get *api.BackupSettingGet) (*api.BackupSetting, error) {
+func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupSettingFind) (*api.BackupSetting, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	list, err := s.getBackupSetting(ctx, tx, get)
+	list, err := s.findBackupSetting(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup setting not found: %+v", get)}
+		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup setting not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), get)}
+		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
 	}
 
 	return list[0], nil
 }
 
-func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.BackupSettingGet) (_ []*api.BackupSetting, err error) {
+func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api.BackupSettingFind) (_ []*api.BackupSetting, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := get.ID; v != nil {
+	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := get.DatabaseId; v != nil {
+	if v := find.DatabaseId; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
 
@@ -353,15 +353,15 @@ func (s *BackupService) getBackupSetting(ctx context.Context, tx *Tx, get *api.B
 	return list, nil
 }
 
-// SetBackupSetting sets the backup settings for a database.
-func (s *BackupService) SetBackupSetting(ctx context.Context, setting *api.BackupSettingSet) (*api.BackupSetting, error) {
+// UpsertBackupSetting sets the backup settings for a database.
+func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	backup, err := s.setBackupSetting(ctx, tx, setting)
+	backup, err := s.upsertBackupSetting(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -373,8 +373,8 @@ func (s *BackupService) SetBackupSetting(ctx context.Context, setting *api.Backu
 	return backup, nil
 }
 
-// createBackup creates a new backup.
-func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *api.BackupSettingSet) (*api.BackupSetting, error) {
+// upsertBackupSetting updates an existing backup setting.
+func (s *BackupService) upsertBackupSetting(ctx context.Context, tx *Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	// Upsert row into backup_setting.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup_setting (
@@ -394,13 +394,13 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 			path_template = excluded.path_template
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path_template"+`
 		`,
-		setting.CreatorId,
-		setting.CreatorId,
-		setting.DatabaseId,
-		setting.Enabled,
-		setting.Hour,
-		setting.DayOfWeek,
-		setting.PathTemplate,
+		upsert.UpdaterId,
+		upsert.UpdaterId,
+		upsert.DatabaseId,
+		upsert.Enabled,
+		upsert.Hour,
+		upsert.DayOfWeek,
+		upsert.PathTemplate,
 	)
 
 	if err != nil {
@@ -428,8 +428,8 @@ func (s *BackupService) setBackupSetting(ctx context.Context, tx *Tx, setting *a
 	return &backupSetting, nil
 }
 
-// GetBackupSettingsMatch retrieves a list of backup settings based on match condition.
-func (s *BackupService) GetBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
+// FindBackupSettingsMatch retrieves a list of backup settings based on match condition.
+func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
