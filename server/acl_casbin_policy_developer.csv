@@ -35,8 +35,8 @@ p, DEVELOPER, /database/{id}/table/{tableName}, GET
 p, DEVELOPER, /database/{id}/backup, GET
 p, DEVELOPER, /database/{id}/backup, POST
 p, DEVELOPER, /database/{id}/restore, POST
-p, DEVELOPER, /database/{id}/backupSetting, GET
-p, DEVELOPER, /database/{id}/backupSetting, POST
+p, DEVELOPER, /database/{id}/backupsetting, GET
+p, DEVELOPER, /database/{id}/backupsetting, POST
 p, DEVELOPER, /issue, POST
 p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET
