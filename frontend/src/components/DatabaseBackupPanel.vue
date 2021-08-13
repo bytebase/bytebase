@@ -106,7 +106,7 @@ import {
   Backup,
   BackupCreate,
   BackupSetting,
-  BackupSettingSet,
+  BackupSettingUpsert,
   Database,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
@@ -289,7 +289,7 @@ export default {
         state.autoBackupDayOfWeek,
         -props.database.timezoneOffset
       );
-      const newBackupSetting: BackupSettingSet = {
+      const newBackupSetting: BackupSettingUpsert = {
         databaseId: props.database.id,
         enabled: on,
         hour: hour,
@@ -297,7 +297,7 @@ export default {
         pathTemplate: state.autoBackupPathTemplate,
       };
       store
-        .dispatch("backup/setBackupSetting", {
+        .dispatch("backup/upsertBackupSetting", {
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {
@@ -317,7 +317,7 @@ export default {
         state.autoBackupDayOfWeek,
         -props.database.timezoneOffset
       );
-      const newBackupSetting: BackupSettingSet = {
+      const newBackupSetting: BackupSettingUpsert = {
         databaseId: props.database.id,
         enabled: state.autoBackupEnabled,
         hour: hour,
@@ -325,7 +325,7 @@ export default {
         pathTemplate: state.autoBackupPathTemplate,
       };
       store
-        .dispatch("backup/setBackupSetting", {
+        .dispatch("backup/upsertBackupSetting", {
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {

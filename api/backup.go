@@ -148,7 +148,7 @@ type RestoreBackup struct {
 
 // BackupSetting is the backup setting for a database.
 type BackupSetting struct {
-	ID int `jsonapi:"primary,table"`
+	ID int `jsonapi:"primary,backupSetting"`
 
 	// Standard fields
 	CreatorId int
@@ -169,8 +169,8 @@ type BackupSetting struct {
 	PathTemplate string `jsonapi:"attr,pathTemplate"`
 }
 
-// BackupSettingGet is the message to get a backup settings.
-type BackupSettingGet struct {
+// BackupSettingFind is the message to get a backup settings.
+type BackupSettingFind struct {
 	ID *int
 
 	// Related fields
@@ -179,12 +179,12 @@ type BackupSettingGet struct {
 	// Domain specific fields
 }
 
-// BackupSettingSet is the message to set a backup settings.
-type BackupSettingSet struct {
+// BackupSettingUpsert is the message to set a backup settings.
+type BackupSettingUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	// CreatorId is the ID of the creator.
-	CreatorId int
+	UpdaterId int
 
 	// Related fields
 	DatabaseId int `jsonapi:"attr,databaseId"`
@@ -208,7 +208,7 @@ type BackupService interface {
 	FindBackup(ctx context.Context, find *BackupFind) (*Backup, error)
 	FindBackupList(ctx context.Context, find *BackupFind) ([]*Backup, error)
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
-	GetBackupSetting(ctx context.Context, get *BackupSettingGet) (*BackupSetting, error)
-	SetBackupSetting(ctx context.Context, setting *BackupSettingSet) (*BackupSetting, error)
-	GetBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSetting, error)
+	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSetting, error)
+	UpsertBackupSetting(ctx context.Context, upsert *BackupSettingUpsert) (*BackupSetting, error)
+	FindBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSetting, error)
 }

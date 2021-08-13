@@ -473,11 +473,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		backupSettingSet := &api.BackupSettingSet{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingSet); err != nil {
+		backupSettingUpsert := &api.BackupSettingUpsert{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set backup setting request").SetInternal(err)
 		}
-		backupSettingSet.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		backupSettingUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
 
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
@@ -490,7 +490,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 
-		backupSetting, err := s.BackupService.SetBackupSetting(context.Background(), backupSettingSet)
+		backupSetting, err := s.BackupService.UpsertBackupSetting(context.Background(), backupSettingUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
 		}
@@ -520,10 +520,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 
-		backupSettingGet := &api.BackupSettingGet{
+		backupSettingFind := &api.BackupSettingFind{
 			DatabaseId: &id,
 		}
-		backupSetting, err := s.BackupService.GetBackupSetting(context.Background(), backupSettingGet)
+		backupSetting, err := s.BackupService.FindBackupSetting(context.Background(), backupSettingFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				// Set the default backup setting.

@@ -51,7 +51,7 @@ func (s *BackupRunner) Run() error {
 				}
 				uniqueKey := fmt.Sprintf("%v", t.Unix())
 				epoch := time.Now().UTC().Unix()
-				list, err := s.server.BackupService.GetBackupSettingsMatch(context.Background(), match)
+				list, err := s.server.BackupService.FindBackupSettingsMatch(context.Background(), match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
 				}
