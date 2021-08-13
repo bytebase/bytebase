@@ -204,7 +204,7 @@ type DatabaseTabItem = {
 
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: "Overview", hash: "overview" },
-  { name: "Backup", hash: "backup" },
+  { name: "Backups", hash: "backup" },
 ];
 
 interface LocalState {
