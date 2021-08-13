@@ -2,7 +2,7 @@
   <div class="mt-6">
     <div class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border">
       <!-- Description list -->
-      <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
         <div class="col-span-1 col-start-1">
           <dt class="text-sm font-medium text-control-light">Character set</dt>
           <dd class="mt-1 text-sm text-main">
@@ -14,13 +14,6 @@
           <dt class="text-sm font-medium text-control-light">Collation</dt>
           <dd class="mt-1 text-sm text-main">
             {{ database.collation }}
-          </dd>
-        </div>
-
-        <div class="col-span-1">
-          <dt class="text-sm font-medium text-control-light">Timezone</dt>
-          <dd class="mt-1 text-sm text-main">
-            {{ timezoneString(database.timezoneName, database.timezoneOffset) }}
           </dd>
         </div>
 
@@ -40,10 +33,17 @@
           </dd>
         </div>
 
-        <div class="col-span-1">
+        <div class="col-span-1 col-start-1">
           <dt class="text-sm font-medium text-control-light">Created</dt>
           <dd class="mt-1 text-sm text-main">
             {{ humanizeTs(database.createdTs) }}
+          </dd>
+        </div>
+
+        <div class="col-span-1">
+          <dt class="text-sm font-medium text-control-light">Updated</dt>
+          <dd class="mt-1 text-sm text-main">
+            {{ humanizeTs(database.updatedTs) }}
           </dd>
         </div>
       </dl>

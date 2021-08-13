@@ -55,8 +55,6 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
-	TimezoneName         string     `jsonapi:"attr,timezoneName"`
-	TimezoneOffset       int        `jsonapi:"attr,timezoneOffset"`
 }
 
 type DatabaseCreate struct {
