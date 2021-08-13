@@ -17,9 +17,10 @@
         </div>
         <div
           v-else
-          class="flex items-center text-lg leading-6 font-medium text-control"
+          class="flex items-center text-lg leading-6 font-medium text-main"
         >
-          Weekly backup disabled
+          Automatic weekly backup
+          <span class="ml-1 text-control-light">disabled</span>
           <button
             v-if="!state.autoBackupEnabled"
             type="button"
