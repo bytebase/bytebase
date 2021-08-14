@@ -43,12 +43,20 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := db.Open(instance.Engine, db.DriverConfig{Logger: exec.l}, db.ConnectionConfig{
-		Username: instance.Username,
-		Password: instance.Password,
-		Host:     instance.Host,
-		Port:     instance.Port,
-	})
+	driver, err := db.Open(
+		instance.Engine,
+		db.DriverConfig{Logger: exec.l},
+		db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+		},
+		db.ConnectionContext{
+			EnvironmentName: instance.Environment.Name,
+			InstanceName:    instance.Name,
+		},
+	)
 	if err != nil {
 		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
 	}

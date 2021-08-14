@@ -49,7 +49,7 @@ func (s *SchemaSyncer) Run() error {
 				}
 
 				for _, instance := range list {
-					if err := s.server.ComposeInstanceAdminDataSource(context.Background(), instance); err != nil {
+					if err := s.server.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 						s.l.Error("Failed to sync instance",
 							zap.Int("id", instance.ID),
 							zap.String("name", instance.Name),

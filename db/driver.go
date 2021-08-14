@@ -219,8 +219,22 @@ type MigrationHistoryFind struct {
 	Limit *int
 }
 
+type ConnectionConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Database string
+}
+
+// Context not used for establishing the db connection, but is useful for logging.
+type ConnectionContext struct {
+	EnvironmentName string
+	InstanceName    string
+}
+
 type Driver interface {
-	open(config ConnectionConfig) (Driver, error)
+	open(config ConnectionConfig, ctx ConnectionContext) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
@@ -236,14 +250,6 @@ type Driver interface {
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
-}
-
-type ConnectionConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Database string
 }
 
 // Register makes a database driver available by the provided type.
@@ -262,7 +268,7 @@ func register(dbType Type, f DriverFunc) {
 }
 
 // Open opens a database specified by its database driver type and connection config
-func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig) (Driver, error) {
+func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, ctx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
@@ -270,7 +276,7 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 		return nil, fmt.Errorf("db: unknown driver %v", dbType)
 	}
 
-	driver, err := f(driverConfig).open(connectionConfig)
+	driver, err := f(driverConfig).open(connectionConfig, ctx)
 	if err != nil {
 		return nil, err
 	}
