@@ -278,7 +278,7 @@ func (m *main) Run() error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)

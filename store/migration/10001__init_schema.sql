@@ -599,6 +599,7 @@ CREATE TABLE backup (
     `status` TEXT NOT NULL CHECK (`status` IN ('PENDING_CREATE', 'DONE', 'FAILED')),
     `type` TEXT NOT NULL CHECK (`type` IN ('MANUAL', 'AUTOMATIC')),
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL')),
+    migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     `comment` TEXT NOT NULL DEFAULT '',
     UNIQUE(database_id, name)
@@ -645,8 +646,7 @@ CREATE TABLE backup_setting (
     day_of_week INTEGER NOT NULL CHECK (
         -1 <= day_of_week
         AND day_of_week < 7
-    ),
-    path_template TEXT NOT NULL
+    )
 );
 
 CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);

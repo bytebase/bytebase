@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase"
@@ -49,8 +48,6 @@ func (s *BackupRunner) Run() error {
 					Hour:      t.Hour(),
 					DayOfWeek: int(t.Weekday()),
 				}
-				uniqueKey := fmt.Sprintf("%v", t.Unix())
-				epoch := time.Now().UTC().Unix()
 				list, err := s.server.BackupService.FindBackupSettingsMatch(context.Background(), match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
@@ -70,14 +67,14 @@ func (s *BackupRunner) Run() error {
 					}
 					backupSetting.Database = database
 
-					go func(backupSetting *api.BackupSetting, uniqueKey string, epoch int64) {
-						if err := s.scheduleBackupTask(backupSetting, uniqueKey, epoch); err != nil {
+					backupName := t.Format("20060102T030405")
+					go func(database *api.Database, backupName string) {
+						if err := s.scheduleBackupTask(database, backupName); err != nil {
 							s.l.Error("Failed to create automatic backup for database",
-								zap.Int("id", backupSetting.ID),
-								zap.String("databaseID", fmt.Sprintf("%v", backupSetting.DatabaseId)),
+								zap.Int("databaseID", database.ID),
 								zap.String("error", err.Error()))
 						}
-					}(backupSetting, uniqueKey, epoch)
+					}(database, backupName)
 				}
 			}()
 
@@ -88,21 +85,21 @@ func (s *BackupRunner) Run() error {
 	return nil
 }
 
-func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniqueKey string, epoch int64) error {
-	key := fmt.Sprintf("auto-backup-%s-%v", uniqueKey, backupSetting.DatabaseId)
-	path := fmt.Sprintf("%s-%s-%v.sql", backupSetting.Database.Instance.Environment.Name, backupSetting.Database.Name, epoch)
-	if backupSetting.PathTemplate != "" {
-		path = strings.ReplaceAll(backupSetting.PathTemplate, "{{TIME}}", fmt.Sprintf("%v", epoch))
+func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName string) error {
+	path, err := getAndCreateBackupPath(s.server.dataDir, database, fmt.Sprintf("%s-autobackup", backupName))
+	if err != nil {
+		return err
 	}
+
 	backupCreate := &api.BackupCreate{
 		CreatorId:      api.SYSTEM_BOT_ID,
-		DatabaseId:     backupSetting.DatabaseId,
-		Name:           key,
+		DatabaseId:     database.ID,
+		Name:           backupName,
 		Status:         api.BackupStatusPendingCreate,
 		Type:           api.BackupTypeAutomatic,
 		StorageBackend: api.BackupStorageBackendLocal,
 		Path:           path,
-		Comment:        fmt.Sprintf("Automatic backup for database %s at %v", backupSetting.Database.Name, epoch),
+		Comment:        fmt.Sprintf("Automatic backup for database %s.", database.Name),
 	}
 
 	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)
@@ -123,7 +120,7 @@ func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniq
 	}
 
 	createdPipeline, err := s.server.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
-		Name:      key,
+		Name:      backupName,
 		CreatorId: backupCreate.CreatorId,
 	})
 	if err != nil {
@@ -131,8 +128,8 @@ func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniq
 	}
 
 	createdStage, err := s.server.StageService.CreateStage(context.Background(), &api.StageCreate{
-		Name:          key,
-		EnvironmentId: backupSetting.Database.Instance.EnvironmentId,
+		Name:          backupName,
+		EnvironmentId: database.Instance.EnvironmentId,
 		PipelineId:    createdPipeline.ID,
 		CreatorId:     backupCreate.CreatorId,
 	})
@@ -141,11 +138,11 @@ func (s *BackupRunner) scheduleBackupTask(backupSetting *api.BackupSetting, uniq
 	}
 
 	_, err = s.server.TaskService.CreateTask(context.Background(), &api.TaskCreate{
-		Name:       key,
+		Name:       backupName,
 		PipelineId: createdPipeline.ID,
 		StageId:    createdStage.ID,
-		InstanceId: backupSetting.Database.InstanceId,
-		DatabaseId: &backupSetting.Database.ID,
+		InstanceId: database.InstanceId,
+		DatabaseId: &database.ID,
 		Status:     api.TaskPending,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),

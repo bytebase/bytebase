@@ -11,6 +11,7 @@ INSERT INTO
         `status`,
         `type`,
         storage_backend,
+        migration_history_version,
         path,
         `comment`
     )
@@ -25,6 +26,7 @@ VALUES
         'DONE',
         'MANUAL',
         'LOCAL',
-        '/tmp/blog-backup-1.sql',
+        '0',
+        'data/backup/db/7008/blog-backup-1.sql',
         'The first backup'
     );

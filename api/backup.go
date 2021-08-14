@@ -81,12 +81,13 @@ type Backup struct {
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
-	Name           string               `jsonapi:"attr,name"`
-	Status         BackupStatus         `jsonapi:"attr,status"`
-	Type           BackupType           `jsonapi:"attr,type"`
-	StorageBackend BackupStorageBackend `jsonapi:"attr,storageBackend"`
-	Path           string               `jsonapi:"attr,path"`
-	Comment        string               `jsonapi:"attr,comment"`
+	Name                    string               `jsonapi:"attr,name"`
+	Status                  BackupStatus         `jsonapi:"attr,status"`
+	Type                    BackupType           `jsonapi:"attr,type"`
+	StorageBackend          BackupStorageBackend `jsonapi:"attr,storageBackend"`
+	MigrationHistoryVersion string               `jsonapi:"attr,migrationHistoryVersion"`
+	Path                    string               `jsonapi:"attr,path"`
+	Comment                 string               `jsonapi:"attr,comment"`
 }
 
 type BackupCreate struct {
@@ -98,12 +99,13 @@ type BackupCreate struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name           string               `jsonapi:"attr,name"`
-	Status         BackupStatus         `jsonapi:"attr,status"`
-	Type           BackupType           `jsonapi:"attr,type"`
-	StorageBackend BackupStorageBackend `jsonapi:"attr,storageBackend"`
-	Path           string               `jsonapi:"attr,path"`
-	Comment        string               `jsonapi:"attr,comment"`
+	Name                    string               `jsonapi:"attr,name"`
+	Status                  BackupStatus         `jsonapi:"attr,status"`
+	Type                    BackupType           `jsonapi:"attr,type"`
+	StorageBackend          BackupStorageBackend `jsonapi:"attr,storageBackend"`
+	MigrationHistoryVersion string               `jsonapi:"attr,migrationHistoryVersion"`
+	Path                    string               `jsonapi:"attr,path"`
+	Comment                 string               `jsonapi:"attr,comment"`
 }
 
 type BackupFind struct {
@@ -163,10 +165,9 @@ type BackupSetting struct {
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
-	Enabled      bool   `jsonapi:"attr,enabled"`
-	Hour         int    `jsonapi:"attr,hour"`
-	DayOfWeek    int    `jsonapi:"attr,dayOfWeek"`
-	PathTemplate string `jsonapi:"attr,pathTemplate"`
+	Enabled   bool `jsonapi:"attr,enabled"`
+	Hour      int  `jsonapi:"attr,hour"`
+	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
 }
 
 // BackupSettingFind is the message to get a backup settings.
@@ -191,10 +192,9 @@ type BackupSettingUpsert struct {
 	DatabaseId int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Enabled      bool   `jsonapi:"attr,enabled"`
-	Hour         int    `jsonapi:"attr,hour"`
-	DayOfWeek    int    `jsonapi:"attr,dayOfWeek"`
-	PathTemplate string `jsonapi:"attr,pathTemplate"`
+	Enabled   bool `jsonapi:"attr,enabled"`
+	Hour      int  `jsonapi:"attr,hour"`
+	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
 }
 
 // BackupSettingsMatch is the message to find backup settings matching the conditions.
