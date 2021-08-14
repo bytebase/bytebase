@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
@@ -69,7 +70,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	backupErr := backupDatabase(task.Instance, task.Database, backup)
+	backupErr := backupDatabase(task.Instance, task.Database, backup, server.dataDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
 	if backupErr != nil {
@@ -84,14 +85,14 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	if backupErr != nil {
-		return true, "", err
+		return true, "", backupErr
 	}
 
 	return true, fmt.Sprintf("Backup database '%s'", task.Database.Name), nil
 }
 
 // backupDatabase will take a backup of a database.
-func backupDatabase(instance *api.Instance, database *api.Database, backup *api.Backup) error {
+func backupDatabase(instance *api.Instance, database *api.Database, backup *api.Backup, dataDir string) error {
 	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
 	if err != nil {
 		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
@@ -99,7 +100,7 @@ func backupDatabase(instance *api.Instance, database *api.Database, backup *api.
 	defer conn.Close()
 	dp := mysqldump.New(conn)
 
-	f, err := os.Create(backup.Path)
+	f, err := os.Create(filepath.Join(dataDir, backup.Path))
 	if err != nil {
 		return fmt.Errorf("failed to open backup path: %s", backup.Path)
 	}
@@ -110,4 +111,24 @@ func backupDatabase(instance *api.Instance, database *api.Database, backup *api.
 	}
 
 	return nil
+}
+
+// getAndCreateBackupDirectory returns the path of a database backup.
+func getAndCreateBackupDirectory(dataDir string, database *api.Database) (string, error) {
+	dir := filepath.Join("backup", "db", fmt.Sprintf("%d", database.ID))
+	absDir := filepath.Join(dataDir, dir)
+	if err := os.MkdirAll(absDir, 0700); err != nil {
+		return "", nil
+	}
+
+	return dir, nil
+}
+
+// getAndCreateBackupPath returns the path of a database backup.
+func getAndCreateBackupPath(dataDir string, database *api.Database, name string) (string, error) {
+	dir, err := getAndCreateBackupDirectory(dataDir, database)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, fmt.Sprintf("%s-%s-%s.sql", api.ProjectSlug(database.Project), database.Instance.Environment.Name, name)), nil
 }

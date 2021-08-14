@@ -67,6 +67,7 @@ type Server struct {
 	readonly     bool
 	demo         bool
 	plan         api.PlanType
+	dataDir      string
 }
 
 //go:embed acl_casbin_model.conf
@@ -81,7 +82,7 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
-func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -103,6 +104,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		readonly:     readonly,
 		demo:         demo,
 		plan:         api.TEAM,
+		dataDir:      dataDir,
 	}
 
 	if !readonly {

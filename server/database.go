@@ -283,6 +283,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 
+		backupCreate.Path, err = getAndCreateBackupPath(s.dataDir, database, backupCreate.Name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
+		}
+		// TODO(spinningbot): fetch the current migration history version.
+		backupCreate.MigrationHistoryVersion = "TODO(spinningbot)"
+
 		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
@@ -387,6 +394,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
+
+		// TODO(spinningbot): need to clone migration history.
 
 		restoreBackup := &api.RestoreBackup{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, restoreBackup); err != nil {

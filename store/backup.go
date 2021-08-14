@@ -116,11 +116,12 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 			`+"`status`,"+`
 			`+"`type`,"+`
 			storage_backend,
+			migration_history_version,
 			path,
 			comment
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, path, comment"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, migration_history_version, path, comment"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -129,6 +130,7 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 		create.Status,
 		create.Type,
 		create.StorageBackend,
+		create.MigrationHistoryVersion,
 		create.Path,
 		create.Comment,
 	)
@@ -151,6 +153,7 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 		&backup.Status,
 		&backup.Type,
 		&backup.StorageBackend,
+		&backup.MigrationHistoryVersion,
 		&backup.Path,
 		&backup.Comment,
 	); err != nil {
@@ -185,6 +188,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 			`+"`status`,"+`
 			`+"`type`,"+`
 			storage_backend,
+			migration_history_version,
 			path,
 			comment
 		FROM backup
@@ -211,6 +215,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 			&backup.Status,
 			&backup.Type,
 			&backup.StorageBackend,
+			&backup.MigrationHistoryVersion,
 			&backup.Path,
 			&backup.Comment,
 		); err != nil {
@@ -239,7 +244,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 		UPDATE backup
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, path, comment"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, migration_history_version, path, comment"+`
 	`,
 		args...,
 	)
@@ -261,6 +266,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 			&backup.Status,
 			&backup.Type,
 			&backup.StorageBackend,
+			&backup.MigrationHistoryVersion,
 			&backup.Path,
 			&backup.Comment,
 		); err != nil {
@@ -314,8 +320,7 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 			database_id,
 			enabled,
 			hour,
-			day_of_week,
-			path_template
+			day_of_week
 		FROM backup_setting
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -339,7 +344,6 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
-			&backupSetting.PathTemplate,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -383,16 +387,14 @@ func (s *BackupService) upsertBackupSetting(ctx context.Context, tx *Tx, upsert 
 			database_id,
 			`+"`enabled`,"+`
 			hour,
-			day_of_week,
-			path_template
+			day_of_week
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT(database_id) DO UPDATE SET
-		  	enabled = excluded.enabled,
-		  	hour = excluded.hour,
-		  	day_of_week = excluded.day_of_week,
-			path_template = excluded.path_template
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week, path_template"+`
+				enabled = excluded.enabled,
+				hour = excluded.hour,
+				day_of_week = excluded.day_of_week
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`
 		`,
 		upsert.UpdaterId,
 		upsert.UpdaterId,
@@ -400,7 +402,6 @@ func (s *BackupService) upsertBackupSetting(ctx context.Context, tx *Tx, upsert 
 		upsert.Enabled,
 		upsert.Hour,
 		upsert.DayOfWeek,
-		upsert.PathTemplate,
 	)
 
 	if err != nil {
@@ -420,7 +421,6 @@ func (s *BackupService) upsertBackupSetting(ctx context.Context, tx *Tx, upsert 
 		&backupSetting.Enabled,
 		&backupSetting.Hour,
 		&backupSetting.DayOfWeek,
-		&backupSetting.PathTemplate,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -446,8 +446,7 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 			database_id,
 			enabled,
 			hour,
-			day_of_week,
-			path_template
+			day_of_week
 		FROM backup_setting
 		WHERE
 			enabled = 1
@@ -480,7 +479,6 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
-			&backupSetting.PathTemplate,
 		); err != nil {
 			return nil, FormatError(err)
 		}
