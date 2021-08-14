@@ -1,9 +1,7 @@
 <template>
   <form
     class="space-y-6 divide-y divide-block-border"
-    @submit.prevent="
-      $emit('create', state.backupName, state.backupPath, state.comment)
-    "
+    @submit.prevent="$emit('create', state.backupName, state.comment)"
   >
     <div class="space-y-4">
       <div class="grid grid-cols-3 gap-y-6 gap-x-4">
@@ -18,22 +16,6 @@
             type="text"
             class="textfield mt-1 w-full"
             v-model="state.backupName"
-          />
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-y-6 gap-x-4">
-        <div class="col-span-3">
-          <label for="path" class="textlabel">
-            Backup path <span class="text-red-600">*</span>
-          </label>
-          <input
-            required
-            id="path"
-            name="path"
-            type="text"
-            class="textfield mt-1 w-full"
-            v-model="state.backupPath"
           />
         </div>
       </div>
@@ -97,7 +79,6 @@ import { isEmpty } from "lodash";
 
 interface LocalState {
   backupName: string;
-  backupPath: string;
   comment: string;
 }
 
@@ -118,12 +99,11 @@ export default {
       backupName: `${
         props.database.name
       }-${new Date().toLocaleTimeString()}-manual`,
-      backupPath: "backup",
       comment: "",
     });
 
     const allowCreate = computed(() => {
-      return !isEmpty(state.backupName) && !isEmpty(state.backupPath);
+      return !isEmpty(state.backupName);
     });
 
     return {
