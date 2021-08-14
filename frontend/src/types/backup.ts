@@ -38,7 +38,6 @@ export type BackupCreate = {
   status: BackupStatus;
   type: BackupType;
   storageBackend: BackupStorageBackend;
-  path: string;
   comment: string;
 };
 
@@ -65,7 +64,6 @@ export type BackupSetting = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
-  pathTemplate: string;
 };
 
 export type BackupSettingUpsert = {
@@ -76,5 +74,4 @@ export type BackupSettingUpsert = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
-  pathTemplate: string;
 };
