@@ -38,12 +38,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		// Try creating the "bytebase" db in the added instance if needed.
 		// Since we allow user to add new instance upfront even providing the incorrect username/password,
 		// thus it's OK if it fails. Frontend will surface relavant info suggesting the "bytebase" db hasn't created yet.
-		db, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-		})
+		db, err := db.Open(
+			instance.Engine,
+			db.DriverConfig{Logger: s.l},
+			db.ConnectionConfig{
+				Username: instance.Username,
+				Password: instance.Password,
+				Host:     instance.Host,
+				Port:     instance.Port,
+			},
+			db.ConnectionContext{
+				EnvironmentName: instance.Environment.Name,
+				InstanceName:    instance.Name,
+			},
+		)
 		if err == nil {
 			defer db.Close(context.Background())
 			db.SetupMigrationIfNeeded(context.Background())
@@ -210,12 +218,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SqlResultSet{}
-		db, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-		})
+		db, err := db.Open(
+			instance.Engine,
+			db.DriverConfig{Logger: s.l},
+			db.ConnectionConfig{
+				Username: instance.Username,
+				Password: instance.Password,
+				Host:     instance.Host,
+				Port:     instance.Port,
+			},
+			db.ConnectionContext{
+				EnvironmentName: instance.Environment.Name,
+				InstanceName:    instance.Name,
+			},
+		)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -247,12 +263,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-		})
+		db, err := db.Open(
+			instance.Engine,
+			db.DriverConfig{Logger: s.l},
+			db.ConnectionConfig{
+				Username: instance.Username,
+				Password: instance.Password,
+				Host:     instance.Host,
+				Port:     instance.Port,
+			},
+			db.ConnectionContext{
+				EnvironmentName: instance.Environment.Name,
+				InstanceName:    instance.Name,
+			},
+		)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -304,12 +328,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-		})
+		driver, err := db.Open(
+			instance.Engine,
+			db.DriverConfig{Logger: s.l},
+			db.ConnectionConfig{
+				Username: instance.Username,
+				Password: instance.Password,
+				Host:     instance.Host,
+				Port:     instance.Port,
+			},
+			db.ConnectionContext{
+				EnvironmentName: instance.Environment.Name,
+				InstanceName:    instance.Name,
+			},
+		)
 		if err == nil {
 			defer driver.Close(context.Background())
 			list, err := driver.FindMigrationHistoryList(context.Background(), find)
