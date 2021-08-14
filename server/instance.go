@@ -14,6 +14,7 @@ import (
 )
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
+	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
 		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
@@ -32,6 +33,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		if err := s.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 			return err
+		}
+
+		// Try creating the "bytebase" db in the added instance if needed.
+		// Since we allow user to add new instance upfront even providing the incorrect username/password,
+		// thus it's OK if it fails. Frontend will surface relavant info suggesting the "bytebase" db hasn't created yet.
+		db, err := db.Open(instance.Engine, db.DriverConfig{Logger: s.l}, db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+		})
+		if err == nil {
+			defer db.Close(context.Background())
+			db.SetupMigrationIfNeeded(context.Background())
 		}
 
 		// Try immediately sync the schema after instance creation.
