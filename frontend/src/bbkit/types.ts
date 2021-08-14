@@ -3,7 +3,8 @@ export type BBButtonConfirmStyle =
   | "ARCHIVE"
   | "RESTORE"
   | "DISABLE"
-  | "EDIT";
+  | "EDIT"
+  | "CLONE";
 
 export type BBTableColumn = {
   title: string;
