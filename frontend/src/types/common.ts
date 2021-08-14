@@ -244,7 +244,7 @@ export const unknown = (
 
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {
     id: UNKNOWN_ID,
-    database: UNKNOWN_DATABASE,
+    databaseId: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
@@ -551,7 +551,7 @@ export const empty = (
 
   const EMPTY_BACKUP_SETTING: BackupSetting = {
     id: EMPTY_ID,
-    database: EMPTY_DATABASE,
+    databaseId: UNKNOWN_ID,
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,

@@ -1,4 +1,3 @@
-import { Database } from "./database";
 import { BackupId, BackupSettingId, DatabaseId } from "./id";
 import { Principal } from "./principal";
 
@@ -13,7 +12,7 @@ export type Backup = {
   id: BackupId;
 
   // Related fields
-  database: Database;
+  databaseId: DatabaseId;
 
   // Standard fields
   creator: Principal;
@@ -53,7 +52,7 @@ export type BackupSetting = {
   id: BackupSettingId;
 
   // Related fields
-  database: Database;
+  databaseId: DatabaseId;
 
   // Standard fields
   creator: Principal;
