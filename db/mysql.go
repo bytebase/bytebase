@@ -24,7 +24,8 @@ func init() {
 }
 
 type MySQLDriver struct {
-	l *zap.Logger
+	l             *zap.Logger
+	connectionCtx ConnectionContext
 
 	db *sql.DB
 }
@@ -35,7 +36,7 @@ func newDriver(config DriverConfig) Driver {
 	}
 }
 
-func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
+func (driver *MySQLDriver) open(config ConnectionConfig, ctx ConnectionContext) (Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -49,12 +50,17 @@ func (driver *MySQLDriver) open(config ConnectionConfig) (Driver, error) {
 	}
 
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
-	driver.l.Debug("Opening MySQL driver", zap.String("dsn", dsn))
+	driver.l.Debug("Opening MySQL driver",
+		zap.String("dsn", dsn),
+		zap.String("environment", ctx.EnvironmentName),
+		zap.String("database", ctx.InstanceName),
+	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
 	}
 	driver.db = db
+	driver.connectionCtx = ctx
 
 	return driver, nil
 }
@@ -418,12 +424,22 @@ func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...")
+		driver.l.Info("Bytebase migration schema not found, creating schema...",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
 		if err := driver.Execute(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.", zap.Error(err))
+			driver.l.Error("Failed to initialize migration schema.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
 			return formatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.")
+		driver.l.Info("Successfully created migration schema.",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
 	}
 
 	return nil
