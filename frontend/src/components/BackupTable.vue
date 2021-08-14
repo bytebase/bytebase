@@ -92,10 +92,10 @@
       <BBTableCell>
         <BBButtonConfirm
           v-if="backup.status == 'DONE'"
-          :style="'RESTORE'"
+          :style="'CLONE'"
           :requireConfirm="true"
-          :okText="'Restore'"
-          :confirmTitle="`Are you sure to restore '${backup.name}' to database '${database.name}'?`"
+          :okText="'Clone'"
+          :confirmTitle="`Are you sure to clone a new database '${database.name}' based on backup '${backup.name}'?`"
           :confirmDescription="''"
           @confirm="restoreBackup(backup)"
         />
@@ -131,7 +131,7 @@ const columnList: BBTableColumn[] = [
     title: "Creator",
   },
   {
-    title: "Restore",
+    title: "Clone",
   },
 ];
 

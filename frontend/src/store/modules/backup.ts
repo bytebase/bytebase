@@ -7,9 +7,7 @@ import {
   BackupSettingState,
   BackupSettingUpsert,
   BackupState,
-  Database,
   DatabaseId,
-  ResourceIdentifier,
   ResourceObject,
   RestoreBackup,
   unknown,
@@ -20,20 +18,9 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Backup {
-  const databaseId = (backup.relationships!.database.data as ResourceIdentifier)
-    .id;
-
-  let database: Database = unknown("DATABASE") as Database;
-  for (const item of includedList || []) {
-    if (item.type == "database" && item.id == databaseId) {
-      database = rootGetters["database/convert"](item, includedList);
-      break;
-    }
-  }
   return {
-    ...(backup.attributes as Omit<Backup, "id" | "database">),
+    ...(backup.attributes as Omit<Backup, "id">),
     id: parseInt(backup.id),
-    database,
   };
 }
 
@@ -42,21 +29,9 @@ function convertBackupSetting(
   includedList: ResourceObject[],
   rootGetters: any
 ): BackupSetting {
-  const databaseId = (
-    backupSetting.relationships!.database.data as ResourceIdentifier
-  ).id;
-
-  let database: Database = unknown("DATABASE") as Database;
-  for (const item of includedList || []) {
-    if (item.type == "database" && item.id == databaseId) {
-      database = rootGetters["database/convert"](item, includedList);
-      break;
-    }
-  }
   return {
-    ...(backupSetting.attributes as Omit<BackupSetting, "id" | "database">),
+    ...(backupSetting.attributes as Omit<BackupSetting, "id">),
     id: parseInt(backupSetting.id),
-    database,
   };
 }
 

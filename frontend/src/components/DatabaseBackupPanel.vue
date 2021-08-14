@@ -32,22 +32,6 @@
         </div>
       </div>
       <div v-if="state.autoBackupEnabled" class="space-y-4">
-        <div>
-          <label for="auto-backup-path-template" class="textlabel">
-            Backup file path template
-          </label>
-          <div class="mt-1 textinfolabel">
-            Backup file path template. TODO: pointing to doc
-          </div>
-          <input
-            type="text"
-            id="auto-backup-path-template"
-            name="autoBackupPathTemplate"
-            placeholder="e.g. 0"
-            class="textfield mt-2 w-full"
-            v-model="state.autoBackupPathTemplate"
-          />
-        </div>
         <div class="flex justify-between">
           <BBButtonConfirm
             :style="'DISABLE'"
@@ -58,14 +42,6 @@
             :requireConfirm="true"
             @confirm="toggleAutoBackup(false)"
           />
-          <button
-            type="button"
-            class="btn-primary"
-            :disabled="!allowUpdateAutoBackupSetting"
-            @click.prevent="updateAutoBackupSetting"
-          >
-            Update
-          </button>
         </div>
       </div>
     </div>
@@ -90,8 +66,8 @@
       <DatabaseBackupCreateForm
         :database="database"
         @create="
-          (backupName, backupPath, comment) => {
-            createBackup(backupName, backupPath, comment);
+          (backupName, comment) => {
+            createBackup(backupName, comment);
             state.showCreateBackupModal = false;
           }
         "
@@ -121,8 +97,6 @@ interface LocalState {
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
-  autoBackupPathTemplate: string;
-  originalAutoBackupPathTemplate: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -157,8 +131,6 @@ export default {
       autoBackupEnabled: false,
       autoBackupHour: hour,
       autoBackupDayOfWeek: dayOfWeek,
-      autoBackupPathTemplate: "",
-      originalAutoBackupPathTemplate: "",
     });
 
     onUnmounted(() => {
@@ -177,8 +149,6 @@ export default {
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
-      state.autoBackupPathTemplate = backupSetting.pathTemplate;
-      state.originalAutoBackupPathTemplate = backupSetting.pathTemplate;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
@@ -240,18 +210,7 @@ export default {
       })`;
     });
 
-    const allowUpdateAutoBackupSetting = computed(() => {
-      return (
-        !isEmpty(state.autoBackupPathTemplate) &&
-        state.autoBackupPathTemplate != state.originalAutoBackupPathTemplate
-      );
-    });
-
-    const createBackup = (
-      backupName: string,
-      backupPath: string,
-      comment: string
-    ) => {
+    const createBackup = (backupName: string, comment: string) => {
       // Create backup
       const newBackup: BackupCreate = {
         databaseId: props.database.id!,
@@ -259,7 +218,6 @@ export default {
         status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
-        path: backupPath,
         comment,
       };
       store.dispatch("backup/createBackup", {
@@ -311,7 +269,6 @@ export default {
         enabled: on,
         hour: state.autoBackupHour,
         dayOfWeek: state.autoBackupDayOfWeek,
-        pathTemplate: state.autoBackupPathTemplate,
       };
       store
         .dispatch("backup/upsertBackupSetting", {
@@ -325,23 +282,6 @@ export default {
             style: "SUCCESS",
             title: `${action} automatic backup for database '${props.database.name}'.`,
           });
-        });
-    };
-
-    const updateAutoBackupSetting = () => {
-      const newBackupSetting: BackupSettingUpsert = {
-        databaseId: props.database.id,
-        enabled: state.autoBackupEnabled,
-        hour: state.autoBackupHour,
-        dayOfWeek: state.autoBackupDayOfWeek,
-        pathTemplate: state.autoBackupPathTemplate,
-      };
-      store
-        .dispatch("backup/upsertBackupSetting", {
-          newBackupSetting: newBackupSetting,
-        })
-        .then((backupSetting: BackupSetting) => {
-          assignBackupSetting(backupSetting);
         });
     };
 
@@ -377,10 +317,8 @@ export default {
       backupList,
       autoBackupWeekdayText,
       autoBackupHourText,
-      allowUpdateAutoBackupSetting,
       createBackup,
       toggleAutoBackup,
-      updateAutoBackupSetting,
     };
   },
 };
