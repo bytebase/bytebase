@@ -287,8 +287,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
-		// TODO(spinningbot): fetch the current migration history version.
-		backupCreate.MigrationHistoryVersion = "TODO(spinningbot)"
+
+		// Require version if using VCS.
+		if database.Project.WorkflowType == api.VCS_WORKFLOW {
+			version, err := getMigrationVersion(database, s.l)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Migration history not found for database %q using VCS workflow", database.Name)).SetInternal(err)
+			}
+			backupCreate.MigrationHistoryVersion = version
+		}
 
 		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
 		if err != nil {

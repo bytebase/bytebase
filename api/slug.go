@@ -14,6 +14,14 @@ func ProjectSlug(project *Project) string {
 	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
 }
 
+func ProjectShortSlug(project *Project) string {
+	return fmt.Sprintf("%s", slug.Make(project.Name))
+}
+
+func EnvSlug(env *Environment) string {
+	return fmt.Sprintf("%s", slug.Make(env.Name))
+}
+
 func ProjectWebhookSlug(projectWebhook *ProjectWebhook) string {
 	return fmt.Sprintf("%s-%d", slug.Make(projectWebhook.Name), projectWebhook.ID)
 }
