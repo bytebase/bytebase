@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
+	"github.com/bytebase/bytebase/db"
 	"go.uber.org/zap"
 )
 
@@ -130,5 +131,43 @@ func getAndCreateBackupPath(dataDir string, database *api.Database, name string)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, fmt.Sprintf("%s-%s-%s.sql", api.ProjectSlug(database.Project), database.Instance.Environment.Name, name)), nil
+	return filepath.Join(dir, fmt.Sprintf("%s.sql", name)), nil
+}
+
+func getMigrationVersion(database *api.Database, logger *zap.Logger) (string, error) {
+	instance := database.Instance
+	driver, err := db.Open(
+		instance.Engine,
+		db.DriverConfig{Logger: logger},
+		db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+			Database: database.Name,
+		},
+		db.ConnectionContext{
+			EnvironmentName: instance.Environment.Name,
+			InstanceName:    instance.Name,
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+	}
+	defer driver.Close(context.Background())
+
+	limit := 1
+	find := &db.MigrationHistoryFind{
+		Database: &database.Name,
+		Limit:    &limit,
+	}
+	list, err := driver.FindMigrationHistoryList(context.Background(), find)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch migration history list: %v", err)
+	}
+	if len(list) != 1 {
+		return "", fmt.Errorf("database %q has no migration history", database.Name)
+	}
+
+	return list[0].Version, nil
 }

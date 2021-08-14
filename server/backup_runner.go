@@ -86,7 +86,7 @@ func (s *BackupRunner) Run() error {
 }
 
 func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName string) error {
-	path, err := getAndCreateBackupPath(s.server.dataDir, database, fmt.Sprintf("%s-autobackup", backupName))
+	path, err := getAndCreateBackupPath(s.server.dataDir, database, fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), backupName))
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,6 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		Type:           api.BackupTypeAutomatic,
 		StorageBackend: api.BackupStorageBackendLocal,
 		Path:           path,
-		Comment:        fmt.Sprintf("Automatic backup for database %s.", database.Name),
 	}
 
 	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)
