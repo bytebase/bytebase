@@ -76,13 +76,9 @@ type TaskDatabaseBackupPayload struct {
 
 // TaskDatabaseRestorePayload is the task payload for database restore.
 type TaskDatabaseRestorePayload struct {
-	// The project owning the database.
-	ProjectId int `json:"projectId,omitempty"`
 	// The database name we restore to. When we restore a backup to a new database, we only have the database name
 	// and don't have the database id upon constructing the task yet.
 	DatabaseName string `json:"databaseName,omitempty"`
-	CharacterSet string `json:"character,omitempty"`
-	Collation    string `json:"collation,omitempty"`
 	BackupId     int    `json:"backupId,omitempty"`
 }
 

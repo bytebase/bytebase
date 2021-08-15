@@ -323,8 +323,6 @@ export default {
               statement: "",
               rollbackStatement: "",
               databaseName: state.databaseName,
-              characterSet: state.characterSet,
-              collation: state.collation,
               backupId: props.backup.id,
             },
           ],
