@@ -386,6 +386,8 @@ CREATE TABLE db (
     UNIQUE(instance_id, name)
 );
 
+CREATE INDEX idx_db_instance_id ON db(instance_id);
+
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
