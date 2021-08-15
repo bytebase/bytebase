@@ -90,26 +90,65 @@
         {{ backup.creator.name }}
       </BBTableCell>
       <BBTableCell>
-        <BBButtonConfirm
-          v-if="backup.status == 'DONE'"
-          :style="'CLONE'"
-          :requireConfirm="true"
-          :okText="'Clone'"
-          :confirmTitle="`Are you sure to clone a new database '${database.name}' based on backup '${backup.name}'?`"
-          :confirmDescription="''"
-          @confirm="restoreBackup(backup)"
-        />
+        <button
+          class="btn-icon"
+          @click.stop="
+            () => {
+              state.restoredBackup = backup;
+              state.showRestoreBackupModal = true;
+            }
+          "
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+            ></path>
+          </svg>
+        </button>
       </BBTableCell>
     </template>
   </BBTable>
+  <BBModal
+    v-if="state.showRestoreBackupModal"
+    :title="`Restore backup '${state.restoredBackup.name}' to a new database`"
+    @close="
+      () => {
+        state.showRestoreBackupModal = false;
+        state.restoredBackup = undefined;
+      }
+    "
+  >
+    <CreateDatabasePrepForm
+      :projectId="database.project.id"
+      :environmentId="database.instance.environment.id"
+      :instanceId="database.instance.id"
+      :backup="state.restoredBackup"
+      @dismiss="
+        () => {
+          state.showRestoreBackupModal = false;
+          state.restoredBackup = undefined;
+        }
+      "
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { Backup, Database } from "../types";
 import { bytesToString } from "../utils";
 import { useStore } from "vuex";
+import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 
 const columnList: BBTableColumn[] = [
   {
@@ -131,13 +170,18 @@ const columnList: BBTableColumn[] = [
     title: "Creator",
   },
   {
-    title: "Clone",
+    title: "Restore",
   },
 ];
 
+interface LocalState {
+  showRestoreBackupModal: boolean;
+  restoredBackup?: Backup;
+}
+
 export default {
   name: "BackupTable",
-  components: {},
+  components: { CreateDatabasePrepForm },
   props: {
     database: {
       required: true,
@@ -150,6 +194,10 @@ export default {
   },
   setup(props, ctx) {
     const store = useStore();
+
+    const state = reactive<LocalState>({
+      showRestoreBackupModal: false,
+    });
 
     const backupSectionList = computed(() => {
       const manualList: Backup[] = [];
@@ -202,6 +250,7 @@ export default {
     };
 
     return {
+      state,
       columnList,
       bytesToString,
       backupSectionList,

@@ -338,6 +338,13 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				if taskCreate.Statement == "" {
 					return nil, fmt.Errorf("failed to create schema update task, sql statement missing")
 				}
+			} else if taskCreate.Type == api.TaskDatabaseRestore {
+				if taskCreate.DatabaseName == "" {
+					return nil, fmt.Errorf("failed to create restore database task, database name missing")
+				}
+				if taskCreate.BackupId == nil {
+					return nil, fmt.Errorf("failed to create restore database task, backup missing")
+				}
 			}
 		}
 	}
@@ -383,6 +390,15 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
+				}
+				taskCreate.Payload = string(bytes)
+			} else if taskCreate.Type == api.TaskDatabaseRestore {
+				payload := api.TaskDatabaseRestorePayload{}
+				payload.DatabaseName = taskCreate.DatabaseName
+				payload.BackupId = *taskCreate.BackupId
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 				}
 				taskCreate.Payload = string(bytes)
 			}

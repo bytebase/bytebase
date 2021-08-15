@@ -40,6 +40,7 @@
           class="mt-1 w-full"
           id="environment"
           name="environment"
+          :disabled="!allowEditEnvironment"
           :selectedId="state.environmentId"
           @select-environment-id="selectEnvironment"
         />
@@ -56,6 +57,7 @@
             class="mt-1"
             id="instance"
             name="instance"
+            :disabled="!allowEditInstance"
             :selectedId="state.instanceId"
             :environmentId="state.environmentId"
             @select-instance-id="selectInstance"
@@ -150,6 +152,8 @@ import {
   IssueCreate,
   SYSTEM_BOT_ID,
   PrincipalId,
+  Backup,
+  StageCreate,
 } from "../types";
 import { isDBAOrOwner, issueSlug } from "../utils";
 
@@ -169,6 +173,16 @@ export default {
   props: {
     projectId: {
       type: Number as PropType<ProjectId>,
+    },
+    environmentId: {
+      type: Number as PropType<EnvironmentId>,
+    },
+    instanceId: {
+      type: Number as PropType<InstanceId>,
+    },
+    // If specified, then we are creating a database from the backup.
+    backup: {
+      type: Object as PropType<Backup>,
     },
   },
   components: {
@@ -210,6 +224,8 @@ export default {
 
     const state = reactive<LocalState>({
       projectId: props.projectId,
+      environmentId: props.environmentId,
+      instanceId: props.instanceId,
       characterSet: "utf8mb4",
       collation: "utf8mb4_general_ci",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
@@ -237,6 +253,16 @@ export default {
       return !props.projectId;
     });
 
+    // If environment has been specified, then we disallow changing it.
+    const allowEditEnvironment = computed(() => {
+      return !props.environmentId;
+    });
+
+    // If instance has been specified, then we disallow changing it.
+    const allowEditInstance = computed(() => {
+      return !props.instanceId;
+    });
+
     const selectProject = (projectId: ProjectId) => {
       state.projectId = projectId;
     };
@@ -258,40 +284,75 @@ export default {
     };
 
     const create = async () => {
-      const newIssue: IssueCreate = {
-        name: `Create database ${state.databaseName}`,
-        type: "bb.issue.database.create",
-        description: "",
-        assigneeId: state.assigneeId!,
-        projectId: state.projectId!,
-        pipeline: {
-          stageList: [
+      const stageList: StageCreate[] = [
+        {
+          name: "Create database",
+          environmentId: state.environmentId!,
+          taskList: [
             {
-              name: "Create database",
-              environmentId: state.environmentId!,
-              taskList: [
-                {
-                  name: `Create database ${state.databaseName}`,
-                  // If current user is DBA or Owner, then the created task will start automatically,
-                  // otherwise, it will require approval.
-                  status: isDBAOrOwner(currentUser.value.role)
-                    ? "PENDING"
-                    : "PENDING_APPROVAL",
-                  type: "bb.task.database.create",
-                  instanceId: state.instanceId!,
-                  statement: `CREATE DATABASE \`${state.databaseName}\`\nCHARACTER SET ${state.characterSet} COLLATE ${state.collation}`,
-                  rollbackStatement: "",
-                  databaseName: state.databaseName,
-                  characterSet: state.characterSet,
-                  collation: state.collation,
-                },
-              ],
+              name: `Create database '${state.databaseName}'`,
+              // If current user is DBA or Owner, then the created task will start automatically,
+              // otherwise, it will require approval.
+              status: isDBAOrOwner(currentUser.value.role)
+                ? "PENDING"
+                : "PENDING_APPROVAL",
+              type: "bb.task.database.create",
+              instanceId: state.instanceId!,
+              statement: `CREATE DATABASE \`${state.databaseName}\`\nCHARACTER SET ${state.characterSet} COLLATE ${state.collation}`,
+              rollbackStatement: "",
+              databaseName: state.databaseName,
+              characterSet: state.characterSet,
+              collation: state.collation,
             },
           ],
-          name: `Pipeline - Create database ${state.databaseName}`,
         },
-        payload: {},
-      };
+      ];
+
+      // If backup is specified, then we add an additional stage to restore the backup to the newly created database.
+      if (props.backup) {
+        stageList.push({
+          name: "Restore backup",
+          environmentId: state.environmentId!,
+          taskList: [
+            {
+              name: `Restore backup '${props.backup.name}'`,
+              // Use "PENDING" here since we consider the required approval has already been granted in the first stage.
+              status: "PENDING",
+              type: "bb.task.database.restore",
+              instanceId: state.instanceId!,
+              statement: "",
+              rollbackStatement: "",
+              databaseName: state.databaseName,
+              backupId: props.backup.id,
+            },
+          ],
+        });
+      }
+      const newIssue: IssueCreate = props.backup
+        ? {
+            name: `Create database '${state.databaseName}' from backup '${props.backup.name}'`,
+            type: "bb.issue.database.create",
+            description: `Creating database from backup '${props.backup.name}'`,
+            assigneeId: state.assigneeId!,
+            projectId: state.projectId!,
+            pipeline: {
+              stageList,
+              name: `Pipeline - Create database '${state.databaseName}' from backup '${props.backup.name}'`,
+            },
+            payload: {},
+          }
+        : {
+            name: `Create database '${state.databaseName}'`,
+            type: "bb.issue.database.create",
+            description: "",
+            assigneeId: state.assigneeId!,
+            projectId: state.projectId!,
+            pipeline: {
+              stageList,
+              name: `Pipeline - Create database ${state.databaseName}`,
+            },
+            payload: {},
+          };
       store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
         router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
       });
@@ -302,6 +363,8 @@ export default {
       isReservedName,
       allowCreate,
       allowEditProject,
+      allowEditEnvironment,
+      allowEditInstance,
       showAssigneeSelect,
       selectProject,
       selectEnvironment,
