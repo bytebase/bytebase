@@ -91,16 +91,22 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		return err
 	}
 
-	backupCreate := &api.BackupCreate{
-		CreatorId:      api.SYSTEM_BOT_ID,
-		DatabaseId:     database.ID,
-		Name:           backupName,
-		Status:         api.BackupStatusPendingCreate,
-		Type:           api.BackupTypeAutomatic,
-		StorageBackend: api.BackupStorageBackendLocal,
-		Path:           path,
+	// Store the migration history version if exists.
+	migrationHistoryVersion, err := getMigrationVersion(database, s.l)
+	if err != nil {
+		return fmt.Errorf("failed to get migration history for database %q: %v", database.Name, err)
 	}
 
+	backupCreate := &api.BackupCreate{
+		CreatorId:               api.SYSTEM_BOT_ID,
+		DatabaseId:              database.ID,
+		Name:                    backupName,
+		Status:                  api.BackupStatusPendingCreate,
+		Type:                    api.BackupTypeAutomatic,
+		MigrationHistoryVersion: migrationHistoryVersion,
+		StorageBackend:          api.BackupStorageBackendLocal,
+		Path:                    path,
+	}
 	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)
 	if err != nil {
 		if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
