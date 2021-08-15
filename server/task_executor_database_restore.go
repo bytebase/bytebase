@@ -45,20 +45,6 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		}
 	}()
 
-	// TODO(tianzhou): revisit this, if we want to do this, it should be better handled in the upper layer.
-	// // Close the pipeline when the restore task is completed regardless its status.
-	// defer func() {
-	// 	status := api.Pipeline_Done
-	// 	pipelinePatch := &api.PipelinePatch{
-	// 		ID:        task.PipelineId,
-	// 		UpdaterId: api.SYSTEM_BOT_ID,
-	// 		Status:    &status,
-	// 	}
-	// 	if _, err := server.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
-	// 		err = fmt.Errorf("failed to update pipeline status: %w", err)
-	// 	}
-	// }()
-
 	payload := &api.TaskDatabaseRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, "", fmt.Errorf("invalid database backup payload: %w", err)
