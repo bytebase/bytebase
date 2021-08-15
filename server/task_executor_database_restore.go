@@ -88,7 +88,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Branch migration history.
-	if err := branchMigrationHistoryIfNeeded(sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
+	if err := branchMigrationHistoryIfNeeded(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
 		return true, "", err
 	}
 
@@ -130,7 +130,7 @@ func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string)
 // We branch by adding a migration history with "BRANCH" type. We choose NOT to copy over all migration history from source database
 // because that might be expensive (e.g. we may use restore to create many ephemeral databases from backup for testing purpose)
 // This is needed only when backup migration history version is not empty.
-func branchMigrationHistoryIfNeeded(sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
+func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
 	// Skip if backup does NOT contain migration history version
 	if backup.MigrationHistoryVersion == "" {
 		return nil
@@ -140,10 +140,24 @@ func branchMigrationHistoryIfNeeded(sourceDatabase, targetDatabase *api.Database
 	if err != nil {
 		return err
 	}
-	defer targetDriver.Close(context.Background())
+	defer targetDriver.Close(ctx)
+
+	issueFind := &api.IssueFind{
+		PipelineId: &task.PipelineId,
+	}
+	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	if err != nil {
+		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
+		if bytebase.ErrorCode(err) != bytebase.ENOTFOUND {
+			return fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
+		}
+	}
 
 	// Add a branch migration history record.
-	// TODO(spinningbot): fill in the new issue ID.
+	issueId := ""
+	if issue != nil {
+		issueId = strconv.Itoa(issue.ID)
+	}
 	m := &db.MigrationInfo{
 		Version:     strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(task.ID)}, "."),
 		Namespace:   targetDatabase.Name,
@@ -153,10 +167,10 @@ func branchMigrationHistoryIfNeeded(sourceDatabase, targetDatabase *api.Database
 		Type:        db.Branch,
 		Description: fmt.Sprintf("Branched from backup %q of database %q.", backup.Name, sourceDatabase.Name),
 		Creator:     task.Creator.Name,
-		IssueId:     "TODO: newIssueID",
+		IssueId:     issueId,
 		Payload:     "",
 	}
-	if err := targetDriver.ExecuteMigration(context.Background(), m, ""); err != nil {
+	if err := targetDriver.ExecuteMigration(ctx, m, ""); err != nil {
 		return fmt.Errorf("failed to create migration history: %w", err)
 	}
 	return nil
