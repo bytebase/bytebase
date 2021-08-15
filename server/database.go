@@ -623,6 +623,5 @@ func (s *Server) ComposeBackupRelationship(ctx context.Context, backup *api.Back
 	if err != nil {
 		return err
 	}
-	s.ComposeDatabaseRelationship()
 	return nil
 }
