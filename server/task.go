@@ -259,20 +259,38 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
 	//    sync will place the synced db into the default project.
 	// 2. Allow user to see the created database right away.
-	if updatedTask.Type == api.TaskDatabaseCreate && updatedTask.Status == api.TaskDone {
-		payload := &api.TaskDatabaseCreatePayload{}
-		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
-			return nil, fmt.Errorf("invalid create database task payload: %w", err)
+	if (updatedTask.Type == api.TaskDatabaseCreate || updatedTask.Type == api.TaskDatabaseRestore) &&
+		updatedTask.Status == api.TaskDone {
+		var projectId int
+		var databaseName, characterSet, collation string
+		if updatedTask.Type == api.TaskDatabaseCreate {
+			payload := &api.TaskDatabaseCreatePayload{}
+			if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
+				return nil, fmt.Errorf("invalid create database task payload: %w", err)
+			}
+			projectId = payload.ProjectId
+			databaseName = payload.DatabaseName
+			characterSet = payload.CharacterSet
+			collation = payload.Collation
+		} else {
+			payload := &api.TaskDatabaseRestorePayload{}
+			if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
+				return nil, fmt.Errorf("invalid create database task payload: %w", err)
+			}
+			projectId = payload.ProjectId
+			databaseName = payload.DatabaseName
+			characterSet = payload.CharacterSet
+			collation = payload.Collation
 		}
 
 		z, offset := time.Now().Zone()
 		databaseCreate := &api.DatabaseCreate{
 			CreatorId:      taskStatusPatch.UpdaterId,
-			ProjectId:      payload.ProjectId,
+			ProjectId:      projectId,
 			InstanceId:     task.InstanceId,
-			Name:           payload.DatabaseName,
-			CharacterSet:   payload.CharacterSet,
-			Collation:      payload.Collation,
+			Name:           databaseName,
+			CharacterSet:   characterSet,
+			Collation:      collation,
 			TimezoneName:   z,
 			TimezoneOffset: offset,
 		}
@@ -281,7 +299,8 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			// Just emits an error instead of failing, since we have another periodic job to sync db info.
 			// Though the db will be assigned to the default project instead of the desired project in that case.
 			s.l.Error("failed to record database after creating database",
-				zap.String("database_name", payload.DatabaseName),
+				zap.String("database_name", databaseName),
+				zap.Int("project_id", projectId),
 				zap.Int("instance_id", task.InstanceId),
 				zap.Error(err),
 			)
