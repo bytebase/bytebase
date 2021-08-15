@@ -342,6 +342,12 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				if taskCreate.DatabaseName == "" {
 					return nil, fmt.Errorf("failed to create restore database task, database name missing")
 				}
+				if taskCreate.CharacterSet == "" {
+					return nil, fmt.Errorf("failed to create restore database task, character set missing")
+				}
+				if taskCreate.Collation == "" {
+					return nil, fmt.Errorf("failed to create restore database task, collation missing")
+				}
 				if taskCreate.BackupId == nil {
 					return nil, fmt.Errorf("failed to create restore database task, backup missing")
 				}
@@ -396,6 +402,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			} else if taskCreate.Type == api.TaskDatabaseRestore {
 				payload := api.TaskDatabaseRestorePayload{}
 				payload.DatabaseName = taskCreate.DatabaseName
+				payload.CharacterSet = taskCreate.CharacterSet
+				payload.Collation = taskCreate.Collation
 				payload.BackupId = *taskCreate.BackupId
 				bytes, err := json.Marshal(payload)
 				if err != nil {
