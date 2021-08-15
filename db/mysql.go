@@ -493,8 +493,10 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return err
 	}
 
-	// Phase 2 - Executing migration unless it's VCS baselining
-	if m.Engine != VCS || m.Type != Baseline {
+	// Phase 2 - Executing migration
+	// Branch migration type always has empty sql.
+	// Baseline migration type could also has empty sql when the database is newly created.
+	if statement != "" {
 		_, err = tx.ExecContext(ctx, statement)
 		if err != nil {
 			return formatError(err)
