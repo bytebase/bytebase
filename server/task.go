@@ -189,100 +189,130 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, fmt.Errorf("failed to change task %v(%v) status: %w", task.ID, task.Name, err)
 	}
 
-	// Update the issue and activity for database create and database schema update tasks.
-	// TODO(tianzhou): This indiciates a coupling that pipeline belongs to an issue.
-	// A better way is to implement this as an onTaskStatusChange callback
-	if updatedTask.Type == api.TaskDatabaseCreate || updatedTask.Type == api.TaskDatabaseSchemaUpdate {
-		issueFind := &api.IssueFind{
-			PipelineId: &task.PipelineId,
+	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
+	// behaves differently depending on whether the task is wrapped in an issue.
+	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
+	issueFind := &api.IssueFind{
+		PipelineId: &task.PipelineId,
+	}
+	issue, err := s.IssueService.FindIssue(ctx, issueFind)
+	if err != nil {
+		// Some
+		if bytebase.ErrorCode(err) != bytebase.ENOTFOUND {
+			return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 		}
-		issue, err := s.IssueService.FindIssue(ctx, issueFind)
+	}
+
+	// Create an activity
+	issueName := ""
+	if issue != nil {
+		issueName = issue.Name
+	}
+	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+		TaskId:    task.ID,
+		OldStatus: task.Status,
+		NewStatus: updatedTask.Status,
+		IssueName: issueName,
+		TaskName:  task.Name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
+	}
+
+	containerId := task.PipelineId
+	if issue != nil {
+		containerId = issue.ID
+	}
+	level := api.ACTIVITY_INFO
+	if updatedTask.Status == api.TaskFailed {
+		level = api.ACTIVITY_ERROR
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorId:   taskStatusPatch.UpdaterId,
+		ContainerId: containerId,
+		Type:        api.ActivityPipelineTaskStatusUpdate,
+		Comment:     taskStatusPatch.Comment,
+		Level:       level,
+		Payload:     string(payload),
+	}
+
+	activityMeta := ActivityMeta{}
+	if issue != nil {
+		activityMeta.issue = issue
+	}
+	_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &activityMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	// Schedule the task if it's being just approved
+	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
+		updatedTask, err = s.TaskScheduler.Schedule(ctx, updatedTask)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch containing issue for creating activity after changing the task status: %v, err: %w", task.Name, err)
+			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
+		}
+	}
+
+	// If create database task completes, then we will create a database entry immediately
+	// instead of waiting for the next schema sync cycle to sync over this newly created database.
+	// This is for 2 reasons:
+	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
+	//    sync will place the synced db into the default project.
+	// 2. Allow user to see the created database right away.
+	if updatedTask.Type == api.TaskDatabaseCreate && updatedTask.Status == api.TaskDone {
+		payload := &api.TaskDatabaseCreatePayload{}
+		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
+			return nil, fmt.Errorf("invalid create database task payload: %w", err)
 		}
 
-		// Create an activity
-		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
-			TaskId:    task.ID,
-			OldStatus: task.Status,
-			NewStatus: updatedTask.Status,
-			IssueName: issue.Name,
-			TaskName:  task.Name,
-		})
+		z, offset := time.Now().Zone()
+		databaseCreate := &api.DatabaseCreate{
+			CreatorId:      taskStatusPatch.UpdaterId,
+			ProjectId:      issue.ProjectId,
+			InstanceId:     task.InstanceId,
+			Name:           payload.DatabaseName,
+			CharacterSet:   payload.CharacterSet,
+			Collation:      payload.Collation,
+			TimezoneName:   z,
+			TimezoneOffset: offset,
+		}
+		_, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
+			// Just emits an error instead of failing, since we have another periodic job to sync db info.
+			// Though the db will be assigned to the default project instead of the desired project in that case.
+			s.l.Error("failed to record database after creating database",
+				zap.String("database_name", payload.DatabaseName),
+				zap.Int("instance_id", task.InstanceId),
+				zap.Error(err),
+			)
 		}
+	}
 
-		level := api.ACTIVITY_INFO
-		if updatedTask.Status == api.TaskFailed {
-			level = api.ACTIVITY_ERROR
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorId:   taskStatusPatch.UpdaterId,
-			ContainerId: issue.ID,
-			Type:        api.ActivityPipelineTaskStatusUpdate,
-			Comment:     taskStatusPatch.Comment,
-			Level:       level,
-			Payload:     string(payload),
-		}
-		_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
-			issue: issue,
-		})
+	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
+	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
+	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
+	if updatedTask.Status == "DONE" && issue.AssigneeId == api.SYSTEM_BOT_ID {
+		pipeline, err := s.ComposePipelineById(ctx, task.PipelineId)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to fetch pipeline to mark issue %v as DONE after completing task %v", issue.Name, updatedTask.Name)
 		}
-
-		// Schedule the task if it's being just approved
-		if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
-			updatedTask, err = s.TaskScheduler.Schedule(ctx, updatedTask)
-			if err != nil {
-				return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
-			}
-		}
-
-		// If create database task completes, then we will create a database entry
-		if updatedTask.Type == api.TaskDatabaseCreate && updatedTask.Status == api.TaskDone {
-			payload := &api.TaskDatabaseCreatePayload{}
-			if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
-				return nil, fmt.Errorf("invalid create database task payload: %w", err)
-			}
-
-			z, offset := time.Now().Zone()
-			databaseCreate := &api.DatabaseCreate{
-				CreatorId:      taskStatusPatch.UpdaterId,
-				ProjectId:      issue.ProjectId,
-				InstanceId:     task.InstanceId,
-				Name:           payload.DatabaseName,
-				CharacterSet:   payload.CharacterSet,
-				Collation:      payload.Collation,
-				TimezoneName:   z,
-				TimezoneOffset: offset,
-			}
-			_, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
-			if err != nil {
-				// Just emits an error instead of failing, since we have another periodic job to sync db info.
-				// Though the db will be assigned to the default project instead of the desired project in that case.
-				s.l.Error("failed to record database after creating database",
-					zap.String("database_name", payload.DatabaseName),
-					zap.Int("instance_id", task.InstanceId),
-					zap.Error(err),
-				)
-			}
-		}
-
-		// If this is the last task in the pipeline and just completed, and the assignee is system bot,
-		// then we mark the issue as DONE.
-		if updatedTask.Status == "DONE" && issue.AssigneeId == api.SYSTEM_BOT_ID {
-			issue.Pipeline, err = s.ComposePipelineById(ctx, issue.PipelineId)
-			if err != nil {
-				return nil, fmt.Errorf("failed to fetch pipeline to mark issue %v as DONE after completing task %v", issue.Name, updatedTask.Name)
-			}
-
-			lastStage := issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
-			if lastStage.TaskList[len(lastStage.TaskList)-1].ID == task.ID {
+		lastStage := pipeline.StageList[len(issue.Pipeline.StageList)-1]
+		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == task.ID {
+			if issue == nil {
+				status := api.Pipeline_Done
+				pipelinePatch := &api.PipelinePatch{
+					ID:        pipeline.ID,
+					UpdaterId: taskStatusPatch.UpdaterId,
+					Status:    &status,
+				}
+				if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
+					return nil, fmt.Errorf("failed to mark pipeline %v as DONE after completing task %v: %w", pipeline.Name, updatedTask.Name, err)
+				}
+			} else {
+				issue.Pipeline = pipeline
 				_, err := s.ChangeIssueStatus(ctx, issue, api.Issue_Done, taskStatusPatch.UpdaterId, "")
 				if err != nil {
-					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v", issue.Name, updatedTask.Name)
+					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v: %w", issue.Name, updatedTask.Name, err)
 				}
 			}
 		}
