@@ -54,6 +54,8 @@ const (
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 type TaskDatabaseCreatePayload struct {
+	// The project owning the database.
+	ProjectId    int    `json:"projectId,omitempty"`
 	Statement    string `json:"statement,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
 	CharacterSet string `json:"character,omitempty"`

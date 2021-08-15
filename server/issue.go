@@ -369,6 +369,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.StageId = createdStage.ID
 			if taskCreate.Type == api.TaskDatabaseCreate {
 				payload := api.TaskDatabaseCreatePayload{}
+				payload.ProjectId = issueCreate.ProjectId
 				payload.Statement = taskCreate.Statement
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.CharacterSet = taskCreate.CharacterSet

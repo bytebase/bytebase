@@ -268,7 +268,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		z, offset := time.Now().Zone()
 		databaseCreate := &api.DatabaseCreate{
 			CreatorId:      taskStatusPatch.UpdaterId,
-			ProjectId:      issue.ProjectId,
+			ProjectId:      payload.ProjectId,
 			InstanceId:     task.InstanceId,
 			Name:           payload.DatabaseName,
 			CharacterSet:   payload.CharacterSet,
