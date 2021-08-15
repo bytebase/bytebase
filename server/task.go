@@ -197,7 +197,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 	issue, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
-		// Some
+		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		if bytebase.ErrorCode(err) != bytebase.ENOTFOUND {
 			return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 		}
