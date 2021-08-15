@@ -81,7 +81,6 @@ var (
 				logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 			} else {
 				logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-				logConfig.DisableStacktrace = true
 			}
 			myLogger, err := logConfig.Build()
 			if err != nil {
