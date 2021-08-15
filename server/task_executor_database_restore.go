@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
@@ -42,18 +44,20 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 			err = fmt.Errorf("encounter internal error when restoring the database")
 		}
 	}()
-	// Close the pipeline when the restore task is completed regardless its status.
-	defer func() {
-		status := api.Pipeline_Done
-		pipelinePatch := &api.PipelinePatch{
-			ID:        task.PipelineId,
-			UpdaterId: api.SYSTEM_BOT_ID,
-			Status:    &status,
-		}
-		if _, err := server.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
-			err = fmt.Errorf("failed to update pipeline status: %w", err)
-		}
-	}()
+
+	// TODO(tianzhou): revisit this, if we want to do this, it should be better handled in the upper layer.
+	// // Close the pipeline when the restore task is completed regardless its status.
+	// defer func() {
+	// 	status := api.Pipeline_Done
+	// 	pipelinePatch := &api.PipelinePatch{
+	// 		ID:        task.PipelineId,
+	// 		UpdaterId: api.SYSTEM_BOT_ID,
+	// 		Status:    &status,
+	// 	}
+	// 	if _, err := server.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
+	// 		err = fmt.Errorf("failed to update pipeline status: %w", err)
+	// 	}
+	// }()
 
 	payload := &api.TaskDatabaseRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -64,54 +68,76 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, "", err
 	}
 
-	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
+	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupId})
 	if err != nil {
 		return true, "", fmt.Errorf("failed to find backup: %w", err)
 	}
-	exec.l.Debug("Start database restore...",
-		zap.String("instance", task.Instance.Name),
-		zap.String("database", task.Database.Name),
-		zap.String("backup", backup.Name),
-	)
-	databaseFind := &api.DatabaseFind{
+
+	sourceDatabaseFind := &api.DatabaseFind{
 		ID: &backup.DatabaseId,
 	}
-	backup.Database, err = server.ComposeDatabaseByFind(context.Background(), databaseFind)
+	sourceDatabase, err := server.ComposeDatabaseByFind(context.Background(), sourceDatabaseFind)
 	if err != nil {
-		return true, "", err
+		return true, "", fmt.Errorf("failed to find database for the backup: %w", err)
 	}
+
+	targetDatabaseFind := &api.DatabaseFind{
+		InstanceId: &task.InstanceId,
+		Name:       &payload.DatabaseName,
+	}
+	targetDatabase, err := server.ComposeDatabaseByFind(context.Background(), targetDatabaseFind)
+	if err != nil {
+		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			return true, "", fmt.Errorf("target database %q not found in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
+		}
+		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
+	}
+
+	exec.l.Debug("Start database restore from backup...",
+		zap.String("source_instance", sourceDatabase.Instance.Name),
+		zap.String("source_database", sourceDatabase.Name),
+		zap.String("target_instance", targetDatabase.Instance.Name),
+		zap.String("target_database", targetDatabase.Name),
+		zap.String("backup", backup.Name),
+	)
 
 	// Fork migration history.
 	if backup.MigrationHistoryVersion != "" {
-		if err := forkMigrationHistory(backup.Database, task.Database, backup, task, exec.l); err != nil {
+		if err := forkMigrationHistory(sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
 			return true, "", err
 		}
 	}
 
 	// Restore the database to the target database.
-	if err := restoreDatabase(task.Database, backup); err != nil {
+	if err := restoreDatabase(targetDatabase, backup, server.dataDir); err != nil {
 		return true, "", err
 	}
 
-	return true, fmt.Sprintf("Restore database '%s'", task.Database.Name), nil
+	return true, fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name), nil
 }
 
 // restoreDatabase will restore the database from a backup
-func restoreDatabase(database *api.Database, backup *api.Backup) error {
+func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string) error {
 	instance := database.Instance
 	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
 	if err != nil {
-		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
+		return fmt.Errorf("failed to connect database: %v", err)
 	}
 	defer conn.Close()
-	f, err := os.OpenFile(backup.Path, os.O_RDONLY, os.ModePerm)
+
+	backupPath := backup.Path
+	if !filepath.IsAbs(backupPath) {
+		backupPath = filepath.Join(dataDir, backupPath)
+	}
+
+	f, err := os.OpenFile(backupPath, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("os.OpenFile(%q) error: %v", backup.Path, err)
+		return fmt.Errorf("failed to open backup file at %s: %v", backupPath, err)
 	}
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 	if err := mysqlrestore.Restore(conn, sc); err != nil {
-		return fmt.Errorf("mysqlrestore.Restore() got error: %v", err)
+		return fmt.Errorf("failed to restore backup: %v", err)
 	}
 	return nil
 }
@@ -183,7 +209,7 @@ func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, backup *
 		Payload:     "",
 	}
 	if err := targetDriver.ExecuteMigration(context.Background(), m, ""); err != nil {
-		return err
+		return fmt.Errorf("failed to create migration history: %w", err)
 	}
 	return nil
 }
