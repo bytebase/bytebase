@@ -101,11 +101,9 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		zap.String("backup", backup.Name),
 	)
 
-	// Fork migration history.
-	if backup.MigrationHistoryVersion != "" {
-		if err := forkMigrationHistory(sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
-			return true, "", err
-		}
+	// Branch migration history.
+	if err := branchMigrationHistoryIfNeeded(sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
+		return true, "", err
 	}
 
 	// Restore the database to the target database.
@@ -142,57 +140,21 @@ func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string)
 	return nil
 }
 
-// forkMigrationHistory will fork the migration history from source database to target database based on backup migration history version.
+// branchMigrationHistoryIfNeeded will branch the migration history from source database to target database based on backup migration history version.
+// We branch by adding a migration history with "BRANCH" type. We choose NOT to copy over all migration history from source database
+// because that might be expensive (e.g. we may use restore to create many ephemeral databases from backup for testing purpose)
 // This is needed only when backup migration history version is not empty.
-func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
-	sourceDriver, err := getDatabaseDriver(sourceDatabase, logger)
-	if err != nil {
-		return err
+func branchMigrationHistoryIfNeeded(sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
+	// Skip if backup does NOT contain migration history version
+	if backup.MigrationHistoryVersion == "" {
+		return nil
 	}
-	defer sourceDriver.Close(context.Background())
 
 	targetDriver, err := getDatabaseDriver(targetDatabase, logger)
 	if err != nil {
 		return err
 	}
 	defer targetDriver.Close(context.Background())
-
-	find := &db.MigrationHistoryFind{
-		Database: &sourceDatabase.Name,
-	}
-	list, err := sourceDriver.FindMigrationHistoryList(context.Background(), find)
-	if err != nil {
-		return fmt.Errorf("failed to fetch migration history list: %v", err)
-	}
-
-	var forkList []*db.MigrationHistory
-	for i := len(list) - 1; i >= 0; i-- {
-		history := list[i]
-		history.Namespace = targetDatabase.Name
-		forkList = append(forkList, history)
-		// Fork the history up to the backup version.
-		if history.Version == backup.MigrationHistoryVersion {
-			break
-		}
-	}
-
-	for _, history := range forkList {
-		m := &db.MigrationInfo{
-			Version:     history.Version,
-			Namespace:   targetDatabase.Name,
-			Database:    targetDatabase.Name,
-			Environment: targetDatabase.Instance.Environment.Name,
-			Engine:      history.Engine,
-			Type:        history.Type,
-			Description: history.Description,
-			Creator:     history.Creator,
-			IssueId:     history.IssueId,
-			Payload:     history.Payload,
-		}
-		if err := targetDriver.ExecuteMigration(context.Background(), m, history.Statement); err != nil {
-			return err
-		}
-	}
 
 	// Add a branch migration history record.
 	// TODO(spinningbot): fill in the new issue ID.
