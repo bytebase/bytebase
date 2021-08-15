@@ -39,18 +39,6 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 			err = fmt.Errorf("encounter internal error when backing database")
 		}
 	}()
-	// Close the pipeline when the backup task is completed regardless its status.
-	defer func() {
-		status := api.Pipeline_Done
-		pipelinePatch := &api.PipelinePatch{
-			ID:        task.PipelineId,
-			UpdaterId: api.SYSTEM_BOT_ID,
-			Status:    &status,
-		}
-		if _, err := server.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
-			err = fmt.Errorf("failed to update pipeline status: %w", err)
-		}
-	}()
 
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
