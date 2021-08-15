@@ -2,14 +2,12 @@ import axios from "axios";
 import {
   Backup,
   BackupCreate,
-  BackupId,
   BackupSetting,
   BackupSettingState,
   BackupSettingUpsert,
   BackupState,
   DatabaseId,
   ResourceObject,
-  RestoreBackup,
   unknown,
 } from "../../types";
 
@@ -114,23 +112,6 @@ const actions = {
 
     commit("upsertBackupSettingByDatabaseId", { databaseId, backupSetting });
     return backupSetting;
-  },
-
-  async restoreFromBackup(
-    { commit, rootGetters }: any,
-    { databaseId, backupId }: { databaseId: DatabaseId; backupId: BackupId }
-  ) {
-    const restoreBackup: RestoreBackup = {
-      backupId: backupId,
-    };
-    const data = (
-      await axios.post(`/api/database/${databaseId}/restore`, {
-        data: {
-          type: "RestoreBackup",
-          attributes: restoreBackup,
-        },
-      })
-    ).data;
   },
 
   async upsertBackupSetting(

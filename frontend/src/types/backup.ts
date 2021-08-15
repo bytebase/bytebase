@@ -40,13 +40,6 @@ export type BackupCreate = {
   comment: string;
 };
 
-export type RestoreBackup = {
-  // Related fields
-
-  // Domain specific fields
-  backupId: BackupId;
-};
-
 // Backup setting.
 export type BackupSetting = {
   id: BackupSettingId;

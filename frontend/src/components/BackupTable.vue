@@ -242,20 +242,12 @@ export default {
       }
     };
 
-    const restoreBackup = (backup: Backup) => {
-      store.dispatch("backup/restoreFromBackup", {
-        databaseId: props.database.id,
-        backupId: backup.id,
-      });
-    };
-
     return {
       state,
       columnList,
       bytesToString,
       backupSectionList,
       statusIconClass,
-      restoreBackup,
     };
   },
 };

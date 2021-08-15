@@ -138,17 +138,6 @@ type BackupPatch struct {
 	Status string
 }
 
-// RestoreBackup is the message to restore from a backup.
-type RestoreBackup struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-
-	// Related fields
-
-	// Domain specific fields
-	BackupId int `jsonapi:"attr,backupId"`
-}
-
 // BackupSetting is the backup setting for a database.
 type BackupSetting struct {
 	ID int `jsonapi:"primary,backupSetting"`
