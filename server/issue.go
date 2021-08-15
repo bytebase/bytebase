@@ -315,6 +315,33 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorId int) (*api.Issue, error) {
+	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+	// since we are not creating pipeline/stage list/task list in a single transaction.
+	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+	// quite unlikely so we will live with it for now.
+	for _, stageCreate := range issueCreate.Pipeline.StageList {
+		for _, taskCreate := range stageCreate.TaskList {
+			if taskCreate.Type == api.TaskDatabaseCreate {
+				if taskCreate.Statement == "" {
+					return nil, fmt.Errorf("failed to create database creation task, sql statement missing")
+				}
+				if taskCreate.DatabaseName == "" {
+					return nil, fmt.Errorf("failed to create database creation task, database name missing")
+				}
+				if taskCreate.CharacterSet == "" {
+					return nil, fmt.Errorf("failed to create database creation task, character set missing")
+				}
+				if taskCreate.Collation == "" {
+					return nil, fmt.Errorf("failed to create database creation task, collation missing")
+				}
+			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+				if taskCreate.Statement == "" {
+					return nil, fmt.Errorf("failed to create schema update task, sql statement missing")
+				}
+			}
+		}
+	}
+
 	issueCreate.Pipeline.CreatorId = creatorId
 	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
 	if err != nil {
@@ -335,18 +362,6 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.StageId = createdStage.ID
 			if taskCreate.Type == api.TaskDatabaseCreate {
 				payload := api.TaskDatabaseCreatePayload{}
-				if taskCreate.Statement == "" {
-					return nil, fmt.Errorf("failed to create database creation task, sql statement missing")
-				}
-				if taskCreate.DatabaseName == "" {
-					return nil, fmt.Errorf("failed to create database creation task, database name missing")
-				}
-				if taskCreate.CharacterSet == "" {
-					return nil, fmt.Errorf("failed to create database creation task, character set missing")
-				}
-				if taskCreate.Collation == "" {
-					return nil, fmt.Errorf("failed to create database creation task, collation missing")
-				}
 				payload.Statement = taskCreate.Statement
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.CharacterSet = taskCreate.CharacterSet
@@ -358,11 +373,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				taskCreate.Payload = string(bytes)
 			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 				payload := api.TaskDatabaseSchemaUpdatePayload{}
-				if taskCreate.Statement == "" {
-					return nil, fmt.Errorf("failed to create schema update task, sql statement missing")
-				}
 				payload.Statement = taskCreate.Statement
-
 				if taskCreate.RollbackStatement != "" {
 					payload.RollbackStatement = taskCreate.RollbackStatement
 				}
