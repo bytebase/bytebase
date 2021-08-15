@@ -1,48 +1,42 @@
 <template>
   <div class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border">
     <div class="space-y-4">
-      <div class="flex justify-between">
-        <div v-if="state.autoBackupEnabled" class="flex flex-col">
+      <div v-if="state.autoBackupEnabled" class="flex justify-between flex-col">
+        <div class="flex justify-between">
           <div
             class="flex items-center text-lg leading-6 font-medium text-main"
           >
             Automatic weekly backup
             <span class="ml-1 text-success">enabled</span>
           </div>
-          <div class="mt-2 text-control">
-            Backup will be taken on every
-            <span class="text-accent">{{ autoBackupWeekdayText }}</span> at
-            <span class="text-accent"> {{ autoBackupHourText }}</span>
-          </div>
-        </div>
-        <div
-          v-else
-          class="flex items-center text-lg leading-6 font-medium text-main"
-        >
-          Automatic weekly backup
-          <span class="ml-1 text-control-light">disabled</span>
           <button
-            v-if="!state.autoBackupEnabled"
             type="button"
-            class="ml-4 btn-primary"
-            @click.prevent="toggleAutoBackup(true)"
+            class="ml-4 btn-normal"
+            @click.prevent="toggleAutoBackup(false)"
           >
-            Enable backup
+            Disable automatic backup
           </button>
         </div>
-      </div>
-      <div v-if="state.autoBackupEnabled" class="space-y-4">
-        <div class="flex justify-between">
-          <BBButtonConfirm
-            :style="'DISABLE'"
-            :buttonText="'Disable weekly backup'"
-            :okText="'Disable'"
-            :confirmTitle="`Disable weekly backup for '${database.name}'?`"
-            :confirmDescription="'Existing automatic backups will be kept as is.'"
-            :requireConfirm="true"
-            @confirm="toggleAutoBackup(false)"
-          />
+        <div class="mt-2 text-control">
+          Backup will be taken on every
+          <span class="text-accent">{{ autoBackupWeekdayText }}</span> at
+          <span class="text-accent"> {{ autoBackupHourText }}</span>
         </div>
+      </div>
+      <div
+        v-else
+        class="flex items-center text-lg leading-6 font-medium text-main"
+      >
+        Automatic weekly backup
+        <span class="ml-1 text-control-light">disabled</span>
+        <button
+          v-if="!state.autoBackupEnabled"
+          type="button"
+          class="ml-4 btn-primary"
+          @click.prevent="toggleAutoBackup(true)"
+        >
+          Enable backup
+        </button>
       </div>
     </div>
     <div class="pt-6 space-y-4">
