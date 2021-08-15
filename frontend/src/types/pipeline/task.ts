@@ -1,5 +1,5 @@
 import { Database } from "../database";
-import { DatabaseId, InstanceId, TaskId, TaskRunId } from "../id";
+import { BackupId, DatabaseId, InstanceId, TaskId, TaskRunId } from "../id";
 import { Instance } from "../instance";
 import { Principal } from "../principal";
 import { VCSPushEvent } from "../vcs";
@@ -9,7 +9,8 @@ import { Stage } from "./stage";
 export type TaskType =
   | "bb.task.general"
   | "bb.task.database.create"
-  | "bb.task.database.schema.update";
+  | "bb.task.database.schema.update"
+  | "bb.task.database.restore";
 
 export type TaskStatus =
   | "PENDING"
@@ -77,6 +78,7 @@ export type TaskCreate = {
   databaseName?: string;
   characterSet?: string;
   collation?: string;
+  backupId?: BackupId;
 };
 
 export type TaskStatusPatch = {
