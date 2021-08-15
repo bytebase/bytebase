@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
@@ -80,7 +83,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	// Fork migration history.
 	if backup.MigrationHistoryVersion != "" {
-		if err := forkMigrationHistory(backup.Database, task.Database, backup.MigrationHistoryVersion, exec.l); err != nil {
+		if err := forkMigrationHistory(backup.Database, task.Database, backup, task, exec.l); err != nil {
 			return true, "", err
 		}
 	}
@@ -115,7 +118,7 @@ func restoreDatabase(database *api.Database, backup *api.Backup) error {
 
 // forkMigrationHistory will fork the migration history from source database to target database based on backup migration history version.
 // This is needed only when backup migration history version is not empty.
-func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, migrationHistoryVersion string, logger *zap.Logger) error {
+func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
 	sourceDriver, err := getDatabaseDriver(sourceDatabase, logger)
 	if err != nil {
 		return err
@@ -142,16 +145,15 @@ func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, migratio
 		history.Namespace = targetDatabase.Name
 		forkList = append(forkList, history)
 		// Fork the history up to the backup version.
-		if history.Version == migrationHistoryVersion {
+		if history.Version == backup.MigrationHistoryVersion {
 			break
 		}
 	}
-	// TODO(spinningbot): add a new BRANCH migration history.
 
 	for _, history := range forkList {
 		m := &db.MigrationInfo{
 			Version:     history.Version,
-			Namespace:   history.Namespace,
+			Namespace:   targetDatabase.Name,
 			Database:    targetDatabase.Name,
 			Environment: targetDatabase.Instance.Environment.Name,
 			Engine:      history.Engine,
@@ -166,6 +168,23 @@ func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, migratio
 		}
 	}
 
+	// Add a branch migration history record.
+	// TODO(spinningbot): fill in the new issue ID.
+	m := &db.MigrationInfo{
+		Version:     strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(task.ID)}, "."),
+		Namespace:   targetDatabase.Name,
+		Database:    targetDatabase.Name,
+		Environment: targetDatabase.Instance.Environment.Name,
+		Engine:      db.MigrationEngine(targetDatabase.Project.WorkflowType),
+		Type:        db.Branch,
+		Description: fmt.Sprintf("Branched from backup %q of database %q.", backup.Name, sourceDatabase.Name),
+		Creator:     task.Creator.Name,
+		IssueId:     "TODO: newIssueID",
+		Payload:     "",
+	}
+	if err := targetDriver.ExecuteMigration(context.Background(), m, ""); err != nil {
+		return err
+	}
 	return nil
 }
 
