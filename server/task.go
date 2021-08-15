@@ -293,14 +293,12 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	fmt.Printf("status %v, assignee %v\n", updatedTask.Status, issue.AssigneeId)
-	if updatedTask.Status == "DONE" && issue.AssigneeId == api.SYSTEM_BOT_ID {
+	if updatedTask.Status == "DONE" && (issue == nil || issue.AssigneeId == api.SYSTEM_BOT_ID) {
 		pipeline, err := s.ComposePipelineById(ctx, updatedTask.PipelineId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", updatedTask.Name)
 		}
-		lastStage := pipeline.StageList[len(issue.Pipeline.StageList)-1]
-		fmt.Printf("last %v, me %v\n", lastStage.TaskList[len(lastStage.TaskList)-1].ID, updatedTask.ID)
+		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
 		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == updatedTask.ID {
 			if issue == nil {
 				status := api.Pipeline_Done
