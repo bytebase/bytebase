@@ -110,6 +110,7 @@ type MigrationType string
 const (
 	Baseline MigrationType = "BASELINE"
 	Sql      MigrationType = "SQL"
+	Branch   MigrationType = "BRANCH"
 )
 
 func (e MigrationType) String() string {
@@ -118,6 +119,8 @@ func (e MigrationType) String() string {
 		return "BASELINE"
 	case Sql:
 		return "SQL"
+	case Branch:
+		return "BRANCH"
 	}
 	return "UNKNOWN"
 }

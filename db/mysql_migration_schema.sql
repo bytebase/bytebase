@@ -53,7 +53,7 @@ CREATE TABLE bytebase.migration_history (
     sequence INTEGER UNSIGNED NOT NULL,
     -- We call it engine because maybe we could load history from other migration tool.
     `engine` ENUM('UI', 'VCS') NOT NULL,
-    `type` ENUM('BASELINE', 'SQL') NOT NULL,
+    `type` ENUM('BASELINE', 'SQL', 'BRANCH') NOT NULL,
     version TEXT NOT NULL,
     description TEXT NOT NULL,
     -- Recorded the migration statement
