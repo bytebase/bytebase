@@ -25,12 +25,12 @@ func Restore(conn *connect.MysqlConnect, sc *bufio.Scanner) error {
 		case line == "DELIMITER ;;":
 			delimiter = true
 			continue
-		case line == "DELIMITER ;" && delimiter == true:
+		case line == "DELIMITER ;" && delimiter:
 			delimiter = false
 			execute = true
 		case strings.HasSuffix(line, ";"):
 			s = s + line + "\n"
-			if delimiter == false {
+			if !delimiter {
 				execute = true
 			}
 		default:
