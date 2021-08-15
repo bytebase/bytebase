@@ -288,14 +288,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		// Require version if using VCS.
-		if database.Project.WorkflowType == api.VCS_WORKFLOW {
-			version, err := getMigrationVersion(database, s.l)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Migration history not found for database %q using VCS workflow", database.Name)).SetInternal(err)
-			}
-			backupCreate.MigrationHistoryVersion = version
+		version, err := getMigrationVersion(database, s.l)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to get migration history for database %q", database.Name)).SetInternal(err)
 		}
+		if database.Project.WorkflowType == api.VCS_WORKFLOW && version == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Migration history configuration is required for backups if database %q uses VCS workflow", database.Name)).SetInternal(err)
+		}
+		backupCreate.MigrationHistoryVersion = version
 
 		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
 		if err != nil {
@@ -401,8 +401,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
-
-		// TODO(spinningbot): need to clone migration history.
 
 		restoreBackup := &api.RestoreBackup{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, restoreBackup); err != nil {
@@ -625,5 +623,6 @@ func (s *Server) ComposeBackupRelationship(ctx context.Context, backup *api.Back
 	if err != nil {
 		return err
 	}
+	s.ComposeDatabaseRelationship()
 	return nil
 }

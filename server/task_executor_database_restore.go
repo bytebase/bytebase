@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
+	"github.com/bytebase/bytebase/db"
 	"go.uber.org/zap"
 )
 
@@ -69,7 +70,22 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		zap.String("database", task.Database.Name),
 		zap.String("backup", backup.Name),
 	)
+	databaseFind := &api.DatabaseFind{
+		ID: &backup.DatabaseId,
+	}
+	backup.Database, err = server.ComposeDatabaseByFind(context.Background(), databaseFind)
+	if err != nil {
+		return true, "", err
+	}
 
+	// Fork migration history.
+	if backup.MigrationHistoryVersion != "" {
+		if err := forkMigrationHistory(backup.Database, task.Database, backup.MigrationHistoryVersion, exec.l); err != nil {
+			return true, "", err
+		}
+	}
+
+	// Restore the database to the target database.
 	if err := restoreDatabase(task.Database, backup); err != nil {
 		return true, "", err
 	}
@@ -95,4 +111,83 @@ func restoreDatabase(database *api.Database, backup *api.Backup) error {
 		return fmt.Errorf("mysqlrestore.Restore() got error: %v", err)
 	}
 	return nil
+}
+
+// forkMigrationHistory will fork the migration history from source database to target database based on backup migration history version.
+// This is needed only when backup migration history version is not empty.
+func forkMigrationHistory(sourceDatabase, targetDatabase *api.Database, migrationHistoryVersion string, logger *zap.Logger) error {
+	sourceDriver, err := getDatabaseDriver(sourceDatabase, logger)
+	if err != nil {
+		return err
+	}
+	defer sourceDriver.Close(context.Background())
+
+	targetDriver, err := getDatabaseDriver(targetDatabase, logger)
+	if err != nil {
+		return err
+	}
+	defer targetDriver.Close(context.Background())
+
+	find := &db.MigrationHistoryFind{
+		Database: &sourceDatabase.Name,
+	}
+	list, err := sourceDriver.FindMigrationHistoryList(context.Background(), find)
+	if err != nil {
+		return fmt.Errorf("failed to fetch migration history list: %v", err)
+	}
+
+	var forkList []*db.MigrationHistory
+	for i := len(list) - 1; i >= 0; i-- {
+		history := list[i]
+		history.Namespace = targetDatabase.Name
+		forkList = append(forkList, history)
+		// Fork the history up to the backup version.
+		if history.Version == migrationHistoryVersion {
+			break
+		}
+	}
+	// TODO(spinningbot): add a new BRANCH migration history.
+
+	for _, history := range forkList {
+		m := &db.MigrationInfo{
+			Version:     history.Version,
+			Namespace:   history.Namespace,
+			Database:    targetDatabase.Name,
+			Environment: targetDatabase.Instance.Environment.Name,
+			Engine:      history.Engine,
+			Type:        history.Type,
+			Description: history.Description,
+			Creator:     history.Creator,
+			IssueId:     history.IssueId,
+			Payload:     history.Payload,
+		}
+		if err := targetDriver.ExecuteMigration(context.Background(), m, history.Statement); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getDatabaseDriver(database *api.Database, logger *zap.Logger) (db.Driver, error) {
+	instance := database.Instance
+	driver, err := db.Open(
+		instance.Engine,
+		db.DriverConfig{Logger: logger},
+		db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+			Database: database.Name,
+		},
+		db.ConnectionContext{
+			EnvironmentName: instance.Environment.Name,
+			InstanceName:    instance.Name,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+	}
+	return driver, nil
 }

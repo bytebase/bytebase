@@ -165,9 +165,8 @@ func getMigrationVersion(database *api.Database, logger *zap.Logger) (string, er
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch migration history list: %v", err)
 	}
-	if len(list) != 1 {
-		return "", fmt.Errorf("database %q has no migration history", database.Name)
+	if len(list) == 0 {
+		return "", nil
 	}
-
 	return list[0].Version, nil
 }
