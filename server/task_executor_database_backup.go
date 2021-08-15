@@ -61,7 +61,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, "", err
 	}
 
-	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
+	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupId})
 	if err != nil {
 		return true, "", fmt.Errorf("failed to find backup: %w", err)
 	}

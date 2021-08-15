@@ -304,13 +304,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
 		}
-		backup.Database = database
 		if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 		}
 
 		payload := api.TaskDatabaseBackupPayload{
-			BackupID: backup.ID,
+			BackupId: backup.ID,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -366,7 +365,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
 			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -383,7 +382,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		for _, backup := range backupList {
-			backup.Database = database
 			if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 			}
@@ -430,7 +428,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		uniqueKey := time.Now().UTC().Unix()
 
 		payload := api.TaskDatabaseRestorePayload{
-			BackupID: backup.ID,
+			BackupId: backup.ID,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {

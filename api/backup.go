@@ -78,18 +78,17 @@ type Backup struct {
 
 	// Related fields
 	DatabaseId int `jsonapi:"attr,databaseId"`
-	// Do not return this to the client since the client always has the database context and fetching the
-	// database object and all its own related objects is a bit expensive.
-	Database *Database
 
 	// Domain specific fields
-	Name                    string               `jsonapi:"attr,name"`
-	Status                  BackupStatus         `jsonapi:"attr,status"`
-	Type                    BackupType           `jsonapi:"attr,type"`
-	StorageBackend          BackupStorageBackend `jsonapi:"attr,storageBackend"`
-	MigrationHistoryVersion string               `jsonapi:"attr,migrationHistoryVersion"`
-	Path                    string               `jsonapi:"attr,path"`
-	Comment                 string               `jsonapi:"attr,comment"`
+	Name           string               `jsonapi:"attr,name"`
+	Status         BackupStatus         `jsonapi:"attr,status"`
+	Type           BackupType           `jsonapi:"attr,type"`
+	StorageBackend BackupStorageBackend `jsonapi:"attr,storageBackend"`
+	// Upon taking the database backup, we will also record the current migration history version if exists.
+	// And when restoring the backup, we will record this in the migration history.
+	MigrationHistoryVersion string `jsonapi:"attr,migrationHistoryVersion"`
+	Path                    string `jsonapi:"attr,path"`
+	Comment                 string `jsonapi:"attr,comment"`
 }
 
 type BackupCreate struct {
