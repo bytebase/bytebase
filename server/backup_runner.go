@@ -117,7 +117,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
-		BackupID: backup.ID,
+		BackupId: backup.ID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {

@@ -69,12 +69,15 @@ type TaskDatabaseSchemaUpdatePayload struct {
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
-	BackupID int `jsonapi:"primary,backupId"`
+	BackupId int `json:"backupId,omitempty"`
 }
 
 // TaskDatabaseRestorePayload is the task payload for database restore.
 type TaskDatabaseRestorePayload struct {
-	BackupID int `jsonapi:"primary,backupId"`
+	// The database name we restore to. When we restore a backup to a new database, we only have the database name
+	// and don't have the database id upon constructing the task yet.
+	DatabaseName string `json:"databaseName,omitempty"`
+	BackupId     int    `json:"backupId,omitempty"`
 }
 
 type Task struct {
@@ -129,6 +132,7 @@ type TaskCreate struct {
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
+	BackupId          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *common.VCSPushEvent
 }
 
