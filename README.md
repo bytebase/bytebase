@@ -12,7 +12,7 @@
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview1.png)
 
-[Bytebase](https://bytebase.com/) is a zero-config, dependency-free database schema change and version control management tool for teams. It supports 2 mainstream schema change workflow:
+[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs. It supports 2 mainstream schema change workflow:
 
 - UI based SQL review
 - Version control based schema migration (Database-as-Code)
