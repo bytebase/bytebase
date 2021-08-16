@@ -228,7 +228,7 @@ type triggerSchema struct {
 // getTables gets all tables of a database.
 func (dp *Dumper) getTables(dbName string) ([]tableSchema, error) {
 	var tables []tableSchema
-	query := fmt.Sprintf("SHOW FULL TABLES FROM %s;", dbName)
+	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -419,7 +419,7 @@ func getReadableRoutineType(s string) string {
 // getEvents gets all events of a database.
 func (dp *Dumper) getEvents(dbName string) ([]eventSchema, error) {
 	var events []eventSchema
-	rows, err := dp.conn.DB.Query(fmt.Sprintf("SHOW EVENTS FROM %s;", dbName))
+	rows, err := dp.conn.DB.Query(fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName))
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +471,7 @@ func (dp *Dumper) getEventStmt(dbName, eventName string) (string, error) {
 // getTriggers gets all triggers of a database.
 func (dp *Dumper) getTriggers(dbName string) ([]triggerSchema, error) {
 	var triggers []triggerSchema
-	rows, err := dp.conn.DB.Query(fmt.Sprintf("SHOW TRIGGERS FROM %s;", dbName))
+	rows, err := dp.conn.DB.Query(fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName))
 	if err != nil {
 		return nil, err
 	}
