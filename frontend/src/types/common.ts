@@ -31,6 +31,14 @@ export const ONBOARDING_ISSUE_ID = 101;
 // For text input, we do validation if there is no further keystroke after 1s
 export const TEXT_VALIDATION_DELAY = 1000;
 
+// Normally, we poll issue every 30s to fetch any update from the server side.
+// If change occurs, then we will start the poll from 1s, 2s, 4s, 8s, 16s, 30s, 30s ... with jitter
+// We do this because new update is more likely to happen after the initial change (e.g task gets new update after changing its status)
+export const NORMAL_POLL_INTERVAL = 30000;
+export const POST_CHANGE_POLL_INTERVAL = 1000;
+// Add jitter to avoid timer from different clients converging to the same polling frequency.
+export const POLL_JITTER = 5000;
+
 // RowStatus
 export type RowStatus = "NORMAL" | "ARCHIVED" | "PENDING_DELETE";
 

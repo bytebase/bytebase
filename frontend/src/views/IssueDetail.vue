@@ -278,6 +278,9 @@ import {
   TaskCreate,
   TaskDatabaseCreatePayload,
   TaskGeneralPayload,
+  NORMAL_POLL_INTERVAL,
+  POLL_JITTER,
+  POST_CHANGE_POLL_INTERVAL,
 } from "../types";
 import {
   defaulTemplate,
@@ -286,14 +289,6 @@ import {
   OutputField,
   IssueTemplate,
 } from "../plugins";
-
-// Normally, we poll issue every 30s to fetch any update from the server side.
-// When issue/task status changes we start the poll from 1s, 2s, 4s, 8s, 16s, 30s, 30s ... with jitter
-// We do this because issue is more likely to change after we change the status (e.g task finishes running)
-const NORMAL_ISSUE_POLL_INTERVAL = 30000;
-const POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL = 1000;
-// Add jitter to avoid timer from different clients converging to the same polling frequency.
-const POLL_JITTER = 5000;
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -447,8 +442,8 @@ export default {
 
       state.pollIssueTimer = setTimeout(() => {
         store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
-        pollIssue(Math.min(interval * 2, NORMAL_ISSUE_POLL_INTERVAL));
-      }, Math.max(1000, Math.min(interval, NORMAL_ISSUE_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
+        pollIssue(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
+      }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
     onMounted(() => {
@@ -458,13 +453,13 @@ export default {
       // won't work.
       document.getElementById("issue-detail-top")!.scrollIntoView();
       if (!state.create) {
-        let interval = NORMAL_ISSUE_POLL_INTERVAL;
+        let interval = NORMAL_POLL_INTERVAL;
         // If we just created the database create issue, we will poll fast since it should return result soon.
         if (
           issue.value.type == "bb.issue.database.create" &&
           Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000
         ) {
-          interval = POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL;
+          interval = POST_CHANGE_POLL_INTERVAL;
         }
         pollIssue(interval);
       }
@@ -482,7 +477,7 @@ export default {
         const oldCreate = state.create;
         state.create = cur.toLowerCase() == "new";
         if (!state.create && oldCreate) {
-          pollIssue(NORMAL_ISSUE_POLL_INTERVAL);
+          pollIssue(NORMAL_POLL_INTERVAL);
         }
       }
     );
@@ -601,7 +596,7 @@ export default {
           issueStatusPatch,
         })
         .then(() => {
-          pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
+          pollIssue(POST_CHANGE_POLL_INTERVAL);
         });
     };
 
@@ -626,7 +621,7 @@ export default {
           taskStatusPatch,
         })
         .then(() => {
-          pollIssue(POST_STATUS_CHANGE_ISSUE_POLL_INTERVAL);
+          pollIssue(POST_CHANGE_POLL_INTERVAL);
         });
     };
 
@@ -641,8 +636,8 @@ export default {
         })
         .then((updatedIssue) => {
           // issue/patchIssue already fetches the new issue, so we schedule
-          // the next poll in NORMAL_ISSUE_POLL_INTERVAL
-          pollIssue(NORMAL_ISSUE_POLL_INTERVAL);
+          // the next poll in NORMAL_POLL_INTERVAL
+          pollIssue(NORMAL_POLL_INTERVAL);
           if (postUpdated) {
             postUpdated(updatedIssue);
           }
