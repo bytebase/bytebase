@@ -124,6 +124,12 @@ func (s *TaskScheduler) Run() error {
 					done, detail, err := executor.RunOnce(context.Background(), s.server, task)
 					if done {
 						if err != nil {
+							s.l.Debug("Failed to run task",
+								zap.Int("id", task.ID),
+								zap.String("name", task.Name),
+								zap.String("type", string(task.Type)),
+								zap.Error(err),
+							)
 							taskStatusPatch := &api.TaskStatusPatch{
 								ID:        task.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
