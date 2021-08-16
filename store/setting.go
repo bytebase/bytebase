@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +34,7 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 	}
 	setting, err := s.FindSetting(ctx, find)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+		if common.ErrorCode(err) == common.ENOTFOUND {
 			tx, err := s.db.BeginTx(ctx, nil)
 			if err != nil {
 				return nil, FormatError(err)
@@ -87,9 +87,9 @@ func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("setting not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("setting not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -243,5 +243,5 @@ func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Se
 		return &setting, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("setting not found: %s", patch.Name)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("setting not found: %s", patch.Name)}
 }

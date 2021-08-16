@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -31,7 +31,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principal, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, "User already exists")
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create principal").SetInternal(err)
@@ -57,7 +57,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			if err := s.ComposePrincipalRole(context.Background(), principal); err != nil {
 				// Normally this should not happen since we create the member together with the principal
 				// and we don't allow deleting the member. Just in case.
-				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				if common.ErrorCode(err) == common.ENOTFOUND {
 					s.l.Error("Principal has not been assigned a role. Skip",
 						zap.Int("id", principal.ID),
 						zap.String("name", principal.Name),
@@ -84,7 +84,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principal, err := s.ComposePrincipalById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal ID: %v", id)).SetInternal(err)
@@ -121,7 +121,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principal, err := s.PrincipalService.PatchPrincipal(context.Background(), principalPatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", id)).SetInternal(err)

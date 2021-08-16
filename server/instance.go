@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -25,7 +25,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.InstanceService.CreateInstance(context.Background(), instanceCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Instance name already exists: %s", instanceCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
@@ -99,7 +99,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
@@ -130,7 +130,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			instance, err = s.InstanceService.PatchInstance(context.Background(), instancePatch)
 			if err != nil {
-				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				if common.ErrorCode(err) == common.ENOTFOUND {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", id)).SetInternal(err)
@@ -143,7 +143,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			instance, err = s.InstanceService.FindInstance(context.Background(), instanceFind)
 			if err != nil {
-				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				if common.ErrorCode(err) == common.ENOTFOUND {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
@@ -211,7 +211,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
@@ -256,7 +256,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
@@ -308,7 +308,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
@@ -445,5 +445,5 @@ func (s *Server) FindInstanceAdminPasswordById(ctx context.Context, instanceId i
 			return dataSource.Password, nil
 		}
 	}
-	return "", &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("missing admin password for instance: %d", instanceId)}
+	return "", &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("missing admin password for instance: %d", instanceId)}
 }

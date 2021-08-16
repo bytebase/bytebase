@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -237,7 +237,7 @@ func initSetting(settingService api.SettingService) (*config, error) {
 		configCreate := &api.SettingCreate{
 			CreatorId:   api.SYSTEM_BOT_ID,
 			Name:        api.SettingAuthSecret,
-			Value:       bytebase.RandomString(SECRET_LENGTH),
+			Value:       common.RandomString(SECRET_LENGTH),
 			Description: "Random string used to sign the JWT auth token.",
 		}
 		config, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)

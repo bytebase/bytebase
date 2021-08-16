@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -25,7 +25,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 		user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
@@ -36,7 +36,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 		member, err := s.MemberService.FindMember(context.Background(), memberFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", login.Email))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
@@ -94,7 +94,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		user, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signup.Email))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
@@ -123,7 +123,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		member, err := s.MemberService.CreateMember(context.Background(), memberCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signup.Email))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)

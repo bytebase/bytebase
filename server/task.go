@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -46,7 +46,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(context.Background(), taskFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
@@ -54,8 +54,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		updatedTask, err := s.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.EINVALID {
-				return echo.NewHTTPError(http.StatusBadRequest, bytebase.ErrorMessage(err))
+			if common.ErrorCode(err) == common.EINVALID {
+				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
@@ -179,8 +179,8 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 
 	if !allowTransition {
-		return nil, &bytebase.Error{
-			Code:    bytebase.EINVALID,
+		return nil, &common.Error{
+			Code:    common.EINVALID,
 			Message: fmt.Sprintf("Invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
@@ -198,7 +198,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	issue, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
-		if bytebase.ErrorCode(err) != bytebase.ENOTFOUND {
+		if common.ErrorCode(err) != common.ENOTFOUND {
 			return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 		}
 	}

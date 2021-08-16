@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -28,7 +28,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Database name already exists: %s", databaseCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
@@ -107,7 +107,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -136,7 +136,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
@@ -164,7 +164,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -217,7 +217,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -277,7 +277,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -299,7 +299,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
@@ -367,7 +367,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -411,7 +411,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -440,7 +440,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -451,7 +451,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupSetting, err := s.BackupService.FindBackupSetting(context.Background(), backupSettingFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
 				backupSetting = &api.BackupSetting{
 					ID: api.UNKNOWN_ID,
