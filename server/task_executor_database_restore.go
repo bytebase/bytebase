@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/db"
 	"go.uber.org/zap"
 )
@@ -73,7 +73,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 	targetDatabase, err := server.ComposeDatabaseByFind(context.Background(), targetDatabaseFind)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+		if common.ErrorCode(err) == common.ENOTFOUND {
 			return true, "", fmt.Errorf("target database %q not found in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
 		}
 		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
@@ -148,7 +148,7 @@ func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceD
 	issue, err := server.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
-		if bytebase.ErrorCode(err) != bytebase.ENOTFOUND {
+		if common.ErrorCode(err) != common.ENOTFOUND {
 			return fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 		}
 	}

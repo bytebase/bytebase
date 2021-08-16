@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -100,9 +100,9 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("member not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d members with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalId, list[0]); err != nil {
@@ -288,5 +288,5 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		return &member, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("member ID not found: %d", patch.ID)}
 }

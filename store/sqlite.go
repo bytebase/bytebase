@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase"
+	"github.com/bytebase/bytebase/common"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
@@ -330,29 +330,29 @@ func FormatError(err error) error {
 
 	switch err.Error() {
 	case "UNIQUE constraint failed: principal.email":
-		return bytebase.Errorf(bytebase.ECONFLICT, "email already exists")
+		return common.Errorf(common.ECONFLICT, "email already exists")
 	case "UNIQUE constraint failed: member.principal_id":
-		return bytebase.Errorf(bytebase.ECONFLICT, "member already exists")
+		return common.Errorf(common.ECONFLICT, "member already exists")
 	case "UNIQUE constraint failed: environment.name":
-		return bytebase.Errorf(bytebase.ECONFLICT, "environment name already exists")
+		return common.Errorf(common.ECONFLICT, "environment name already exists")
 	case "UNIQUE constraint failed: project.key":
-		return bytebase.Errorf(bytebase.ECONFLICT, "project key already exists")
+		return common.Errorf(common.ECONFLICT, "project key already exists")
 	case "UNIQUE constraint failed: project_webhook.project_id, project_webhook.url":
-		return bytebase.Errorf(bytebase.ECONFLICT, "webhook url already exists")
+		return common.Errorf(common.ECONFLICT, "webhook url already exists")
 	case "UNIQUE constraint failed: project_member.project_id, project_member.principal_id":
-		return bytebase.Errorf(bytebase.ECONFLICT, "project member already exists")
+		return common.Errorf(common.ECONFLICT, "project member already exists")
 	case "UNIQUE constraint failed: db.instance_id, db.name":
-		return bytebase.Errorf(bytebase.ECONFLICT, "database name already exists")
+		return common.Errorf(common.ECONFLICT, "database name already exists")
 	case "UNIQUE constraint failed: data_source.instance_id, data_source.name":
-		return bytebase.Errorf(bytebase.ECONFLICT, "data source name already exists")
+		return common.Errorf(common.ECONFLICT, "data source name already exists")
 	case "UNIQUE constraint failed: backup.database_id, backup.name":
-		return bytebase.Errorf(bytebase.ECONFLICT, "backup name already exists")
+		return common.Errorf(common.ECONFLICT, "backup name already exists")
 	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
-		return bytebase.Errorf(bytebase.ECONFLICT, "bookmark already exists")
+		return common.Errorf(common.ECONFLICT, "bookmark already exists")
 	case "UNIQUE constraint failed: repo.project_id":
-		return bytebase.Errorf(bytebase.ECONFLICT, "project has already linked repository")
+		return common.Errorf(common.ECONFLICT, "project has already linked repository")
 	case "UNIQUE constraint failed: issue_subscriber.issue_id, issue_subscriber.subscriber_id":
-		return bytebase.Errorf(bytebase.ECONFLICT, "issue subscriber already exists")
+		return common.Errorf(common.ECONFLICT, "issue subscriber already exists")
 	default:
 		return err
 	}

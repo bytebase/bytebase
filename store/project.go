@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -101,9 +101,9 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d projects with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d projects with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := s.cache.UpsertCache(api.ProjectCache, list[0].ID, list[0]); err != nil {
@@ -315,5 +315,5 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		return &project, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project ID not found: %d", patch.ID)}
 }

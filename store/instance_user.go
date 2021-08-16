@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -179,7 +179,7 @@ func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDel
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance user ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("instance user ID not found: %d", delete.ID)}
 	}
 
 	return nil

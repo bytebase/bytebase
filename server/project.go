@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
@@ -27,7 +27,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		projectCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		project, err := s.ProjectService.CreateProject(context.Background(), projectCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
@@ -95,7 +95,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		project, err := s.ComposeProjectlById(context.Background(), id)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
@@ -124,7 +124,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		project, err := s.ProjectService.PatchProject(context.Background(), projectPatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
@@ -153,7 +153,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSId)).SetInternal(err)
@@ -161,7 +161,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
 		repositoryCreate.WebhookEndpointId = uuid.New().String()
-		repositoryCreate.WebhookSecretToken = bytebase.RandomString(gitlab.SECRET_TOKEN_LENGTH)
+		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SECRET_TOKEN_LENGTH)
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
 			webhookPost := gitlab.WebhookPost{
@@ -203,7 +203,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.RepositoryService.CreateRepository(context.Background(), repositoryCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project %d has already linked repository", repositoryCreate.ProjectId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)

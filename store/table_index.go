@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -75,9 +75,9 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("index not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("index not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d indexs with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d indexs with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -303,5 +303,5 @@ func (s *IndexService) patchIndex(ctx context.Context, tx *Tx, patch *api.IndexP
 		return &index, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("index ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("index ID not found: %d", patch.ID)}
 }

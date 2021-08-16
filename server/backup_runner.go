@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -109,7 +109,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 	}
 	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)
 	if err != nil {
-		if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+		if common.ErrorCode(err) == common.ECONFLICT {
 			// Automatic backup already exists.
 			return nil
 		}

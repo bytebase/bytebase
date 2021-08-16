@@ -1,4 +1,4 @@
-package bytebase
+package common
 
 import (
 	"math/rand"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -244,7 +244,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		return &projectMember, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project member ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project member ID not found: %d", patch.ID)}
 }
 
 // deleteProjectMember permanently deletes a projectMember by ID.
@@ -257,7 +257,7 @@ func deleteProjectMember(ctx context.Context, tx *Tx, delete *api.ProjectMemberD
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("project member ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project member ID not found: %d", delete.ID)}
 	}
 
 	return nil

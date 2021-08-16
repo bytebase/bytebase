@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -29,7 +29,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMember, err := s.ProjectMemberService.CreateProjectMember(context.Background(), projectMemberCreate)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ECONFLICT {
+			if common.ErrorCode(err) == common.ECONFLICT {
 				return echo.NewHTTPError(http.StatusConflict, "User is already a project member")
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project member").SetInternal(err)
@@ -67,7 +67,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMember, err := s.ProjectMemberService.PatchProjectMember(context.Background(), projectMemberPatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project membership ID: %v", id)).SetInternal(err)
@@ -101,7 +101,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 		err = s.ProjectMemberService.DeleteProjectMember(context.Background(), projectMemberDelete)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)

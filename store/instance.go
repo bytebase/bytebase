@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -134,9 +134,9 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("instance not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d instances with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d instances with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := s.cache.UpsertCache(api.InstanceCache, list[0].ID, list[0]); err != nil {
@@ -346,5 +346,5 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 		return &instance, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("instance ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("instance ID not found: %d", patch.ID)}
 }

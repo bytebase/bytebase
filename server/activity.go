@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -29,7 +29,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
 			if err != nil {
-				if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+				if common.ErrorCode(err) == common.ENOTFOUND {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerId))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerId)).SetInternal(err)
@@ -107,7 +107,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 
 		activity, err := s.ActivityService.PatchActivity(context.Background(), activityPatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch activity ID: %v", id)).SetInternal(err)
@@ -136,7 +136,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 		err = s.ActivityService.DeleteActivity(context.Background(), activityDelete)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete activity ID: %v", id)).SetInternal(err)

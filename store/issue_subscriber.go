@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -167,7 +167,7 @@ func deleteIssueSubscriber(ctx context.Context, tx *Tx, delete *api.IssueSubscri
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("subscriber %d not found in issue %d", delete.SubscriberId, delete.IssueId)}
+		return &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("subscriber %d not found in issue %d", delete.SubscriberId, delete.IssueId)}
 	}
 
 	return nil

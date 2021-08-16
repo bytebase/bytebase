@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -59,9 +59,9 @@ func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("backup not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d backups with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d backups with filter %+v, expect 1. ", len(list), find)}
 	}
 
 	return list[0], nil
@@ -275,7 +275,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 		return &backup, nil
 	}
 
-	return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("backup ID not found: %d", patch.ID)}
 }
 
 // FindBackupSetting finds the backup setting for a database.
@@ -292,9 +292,9 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &bytebase.Error{Code: bytebase.ENOTFOUND, Message: fmt.Sprintf("backup setting not found: %+v", find)}
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("backup setting not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &bytebase.Error{Code: bytebase.ECONFLICT, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
 	}
 
 	return list[0], nil

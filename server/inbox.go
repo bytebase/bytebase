@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -82,7 +82,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 
 		inbox, err := s.InboxService.PatchInbox(context.Background(), inboxPatch)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)

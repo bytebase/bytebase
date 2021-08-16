@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/db"
@@ -49,7 +48,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repository, err := s.RepositoryService.FindRepository(context.Background(), repositoryFind)
 		if err != nil {
-			if bytebase.ErrorCode(err) == bytebase.ENOTFOUND {
+			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointId)).SetInternal(err)
