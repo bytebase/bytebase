@@ -292,7 +292,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		version, err := getMigrationVersion(database, s.l)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to get migration history for database %q", database.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get migration history for database %q", database.Name)).SetInternal(err)
 		}
 		if database.Project.WorkflowType == api.VCS_WORKFLOW && version == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Migration history configuration is required for backups if database %q uses VCS workflow", database.Name)).SetInternal(err)
@@ -315,7 +315,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task payload").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task payload").SetInternal(err)
 		}
 
 		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
@@ -323,7 +323,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			CreatorId: backupCreate.CreatorId,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create pipeline").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup pipeline").SetInternal(err)
 		}
 
 		createdStage, err := s.StageService.CreateStage(context.Background(), &api.StageCreate{
@@ -333,7 +333,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			CreatorId:     backupCreate.CreatorId,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create stage").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup stage").SetInternal(err)
 		}
 
 		_, err = s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
@@ -348,7 +348,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			CreatorId:  backupCreate.CreatorId,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create task").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -391,7 +391,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, backupList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch table list response: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch backup list response: %v", id)).SetInternal(err)
 		}
 		return nil
 	})
