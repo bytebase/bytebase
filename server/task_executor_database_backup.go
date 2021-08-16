@@ -151,7 +151,7 @@ func getMigrationVersion(database *api.Database, logger *zap.Logger) (string, er
 	}
 	list, err := driver.FindMigrationHistoryList(context.Background(), find)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch migration history list: %v", err)
+		return "", fmt.Errorf("failed to fetch migration history list: %w", err)
 	}
 	if len(list) == 0 {
 		return "", nil

@@ -95,7 +95,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 	// Store the migration history version if exists.
 	migrationHistoryVersion, err := getMigrationVersion(database, s.l)
 	if err != nil {
-		return fmt.Errorf("failed to get migration history for database %q: %v", database.Name, err)
+		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 	}
 
 	backupCreate := &api.BackupCreate{
@@ -114,7 +114,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 			// Automatic backup already exists.
 			return nil
 		}
-		return fmt.Errorf("failed to create backup: %v", err)
+		return fmt.Errorf("failed to create backup: %w", err)
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
@@ -122,7 +122,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to create task payload: %v", err)
+		return fmt.Errorf("failed to create task payload: %w", err)
 	}
 
 	createdPipeline, err := s.server.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
@@ -130,7 +130,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		CreatorId: backupCreate.CreatorId,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create pipeline: %v", err)
+		return fmt.Errorf("failed to create pipeline: %w", err)
 	}
 
 	createdStage, err := s.server.StageService.CreateStage(context.Background(), &api.StageCreate{
@@ -140,7 +140,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		CreatorId:     backupCreate.CreatorId,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create stage: %v", err)
+		return fmt.Errorf("failed to create stage: %w", err)
 	}
 
 	_, err = s.server.TaskService.CreateTask(context.Background(), &api.TaskCreate{
@@ -155,7 +155,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		CreatorId:  backupCreate.CreatorId,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create task: %v", err)
+		return fmt.Errorf("failed to create task: %w", err)
 	}
 	return nil
 }
