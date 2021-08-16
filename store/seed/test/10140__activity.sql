@@ -165,7 +165,7 @@ VALUES
         13002,
         'bb.pipeline.task.status.update',
         'INFO',
-        'Established baseline version %s for database ''shop''',
+        'Established baseline version 202106280000 for database ''shop''',
         '{"taskId":11002,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 
@@ -219,7 +219,7 @@ VALUES
         13002,
         'bb.pipeline.task.status.update',
         'INFO',
-        'Established baseline version %s for database ''shop''',
+        'Established baseline version 202106280000 for database ''shop''',
         '{"taskId":11003,"oldStatus":"RUNNING","newStatus":"DONE"}'
     );
 

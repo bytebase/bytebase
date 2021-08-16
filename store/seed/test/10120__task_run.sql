@@ -22,7 +22,7 @@ VALUES
         'Add initial schema 1624873710',
         'DONE',
         'bb.task.database.schema.update',
-        'Established baseline version %s for database ''shop''',
+        'Established baseline version 202106280000 for database ''shop''',
         '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -50,7 +50,7 @@ VALUES
         'Add initial schema 1624883710',
         'DONE',
         'bb.task.database.schema.update',
-        'Established baseline version %s for database ''shop''',
+        'Established baseline version 202106280000 for database ''shop''',
         '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
     );
 
