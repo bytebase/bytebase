@@ -10,6 +10,7 @@ const template: IssueTemplate = {
       name: "",
       type: "bb.issue.general",
       description: "",
+      assigneeId: UNKNOWN_ID,
       pipeline: {
         stageList: [
           {

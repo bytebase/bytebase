@@ -1,4 +1,4 @@
-import { IssueCreate, StageCreate } from "../../types";
+import { IssueCreate, StageCreate, UNKNOWN_ID } from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
@@ -32,6 +32,7 @@ const template: IssueTemplate = {
       name: "Update database schema",
       type: "bb.issue.database.schema.update",
       description: "",
+      assigneeId: UNKNOWN_ID,
       pipeline: {
         stageList,
         name: "Update database schema pipeline",

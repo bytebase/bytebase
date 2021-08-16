@@ -1,13 +1,12 @@
-
+import { Issue, IssueCreate, UNKNOWN_ID } from "../../types";
+import { allowDatabaseAccess, fullDatabasePath } from "../../utils";
 import {
-  IssueTemplate,
-  TemplateContext,
   INPUT_CUSTOM_FIELD_ID_BEGIN,
   IssueContext,
+  IssueTemplate,
   OUTPUT_CUSTOM_FIELD_ID_BEGIN,
+  TemplateContext,
 } from "../types";
-import { IssueCreate, UNKNOWN_ID, Issue } from "../../types";
-import { allowDatabaseAccess, fullDatabasePath } from "../../utils";
 
 const INPUT_READ_ONLY_FIELD_ID = INPUT_CUSTOM_FIELD_ID_BEGIN;
 const OUTPUT_DATABASE_FIELD_ID = OUTPUT_CUSTOM_FIELD_ID_BEGIN;
@@ -23,6 +22,7 @@ const template: IssueTemplate = {
       name: "Request database access",
       type: "bb.issue.database.grant",
       description: "",
+      assigneeId: UNKNOWN_ID,
       pipeline: {
         stageList: [
           {
