@@ -105,7 +105,7 @@ func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string)
 	instance := database.Instance
 	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
 	if err != nil {
-		return fmt.Errorf("failed to connect database: %v", err)
+		return fmt.Errorf("failed to connect database: %w", err)
 	}
 	defer conn.Close()
 
@@ -116,12 +116,12 @@ func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string)
 
 	f, err := os.OpenFile(backupPath, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("failed to open backup file at %s: %v", backupPath, err)
+		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
 	}
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 	if err := mysqlrestore.Restore(conn, sc); err != nil {
-		return fmt.Errorf("failed to restore backup: %v", err)
+		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil
 }
@@ -194,7 +194,7 @@ func getDatabaseDriver(database *api.Database, logger *zap.Logger) (db.Driver, e
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+		return nil, fmt.Errorf("failed to connect instance %q at %q:%q with user %q: %w", instance.Name, instance.Host, instance.Port, instance.Username, err)
 	}
 	return driver, nil
 }
