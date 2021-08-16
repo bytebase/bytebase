@@ -80,6 +80,9 @@ import {
   BackupSetting,
   BackupSettingUpsert,
   Database,
+  NORMAL_POLL_INTERVAL,
+  POLL_JITTER,
+  POST_CHANGE_POLL_INTERVAL,
   UNKNOWN_ID,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
@@ -108,9 +111,6 @@ export default {
   },
   setup(props, ctx) {
     const store = useStore();
-    const NORMAL_BACKUPS_POLL_INTERVAL = 10000;
-    // Add jitter to avoid timer from different clients converging to the same polling frequency.
-    const POLL_JITTER = 500;
 
     // For now, we hard code the backup time to a time between 0:00 AM ~ 6:00 AM on Sunday local time.
     const DEFAULT_BACKUP_HOUR = Math.floor(Math.random() * 7);
@@ -218,7 +218,7 @@ export default {
         databaseId: props.database.id,
         newBackup: newBackup,
       });
-      pollBackups(NORMAL_BACKUPS_POLL_INTERVAL);
+      pollBackups(POST_CHANGE_POLL_INTERVAL);
     };
 
     // pollBackups invalidates the current timer and schedule a new timer in <<interval>> microseconds
@@ -238,10 +238,10 @@ export default {
               }
             }
             if (pending) {
-              pollBackups(Math.min(interval * 2, NORMAL_BACKUPS_POLL_INTERVAL));
+              pollBackups(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
             }
           });
-      }, Math.max(1000, Math.min(interval, NORMAL_BACKUPS_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
+      }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
     const prepareBackupSetting = () => {
