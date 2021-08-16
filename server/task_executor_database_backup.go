@@ -84,7 +84,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 func backupDatabase(instance *api.Instance, database *api.Database, backup *api.Backup, dataDir string) error {
 	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
 	if err != nil {
-		return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", instance.Username, instance.Password, instance.Host, instance.Port, err)
+		return fmt.Errorf("failed to connect instance %q at %q:%q with user %q: %w", instance.Name, instance.Host, instance.Port, instance.Username, err)
 	}
 	defer conn.Close()
 	dp := mysqldump.New(conn)
@@ -140,7 +140,7 @@ func getMigrationVersion(database *api.Database, logger *zap.Logger) (string, er
 		},
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+		return "", fmt.Errorf("failed to connect instance %q at %q:%q with user %q: %w", instance.Name, instance.Host, instance.Port, instance.Username, err)
 	}
 	defer driver.Close(context.Background())
 
