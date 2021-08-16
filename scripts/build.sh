@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # cd to the root directory and run
-# ./build.sh [outdir]
+# scripts/build.sh [outdir]
 
 # exit when any command fails
 set -e
@@ -9,6 +9,11 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
+
+if [ `dirname "${BASH_SOURCE[0]}"` != "scripts" ]
+then
+  echo "${RED}Precheck failed.${NC} Build script must run from root directory: scripts/build.sh"; exit 1;
+fi
 
 if [ -z "$1" ];
 then
@@ -18,11 +23,6 @@ else
 fi
 
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
-
-if [ `dirname "${BASH_SOURCE[0]}"` != "." ]
-then
-  echo "${RED}Precheck failed.${NC} Build script must run from Bytebase root directory ${SCRIPT_DIR}"; exit 1;
-fi
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
 if [ "${GO_VERSION}" < "1.16" ];
@@ -37,7 +37,7 @@ fi
 
 # Step 1 - Build the frontend release version into the backend/server/dist folder
 # Step 2 - Build the monolithic app by building backend release version together with the backend/server/dist (leveraing embed introduced in Golang 1.16).
-VERSION=`cat ./VERSION`
+VERSION=`cat scripts/VERSION`
 echo "Start building Bytebase monolithic ${VERSION}..."
 
 echo ""

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # cd to the root directory and run
-# ./build_docker_bb.sh
+# scripts/build_docker_bb.sh
 
 # exit when any command fails
 set -e
@@ -10,7 +10,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-VERSION=`cat ./VERSION`
+if [ `dirname "${BASH_SOURCE[0]}"` != "scripts" ]
+then
+  echo "${RED}Precheck failed.${NC} Build script must run from root directory: scripts/build_docker.sh"; exit 1;
+fi
+
+VERSION=`cat scripts/VERSION`
 echo "Start building bb docker image ${VERSION}..."
 
 docker build -f ./Dockerfile.bb\
