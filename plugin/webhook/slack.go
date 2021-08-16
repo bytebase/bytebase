@@ -45,11 +45,20 @@ type SlackReceiver struct {
 
 func (receiver *SlackReceiver) post(context WebhookContext) error {
 	blockList := []SlackWebhookBlock{}
+
+	status := ""
+	if context.Level == WebhookSuccess {
+		status = ":white_check_mark: "
+	} else if context.Level == WebhookWarn {
+		status = ":warning: "
+	} else if context.Level == WebhookError {
+		status = ":exclamation: "
+	}
 	blockList = append(blockList, SlackWebhookBlock{
 		Type: "section",
 		Text: &SlackWebhookBlockMarkdown{
 			Type: "mrkdwn",
-			Text: fmt.Sprintf("*%s*", context.Title),
+			Text: fmt.Sprintf("*%s%s*", status, context.Title),
 		},
 	})
 

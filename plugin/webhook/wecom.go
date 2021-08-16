@@ -39,9 +39,17 @@ func (receiver *WeComReceiver) post(context WebhookContext) error {
 	metaStrList = append(metaStrList, fmt.Sprintf("By: <font color=\"comment\">%s (%s)</font>", context.CreatorName, context.CreatorEmail))
 	metaStrList = append(metaStrList, fmt.Sprintf("At: <font color=\"comment\">%s</font>", time.Unix(context.CreatedTs, 0).Format(timeFormat)))
 
-	content := fmt.Sprintf("# %s\n\n%s\n[View in Bytebase](%s)", context.Title, strings.Join(metaStrList, "\n"), context.Link)
+	status := ""
+	if context.Level == WebhookSuccess {
+		status = "<font color=\"green\">Success</font> "
+	} else if context.Level == WebhookWarn {
+		status = "<font color=\"yellow\">Warn</font> "
+	} else if context.Level == WebhookError {
+		status = "<font color=\"red\">Error</font> "
+	}
+	content := fmt.Sprintf("# %s%s\n\n%s\n[View in Bytebase](%s)", status, context.Title, strings.Join(metaStrList, "\n"), context.Link)
 	if context.Description != "" {
-		content = fmt.Sprintf("# %s\n> %s\n\n%s\n[View in Bytebase](%s)", context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
+		content = fmt.Sprintf("# %s%s\n> %s\n\n%s\n[View in Bytebase](%s)", status, context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
 
 	post := WeComWebhook{
