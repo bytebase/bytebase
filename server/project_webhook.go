@@ -215,6 +215,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			hook.Type,
 			webhook.WebhookContext{
 				URL:          hook.URL,
+				Level:        webhook.WebhookInfo,
 				Title:        fmt.Sprintf("Test webhook '%s'", hook.Name),
 				Description:  "This is a test",
 				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectSlug(project), api.ProjectWebhookSlug(hook)),

@@ -52,8 +52,16 @@ func (receiver *DiscordReceiver) post(context WebhookContext) error {
 		fieldList = append(fieldList, DiscordWebhookEmbedField(meta))
 	}
 
+	status := ""
+	if context.Level == WebhookSuccess {
+		status = ":white_check_mark: "
+	} else if context.Level == WebhookWarn {
+		status = ":warning: "
+	} else if context.Level == WebhookError {
+		status = ":exclamation: "
+	}
 	embedList = append(embedList, DiscordWebhookEmbed{
-		Title:       context.Title,
+		Title:       fmt.Sprintf("%s%s", status, context.Title),
 		Type:        "rich",
 		Description: context.Description,
 		URL:         context.Link,

@@ -19,8 +19,18 @@ type WebhookMeta struct {
 	Value string
 }
 
+type WebhookLevel string
+
+const (
+	WebhookInfo    WebhookLevel = "INFO"
+	WebhookSuccess WebhookLevel = "SUCCESS"
+	WebhookWarn    WebhookLevel = "WARN"
+	WebhookError   WebhookLevel = "ERROR"
+)
+
 type WebhookContext struct {
 	URL          string
+	Level        WebhookLevel
 	Title        string
 	Description  string
 	Link         string

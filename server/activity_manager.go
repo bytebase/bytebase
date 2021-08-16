@@ -92,6 +92,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			// Call exteranl webhook endpoint in Go routine to avoid blocking web serveing thread.
 			go func() {
 				for _, hook := range hookList {
+					level := webhook.WebhookInfo
 					title := ""
 					link := fmt.Sprintf("%s:%d/issue/%s", m.s.frontendHost, m.s.frontendPort, api.IssueSlug(meta.issue))
 					metaList := []webhook.WebhookMeta{}
@@ -103,6 +104,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 						case "OPEN":
 							title = fmt.Sprintf("Issue reopened - %s", meta.issue.Name)
 						case "DONE":
+							level = webhook.WebhookSuccess
 							title = fmt.Sprintf("Issue resolved - %s", meta.issue.Name)
 						case "CANCELED":
 							title = fmt.Sprintf("Issue canceled - %s", meta.issue.Name)
@@ -213,8 +215,10 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 						case api.TaskRunning:
 							title = fmt.Sprintf("Task started - %s", task.Name)
 						case api.TaskDone:
+							level = webhook.WebhookSuccess
 							title = fmt.Sprintf("Task completed - %s", task.Name)
 						case api.TaskFailed:
+							level = webhook.WebhookError
 							title = fmt.Sprintf("Task failed - %s", task.Name)
 						}
 					}
@@ -232,6 +236,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 						hook.Type,
 						webhook.WebhookContext{
 							URL:          hook.URL,
+							Level:        level,
 							Title:        title,
 							Description:  create.Comment,
 							Link:         link,
