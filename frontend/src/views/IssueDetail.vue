@@ -705,6 +705,8 @@ export default {
             ((task as Task).payload as TaskDatabaseSchemaUpdatePayload)
               .statement || ""
           );
+        case "bb.task.database.restore":
+          return "";
       }
     };
 
