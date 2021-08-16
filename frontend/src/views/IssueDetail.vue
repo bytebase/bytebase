@@ -690,6 +690,10 @@ export default {
       });
     };
 
+    const selectedTask = computed((): Task | TaskCreate => {
+      return selectedStage.value.taskList[0];
+    });
+
     const statement = (stage: Stage): string => {
       const task = stage.taskList[0];
       switch (task.type) {
@@ -789,17 +793,19 @@ export default {
     });
 
     const showIssueTaskStatementPanel = computed(() => {
+      const task = selectedTask.value;
       return (
-        issue.value.type == "bb.issue.general" ||
-        issue.value.type == "bb.issue.database.create" ||
-        issue.value.type == "bb.issue.database.schema.update"
+        task.type == "bb.task.general" ||
+        task.type == "bb.task.database.create" ||
+        task.type == "bb.task.database.schema.update"
       );
     });
 
     const showIssueTaskRollbackStatementPanel = computed(() => {
       // TODO(tianzhou): Disable rollback statement for now
       return false;
-      //return issue.value.type == "bb.issue.database.schema.update";
+      // const task = selectedTask.value;
+      // return task.type == "bb.task.database.schema.update";
     });
 
     return {
