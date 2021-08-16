@@ -136,7 +136,7 @@ func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceD
 		return nil
 	}
 
-	targetDriver, err := getDatabaseDriver(targetDatabase, logger)
+	targetDriver, err := GetDatabaseDriver(targetDatabase.Instance, targetDatabase.Name, logger)
 	if err != nil {
 		return err
 	}
@@ -174,27 +174,4 @@ func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceD
 		return fmt.Errorf("failed to create migration history: %w", err)
 	}
 	return nil
-}
-
-func getDatabaseDriver(database *api.Database, logger *zap.Logger) (db.Driver, error) {
-	instance := database.Instance
-	driver, err := db.Open(
-		instance.Engine,
-		db.DriverConfig{Logger: logger},
-		db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-			Database: database.Name,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect instance %q at %q:%q with user %q: %w", instance.Name, instance.Host, instance.Port, instance.Username, err)
-	}
-	return driver, nil
 }

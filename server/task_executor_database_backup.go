@@ -123,24 +123,9 @@ func getAndCreateBackupPath(dataDir string, database *api.Database, name string)
 }
 
 func getMigrationVersion(database *api.Database, logger *zap.Logger) (string, error) {
-	instance := database.Instance
-	driver, err := db.Open(
-		instance.Engine,
-		db.DriverConfig{Logger: logger},
-		db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-			Database: database.Name,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
+	driver, err := GetDatabaseDriver(database.Instance, database.Name, logger)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect instance %q at %q:%q with user %q: %w", instance.Name, instance.Host, instance.Port, instance.Username, err)
+		return "", err
 	}
 	defer driver.Close(context.Background())
 

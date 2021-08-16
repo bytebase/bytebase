@@ -97,24 +97,10 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 	resultSet := &api.SqlResultSet{}
 	err := func() error {
-		driver, err := db.Open(
-			db.Mysql,
-			db.DriverConfig{Logger: s.l},
-			db.ConnectionConfig{
-				Username: instance.Username,
-				Password: instance.Password,
-				Host:     instance.Host,
-				Port:     instance.Port,
-			},
-			db.ConnectionContext{
-				EnvironmentName: instance.Environment.Name,
-				InstanceName:    instance.Name,
-			},
-		)
+		driver, err := GetDatabaseDriver(instance, "", s.l)
 		if err != nil {
-			return fmt.Errorf("failed to connect instance: %v with user: %v. Error %w", instance.Name, instance.Username, err)
+			return err
 		}
-
 		defer driver.Close(context.Background())
 
 		userList, schemaList, err := driver.SyncSchema(context.Background())
