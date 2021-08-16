@@ -117,10 +117,9 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 			`+"`type`,"+`
 			storage_backend,
 			migration_history_version,
-			path,
-			comment
+			path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, migration_history_version, path, comment"+`
 	`,
 		create.CreatorId,
@@ -132,7 +131,6 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 		create.StorageBackend,
 		create.MigrationHistoryVersion,
 		create.Path,
-		create.Comment,
 	)
 
 	if err != nil {
@@ -236,6 +234,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	set, args = append(set, "status = ?"), append(args, patch.Status)
+	set, args = append(set, "comment = ?"), append(args, patch.Comment)
 
 	args = append(args, patch.ID)
 
