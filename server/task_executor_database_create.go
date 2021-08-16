@@ -73,5 +73,5 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, "", err
 	}
 
-	return true, fmt.Sprintf("Created database '%s'", payload.DatabaseName), nil
+	return true, fmt.Sprintf("Created database %q", payload.DatabaseName), nil
 }

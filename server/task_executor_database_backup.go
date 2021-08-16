@@ -77,7 +77,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, "", backupErr
 	}
 
-	return true, fmt.Sprintf("Backup database '%s'", task.Database.Name), nil
+	return true, fmt.Sprintf("Backup database %q", task.Database.Name), nil
 }
 
 // backupDatabase will take a backup of a database.

@@ -55,7 +55,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			if connectionInfo.Port != "" {
 				hostPort += ":" + connectionInfo.Port
 			}
-			resultSet.Error = fmt.Errorf("failed to connect '%s' for user '%s' (using password: %s), %w", hostPort, connectionInfo.Username, usePassword, err).Error()
+			resultSet.Error = fmt.Errorf("failed to connect %q for user %q (using password: %s), %w", hostPort, connectionInfo.Username, usePassword, err).Error()
 		} else {
 			defer db.Close(context.Background())
 			if err := db.Ping(context.Background()); err != nil {

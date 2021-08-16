@@ -152,9 +152,9 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, "", err
 	}
 
-	detail = fmt.Sprintf("Applied migration version %s to database '%s'", mi.Version, databaseName)
+	detail = fmt.Sprintf("Applied migration version %s to database %q", mi.Version, databaseName)
 	if mi.Type == db.Baseline {
-		detail = fmt.Sprintf("Established baseline version %s for database '%s'", mi.Version, databaseName)
+		detail = fmt.Sprintf("Established baseline version %s for database %q", mi.Version, databaseName)
 	}
 
 	return true, detail, nil

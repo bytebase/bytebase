@@ -188,7 +188,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 
 		if claims.Audience != fmt.Sprintf(accessTokenAudienceFmt, mode) {
 			return echo.NewHTTPError(http.StatusUnauthorized,
-				fmt.Sprintf("Invalid access token, audience mismatch, got '%v', expected '%v'. you may send request to the wrong environment",
+				fmt.Sprintf("Invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 					claims.Audience,
 					fmt.Sprintf(accessTokenAudienceFmt, mode),
 				))
@@ -257,7 +257,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 
 					if refreshTokenClaims.Audience != fmt.Sprintf(refreshTokenAudienceFmt, mode) {
 						return echo.NewHTTPError(http.StatusUnauthorized,
-							fmt.Sprintf("Invalid refresh token, audience mismatch, got '%v', expected '%v'. you may send request to the wrong environment",
+							fmt.Sprintf("Invalid refresh token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 								refreshTokenClaims.Audience,
 								fmt.Sprintf(refreshTokenAudienceFmt, mode),
 							))
