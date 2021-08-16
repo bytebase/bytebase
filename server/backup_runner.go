@@ -30,6 +30,7 @@ type BackupRunner struct {
 // Run is the runner for backup runner.
 func (s *BackupRunner) Run() error {
 	go func() {
+		s.l.Debug(fmt.Sprintf("Auto backup runner started and will run every %v", s.backupRunnerInterval))
 		for {
 			func() {
 				defer func() {
@@ -38,7 +39,7 @@ func (s *BackupRunner) Run() error {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Backup runner PANIC RECOVER", zap.Error(err))
+						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
 				// Find all databases that need a backup in this hour.

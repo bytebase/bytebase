@@ -27,6 +27,7 @@ type SchemaSyncer struct {
 
 func (s *SchemaSyncer) Run() error {
 	go func() {
+		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", SCHEMA_SYNC_INTERVAL))
 		for {
 			func() {
 				defer func() {

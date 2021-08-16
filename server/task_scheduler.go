@@ -30,6 +30,7 @@ type TaskScheduler struct {
 
 func (s *TaskScheduler) Run() error {
 	go func() {
+		s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", TASK_SCHEDULE_INTERVAL))
 		for {
 			func() {
 				defer func() {
@@ -38,7 +39,7 @@ func (s *TaskScheduler) Run() error {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Scheduler PANIC RECOVER", zap.Error(err))
+						s.l.Error("Task scheduler PANIC RECOVER", zap.Error(err))
 					}
 				}()
 
