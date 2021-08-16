@@ -240,7 +240,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							zap.String("file", added))
 						continue
 					}
-					createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue '%s' on adding %s", issue.Name, added))
+					createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
 				}
 			}
 		}
