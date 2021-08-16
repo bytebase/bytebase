@@ -106,7 +106,6 @@ type BackupCreate struct {
 	StorageBackend          BackupStorageBackend `jsonapi:"attr,storageBackend"`
 	MigrationHistoryVersion string               `jsonapi:"attr,migrationHistoryVersion"`
 	Path                    string               `jsonapi:"attr,path"`
-	Comment                 string               `jsonapi:"attr,comment"`
 }
 
 type BackupFind struct {
@@ -135,7 +134,8 @@ type BackupPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Status string
+	Status  string
+	Comment string
 }
 
 // BackupSetting is the backup setting for a database.

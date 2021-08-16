@@ -37,7 +37,6 @@ export type BackupCreate = {
   status: BackupStatus;
   type: BackupType;
   storageBackend: BackupStorageBackend;
-  comment: string;
 };
 
 // Backup setting.

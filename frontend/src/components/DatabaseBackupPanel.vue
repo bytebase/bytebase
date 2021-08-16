@@ -60,8 +60,8 @@
       <DatabaseBackupCreateForm
         :database="database"
         @create="
-          (backupName, comment) => {
-            createBackup(backupName, comment);
+          (backupName) => {
+            createBackup(backupName);
             state.showCreateBackupModal = false;
           }
         "
@@ -204,7 +204,7 @@ export default {
       })`;
     });
 
-    const createBackup = (backupName: string, comment: string) => {
+    const createBackup = (backupName: string) => {
       // Create backup
       const newBackup: BackupCreate = {
         databaseId: props.database.id!,
@@ -212,7 +212,6 @@ export default {
         status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
-        comment,
       };
       store.dispatch("backup/createBackup", {
         databaseId: props.database.id,

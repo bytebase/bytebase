@@ -1,7 +1,7 @@
 <template>
   <form
     class="space-y-6 divide-y divide-block-border"
-    @submit.prevent="$emit('create', state.backupName, state.comment)"
+    @submit.prevent="$emit('create', state.backupName)"
   >
     <div class="space-y-4">
       <div class="grid grid-cols-3 gap-y-6 gap-x-4">
@@ -17,38 +17,6 @@
             class="textfield mt-1 w-full"
             v-model="state.backupName"
           />
-        </div>
-      </div>
-
-      <div class="sm:col-span-4 w-112 min-w-full">
-        <label for="comment" class="textlabel"> Comment </label>
-        <div class="mt-1">
-          <textarea
-            ref="commentTextArea"
-            rows="3"
-            class="
-              textarea
-              block
-              w-full
-              resize-none
-              mt-1
-              text-sm text-control
-              rounded-md
-              whitespace-pre-wrap
-            "
-            placeholder="(Optional) Add a note..."
-            v-model="state.comment"
-            @input="
-              (e) => {
-                sizeToFit(e.target);
-              }
-            "
-            @focus="
-              (e) => {
-                sizeToFit(e.target);
-              }
-            "
-          ></textarea>
         </div>
       </div>
     </div>
@@ -73,7 +41,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, ref } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { Database } from "../types";
 import { isEmpty } from "lodash";
 import moment from "moment";
@@ -81,7 +49,6 @@ import slug from "slug";
 
 interface LocalState {
   backupName: string;
-  comment: string;
 }
 
 export default {
@@ -95,14 +62,11 @@ export default {
   },
   components: {},
   setup(props, ctx) {
-    const commentTextArea = ref("");
-
     const state = reactive<LocalState>({
       // The default format is consistent with the default automatic backup name format used in the server.
       backupName: `${slug(props.database.project.name)}-${slug(
         props.database.instance.environment.name
       )}-${moment.utc().local().format("YYYYMMDDTHHmmss")}`,
-      comment: "",
     });
 
     const allowCreate = computed(() => {
@@ -110,7 +74,6 @@ export default {
     });
 
     return {
-      commentTextArea,
       state,
       allowCreate,
     };

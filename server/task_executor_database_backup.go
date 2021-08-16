@@ -62,13 +62,16 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	backupErr := backupDatabase(task.Instance, task.Database, backup, server.dataDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
+	comment := ""
 	if backupErr != nil {
 		newBackupStatus = string(api.BackupStatusFailed)
+		comment = backupErr.Error()
 	}
 	if _, err = server.BackupService.PatchBackup(ctx, &api.BackupPatch{
 		ID:        backup.ID,
 		Status:    newBackupStatus,
 		UpdaterId: api.SYSTEM_BOT_ID,
+		Comment:   comment,
 	}); err != nil {
 		return true, "", fmt.Errorf("failed to patch backup: %w", err)
 	}
