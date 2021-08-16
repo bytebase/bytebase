@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/db"
 	"go.uber.org/zap"
 )
 
@@ -43,24 +42,10 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := db.Open(
-		instance.Engine,
-		db.DriverConfig{Logger: exec.l},
-		db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
+	driver, err := GetDatabaseDriver(task.Instance, "", exec.l)
 	if err != nil {
-		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+		return true, "", err
 	}
-
 	defer driver.Close(context.Background())
 
 	exec.l.Debug("Start creating database...",

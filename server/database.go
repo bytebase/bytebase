@@ -10,8 +10,10 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -537,4 +539,28 @@ func (s *Server) ComposeBackupRelationship(ctx context.Context, backup *api.Back
 		return err
 	}
 	return nil
+}
+
+// Retrieve db.Driver connection.
+// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
+func GetDatabaseDriver(instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+	driver, err := db.Open(
+		instance.Engine,
+		db.DriverConfig{Logger: logger},
+		db.ConnectionConfig{
+			Username: instance.Username,
+			Password: instance.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+			Database: databaseName,
+		},
+		db.ConnectionContext{
+			EnvironmentName: instance.Environment.Name,
+			InstanceName:    instance.Name,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect database %s/%s at %q:%q with user %q: %w", instance.Name, databaseName, instance.Host, instance.Port, instance.Username, err)
+	}
+	return driver, nil
 }

@@ -110,30 +110,14 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, "", err
 	}
 
-	instance := task.Instance
-	driver, err := db.Open(
-		instance.Engine,
-		db.DriverConfig{Logger: exec.l},
-		db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-			Database: databaseName,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
+	driver, err := GetDatabaseDriver(task.Instance, databaseName, exec.l)
 	if err != nil {
-		return true, "", fmt.Errorf("failed to connect instance: %v with user: %v. %w", instance.Name, instance.Username, err)
+		return true, "", err
 	}
-
 	defer driver.Close(context.Background())
 
 	exec.l.Debug("Start sql migration...",
-		zap.String("instance", instance.Name),
+		zap.String("instance", task.Instance.Name),
 		zap.String("database", databaseName),
 		zap.String("engine", mi.Engine.String()),
 		zap.String("type", mi.Type.String()),
@@ -142,10 +126,10 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return true, "", fmt.Errorf("failed to check migration setup for instance: %v, %w", instance.Name, err)
+		return true, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
 	if setup {
-		return true, "", fmt.Errorf("missing migration schema for instance: %v", instance.Name)
+		return true, "", fmt.Errorf("missing migration schema for instance %q", task.Instance.Name)
 	}
 
 	if err := driver.ExecuteMigration(ctx, mi, sql); err != nil {
