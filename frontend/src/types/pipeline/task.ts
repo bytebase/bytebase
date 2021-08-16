@@ -1,5 +1,12 @@
 import { Database } from "../database";
-import { BackupId, DatabaseId, InstanceId, TaskId, TaskRunId } from "../id";
+import {
+  BackupId,
+  DatabaseId,
+  InstanceId,
+  ProjectId,
+  TaskId,
+  TaskRunId,
+} from "../id";
 import { Instance } from "../instance";
 import { Principal } from "../principal";
 import { VCSPushEvent } from "../vcs";
@@ -25,6 +32,7 @@ export type TaskGeneralPayload = {
 };
 
 export type TaskDatabaseCreatePayload = {
+  projectId: ProjectId;
   statement: string;
   databaseName: string;
   characterSet: string;
@@ -37,10 +45,16 @@ export type TaskDatabaseSchemaUpdatePayload = {
   pushEvent?: VCSPushEvent;
 };
 
+export type TaskDatabaseRestorePayload = {
+  databaseName: string;
+  backupId: BackupId;
+};
+
 export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
-  | TaskDatabaseSchemaUpdatePayload;
+  | TaskDatabaseSchemaUpdatePayload
+  | TaskDatabaseRestorePayload;
 
 export type Task = {
   id: TaskId;
