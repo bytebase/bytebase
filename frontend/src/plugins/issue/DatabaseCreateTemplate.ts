@@ -1,5 +1,5 @@
+import { IssueCreate, UNKNOWN_ID } from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
-import { IssueCreate } from "../../types";
 
 const template: IssueTemplate = {
   type: "bb.issue.database.create",
@@ -12,6 +12,7 @@ const template: IssueTemplate = {
       name: "Create database",
       type: "bb.issue.database.create",
       description: "",
+      assigneeId: UNKNOWN_ID,
       pipeline: {
         stageList: [
           {
