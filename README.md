@@ -82,7 +82,7 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 1.  Start backend using air (with live reload)
 
     ```bash
-    $ air
+    $ air -c scripts/.air.toml
     ```
 
 1.  Start frontend (with live reload)
