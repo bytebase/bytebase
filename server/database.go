@@ -294,9 +294,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get migration history for database %q", database.Name)).SetInternal(err)
 		}
-		if database.Project.WorkflowType == api.VCS_WORKFLOW && version == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Migration history configuration is required for backups if database %q uses VCS workflow", database.Name)).SetInternal(err)
-		}
 		backupCreate.MigrationHistoryVersion = version
 
 		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
