@@ -39,7 +39,7 @@ func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *
 			payload
 		)
 		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, detail, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, comment, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -66,7 +66,7 @@ func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
-		&taskRun.Detail,
+		&taskRun.Comment,
 		&taskRun.Payload,
 	); err != nil {
 		return nil, FormatError(err)
@@ -105,7 +105,7 @@ func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, pat
 	// Build UPDATE clause.
 	set, args := []string{}, []interface{}{}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
-	set, args = append(set, "detail = ?"), append(args, patch.Detail)
+	set, args = append(set, "comment = ?"), append(args, patch.Comment)
 
 	// Build WHERE clause.
 	where := []string{"1 = 1"}
@@ -120,7 +120,7 @@ func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, pat
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, detail, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, comment, payload"+`
 	`,
 		args...,
 	)
@@ -142,7 +142,7 @@ func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, pat
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
-		&taskRun.Detail,
+		&taskRun.Comment,
 		&taskRun.Payload,
 	); err != nil {
 		return nil, FormatError(err)
@@ -180,7 +180,7 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
-			detail,
+			comment,
 			payload
 		FROM task_run
 		WHERE `+strings.Join(where, " AND "),
@@ -205,7 +205,7 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 			&taskRun.Name,
 			&taskRun.Status,
 			&taskRun.Type,
-			&taskRun.Detail,
+			&taskRun.Comment,
 			&taskRun.Payload,
 		); err != nil {
 			return nil, FormatError(err)

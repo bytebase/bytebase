@@ -48,7 +48,7 @@ type TaskRun struct {
 	Name    string        `jsonapi:"attr,name"`
 	Status  TaskRunStatus `jsonapi:"attr,status"`
 	Type    TaskType      `jsonapi:"attr,type"`
-	Detail  string        `jsonapi:"attr,detail"`
+	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
 }
 
@@ -92,8 +92,8 @@ type TaskRunStatusPatch struct {
 
 	// Domain specific fields
 	Status TaskRunStatus
-	// The task status detail
-	Detail string
+	// Records the status detail (e.g. error message on failure)
+	Comment string
 }
 
 type TaskRunService interface {
