@@ -76,14 +76,6 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		}
 		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
 	}
-	databasePatch := &api.DatabasePatch{
-		ID:             targetDatabase.ID,
-		UpdaterId:      api.SYSTEM_BOT_ID,
-		SourceBackupId: &backup.ID,
-	}
-	if _, err = server.DatabaseService.PatchDatabase(context.Background(), databasePatch); err != nil {
-		return true, "failed to patch database source backup ID", err
-	}
 
 	exec.l.Debug("Start database restore from backup...",
 		zap.String("source_instance", sourceDatabase.Instance.Name),
@@ -93,14 +85,28 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		zap.String("backup", backup.Name),
 	)
 
-	// Branch migration history.
+	// Restore the database to the target database.
+	if err := restoreDatabase(targetDatabase, backup, server.dataDir); err != nil {
+		return true, "", err
+	}
+
+	// TODO(tianzhou): This should be done in the same transaction as restoreDatabase to guarantee consistency.
+	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
 	if err := branchMigrationHistoryIfNeeded(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
 		return true, "", err
 	}
 
-	// Restore the database to the target database.
-	if err := restoreDatabase(targetDatabase, backup, server.dataDir); err != nil {
-		return true, "", err
+	// Patch the backup id after we successfully restore the database using the backup.
+	// restoringDatabase is changing the customer database instance, while here we are changing our own meta db,
+	// and since we can't guarantee cross database transaction consistency, there is always a chance to have
+	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
+	databasePatch := &api.DatabasePatch{
+		ID:             targetDatabase.ID,
+		UpdaterId:      api.SYSTEM_BOT_ID,
+		SourceBackupId: &backup.ID,
+	}
+	if _, err = server.DatabaseService.PatchDatabase(context.Background(), databasePatch); err != nil {
+		return true, "", fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
 	}
 
 	return true, fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name), nil
