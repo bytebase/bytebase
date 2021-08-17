@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  Backup,
   Database,
   DatabaseCreate,
   DatabaseId,
@@ -46,12 +47,20 @@ function convert(
     dataSourceList.push(dataSource);
   }
 
+  const sourceBackupId = database.relationships!.sourceBackup.data
+    ? (database.relationships!.sourceBackup.data as ResourceIdentifier).id
+    : undefined;
+  let sourceBackup: Backup | undefined = undefined;
+
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
       project = rootGetters["project/convert"](item, includedList);
+    }
+    if (item.type == "backup" && item.id == sourceBackupId) {
+      sourceBackup = rootGetters["backup/convert"](item, includedList);
     }
   }
 
@@ -60,12 +69,13 @@ function convert(
   const databaseWithoutDataSourceList = {
     ...(database.attributes as Omit<
       Database,
-      "id" | "instance" | "project" | "dataSourceList"
+      "id" | "instance" | "project" | "dataSourceList" | "sourceBackup"
     >),
     id: parseInt(database.id),
     instance,
     project,
     dataSourceList: [],
+    sourceBackup,
   };
 
   for (const item of includedList || []) {
