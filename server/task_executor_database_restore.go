@@ -164,6 +164,10 @@ func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceD
 	if issue != nil {
 		issueId = strconv.Itoa(issue.ID)
 	}
+	description := fmt.Sprintf("Branched from backup %q of database %q.", backup.Name, sourceDatabase.Name)
+	if sourceDatabase.InstanceId != targetDatabase.InstanceId {
+		description = fmt.Sprintf("Branched from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
+	}
 	m := &db.MigrationInfo{
 		Version:     defaultMigrationVersionFromTaskId(task.ID),
 		Namespace:   targetDatabase.Name,
@@ -171,7 +175,7 @@ func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceD
 		Environment: targetDatabase.Instance.Environment.Name,
 		Engine:      db.MigrationEngine(targetDatabase.Project.WorkflowType),
 		Type:        db.Branch,
-		Description: fmt.Sprintf("Branched from backup %q of database %q.", backup.Name, sourceDatabase.Name),
+		Description: description,
 		Creator:     task.Creator.Name,
 		IssueId:     issueId,
 		Payload:     "",
