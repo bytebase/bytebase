@@ -154,6 +154,13 @@ func (s *TaskScheduler) Run() error {
 								zap.Error(err),
 							)
 						}
+					} else if err != nil {
+						s.l.Debug("Encountered transient error running task, will retry",
+							zap.Int("id", task.ID),
+							zap.String("name", task.Name),
+							zap.String("type", string(task.Type)),
+							zap.Error(err),
+						)
 					}
 				}
 			}()
