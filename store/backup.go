@@ -176,13 +176,13 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			database_id,
-		    name,
+			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
 			storage_backend,

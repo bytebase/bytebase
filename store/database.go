@@ -226,17 +226,18 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			instance_id,
 			project_id,
-		    name,
+			source_backup_id,
+			name,
 			character_set,
 			collation,
-		    sync_status,
+			sync_status,
 			last_successful_sync_ts
 		FROM db
 		WHERE `+strings.Join(where, " AND "),
@@ -251,6 +252,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 	list := make([]*api.Database, 0)
 	for rows.Next() {
 		var database api.Database
+		var nullSourceBackupID sql.NullInt64
 		if err := rows.Scan(
 			&database.ID,
 			&database.CreatorId,
@@ -259,6 +261,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.UpdatedTs,
 			&database.InstanceId,
 			&database.ProjectId,
+			&nullSourceBackupID,
 			&database.Name,
 			&database.CharacterSet,
 			&database.Collation,
@@ -266,6 +269,9 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.LastSuccessfulSyncTs,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if nullSourceBackupID.Valid {
+			database.SourceBackupId = int(nullSourceBackupID.Int64)
 		}
 
 		list = append(list, &database)
@@ -284,6 +290,9 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 	if v := patch.ProjectId; v != nil {
 		set, args = append(set, "project_id = ?"), append(args, *v)
 	}
+	if v := patch.SourceBackupId; v != nil {
+		set, args = append(set, "source_backup_id = ?"), append(args, *v)
+	}
 	if v := patch.SyncStatus; v != nil {
 		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
 	}
@@ -298,7 +307,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, source_backup_id, name, character_set, collation, sync_status, last_successful_sync_ts
 	`,
 		args...,
 	)
@@ -309,6 +318,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 
 	if row.Next() {
 		var database api.Database
+		var nullSourceBackupID sql.NullInt64
 		if err := row.Scan(
 			&database.ID,
 			&database.CreatorId,
@@ -317,6 +327,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.UpdatedTs,
 			&database.InstanceId,
 			&database.ProjectId,
+			&nullSourceBackupID,
 			&database.Name,
 			&database.CharacterSet,
 			&database.Collation,
@@ -324,6 +335,9 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.LastSuccessfulSyncTs,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if nullSourceBackupID.Valid {
+			database.SourceBackupId = int(nullSourceBackupID.Int64)
 		}
 		return &database, nil
 	}
