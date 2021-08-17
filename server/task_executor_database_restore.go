@@ -78,6 +78,14 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		}
 		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
 	}
+	databasePatch := &api.DatabasePatch{
+		ID:             targetDatabase.ID,
+		UpdaterId:      api.SYSTEM_BOT_ID,
+		SourceBackupId: &backup.ID,
+	}
+	if _, err = server.DatabaseService.PatchDatabase(context.Background(), databasePatch); err != nil {
+		return true, "failed to patch database source backup ID", err
+	}
 
 	exec.l.Debug("Start database restore from backup...",
 		zap.String("source_instance", sourceDatabase.Instance.Name),

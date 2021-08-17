@@ -519,9 +519,33 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
+	if database.SourceBackupId != 0 {
+		database.SourceBackup, err = s.ComposeBackupByID(context.Background(), database.SourceBackupId)
+		if err != nil {
+			return err
+		}
+	}
+
 	database.DataSourceList = []*api.DataSource{}
 
 	return nil
+}
+
+// ComposeBackupByID will compose the backup by backup ID.
+func (s *Server) ComposeBackupByID(ctx context.Context, id int) (*api.Backup, error) {
+	backupFind := &api.BackupFind{
+		ID: &id,
+	}
+	backup, err := s.BackupService.FindBackup(ctx, backupFind)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.ComposeBackupRelationship(ctx, backup); err != nil {
+		return nil, err
+	}
+
+	return backup, nil
 }
 
 // ComposeBackupRelationship will compose the relationship of a backup.

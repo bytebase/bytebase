@@ -48,6 +48,8 @@ type Database struct {
 	InstanceId     int
 	Instance       *Instance     `jsonapi:"relation,instance"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
+	SourceBackupId int
+	SourceBackup   *Backup `jsonapi:"relation,sourceBackup"`
 
 	// Domain specific fields
 	Name                 string     `jsonapi:"attr,name"`
@@ -103,7 +105,8 @@ type DatabasePatch struct {
 	UpdaterId int
 
 	// Related fields
-	ProjectId *int `jsonapi:"attr,projectId"`
+	ProjectId      *int `jsonapi:"attr,projectId"`
+	SourceBackupId *int
 
 	// Domain specific fields
 	SyncStatus           *SyncStatus

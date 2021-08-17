@@ -378,6 +378,7 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     name TEXT NOT NULL,
