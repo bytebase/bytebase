@@ -4,7 +4,7 @@ PRAGMA user_version = 10001;
 CREATE TABLE principal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -62,7 +62,7 @@ VALUES
 CREATE TABLE setting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -96,7 +96,7 @@ END;
 CREATE TABLE member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -131,7 +131,7 @@ END;
 CREATE TABLE environment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -169,7 +169,7 @@ END;
 CREATE TABLE project (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -226,7 +226,7 @@ END;
 CREATE TABLE project_member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -260,7 +260,7 @@ END;
 CREATE TABLE project_webhook (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -299,7 +299,7 @@ END;
 CREATE TABLE instance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -335,7 +335,7 @@ END;
 CREATE TABLE instance_user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -370,7 +370,7 @@ END;
 CREATE TABLE db (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -413,7 +413,7 @@ END;
 CREATE TABLE tbl (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -460,7 +460,7 @@ END;
 CREATE TABLE col (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -506,7 +506,7 @@ END;
 CREATE TABLE idx (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -550,7 +550,7 @@ END;
 CREATE TABLE data_source (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -592,7 +592,7 @@ END;
 CREATE TABLE backup (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -634,7 +634,7 @@ END;
 CREATE TABLE backup_setting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -679,7 +679,7 @@ END;
 CREATE TABLE pipeline (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -713,7 +713,7 @@ END;
 CREATE TABLE stage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -748,7 +748,7 @@ END;
 CREATE TABLE task (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -845,7 +845,7 @@ END;
 CREATE TABLE issue (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -905,7 +905,7 @@ CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_i
 CREATE TABLE activity (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -965,7 +965,7 @@ VALUES
 CREATE TABLE bookmark (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -998,7 +998,7 @@ END;
 CREATE TABLE vcs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -1048,7 +1048,7 @@ END;
 CREATE TABLE repo (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED', 'PENDING_DELETE')
+        row_status IN ('NORMAL', 'ARCHIVED')
     ) DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),

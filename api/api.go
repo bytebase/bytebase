@@ -5,9 +5,8 @@ const UNKNOWN_ID = -1
 type RowStatus string
 
 const (
-	Normal        RowStatus = "NORMAL"
-	Archived      RowStatus = "ARCHIVED"
-	PendingDelete RowStatus = "PENDING_DELETE"
+	Normal   RowStatus = "NORMAL"
+	Archived RowStatus = "ARCHIVED"
 )
 
 func (e RowStatus) String() string {
@@ -16,8 +15,6 @@ func (e RowStatus) String() string {
 		return "NORMAL"
 	case Archived:
 		return "ARCHIVED"
-	case PendingDelete:
-		return "PENDING_DELETE"
 	}
 	return ""
 }
