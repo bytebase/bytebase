@@ -11,8 +11,12 @@ import (
 
 type TaskExecutor interface {
 	// RunOnce will be called periodically by the scheduler until terminated is true.
-	// Note, it's possible that err could be non-nil while terminated is false, which
+	//
+	// NOTE
+	//
+	// 1. It's possible that err could be non-nil while terminated is false, which
 	// usually indicates a transient error and will make scheduler retry later.
+	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error)
 }
 
