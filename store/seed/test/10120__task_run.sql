@@ -9,7 +9,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
@@ -37,7 +37,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
@@ -64,7 +64,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail
+        comment
     )
 VALUES
     (
@@ -89,7 +89,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
@@ -117,7 +117,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
@@ -145,7 +145,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
@@ -173,7 +173,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
@@ -201,7 +201,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        detail,
+        comment,
         payload
     )
 VALUES
