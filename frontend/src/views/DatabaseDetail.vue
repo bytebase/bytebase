@@ -71,8 +71,10 @@
                   :to="`/db/${database.sourceBackup.databaseId}`"
                   class="normal-link"
                 >
+                  <!-- Do not display the name of the backup's database because that requires a fetch  -->
                   <span class="tooltip"
-                    >This database is restored from a backup</span
+                    >{{ database.name }} is restored from another database
+                    backup</span
                   >
                   Parent database
                 </router-link>
