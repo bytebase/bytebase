@@ -40,7 +40,7 @@ export const POST_CHANGE_POLL_INTERVAL = 1000;
 export const POLL_JITTER = 5000;
 
 // RowStatus
-export type RowStatus = "NORMAL" | "ARCHIVED" | "PENDING_DELETE";
+export type RowStatus = "NORMAL" | "ARCHIVED";
 
 // Router
 export type RouterSlug = {
