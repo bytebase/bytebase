@@ -378,7 +378,8 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    source_backup_id INTEGER,
+    -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
+    source_backup_id INTEGER REFERENCES backup (id) ON DELETE SET NULL,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     name TEXT NOT NULL,
