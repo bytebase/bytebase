@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/db"
@@ -62,8 +61,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		} else {
 			mi.Creator = creator.Name
 		}
-		// Use the concatenation of current time and the task id to guarantee uniqueness in an ascending way.
-		mi.Version = strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(task.ID)}, ".")
+		mi.Version = defaultMigrationVersionFromTaskId(task.ID)
 		mi.Database = databaseName
 		mi.Namespace = databaseName
 		mi.Description = task.Name
