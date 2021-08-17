@@ -63,6 +63,21 @@
                 {{ projectName(database.project) }}
               </router-link>
             </dd>
+            <template v-if="database.sourceBackup">
+              <dt class="sr-only">Parent</dt>
+              <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
+                <span class="textlabel">Restored&nbsp;-&nbsp;</span>
+                <router-link
+                  :to="`/db/${database.sourceBackup.databaseId}`"
+                  class="normal-link"
+                >
+                  <span class="tooltip"
+                    >This database is restored from a backup</span
+                  >
+                  Parent database
+                </router-link>
+              </dd>
+            </template>
             <dd
               v-if="databaseConsoleLink.length > 0"
               class="flex items-center text-sm md:mr-4"

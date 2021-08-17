@@ -39,6 +39,12 @@ const state: () => BackupState = () => ({
 });
 
 const getters = {
+  convert:
+    (state: BackupState, getters: any, rootState: any, rootGetters: any) =>
+    (backup: ResourceObject, includedList: ResourceObject[]): Backup => {
+      return convert(backup, includedList || [], rootGetters);
+    },
+
   backupListByDatabaseId:
     (state: BackupState) =>
     (databaseId: DatabaseId): Backup[] => {
