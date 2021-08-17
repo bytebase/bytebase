@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
@@ -167,7 +165,7 @@ func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceD
 		issueId = strconv.Itoa(issue.ID)
 	}
 	m := &db.MigrationInfo{
-		Version:     strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(task.ID)}, "."),
+		Version:     defaultMigrationVersionFromTaskId(task.ID),
 		Namespace:   targetDatabase.Name,
 		Database:    targetDatabase.Name,
 		Environment: targetDatabase.Instance.Environment.Name,
