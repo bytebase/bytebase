@@ -164,9 +164,9 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	if issue != nil {
 		issueId = strconv.Itoa(issue.ID)
 	}
-	description := fmt.Sprintf("Branched from backup %q of database %q.", backup.Name, sourceDatabase.Name)
+	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.Name)
 	if sourceDatabase.InstanceId != targetDatabase.InstanceId {
-		description = fmt.Sprintf("Branched from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
+		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
 	}
 	m := &db.MigrationInfo{
 		Version:     defaultMigrationVersionFromTaskId(task.ID),
