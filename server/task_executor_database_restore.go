@@ -92,7 +92,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	// TODO(tianzhou): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	if err := branchMigrationHistoryIfNeeded(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
+	if err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
 		return true, "", err
 	}
 
@@ -138,16 +138,10 @@ func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string)
 	return nil
 }
 
-// branchMigrationHistoryIfNeeded will branch the migration history from source database to target database based on backup migration history version.
-// We branch by adding a migration history with "BRANCH" type. We choose NOT to copy over all migration history from source database
-// because that might be expensive (e.g. we may use restore to create many ephemeral databases from backup for testing purpose)
-// This is needed only when backup migration history version is not empty.
-func branchMigrationHistoryIfNeeded(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
-	// Skip if backup does NOT contain migration history version
-	if backup.MigrationHistoryVersion == "" {
-		return nil
-	}
-
+// createBranchMigrationHistory creates a migration history with "BRANCH" type. We choose NOT to copy over
+// all migrationhistory from source database because that might be expensive (e.g. we may use restore to
+// create many ephemeral databases from backup for testing purpose)
+func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
 	targetDriver, err := GetDatabaseDriver(targetDatabase.Instance, targetDatabase.Name, logger)
 	if err != nil {
 		return err
