@@ -10,6 +10,7 @@
             <span class="ml-1 text-success">enabled</span>
           </div>
           <button
+            v-if="allowEdit"
             type="button"
             class="ml-4 btn-normal"
             @click.prevent="toggleAutoBackup(false)"
@@ -30,7 +31,7 @@
         Automatic weekly backup
         <span class="ml-1 text-control-light">disabled</span>
         <button
-          v-if="!state.autoBackupEnabled"
+          v-if="allowEdit && !state.autoBackupEnabled"
           type="button"
           class="ml-4 btn-primary"
           @click.prevent="toggleAutoBackup(true)"
@@ -43,6 +44,7 @@
       <div class="flex justify-between items-center">
         <div class="text-lg leading-6 font-medium text-main">Backups</div>
         <button
+          v-if="allowEdit"
           @click.prevent="state.showCreateBackupModal = true"
           type="button"
           class="btn-normal whitespace-nowrap items-center"
@@ -50,7 +52,11 @@
           Backup now
         </button>
       </div>
-      <BackupTable :database="database" :backupList="backupList" />
+      <BackupTable
+        :database="database"
+        :backupList="backupList"
+        :allowEdit="allowEdit"
+      />
     </div>
     <BBModal
       v-if="state.showCreateBackupModal"
@@ -103,6 +109,10 @@ export default {
     database: {
       required: true,
       type: Object as PropType<Database>,
+    },
+    allowEdit: {
+      required: true,
+      type: Boolean,
     },
   },
   components: {

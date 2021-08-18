@@ -17,7 +17,11 @@
       <BBTableHeaderCell class="w-48" :title="columnList[2].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-      <BBTableHeaderCell class="w-4" :title="columnList[5].title" />
+      <BBTableHeaderCell
+        v-if="allowEdit"
+        class="w-4"
+        :title="columnList[5].title"
+      />
     </template>
     <template v-slot:body="{ rowData: backup }">
       <BBTableCell :leftPadding="4">
@@ -85,7 +89,7 @@
       <BBTableCell>
         {{ backup.creator.name }}
       </BBTableCell>
-      <BBTableCell>
+      <BBTableCell v-if="allowEdit">
         <button
           class="btn-icon"
           @click.stop="
@@ -146,7 +150,7 @@ import { bytesToString } from "../utils";
 import { useStore } from "vuex";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 
-const columnList: BBTableColumn[] = [
+const EDIT_COLUMN_LIST: BBTableColumn[] = [
   {
     title: "Status",
   },
@@ -167,6 +171,24 @@ const columnList: BBTableColumn[] = [
   },
 ];
 
+const NON_EDIT_COLUMN_LIST: BBTableColumn[] = [
+  {
+    title: "Status",
+  },
+  {
+    title: "Name",
+  },
+  {
+    title: "Comment",
+  },
+  {
+    title: "Time",
+  },
+  {
+    title: "Creator",
+  },
+];
+
 interface LocalState {
   showRestoreBackupModal: boolean;
   restoredBackup?: Backup;
@@ -183,6 +205,10 @@ export default {
     backupList: {
       required: true,
       type: Object as PropType<Backup[]>,
+    },
+    allowEdit: {
+      required: true,
+      type: Boolean,
     },
   },
   setup(props, ctx) {
@@ -234,6 +260,10 @@ export default {
           );
       }
     };
+
+    const columnList = computed(() => {
+      return props.allowEdit ? EDIT_COLUMN_LIST : NON_EDIT_COLUMN_LIST;
+    });
 
     return {
       state,
