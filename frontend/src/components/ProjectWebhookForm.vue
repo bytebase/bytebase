@@ -93,7 +93,8 @@
           v-else-if="state.webhook.type == 'bb.plugin.webhook.dingtalk'"
         >
           Create the corresponding webhook for the DingTalk group receiving the
-          message.
+          message. If you want to use keyword list to protect the webhook, you
+          can add "Bytebase" to that list.
           <a
             href="https://developers.dingtalk.com/document/robots/custom-robot-access"
             target="__blank"
@@ -103,7 +104,8 @@
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.feishu'">
           Create the corresponding webhook for the Feishu group receiving the
-          message.
+          message. If you want to use keyword list to protect the webhook, you
+          can add "Bytebase" to that list.
           <a
             href="https://www.feishu.cn/hc/zh-CN/articles/360024984973"
             target="__blank"
