@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border">
+  <div class="space-y-6 divide-y divide-block-border">
     <div class="space-y-4">
       <div v-if="state.autoBackupEnabled" class="flex justify-between flex-col">
         <div class="flex justify-between">
