@@ -72,9 +72,9 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	targetDatabase, err := server.ComposeDatabaseByFind(context.Background(), targetDatabaseFind)
 	if err != nil {
 		if common.ErrorCode(err) == common.ENOTFOUND {
-			return true, "", fmt.Errorf("target database %q not found in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
+			return true, "", fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 		}
-		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", targetDatabase.Name, task.Instance.Name, err)
+		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 	}
 
 	exec.l.Debug("Start database restore from backup...",
