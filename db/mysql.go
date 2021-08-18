@@ -473,9 +473,9 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version)
 	}
 
-	// If the migration engine is VCS and type is not baseline, then we can only proceed if there is existing baseline
+	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Engine == VCS && m.Type != Baseline {
+	if m.Engine == VCS && m.Type != Baseline && m.Type != Branch {
 		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
 		if err != nil {
 			return err
