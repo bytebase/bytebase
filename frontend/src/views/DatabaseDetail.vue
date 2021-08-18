@@ -189,7 +189,7 @@
       }
     "
   />
-  <div class="max-w-7xl mx-auto py-6 px-6">
+  <div class="py-6 px-6">
     <template v-if="state.selectedIndex == OVERVIEW_TAB">
       <DatabaseOverviewPanel id="overview" :database="database" />
     </template>

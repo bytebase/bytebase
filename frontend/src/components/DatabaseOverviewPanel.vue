@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border">
+  <div class="space-y-6 divide-y divide-block-border">
     <!-- Description list -->
     <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
       <div class="col-span-1 col-start-1">

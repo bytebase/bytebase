@@ -17,7 +17,7 @@
     "
   />
 
-  <div class="max-w-7xl mx-auto py-6 px-6">
+  <div class="py-6 px-6">
     <router-view
       :projectSlug="projectSlug"
       :projectWebhookSlug="projectWebhookSlug"
