@@ -10,7 +10,7 @@
             <span class="ml-1 text-success">enabled</span>
           </div>
           <button
-            v-if="allowEdit"
+            v-if="allowAdmin"
             type="button"
             class="ml-4 btn-normal"
             @click.prevent="toggleAutoBackup(false)"
@@ -31,7 +31,7 @@
         Automatic weekly backup
         <span class="ml-1 text-control-light">disabled</span>
         <button
-          v-if="allowEdit && !state.autoBackupEnabled"
+          v-if="allowAdmin && !state.autoBackupEnabled"
           type="button"
           class="ml-4 btn-primary"
           @click.prevent="toggleAutoBackup(true)"
@@ -109,6 +109,10 @@ export default {
     database: {
       required: true,
       type: Object as PropType<Database>,
+    },
+    allowAdmin: {
+      required: true,
+      type: Boolean,
     },
     allowEdit: {
       required: true,

@@ -194,7 +194,11 @@
       <DatabaseOverviewPanel id="overview" :database="database" />
     </template>
     <template v-if="state.selectedIndex == BACKUP_TAB">
-      <DatabaseBackupPanel :database="database" :allowEdit="allowEdit" />
+      <DatabaseBackupPanel
+        :database="database"
+        :allowAdmin="allowAdmin"
+        :allowEdit="allowEdit"
+      />
     </template>
   </div>
 </template>
@@ -300,10 +304,14 @@ export default {
       return false;
     });
 
-    // Database can be edited if meets either of the condition below:
+    // Database can be admined if meets either of the condition below:
     // - Workspace owner, dba
     // - db's project owner
-    const allowEdit = computed(() => {
+    //
+    // The admin operation includes
+    // - Transfer project
+    // - Enable/disable backup
+    const allowAdmin = computed(() => {
       if (isCurrentUserDBAOrOwner.value) {
         return true;
       }
@@ -313,6 +321,25 @@ export default {
           member.role == "OWNER" &&
           member.principal.id == currentUser.value.id
         ) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // Database can be edited if meets either of the condition below:
+    // - Workspace owner, dba
+    // - db's project member
+    //
+    // The edit operation includes
+    // - Take manual backup
+    const allowEdit = computed(() => {
+      if (isCurrentUserDBAOrOwner.value) {
+        return true;
+      }
+
+      for (const member of database.value.project.memberList) {
+        if (member.principal.id == currentUser.value.id) {
           return true;
         }
       }
@@ -384,6 +411,7 @@ export default {
       database,
       databaseConsoleLink,
       allowChangeProject,
+      allowAdmin,
       allowEdit,
       tryTransferProject,
       updateProject,
