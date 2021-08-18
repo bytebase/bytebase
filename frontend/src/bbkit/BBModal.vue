@@ -56,7 +56,7 @@
           </svg>
         </button>
       </div>
-      <div class="pt-4 max-h-screen overflow-auto w-full">
+      <div class="pt-4 px-0.5 max-h-screen overflow-auto w-full">
         <slot />
       </div>
     </div>
