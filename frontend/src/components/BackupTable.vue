@@ -67,13 +67,13 @@
           </template>
         </span>
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap">
+      <BBTableCell>
         {{ backup.name }}
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap">
+      <BBTableCell>
         {{ backup.path }}
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap tooltip-wrapper">
+      <BBTableCell class="tooltip-wrapper">
         <span v-if="backup.comment.length > 30" class="tooltip">{{
           backup.comment
         }}</span>
@@ -83,10 +83,10 @@
             : backup.comment
         }}
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap">
+      <BBTableCell>
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap">
+      <BBTableCell>
         {{ backup.creator.name }}
       </BBTableCell>
       <BBTableCell>
