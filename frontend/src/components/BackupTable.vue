@@ -15,10 +15,9 @@
       />
       <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
       <BBTableHeaderCell class="w-48" :title="columnList[2].title" />
-      <BBTableHeaderCell class="w-8" :title="columnList[3].title" />
+      <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-      <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-      <BBTableHeaderCell class="w-4" :title="columnList[6].title" />
+      <BBTableHeaderCell class="w-4" :title="columnList[5].title" />
     </template>
     <template v-slot:body="{ rowData: backup }">
       <BBTableCell :leftPadding="4">
@@ -70,16 +69,13 @@
       <BBTableCell>
         {{ backup.name }}
       </BBTableCell>
-      <BBTableCell>
-        {{ backup.path }}
-      </BBTableCell>
       <BBTableCell class="tooltip-wrapper">
-        <span v-if="backup.comment.length > 30" class="tooltip">{{
+        <span v-if="backup.comment.length > 100" class="tooltip">{{
           backup.comment
         }}</span>
         {{
-          backup.comment.length > 30
-            ? backup.comment.substring(0, 30) + "..."
+          backup.comment.length > 100
+            ? backup.comment.substring(0, 100) + "..."
             : backup.comment
         }}
       </BBTableCell>
@@ -156,9 +152,6 @@ const columnList: BBTableColumn[] = [
   },
   {
     title: "Name",
-  },
-  {
-    title: "Path",
   },
   {
     title: "Comment",
