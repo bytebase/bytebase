@@ -68,7 +68,7 @@ func (s *BackupRunner) Run() error {
 					}
 					backupSetting.Database = database
 
-					backupName := t.Format("20060102T030405")
+					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupName string) {
 						if err := s.scheduleBackupTask(database, backupName); err != nil {
 							s.l.Error("Failed to create automatic backup for database",
@@ -87,7 +87,7 @@ func (s *BackupRunner) Run() error {
 }
 
 func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName string) error {
-	path, err := getAndCreateBackupPath(s.server.dataDir, database, fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), backupName))
+	path, err := getAndCreateBackupPath(s.server.dataDir, database, backupName)
 	if err != nil {
 		return err
 	}
