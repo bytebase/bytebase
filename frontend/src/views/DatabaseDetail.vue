@@ -302,14 +302,17 @@ export default {
 
     // Database can be edited if meets either of the condition below:
     // - Workspace owner, dba
-    // - db's project member
+    // - db's project owner
     const allowEdit = computed(() => {
       if (isCurrentUserDBAOrOwner.value) {
         return true;
       }
 
       for (const member of database.value.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
+        if (
+          member.role == "OWNER" &&
+          member.principal.id == currentUser.value.id
+        ) {
           return true;
         }
       }
