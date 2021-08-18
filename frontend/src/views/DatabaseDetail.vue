@@ -194,7 +194,7 @@
       <DatabaseOverviewPanel id="overview" :database="database" />
     </template>
     <template v-if="state.selectedIndex == BACKUP_TAB">
-      <DatabaseBackupPanel :database="database" />
+      <DatabaseBackupPanel :database="database" :allowEdit="allowEdit" />
     </template>
   </div>
 </template>
@@ -300,6 +300,22 @@ export default {
       return false;
     });
 
+    // Database can be edited if meets either of the condition below:
+    // - Workspace owner, dba
+    // - db's project member
+    const allowEdit = computed(() => {
+      if (isCurrentUserDBAOrOwner.value) {
+        return true;
+      }
+
+      for (const member of database.value.project.memberList) {
+        if (member.principal.id == currentUser.value.id) {
+          return true;
+        }
+      }
+      return false;
+    });
+
     const tryTransferProject = () => {
       state.editingProjectId = database.value.project.id;
       state.showModal = true;
@@ -365,6 +381,7 @@ export default {
       database,
       databaseConsoleLink,
       allowChangeProject,
+      allowEdit,
       tryTransferProject,
       updateProject,
       selectTab,
