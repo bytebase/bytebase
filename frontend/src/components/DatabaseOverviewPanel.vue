@@ -69,7 +69,7 @@
       <BBAttention
         v-else
         :title="attentionTitle"
-        :actionText="'Config instance'"
+        :actionText="allowConfigInstance ? 'Config instance' : ''"
         @click-action="configInstance"
       />
     </div>
@@ -284,6 +284,10 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
+    const allowConfigInstance = computed(() => {
+      return isCurrentUserDBAOrOwner.value;
+    });
+
     const allowViewDataSource = computed(() => {
       if (isCurrentUserDBAOrOwner.value) {
         return true;
@@ -368,6 +372,7 @@ export default {
       attentionTitle,
       migrationHistorySectionList,
       hasDataSourceFeature,
+      allowConfigInstance,
       allowViewDataSource,
       allowChangeDataSource,
       readWriteDataSourceList,
