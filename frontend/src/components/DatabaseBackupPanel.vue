@@ -126,19 +126,11 @@ export default {
   setup(props, ctx) {
     const store = useStore();
 
-    // For now, we hard code the backup time to a time between 0:00 AM ~ 6:00 AM on Sunday local time.
-    const DEFAULT_BACKUP_HOUR = Math.floor(Math.random() * 7);
-    const DEFAULT_BACKUP_DAYOFWEEK = 0;
-    const { hour, dayOfWeek } = localToUTC(
-      DEFAULT_BACKUP_HOUR,
-      DEFAULT_BACKUP_DAYOFWEEK
-    );
-
     const state = reactive<LocalState>({
       showCreateBackupModal: false,
       autoBackupEnabled: false,
-      autoBackupHour: hour,
-      autoBackupDayOfWeek: dayOfWeek,
+      autoBackupHour: 0,
+      autoBackupDayOfWeek: 0,
     });
 
     onUnmounted(() => {
@@ -271,11 +263,20 @@ export default {
     watchEffect(prepareBackupSetting);
 
     const toggleAutoBackup = (on: boolean) => {
+      // For now, we hard code the backup time to a time between 0:00 AM ~ 6:00 AM on Sunday local time.
+      // Choose a new random time everytime we re-enabling the auto backup. This is a workaround for
+      // user to choose a desired backup window.
+      const DEFAULT_BACKUP_HOUR = () => Math.floor(Math.random() * 7);
+      const DEFAULT_BACKUP_DAYOFWEEK = 0;
+      const { hour, dayOfWeek } = localToUTC(
+        DEFAULT_BACKUP_HOUR(),
+        DEFAULT_BACKUP_DAYOFWEEK
+      );
       const newBackupSetting: BackupSettingUpsert = {
         databaseId: props.database.id,
         enabled: on,
-        hour: state.autoBackupHour,
-        dayOfWeek: state.autoBackupDayOfWeek,
+        hour: on ? hour : state.autoBackupHour,
+        dayOfWeek: on ? dayOfWeek : state.autoBackupDayOfWeek,
       };
       store
         .dispatch("backup/upsertBackupSetting", {
