@@ -200,8 +200,8 @@ func start() {
 
 	// Execute program.
 	if err := m.Run(); err != nil {
-		m.l.Error(err.Error())
 		if err != http.ErrServerClosed {
+			m.l.Error(err.Error())
 			m.Close()
 			cancel()
 		}
