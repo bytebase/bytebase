@@ -5,7 +5,6 @@ import { Principal } from "./principal";
 type ProjectWebhookTypeItem = {
   type: string;
   name: string;
-  logo: string;
   urlPrefix: string;
 };
 
@@ -13,37 +12,31 @@ export const PROJECT_HOOK_TYPE_ITEM_LIST: ProjectWebhookTypeItem[] = [
   {
     type: "bb.plugin.webhook.slack",
     name: "Slack",
-    logo: "slack-logo.png",
     urlPrefix: "https://hooks.slack.com/",
   },
   {
     type: "bb.plugin.webhook.discord",
     name: "Discord",
-    logo: "discord-logo.svg",
     urlPrefix: "https://discord.com/api/webhooks",
   },
   {
     type: "bb.plugin.webhook.teams",
     name: "Teams",
-    logo: "teams-logo.svg",
     urlPrefix: "",
   },
   {
     type: "bb.plugin.webhook.dingtalk",
     name: "DingTalk",
-    logo: "dingtalk-logo.png",
     urlPrefix: "https://oapi.dingtalk.com",
   },
   {
     type: "bb.plugin.webhook.feishu",
     name: "Feishu",
-    logo: "feishu-logo.png",
     urlPrefix: "https://open.feishu.cn",
   },
   {
     type: "bb.plugin.webhook.wecom",
     name: "WeCom",
-    logo: "wecom-logo.png",
     urlPrefix: "https://qyapi.weixin.qq.com",
   },
 ];
