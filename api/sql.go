@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/db"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 type ConnectionInfo struct {

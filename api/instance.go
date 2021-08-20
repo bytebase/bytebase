@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/bytebase/bytebase/db"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 type Instance struct {

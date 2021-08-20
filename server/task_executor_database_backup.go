@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
-	"github.com/bytebase/bytebase/db"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 

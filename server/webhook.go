@@ -14,8 +14,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/db"
 	"github.com/bytebase/bytebase/external/gitlab"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )

@@ -13,7 +13,7 @@ import (
 	"github.com/bytebase/bytebase/bin/bb/connect"
 	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/db"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
