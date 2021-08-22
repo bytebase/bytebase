@@ -63,11 +63,11 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 **Tech Stack**
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.svg)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/techstack.svg)
 
 **Data Model**
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/datamodel_v1.png)
 
 ### Prerequisites
 
