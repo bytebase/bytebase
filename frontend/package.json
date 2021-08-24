@@ -21,7 +21,7 @@
     "slug": "^4.0.2",
     "tailwindcss": "^2.2.2",
     "uuid": "^8.3.2",
-    "vue": "^3.2.2",
+    "vue": "^3.2.4",
     "vue-router": "^4.0.8",
     "vuex": "^4.0.0"
   },
@@ -30,7 +30,7 @@
     "@types/slug": "^0.9.1",
     "@types/uuid": "^8.3.0",
     "@vitejs/plugin-vue": "^1.1.4",
-    "@vue/compiler-sfc": "^3.0.5",
-    "vite": "^2.3.8"
+    "@vue/compiler-sfc": "^3.2.4",
+    "vite": "^2.5.1"
   }
 }
