@@ -23,8 +23,9 @@ const (
 	databaseHeaderFmt = "" +
 		"--\n" +
 		"-- MySQL database structure for `%s`\n" +
-		"--\n\n"
-	settingsStmt = "" +
+		"--\n"
+	useDatabaseFmt = "USE `%s`;\n\n"
+	settingsStmt   = "" +
 		"SET character_set_client  = %s;\n" +
 		"SET character_set_results = %s;\n" +
 		"SET collation_connection  = %s;\n" +
@@ -116,6 +117,20 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	if _, err := out.WriteString(header); err != nil {
 		return err
 	}
+	if dumpAll {
+		dbStmt, err := dp.getDatabaseStmt(dbName)
+		if err != nil {
+			return fmt.Errorf("failed to get database %q: %s", dbName, err)
+		}
+		if _, err := out.WriteString(dbStmt); err != nil {
+			return err
+		}
+		// Use database statement.
+		useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
+		if _, err := out.WriteString(useStmt); err != nil {
+			return err
+		}
+	}
 
 	// Table and view statement.
 	tables, err := dp.getTables(dbName)
@@ -127,19 +142,8 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 			return err
 		}
 		if !schemaOnly && tbl.tableType == "BASE TABLE" {
-			stmts, err := dp.getTableData(dbName, tbl.name, dumpAll)
-			if err != nil {
+			if err := dp.exportTableData(dbName, tbl.name, dumpAll, out); err != nil {
 				return err
-			}
-			for _, stmt := range stmts {
-				if _, err := out.WriteString(stmt); err != nil {
-					return err
-				}
-			}
-			if len(stmts) > 0 {
-				if _, err := out.WriteString("\n"); err != nil {
-					return err
-				}
 			}
 		}
 	}
@@ -197,6 +201,25 @@ func (dp *Dumper) getDatabases() ([]string, error) {
 		dbNames = append(dbNames, name)
 	}
 	return dbNames, nil
+}
+
+// getDatabaseStmt gets the create statement of a database.
+func (dp *Dumper) getDatabaseStmt(dbName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
+	rows, err := dp.conn.DB.Query(query)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var stmt, unused string
+		if err := rows.Scan(&unused, &stmt); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s;\n", stmt), nil
+	}
+	return "", fmt.Errorf("query %q returned multiple rows", query)
 }
 
 // tableSchema describes the schema of a table or view.
@@ -292,23 +315,21 @@ func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) 
 
 }
 
-// getTableData gets the data of a table.
-func (dp *Dumper) getTableData(dbName, tblName string, dumpAll bool) ([]string, error) {
+// exportTableData gets the data of a table.
+func (dp *Dumper) exportTableData(dbName, tblName string, dumpAll bool, out *os.File) error {
 	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
 	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
-	var stmts []string
-
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(cols) <= 0 {
-		return nil, nil
+		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
 	ptrs := make([]interface{}, len(cols))
@@ -317,7 +338,7 @@ func (dp *Dumper) getTableData(dbName, tblName string, dumpAll bool) ([]string, 
 	}
 	for rows.Next() {
 		if err := rows.Scan(ptrs...); err != nil {
-			return nil, err
+			return err
 		}
 		tokens := make([]string, len(cols))
 		for i, v := range values {
@@ -335,9 +356,14 @@ func (dp *Dumper) getTableData(dbName, tblName string, dumpAll bool) ([]string, 
 			dbPrefix = fmt.Sprintf("`%s`.", dbName)
 		}
 		stmt := fmt.Sprintf("INSERT INTO %s`%s` VALUES (%s);\n", dbPrefix, tblName, strings.Join(tokens, ", "))
-		stmts = append(stmts, stmt)
+		if _, err := out.WriteString(stmt); err != nil {
+			return err
+		}
 	}
-	return stmts, nil
+	if _, err := out.WriteString("\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // isNumeric determines whether the value needs quotes.

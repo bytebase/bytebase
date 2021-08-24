@@ -60,6 +60,7 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 		}
 	}
 
+	dumpAll := database == ""
 	switch databaseType {
 	case "mysql":
 		if username == "" {
@@ -80,7 +81,6 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 		if err != nil {
 			return err
 		}
-		dumpAll := database == ""
 		for _, dbName := range databases {
 			out, err := getOutFile(dbName, directory)
 			if err != nil {
@@ -112,13 +112,13 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 			}
 			defer out.Close()
 
-			if err := dp.Dump(dbName, out, schemaOnly); err != nil {
+			if err := dp.Dump(dbName, out, schemaOnly, dumpAll); err != nil {
 				return err
 			}
 		}
 		return nil
 	default:
-		return fmt.Errorf("database type %q not supported; supported types: mysql, pg.", databaseType)
+		return fmt.Errorf("database type %q not supported; supported types: mysql, pg", databaseType)
 	}
 }
 
