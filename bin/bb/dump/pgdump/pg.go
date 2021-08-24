@@ -165,7 +165,12 @@ var (
 		"WITHIN":            true,
 		"WITHOUT":           true,
 	}
-	ident = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
+	ident             = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
+	databaseHeaderFmt = "" +
+		"--\n" +
+		"-- PostgreSQL database structure for %s\n" +
+		"--\n"
+	useDatabaseFmt = "\\connect %s;\n\n"
 )
 
 // Dumper is a class for dumping schemas of a Postgres instance.
@@ -196,7 +201,7 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 			}
 		}
 		if !exist {
-			return nil, fmt.Errorf("database %q not found.", database)
+			return nil, fmt.Errorf("database %q not found", database)
 		}
 		dbNames = []string{database}
 	}
@@ -211,16 +216,24 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 }
 
 // Dump dumps the schema of a Postgres instance.
-func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
+func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) error {
 	// pg_dump -d dbName --schema-only
 	if err := dp.conn.SwitchDatabase(dbName); err != nil {
 		return err
 	}
 
-	// Database statement.
-	dbStmt := getDatabaseStmt(dbName)
-	if _, err := out.WriteString(dbStmt); err != nil {
+	// Database header.
+	header := fmt.Sprintf(databaseHeaderFmt, dbName)
+	if _, err := out.WriteString(header); err != nil {
 		return err
+	}
+	// Database statement.
+	if dumpAll {
+		// Use database statement.
+		useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
+		if _, err := out.WriteString(useStmt); err != nil {
+			return err
+		}
 	}
 
 	// Schema statements.
@@ -261,19 +274,8 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly bool) error {
 			constraints[key] = true
 		}
 		if !schemaOnly {
-			stmts, err := dp.getTableData(tbl)
-			if err != nil {
+			if err := dp.exportTableData(tbl, out); err != nil {
 				return err
-			}
-			for _, stmt := range stmts {
-				if _, err := out.WriteString(stmt); err != nil {
-					return err
-				}
-			}
-			if len(stmts) > 0 {
-				if _, err := out.WriteString("\n"); err != nil {
-					return err
-				}
 			}
 		}
 	}
@@ -582,15 +584,6 @@ func (t eventTriggerSchema) Statement() string {
 	return s
 }
 
-// getDatabaseStmt returns the header of a Postgres database.
-func getDatabaseStmt(dbName string) string {
-	return fmt.Sprintf(""+
-		"--\n"+
-		"-- PostgreSQL database structure for %s\n"+
-		"--\n\n",
-		dbName)
-}
-
 // getDatabases gets all databases of a Postgres instance.
 func (dp *Dumper) getDatabases() ([]string, error) {
 	var dbNames []string
@@ -844,23 +837,21 @@ func (dp *Dumper) getIndices() ([]indexSchema, error) {
 	return indices, nil
 }
 
-// getTableData gets the data of a table.
-func (dp *Dumper) getTableData(tbl tableSchema) ([]string, error) {
+// exportTableData gets the data of a table.
+func (dp *Dumper) exportTableData(tbl tableSchema, out *os.File) error {
 	query := fmt.Sprintf("SELECT * FROM %s.%s;", tbl.schemaName, tbl.name)
 	rows, err := dp.conn.DB.Query(query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
-	var stmts []string
-
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(cols) <= 0 {
-		return nil, nil
+		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
 	ptrs := make([]interface{}, len(cols))
@@ -869,7 +860,7 @@ func (dp *Dumper) getTableData(tbl tableSchema) ([]string, error) {
 	}
 	for rows.Next() {
 		if err := rows.Scan(ptrs...); err != nil {
-			return nil, err
+			return err
 		}
 		tokens := make([]string, len(cols))
 		for i, v := range values {
@@ -883,9 +874,14 @@ func (dp *Dumper) getTableData(tbl tableSchema) ([]string, error) {
 			}
 		}
 		stmt := fmt.Sprintf("INSERT INTO %s.%s VALUES (%s);\n", tbl.schemaName, tbl.name, strings.Join(tokens, ", "))
-		stmts = append(stmts, stmt)
+		if _, err := out.WriteString(stmt); err != nil {
+			return err
+		}
 	}
-	return stmts, nil
+	if _, err := out.WriteString("\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // isNumeric determines whether the value needs quotes.
