@@ -35,7 +35,7 @@
 
 **Visit [docs.bytebase.com](https://docs.bytebase.com) for more details**
 
-## Installation
+## Installation ⚙️
 
 [Detailed installation guide](https://docs.bytebase.com/install/docker)
 
@@ -51,13 +51,13 @@ $ docker run --init --name bytebase --restart always --publish 8080:8080 --volum
 $ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.4.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
-## Interested in contributing?
+## Interested in contributing? 🕊
 
 1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/), you can add/improve content there.
 
-## Development
+## Development 🏗
 
 Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start working on the code:
 
