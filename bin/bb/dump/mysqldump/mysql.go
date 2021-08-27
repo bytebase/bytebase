@@ -2,6 +2,7 @@
 package mysqldump
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -112,13 +113,17 @@ func (dp *Dumper) GetDumpableDatabases(database string) ([]string, error) {
 func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
+	txn, err := dp.conn.DB.BeginTx(context.Background(), &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return err
+	}
 	// Database header.
 	header := fmt.Sprintf(databaseHeaderFmt, dbName)
 	if _, err := out.WriteString(header); err != nil {
 		return err
 	}
 	if dumpAll {
-		dbStmt, err := dp.getDatabaseStmt(dbName)
+		dbStmt, err := dp.getDatabaseStmt(txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get database %q: %s", dbName, err)
 		}
@@ -133,7 +138,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Table and view statement.
-	tables, err := dp.getTables(dbName)
+	tables, err := dp.getTables(txn, dbName)
 	if err != nil {
 		return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
 	}
@@ -142,14 +147,14 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 			return err
 		}
 		if !schemaOnly && tbl.tableType == "BASE TABLE" {
-			if err := dp.exportTableData(dbName, tbl.name, dumpAll, out); err != nil {
+			if err := dp.exportTableData(txn, dbName, tbl.name, dumpAll, out); err != nil {
 				return err
 			}
 		}
 	}
 
 	// Procedure and function (routine) statements.
-	routines, err := dp.getRoutines(dbName)
+	routines, err := dp.getRoutines(txn, dbName)
 	if err != nil {
 		return fmt.Errorf("failed to get routines of database %q: %s", dbName, err)
 	}
@@ -160,7 +165,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Event statements.
-	events, err := dp.getEvents(dbName)
+	events, err := dp.getEvents(txn, dbName)
 	if err != nil {
 		return fmt.Errorf("failed to get events of database %q: %s", dbName, err)
 	}
@@ -171,7 +176,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Trigger statements.
-	triggers, err := dp.getTriggers(dbName)
+	triggers, err := dp.getTriggers(txn, dbName)
 	if err != nil {
 		return fmt.Errorf("failed to get triggers of database %q: %s", dbName, err)
 	}
@@ -179,6 +184,10 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 		if _, err := out.WriteString(fmt.Sprintf("%s\n", tr.statement)); err != nil {
 			return err
 		}
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
 	}
 
 	return nil
@@ -204,9 +213,9 @@ func (dp *Dumper) getDatabases() ([]string, error) {
 }
 
 // getDatabaseStmt gets the create statement of a database.
-func (dp *Dumper) getDatabaseStmt(dbName string) (string, error) {
+func (dp *Dumper) getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -249,10 +258,10 @@ type triggerSchema struct {
 }
 
 // getTables gets all tables of a database.
-func (dp *Dumper) getTables(dbName string) ([]tableSchema, error) {
-	var tables []tableSchema
+func (dp *Dumper) getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
+	var tables []*tableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -263,22 +272,24 @@ func (dp *Dumper) getTables(dbName string) ([]tableSchema, error) {
 		if err := rows.Scan(&tbl.name, &tbl.tableType); err != nil {
 			return nil, err
 		}
-		stmt, err := dp.getTableStmt(dbName, tbl.name, tbl.tableType)
+		tables = append(tables, &tbl)
+	}
+	for _, tbl := range tables {
+		stmt, err := dp.getTableStmt(txn, dbName, tbl.name, tbl.tableType)
 		if err != nil {
 			return nil, fmt.Errorf("getTableStmt(%q, %q, %q) got error: %s", dbName, tbl.name, tbl.tableType, err)
 		}
 		tbl.statement = stmt
-		tables = append(tables, tbl)
 	}
 	return tables, nil
 }
 
 // getTableStmt gets the create statement of a table.
-func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) {
+func (dp *Dumper) getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
 	case "BASE TABLE":
 		query := fmt.Sprintf("SHOW CREATE TABLE %s.%s;", dbName, tblName)
-		rows, err := dp.conn.DB.Query(query)
+		rows, err := txn.Query(query)
 		if err != nil {
 			return "", err
 		}
@@ -291,11 +302,11 @@ func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) 
 			}
 			return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 		}
-		return "", fmt.Errorf("query %q returned invalid rows.", query)
+		return "", fmt.Errorf("query %q returned invalid rows", query)
 	case "VIEW":
 		// This differs from mysqldump as it includes.
 		query := fmt.Sprintf("SHOW CREATE VIEW %s.%s;", dbName, tblName)
-		rows, err := dp.conn.DB.Query(query)
+		rows, err := txn.Query(query)
 		if err != nil {
 			return "", err
 		}
@@ -316,9 +327,9 @@ func (dp *Dumper) getTableStmt(dbName, tblName, tblType string) (string, error) 
 }
 
 // exportTableData gets the data of a table.
-func (dp *Dumper) exportTableData(dbName, tblName string, dumpAll bool, out *os.File) error {
+func (dp *Dumper) exportTableData(txn *sql.Tx, dbName, tblName string, dumpAll bool, out *os.File) error {
 	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return err
 	}
@@ -373,11 +384,11 @@ func isNumeric(t string) bool {
 }
 
 // getRoutines gets all routines of a database.
-func (dp *Dumper) getRoutines(dbName string) ([]routineSchema, error) {
-	var routines []routineSchema
+func (dp *Dumper) getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
+	var routines []*routineSchema
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
 		query := fmt.Sprintf("SHOW %s STATUS WHERE Db = ?;", routineType)
-		rows, err := dp.conn.DB.Query(query, dbName)
+		rows, err := txn.Query(query, dbName)
 		if err != nil {
 			return nil, err
 		}
@@ -399,21 +410,24 @@ func (dp *Dumper) getRoutines(dbName string) ([]routineSchema, error) {
 			r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
 			r.routineType = fmt.Sprintf("%s", *values[2].(*interface{}))
 
-			stmt, err := dp.getRoutineStmt(dbName, r.name, r.routineType)
-			if err != nil {
-				return nil, fmt.Errorf("getRoutineStmt(%q, %q, %q) got error: %s", dbName, r.name, r.routineType, err)
-			}
-			r.statement = stmt
-			routines = append(routines, r)
+			routines = append(routines, &r)
 		}
+	}
+
+	for _, r := range routines {
+		stmt, err := dp.getRoutineStmt(txn, dbName, r.name, r.routineType)
+		if err != nil {
+			return nil, fmt.Errorf("getRoutineStmt(%q, %q, %q) got error: %s", dbName, r.name, r.routineType, err)
+		}
+		r.statement = stmt
 	}
 	return routines, nil
 }
 
 // getRoutineStmt gets the create statement of a routine.
-func (dp *Dumper) getRoutineStmt(dbName, routineName, routineType string) (string, error) {
+func (dp *Dumper) getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE %s %s.%s;", routineType, dbName, routineName)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -443,9 +457,9 @@ func getReadableRoutineType(s string) string {
 }
 
 // getEvents gets all events of a database.
-func (dp *Dumper) getEvents(dbName string) ([]eventSchema, error) {
-	var events []eventSchema
-	rows, err := dp.conn.DB.Query(fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName))
+func (dp *Dumper) getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
+	var events []*eventSchema
+	rows, err := txn.Query(fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName))
 	if err != nil {
 		return nil, err
 	}
@@ -465,20 +479,23 @@ func (dp *Dumper) getEvents(dbName string) ([]eventSchema, error) {
 			return nil, err
 		}
 		r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
-		stmt, err := dp.getEventStmt(dbName, r.name)
+		events = append(events, &r)
+	}
+
+	for _, r := range events {
+		stmt, err := dp.getEventStmt(txn, dbName, r.name)
 		if err != nil {
 			return nil, fmt.Errorf("getEventStmt(%q, %q) got error: %s", dbName, r.name, err)
 		}
 		r.statement = stmt
-		events = append(events, r)
 	}
 	return events, nil
 }
 
 // getEventStmt gets the create statement of an event.
-func (dp *Dumper) getEventStmt(dbName, eventName string) (string, error) {
+func (dp *Dumper) getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT %s.%s;", dbName, eventName)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -495,9 +512,9 @@ func (dp *Dumper) getEventStmt(dbName, eventName string) (string, error) {
 }
 
 // getTriggers gets all triggers of a database.
-func (dp *Dumper) getTriggers(dbName string) ([]triggerSchema, error) {
-	var triggers []triggerSchema
-	rows, err := dp.conn.DB.Query(fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName))
+func (dp *Dumper) getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
+	var triggers []*triggerSchema
+	rows, err := txn.Query(fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName))
 	if err != nil {
 		return nil, err
 	}
@@ -517,20 +534,22 @@ func (dp *Dumper) getTriggers(dbName string) ([]triggerSchema, error) {
 			return nil, err
 		}
 		tr.name = fmt.Sprintf("%s", *values[0].(*interface{}))
-		stmt, err := dp.getTriggerStmt(dbName, tr.name)
+		triggers = append(triggers, &tr)
+	}
+	for _, tr := range triggers {
+		stmt, err := dp.getTriggerStmt(txn, dbName, tr.name)
 		if err != nil {
 			return nil, fmt.Errorf("getTriggerStmt(%q, %q) got error: %s", dbName, tr.name, err)
 		}
 		tr.statement = stmt
-		triggers = append(triggers, tr)
 	}
 	return triggers, nil
 }
 
 // getTriggerStmt gets the create statement of a trigger.
-func (dp *Dumper) getTriggerStmt(dbName, triggerName string) (string, error) {
+func (dp *Dumper) getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER %s.%s;", dbName, triggerName)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
 	}
