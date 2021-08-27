@@ -1,21 +1,29 @@
 # <a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/frontend/src/assets/logo.svg" height="56px" /></a>
 
-### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
-
-&nbsp;
-
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-red)
 
+### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
+
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
 > issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
-
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview1.png)
 
 [Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs. It supports 2 mainstream schema change workflow:
 
 - UI based SQL review
 - Version control based schema migration (Database-as-Code)
+
+<figcaption align = "center">Fig.1 - Dashboard</figcaption>
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview1.webp)
+
+<figcaption align = "center">Fig.2 - SQL review issue pipeline</figcaption>
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview2.webp)
+
+<figcaption align = "center">Fig.3 - GitLab based schema migration (Database-as-code)</figcaption>
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
 
 ### Supported database engines
 
@@ -37,7 +45,7 @@
 
 **Visit [docs.bytebase.com](https://docs.bytebase.com) for more details**
 
-## Installation
+## ⚙️ Installation
 
 [Detailed installation guide](https://docs.bytebase.com/install/docker)
 
@@ -53,7 +61,13 @@ $ docker run --init --name bytebase --restart always --publish 8080:8080 --volum
 $ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.4.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
-## Development
+## 🕊 Interested in contributing?
+
+1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+
+1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/), you can add/improve content there.
+
+## 🏗 Development
 
 Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start working on the code:
 
