@@ -2,6 +2,7 @@
 package pgdump
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -222,6 +223,11 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 		return err
 	}
 
+	txn, err := dp.conn.DB.BeginTx(context.Background(), &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return err
+	}
+
 	// Database header.
 	header := fmt.Sprintf(databaseHeaderFmt, dbName)
 	if _, err := out.WriteString(header); err != nil {
@@ -237,7 +243,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Schema statements.
-	schemas, err := dp.getPgSchemas()
+	schemas, err := dp.getPgSchemas(txn)
 	if err != nil {
 		return err
 	}
@@ -248,7 +254,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Sequence statements.
-	seqs, err := dp.getSequences()
+	seqs, err := dp.getSequences(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get sequences from database %q: %s", dbName, err)
 	}
@@ -259,7 +265,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Table statements.
-	tables, err := dp.getPgTables()
+	tables, err := dp.getPgTables(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
 	}
@@ -274,14 +280,14 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 			constraints[key] = true
 		}
 		if !schemaOnly {
-			if err := dp.exportTableData(tbl, out); err != nil {
+			if err := dp.exportTableData(txn, tbl, out); err != nil {
 				return err
 			}
 		}
 	}
 
 	// View statements.
-	views, err := dp.getViews()
+	views, err := dp.getViews(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get views from database %q: %s", dbName, err)
 	}
@@ -292,7 +298,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Index statements.
-	indices, err := dp.getIndices()
+	indices, err := dp.getIndices(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
 	}
@@ -307,7 +313,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Function statements.
-	fs, err := dp.getFunctions()
+	fs, err := dp.getFunctions(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get functions from database %q: %s", dbName, err)
 	}
@@ -318,7 +324,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Trigger statements.
-	triggers, err := dp.getTriggers()
+	triggers, err := dp.getTriggers(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get triggers from database %q: %s", dbName, err)
 	}
@@ -329,7 +335,7 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 	}
 
 	// Event statements.
-	events, err := dp.getEventTriggers()
+	events, err := dp.getEventTriggers(txn)
 	if err != nil {
 		return fmt.Errorf("failed to get event triggers from database %q: %s", dbName, err)
 	}
@@ -339,6 +345,9 @@ func (dp *Dumper) Dump(dbName string, out *os.File, schemaOnly, dumpAll bool) er
 		}
 	}
 
+	if err := txn.Commit(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -353,8 +362,8 @@ type tableSchema struct {
 	schemaName  string
 	name        string
 	tableowner  string
-	columns     []columnSchema
-	constraints []tableConstraint
+	columns     []*columnSchema
+	constraints []*tableConstraint
 }
 
 // columnSchema describes the schema of a pg table column.
@@ -604,9 +613,9 @@ func (dp *Dumper) getDatabases() ([]string, error) {
 }
 
 // getPgSchemas gets all schemas of a database.
-func (dp *Dumper) getPgSchemas() ([]pgSchema, error) {
-	var schemas []pgSchema
-	rows, err := dp.conn.DB.Query("SELECT schema_name, schema_owner FROM information_schema.schemata;")
+func (dp *Dumper) getPgSchemas(txn *sql.Tx) ([]*pgSchema, error) {
+	var schemas []*pgSchema
+	rows, err := txn.Query("SELECT schema_name, schema_owner FROM information_schema.schemata;")
 	if err != nil {
 		return nil, err
 	}
@@ -621,7 +630,7 @@ func (dp *Dumper) getPgSchemas() ([]pgSchema, error) {
 		if ok := pgSystemSchema(schema.name); ok {
 			continue
 		}
-		schemas = append(schemas, schema)
+		schemas = append(schemas, &schema)
 	}
 	return schemas, nil
 }
@@ -646,17 +655,17 @@ func pgSystemSchema(s string) bool {
 }
 
 // getTables gets all tables of a database.
-func (dp *Dumper) getPgTables() ([]tableSchema, error) {
-	constraints, err := dp.getTableConstraints()
+func (dp *Dumper) getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
+	constraints, err := dp.getTableConstraints(txn)
 	if err != nil {
 		return nil, fmt.Errorf("getTableConstraints() got error: %v", err)
 	}
 
-	var tables []tableSchema
+	var tables []*tableSchema
 	query := "" +
 		"SELECT * FROM pg_catalog.pg_tables " +
 		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -674,7 +683,11 @@ func (dp *Dumper) getPgTables() ([]tableSchema, error) {
 		tbl.name = quoteIdentifier(tablename)
 		tbl.tableowner = tableowner
 
-		columns, err := dp.getTableColumns(tbl.schemaName, tbl.name)
+		tables = append(tables, &tbl)
+	}
+
+	for _, tbl := range tables {
+		columns, err := dp.getTableColumns(txn, tbl.schemaName, tbl.name)
 		if err != nil {
 			return nil, fmt.Errorf("getTable(%q, %q) got error %v", tbl.schemaName, tbl.name, err)
 		}
@@ -683,26 +696,23 @@ func (dp *Dumper) getPgTables() ([]tableSchema, error) {
 		key := fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 		v, _ := constraints[key]
 		tbl.constraints = v
-
-		tables = append(tables, tbl)
 	}
-
 	return tables, nil
 }
 
 // getTableColumns gets the columns of a table.
-func (dp *Dumper) getTableColumns(schemaName, tableName string) ([]columnSchema, error) {
+func (dp *Dumper) getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema, error) {
 	query := "" +
 		"SELECT column_name, data_type, character_maximum_length, column_default, is_nullable " +
 		"FROM INFORMATION_SCHEMA.COLUMNS " +
 		"WHERE table_schema=$1 AND table_name=$2;"
-	rows, err := dp.conn.DB.Query(query, schemaName, tableName)
+	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var columns []columnSchema
+	var columns []*columnSchema
 	for rows.Next() {
 		var columnName, dataType, isNullable string
 		var characterMaximumLength, columnDefault sql.NullString
@@ -720,7 +730,7 @@ func (dp *Dumper) getTableColumns(schemaName, tableName string) ([]columnSchema,
 			columnDefault:          columnDefault.String,
 			isNullable:             isNullBool,
 		}
-		columns = append(columns, c)
+		columns = append(columns, &c)
 	}
 	return columns, nil
 }
@@ -737,14 +747,14 @@ func convertBoolFromYesNo(s string) (bool, error) {
 }
 
 // getTableConstraints gets all table constraints of a database.
-func (dp *Dumper) getTableConstraints() (map[string][]tableConstraint, error) {
+func (dp *Dumper) getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 	query := "" +
 		"SELECT n.nspname, conrelid::regclass, conname, pg_get_constraintdef(c.oid) " +
 		"FROM pg_constraint c " +
 		"JOIN pg_namespace n ON n.oid = c.connamespace " +
 		"WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');"
-	ret := make(map[string][]tableConstraint)
-	rows, err := dp.conn.DB.Query(query)
+	ret := make(map[string][]*tableConstraint)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -761,18 +771,18 @@ func (dp *Dumper) getTableConstraints() (map[string][]tableConstraint, error) {
 		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
 		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
 		v, _ := ret[key]
-		ret[key] = append(v, constraint)
+		ret[key] = append(v, &constraint)
 	}
 	return ret, nil
 }
 
 // getViews gets all views of a database.
-func (dp *Dumper) getViews() ([]viewSchema, error) {
+func (dp *Dumper) getViews(txn *sql.Tx) ([]*viewSchema, error) {
 	query := "" +
 		"SELECT table_schema, table_name FROM information_schema.views " +
 		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
-	var views []viewSchema
-	rows, err := dp.conn.DB.Query(query)
+	var views []*viewSchema
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -784,20 +794,21 @@ func (dp *Dumper) getViews() ([]viewSchema, error) {
 			return nil, err
 		}
 		view.schemaName, view.name = quoteIdentifier(view.schemaName), quoteIdentifier(view.name)
-		if err = dp.getView(&view); err != nil {
-			return nil, fmt.Errorf("getPgView(%q, %q) got error %v", view.schemaName, view.name, err)
-		}
-
-		views = append(views, view)
+		views = append(views, &view)
 	}
 
+	for _, view := range views {
+		if err = dp.getView(txn, view); err != nil {
+			return nil, fmt.Errorf("getPgView(%q, %q) got error %v", view.schemaName, view.name, err)
+		}
+	}
 	return views, nil
 }
 
 // getView gets the schema of a view.
-func (dp *Dumper) getView(view *viewSchema) error {
+func (dp *Dumper) getView(txn *sql.Tx, view *viewSchema) error {
 	query := fmt.Sprintf("SELECT pg_get_viewdef('%s.%s', true);", view.schemaName, view.name)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return err
 	}
@@ -813,13 +824,13 @@ func (dp *Dumper) getView(view *viewSchema) error {
 }
 
 // getIndices gets all indices of a database.
-func (dp *Dumper) getIndices() ([]indexSchema, error) {
+func (dp *Dumper) getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 	query := "" +
 		"SELECT schemaname, tablename, indexname, indexdef " +
 		"FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
 
-	var indices []indexSchema
-	rows, err := dp.conn.DB.Query(query)
+	var indices []*indexSchema
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -831,16 +842,16 @@ func (dp *Dumper) getIndices() ([]indexSchema, error) {
 			return nil, err
 		}
 		idx.schemaName, idx.tableName, idx.name = quoteIdentifier(idx.schemaName), quoteIdentifier(idx.tableName), quoteIdentifier(idx.name)
-		indices = append(indices, idx)
+		indices = append(indices, &idx)
 	}
 
 	return indices, nil
 }
 
 // exportTableData gets the data of a table.
-func (dp *Dumper) exportTableData(tbl tableSchema, out *os.File) error {
+func (dp *Dumper) exportTableData(txn *sql.Tx, tbl *tableSchema, out *os.File) error {
 	query := fmt.Sprintf("SELECT * FROM %s.%s;", tbl.schemaName, tbl.name)
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return err
 	}
@@ -891,12 +902,12 @@ func isNumeric(t string) bool {
 }
 
 // getSequences gets all sequences of a database.
-func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
+func (dp *Dumper) getSequences(txn *sql.Tx) ([]*sequencePgSchema, error) {
 	caches := make(map[string]string)
 	query := "SELECT seqclass.relnamespace::regnamespace::text, seqclass.relname, seq.seqcache " +
 		"FROM pg_catalog.pg_class AS seqclass " +
 		"JOIN pg_catalog.pg_sequence AS seq ON (seq.seqrelid = seqclass.relfilenode);"
-	rows, err := dp.conn.DB.Query(query)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -910,11 +921,11 @@ func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
 		caches[fmt.Sprintf("%s.%s", schemaName, seqName)] = cache
 	}
 
-	var seqs []sequencePgSchema
+	var seqs []*sequencePgSchema
 	query = "" +
 		"SELECT sequence_schema, sequence_name, data_type, start_value, increment, minimum_value, maximum_value, cycle_option " +
 		"FROM information_schema.sequences;"
-	rows, err = dp.conn.DB.Query(query)
+	rows, err = txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -932,14 +943,14 @@ func (dp *Dumper) getSequences() ([]sequencePgSchema, error) {
 			return nil, fmt.Errorf("cannot find cache value for sequence: %q.%q", seq.schemaName, seq.name)
 		}
 		seq.cache = cache
-		seqs = append(seqs, seq)
+		seqs = append(seqs, &seq)
 	}
 
 	return seqs, nil
 }
 
 // getFunctions gets all functions of a database.
-func (dp *Dumper) getFunctions() ([]functionSchema, error) {
+func (dp *Dumper) getFunctions(txn *sql.Tx) ([]*functionSchema, error) {
 	query := "" +
 		"SELECT n.nspname, p.proname, l.lanname, " +
 		"  CASE WHEN l.lanname = 'internal' THEN p.prosrc ELSE pg_get_functiondef(p.oid) END as definition, " +
@@ -950,8 +961,8 @@ func (dp *Dumper) getFunctions() ([]functionSchema, error) {
 		"LEFT JOIN pg_type t ON t.oid = p.prorettype " +
 		"WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');"
 
-	var fs []functionSchema
-	rows, err := dp.conn.DB.Query(query)
+	var fs []*functionSchema
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -963,18 +974,18 @@ func (dp *Dumper) getFunctions() ([]functionSchema, error) {
 			return nil, err
 		}
 		f.schemaName, f.name = quoteIdentifier(f.schemaName), quoteIdentifier(f.name)
-		fs = append(fs, f)
+		fs = append(fs, &f)
 	}
 
 	return fs, nil
 }
 
 // getTriggers gets all triggers of a database.
-func (dp *Dumper) getTriggers() ([]triggerSchema, error) {
+func (dp *Dumper) getTriggers(txn *sql.Tx) ([]*triggerSchema, error) {
 	query := "SELECT tgname, pg_get_triggerdef(t.oid) FROM pg_trigger AS t;"
 
-	var triggers []triggerSchema
-	rows, err := dp.conn.DB.Query(query)
+	var triggers []*triggerSchema
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -986,22 +997,22 @@ func (dp *Dumper) getTriggers() ([]triggerSchema, error) {
 			return nil, err
 		}
 		t.name = quoteIdentifier(t.name)
-		triggers = append(triggers, t)
+		triggers = append(triggers, &t)
 	}
 
 	return triggers, nil
 }
 
 // getEventTriggers gets all event triggers of a database.
-func (dp *Dumper) getEventTriggers() ([]eventTriggerSchema, error) {
+func (dp *Dumper) getEventTriggers(txn *sql.Tx) ([]*eventTriggerSchema, error) {
 	query := "" +
 		"SELECT evtname, evtenabled, evtevent, pg_get_userbyid(evtowner) AS evtowner, " +
 		"  array_to_string(array(SELECT quote_literal(x) FROM unnest(evttags) as t(x)), ', ') AS evttags, " +
 		"  e.evtfoid::regproc " +
 		"FROM pg_event_trigger e;"
 
-	var triggers []eventTriggerSchema
-	rows, err := dp.conn.DB.Query(query)
+	var triggers []*eventTriggerSchema
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1013,7 +1024,7 @@ func (dp *Dumper) getEventTriggers() ([]eventTriggerSchema, error) {
 			return nil, err
 		}
 		t.name = quoteIdentifier(t.name)
-		triggers = append(triggers, t)
+		triggers = append(triggers, &t)
 	}
 
 	return triggers, nil
