@@ -268,8 +268,8 @@ VALUES
         1624879944,
         11014,
         'Update testdb_integration task run',
-        'DONE',
+        'FAILED',
         'bb.task.database.schema.update',
-        'Applied migration version 20210830020000.11014 to database "testdb_integration"',
+        'table "tbl2" already exists',
         '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT)"}'
     );
