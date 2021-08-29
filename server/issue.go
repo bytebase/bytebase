@@ -21,6 +21,44 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
+		// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+		// since we are not creating pipeline/stage list/task list in a single transaction.
+		// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+		// quite unlikely so we will live with it for now.
+		if issueCreate.AssigneeId == api.UNKNOWN_ID {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+		}
+
+		for _, stageCreate := range issueCreate.Pipeline.StageList {
+			for _, taskCreate := range stageCreate.TaskList {
+				if taskCreate.Type == api.TaskDatabaseCreate {
+					if taskCreate.Statement == "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+					}
+					if taskCreate.DatabaseName == "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
+					}
+					if taskCreate.CharacterSet == "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
+					}
+					if taskCreate.Collation == "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
+					}
+				} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+					if taskCreate.Statement == "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+					}
+				} else if taskCreate.Type == api.TaskDatabaseRestore {
+					if taskCreate.DatabaseName == "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
+					}
+					if taskCreate.BackupId == nil {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, backup missing")
+					}
+				}
+			}
+		}
+
 		issue, err := s.CreateIssue(context.Background(), issueCreate, c.Get(GetPrincipalIdContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
@@ -315,44 +353,6 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorId int) (*api.Issue, error) {
-	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
-	// since we are not creating pipeline/stage list/task list in a single transaction.
-	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
-	// quite unlikely so we will live with it for now.
-	if issueCreate.AssigneeId == api.UNKNOWN_ID {
-		return nil, fmt.Errorf("assignee missing")
-	}
-
-	for _, stageCreate := range issueCreate.Pipeline.StageList {
-		for _, taskCreate := range stageCreate.TaskList {
-			if taskCreate.Type == api.TaskDatabaseCreate {
-				if taskCreate.Statement == "" {
-					return nil, fmt.Errorf("failed to create database creation task, sql statement missing")
-				}
-				if taskCreate.DatabaseName == "" {
-					return nil, fmt.Errorf("failed to create database creation task, database name missing")
-				}
-				if taskCreate.CharacterSet == "" {
-					return nil, fmt.Errorf("failed to create database creation task, character set missing")
-				}
-				if taskCreate.Collation == "" {
-					return nil, fmt.Errorf("failed to create database creation task, collation missing")
-				}
-			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-				if taskCreate.Statement == "" {
-					return nil, fmt.Errorf("failed to create schema update task, sql statement missing")
-				}
-			} else if taskCreate.Type == api.TaskDatabaseRestore {
-				if taskCreate.DatabaseName == "" {
-					return nil, fmt.Errorf("failed to create restore database task, database name missing")
-				}
-				if taskCreate.BackupId == nil {
-					return nil, fmt.Errorf("failed to create restore database task, backup missing")
-				}
-			}
-		}
-	}
-
 	issueCreate.Pipeline.CreatorId = creatorId
 	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
 	if err != nil {
