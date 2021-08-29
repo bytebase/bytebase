@@ -155,7 +155,9 @@
                   :statement="selectedStatement"
                   :create="state.create"
                   :rollback="false"
+                  :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateStatement"
+                  @apply-statement-to-other-stages="applyStatementToOtherStages"
                 />
               </template>
               <template
@@ -168,6 +170,7 @@
                     :statement="statement(stage)"
                     :create="state.create"
                     :rollback="false"
+                    :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                   />
                 </template>
@@ -182,7 +185,11 @@
                   :statement="selectedRollbackStatement"
                   :create="state.create"
                   :rollback="true"
+                  :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
+                  @apply-statement-to-other-stages="
+                    applyRollbackStatementToOtherStages
+                  "
                 />
               </template>
               <template
@@ -194,6 +201,7 @@
                   :statement="rollbackStatment(stage)"
                   :create="state.create"
                   :rollback="true"
+                  :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
                 />
               </template>
@@ -514,9 +522,33 @@ export default {
       stage.taskList[0].statement = newStatement;
     };
 
+    const applyStatementToOtherStages = (newStatement: string) => {
+      for (const stage of (issue.value as IssueCreate).pipeline.stageList) {
+        for (const task of stage.taskList) {
+          if (
+            task.type == "bb.task.general" ||
+            task.type == "bb.task.database.create" ||
+            task.type == "bb.task.database.schema.update"
+          ) {
+            task.statement = newStatement;
+          }
+        }
+      }
+    };
+
     const updateRollbackStatement = (newStatement: string) => {
       const stage = selectedStage.value as StageCreate;
       stage.taskList[0].rollbackStatement = newStatement;
+    };
+
+    const applyRollbackStatementToOtherStages = (newStatement: string) => {
+      for (const stage of (issue.value as IssueCreate).pipeline.stageList) {
+        for (const task of stage.taskList) {
+          if (task.type == "bb.task.database.schema.update") {
+            task.rollbackStatement = newStatement;
+          }
+        }
+      }
     };
 
     const updateDescription = (
@@ -808,13 +840,34 @@ export default {
       // return task.type == "bb.task.database.schema.update";
     });
 
+    const showIssueTaskStatementApply = computed(() => {
+      if (!state.create) {
+        return false;
+      }
+      let count = 0;
+      for (const stage of (issue.value as IssueCreate).pipeline.stageList) {
+        for (const task of stage.taskList) {
+          if (
+            task.type == "bb.task.general" ||
+            task.type == "bb.task.database.create" ||
+            task.type == "bb.task.database.schema.update"
+          ) {
+            count++;
+          }
+        }
+      }
+      return count > 1;
+    });
+
     return {
       state,
       issue,
       updateName,
       updateDescription,
       updateStatement,
+      applyStatementToOtherStages,
       updateRollbackStatement,
+      applyRollbackStatementToOtherStages,
       updateAssigneeId,
       addSubscriberId,
       removeSubscriberId,
@@ -842,6 +895,7 @@ export default {
       showIssueOutputPanel,
       showIssueTaskStatementPanel,
       showIssueTaskRollbackStatementPanel,
+      showIssueTaskStatementApply,
     };
   },
 };

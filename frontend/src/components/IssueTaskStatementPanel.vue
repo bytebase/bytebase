@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-between">
+  <div class="flex items-center space-x-4">
     <div
       class="text-sm font-medium"
       :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
@@ -7,6 +7,17 @@
       {{ rollback ? "Rollback SQL" : "SQL" }}
       <span v-if="create && !rollback" class="text-red-600">*</span>
     </div>
+    <button
+      v-if="showApplyStatement"
+      :disabled="isEmpty(state.editStatement)"
+      type="button"
+      class="btn-small"
+      @click.prevent="
+        $emit('apply-statement-to-other-stages', state.editStatement)
+      "
+    >
+      Apply to other stages
+    </button>
   </div>
   <label class="sr-only">SQL statement</label>
   <template v-if="state.editing">
@@ -67,7 +78,7 @@ interface LocalState {
 
 export default {
   name: "IssueTaskStatementPanel",
-  emits: ["update-statement"],
+  emits: ["update-statement", "apply-statement-to-other-stages"],
   props: {
     statement: {
       required: true,
@@ -78,6 +89,10 @@ export default {
       type: Boolean,
     },
     rollback: {
+      required: true,
+      type: Boolean,
+    },
+    showApplyStatement: {
       required: true,
       type: Boolean,
     },
