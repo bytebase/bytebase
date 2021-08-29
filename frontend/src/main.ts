@@ -1,4 +1,5 @@
 import axios from "axios";
+import isEmpty from "lodash-es/isEmpty";
 import moment from "moment";
 import { createApp } from "vue";
 import App from "./App.vue";
@@ -141,6 +142,7 @@ Promise.all([
   app.config.globalProperties.isRelease = isRelease();
   app.config.globalProperties.sizeToFit = sizeToFit;
   app.config.globalProperties.urlfy = urlfy;
+  app.config.globalProperties.isEmpty = isEmpty;
   app.config.globalProperties.environmentName = environmentName;
   app.config.globalProperties.environmentSlug = environmentSlug;
   app.config.globalProperties.projectName = projectName;
