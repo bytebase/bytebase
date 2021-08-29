@@ -245,3 +245,31 @@ VALUES
         'Add created_at column to user,post,comment table for dev environment',
         1
     );
+
+-- Issue for multi-stage create table UI workflow
+INSERT INTO
+    issue (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        pipeline_id,
+        name,
+        `status`,
+        `type`,
+        description,
+        assignee_id
+    )
+VALUES
+    (
+        13009,
+        103,
+        103,
+        3001,
+        9009,
+        'Create a new table ''tabl2'' using multi-stage SQL review workflow',
+        'OPEN',
+        'bb.issue.general',
+        'Create tbl2 using multi-stage SQL review workflow',
+        102
+    );

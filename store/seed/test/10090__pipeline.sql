@@ -165,3 +165,25 @@ VALUES
         'Pipeline - Add created_at column to user,post,comment table for dev environment',
         'OPEN'
     );
+
+-- Pipeline for multi-stage create table UI workflow
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        `status`
+    )
+VALUES
+    (
+        9009,
+        103,
+        1624879944,
+        103,
+        1624879944,
+        'Pipeline - Create a new table tbl2',
+        'OPEN'
+    );

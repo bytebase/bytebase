@@ -217,3 +217,59 @@ VALUES
         'database ''blog'' has already applied version 202106280100',
         '{"statement":"ALTER TABLE `user` ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE post ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE comment ADD COLUMN `created_at` DATETIME NOT NULL;\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"171ceaf7659ceb8e495aa3ef356ec686656f9dc0","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1624869938,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/171ceaf7659ceb8e495aa3ef356ec686656f9dc0","authorName":"tianzhou","added":"bytebase/dev/202106280100__blog__add_created_at_column.sql"}}}'
     );
+
+-- Successful task run for task 10013 create table
+INSERT INTO
+    task_run (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        task_id,
+        name,
+        `status`,
+        `type`,
+        comment,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        11013,
+        'Update testdb_dev task run',
+        'DONE',
+        'bb.task.database.schema.update',
+        'Applied migration version 20210830011437.11013 to database "testdb_dev"',
+        '{"statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT)"}'
+    );
+
+-- Successful task run for task 10014 create table
+INSERT INTO
+    task_run (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        task_id,
+        name,
+        `status`,
+        `type`,
+        comment,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        11014,
+        'Update testdb_integration task run',
+        'DONE',
+        'bb.task.database.schema.update',
+        'Applied migration version 20210830020000.11014 to database "testdb_integration"',
+        '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT)"}'
+    );

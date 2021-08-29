@@ -798,3 +798,129 @@ VALUES
         'database ''blog'' has already applied version 202106280100',
         '{"taskId":11012,"oldStatus":"RUNNING","newStatus":"FAILED"}'
     );
+
+-- Activity for issue 13009
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        103,
+        1624879944,
+        103,
+        1624879944,
+        13009,
+        'bb.issue.create',
+        'INFO',
+        '',
+        '{"issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow"}'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        13009,
+        'bb.pipeline.task.status.update',
+        'INFO',
+        '',
+        '{"taskId":11015,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        13009,
+        'bb.pipeline.task.status.update',
+        'INFO',
+        'Applied migration version 20210830011437.11013 to database "testdb_dev"',
+        '{"taskId":11015,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        13009,
+        'bb.pipeline.task.status.update',
+        'INFO',
+        '',
+        '{"taskId":11016,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        13009,
+        'bb.pipeline.task.status.update',
+        'INFO',
+        'Applied migration version 20210830020000.11014 to database "testdb_integration"',
+        '{"taskId":11016,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
+    );

@@ -395,3 +395,125 @@ VALUES
         'FAILED',
         '{"statement":"ALTER TABLE `user` ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE post ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE comment ADD COLUMN `created_at` DATETIME NOT NULL;\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"171ceaf7659ceb8e495aa3ef356ec686656f9dc0","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1624869938,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/171ceaf7659ceb8e495aa3ef356ec686656f9dc0","authorName":"tianzhou","added":"bytebase/dev/202106280100__blog__add_created_at_column.sql"}}}'
     );
+
+-- Task for Pipeline 9009 multi-stage create table UI workflow
+-- Task for stage 10013 "Dev" to create table in database 7002 'testdb_dev'
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        11013,
+        103,
+        103,
+        9009,
+        10013,
+        6001,
+        7002,
+        'Update testdb_dev',
+        'bb.task.database.schema.update',
+        'DONE',
+        '{"statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl2;"}'
+    );
+
+-- Task for stage 10014 "Integration" to create table in database 7006 'testdb_integration'
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        11014,
+        103,
+        103,
+        9009,
+        10014,
+        6002,
+        7006,
+        'Update testdb_integration',
+        'bb.task.database.schema.update',
+        'DONE',
+        '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl2;"}'
+    );
+
+
+-- Task for stage 10015 "Integration" to create table in database 7010 'testdb_staging'
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        11015,
+        103,
+        103,
+        9009,
+        10015,
+        6003,
+        7010,
+        'Update testdb_staging',
+        'bb.task.database.schema.update',
+        'PENDING_APPROVAL',
+        '{"statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_staging.tbl2;"}'
+    );
+
+-- Task for stage 10016 "prod" to create table in database 7014 'testdb_prod'
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        `type`,
+        `status`,
+        payload
+    )
+VALUES
+    (
+        11016,
+        103,
+        103,
+        9009,
+        10016,
+        6004,
+        7014,
+        'Update testdb_prod',
+        'bb.task.database.schema.update',
+        'PENDING_APPROVAL',
+        '{"statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_prod.tbl2;"}'
+    );

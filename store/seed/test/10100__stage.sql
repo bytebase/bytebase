@@ -269,3 +269,96 @@ VALUES
         5001,
         'Dev'
     );
+
+-- Stage for Pipeline 9009 multi-stage create table UI workflow
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        10013,
+        103,
+        1624879944,
+        103,
+        1624879944,
+        9009,
+        5001,
+        'Dev'
+    );
+
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        10014,
+        103,
+        1624879944,
+        103,
+        1624879944,
+        9009,
+        5002,
+        'Integration'
+    );
+
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        10015,
+        103,
+        1624879944,
+        103,
+        1624879944,
+        9009,
+        5003,
+        'Staging'
+    );
+
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        10016,
+        103,
+        1624879944,
+        103,
+        1624879944,
+        9009,
+        5004,
+        'Prod'
+    );
