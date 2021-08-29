@@ -319,6 +319,10 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
 	// quite unlikely so we will live with it for now.
+	if issueCreate.AssigneeId == api.UNKNOWN_ID {
+		return nil, fmt.Errorf("assignee missing")
+	}
+
 	for _, stageCreate := range issueCreate.Pipeline.StageList {
 		for _, taskCreate := range stageCreate.TaskList {
 			if taskCreate.Type == api.TaskDatabaseCreate {
