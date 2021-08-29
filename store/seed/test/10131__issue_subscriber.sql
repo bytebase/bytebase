@@ -100,3 +100,19 @@ INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
 VALUES
     (13007, 103);
+
+-- Subscriber for issue 13009
+INSERT INTO
+    issue_subscriber (issue_id, subscriber_id)
+VALUES
+    (13009, 101);
+
+INSERT INTO
+    issue_subscriber (issue_id, subscriber_id)
+VALUES
+    (13009, 102);
+
+INSERT INTO
+    issue_subscriber (issue_id, subscriber_id)
+VALUES
+    (13009, 103);
