@@ -2,7 +2,14 @@
   <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
-      <div class="px-4 pb-4 md:flex md:items-center md:justify-between">
+      <div
+        class="
+          px-4
+          pb-4
+          space-y-2
+          md:space-y-0 md:flex md:items-center md:justify-between
+        "
+      >
         <div class="flex-1 min-w-0">
           <!-- Summary -->
           <div class="flex items-center">
@@ -109,29 +116,39 @@
             </dd>
           </dl>
         </div>
-        <button
-          v-if="allowChangeProject"
-          type="button"
-          class="btn-normal"
-          @click.prevent="tryTransferProject"
-        >
-          <!-- Heroicon name: solid/pencil -->
-          <svg
-            class="-ml-1 mr-2 h-5 w-5 text-control-light"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
+        <div class="flex items-center space-x-2">
+          <button
+            v-if="allowChangeProject"
+            type="button"
+            class="btn-normal"
+            @click.prevent="tryTransferProject"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-            ></path>
-          </svg>
-          <span>Transfer Project</span>
-        </button>
+            <!-- Heroicon name: solid/pencil -->
+            <svg
+              class="-ml-1 mr-2 h-5 w-5 text-control-light"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+              ></path>
+            </svg>
+            <span>Transfer Project</span>
+          </button>
+          <button
+            v-if="allowEdit"
+            type="button"
+            class="btn-primary"
+            @click.prevent="alterSchema"
+          >
+            <span>{{ alterSchemaText }}</span>
+          </button>
+        </div>
       </div>
     </main>
   </div>
@@ -212,7 +229,13 @@ import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import { consoleLink, idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
-import { ProjectId, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
+import {
+  ProjectId,
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+  Repository,
+  baseDirectoryWebURL,
+} from "../types";
 import { isEmpty } from "lodash";
 
 const OVERVIEW_TAB = 0;
@@ -346,9 +369,42 @@ export default {
       return false;
     });
 
+    const alterSchemaText = computed(() => {
+      if (database.value.project.workflowType == "VCS") {
+        return "Alter Schema in VCS";
+      }
+      return "Alter Schema";
+    });
+
     const tryTransferProject = () => {
       state.editingProjectId = database.value.project.id;
       state.showModal = true;
+    };
+
+    const alterSchema = () => {
+      if (database.value.project.workflowType == "UI") {
+        router.push({
+          name: "workspace.issue.detail",
+          params: {
+            issueSlug: "new",
+          },
+          query: {
+            template: "bb.issue.database.schema.update",
+            name: `[${database.value.name}] Alter schema`,
+            project: database.value.project.id,
+            databaseList: database.value.id,
+          },
+        });
+      } else if (database.value.project.workflowType == "VCS") {
+        store
+          .dispatch(
+            "repository/fetchRepositoryByProjectId",
+            database.value.project.id
+          )
+          .then((repository: Repository) => {
+            window.open(baseDirectoryWebURL(repository), "_blank");
+          });
+      }
     };
 
     const updateProject = (newProjectId: ProjectId) => {
@@ -414,6 +470,8 @@ export default {
       allowAdmin,
       allowEdit,
       tryTransferProject,
+      alterSchema,
+      alterSchemaText,
       updateProject,
       selectTab,
       databaseTabItemList,
