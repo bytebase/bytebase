@@ -1,6 +1,9 @@
 <template>
   <div class="flex justify-between">
-    <div class="textlabel">
+    <div
+      class="text-sm font-medium"
+      :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
+    >
       {{ rollback ? "Rollback SQL" : "SQL" }}
       <span v-if="create && !rollback" class="text-red-600">*</span>
     </div>
