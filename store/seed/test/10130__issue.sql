@@ -51,11 +51,11 @@ VALUES
         1624873710,
         3002,
         9002,
-        'Create product table',
+        'Create product table using multi-stage VCS workflow',
         'OPEN',
         'bb.issue.database.schema.update',
-        'Create product table',
-        102
+        'Create product table using multi-stage VCS workflow',
+        101
     );
 
 -- Issue for the multi stage create table pipeline, first stage has a failed task run
@@ -267,7 +267,7 @@ VALUES
         103,
         3001,
         9009,
-        'Create a new table ''tabl2'' using multi-stage SQL review workflow',
+        'Create a new table ''tbl2'' using multi-stage SQL review workflow',
         'OPEN',
         'bb.issue.general',
         'Create tbl2 using multi-stage SQL review workflow',

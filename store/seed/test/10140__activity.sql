@@ -822,7 +822,7 @@ VALUES
         'bb.issue.create',
         'INFO',
         '',
-        '{"issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow"}'
+        '{"issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow"}'
     );
 
 INSERT INTO
@@ -847,7 +847,7 @@ VALUES
         'bb.pipeline.task.status.update',
         'INFO',
         '',
-        '{"taskId":11015,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+        '{"taskId":11015,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
     );
 
 INSERT INTO
@@ -872,7 +872,7 @@ VALUES
         'bb.pipeline.task.status.update',
         'INFO',
         'Applied migration version 20210830011437.11013 to database "testdb_dev"',
-        '{"taskId":11015,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+        '{"taskId":11015,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
     );
 
 INSERT INTO
@@ -897,7 +897,7 @@ VALUES
         'bb.pipeline.task.status.update',
         'INFO',
         '',
-        '{"taskId":11016,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+        '{"taskId":11016,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
     );
 
 INSERT INTO
@@ -920,7 +920,7 @@ VALUES
         1624879944,
         13009,
         'bb.pipeline.task.status.update',
-        'INFO',
-        'Applied migration version 20210830020000.11014 to database "testdb_integration"',
-        '{"taskId":11016,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tabl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
+        'ERROR',
+        'table "tbl2" already exists',
+        '{"taskId":11016,"oldStatus":"RUNNING","newStatus":"FAILED","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
     );

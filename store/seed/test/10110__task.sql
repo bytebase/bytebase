@@ -453,7 +453,7 @@ VALUES
         7006,
         'Update testdb_integration',
         'bb.task.database.schema.update',
-        'DONE',
+        'FAILED',
         '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl2;"}'
     );
 
