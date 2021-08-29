@@ -146,6 +146,7 @@ import {
   SYSTEM_BOT_ID,
   Task,
   TaskId,
+  UNKNOWN_ID,
 } from "../types";
 import { IssueTemplate } from "../plugins";
 import isEmpty from "lodash-es/isEmpty";
@@ -386,7 +387,7 @@ export default {
         return false;
       }
 
-      if (!newIssue.assigneeId) {
+      if (newIssue.assigneeId == UNKNOWN_ID) {
         return false;
       }
 
