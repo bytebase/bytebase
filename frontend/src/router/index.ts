@@ -412,12 +412,26 @@ const routes: Array<RouteRecordRaw> = [
                   idFromSlug(slug)
                 );
 
-                const actionList: string[] = [
-                  "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.create",
-                ];
-
                 if (project.rowStatus == "NORMAL") {
+                  const currentUser = store.getters["auth/currentUser"]();
+                  let allowEditProject = false;
+                  if (isDBAOrOwner(currentUser.role)) {
+                    allowEditProject = true;
+                  } else {
+                    for (const member of project.memberList) {
+                      if (member.principal.id == currentUser.id) {
+                        allowEditProject = true;
+                        break;
+                      }
+                    }
+                  }
+
+                  const actionList: string[] = allowEditProject
+                    ? [
+                        "quickaction.bb.database.schema.update",
+                        "quickaction.bb.database.create",
+                      ]
+                    : [];
                   return new Map([
                     ["OWNER", actionList],
                     ["DBA", actionList],
