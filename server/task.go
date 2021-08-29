@@ -290,6 +290,16 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		}
 	}
 
+	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
+	if (updatedTask.Type == api.TaskDatabaseCreate || updatedTask.Type == api.TaskDatabaseSchemaUpdate) &&
+		updatedTask.Status == api.TaskDone {
+		instance, err := s.ComposeInstanceById(context.Background(), task.InstanceId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
+		}
+		s.SyncSchema(instance)
+	}
+
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
