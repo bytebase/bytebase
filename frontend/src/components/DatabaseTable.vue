@@ -49,12 +49,6 @@
       <BBTableCell v-if="showInstanceColumn" class="w-24">
         {{ instanceName(database.instance) }}
       </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-8">
-        {{ database.characterSet }}
-      </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-8">
-        {{ database.collation }}
-      </BBTableCell>
       <BBTableCell class="w-8">
         {{ database.syncStatus }}
       </BBTableCell>
@@ -119,12 +113,6 @@ const columnListMap: Map<
         title: "Instance",
       },
       {
-        title: "Character set",
-      },
-      {
-        title: "Collation",
-      },
-      {
         title: "Sync status",
       },
       {
@@ -165,12 +153,6 @@ const columnListMap: Map<
         title: "Environment",
       },
       {
-        title: "Character set",
-      },
-      {
-        title: "Collation",
-      },
-      {
         title: "Sync status",
       },
       {
@@ -202,12 +184,6 @@ const columnListMap: Map<
         title: "Project",
       },
       {
-        title: "Character set",
-      },
-      {
-        title: "Collation",
-      },
-      {
         title: "Sync status",
       },
       {
@@ -223,12 +199,6 @@ const columnListMap: Map<
       },
       {
         title: "Environment",
-      },
-      {
-        title: "Character set",
-      },
-      {
-        title: "Collation",
       },
       {
         title: "Sync status",
