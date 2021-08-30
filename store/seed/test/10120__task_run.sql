@@ -268,8 +268,36 @@ VALUES
         1624879944,
         11014,
         'Update testdb_integration task run',
+        'DONE',
+        'bb.task.database.schema.update',
+        'Applied migration version 20210830011437.11014 to database "testdb_integration"',
+        '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT)"}'
+    );
+
+-- Failed task run for task 10015 create table
+INSERT INTO
+    task_run (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        task_id,
+        name,
+        `status`,
+        `type`,
+        comment,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        11015,
+        'Update testdb_staging task run',
         'FAILED',
         'bb.task.database.schema.update',
         'table "tbl2" already exists',
-        '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT)"}'
+        '{"statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT)"}'
     );

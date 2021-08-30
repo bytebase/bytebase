@@ -872,7 +872,7 @@ VALUES
         'bb.pipeline.task.status.update',
         'INFO',
         'Applied migration version 20210830011437.11013 to database "testdb_dev"',
-        '{"taskId":11015,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+        '{"taskId":11013,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
     );
 
 INSERT INTO
@@ -897,7 +897,57 @@ VALUES
         'bb.pipeline.task.status.update',
         'INFO',
         '',
-        '{"taskId":11016,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_dev"}'
+        '{"taskId":11014,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
+    );
+
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        13009,
+        'bb.pipeline.task.status.update',
+        'INFO',
+        'Applied migration version 20210830011437.11014 to database "testdb_integration"',
+        '{"taskId":11014,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
+    );
+    
+INSERT INTO
+    activity (
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        container_id,
+        `type`,
+        `level`,
+        COMMENT,
+        payload
+    )
+VALUES
+    (
+        102,
+        1624879944,
+        102,
+        1624879944,
+        13009,
+        'bb.pipeline.task.status.update',
+        'INFO',
+        '',
+        '{"taskId":11015,"oldStatus":"PENDING","newStatus":"RUNNING","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_staging"}'
     );
 
 INSERT INTO
@@ -922,5 +972,5 @@ VALUES
         'bb.pipeline.task.status.update',
         'ERROR',
         'table "tbl2" already exists',
-        '{"taskId":11016,"oldStatus":"RUNNING","newStatus":"FAILED","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
+        '{"taskId":11015,"oldStatus":"RUNNING","newStatus":"FAILED","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_staging"}'
     );

@@ -453,7 +453,7 @@ VALUES
         7006,
         'Update testdb_integration',
         'bb.task.database.schema.update',
-        'FAILED',
+        'DONE',
         '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl2;"}'
     );
 
@@ -484,7 +484,7 @@ VALUES
         7010,
         'Update testdb_staging',
         'bb.task.database.schema.update',
-        'PENDING_APPROVAL',
+        'FAILED',
         '{"statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_staging.tbl2;"}'
     );
 
