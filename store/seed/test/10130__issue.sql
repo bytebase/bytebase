@@ -269,7 +269,7 @@ VALUES
         9009,
         'Create a new table ''tbl2'' using multi-stage SQL review workflow',
         'OPEN',
-        'bb.issue.general',
+        'bb.issue.database.schema.update',
         'Create tbl2 using multi-stage SQL review workflow',
         102
     );
