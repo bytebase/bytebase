@@ -62,9 +62,11 @@
       >
         <IssueStatusTransitionButtonGroup
           :create="state.create"
+          :allowRollback="allowRollback"
           :issue="issue"
           :issueTemplate="issueTemplate"
           @create="doCreate"
+          @rollback="doRollback"
           @change-issue-status="changeIssueStatus"
           @change-task-status="changeTaskStatus"
         />
@@ -197,13 +199,15 @@
                 v-for="(stage, index) in issue.pipeline.stageList"
                 :key="index"
               >
-                <IssueTaskStatementPanel
-                  :statement="rollbackStatment(stage)"
-                  :create="state.create"
-                  :rollback="true"
-                  :showApplyStatement="showIssueTaskStatementApply"
-                  @update-statement="updateRollbackStatement"
-                />
+                <template v-if="selectedStage.id == stage.id">
+                  <IssueTaskStatementPanel
+                    :statement="rollbackStatement(stage)"
+                    :create="state.create"
+                    :rollback="true"
+                    :showApplyStatement="showIssueTaskStatementApply"
+                    @update-statement="updateRollbackStatement"
+                  />
+                </template>
               </template>
             </section>
             <IssueDescriptionPanel
@@ -289,6 +293,8 @@ import {
   NORMAL_POLL_INTERVAL,
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
+  Project,
+  IssueId,
 } from "../types";
 import {
   defaulTemplate,
@@ -297,6 +303,7 @@ import {
   OutputField,
   IssueTemplate,
 } from "../plugins";
+import { isEmpty } from "lodash";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -369,58 +376,186 @@ export default {
     watchEffect(refreshTemplate);
 
     const buildNewIssue = (): IssueCreate => {
-      const databaseList: Database[] = [];
-      if (router.currentRoute.value.query.databaseList) {
-        for (const databaseId of (
-          router.currentRoute.value.query.databaseList as string
-        ).split(","))
-          databaseList.push(store.getters["database/databaseById"](databaseId));
-      }
-
-      const environmentList: Environment[] = [];
-      if (router.currentRoute.value.query.environment) {
-        environmentList.push(
-          store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
-          )
+      var newIssue: IssueCreate;
+      if (router.currentRoute.value.query.rollbackIssue) {
+        const rollbackIssue: Issue = store.getters["issue/issueById"](
+          parseInt(router.currentRoute.value.query.rollbackIssue as string)
         );
-      } else if (databaseList.length > 0) {
-        for (const database of databaseList) {
-          environmentList.push(database.instance.environment);
+
+        let validState = false;
+        let title = "";
+
+        // We expect user to create rollback from the original issue, which should have already fetched
+        // issue remotely. Otherwise, this will return UNKNOWN_ID
+        if (rollbackIssue.id == UNKNOWN_ID) {
+          title =
+            "INVALID STATE, please create rollback from the original issue.";
+        } else {
+          if (rollbackIssue.type != "bb.issue.database.schema.update") {
+            title =
+              "INVALID STATE, only support to rollback update schema issue.";
+          } else if (
+            rollbackIssue.status != "DONE" &&
+            rollbackIssue.status != "CANCELED"
+          ) {
+            title =
+              "INVALID STATE, only support to rollback issue in closed state.";
+          } else {
+            for (const stage of rollbackIssue.pipeline.stageList) {
+              for (const task of stage.taskList) {
+                if (
+                  task.status == "DONE" &&
+                  task.type == "bb.task.database.schema.update" &&
+                  !isEmpty(
+                    (task.payload as TaskDatabaseSchemaUpdatePayload)
+                      .rollbackStatement
+                  )
+                ) {
+                  validState = true;
+                  break;
+                }
+              }
+              if (validState) {
+                break;
+              }
+            }
+
+            if (!validState) {
+              title =
+                "INVALID STATE, no applicable update schema task to rollback.";
+            }
+          }
+        }
+
+        if (validState) {
+          const environmentList: Environment[] = [];
+          const databaseList: Database[] = [];
+          const statementList: string[] = [];
+          const rollbackStatementList: string[] = [];
+          for (
+            let i = rollbackIssue.pipeline.stageList.length - 1;
+            i >= 0;
+            i--
+          ) {
+            const stage = rollbackIssue.pipeline.stageList[i];
+            for (let j = stage.taskList.length - 1; j >= 0; j--) {
+              const task = stage.taskList[j];
+              if (
+                task.status == "DONE" &&
+                task.type == "bb.task.database.schema.update" &&
+                !isEmpty(
+                  (task.payload as TaskDatabaseSchemaUpdatePayload)
+                    .rollbackStatement
+                )
+              ) {
+                environmentList.push(stage.environment);
+                databaseList.push(task.database!);
+                statementList.push(
+                  (task.payload as TaskDatabaseSchemaUpdatePayload)
+                    .rollbackStatement
+                );
+                rollbackStatementList.push(
+                  (task.payload as TaskDatabaseSchemaUpdatePayload).statement
+                );
+              }
+            }
+          }
+
+          if (environmentList.length == 0) {
+            newIssue = {
+              ...defaulTemplate().buildIssue({
+                environmentList: store.getters["environment/environmentList"](),
+                databaseList: [],
+                currentUser: currentUser.value,
+              }),
+              name: "INVALID STATE, no applicable update schema task to rollback.",
+              projectId: UNKNOWN_ID,
+            };
+          } else {
+            newIssue = {
+              ...newIssueTemplate.value.buildIssue({
+                environmentList,
+                databaseList,
+                statementList,
+                rollbackStatementList,
+                currentUser: currentUser.value,
+              }),
+              projectId: rollbackIssue.project.id,
+              name: `[Rollback] issue/${rollbackIssue.id} - ${rollbackIssue.name}`,
+              description: rollbackIssue.description
+                ? `====Original issue description BEGIN====\n\n${rollbackIssue.description}\n\n====Original issue description END====\n\n`
+                : "",
+              assigneeId: rollbackIssue.assignee.id,
+            };
+          }
+        } else {
+          newIssue = {
+            ...defaulTemplate().buildIssue({
+              environmentList: store.getters["environment/environmentList"](),
+              databaseList: [],
+              currentUser: currentUser.value,
+            }),
+            name: title,
+            projectId: UNKNOWN_ID,
+          };
         }
       } else {
-        environmentList.push(...store.getters["environment/environmentList"]());
-      }
+        const databaseList: Database[] = [];
+        if (router.currentRoute.value.query.databaseList) {
+          for (const databaseId of (
+            router.currentRoute.value.query.databaseList as string
+          ).split(","))
+            databaseList.push(
+              store.getters["database/databaseById"](databaseId)
+            );
+        }
 
-      const newIssue: IssueCreate = {
-        ...newIssueTemplate.value.buildIssue({
-          environmentList,
-          databaseList,
-          currentUser: currentUser.value,
-        }),
-        projectId: router.currentRoute.value.query.project
-          ? parseInt(router.currentRoute.value.query.project as string)
-          : UNKNOWN_ID,
-      };
+        const environmentList: Environment[] = [];
+        if (router.currentRoute.value.query.environment) {
+          environmentList.push(
+            store.getters["environment/environmentById"](
+              router.currentRoute.value.query.environment
+            )
+          );
+        } else if (databaseList.length > 0) {
+          for (const database of databaseList) {
+            environmentList.push(database.instance.environment);
+          }
+        } else {
+          environmentList.push(
+            ...store.getters["environment/environmentList"]()
+          );
+        }
 
-      // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
-      if (store.getters["actuator/isDemo"]()) {
-        newIssue.assigneeId = currentUser.value.id;
-      }
+        newIssue = {
+          ...newIssueTemplate.value.buildIssue({
+            environmentList,
+            databaseList,
+            currentUser: currentUser.value,
+          }),
+          projectId: router.currentRoute.value.query.project
+            ? parseInt(router.currentRoute.value.query.project as string)
+            : UNKNOWN_ID,
+        };
 
-      if (router.currentRoute.value.query.name) {
-        newIssue.name = router.currentRoute.value.query.name as string;
-      }
-      if (router.currentRoute.value.query.description) {
-        newIssue.description = router.currentRoute.value.query
-          .description as string;
-      }
-      if (router.currentRoute.value.query.assignee) {
-        newIssue.assigneeId = parseInt(
-          router.currentRoute.value.query.assignee as string
-        );
-      }
+        // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
+        if (store.getters["actuator/isDemo"]()) {
+          newIssue.assigneeId = currentUser.value.id;
+        }
 
+        if (router.currentRoute.value.query.name) {
+          newIssue.name = router.currentRoute.value.query.name as string;
+        }
+        if (router.currentRoute.value.query.description) {
+          newIssue.description = router.currentRoute.value.query
+            .description as string;
+        }
+        if (router.currentRoute.value.query.assignee) {
+          newIssue.assigneeId = parseInt(
+            router.currentRoute.value.query.assignee as string
+          );
+        }
+      }
       for (const field of newIssueTemplate.value.inputFieldList) {
         const value = router.currentRoute.value.query[field.slug] as string;
         if (value) {
@@ -486,6 +621,9 @@ export default {
         state.create = cur.toLowerCase() == "new";
         if (!state.create && oldCreate) {
           pollIssue(NORMAL_POLL_INTERVAL);
+        } else if (state.create && !oldCreate) {
+          clearInterval(state.pollIssueTimer);
+          state.newIssue = buildNewIssue();
         }
       }
     );
@@ -499,6 +637,15 @@ export default {
     const issueTemplate = computed(
       () => templateForType(issue.value.type) || defaulTemplate()
     );
+
+    const project = computed((): Project => {
+      if (state.create) {
+        return store.getters["project/projectById"](
+          (issue.value as IssueCreate).projectId
+        );
+      }
+      return (issue.value as Issue).project;
+    });
 
     const updateName = (
       newName: string,
@@ -614,6 +761,19 @@ export default {
             `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
           );
         });
+    };
+
+    const doRollback = () => {
+      router.push({
+        name: "workspace.issue.detail",
+        params: {
+          issueSlug: "new",
+        },
+        query: {
+          template: "bb.issue.database.schema.update",
+          rollbackIssue: (issue.value as Issue).id,
+        },
+      });
     };
 
     const changeIssueStatus = (newStatus: IssueStatus, comment: string) => {
@@ -799,6 +959,36 @@ export default {
       return state.create;
     });
 
+    // For now, we only support rollback for schema update issue when all below conditions met:
+    // 1. Issue is in DONE or CANCELED state
+    // 2. There is at least one completed schema update task and the task contains the rollback statement.
+    const allowRollback = computed(() => {
+      if (!state.create) {
+        if (issue.value.type == "bb.issue.database.schema.update") {
+          if (
+            (issue.value as Issue).status == "DONE" ||
+            (issue.value as Issue).status == "CANCELED"
+          ) {
+            for (const stage of (issue.value as Issue).pipeline.stageList) {
+              for (const task of stage.taskList) {
+                if (
+                  task.status == "DONE" &&
+                  task.type == "bb.task.database.schema.update" &&
+                  !isEmpty(
+                    (task.payload as TaskDatabaseSchemaUpdatePayload)
+                      .rollbackStatement
+                  )
+                ) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+      }
+      return false;
+    });
+
     const showCancelBanner = computed(() => {
       return !state.create && (issue.value as Issue).status == "CANCELED";
     });
@@ -834,10 +1024,10 @@ export default {
     });
 
     const showIssueTaskRollbackStatementPanel = computed(() => {
-      // TODO(tianzhou): Disable rollback statement for now
+      if (project.value.workflowType == "UI") {
+        return issue.value.type == "bb.issue.database.schema.update";
+      }
       return false;
-      // const task = selectedTask.value;
-      // return task.type == "bb.task.database.schema.update";
     });
 
     const showIssueTaskStatementApply = computed(() => {
@@ -873,6 +1063,7 @@ export default {
       removeSubscriberId,
       updateCustomField,
       doCreate,
+      doRollback,
       changeIssueStatus,
       changeTaskStatus,
       currentPipelineType,
@@ -888,6 +1079,7 @@ export default {
       allowEditOutput,
       allowEditNameAndDescription,
       allowEditSql,
+      allowRollback,
       showCancelBanner,
       showSuccessBanner,
       showPendingApproval,

@@ -85,6 +85,11 @@
             {{ transition.buttonName }}
           </button>
         </template>
+        <template v-if="allowRollback">
+          <button type="button" class="btn-primary" @click.prevent="doRollback">
+            Rollback
+          </button>
+        </template>
       </div>
     </template>
   </template>
@@ -170,9 +175,13 @@ export type IssueContext = {
 
 export default {
   name: "IssueStatusTransitionButtonGroup",
-  emits: ["create", "change-issue-status", "change-task-status"],
+  emits: ["create", "rollback", "change-issue-status", "change-task-status"],
   props: {
     create: {
+      required: true,
+      type: Boolean,
+    },
+    allowRollback: {
       required: true,
       type: Boolean,
     },
@@ -424,6 +433,10 @@ export default {
       emit("create");
     };
 
+    const doRollback = () => {
+      emit("rollback");
+    };
+
     return {
       updateStatusModalState,
       applicableTaskStatusTransitionList,
@@ -435,6 +448,7 @@ export default {
       doIssueStatusTransition,
       allowCreate,
       doCreate,
+      doRollback,
     };
   },
 };

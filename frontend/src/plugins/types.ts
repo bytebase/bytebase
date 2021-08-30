@@ -1,5 +1,5 @@
 import { Store } from "vuex";
-import { Environment, Principal, IssueCreate, Issue, Database } from "../types";
+import { Database, Environment, Issue, IssueCreate, Principal } from "../types";
 
 // Issue
 // It has to be string type because the id for stage field contain multiple parts.
@@ -86,6 +86,8 @@ export type TemplateContext = {
   databaseList: Database[];
   environmentList: Environment[];
   currentUser: Principal;
+  statementList?: string[];
+  rollbackStatementList?: string[];
 };
 
 export type IssueTemplate = {
