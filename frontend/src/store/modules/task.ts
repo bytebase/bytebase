@@ -1,21 +1,21 @@
 import axios from "axios";
 import {
-  ResourceObject,
-  TaskState,
-  Task,
-  Stage,
-  unknown,
-  IssueId,
-  StageId,
-  PipelineId,
-  Pipeline,
-  TaskStatusPatch,
-  TaskId,
   empty,
-  ResourceIdentifier,
-  Principal,
-  TaskRun,
   Instance,
+  IssueId,
+  Pipeline,
+  PipelineId,
+  Principal,
+  ResourceIdentifier,
+  ResourceObject,
+  Stage,
+  StageId,
+  Task,
+  TaskId,
+  TaskRun,
+  TaskState,
+  TaskStatusPatch,
+  unknown,
 } from "../../types";
 
 const state: () => TaskState = () => ({});
@@ -77,14 +77,14 @@ function convertPartial(
       item.type == "instance" &&
       (task.relationships!.instance.data as ResourceIdentifier).id == item.id
     ) {
-      instance = rootGetters["instance/convert"](item);
+      instance = rootGetters["instance/convert"](item, includedList);
     }
     if (
       item.type == "database" &&
       // Tasks like creating database may not have database.
       (task.relationships!.database.data as ResourceIdentifier)?.id == item.id
     ) {
-      database = rootGetters["database/convert"](item);
+      database = rootGetters["database/convert"](item, includedList);
     }
   }
 
