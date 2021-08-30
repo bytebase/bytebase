@@ -2,7 +2,11 @@
   <div class="flex items-center space-x-4">
     <div
       class="text-sm font-medium"
-      :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
+      :class="
+        !rollback && isEmpty(state.editStatement)
+          ? 'text-red-600'
+          : 'text-control'
+      "
     >
       {{ rollback ? "Rollback SQL" : "SQL" }}
       <span v-if="create && !rollback" class="text-red-600">*</span>
