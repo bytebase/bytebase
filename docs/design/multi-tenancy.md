@@ -21,7 +21,7 @@ Note, the above 2 cases can also be combined, thinking of a Bytebase customer wh
 
 This is quite an advanced feature and to our knowledege, none existing database schema change solution has implemented this natively. We choose to implement this at a relative early stage for Bytebase because:
 
-1. To support this natively, we have to make tenant as a first-class citizen. This is better done in the early stage instead of an afterthought so that all following feature desugb would take tenant into consideration by default.
+1. To support this natively, we have to make tenant as a first-class citizen. This is better done in the early stage instead of an afterthought so that all following feature design would take tenant into consideration by default.
 
 2. Be a key differentiator from other tools and establish the image that Bytebase while being a new comer, is a serious player in this category.
 
