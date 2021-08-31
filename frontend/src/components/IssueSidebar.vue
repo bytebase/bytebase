@@ -86,16 +86,20 @@
         </div>
       </template>
 
-      <template v-if="database">
+      <template v-if="databaseName">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           Database
         </h2>
-        <router-link
-          :to="`/db/${databaseSlug(database)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
+        <div
+          @click.prevent="clickDatabase"
+          class="col-span-2 text-sm font-medium text-main"
+          :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
         >
-          {{ database.name }}
-        </router-link>
+          {{ databaseName }}
+          <span class="text-control-light">{{
+            showDatabaseCreationLabel
+          }}</span>
+        </div>
       </template>
 
       <template v-if="showInstance">
@@ -201,7 +205,6 @@ import { InputField } from "../plugins";
 import {
   Database,
   Environment,
-  Principal,
   Project,
   Issue,
   IssueCreate,
@@ -210,8 +213,11 @@ import {
   StageCreate,
   Instance,
   ONBOARDING_ISSUE_ID,
+  TaskDatabaseCreatePayload,
+  Task,
 } from "../types";
-import { allTaskList, isDBAOrOwner } from "../utils";
+import { allTaskList, databaseSlug, idFromSlug, isDBAOrOwner } from "../utils";
+import { useRouter } from "vue-router";
 
 interface LocalState {}
 
@@ -258,6 +264,7 @@ export default {
   },
   setup(props, { emit }) {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({});
 
@@ -277,8 +284,27 @@ export default {
         }
         return undefined;
       }
+
       const stage = props.selectedStage as Stage;
       return stage.taskList[0].database;
+    });
+
+    const databaseName = computed((): string | undefined => {
+      if (database.value) {
+        return database.value.name;
+      }
+
+      const stage = props.selectedStage as Stage;
+      if (stage.taskList[0].type == "bb.task.database.create") {
+        if (props.create) {
+          const stage = props.selectedStage as StageCreate;
+          return stage.taskList[0].databaseName;
+        }
+        return (
+          (stage.taskList[0] as Task).payload as TaskDatabaseCreatePayload
+        ).databaseName;
+      }
+      return undefined;
     });
 
     const instance = computed((): Instance => {
@@ -351,6 +377,53 @@ export default {
       }
     };
 
+    const isDatabaseCreated = computed(() => {
+      const stage = props.selectedStage as Stage;
+      if (stage.taskList[0].type == "bb.task.database.create") {
+        if (props.create) {
+          return false;
+        }
+        return stage.taskList[0].status == "DONE";
+      }
+      return true;
+    });
+
+    // We only show creation label for database create task
+    const showDatabaseCreationLabel = computed(() => {
+      const stage = props.selectedStage as Stage;
+      if (stage.taskList[0].type != "bb.task.database.create") {
+        return "";
+      }
+      return isDatabaseCreated.value ? "(created)" : "(pending create)";
+    });
+
+    const clickDatabase = () => {
+      if (database.value) {
+        router.push({
+          name: "workspace.database.detail",
+          params: {
+            databaseSlug: databaseSlug(database.value),
+          },
+        });
+      } else {
+        store
+          .dispatch("database/fetchDatabaseListByInstanceId", instance.value.id)
+          .then((list: Database[]) => {
+            for (const database of list) {
+              if (database.name == databaseName.value) {
+                router.push({
+                  name: "workspace.database.detail",
+                  params: {
+                    databaseSlug: databaseSlug(database),
+                  },
+                });
+                break;
+              }
+            }
+          });
+      }
+    };
+
     return {
       EMPTY_ID,
       state,
@@ -358,12 +431,16 @@ export default {
       environment,
       instance,
       database,
+      databaseName,
       project,
       showInstance,
       showStageSelect,
       allowEditAssignee,
       allowEditCustomField,
       trySaveCustomField,
+      isDatabaseCreated,
+      showDatabaseCreationLabel,
+      clickDatabase,
     };
   },
 };
