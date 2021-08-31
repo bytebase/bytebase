@@ -140,6 +140,93 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 				return nil
 			}
 
+			var recreateTableSchema = func(database *api.Database, table db.DBTable) error {
+				// Table
+				tableCreate := &api.TableCreate{
+					CreatorId:     api.SYSTEM_BOT_ID,
+					DatabaseId:    database.ID,
+					Name:          table.Name,
+					Type:          table.Type,
+					Engine:        table.Engine,
+					Collation:     table.Collation,
+					RowCount:      table.RowCount,
+					DataSize:      table.DataSize,
+					IndexSize:     table.IndexSize,
+					DataFree:      table.DataFree,
+					CreateOptions: table.CreateOptions,
+					Comment:       table.Comment,
+				}
+				upsertedTable, err := createTable(database, tableCreate)
+				if err != nil {
+					return err
+				}
+
+				// Column
+				for _, column := range table.ColumnList {
+					columnFind := &api.ColumnFind{
+						DatabaseId: &database.ID,
+						TableId:    &upsertedTable.ID,
+						Name:       &column.Name,
+					}
+					_, err := s.ColumnService.FindColumn(context.Background(), columnFind)
+					if err != nil {
+						if common.ErrorCode(err) == common.ENOTFOUND {
+							columnCreate := &api.ColumnCreate{
+								CreatorId:    api.SYSTEM_BOT_ID,
+								DatabaseId:   database.ID,
+								TableId:      upsertedTable.ID,
+								Name:         column.Name,
+								Position:     column.Position,
+								Default:      column.Default,
+								Nullable:     column.Nullable,
+								Type:         column.Type,
+								CharacterSet: column.CharacterSet,
+								Collation:    column.Collation,
+								Comment:      column.Comment,
+							}
+							if err := createColumn(database, upsertedTable, columnCreate); err != nil {
+								return err
+							}
+						} else {
+							return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+						}
+					}
+				}
+
+				// Index
+				for _, index := range table.IndexList {
+					indexFind := &api.IndexFind{
+						DatabaseId: &database.ID,
+						TableId:    &upsertedTable.ID,
+						Name:       &index.Name,
+						Expression: &index.Expression,
+					}
+					_, err := s.IndexService.FindIndex(context.Background(), indexFind)
+					if err != nil {
+						if common.ErrorCode(err) == common.ENOTFOUND {
+							indexCreate := &api.IndexCreate{
+								CreatorId:  api.SYSTEM_BOT_ID,
+								DatabaseId: database.ID,
+								TableId:    upsertedTable.ID,
+								Name:       index.Name,
+								Expression: index.Expression,
+								Position:   index.Position,
+								Type:       index.Type,
+								Unique:     index.Unique,
+								Visible:    index.Visible,
+								Comment:    index.Comment,
+							}
+							if err := createIndex(database, upsertedTable, indexCreate); err != nil {
+								return err
+							}
+						} else {
+							return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+						}
+					}
+				}
+				return nil
+			}
+
 			instanceUserFind := &api.InstanceUserFind{
 				InstanceId: instance.ID,
 			}
@@ -190,6 +277,10 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 			//   	   We don't delete the entry because:
 			//   	   1. This entry has already been associated with other entities, we can't simply delete it.
 			//   	   2. The deletion in the schema might be a mistake, so it's better to surface as NOT_FOUND to let user review it.
+			//
+			// If we successfully synced a particular db schema, we just recreate its table, index, column info. We do this because
+			// we don't reference those objects and they are for information purpose.
+
 			databaseFind := &api.DatabaseFind{
 				InstanceId: &instance.ID,
 			}
@@ -207,7 +298,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 				}
 				if matchedDb != nil {
-					// Case 1
+					// Case 1, appear in both the bytebase metadata and the synced db schema
 					syncStatus := api.OK
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
@@ -224,147 +315,22 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, database.Name, err)
 					}
 
+					tableDelete := &api.TableDelete{
+						DatabaseId: database.ID,
+					}
+					err = s.TableService.DeleteTable(context.Background(), tableDelete)
+					if err != nil {
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, database.Name, err)
+					}
+
 					for _, table := range schema.TableList {
-						// Table
-						tableFind := &api.TableFind{
-							DatabaseId: &database.ID,
-							Name:       &table.Name,
-						}
-						storedTable, err := s.TableService.FindTable(context.Background(), tableFind)
-						var upsertedTable *api.Table
+						err = recreateTableSchema(database, table)
 						if err != nil {
-							if common.ErrorCode(err) == common.ENOTFOUND {
-								tableCreate := &api.TableCreate{
-									CreatorId:     api.SYSTEM_BOT_ID,
-									DatabaseId:    database.ID,
-									Name:          table.Name,
-									Type:          table.Type,
-									Engine:        table.Engine,
-									Collation:     table.Collation,
-									RowCount:      table.RowCount,
-									DataSize:      table.DataSize,
-									IndexSize:     table.IndexSize,
-									DataFree:      table.DataFree,
-									CreateOptions: table.CreateOptions,
-									Comment:       table.Comment,
-								}
-								upsertedTable, err = createTable(database, tableCreate)
-								if err != nil {
-									return err
-								}
-							} else {
-								return fmt.Errorf("failed to sync table for instance: %s, database: %s. Error %w", instance.Name, database.Name, err)
-							}
-						} else {
-							tablePatch := &api.TablePatch{
-								ID:                   storedTable.ID,
-								UpdaterId:            api.SYSTEM_BOT_ID,
-								SyncStatus:           &syncStatus,
-								LastSuccessfulSyncTs: &ts,
-							}
-							upsertedTable, err = s.TableService.PatchTable(context.Background(), tablePatch)
-							if err != nil {
-								if common.ErrorCode(err) == common.ENOTFOUND {
-									return fmt.Errorf("failed to sync table for instance: %s, database: %s. Table not found: %s", instance.Name, database.Name, storedTable.Name)
-								}
-								return fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to update table: %s. Error %w", instance.Name, database.Name, storedTable.Name, err)
-							}
-						}
-
-						// Column
-						for _, column := range table.ColumnList {
-							columnFind := &api.ColumnFind{
-								DatabaseId: &database.ID,
-								TableId:    &upsertedTable.ID,
-								Name:       &column.Name,
-							}
-							storedColumn, err := s.ColumnService.FindColumn(context.Background(), columnFind)
-							if err != nil {
-								if common.ErrorCode(err) == common.ENOTFOUND {
-									columnCreate := &api.ColumnCreate{
-										CreatorId:    api.SYSTEM_BOT_ID,
-										DatabaseId:   database.ID,
-										TableId:      upsertedTable.ID,
-										Name:         column.Name,
-										Position:     column.Position,
-										Default:      column.Default,
-										Nullable:     column.Nullable,
-										Type:         column.Type,
-										CharacterSet: column.CharacterSet,
-										Collation:    column.Collation,
-										Comment:      column.Comment,
-									}
-									if err := createColumn(database, upsertedTable, columnCreate); err != nil {
-										return err
-									}
-								} else {
-									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
-								}
-							} else {
-								columnPatch := &api.ColumnPatch{
-									ID:                   storedColumn.ID,
-									UpdaterId:            api.SYSTEM_BOT_ID,
-									SyncStatus:           &syncStatus,
-									LastSuccessfulSyncTs: &ts,
-								}
-								_, err := s.ColumnService.PatchColumn(context.Background(), columnPatch)
-								if err != nil {
-									if common.ErrorCode(err) == common.ENOTFOUND {
-										return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column not found: %s", instance.Name, database.Name, upsertedTable.Name, storedColumn.Name)
-									}
-									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Failed to update column: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, storedColumn.Name, err)
-								}
-							}
-						}
-
-						// Index
-						for _, index := range table.IndexList {
-							indexFind := &api.IndexFind{
-								DatabaseId: &database.ID,
-								TableId:    &upsertedTable.ID,
-								Name:       &index.Name,
-								Expression: &index.Expression,
-							}
-							storedIndex, err := s.IndexService.FindIndex(context.Background(), indexFind)
-							if err != nil {
-								if common.ErrorCode(err) == common.ENOTFOUND {
-									indexCreate := &api.IndexCreate{
-										CreatorId:  api.SYSTEM_BOT_ID,
-										DatabaseId: database.ID,
-										TableId:    upsertedTable.ID,
-										Name:       index.Name,
-										Expression: index.Expression,
-										Position:   index.Position,
-										Type:       index.Type,
-										Unique:     index.Unique,
-										Visible:    index.Visible,
-										Comment:    index.Comment,
-									}
-									if err := createIndex(database, upsertedTable, indexCreate); err != nil {
-										return err
-									}
-								} else {
-									return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
-								}
-							} else {
-								indexPatch := &api.IndexPatch{
-									ID:                   storedIndex.ID,
-									UpdaterId:            api.SYSTEM_BOT_ID,
-									SyncStatus:           &syncStatus,
-									LastSuccessfulSyncTs: &ts,
-								}
-								_, err := s.IndexService.PatchIndex(context.Background(), indexPatch)
-								if err != nil {
-									if common.ErrorCode(err) == common.ENOTFOUND {
-										return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Index not found: %s", instance.Name, database.Name, upsertedTable.Name, storedIndex.Name)
-									}
-									return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to update index: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, storedIndex.Name, err)
-								}
-							}
+							return err
 						}
 					}
 				} else {
-					// Case 2
+					// Case 2, only appear in the synced db schema
 					z, offset := time.Now().Zone()
 					databaseCreate := &api.DatabaseCreate{
 						CreatorId:      api.SYSTEM_BOT_ID,
@@ -385,94 +351,15 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 
 					for _, table := range schema.TableList {
-						// Table
-						tableCreate := &api.TableCreate{
-							CreatorId:     api.SYSTEM_BOT_ID,
-							DatabaseId:    database.ID,
-							Name:          table.Name,
-							Type:          table.Type,
-							Engine:        table.Engine,
-							Collation:     table.Collation,
-							RowCount:      table.RowCount,
-							DataSize:      table.DataSize,
-							IndexSize:     table.IndexSize,
-							DataFree:      table.DataFree,
-							CreateOptions: table.CreateOptions,
-							Comment:       table.Comment,
-						}
-						upsertedTable, err := createTable(database, tableCreate)
+						err = recreateTableSchema(database, table)
 						if err != nil {
 							return err
-						}
-
-						// Column
-						for _, column := range table.ColumnList {
-							columnFind := &api.ColumnFind{
-								DatabaseId: &database.ID,
-								TableId:    &upsertedTable.ID,
-								Name:       &column.Name,
-							}
-							_, err := s.ColumnService.FindColumn(context.Background(), columnFind)
-							if err != nil {
-								if common.ErrorCode(err) == common.ENOTFOUND {
-									columnCreate := &api.ColumnCreate{
-										CreatorId:    api.SYSTEM_BOT_ID,
-										DatabaseId:   database.ID,
-										TableId:      upsertedTable.ID,
-										Name:         column.Name,
-										Position:     column.Position,
-										Default:      column.Default,
-										Nullable:     column.Nullable,
-										Type:         column.Type,
-										CharacterSet: column.CharacterSet,
-										Collation:    column.Collation,
-										Comment:      column.Comment,
-									}
-									if err := createColumn(database, upsertedTable, columnCreate); err != nil {
-										return err
-									}
-								} else {
-									return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
-								}
-							}
-						}
-
-						// Index
-						for _, index := range table.IndexList {
-							indexFind := &api.IndexFind{
-								DatabaseId: &database.ID,
-								TableId:    &upsertedTable.ID,
-								Name:       &index.Name,
-								Expression: &index.Expression,
-							}
-							_, err := s.IndexService.FindIndex(context.Background(), indexFind)
-							if err != nil {
-								if common.ErrorCode(err) == common.ENOTFOUND {
-									indexCreate := &api.IndexCreate{
-										CreatorId:  api.SYSTEM_BOT_ID,
-										DatabaseId: database.ID,
-										TableId:    upsertedTable.ID,
-										Name:       index.Name,
-										Expression: index.Expression,
-										Position:   index.Position,
-										Type:       index.Type,
-										Unique:     index.Unique,
-										Visible:    index.Visible,
-										Comment:    index.Comment,
-									}
-									if err := createIndex(database, upsertedTable, indexCreate); err != nil {
-										return err
-									}
-								} else {
-									return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
-								}
-							}
 						}
 					}
 				}
 			}
 
-			// Case 3
+			// Case 3, only appear in the bytebase metadata
 			for _, db := range dbList {
 				found := false
 				for _, schema := range schemaList {

@@ -121,8 +121,6 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 			updater_id,
 			database_id,
 			table_id,
-			sync_status,
-			last_successful_sync_ts,
 			name,
 			position,
 			`+"`default`,"+`
@@ -132,8 +130,8 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 			collation,
 			comment
 		)
-		VALUES (?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?, ?, ?, ?, ?, ?, ?, ?)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, sync_status, last_successful_sync_ts, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -164,8 +162,6 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 		&column.UpdatedTs,
 		&column.DatabaseId,
 		&column.TableId,
-		&column.SyncStatus,
-		&column.LastSuccessfulSyncTs,
 		&column.Name,
 		&column.Position,
 		&defaultStr,
@@ -210,8 +206,6 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 			updated_ts,
 			database_id,
 			table_id,
-			sync_status,
-			last_successful_sync_ts,
 			name,
 			position,
 			`+"`default`,"+`
@@ -243,8 +237,6 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 			&column.UpdatedTs,
 			&column.DatabaseId,
 			&column.TableId,
-			&column.SyncStatus,
-			&column.LastSuccessfulSyncTs,
 			&column.Name,
 			&column.Position,
 			&defaultStr,
@@ -274,12 +266,6 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.ColumnPatch) (*api.Column, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
-	if v := patch.SyncStatus; v != nil {
-		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
-	}
-	if v := patch.LastSuccessfulSyncTs; v != nil {
-		set, args = append(set, "last_successful_sync_ts = ?"), append(args, *v)
-	}
 
 	args = append(args, patch.ID)
 
@@ -288,7 +274,7 @@ func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.Colu
 		UPDATE col
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, sync_status, last_successful_sync_ts, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
 	`,
 		args...,
 	)
@@ -308,8 +294,6 @@ func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.Colu
 			&column.UpdatedTs,
 			&column.DatabaseId,
 			&column.TableId,
-			&column.SyncStatus,
-			&column.LastSuccessfulSyncTs,
 			&column.Name,
 			&column.Position,
 			&defaultStr,
