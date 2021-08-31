@@ -1,3 +1,6 @@
+**This implementation is on hold because we plan to wait for more customer input to decide which design approach to take. So far, we are leaning towards to introduce a general tag or a tenant specific tag at the project level
+and allow a database to associate with multiple such tags**
+
 # Multi-tenancy support
 
 2021.8.22
