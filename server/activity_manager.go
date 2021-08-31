@@ -38,8 +38,11 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		postInbox := false
 		switch create.Type {
 		case api.ActivityIssueCreate:
+			postInbox = true
 		case api.ActivityIssueStatusUpdate:
+			postInbox = true
 		case api.ActivityIssueCommentCreate:
+			postInbox = true
 		case api.ActivityIssueFieldUpdate:
 			postInbox = true
 		case api.ActivityPipelineTaskStatusUpdate:
