@@ -106,12 +106,13 @@ type IssueCreate struct {
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
-	Name             string    `jsonapi:"attr,name"`
-	Type             IssueType `jsonapi:"attr,type"`
-	Description      string    `jsonapi:"attr,description"`
-	AssigneeId       int       `jsonapi:"attr,assigneeId"`
-	SubscriberIdList []int     `jsonapi:"attr,subscriberIdList"`
-	Payload          string    `jsonapi:"attr,payload"`
+	Name              string    `jsonapi:"attr,name"`
+	Type              IssueType `jsonapi:"attr,type"`
+	Description       string    `jsonapi:"attr,description"`
+	AssigneeId        int       `jsonapi:"attr,assigneeId"`
+	SubscriberIdList  []int     `jsonapi:"attr,subscriberIdList"`
+	RollbackIssueId   *int      `jsonapi:"attr,rollbackIssueId"`
+	Payload           string    `jsonapi:"attr,payload"`
 }
 
 type IssueFind struct {

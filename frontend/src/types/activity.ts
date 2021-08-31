@@ -1,5 +1,5 @@
 import { FieldId } from "../plugins";
-import { ActivityId, ContainerId, PrincipalId, TaskId } from "./id";
+import { ActivityId, ContainerId, IssueId, PrincipalId, TaskId } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
@@ -24,6 +24,7 @@ export type ActivityLevel = "INFO" | "WARNING" | "ERROR";
 
 export type ActionIssueCreatePayload = {
   issueName: string;
+  rollbackIssueId?: IssueId;
 };
 
 export type ActionIssueCommentCreatePayload = {
