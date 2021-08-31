@@ -268,7 +268,7 @@ VALUES
         3001,
         9009,
         'Create a new table ''tbl2'' using multi-stage SQL review workflow',
-        'OPEN',
+        'CANCELED',
         'bb.issue.database.schema.update',
         'Create tbl2 using multi-stage SQL review workflow',
         102
