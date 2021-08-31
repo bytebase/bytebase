@@ -421,9 +421,14 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to create issue. Error %w", err)
 	}
 
-	bytes, err := json.Marshal(api.ActivityIssueCreatePayload{
+	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Name,
-	})
+	}
+	if issueCreate.RollbackIssueId != nil {
+		createActivityPayload.RollbackIssueId = *issueCreate.RollbackIssueId
+	}
+
+	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
 	}
@@ -439,6 +444,37 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+	}
+
+	// If we are creating a rollback issue, then we will also post a comment on the original issue
+	if issueCreate.RollbackIssueId != nil {
+		issueFind := &api.IssueFind{
+			ID: issueCreate.RollbackIssueId,
+		}
+		rollbackIssue, err := s.IssueService.FindIssue(ctx, issueFind)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
+		}
+		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
+			IssueName: rollbackIssue.Name,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorId:   creatorId,
+			ContainerId: *issueCreate.RollbackIssueId,
+			Type:        api.ActivityIssueCommentCreate,
+			Level:       api.ACTIVITY_INFO,
+			Comment:     fmt.Sprintf("Created rollback issue %q", issue.Name),
+			Payload:     string(bytes),
+		}
+		_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+			issue: rollbackIssue,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
+		}
 	}
 
 	if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {

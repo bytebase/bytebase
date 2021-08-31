@@ -377,6 +377,8 @@ export default {
 
     const buildNewIssue = (): IssueCreate => {
       var newIssue: IssueCreate;
+
+      // Create rollback issue
       if (router.currentRoute.value.query.rollbackIssue) {
         const rollbackIssue: Issue = store.getters["issue/issueById"](
           parseInt(router.currentRoute.value.query.rollbackIssue as string)
@@ -499,7 +501,10 @@ export default {
             projectId: UNKNOWN_ID,
           };
         }
-      } else {
+        newIssue.rollbackIssueId = rollbackIssue.id;
+      }
+      // Create issue from normal query parameter
+      else {
         const databaseList: Database[] = [];
         if (router.currentRoute.value.query.databaseList) {
           for (const databaseId of (

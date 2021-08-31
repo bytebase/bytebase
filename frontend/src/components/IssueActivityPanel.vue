@@ -310,6 +310,20 @@
                           {{ humanizeTs(activity.createdTs) }})
                         </template>
                       </a>
+                      <span
+                        v-if="
+                          activity.actionType == 'bb.issue.create' &&
+                          activity.payload.rollbackIssueId
+                        "
+                      >
+                        (rollback
+                        <router-link
+                          :to="`/issue/${activity.payload.rollbackIssueId}`"
+                          class="normal-link"
+                          >{{ `issue/${activity.payload.rollbackIssueId}` }}
+                        </router-link>
+                        )
+                      </span>
                     </div>
                     <div
                       v-if="currentUser.id == activity.creator.id"
