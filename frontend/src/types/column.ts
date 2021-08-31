@@ -1,8 +1,5 @@
 import { ColumnId, DatabaseId, TableId } from "./id";
 
-// Similar to DatabaseSyncStatus, see comment
-export type ColumnSyncStatus = "OK" | "NOT_FOUND";
-
 // Column
 export type Column = {
   id: ColumnId;
@@ -18,8 +15,6 @@ export type Column = {
   updatedTs: number;
 
   // Domain specific fields
-  syncStatus: ColumnSyncStatus;
-  lastSuccessfulSyncTs: number;
   name: string;
   position: number;
   default: string;

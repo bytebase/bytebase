@@ -28,12 +28,6 @@
       <BBTableCell class="w-16">
         {{ column.comment }}
       </BBTableCell>
-      <BBTableCell class="w-8">
-        {{ column.syncStatus }}
-      </BBTableCell>
-      <BBTableCell class="w-16">
-        {{ humanizeTs(column.lastSuccessfulSyncTs) }}
-      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -64,12 +58,6 @@ const COLUMN_LIST: BBTableColumn[] = [
   },
   {
     title: "Comment",
-  },
-  {
-    title: "Sync status",
-  },
-  {
-    title: "Last successful sync",
   },
 ];
 

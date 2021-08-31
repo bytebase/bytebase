@@ -112,8 +112,6 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 			updater_id,
 			database_id,
 			table_id,
-			sync_status,
-			last_successful_sync_ts,
 			name,
 			expression,
 			position,
@@ -122,8 +120,8 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 			visible,
 			comment
 		)
-		VALUES (?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?, ?, ?, ?, ?, ?, ?)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, sync_status, last_successful_sync_ts, name, expression, position, `type`, `unique`, visible, comment"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, `type`, `unique`, visible, comment"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -153,8 +151,6 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 		&index.UpdatedTs,
 		&index.DatabaseId,
 		&index.TableId,
-		&index.SyncStatus,
-		&index.LastSuccessfulSyncTs,
 		&index.Name,
 		&index.Expression,
 		&index.Position,
@@ -197,8 +193,6 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 			updated_ts,
 			database_id,
 			table_id,
-			sync_status,
-			last_successful_sync_ts,
 			name,
 			expression,
 			position,
@@ -228,8 +222,6 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 			&index.UpdatedTs,
 			&index.DatabaseId,
 			&index.TableId,
-			&index.SyncStatus,
-			&index.LastSuccessfulSyncTs,
 			&index.Name,
 			&index.Expression,
 			&index.Position,
@@ -254,12 +246,6 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 func (s *IndexService) patchIndex(ctx context.Context, tx *Tx, patch *api.IndexPatch) (*api.Index, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
-	if v := patch.SyncStatus; v != nil {
-		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
-	}
-	if v := patch.LastSuccessfulSyncTs; v != nil {
-		set, args = append(set, "last_successful_sync_ts = ?"), append(args, *v)
-	}
 
 	args = append(args, patch.ID)
 
@@ -268,7 +254,7 @@ func (s *IndexService) patchIndex(ctx context.Context, tx *Tx, patch *api.IndexP
 		UPDATE idx
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, sync_status, last_successful_sync_ts, name, expression, position, `type`, `unique`, visible, comment"+`
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, `type`, `unique`, visible, comment"+`
 	`,
 		args...,
 	)
@@ -287,8 +273,6 @@ func (s *IndexService) patchIndex(ctx context.Context, tx *Tx, patch *api.IndexP
 			&index.UpdatedTs,
 			&index.DatabaseId,
 			&index.TableId,
-			&index.SyncStatus,
-			&index.LastSuccessfulSyncTs,
 			&index.Name,
 			&index.Expression,
 			&index.Position,

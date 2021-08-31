@@ -1,8 +1,5 @@
 import { DatabaseId, TableId, TableIndexId } from "./id";
 
-// Similar to DatabaseSyncStatus, see comment
-export type IndexSyncStatus = "OK" | "NOT_FOUND";
-
 // Index
 export type TableIndex = {
   id: TableIndexId;
@@ -18,8 +15,6 @@ export type TableIndex = {
   updatedTs: number;
 
   // Domain specific fields
-  syncStatus: IndexSyncStatus;
-  lastSuccessfulSyncTs: number;
   name: string;
   expression: string;
   position: number;

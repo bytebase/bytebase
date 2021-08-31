@@ -103,6 +103,27 @@ func (s *TableService) PatchTable(ctx context.Context, patch *api.TablePatch) (*
 	return table, nil
 }
 
+// DeleteTable deletes an existing table by ID.
+// Returns ENOTFOUND if table does not exist.
+func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	err = deleteTable(ctx, tx, delete)
+	if err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
 // createTable creates a new table.
 func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.TableCreate) (*api.Table, error) {
 	// Insert row into table.
@@ -115,8 +136,6 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			`+"`type`,"+`
 			engine,
 			collation,
-			sync_status,
-			last_successful_sync_ts,
 			row_count,
 			data_size,
 			index_size,
@@ -124,8 +143,8 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			create_options,
 			comment
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size, data_free, create_options, comment"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, row_count, data_size, index_size, data_free, create_options, comment"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -160,8 +179,6 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 		&table.Type,
 		&table.Engine,
 		&table.Collation,
-		&table.SyncStatus,
-		&table.LastSuccessfulSyncTs,
 		&table.RowCount,
 		&table.DataSize,
 		&table.IndexSize,
@@ -200,8 +217,6 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 			`+"`type`,"+`
 			engine,
 			collation,
-			sync_status,
-			last_successful_sync_ts,
 			row_count,
 			data_size,
 			index_size,
@@ -232,8 +247,6 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 			&table.Type,
 			&table.Engine,
 			&table.Collation,
-			&table.SyncStatus,
-			&table.LastSuccessfulSyncTs,
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
@@ -257,12 +270,6 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TablePatch) (*api.Table, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
-	if v := patch.SyncStatus; v != nil {
-		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
-	}
-	if v := patch.LastSuccessfulSyncTs; v != nil {
-		set, args = append(set, "last_successful_sync_ts = ?"), append(args, *v)
-	}
 
 	args = append(args, patch.ID)
 
@@ -271,7 +278,7 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 		UPDATE tbl
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, sync_status, last_successful_sync_ts, row_count, data_size, index_size, data_free, create_options, comment"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, row_count, data_size, index_size, data_free, create_options, comment"+`
 	`,
 		args...,
 	)
@@ -293,8 +300,6 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 			&table.Type,
 			&table.Engine,
 			&table.Collation,
-			&table.SyncStatus,
-			&table.LastSuccessfulSyncTs,
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
@@ -308,4 +313,15 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 	}
 
 	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("table ID not found: %d", patch.ID)}
+}
+
+// deleteTable permanently deletes tables from a database.
+func deleteTable(ctx context.Context, tx *Tx, delete *api.TableDelete) error {
+	// Remove row from database.
+	_, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = ?`, delete.DatabaseId)
+	if err != nil {
+		return FormatError(err)
+	}
+
+	return nil
 }

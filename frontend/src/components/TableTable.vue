@@ -24,12 +24,6 @@
       <BBTableCell v-if="mode == 'TABLE'" class="w-8">
         {{ bytesToString(table.indexSize) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
-        {{ table.syncStatus }}
-      </BBTableCell>
-      <BBTableCell class="w-16">
-        {{ humanizeTs(table.lastSuccessfulSyncTs) }}
-      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -63,12 +57,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
       {
         title: "Index size",
       },
-      {
-        title: "Sync status",
-      },
-      {
-        title: "Last successful sync",
-      },
     ],
   ],
   [
@@ -76,12 +64,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
     [
       {
         title: "Name",
-      },
-      {
-        title: "Sync status",
-      },
-      {
-        title: "Last successful sync",
       },
     ],
   ],

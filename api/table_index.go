@@ -19,15 +19,13 @@ type Index struct {
 	TableId    int
 
 	// Domain specific fields
-	SyncStatus           SyncStatus `json:"syncStatus"`
-	LastSuccessfulSyncTs int64      `json:"lastSuccessfulSyncTs"`
-	Name                 string     `json:"name"`
-	Expression           string     `json:"expression"`
-	Position             int        `json:"position"`
-	Type                 string     `json:"type"`
-	Unique               bool       `json:"unique"`
-	Visible              bool       `json:"visible"`
-	Comment              string     `json:"comment"`
+	Name       string `json:"name"`
+	Expression string `json:"expression"`
+	Position   int    `json:"position"`
+	Type       string `json:"type"`
+	Unique     bool   `json:"unique"`
+	Visible    bool   `json:"visible"`
+	Comment    string `json:"comment"`
 }
 
 type IndexCreate struct {
@@ -75,10 +73,6 @@ type IndexPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterId int
-
-	// Domain specific fields
-	SyncStatus           *SyncStatus
-	LastSuccessfulSyncTs *int64
 }
 
 type IndexService interface {
