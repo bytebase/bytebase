@@ -20,7 +20,7 @@
       <div class="flex flex-row space-x-2 items-center">
         <label for="repository" class="textlabel"> Repository </label>
         <div
-          v-if="!create"
+          v-if="!create && allowEdit"
           class="ml-1 normal-link text-sm"
           @click.prevent="$emit('change-repository')"
         >
