@@ -1036,10 +1036,10 @@ WHERE
 
 END;
 
--- repo table stores the repository setting for a project
+-- repository table stores the repository setting for a project
 -- A vcs is associated with many repositories.
 -- A project can only link one repository (at least for now).
-CREATE TABLE repo (
+CREATE TABLE repository (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED')
@@ -1064,7 +1064,7 @@ CREATE TABLE repo (
     -- Branch we are interested.
     -- For GitLab, this corresponds to webhook's push_events_branch_filter. Wildcard is supported
     branch_filter TEXT NOT NULL CHECK (trim(branch_filter) != ''),
-    -- Repo id from the corresponding VCS provider.
+    -- Repository id from the corresponding VCS provider.
     -- For GitLab, this is the project id. e.g. 123
     external_id TEXT NOT NULL,
     -- Push webhook id from the corresponding VCS provider.
@@ -1085,14 +1085,14 @@ CREATE TABLE repo (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('repo', 100);
+    ('repository', 100);
 
-CREATE TRIGGER IF NOT EXISTS `trigger_update_repo_modification_time`
+CREATE TRIGGER IF NOT EXISTS `trigger_update_repository_modification_time`
 AFTER
 UPDATE
-    ON `repo` FOR EACH ROW BEGIN
+    ON `repository` FOR EACH ROW BEGIN
 UPDATE
-    `repo`
+    `repository`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE

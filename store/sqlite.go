@@ -349,7 +349,7 @@ func FormatError(err error) error {
 		return common.Errorf(common.ECONFLICT, "backup name already exists")
 	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
 		return common.Errorf(common.ECONFLICT, "bookmark already exists")
-	case "UNIQUE constraint failed: repo.project_id":
+	case "UNIQUE constraint failed: repository.project_id":
 		return common.Errorf(common.ECONFLICT, "project has already linked repository")
 	case "UNIQUE constraint failed: issue_subscriber.issue_id, issue_subscriber.subscriber_id":
 		return common.Errorf(common.ECONFLICT, "issue subscriber already exists")

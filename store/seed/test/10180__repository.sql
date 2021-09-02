@@ -1,6 +1,6 @@
 -- This is for demo purpose and the webhook has already been deleted
 INSERT INTO
-    repo (
+    repository (
         id,
         creator_id,
         updater_id,
@@ -45,7 +45,7 @@ VALUES
     );
 
 INSERT INTO
-    repo (
+    repository (
         id,
         creator_id,
         updater_id,

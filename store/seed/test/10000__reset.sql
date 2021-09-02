@@ -6,7 +6,7 @@ WHERE
     name != 'bb.auth.secret';
 
 DELETE FROM
-    repo;
+    repository;
 
 DELETE FROM
     vcs;

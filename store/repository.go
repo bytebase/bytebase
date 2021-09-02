@@ -141,7 +141,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
-		INSERT INTO repo (
+		INSERT INTO repository (
 		    creator_id,
 		    updater_id,
 			vcs_id,
@@ -255,7 +255,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			access_token,
 			expires_ts,
 			refresh_token
-		FROM repo
+		FROM repository
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -317,7 +317,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 
 	// Execute update query with RETURNING.
 	row, err := tx.QueryContext(ctx, `
-		UPDATE repo
+		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
@@ -376,7 +376,7 @@ func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete
 	}
 
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM repo WHERE project_id = ?`, delete.ProjectId)
+	result, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectId)
 	if err != nil {
 		return FormatError(err)
 	}
