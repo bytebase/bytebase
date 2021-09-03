@@ -57,17 +57,17 @@ func (e ActivityType) String() string {
 type ActivityLevel string
 
 const (
-	ACTIVITY_INFO    ActivityLevel = "INFO"
-	ACTIVITY_WARNING ActivityLevel = "WARNING"
-	ACTIVITY_ERROR   ActivityLevel = "ERROR"
+	ACTIVITY_INFO  ActivityLevel = "INFO"
+	ACTIVITY_WARN  ActivityLevel = "WARN"
+	ACTIVITY_ERROR ActivityLevel = "ERROR"
 )
 
 func (e ActivityLevel) String() string {
 	switch e {
 	case ACTIVITY_INFO:
 		return "INFO"
-	case ACTIVITY_WARNING:
-		return "WARNING"
+	case ACTIVITY_WARN:
+		return "WARN"
 	case ACTIVITY_ERROR:
 		return "ERROR"
 	}

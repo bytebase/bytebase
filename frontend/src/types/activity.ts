@@ -25,7 +25,7 @@ export type ActivityType =
   | MemberActivityType
   | ProjectActivityType;
 
-export type ActivityLevel = "INFO" | "WARNING" | "ERROR";
+export type ActivityLevel = "INFO" | "WARN" | "ERROR";
 
 export type ActionIssueCreatePayload = {
   issueName: string;
