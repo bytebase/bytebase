@@ -907,7 +907,7 @@ CREATE TABLE activity (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     container_id INTEGER NOT NULL CHECK (container_id != 0),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
-    `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARNING', 'ERROR')),
+    `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARN', 'ERROR')),
     `comment` TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );

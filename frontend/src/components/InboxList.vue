@@ -33,7 +33,7 @@
                 >
               </template>
               <span> {{ actionSentence(inbox.activity) }}</span>
-              <template v-if="inbox.activity.level == 'WARNING'">
+              <template v-if="inbox.activity.level == 'WARN'">
                 <svg
                   class="ml-1 h-6 w-6 text-warning"
                   xmlns="http://www.w3.org/2000/svg"

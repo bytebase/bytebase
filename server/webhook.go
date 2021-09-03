@@ -119,7 +119,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							CreatorId:   api.SYSTEM_BOT_ID,
 							ContainerId: repository.ProjectId,
 							Type:        api.ActivityProjectRepositoryPush,
-							Level:       api.ACTIVITY_WARNING,
+							Level:       api.ACTIVITY_WARN,
 							Payload:     string(bytes),
 						}
 						_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})

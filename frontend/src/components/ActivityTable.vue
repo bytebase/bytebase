@@ -36,7 +36,7 @@
               ></path>
             </svg>
           </template>
-          <template v-else-if="activity.level === `WARNING`">
+          <template v-else-if="activity.level === `WARN`">
             <svg
               class="text-warning"
               fill="none"
