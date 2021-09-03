@@ -45,6 +45,7 @@ type ProjectTabItem = {
 const projectTabItemList: ProjectTabItem[] = [
   { name: "Overview", hash: "overview" },
   { name: "Migration History", hash: "migration-history" },
+  { name: "Activity", hash: "activity" },
   { name: "Version Control", hash: "version-control" },
   { name: "Webhooks", hash: "webhook" },
   { name: "Settings", hash: "setting" },

@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // Activity type
@@ -21,6 +23,9 @@ const (
 	ActivityMemberRoleUpdate ActivityType = "bb.member.role.update"
 	ActivityMemberActivate   ActivityType = "bb.member.activate"
 	ActivityMemberDeactivate ActivityType = "bb.member.deactivate"
+
+	// Project related
+	ActivityProjectRepositoryPush ActivityType = "bb.project.repository.push"
 )
 
 func (e ActivityType) String() string {
@@ -43,6 +48,8 @@ func (e ActivityType) String() string {
 		return "bb.member.activate"
 	case ActivityMemberDeactivate:
 		return "bb.member.deactivate"
+	case ActivityProjectRepositoryPush:
+		return "bb.project.repository.push"
 	}
 	return "bb.activity.unknown"
 }
@@ -130,6 +137,11 @@ type ActivityMemberActivateDeactivatePayload struct {
 	Role           Role   `json:"role"`
 }
 
+type ActivityProjectRepositoryPushPayload struct {
+	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
+	Error        string              `json:"error"`
+}
+
 type Activity struct {
 	ID int `jsonapi:"primary,activity"`
 
@@ -170,6 +182,7 @@ type ActivityFind struct {
 
 	// Domain specific fields
 	ContainerId *int
+	Limit       *int
 }
 
 func (find *ActivityFind) String() string {

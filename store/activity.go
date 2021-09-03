@@ -184,7 +184,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		where, args = append(where, "container_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	var query = `
 		SELECT 
 		    id,
 		    creator_id,
@@ -192,12 +192,17 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		    updater_id,
 		    updated_ts,
 			container_id,
-		    `+"`type`,"+`
-			`+"`level`,"+`
+		    ` + "`type`," + `
+			` + "`level`," + `
 		    comment,
 			payload
 		FROM activity
-		WHERE `+strings.Join(where, " AND "),
+		WHERE ` + strings.Join(where, " AND ")
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {
