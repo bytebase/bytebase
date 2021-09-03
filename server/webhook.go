@@ -69,179 +69,186 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
 			for _, added := range commit.AddedList {
-				if strings.HasPrefix(added, repository.BaseDirectory) && filepath.Ext(added) == ".sql" {
-					mi, err := db.ParseMigrationInfo(added, repository.BaseDirectory)
-					if err != nil {
-						s.l.Warn("Invalid migration filename. Skip", zap.String("file", added), zap.Error(err))
-						continue
-					}
+				if !strings.HasPrefix(added, repository.BaseDirectory) {
+					s.l.Debug(fmt.Sprintf("Committed file %q is not under base directory: %q. Skip.", added, repository.BaseDirectory))
+					continue
+				}
+				if filepath.Ext(added) != ".sql" {
+					s.l.Debug(fmt.Sprintf("Committed file %q does not have .sql extension. Skip.", added))
+					continue
+				}
 
-					// Retrieve sql by reading the file content
-					resp, err := gitlab.GET(
-						repository.VCS.InstanceURL,
-						fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalId, url.QueryEscape(added), commit.ID),
-						repository.AccessToken,
+				mi, err := db.ParseMigrationInfo(added, repository.BaseDirectory)
+				if err != nil {
+					s.l.Warn("Invalid migration filename. Skip", zap.String("file", added), zap.Error(err))
+					continue
+				}
+
+				// Retrieve sql by reading the file content
+				resp, err := gitlab.GET(
+					repository.VCS.InstanceURL,
+					fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalId, url.QueryEscape(added), commit.ID),
+					repository.AccessToken,
+				)
+				if err != nil {
+					s.l.Warn("Failed to read added repository file. Skip", zap.String("file", added), zap.Error(err))
+					continue
+				}
+
+				b, err := io.ReadAll(resp.Body)
+				if err != nil {
+					s.l.Warn("Failed to read added repository file response. Skip", zap.String("file", added), zap.Error(err))
+					continue
+				}
+				defer resp.Body.Close()
+
+				// Find matching database list
+				databaseFind := &api.DatabaseFind{
+					ProjectId: &repository.ProjectId,
+					Name:      &mi.Database,
+				}
+				databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
+				if err != nil {
+					s.l.Warn("Failed to find database matching added repository file. Skip", zap.String("file", added), zap.Error(err))
+					continue
+				} else if len(databaseList) == 0 {
+					s.l.Warn("Project does not own this database. Skip",
+						zap.Int("project_id", repository.ProjectId),
+						zap.String("database_name", mi.Database),
+						zap.String("file", added),
 					)
-					if err != nil {
-						s.l.Warn("Failed to read added repository file. Skip", zap.String("file", added), zap.Error(err))
-						continue
-					}
+					continue
+				}
 
-					b, err := io.ReadAll(resp.Body)
-					if err != nil {
-						s.l.Warn("Failed to read added repository file response. Skip", zap.String("file", added), zap.Error(err))
-						continue
-					}
-					defer resp.Body.Close()
+				// We support 3 patterns on how to organize the schema files.
+				// Pattern 1: 	The database name is the same across all environments. Each environment will have its own directory, so the
+				//              schema file looks like "dev/v1__db1", "staging/v1__db1".
+				//
+				// Pattern 2: 	Like 1, the database name is the same across all environments. All environment shares the same schema file,
+				//              say v1__db1, when a new file is added like v2__db1__add_column, we will create a multi stage pipeline where
+				//              each stage corresponds to an environment.
+				//
+				// Pattern 3:  	The database name is different among different environments. In such case, the database name alone is enough
+				//             	to identify ambiguity.
 
-					// Find matching database list
-					databaseFind := &api.DatabaseFind{
-						ProjectId: &repository.ProjectId,
-						Name:      &mi.Database,
+				// Further filter by environment name if applicable.
+				filterdDatabaseList := []*api.Database{}
+				if mi.Environment != "" {
+					for _, database := range databaseList {
+						// Environment name comparision is case insensitive
+						if strings.EqualFold(database.Instance.Environment.Name, mi.Environment) {
+							filterdDatabaseList = append(filterdDatabaseList, database)
+						}
 					}
-					databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
-					if err != nil {
-						s.l.Warn("Failed to find database matching added repository file. Skip", zap.String("file", added), zap.Error(err))
-						continue
-					} else if len(databaseList) == 0 {
-						s.l.Warn("Project does not own this database. Skip",
+					if len(filterdDatabaseList) == 0 {
+						s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s for environment %s. Skip", repository.ProjectId, mi.Database, mi.Environment),
 							zap.Int("project_id", repository.ProjectId),
-							zap.String("database_name", mi.Database),
+							zap.String("environment", mi.Environment),
 							zap.String("file", added),
 						)
 						continue
 					}
+				} else {
+					filterdDatabaseList = databaseList
+				}
 
-					// We support 3 patterns on how to organize the schema files.
-					// Pattern 1: 	The database name is the same across all environments. Each environment will have its own directory, so the
-					//              schema file looks like "dev/v1__db1", "staging/v1__db1".
-					//
-					// Pattern 2: 	Like 1, the database name is the same across all environments. All environment shares the same schema file,
-					//              say v1__db1, when a new file is added like v2__db1__add_column, we will create a multi stage pipeline where
-					//              each stage corresponds to an environment.
-					//
-					// Pattern 3:  	The database name is different among different environments. In such case, the database name alone is enough
-					//             	to identify ambiguity.
-
-					// Further filter by environment name if applicable.
-					filterdDatabaseList := []*api.Database{}
-					if mi.Environment != "" {
-						for _, database := range databaseList {
-							// Environment name comparision is case insensitive
-							if strings.EqualFold(database.Instance.Environment.Name, mi.Environment) {
-								filterdDatabaseList = append(filterdDatabaseList, database)
-							}
+				{
+					// It could happen that for a particular environment a project contain 2 database with the same name.
+					// We will emit warning in this case.
+					var databaseListByEnv = map[int][]*api.Database{}
+					for _, database := range filterdDatabaseList {
+						list, ok := databaseListByEnv[database.Instance.EnvironmentId]
+						if ok {
+							databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
+						} else {
+							list := make([]*api.Database, 0)
+							databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
 						}
-						if len(filterdDatabaseList) == 0 {
-							s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s for environment %s. Skip", repository.ProjectId, mi.Database, mi.Environment),
+					}
+
+					var multipleDatabaseForSameEnv = false
+					for environemntId, databaseList := range databaseListByEnv {
+						if len(databaseList) > 1 {
+							multipleDatabaseForSameEnv = true
+
+							s.l.Warn(fmt.Sprintf("Project ID %d contain multiple database %s for environment %d. Skip", repository.ProjectId, mi.Database, environemntId),
 								zap.Int("project_id", repository.ProjectId),
-								zap.String("environment", mi.Environment),
 								zap.String("file", added),
 							)
-							continue
-						}
-					} else {
-						filterdDatabaseList = databaseList
-					}
-
-					{
-						// It could happen that for a particular environment a project contain 2 database with the same name.
-						// We will emit warning in this case.
-						var databaseListByEnv = map[int][]*api.Database{}
-						for _, database := range filterdDatabaseList {
-							list, ok := databaseListByEnv[database.Instance.EnvironmentId]
-							if ok {
-								databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
-							} else {
-								list := make([]*api.Database, 0)
-								databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
-							}
-						}
-
-						var multipleDatabaseForSameEnv = false
-						for environemntId, databaseList := range databaseListByEnv {
-							if len(databaseList) > 1 {
-								multipleDatabaseForSameEnv = true
-
-								s.l.Warn(fmt.Sprintf("Project ID %d contain multiple database %s for environment %d. Skip", repository.ProjectId, mi.Database, environemntId),
-									zap.Int("project_id", repository.ProjectId),
-									zap.String("file", added),
-								)
-							}
-						}
-
-						if multipleDatabaseForSameEnv {
-							continue
 						}
 					}
 
-					// Compose the new issue
-					createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
-					if err != nil {
-						s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
-					}
-					vcsPushEvent := common.VCSPushEvent{
-						VCSType:            repository.VCS.Type,
-						BaseDirectory:      repository.BaseDirectory,
-						Ref:                pushEvent.Ref,
-						RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-						RepositoryURL:      pushEvent.Project.WebURL,
-						RepositoryFullPath: pushEvent.Project.FullPath,
-						AuthorName:         pushEvent.AuthorName,
-						FileCommit: common.VCSFileCommit{
-							ID:         commit.ID,
-							Title:      commit.Title,
-							Message:    commit.Message,
-							CreatedTs:  createdTime.Unix(),
-							URL:        commit.URL,
-							AuthorName: commit.Author.Name,
-							Added:      added,
-						},
-					}
-
-					stageList := []api.StageCreate{}
-					for _, database := range filterdDatabaseList {
-						databaseID := database.ID
-						taskStatus := api.TaskPendingApproval
-						if database.Instance.Environment.ApprovalPolicy == api.ManualApprovalNever {
-							taskStatus = api.TaskPending
-						}
-						task := &api.TaskCreate{
-							InstanceId:   database.InstanceId,
-							DatabaseId:   &databaseID,
-							Name:         mi.Description,
-							Status:       taskStatus,
-							Type:         api.TaskDatabaseSchemaUpdate,
-							Statement:    string(b),
-							VCSPushEvent: &vcsPushEvent,
-						}
-						stageList = append(stageList, api.StageCreate{
-							EnvironmentId: database.Instance.EnvironmentId,
-							TaskList:      []api.TaskCreate{*task},
-							Name:          database.Instance.Environment.Name,
-						})
-					}
-					pipeline := &api.PipelineCreate{
-						StageList: stageList,
-						Name:      fmt.Sprintf("Pipeline - %s", commit.Title),
-					}
-					issueCreate := &api.IssueCreate{
-						ProjectId:   repository.ProjectId,
-						Pipeline:    *pipeline,
-						Name:        commit.Title,
-						Type:        api.IssueDatabaseSchemaUpdate,
-						Description: commit.Message,
-						AssigneeId:  api.SYSTEM_BOT_ID,
-					}
-
-					issue, err := s.CreateIssue(context.Background(), issueCreate, api.SYSTEM_BOT_ID)
-					if err != nil {
-						s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
-							zap.String("file", added))
+					if multipleDatabaseForSameEnv {
 						continue
 					}
-					createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
 				}
+
+				// Compose the new issue
+				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+				if err != nil {
+					s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
+				}
+				vcsPushEvent := common.VCSPushEvent{
+					VCSType:            repository.VCS.Type,
+					BaseDirectory:      repository.BaseDirectory,
+					Ref:                pushEvent.Ref,
+					RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+					RepositoryURL:      pushEvent.Project.WebURL,
+					RepositoryFullPath: pushEvent.Project.FullPath,
+					AuthorName:         pushEvent.AuthorName,
+					FileCommit: common.VCSFileCommit{
+						ID:         commit.ID,
+						Title:      commit.Title,
+						Message:    commit.Message,
+						CreatedTs:  createdTime.Unix(),
+						URL:        commit.URL,
+						AuthorName: commit.Author.Name,
+						Added:      added,
+					},
+				}
+
+				stageList := []api.StageCreate{}
+				for _, database := range filterdDatabaseList {
+					databaseID := database.ID
+					taskStatus := api.TaskPendingApproval
+					if database.Instance.Environment.ApprovalPolicy == api.ManualApprovalNever {
+						taskStatus = api.TaskPending
+					}
+					task := &api.TaskCreate{
+						InstanceId:   database.InstanceId,
+						DatabaseId:   &databaseID,
+						Name:         mi.Description,
+						Status:       taskStatus,
+						Type:         api.TaskDatabaseSchemaUpdate,
+						Statement:    string(b),
+						VCSPushEvent: &vcsPushEvent,
+					}
+					stageList = append(stageList, api.StageCreate{
+						EnvironmentId: database.Instance.EnvironmentId,
+						TaskList:      []api.TaskCreate{*task},
+						Name:          database.Instance.Environment.Name,
+					})
+				}
+				pipeline := &api.PipelineCreate{
+					StageList: stageList,
+					Name:      fmt.Sprintf("Pipeline - %s", commit.Title),
+				}
+				issueCreate := &api.IssueCreate{
+					ProjectId:   repository.ProjectId,
+					Pipeline:    *pipeline,
+					Name:        commit.Title,
+					Type:        api.IssueDatabaseSchemaUpdate,
+					Description: commit.Message,
+					AssigneeId:  api.SYSTEM_BOT_ID,
+				}
+
+				issue, err := s.CreateIssue(context.Background(), issueCreate, api.SYSTEM_BOT_ID)
+				if err != nil {
+					s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
+						zap.String("file", added))
+					continue
+				}
+				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
 			}
 		}
 
