@@ -35,11 +35,14 @@ module.exports = {
 
         "control-placeholder": "var(--color-control-placeholder)",
 
-        error: "var(--color-error)",
-        "error-hover": "var(--color-error-hover)",
+        info: "var(--color-info)",
+        "info-hover": "var(--color-info-hover)",
 
         warning: "var(--color-warning)",
         "warning-hover": "var(--color-warning-hover)",
+
+        error: "var(--color-error)",
+        "error-hover": "var(--color-error-hover)",
 
         success: "var(--color-success)",
         "success-hover": "var(--color-success-hover)",

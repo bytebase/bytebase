@@ -4,8 +4,7 @@
       class="
         border-t border-b border-block-border
         divide-y divide-gray-300
-        lg:flex
-        lg:divide-y-0
+        lg:flex lg:divide-y-0
       "
     >
       <li
@@ -33,7 +32,7 @@
               <template v-if="item.taskStatus === 'PENDING'">
                 <span
                   v-if="activeTask(pipeline).id === item.taskId"
-                  class="h-2 w-2 bg-blue-600 rounded-full"
+                  class="h-2 w-2 bg-info rounded-full"
                   aria-hidden="true"
                 ></span>
                 <span
@@ -60,7 +59,7 @@
               </template>
               <template v-else-if="item.taskStatus == 'RUNNING'">
                 <span
-                  class="h-2.5 w-2.5 bg-blue-600 rounded-full"
+                  class="h-2.5 w-2.5 bg-info rounded-full"
                   style="
                     animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                   "
@@ -103,8 +102,7 @@
                 hidden
                 cursor-pointer
                 hover:underline
-                lg:ml-4
-                lg:flex lg:flex-col
+                lg:ml-4 lg:flex lg:flex-col
               "
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
@@ -254,7 +252,7 @@ export default {
             !props.create &&
             activeTask(props.pipeline as Pipeline).id === item.taskId
           ) {
-            return "bg-white border-2 border-blue-600 text-blue-600 ";
+            return "bg-white border-2 border-info text-info ";
           }
           return "bg-white border-2 border-control";
         case "PENDING_APPROVAL":
@@ -262,11 +260,11 @@ export default {
             !props.create &&
             activeTask(props.pipeline as Pipeline).id === item.taskId
           ) {
-            return "bg-white border-2 border-blue-600 text-blue-600";
+            return "bg-white border-2 border-info text-info";
           }
           return "bg-white border-2 border-control";
         case "RUNNING":
-          return "bg-white border-2 border-blue-600 text-blue-600";
+          return "bg-white border-2 border-info text-info";
         case "DONE":
           return "bg-success text-white";
         case "FAILED":
@@ -298,11 +296,11 @@ export default {
             !props.create &&
             activeTask(props.pipeline as Pipeline).id === item.taskId
           ) {
-            return textClass + "text-blue-600";
+            return textClass + "text-info";
           }
           return textClass + "text-control";
         case "RUNNING":
-          return textClass + "text-blue-600";
+          return textClass + "text-info";
         case "FAILED":
           return textClass + "text-red-500";
       }
