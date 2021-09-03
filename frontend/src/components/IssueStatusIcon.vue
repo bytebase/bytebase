@@ -6,7 +6,7 @@
     <template v-if="issueStatus === `OPEN`">
       <span
         v-if="taskStatus === 'RUNNING'"
-        class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
+        class="h-2 w-2 bg-info hover:bg-info-hover rounded-full"
         style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
         aria-hidden="true"
       ></span>
@@ -18,7 +18,7 @@
       >
       <span
         v-else
-        class="h-1.5 w-1.5 bg-blue-600 hover:bg-blue-700 rounded-full"
+        class="h-1.5 w-1.5 bg-info hover:bg-info-hover rounded-full"
         aria-hidden="true"
       ></span>
     </template>
@@ -92,7 +92,7 @@ export default {
           }
           return (
             iconClass +
-            " bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700"
+            " bg-white border-2 border-info text-info hover:text-info-hover hover:border-info-hover"
           );
         case "CANCELED":
           return (

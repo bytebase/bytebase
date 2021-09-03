@@ -25,7 +25,7 @@
           >
             <template v-if="taskRun.status == 'RUNNING'">
               <span
-                class="h-2.5 w-2.5 bg-blue-600 rounded-full"
+                class="h-2.5 w-2.5 bg-info rounded-full"
                 style="
                   animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 "
@@ -135,7 +135,7 @@ export default {
     const statusIconClass = (status: TaskRunStatus) => {
       switch (status) {
         case "RUNNING":
-          return "bg-white border-2 border-blue-600 text-blue-600";
+          return "bg-white border-2 border-info text-info";
         case "DONE":
           return "bg-success text-white";
         case "FAILED":

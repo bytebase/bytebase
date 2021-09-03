@@ -60,7 +60,7 @@
                     class="absolute h-4 w-4 rounded-full bg-blue-200"
                   ></span>
                   <span
-                    class="relative block w-2 h-2 bg-blue-600 rounded-full"
+                    class="relative block w-2 h-2 bg-info rounded-full"
                   ></span>
                 </template>
                 <template v-else>

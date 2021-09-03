@@ -31,7 +31,7 @@
         >
           <template v-if="backup.status == 'PENDING_CREATE'">
             <span
-              class="h-2 w-2 bg-blue-600 hover:bg-blue-700 rounded-full"
+              class="h-2 w-2 bg-info hover:bg-info-hover rounded-full"
               style="
                 animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
               "
@@ -236,7 +236,7 @@ export default {
         case "PENDING_CREATE":
           return (
             iconClass +
-            " bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700"
+            " bg-white border-2 border-info text-info hover:text-info-hover hover:border-info-hover"
           );
         case "DONE":
           return iconClass + " bg-success hover:bg-success-hover text-white";
