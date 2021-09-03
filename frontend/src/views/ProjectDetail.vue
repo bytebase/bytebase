@@ -13,6 +13,9 @@
       :databaseList="databaseList"
     />
   </template>
+  <template v-if="selectedTab == ACTIVITY_TAB">
+    <ProjectActivityPanel id="activity" :project="project" />
+  </template>
   <template v-else-if="selectedTab == VERSION_CONTROL_TAB">
     <ProjectVersionControlPanel
       id="version-control"
@@ -39,7 +42,8 @@
 <script lang="ts">
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { idFromSlug, isProjectOwner, sortDatabaseList } from "../utils";
+import { idFromSlug, sortDatabaseList } from "../utils";
+import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
@@ -49,13 +53,15 @@ import { cloneDeep } from "lodash";
 
 const OVERVIEW_TAB = 0;
 const MIGRATION_HISTORY_TAB = 1;
-const VERSION_CONTROL_TAB = 2;
-const PROJECT_HOOK_TAB = 3;
-const SETTING_TAB = 4;
+const ACTIVITY_TAB = 2;
+const VERSION_CONTROL_TAB = 3;
+const PROJECT_HOOK_TAB = 4;
+const SETTING_TAB = 5;
 
 export default {
   name: "ProjectDetail",
   components: {
+    ProjectActivityPanel,
     ProjectMigrationHistoryPanel,
     ProjectOverviewPanel,
     ProjectVersionControlPanel,
@@ -105,6 +111,7 @@ export default {
     return {
       OVERVIEW_TAB,
       MIGRATION_HISTORY_TAB,
+      ACTIVITY_TAB,
       VERSION_CONTROL_TAB,
       PROJECT_HOOK_TAB,
       SETTING_TAB,

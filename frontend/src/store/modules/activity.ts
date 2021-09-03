@@ -7,6 +7,7 @@ import {
   ActivityState,
   IssueId,
   PrincipalId,
+  ProjectId,
   ResourceObject,
 } from "../../types";
 
@@ -74,6 +75,29 @@ const actions = {
     });
 
     commit("setActivityListForIssue", { issueId, activityList });
+    return activityList;
+  },
+
+  // We do not store the returned list because the caller will specify different limits
+  async fetchActivityListForProject(
+    { rootGetters }: any,
+    {
+      projectId,
+      limit,
+    }: {
+      projectId: ProjectId;
+      limit?: number;
+    }
+  ) {
+    var queryList = [`container=${projectId}`];
+    if (limit) {
+      queryList.push(`limit=${limit}`);
+    }
+    const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
+    const activityList = data.data.map((activity: ResourceObject) => {
+      return convert(activity, data.included, rootGetters);
+    });
+
     return activityList;
   },
 

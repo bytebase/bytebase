@@ -78,9 +78,58 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					continue
 				}
 
+				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+				if err != nil {
+					s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
+				}
+				vcsPushEvent := common.VCSPushEvent{
+					VCSType:            repository.VCS.Type,
+					BaseDirectory:      repository.BaseDirectory,
+					Ref:                pushEvent.Ref,
+					RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+					RepositoryURL:      pushEvent.Project.WebURL,
+					RepositoryFullPath: pushEvent.Project.FullPath,
+					AuthorName:         pushEvent.AuthorName,
+					FileCommit: common.VCSFileCommit{
+						ID:         commit.ID,
+						Title:      commit.Title,
+						Message:    commit.Message,
+						CreatedTs:  createdTime.Unix(),
+						URL:        commit.URL,
+						AuthorName: commit.Author.Name,
+						Added:      added,
+					},
+				}
+
 				mi, err := db.ParseMigrationInfo(added, repository.BaseDirectory)
 				if err != nil {
 					s.l.Warn("Invalid migration filename. Skip", zap.String("file", added), zap.Error(err))
+
+					// Create a WARNING project activity if the committed file path doesn't match the expected pattern
+					{
+						bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+							VCSPushEvent: vcsPushEvent,
+							Error:        err.Error(),
+						})
+						if err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+						}
+
+						activityCreate := &api.ActivityCreate{
+							CreatorId:   api.SYSTEM_BOT_ID,
+							ContainerId: repository.ProjectId,
+							Type:        api.ActivityProjectRepositoryPush,
+							Level:       api.ACTIVITY_WARNING,
+							Payload:     string(bytes),
+						}
+						_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+						if err != nil {
+							return echo.NewHTTPError(
+								http.StatusInternalServerError,
+								"Failed to create project activity to record mismatch between committed file and expected pattern.").SetInternal(err)
+						}
+					}
+
 					continue
 				}
 
@@ -184,29 +233,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Compose the new issue
-				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
-				if err != nil {
-					s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
-				}
-				vcsPushEvent := common.VCSPushEvent{
-					VCSType:            repository.VCS.Type,
-					BaseDirectory:      repository.BaseDirectory,
-					Ref:                pushEvent.Ref,
-					RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-					RepositoryURL:      pushEvent.Project.WebURL,
-					RepositoryFullPath: pushEvent.Project.FullPath,
-					AuthorName:         pushEvent.AuthorName,
-					FileCommit: common.VCSFileCommit{
-						ID:         commit.ID,
-						Title:      commit.Title,
-						Message:    commit.Message,
-						CreatedTs:  createdTime.Unix(),
-						URL:        commit.URL,
-						AuthorName: commit.Author.Name,
-						Added:      added,
-					},
-				}
-
 				stageList := []api.StageCreate{}
 				for _, database := range filterdDatabaseList {
 					databaseID := database.ID
@@ -248,7 +274,30 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						zap.String("file", added))
 					continue
 				}
+
 				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
+
+				// Create a project activity after sucessfully creating the issue as the result of the push event
+				{
+					bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+						VCSPushEvent: vcsPushEvent,
+					})
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+					}
+
+					activityCreate := &api.ActivityCreate{
+						CreatorId:   api.SYSTEM_BOT_ID,
+						ContainerId: repository.ProjectId,
+						Type:        api.ActivityProjectRepositoryPush,
+						Level:       api.ACTIVITY_INFO,
+						Payload:     string(bytes),
+					}
+					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+					}
+				}
 			}
 		}
 

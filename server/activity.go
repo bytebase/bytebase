@@ -65,13 +65,19 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 
 	g.GET("/activity", func(c echo.Context) error {
 		activityFind := &api.ActivityFind{}
-		containerIdStr := c.QueryParams().Get("container")
-		if containerIdStr != "" {
+		if containerIdStr := c.QueryParams().Get("container"); containerIdStr != "" {
 			containerId, err := strconv.Atoi(containerIdStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter container is not a number: %s", containerIdStr)).SetInternal(err)
 			}
 			activityFind.ContainerId = &containerId
+		}
+		if limitStr := c.QueryParam("limit"); limitStr != "" {
+			limit, err := strconv.Atoi(limitStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter limit is not a number: %s", limitStr)).SetInternal(err)
+			}
+			activityFind.Limit = &limit
 		}
 		list, err := s.ActivityService.FindActivityList(context.Background(), activityFind)
 		if err != nil {

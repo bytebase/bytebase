@@ -18,7 +18,12 @@ export type MemberActivityType =
   | "bb.member.activate"
   | "bb.member.deactivate";
 
-export type ActivityType = IssueActivityType | MemberActivityType;
+export type ProjectActivityType = "bb.project.repository.push";
+
+export type ActivityType =
+  | IssueActivityType
+  | MemberActivityType
+  | ProjectActivityType;
 
 export type ActivityLevel = "INFO" | "WARNING" | "ERROR";
 
