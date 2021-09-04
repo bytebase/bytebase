@@ -109,7 +109,7 @@ type MigrationType string
 
 const (
 	Baseline MigrationType = "BASELINE"
-	Sql      MigrationType = "SQL"
+	Migrate  MigrationType = "MIGRATE"
 	Branch   MigrationType = "BRANCH"
 )
 
@@ -117,8 +117,8 @@ func (e MigrationType) String() string {
 	switch e {
 	case Baseline:
 		return "BASELINE"
-	case Sql:
-		return "SQL"
+	case Migrate:
+		return "MIGRATE"
 	case Branch:
 		return "BRANCH"
 	}
@@ -168,7 +168,7 @@ func ParseMigrationInfo(fullPath string, baseDir string) (*MigrationInfo, error)
 		Environment: parentDir,
 	}
 
-	migrationType := Sql
+	migrationType := Migrate
 	description := ""
 	if len(parts) > 2 {
 		if parts[2] == "baseline" {

@@ -46,7 +46,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 
 	mi := &db.MigrationInfo{
-		Type: db.Sql,
+		Type: db.Migrate,
 	}
 	if payload.VCSPushEvent == nil {
 		mi.Engine = db.UI

@@ -487,7 +487,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	}
 
 	// VCS based SQL migration requires existing baselining
-	requireBaseline := m.Engine == VCS && m.Type == Sql
+	requireBaseline := m.Engine == VCS && m.Type == Migrate
 	sequence, err := findNextSequence(ctx, tx, m.Namespace, requireBaseline)
 	if err != nil {
 		return err
