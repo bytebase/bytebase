@@ -4,6 +4,7 @@ import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
+import { VCSPushEvent } from "./vcs";
 
 export type IssueActivityType =
   | "bb.issue.create"
@@ -80,6 +81,10 @@ export type ActionMemberActivateDeactivatePayload = {
   role: RoleType;
 };
 
+export type ActionProjectRepositoryPushPayload = {
+  pushEvent: VCSPushEvent;
+};
+
 export type ActionPayloadType =
   | ActionIssueCreatePayload
   | ActionIssueCommentCreatePayload
@@ -88,7 +93,8 @@ export type ActionPayloadType =
   | ActionTaskStatusUpdatePayload
   | ActionMemberCreatePayload
   | ActionMemberRoleUpdatePayload
-  | ActionMemberActivateDeactivatePayload;
+  | ActionMemberActivateDeactivatePayload
+  | ActionProjectRepositoryPushPayload;
 
 export type Activity = {
   id: ActivityId;
