@@ -325,7 +325,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     containerId: UNKNOWN_ID,
-    actionType: "bb.issue.create",
+    type: "bb.issue.create",
     level: "INFO",
     comment: "<<Unknown comment>>",
   };
@@ -632,7 +632,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     containerId: EMPTY_ID,
-    actionType: "bb.issue.create",
+    type: "bb.issue.create",
     level: "INFO",
     comment: "",
   };

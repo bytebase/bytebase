@@ -28,29 +28,29 @@ export type ActivityType =
 
 export type ActivityLevel = "INFO" | "WARN" | "ERROR";
 
-export type ActionIssueCreatePayload = {
+export type ActivityIssueCreatePayload = {
   issueName: string;
   rollbackIssueId?: IssueId;
 };
 
-export type ActionIssueCommentCreatePayload = {
+export type ActivityIssueCommentCreatePayload = {
   issueName: string;
 };
 
-export type ActionIssueFieldUpdatePayload = {
+export type ActivityIssueFieldUpdatePayload = {
   fieldId: FieldId;
   oldValue?: string;
   newValue?: string;
   issueName: string;
 };
 
-export type ActionIssueStatusUpdatePayload = {
+export type ActivityIssueStatusUpdatePayload = {
   oldStatus: IssueStatus;
   newStatus: IssueStatus;
   issueName: string;
 };
 
-export type ActionTaskStatusUpdatePayload = {
+export type ActivityTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
@@ -58,7 +58,7 @@ export type ActionTaskStatusUpdatePayload = {
   taskName: string;
 };
 
-export type ActionMemberCreatePayload = {
+export type ActivityMemberCreatePayload = {
   principalId: PrincipalId;
   principalName: string;
   principalEmail: string;
@@ -66,7 +66,7 @@ export type ActionMemberCreatePayload = {
   role: RoleType;
 };
 
-export type ActionMemberRoleUpdatePayload = {
+export type ActivityMemberRoleUpdatePayload = {
   principalId: PrincipalId;
   principalName: string;
   principalEmail: string;
@@ -74,27 +74,27 @@ export type ActionMemberRoleUpdatePayload = {
   newRole: RoleType;
 };
 
-export type ActionMemberActivateDeactivatePayload = {
+export type ActivityMemberActivateDeactivatePayload = {
   principalId: PrincipalId;
   principalName: string;
   principalEmail: string;
   role: RoleType;
 };
 
-export type ActionProjectRepositoryPushPayload = {
+export type ActivityProjectRepositoryPushPayload = {
   pushEvent: VCSPushEvent;
 };
 
 export type ActionPayloadType =
-  | ActionIssueCreatePayload
-  | ActionIssueCommentCreatePayload
-  | ActionIssueFieldUpdatePayload
-  | ActionIssueStatusUpdatePayload
-  | ActionTaskStatusUpdatePayload
-  | ActionMemberCreatePayload
-  | ActionMemberRoleUpdatePayload
-  | ActionMemberActivateDeactivatePayload
-  | ActionProjectRepositoryPushPayload;
+  | ActivityIssueCreatePayload
+  | ActivityIssueCommentCreatePayload
+  | ActivityIssueFieldUpdatePayload
+  | ActivityIssueStatusUpdatePayload
+  | ActivityTaskStatusUpdatePayload
+  | ActivityMemberCreatePayload
+  | ActivityMemberRoleUpdatePayload
+  | ActivityMemberActivateDeactivatePayload
+  | ActivityProjectRepositoryPushPayload;
 
 export type Activity = {
   id: ActivityId;
@@ -107,9 +107,9 @@ export type Activity = {
 
   // Domain specific fields
   // The object where this activity belongs
-  // e.g if actionType is "bb.issue.xxx", then this field refers to the corresponding issue's id.
+  // e.g if type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
   containerId: ContainerId;
-  actionType: ActivityType;
+  type: ActivityType;
   level: ActivityLevel;
   comment: string;
   payload?: ActionPayloadType;
@@ -118,7 +118,7 @@ export type Activity = {
 export type ActivityCreate = {
   // Domain specific fields
   containerId: ContainerId;
-  actionType: ActivityType;
+  type: ActivityType;
   comment: string;
   payload?: ActionPayloadType;
 };

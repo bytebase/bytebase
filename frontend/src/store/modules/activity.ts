@@ -120,7 +120,7 @@ const actions = {
     );
 
     // There might exist other activities happened since the last fetch, so we do a full refetch.
-    if (newActivity.actionType.startsWith("bb.issue.")) {
+    if (newActivity.type.startsWith("bb.issue.")) {
       dispatch("fetchActivityListForIssue", newActivity.containerId);
     }
 
@@ -158,7 +158,7 @@ const actions = {
   async deleteActivity({ dispatch }: any, activity: Activity) {
     await axios.delete(`/api/activity/${activity.id}`);
 
-    if (activity.actionType.startsWith("bb.issue.")) {
+    if (activity.type.startsWith("bb.issue.")) {
       dispatch("fetchActivityListForIssue", activity.containerId);
     }
   },

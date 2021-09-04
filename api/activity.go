@@ -157,7 +157,7 @@ type Activity struct {
 	ContainerId int `jsonapi:"attr,containerId"`
 
 	// Domain specific fields
-	Type    ActivityType  `jsonapi:"attr,actionType"`
+	Type    ActivityType  `jsonapi:"attr,type"`
 	Level   ActivityLevel `jsonapi:"attr,level"`
 	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
@@ -170,7 +170,7 @@ type ActivityCreate struct {
 
 	// Domain specific fields
 	ContainerId int          `jsonapi:"attr,containerId"`
-	Type        ActivityType `jsonapi:"attr,actionType"`
+	Type        ActivityType `jsonapi:"attr,type"`
 	Level       ActivityLevel
 	Comment     string `jsonapi:"attr,comment"`
 	Payload     string `jsonapi:"attr,payload"`

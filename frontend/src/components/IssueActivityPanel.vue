@@ -303,7 +303,7 @@
                         <template
                           v-if="
                             activity.createdTs != activity.updatedTs &&
-                            activity.actionType == 'bb.issue.comment.create'
+                            activity.type == 'bb.issue.comment.create'
                           "
                         >
                           (edited
@@ -312,7 +312,7 @@
                       </a>
                       <span
                         v-if="
-                          activity.actionType == 'bb.issue.create' &&
+                          activity.type == 'bb.issue.create' &&
                           activity.payload.rollbackIssueId
                         "
                       >
@@ -385,9 +385,7 @@
                       <div v-else class="mr-2 flex items-center space-x-2">
                         <!-- Delete Comment Button-->
                         <button
-                          v-if="
-                            activity.actionType == 'bb.issue.comment.create'
-                          "
+                          v-if="activity.type == 'bb.issue.comment.create'"
                           class="btn-icon"
                           @click.prevent="
                             {
@@ -568,8 +566,8 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   Issue,
   Activity,
-  ActionIssueFieldUpdatePayload,
-  ActionTaskStatusUpdatePayload,
+  ActivityIssueFieldUpdatePayload,
+  ActivityTaskStatusUpdatePayload,
   UNKNOWN_ID,
   EMPTY_ID,
   SYSTEM_BOT_ID,
@@ -689,9 +687,9 @@ export default {
         props.issue.id
       );
       return list.filter((activity: Activity) => {
-        if (activity.actionType == "bb.issue.field.update") {
+        if (activity.type == "bb.issue.field.update") {
           let containUserVisibleChange =
-            (activity.payload as ActionIssueFieldUpdatePayload).fieldId !=
+            (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
             IssueBuiltinFieldId.SUBSCRIBER_LIST;
           return containUserVisibleChange;
         }
@@ -713,7 +711,7 @@ export default {
 
     const doCreateComment = () => {
       const createActivity: ActivityCreate = {
-        actionType: "bb.issue.comment.create",
+        type: "bb.issue.comment.create",
         containerId: props.issue.id,
         comment: newComment.value,
       };
@@ -770,12 +768,12 @@ export default {
     };
 
     const actionIcon = (activity: Activity): ActionIconType => {
-      if (activity.actionType == "bb.issue.create") {
+      if (activity.type == "bb.issue.create") {
         return "create";
-      } else if (activity.actionType == "bb.issue.field.update") {
+      } else if (activity.type == "bb.issue.field.update") {
         return "update";
-      } else if (activity.actionType == "bb.pipeline.task.status.update") {
-        const payload = activity.payload as ActionTaskStatusUpdatePayload;
+      } else if (activity.type == "bb.pipeline.task.status.update") {
+        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
         switch (payload.newStatus) {
           case "PENDING": {
             if (payload.oldStatus == "RUNNING") {
@@ -801,7 +799,7 @@ export default {
 
     const actionSubjectPrefix = (activity: Activity): string => {
       if (activity.creator.id == SYSTEM_BOT_ID) {
-        if (activity.actionType == "bb.pipeline.task.status.update") {
+        if (activity.type == "bb.pipeline.task.status.update") {
           return "Task ";
         }
       }
@@ -810,9 +808,9 @@ export default {
 
     const actionSubject = (activity: Activity): ActionSubject => {
       if (activity.creator.id == SYSTEM_BOT_ID) {
-        if (activity.actionType == "bb.pipeline.task.status.update") {
+        if (activity.type == "bb.pipeline.task.status.update") {
           if (props.issue.pipeline.id != EMPTY_ID) {
-            const payload = activity.payload as ActionTaskStatusUpdatePayload;
+            const payload = activity.payload as ActivityTaskStatusUpdatePayload;
             const task = findTaskById(props.issue.pipeline, payload.taskId);
             var link = "";
             if (task.id != UNKNOWN_ID) {
@@ -835,12 +833,12 @@ export default {
     };
 
     const actionSentence = (activity: Activity): string => {
-      if (activity.actionType.startsWith("bb.issue.")) {
+      if (activity.type.startsWith("bb.issue.")) {
         return issueActivityActionSentence(activity);
       }
-      switch (activity.actionType) {
+      switch (activity.type) {
         case "bb.pipeline.task.status.update": {
-          const payload = activity.payload as ActionTaskStatusUpdatePayload;
+          const payload = activity.payload as ActivityTaskStatusUpdatePayload;
           var str = `changed`;
           switch (payload.newStatus) {
             case "PENDING": {
