@@ -72,6 +72,15 @@
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ activityName(activity.actionType) }}
+        <template v-if="activityLink(activity)">
+          <a
+            :href="activityLink(activity).path"
+            target="_blank"
+            class="normal-link"
+          >
+            {{ activityLink(activity).title }}
+          </a>
+        </template>
       </BBTableCell>
       <BBTableCell class="w-24">
         {{ activity.comment }}
@@ -92,8 +101,13 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { Activity } from "../types";
+import { ActionProjectRepositoryPushPayload, Activity } from "../types";
 import { activityName } from "../utils";
+
+type Link = {
+  title: string;
+  path: string;
+};
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -123,9 +137,24 @@ export default {
     },
   },
   setup(props, ctx) {
+    const activityLink = (activity: Activity): Link | undefined => {
+      switch (activity.actionType) {
+        case "bb.project.repository.push": {
+          const payload =
+            activity.payload as ActionProjectRepositoryPushPayload;
+          return {
+            title: payload.pushEvent.fileCommit.id.substring(0, 7),
+            path: payload.pushEvent.fileCommit.url,
+          };
+        }
+      }
+      return undefined;
+    };
+
     return {
       activityName,
       COLUMN_LIST,
+      activityLink,
     };
   },
 };

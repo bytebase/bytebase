@@ -139,7 +139,6 @@ type ActivityMemberActivateDeactivatePayload struct {
 
 type ActivityProjectRepositoryPushPayload struct {
 	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
-	Error        string              `json:"error"`
 }
 
 type Activity struct {

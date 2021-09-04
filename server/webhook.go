@@ -107,12 +107,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 					// Create a WARNING project activity if the committed file path doesn't match the expected pattern
 					{
-						bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+						bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 							VCSPushEvent: vcsPushEvent,
-							Error:        err.Error(),
 						})
-						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+						if marshalErr != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(marshalErr)
 						}
 
 						activityCreate := &api.ActivityCreate{
@@ -120,6 +119,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							ContainerId: repository.ProjectId,
 							Type:        api.ActivityProjectRepositoryPush,
 							Level:       api.ACTIVITY_WARN,
+							Comment:     err.Error(),
 							Payload:     string(bytes),
 						}
 						_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
