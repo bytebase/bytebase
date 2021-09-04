@@ -374,6 +374,7 @@ export const unknown = (
     webURL: "",
     baseDirectory: "",
     branchFilter: "",
+    filePathTemplate: "",
     externalId: UNKNOWN_ID.toString(),
   };
 
@@ -681,6 +682,7 @@ export const empty = (
     webURL: "",
     baseDirectory: "",
     branchFilter: "",
+    filePathTemplate: "",
     externalId: EMPTY_ID.toString(),
   };
 
