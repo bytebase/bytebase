@@ -1,9 +1,9 @@
 import { Store } from "vuex";
 import { IssueBuiltinFieldId } from "../plugins";
 import {
-  ActionIssueFieldUpdatePayload,
-  ActionIssueStatusUpdatePayload,
   Activity,
+  ActivityIssueFieldUpdatePayload,
+  ActivityIssueStatusUpdatePayload,
   ActivityType,
 } from "../types";
 
@@ -39,13 +39,13 @@ export function activityName(type: ActivityType): string {
 }
 
 export function issueActivityActionSentence(activity: Activity): string {
-  switch (activity.actionType) {
+  switch (activity.type) {
     case "bb.issue.create":
       return "created issue";
     case "bb.issue.comment.create":
       return "commented";
     case "bb.issue.field.update": {
-      const update = activity.payload as ActionIssueFieldUpdatePayload;
+      const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
       let name = "Unknown Field";
       let oldValue = undefined;
@@ -114,7 +114,7 @@ export function issueActivityActionSentence(activity: Activity): string {
       return "updated";
     }
     case "bb.issue.status.update": {
-      const update = activity.payload as ActionIssueStatusUpdatePayload;
+      const update = activity.payload as ActivityIssueStatusUpdatePayload;
       switch (update.newStatus) {
         case "OPEN":
           return "reopened issue";

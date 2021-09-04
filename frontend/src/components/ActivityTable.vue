@@ -71,7 +71,7 @@
         </span>
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ activityName(activity.actionType) }}
+        {{ activityName(activity.type) }}
         <template v-if="activityLink(activity)">
           <a
             :href="activityLink(activity).path"
@@ -101,7 +101,7 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { ActionProjectRepositoryPushPayload, Activity } from "../types";
+import { ActivityProjectRepositoryPushPayload, Activity } from "../types";
 import { activityName } from "../utils";
 
 type Link = {
@@ -138,10 +138,10 @@ export default {
   },
   setup(props, ctx) {
     const activityLink = (activity: Activity): Link | undefined => {
-      switch (activity.actionType) {
+      switch (activity.type) {
         case "bb.project.repository.push": {
           const payload =
-            activity.payload as ActionProjectRepositoryPushPayload;
+            activity.payload as ActivityProjectRepositoryPushPayload;
           return {
             title: payload.pushEvent.fileCommit.id.substring(0, 7),
             path: payload.pushEvent.fileCommit.url,

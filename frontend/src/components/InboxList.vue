@@ -85,11 +85,11 @@
 import { computed, PropType } from "@vue/runtime-core";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
-  ActionIssueCommentCreatePayload,
-  ActionIssueCreatePayload,
-  ActionIssueFieldUpdatePayload,
-  ActionIssueStatusUpdatePayload,
-  ActionTaskStatusUpdatePayload,
+  ActivityIssueCommentCreatePayload,
+  ActivityIssueCreatePayload,
+  ActivityIssueFieldUpdatePayload,
+  ActivityIssueStatusUpdatePayload,
+  ActivityTaskStatusUpdatePayload,
   Activity,
   Inbox,
 } from "../types";
@@ -114,10 +114,10 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const actionLink = (activity: Activity): string => {
-      if (activity.actionType.startsWith("bb.issue.")) {
+      if (activity.type.startsWith("bb.issue.")) {
         return `/issue/${activity.containerId}`;
-      } else if (activity.actionType == "bb.pipeline.task.status.update") {
-        const payload = activity.payload as ActionTaskStatusUpdatePayload;
+      } else if (activity.type == "bb.pipeline.task.status.update") {
+        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
         return `/issue/${activity.containerId}?task=${payload.taskId}`;
       }
 
@@ -125,33 +125,35 @@ export default {
     };
 
     const showCreator = (activity: Activity): boolean => {
-      return activity.actionType.startsWith("bb.issue.");
+      return activity.type.startsWith("bb.issue.");
     };
 
     const actionSentence = (activity: Activity): string => {
-      if (activity.actionType.startsWith("bb.issue.")) {
+      if (activity.type.startsWith("bb.issue.")) {
         const actionStr = issueActivityActionSentence(activity);
-        switch (activity.actionType) {
+        switch (activity.type) {
           case "bb.issue.create": {
-            const payload = activity.payload as ActionIssueCreatePayload;
+            const payload = activity.payload as ActivityIssueCreatePayload;
             return `${actionStr} - '${payload?.issueName || ""}'`;
           }
           case "bb.issue.comment.create": {
-            const payload = activity.payload as ActionIssueCommentCreatePayload;
+            const payload =
+              activity.payload as ActivityIssueCommentCreatePayload;
             return `${actionStr} - '${payload?.issueName || ""}'`;
           }
           case "bb.issue.field.update": {
-            const payload = activity.payload as ActionIssueFieldUpdatePayload;
+            const payload = activity.payload as ActivityIssueFieldUpdatePayload;
             return `${actionStr} - '${payload?.issueName || ""}'`;
           }
           case "bb.issue.status.update": {
-            const payload = activity.payload as ActionIssueStatusUpdatePayload;
+            const payload =
+              activity.payload as ActivityIssueStatusUpdatePayload;
             return `${actionStr} - '${payload?.issueName || ""}'`;
           }
         }
         return actionStr;
-      } else if (activity.actionType == "bb.pipeline.task.status.update") {
-        const payload = activity.payload as ActionTaskStatusUpdatePayload;
+      } else if (activity.type == "bb.pipeline.task.status.update") {
+        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
         var actionStr = `changed`;
         switch (payload.newStatus) {
           case "PENDING": {
