@@ -39,7 +39,7 @@
     <div>
       <div class="textlabel">Branch <span class="text-red-600">*</span></div>
       <div class="mt-1 textinfolabel">
-        The branch where Bytebase observes the SQL file (.sql) change.
+        The branch where Bytebase observes the file change.
       </div>
       <input
         id="branch"
@@ -57,9 +57,7 @@
     <div>
       <div class="textlabel">Base directory</div>
       <div class="mt-1 textinfolabel">
-        The directory and all its sub-directories that Bytebase will observe the
-        SQL file (.sql) change. If empty, then Bytebase will observe the entire
-        repository.
+        The root directory where Bytebase observes the file change.
       </div>
       <input
         id="basedirectory"
@@ -68,6 +66,21 @@
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
         v-model="repositoryConfig.baseDirectory"
+      />
+    </div>
+    <div>
+      <div class="textlabel">File path template</div>
+      <div class="mt-1 textinfolabel">
+        Bytebase only observes the file path name matching the template pattern
+        relative to the base directory.
+      </div>
+      <input
+        id="filepathtemplate"
+        name="filepathtemplate"
+        type="text"
+        class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
+        v-model="repositoryConfig.filePathTemplate"
       />
     </div>
   </div>

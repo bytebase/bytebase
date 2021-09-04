@@ -7,10 +7,13 @@
     <a class="normal-link" :href="repository.webURL" target="_blank">{{
       repository.fullPath
     }}</a
-    >. To make schema changes, a developer would create a migration script under
-    base directory
+    >. To make schema changes, a developer would create a migration script
+    matching file path pattern
     <span class="font-medium text-main"
       >/{{ state.repositoryConfig.baseDirectory }}</span
+    >
+    <span class="font-medium text-main"
+      >/{{ state.repositoryConfig.filePathTemplate }}</span
     >. After the script is review approved and merged into the
     <template v-if="state.repositoryConfig.branchFilter"
       >branch matching pattern
@@ -94,6 +97,7 @@ export default {
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
         branchFilter: props.repository.branchFilter,
+        filePathTemplate: props.repository.filePathTemplate,
       },
     });
 
@@ -103,6 +107,7 @@ export default {
         state.repositoryConfig = {
           baseDirectory: cur.baseDirectory,
           branchFilter: cur.branchFilter,
+          filePathTemplate: cur.filePathTemplate,
         };
       }
     );
@@ -119,9 +124,11 @@ export default {
     const allowUpdate = computed(() => {
       return (
         !isEmpty(state.repositoryConfig.branchFilter) &&
-        (props.repository.baseDirectory !=
-          state.repositoryConfig.baseDirectory ||
-          props.repository.branchFilter != state.repositoryConfig.branchFilter)
+        (props.repository.branchFilter != state.repositoryConfig.branchFilter ||
+          props.repository.baseDirectory !=
+            state.repositoryConfig.baseDirectory ||
+          props.repository.filePathTemplate !=
+            state.repositoryConfig.filePathTemplate)
       );
     });
 
@@ -140,14 +147,21 @@ export default {
     const doUpdate = () => {
       const repositoryPatch: RepositoryPatch = {};
       if (
+        props.repository.branchFilter != state.repositoryConfig.branchFilter
+      ) {
+        repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
+      }
+      if (
         props.repository.baseDirectory != state.repositoryConfig.baseDirectory
       ) {
         repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
       }
       if (
-        props.repository.branchFilter != state.repositoryConfig.branchFilter
+        props.repository.filePathTemplate !=
+        state.repositoryConfig.filePathTemplate
       ) {
-        repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
+        repositoryPatch.filePathTemplate =
+          state.repositoryConfig.filePathTemplate;
       }
       store
         .dispatch("repository/updateRepositoryByProjectId", {

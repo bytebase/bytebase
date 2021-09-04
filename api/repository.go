@@ -26,8 +26,9 @@ type Repository struct {
 	Name               string `jsonapi:"attr,name"`
 	FullPath           string `jsonapi:"attr,fullPath"`
 	WebURL             string `jsonapi:"attr,webURL"`
-	BaseDirectory      string `jsonapi:"attr,baseDirectory"`
 	BranchFilter       string `jsonapi:"attr,branchFilter"`
+	BaseDirectory      string `jsonapi:"attr,baseDirectory"`
+	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
 	ExternalId         string `jsonapi:"attr,externalId"`
 	ExternalWebhookId  string
 	WebhookURLHost     string
@@ -49,12 +50,13 @@ type RepositoryCreate struct {
 	ProjectId int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Name          string `jsonapi:"attr,name"`
-	FullPath      string `jsonapi:"attr,fullPath"`
-	WebURL        string `jsonapi:"attr,webURL"`
-	BaseDirectory string `jsonapi:"attr,baseDirectory"`
-	BranchFilter  string `jsonapi:"attr,branchFilter"`
-	ExternalId    string `jsonapi:"attr,externalId"`
+	Name             string `jsonapi:"attr,name"`
+	FullPath         string `jsonapi:"attr,fullPath"`
+	WebURL           string `jsonapi:"attr,webURL"`
+	BranchFilter     string `jsonapi:"attr,branchFilter"`
+	BaseDirectory    string `jsonapi:"attr,baseDirectory"`
+	FilePathTemplate string `jsonapi:"attr,filePathTemplate"`
+	ExternalId       string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on
 	// behalf of that user to perform tasks like webhook CRUD later.
@@ -94,8 +96,9 @@ type RepositoryPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	BaseDirectory *string `jsonapi:"attr,baseDirectory"`
-	BranchFilter  *string `jsonapi:"attr,branchFilter"`
+	BranchFilter     *string `jsonapi:"attr,branchFilter"`
+	BaseDirectory    *string `jsonapi:"attr,baseDirectory"`
+	FilePathTemplate *string `jsonapi:"attr,filePathTemplate"`
 }
 
 type RepositoryDelete struct {

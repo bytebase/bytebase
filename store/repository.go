@@ -149,8 +149,9 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 			name,
 			full_path,
 			web_url,
-			base_directory,
 			branch_filter,
+			base_directory,
+			file_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -160,8 +161,8 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 			expires_ts,
 			refresh_token
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -170,8 +171,9 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		create.Name,
 		create.FullPath,
 		create.WebURL,
-		create.BaseDirectory,
 		create.BranchFilter,
+		create.BaseDirectory,
+		create.FilePathTemplate,
 		create.ExternalId,
 		create.ExternalWebhookId,
 		create.WebhookURLHost,
@@ -200,8 +202,9 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		&repository.Name,
 		&repository.FullPath,
 		&repository.WebURL,
-		&repository.BaseDirectory,
 		&repository.BranchFilter,
+		&repository.BaseDirectory,
+		&repository.FilePathTemplate,
 		&repository.ExternalId,
 		&repository.ExternalWebhookId,
 		&repository.WebhookURLHost,
@@ -245,8 +248,9 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			name,
 			full_path,
 			web_url,
-			base_directory,
 			branch_filter,
+			base_directory,
+			file_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -279,8 +283,9 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			&repository.Name,
 			&repository.FullPath,
 			&repository.WebURL,
-			&repository.BaseDirectory,
 			&repository.BranchFilter,
+			&repository.BaseDirectory,
+			&repository.FilePathTemplate,
 			&repository.ExternalId,
 			&repository.ExternalWebhookId,
 			&repository.WebhookURLHost,
@@ -306,11 +311,14 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*api.Repository, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	if v := patch.BranchFilter; v != nil {
+		set, args = append(set, "branch_filter = ?"), append(args, *v)
+	}
 	if v := patch.BaseDirectory; v != nil {
 		set, args = append(set, "base_directory = ?"), append(args, *v)
 	}
-	if v := patch.BranchFilter; v != nil {
-		set, args = append(set, "branch_filter = ?"), append(args, *v)
+	if v := patch.FilePathTemplate; v != nil {
+		set, args = append(set, "file_path_template = ?"), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -320,7 +328,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, base_directory, branch_filter, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		args...,
 	)
@@ -342,8 +350,9 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 			&repository.Name,
 			&repository.FullPath,
 			&repository.WebURL,
-			&repository.BaseDirectory,
 			&repository.BranchFilter,
+			&repository.BaseDirectory,
+			&repository.FilePathTemplate,
 			&repository.ExternalId,
 			&repository.ExternalWebhookId,
 			&repository.WebhookURLHost,

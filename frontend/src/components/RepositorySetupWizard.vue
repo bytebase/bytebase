@@ -36,7 +36,6 @@ import { computed, PropType } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
-import { v4 as uuidv4 } from "uuid";
 import { BBStepTabItem } from "../bbkit/types";
 import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
@@ -48,7 +47,11 @@ import {
   unknown,
   VCS,
 } from "../types";
-import { projectSlug, randomString } from "../utils";
+import { projectSlug } from "../utils";
+
+// Default file path template is to organize migration files from different environments under separate directories.
+const DEFAULT_FILE_PATH_TEMPLATE =
+  "{{envname}}/{{version}}__{{dbname}}__{{type}}__{{description}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
 const CHOOSE_REPOSITORY_STEP = 1;
@@ -105,6 +108,7 @@ export default {
         repositoryConfig: {
           baseDirectory: "",
           branchFilter: "",
+          filePathTemplate: DEFAULT_FILE_PATH_TEMPLATE,
         },
       },
       currentStep: CHOOSE_PROVIDER_STEP,

@@ -1,5 +1,5 @@
 import isEmpty from "lodash-es/isEmpty";
-import { RepositoryId, VCSId, ProjectId } from "./id";
+import { ProjectId, RepositoryId, VCSId } from "./id";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";
@@ -26,6 +26,7 @@ export type Repository = {
   webURL: string;
   baseDirectory: string;
   branchFilter: string;
+  filePathTemplate: string;
   // e.g. In GitLab, this is the corresponding project id.
   externalId: string;
 };
@@ -50,11 +51,13 @@ export type RepositoryCreate = {
 export type RepositoryPatch = {
   baseDirectory?: string;
   branchFilter?: string;
+  filePathTemplate?: string;
 };
 
 export type RepositoryConfig = {
   baseDirectory: string;
   branchFilter: string;
+  filePathTemplate: string;
 };
 
 export type ExternalRepositoryInfo = {
