@@ -385,6 +385,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				taskCreate.Payload = string(bytes)
 			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 				payload := api.TaskDatabaseSchemaUpdatePayload{}
+				payload.MigrationType = taskCreate.MigrationType
 				payload.Statement = taskCreate.Statement
 				if taskCreate.RollbackStatement != "" {
 					payload.RollbackStatement = taskCreate.RollbackStatement

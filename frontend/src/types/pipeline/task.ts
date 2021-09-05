@@ -7,7 +7,7 @@ import {
   TaskId,
   TaskRunId,
 } from "../id";
-import { Instance } from "../instance";
+import { Instance, MigrationType } from "../instance";
 import { Principal } from "../principal";
 import { VCSPushEvent } from "../vcs";
 import { Pipeline } from "./pipeline";
@@ -40,6 +40,7 @@ export type TaskDatabaseCreatePayload = {
 };
 
 export type TaskDatabaseSchemaUpdatePayload = {
+  migrationType: MigrationType;
   statement: string;
   rollbackStatement: string;
   pushEvent?: VCSPushEvent;
@@ -93,6 +94,7 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   backupId?: BackupId;
+  migrationType: MigrationType;
 };
 
 export type TaskStatusPatch = {

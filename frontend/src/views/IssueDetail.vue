@@ -157,6 +157,7 @@
                   :statement="selectedStatement"
                   :create="state.create"
                   :rollback="false"
+                  :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateStatement"
                   @apply-statement-to-other-stages="applyStatementToOtherStages"
@@ -172,6 +173,7 @@
                     :statement="statement(stage)"
                     :create="state.create"
                     :rollback="false"
+                    :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                   />
@@ -187,6 +189,7 @@
                   :statement="selectedRollbackStatement"
                   :create="state.create"
                   :rollback="true"
+                  :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
                   @apply-statement-to-other-stages="
@@ -204,6 +207,7 @@
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
                     :rollback="true"
+                    :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateRollbackStatement"
                   />
@@ -295,6 +299,7 @@ import {
   POST_CHANGE_POLL_INTERVAL,
   Project,
   IssueId,
+  MigrationType,
 } from "../types";
 import {
   defaulTemplate,
@@ -929,6 +934,19 @@ export default {
       return task.rollbackStatement;
     });
 
+    const selectedMigrateType = computed((): MigrationType => {
+      if (
+        !state.create &&
+        selectedTask.value.type == "bb.task.database.schema.update"
+      ) {
+        return (
+          (selectedTask.value as Task)
+            .payload as TaskDatabaseSchemaUpdatePayload
+        ).migrationType;
+      }
+      return "MIGRATE";
+    });
+
     const allowEditSidebar = computed(() => {
       // For now, we only allow assignee to update the field when the issue
       // is 'OPEN'. This reduces flexibility as creator must ask assignee to
@@ -1080,6 +1098,7 @@ export default {
       rollbackStatement,
       selectedStatement,
       selectedRollbackStatement,
+      selectedMigrateType,
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,

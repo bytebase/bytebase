@@ -60,7 +60,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10003 "Integration" to update database 7007 'shop'
@@ -94,7 +94,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10004 "Staging" to update database 7011 'shop'
@@ -128,7 +128,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10005 "Prod" to update database 7015 'proddb1'
@@ -162,7 +162,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"14","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repoFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"da90a2510eccd051ad14e4b89ca904d733169a39","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/da90a2510eccd051ad14e4b89ca904d733169a39","authorName":"tianzhou","added":"bytebase/v1__shop__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for Pipeline 9003 create table
@@ -193,7 +193,7 @@ VALUES
         'Update testdb_dev',
         'bb.task.database.schema.update',
         'FAILED',
-        '{"statement":"CREATE TABLE testdb_dev.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl1;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl1;"}'
     );
 
 -- Task for stage 10003 "Integration" to update database 7006 'testdb_integration'
@@ -223,7 +223,7 @@ VALUES
         'Update testdb_integration',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"statement":"CREATE TABLE testdb_integration.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl1;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl1;"}'
     );
 
 -- Task for stage 10008 simulating webhook push event
@@ -257,7 +257,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"d7f3b88b93c4d7f57b710980cdf92f72dcc4cd1e","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs":1624865383,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/d7f3b88b93c4d7f57b710980cdf92f72dcc4cd1e","authorName":"tianzhou","added":"bytebase/dev/202106280000__blog__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"d7f3b88b93c4d7f57b710980cdf92f72dcc4cd1e","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs":1624865383,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/d7f3b88b93c4d7f57b710980cdf92f72dcc4cd1e","authorName":"tianzhou","added":"bytebase/dev/202106280000__blog__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10009 simulating webhook push event
@@ -291,7 +291,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"70d06befa6d78abed1b78b7de1cd0e7ce3365719","title":"Create user, post, comment table for integration environment","message":"Create user, post, comment table for integration environment","createdTs":1624866787,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/70d06befa6d78abed1b78b7de1cd0e7ce3365719","authorName":"tianzhou","added":"bytebase/integration/202106280000__blog__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"70d06befa6d78abed1b78b7de1cd0e7ce3365719","title":"Create user, post, comment table for integration environment","message":"Create user, post, comment table for integration environment","createdTs":1624866787,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/70d06befa6d78abed1b78b7de1cd0e7ce3365719","authorName":"tianzhou","added":"bytebase/integration/202106280000__blog__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10010 simulating webhook push event
@@ -325,7 +325,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"2dac551a44ff26b08d20bd213b856a993da50ecb","title":"Create user, post, comment table for staging environment","message":"Create user, post, comment table for staging environment","createdTs":1624868403,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/2dac551a44ff26b08d20bd213b856a993da50ecb","authorName":"tianzhou","added":"bytebase/staging/202106280000__blog__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"2dac551a44ff26b08d20bd213b856a993da50ecb","title":"Create user, post, comment table for staging environment","message":"Create user, post, comment table for staging environment","createdTs":1624868403,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/2dac551a44ff26b08d20bd213b856a993da50ecb","authorName":"tianzhou","added":"bytebase/staging/202106280000__blog__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10011 simulating webhook push event
@@ -359,7 +359,7 @@ VALUES
         'Add initial schema',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"e3ff00e2432cfb2da422222ab4f055dd43c4d441","title":"Create user, post, comment table for prod environment","message":"Create user, post, comment table for prod environment","createdTs":1624868676,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/e3ff00e2432cfb2da422222ab4f055dd43c4d441","authorName":"tianzhou","added":"bytebase/prod/202106280000__blog__baseline__add_initial_schema.sql"}}}'
+        '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"e3ff00e2432cfb2da422222ab4f055dd43c4d441","title":"Create user, post, comment table for prod environment","message":"Create user, post, comment table for prod environment","createdTs":1624868676,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/e3ff00e2432cfb2da422222ab4f055dd43c4d441","authorName":"tianzhou","added":"bytebase/prod/202106280000__blog__baseline__add_initial_schema.sql"}}}'
     );
 
 -- Task for stage 10012 simulating webhook push event
@@ -393,7 +393,7 @@ VALUES
         'Add created at column',
         'bb.task.database.schema.update',
         'FAILED',
-        '{"statement":"ALTER TABLE `user` ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE post ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE comment ADD COLUMN `created_at` DATETIME NOT NULL;\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"4680075d6b640d4233fa89c4af482993368c86d4","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1624869938,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/4680075d6b640d4233fa89c4af482993368c86d4","authorName":"tianzhou","added":"bytebase/dev/202106280100__blog__migrate__add_created_at_column.sql"}}}'
+        '{"migrationType":"MIGRATE","statement":"ALTER TABLE `user` ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE post ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE comment ADD COLUMN `created_at` DATETIME NOT NULL;\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repoId":"13","repoUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repoFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"4680075d6b640d4233fa89c4af482993368c86d4","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1624869938,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/4680075d6b640d4233fa89c4af482993368c86d4","authorName":"tianzhou","added":"bytebase/dev/202106280100__blog__migrate__add_created_at_column.sql"}}}'
     );
 
 -- Task for Pipeline 9009 multi-stage create table UI workflow
@@ -424,7 +424,7 @@ VALUES
         'Update testdb_dev',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl2;"}'
     );
 
 -- Task for stage 10014 "Integration" to create table in database 7006 'testdb_integration'
@@ -454,7 +454,7 @@ VALUES
         'Update testdb_integration',
         'bb.task.database.schema.update',
         'DONE',
-        '{"statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl2;"}'
     );
 
 
@@ -485,7 +485,7 @@ VALUES
         'Update testdb_staging',
         'bb.task.database.schema.update',
         'FAILED',
-        '{"statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_staging.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_staging.tbl2;"}'
     );
 
 -- Task for stage 10016 "prod" to create table in database 7014 'testdb_prod'
@@ -515,5 +515,5 @@ VALUES
         'Update testdb_prod',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_prod.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_prod.tbl2;"}'
     );
