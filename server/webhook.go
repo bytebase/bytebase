@@ -228,13 +228,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						taskStatus = api.TaskPending
 					}
 					task := &api.TaskCreate{
-						InstanceId:   database.InstanceId,
-						DatabaseId:   &databaseID,
-						Name:         mi.Description,
-						Status:       taskStatus,
-						Type:         api.TaskDatabaseSchemaUpdate,
-						Statement:    string(b),
-						VCSPushEvent: &vcsPushEvent,
+						InstanceId:    database.InstanceId,
+						DatabaseId:    &databaseID,
+						Name:          mi.Description,
+						Status:        taskStatus,
+						Type:          api.TaskDatabaseSchemaUpdate,
+						Statement:     string(b),
+						VCSPushEvent:  &vcsPushEvent,
+						MigrationType: mi.Type,
 					}
 					stageList = append(stageList, api.StageCreate{
 						EnvironmentId: database.Instance.EnvironmentId,

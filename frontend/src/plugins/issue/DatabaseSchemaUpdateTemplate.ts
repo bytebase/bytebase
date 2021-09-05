@@ -26,6 +26,7 @@ const template: IssueTemplate = {
             rollbackStatement: ctx.rollbackStatementList
               ? ctx.rollbackStatementList[i]
               : "",
+            migrationType: "MIGRATE",
           },
         ],
       });

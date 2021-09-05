@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 const ONBOARDING_TASK_ID1 = 101
@@ -64,6 +65,7 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update.
 type TaskDatabaseSchemaUpdatePayload struct {
+	MigrationType     db.MigrationType     `json:"migrationType,omitempty"`
 	Statement         string               `json:"statement,omitempty"`
 	RollbackStatement string               `json:"rollbackStatement,omitempty"`
 	VCSPushEvent      *common.VCSPushEvent `json:"pushEvent,omitempty"`
@@ -136,6 +138,7 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	BackupId          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *common.VCSPushEvent
+	MigrationType     db.MigrationType
 }
 
 type TaskFind struct {

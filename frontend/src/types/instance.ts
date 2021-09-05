@@ -67,7 +67,7 @@ export type InstanceMigration = {
 
 export type MigrationEngine = "UI" | "VCS";
 
-export type MigrationType = "BASELINE" | "SQL";
+export type MigrationType = "BASELINE" | "MIGRATE" | "BRANCH";
 
 export type MigrationHistoryPayload = {
   pushEvent?: VCSPushEvent;
