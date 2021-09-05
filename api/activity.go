@@ -139,6 +139,10 @@ type ActivityMemberActivateDeactivatePayload struct {
 
 type ActivityProjectRepositoryPushPayload struct {
 	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
+	// Used by activity table to display info without paying the join cost
+	// IssueId/IssueName only exist if the push event leads to the issue creation.
+	IssueId   int    `json:"issueId,omitempty"`
+	IssueName string `json:"issueName,omitempty"`
 }
 
 type Activity struct {

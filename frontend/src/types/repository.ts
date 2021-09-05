@@ -40,8 +40,9 @@ export type RepositoryCreate = {
   name: string;
   fullPath: string;
   webURL: string;
-  baseDirectory: string;
   branchFilter: string;
+  baseDirectory: string;
+  filePathTemplate: string;
   externalId: string;
   accessToken: string;
   expiresTs: number;

@@ -33,7 +33,7 @@ VALUES
         "http://gitlab.bytebase.com/bytebase-demo/blog",
         "master",
         "bytebase",
-        "{{envname}}/{{version}}__{{dbname}}__{{type}}__{{description}}.sql",
+        "{{ENV_NAME}}/{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}.sql",
         -- Refers to the bytebase-demo/blog
         "13",
         -- Refers to the webhook in bytebase-demo/blog
@@ -80,7 +80,7 @@ VALUES
         "http://gitlab.bytebase.com/bytebase-demo/shop",
         "master",
         "bytebase",
-        "{{envname}}/{{version}}__{{dbname}}__{{type}}__{{description}}.sql",
+        "{{ENV_NAME}}/{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}.sql",
         -- Refers to the bytebase-demo/shop
         "14",
         -- Refers to the webhook in bytebase-demo/shop

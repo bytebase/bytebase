@@ -70,17 +70,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		for _, commit := range pushEvent.CommitList {
 			for _, added := range commit.AddedList {
 				if !strings.HasPrefix(added, repository.BaseDirectory) {
-					s.l.Debug(fmt.Sprintf("Committed file %q is not under base directory: %q. Skip.", added, repository.BaseDirectory))
-					continue
-				}
-				if filepath.Ext(added) != ".sql" {
-					s.l.Debug(fmt.Sprintf("Committed file %q does not have .sql extension. Skip.", added))
+					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", added), zap.String("base_directory", repository.BaseDirectory))
 					continue
 				}
 
 				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 				if err != nil {
-					s.l.Warn("Failed to parse timestamp. Skip", zap.String("file", added), zap.Error(err))
+					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", added), zap.String("timestamp", commit.Timestamp), zap.Error(err))
 				}
 				vcsPushEvent := common.VCSPushEvent{
 					VCSType:            repository.VCS.Type,
@@ -101,35 +97,34 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					},
 				}
 
-				mi, err := db.ParseMigrationInfo(added, repository.BaseDirectory)
-				if err != nil {
-					s.l.Warn("Invalid migration filename. Skip", zap.String("file", added), zap.Error(err))
-
-					// Create a WARNING project activity if the committed file path doesn't match the expected pattern
-					{
-						bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
-							VCSPushEvent: vcsPushEvent,
-						})
-						if marshalErr != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(marshalErr)
-						}
-
-						activityCreate := &api.ActivityCreate{
-							CreatorId:   api.SYSTEM_BOT_ID,
-							ContainerId: repository.ProjectId,
-							Type:        api.ActivityProjectRepositoryPush,
-							Level:       api.ACTIVITY_WARN,
-							Comment:     err.Error(),
-							Payload:     string(bytes),
-						}
-						_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
-						if err != nil {
-							return echo.NewHTTPError(
-								http.StatusInternalServerError,
-								"Failed to create project activity to record mismatch between committed file and expected pattern.").SetInternal(err)
-						}
+				// Create a WARNING project activity if committed file is ignored
+				var createIgnoredFileActivity = func(err error) {
+					s.l.Warn("Ignored committed file", zap.String("file", added), zap.Error(err))
+					bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+						VCSPushEvent: vcsPushEvent,
+					})
+					if marshalErr != nil {
+						s.l.Warn("Failed to construct project activity payload to record ignored repository committed file", zap.Error(marshalErr))
+						return
 					}
 
+					activityCreate := &api.ActivityCreate{
+						CreatorId:   api.SYSTEM_BOT_ID,
+						ContainerId: repository.ProjectId,
+						Type:        api.ActivityProjectRepositoryPush,
+						Level:       api.ACTIVITY_WARN,
+						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
+						Payload:     string(bytes),
+					}
+					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					if err != nil {
+						s.l.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
+					}
+				}
+
+				mi, err := db.ParseMigrationInfo(added, filepath.Join(repository.BaseDirectory, repository.FilePathTemplate))
+				if err != nil {
+					createIgnoredFileActivity(err)
 					continue
 				}
 
@@ -140,13 +135,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					repository.AccessToken,
 				)
 				if err != nil {
-					s.l.Warn("Failed to read added repository file. Skip", zap.String("file", added), zap.Error(err))
+					createIgnoredFileActivity(fmt.Errorf("failed to read file: %w", err))
 					continue
 				}
 
 				b, err := io.ReadAll(resp.Body)
 				if err != nil {
-					s.l.Warn("Failed to read added repository file response. Skip", zap.String("file", added), zap.Error(err))
+					createIgnoredFileActivity(fmt.Errorf("failed to read file response: %w", err))
 					continue
 				}
 				defer resp.Body.Close()
@@ -158,14 +153,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 				databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
 				if err != nil {
-					s.l.Warn("Failed to find database matching added repository file. Skip", zap.String("file", added), zap.Error(err))
+					createIgnoredFileActivity(fmt.Errorf("failed to find database matching committed file database %q", mi.Database))
 					continue
 				} else if len(databaseList) == 0 {
-					s.l.Warn("Project does not own this database. Skip",
-						zap.Int("project_id", repository.ProjectId),
-						zap.String("database_name", mi.Database),
-						zap.String("file", added),
-					)
+					createIgnoredFileActivity(fmt.Errorf("project ID %d does not own committed file database %q", repository.ProjectId, mi.Database))
 					continue
 				}
 
@@ -190,11 +181,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						}
 					}
 					if len(filterdDatabaseList) == 0 {
-						s.l.Warn(fmt.Sprintf("Project ID %d does not contain database %s for environment %s. Skip", repository.ProjectId, mi.Database, mi.Environment),
-							zap.Int("project_id", repository.ProjectId),
-							zap.String("environment", mi.Environment),
-							zap.String("file", added),
-						)
+						createIgnoredFileActivity(fmt.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment))
 						continue
 					}
 				} else {
@@ -220,7 +207,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						if len(databaseList) > 1 {
 							multipleDatabaseForSameEnv = true
 
-							s.l.Warn(fmt.Sprintf("Project ID %d contain multiple database %s for environment %d. Skip", repository.ProjectId, mi.Database, environemntId),
+							s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environemntId),
 								zap.Int("project_id", repository.ProjectId),
 								zap.String("file", added),
 							)
@@ -281,6 +268,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				{
 					bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 						VCSPushEvent: vcsPushEvent,
+						IssueId:      issue.ID,
+						IssueName:    issue.Name,
 					})
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
@@ -291,6 +280,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						ContainerId: repository.ProjectId,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ACTIVITY_INFO,
+						Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
 						Payload:     string(bytes),
 					}
 					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})

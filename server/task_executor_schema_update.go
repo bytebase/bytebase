@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -66,7 +67,18 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		mi.Namespace = databaseName
 		mi.Description = task.Name
 	} else {
-		mi, err = db.ParseMigrationInfo(payload.VCSPushEvent.FileCommit.Added, payload.VCSPushEvent.BaseDirectory)
+		repositoryFind := &api.RepositoryFind{
+			ProjectId: &task.Database.ProjectId,
+		}
+		repository, err := server.RepositoryService.FindRepository(context.Background(), repositoryFind)
+		if err != nil {
+			return true, "", fmt.Errorf("failed to find linked repository for database %q", databaseName)
+		}
+
+		mi, err = db.ParseMigrationInfo(
+			payload.VCSPushEvent.FileCommit.Added,
+			filepath.Join(payload.VCSPushEvent.BaseDirectory, repository.FilePathTemplate),
+		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
 			return true, "", fmt.Errorf("failed to start schema migration, error: %w", err)
