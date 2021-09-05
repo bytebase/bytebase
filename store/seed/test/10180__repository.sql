@@ -9,8 +9,9 @@ INSERT INTO
         name,
         full_path,
         web_url,
-        base_directory,
         branch_filter,
+        base_directory,
+        file_path_template,
         external_id,
         external_webhook_id,
         webhook_url_host,
@@ -30,8 +31,9 @@ VALUES
         "Blog",
         "bytebase-demo/blog",
         "http://gitlab.bytebase.com/bytebase-demo/blog",
-        "bytebase",
         "master",
+        "bytebase",
+        "{{envname}}/{{version}}__{{dbname}}__{{type}}__{{description}}.sql",
         -- Refers to the bytebase-demo/blog
         "13",
         -- Refers to the webhook in bytebase-demo/blog
@@ -54,8 +56,9 @@ INSERT INTO
         name,
         full_path,
         web_url,
-        base_directory,
         branch_filter,
+        base_directory,
+        file_path_template,
         external_id,
         external_webhook_id,
         webhook_url_host,
@@ -75,8 +78,9 @@ VALUES
         "Shop",
         "bytebase-demo/shop",
         "http://gitlab.bytebase.com/bytebase-demo/shop",
-        "bytebase",
         "master",
+        "bytebase",
+        "{{envname}}/{{version}}__{{dbname}}__{{type}}__{{description}}.sql",
         -- Refers to the bytebase-demo/shop
         "14",
         -- Refers to the webhook in bytebase-demo/shop
