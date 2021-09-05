@@ -9,9 +9,9 @@
     }}</a
     >. To make schema changes, a developer would create a migration script
     matching file path pattern
-    <span class="font-medium text-main"
-      >/{{ state.repositoryConfig.baseDirectory }}</span
-    >
+    <span class="font-medium text-main">{{
+      state.repositoryConfig.baseDirectory
+    }}</span>
     <span class="font-medium text-main"
       >/{{ state.repositoryConfig.filePathTemplate }}</span
     >. After the script is review approved and merged into the
@@ -124,6 +124,7 @@ export default {
     const allowUpdate = computed(() => {
       return (
         !isEmpty(state.repositoryConfig.branchFilter) &&
+        !isEmpty(state.repositoryConfig.filePathTemplate) &&
         (props.repository.branchFilter != state.repositoryConfig.branchFilter ||
           props.repository.baseDirectory !=
             state.repositoryConfig.baseDirectory ||

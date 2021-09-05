@@ -83,6 +83,8 @@ export type ActivityMemberActivateDeactivatePayload = {
 
 export type ActivityProjectRepositoryPushPayload = {
   pushEvent: VCSPushEvent;
+  issueId?: number;
+  issueName?: string;
 };
 
 export type ActionPayloadType =

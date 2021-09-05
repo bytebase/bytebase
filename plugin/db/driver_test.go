@@ -8,128 +8,151 @@ import (
 
 func TestParseMigrationInfo(t *testing.T) {
 	type test struct {
-		fullPath string
-		baseDir  string
-		want     MigrationInfo
-		wantErr  string
+		filePath         string
+		filePathTemplate string
+		want             MigrationInfo
+		wantErr          string
 	}
 
 	tests := []test{
 		{
-			fullPath: "001foo__db1",
-			baseDir:  "",
+			filePath:         "001foo__db1",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
-				Type:        "SQL",
+				Engine:      VCS,
+				Type:        Migrate,
 				Description: "Create db1 migration",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "bytebase/001foo__db1",
-			baseDir:  "bytebase",
+			filePath:         "1.2.3__db foo_+-=/_#?!$.",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}",
+			want: MigrationInfo{
+				Version:     "1.2.3",
+				Namespace:   "db foo_+-=/_#?!$.",
+				Database:    "db foo_+-=/_#?!$.",
+				Environment: "",
+				Engine:      VCS,
+				Type:        Migrate,
+				Description: "Create db foo_+-=/_#?!$. migration",
+				Creator:     "",
+			},
+			wantErr: "",
+		},
+		{
+			filePath:         "bytebase/001foo__db1",
+			filePathTemplate: "bytebase/{{VERSION}}__{{DB_NAME}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
-				Type:        "SQL",
+				Engine:      VCS,
+				Type:        Migrate,
 				Description: "Create db1 migration",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "bytebase/dev/001foo__db1",
-			baseDir:  "dev",
+			filePath:         "bytebase/dev/001foo__db1",
+			filePathTemplate: "bytebase/{{ENV_NAME}}/{{VERSION}}__{{DB_NAME}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "dev",
-				Type:        "SQL",
+				Engine:      VCS,
+				Type:        Migrate,
 				Description: "Create db1 migration",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "bytebase/dev/001foo__db1",
-			baseDir:  "",
-			want: MigrationInfo{
-				Version:     "001foo",
-				Namespace:   "db1",
-				Database:    "db1",
-				Environment: "dev",
-				Type:        "SQL",
-				Description: "Create db1 migration",
-				Creator:     "",
-			},
-			wantErr: "",
-		},
-		{
-			fullPath: "001foo__db1__create_t1",
-			baseDir:  "",
+			filePath:         "001foo__db1__create_t1",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{DESCRIPTION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
-				Type:        "SQL",
+				Engine:      VCS,
+				Type:        Migrate,
 				Description: "Create t1",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "001foo__db1__baseline",
-			baseDir:  "",
+			filePath:         "001foo__db1__migrate",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
-				Type:        "BASELINE",
+				Engine:      VCS,
+				Type:        Migrate,
+				Description: "Create db1 migration",
+				Creator:     "",
+			},
+			wantErr: "",
+		},
+		{
+			filePath:         "001foo__db1__baseline",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}",
+			want: MigrationInfo{
+				Version:     "001foo",
+				Namespace:   "db1",
+				Database:    "db1",
+				Environment: "",
+				Engine:      VCS,
+				Type:        Baseline,
 				Description: "Create db1 baseline",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "001foo__db1__baseline__create_t1",
-			baseDir:  "",
+			filePath:         "001foo__db1__baseline__create_t1",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
-				Type:        "BASELINE",
+				Engine:      VCS,
+				Type:        Baseline,
 				Description: "Create t1",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "001foo__db_shop1__baseline__create_t1",
-			baseDir:  "",
+			filePath:         "001foo__db_shop1__baseline__create_t1",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db_shop1",
 				Database:    "db_shop1",
 				Environment: "",
-				Type:        "BASELINE",
+				Engine:      VCS,
+				Type:        Baseline,
 				Description: "Create t1",
 				Creator:     "",
 			},
 			wantErr: "",
 		},
 		{
-			fullPath: "001foo_db",
-			baseDir:  "",
+			filePath:         "db",
+			filePathTemplate: "{{VERSION}}__{{DB_NAME}}",
 			want: MigrationInfo{
 				Version:     "",
 				Namespace:   "",
@@ -139,21 +162,21 @@ func TestParseMigrationInfo(t *testing.T) {
 				Description: "",
 				Creator:     "",
 			},
-			wantErr: "invalid filename format",
+			wantErr: "does not match file path template",
 		},
 	}
 
 	for _, tc := range tests {
-		mi, err := ParseMigrationInfo(tc.fullPath, tc.baseDir)
+		mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate)
 		if err != nil {
 			if tc.wantErr == "" {
-				t.Errorf("fullPath=%s, baseDir=%s: expected no error, got %w", tc.fullPath, tc.baseDir, err)
+				t.Errorf("filePath=%s, filePathTemplate=%s: expected no error, got %w", tc.filePath, tc.filePathTemplate, err)
 			} else if !strings.Contains(err.Error(), tc.wantErr) {
-				t.Errorf("fullPath=%s, baseDir=%s: expected error %s, got %w", tc.fullPath, tc.baseDir, tc.wantErr, err)
+				t.Errorf("filePath=%s, filePathTemplate=%s: expected error %s, got %w", tc.filePath, tc.filePathTemplate, tc.wantErr, err)
 			}
 		} else {
 			if !reflect.DeepEqual(tc.want, *mi) {
-				t.Errorf("fullPath=%s, baseDir=%s: expected %+v, got %+v", tc.fullPath, tc.baseDir, tc.want, *mi)
+				t.Errorf("filePath=%s, filePathTemplate=%s: expected %+v, got %+v", tc.filePath, tc.filePathTemplate, tc.want, *mi)
 			}
 		}
 

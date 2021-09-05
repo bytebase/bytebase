@@ -72,18 +72,43 @@
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ activityName(activity.type) }}
-        <template v-if="activityLink(activity)">
+        <template v-if="activityTypeLink(activity)">
           <a
-            :href="activityLink(activity).path"
+            v-if="activityTypeLink(activity).external"
+            :href="activityTypeLink(activity).path"
             target="_blank"
             class="normal-link"
           >
-            {{ activityLink(activity).title }}
+            {{ activityTypeLink(activity).title }}
           </a>
+          <router-link
+            v-else
+            class="normal-link"
+            :to="activityTypeLink(activity).path"
+          >
+            {{ activityTypeLink(activity).title }}
+          </router-link>
         </template>
       </BBTableCell>
       <BBTableCell class="w-24">
         {{ activity.comment }}
+        <template v-if="activityCommentLink(activity)">
+          <a
+            v-if="activityCommentLink(activity).external"
+            :href="activityCommentLink(activity).path"
+            target="_blank"
+            class="normal-link"
+          >
+            {{ activityCommentLink(activity).title }}
+          </a>
+          <router-link
+            v-else
+            class="normal-link"
+            :to="activityCommentLink(activity).path"
+          >
+            {{ activityCommentLink(activity).title }}
+          </router-link>
+        </template>
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ humanizeTs(activity.createdTs) }}
@@ -102,11 +127,12 @@
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { ActivityProjectRepositoryPushPayload, Activity } from "../types";
-import { activityName } from "../utils";
+import { activityName, issueSlug } from "../utils";
 
 type Link = {
   title: string;
   path: string;
+  external: boolean;
 };
 
 const COLUMN_LIST: BBTableColumn[] = [
@@ -137,7 +163,7 @@ export default {
     },
   },
   setup(props, ctx) {
-    const activityLink = (activity: Activity): Link | undefined => {
+    const activityTypeLink = (activity: Activity): Link | undefined => {
       switch (activity.type) {
         case "bb.project.repository.push": {
           const payload =
@@ -145,7 +171,26 @@ export default {
           return {
             title: payload.pushEvent.fileCommit.id.substring(0, 7),
             path: payload.pushEvent.fileCommit.url,
+            external: true,
           };
+        }
+      }
+      return undefined;
+    };
+
+    const activityCommentLink = (activity: Activity): Link | undefined => {
+      switch (activity.type) {
+        case "bb.project.repository.push": {
+          const payload =
+            activity.payload as ActivityProjectRepositoryPushPayload;
+          if (payload.issueId && payload.issueName) {
+            return {
+              title: `issue/${payload.issueId}`,
+              path: `/issue/${issueSlug(payload.issueName!, payload.issueId!)}`,
+              external: false,
+            };
+          }
+          break;
         }
       }
       return undefined;
@@ -154,7 +199,8 @@ export default {
     return {
       activityName,
       COLUMN_LIST,
-      activityLink,
+      activityTypeLink,
+      activityCommentLink,
     };
   },
 };

@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -142,56 +142,77 @@ type MigrationInfo struct {
 	Payload     string
 }
 
-// ParseMigrationInfo derives MigrationInfo from fullPath and baseDir
-// filepath is the full file path in the repository. The format is {{baseDir}}/[{{subdir}}/]/{{filename}}
-// Expected filename example, {{version}} can be arbitrary string without "__"
-// - {{version}}__db1 (a normal migration without description)
-// - {{version}}__db1__create_t1 (a normal migration with "create t1" as description)
-// - {{version}}__db1__baseline  (a baseline migration without description)
-// - {{version}}__db1__baseline__create_t1  (a baseline migration with "create t1" as description)
-func ParseMigrationInfo(fullPath string, baseDir string) (*MigrationInfo, error) {
-	filename := filepath.Base(fullPath)
-	parentDir := filepath.Base(filepath.Clean(filepath.Dir(strings.TrimPrefix(fullPath, baseDir))))
-	if parentDir == "." || parentDir == "/" {
-		parentDir = ""
+// ParseMigrationInfo matches filePath against filePathTemplate
+// If filePath matches, then it will derive MigrationInfo from the filePath.
+// Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
+func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInfo, error) {
+	placeholderList := []string{
+		"ENV_NAME",
+		"VERSION",
+		"DB_NAME",
+		"TYPE",
+		"DESCRIPTION",
 	}
-	parts := strings.Split(strings.TrimSuffix(filename, ".sql"), "__")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid filename format, got %v, want {{version}}__{{dbname}}[__{{type}}][__{{description}}].sql", filename)
+	filePathRegex := filePathTemplate
+	for _, placeholder := range placeholderList {
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+	}
+	myRegex, err := regexp.Compile(filePathRegex)
+	if err != nil {
+		return nil, fmt.Errorf("invalid file path template: %q", filePathTemplate)
+	}
+	if !myRegex.MatchString(filePath) {
+		return nil, fmt.Errorf("file path %q does not match file path template %q", filePath, filePathTemplate)
 	}
 
 	mi := &MigrationInfo{
-		Engine:      VCS,
-		Version:     parts[0],
-		Namespace:   parts[1],
-		Database:    parts[1],
-		Environment: parentDir,
+		Engine: VCS,
+		Type:   Migrate,
+	}
+	matchList := myRegex.FindStringSubmatch(filePath)
+	for _, placeholder := range placeholderList {
+		index := myRegex.SubexpIndex(placeholder)
+		if index >= 0 {
+			if placeholder == "ENV_NAME" {
+				mi.Environment = matchList[index]
+			} else if placeholder == "VERSION" {
+				mi.Version = matchList[index]
+			} else if placeholder == "DB_NAME" {
+				mi.Namespace = matchList[index]
+				mi.Database = matchList[index]
+			} else if placeholder == "TYPE" {
+				if matchList[index] == "baseline" {
+					mi.Type = Baseline
+				} else if matchList[index] == "migrate" {
+					mi.Type = Migrate
+				} else {
+					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'baseline' or 'migrate'", filePath, matchList[index])
+				}
+			} else if placeholder == "DESCRIPTION" {
+				mi.Description = matchList[index]
+			}
+		}
 	}
 
-	migrationType := Migrate
-	description := ""
-	if len(parts) > 2 {
-		if parts[2] == "baseline" {
-			migrationType = Baseline
-			if len(parts) > 3 {
-				description = strings.Join(parts[3:], " ")
-			}
-		} else {
-			description = strings.Join(parts[2:], " ")
-		}
+	if mi.Version == "" {
+		return nil, fmt.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
 	}
-	if description == "" {
-		if migrationType == Baseline {
-			description = fmt.Sprintf("Create %s baseline", mi.Database)
-		} else {
-			description = fmt.Sprintf("Create %s migration", mi.Database)
-		}
+	if mi.Namespace == "" {
+		return nil, fmt.Errorf("file path %q does not contain {{DB_NAME}}, configured file path template %q", filePath, filePathTemplate)
 	}
-	mi.Type = migrationType
-	// Replace _ with space
-	description = strings.ReplaceAll(description, "_", " ")
-	// Capitalize first letter
-	mi.Description = strings.ToUpper(description[:1]) + description[1:]
+
+	if mi.Description == "" {
+		if mi.Type == Baseline {
+			mi.Description = fmt.Sprintf("Create %s baseline", mi.Database)
+		} else {
+			mi.Description = fmt.Sprintf("Create %s migration", mi.Database)
+		}
+	} else {
+		// Replace _ with space
+		mi.Description = strings.ReplaceAll(mi.Description, "_", " ")
+		// Capitalize first letter
+		mi.Description = strings.ToUpper(mi.Description[:1]) + mi.Description[1:]
+	}
 
 	return mi, nil
 }

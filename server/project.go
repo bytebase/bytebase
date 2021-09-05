@@ -148,6 +148,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
 
+		if err := validateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
+		}
+
 		vcsFind := &api.VCSFind{
 			ID: &repositoryCreate.VCSId,
 		}
@@ -266,8 +270,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch repository request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
 		}
+
+		if repositoryPatch.FilePathTemplate != nil {
+			if err := validateRepositoryFilePathTemplate(*repositoryPatch.FilePathTemplate); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted patch linked repository request: %s", err.Error()))
+			}
+		}
+
 		// Remove enclosing /
 		if repositoryPatch.BaseDirectory != nil {
 			baseDir := strings.Trim(*repositoryPatch.BaseDirectory, "/")
@@ -450,5 +461,18 @@ func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Pr
 		return err
 	}
 
+	return nil
+}
+
+func validateRepositoryFilePathTemplate(filePathTemplate string) error {
+	if !strings.Contains(filePathTemplate, "{{VERSION}}") {
+		return fmt.Errorf("missing {{VERSION}} in file path template")
+	}
+	if !strings.Contains(filePathTemplate, "{{DB_NAME}}") {
+		return fmt.Errorf("missing {{DB_NAME}} in file path template")
+	}
+	if !strings.Contains(filePathTemplate, "{{TYPE}}") {
+		return fmt.Errorf("missing {{TYPE}} in file path template")
+	}
 	return nil
 }
