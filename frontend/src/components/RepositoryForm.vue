@@ -97,9 +97,8 @@
         {{ REQUIRED_PLACEHOLDER }}. Optional placeholders:
         {{ OPTIONAL_PLACEHOLDER }}
       </div>
-      <div class="mt-2 textinfolabel">Example:</div>
       <div class="mt-2 textinfolabel">
-        File path for normal migration type:
+        • File path example for normal migration type:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
@@ -109,7 +108,7 @@
         }}
       </div>
       <div class="mt-2 textinfolabel">
-        File path for baseline migration type:
+        • File path example for baseline migration type:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
