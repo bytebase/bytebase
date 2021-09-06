@@ -25,7 +25,8 @@ const (
 	ActivityMemberDeactivate ActivityType = "bb.member.deactivate"
 
 	// Project related
-	ActivityProjectRepositoryPush ActivityType = "bb.project.repository.push"
+	ActivityProjectRepositoryPush   ActivityType = "bb.project.repository.push"
+	ActivityProjectDatabaseTransfer ActivityType = "bb.project.database.transfer"
 )
 
 func (e ActivityType) String() string {
@@ -50,6 +51,8 @@ func (e ActivityType) String() string {
 		return "bb.member.deactivate"
 	case ActivityProjectRepositoryPush:
 		return "bb.project.repository.push"
+	case ActivityProjectDatabaseTransfer:
+		return "bb.project.database.transfer"
 	}
 	return "bb.activity.unknown"
 }
@@ -143,6 +146,12 @@ type ActivityProjectRepositoryPushPayload struct {
 	// IssueId/IssueName only exist if the push event leads to the issue creation.
 	IssueId   int    `json:"issueId,omitempty"`
 	IssueName string `json:"issueName,omitempty"`
+}
+
+type ActivityProjectDatabaseTransferPayload struct {
+	DatabaseId int `json:"databaseId,omitempty"`
+	// Used by activity table to display info without paying the join cost
+	DatabaseName string `json:"databaseName,omitempty"`
 }
 
 type Activity struct {
