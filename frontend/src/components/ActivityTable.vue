@@ -126,7 +126,11 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { ActivityProjectRepositoryPushPayload, Activity } from "../types";
+import {
+  ActivityProjectRepositoryPushPayload,
+  Activity,
+  ActivityProjectDatabaseTransferPayload,
+} from "../types";
 import { activityName, issueSlug } from "../utils";
 
 type Link = {
@@ -172,6 +176,15 @@ export default {
             title: payload.pushEvent.fileCommit.id.substring(0, 7),
             path: payload.pushEvent.fileCommit.url,
             external: true,
+          };
+        }
+        case "bb.project.database.transfer": {
+          const payload =
+            activity.payload as ActivityProjectDatabaseTransferPayload;
+          return {
+            title: payload.databaseName,
+            path: `/db/${payload.databaseId}`,
+            external: false,
           };
         }
       }

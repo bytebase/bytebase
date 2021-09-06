@@ -19,7 +19,9 @@ export type MemberActivityType =
   | "bb.member.activate"
   | "bb.member.deactivate";
 
-export type ProjectActivityType = "bb.project.repository.push";
+export type ProjectActivityType =
+  | "bb.project.repository.push"
+  | "bb.project.database.transfer";
 
 export type ActivityType =
   | IssueActivityType
@@ -87,6 +89,11 @@ export type ActivityProjectRepositoryPushPayload = {
   issueName?: string;
 };
 
+export type ActivityProjectDatabaseTransferPayload = {
+  databaseId: number;
+  databaseName: string;
+};
+
 export type ActionPayloadType =
   | ActivityIssueCreatePayload
   | ActivityIssueCommentCreatePayload
@@ -96,7 +103,8 @@ export type ActionPayloadType =
   | ActivityMemberCreatePayload
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload
-  | ActivityProjectRepositoryPushPayload;
+  | ActivityProjectRepositoryPushPayload
+  | ActivityProjectDatabaseTransferPayload;
 
 export type Activity = {
   id: ActivityId;

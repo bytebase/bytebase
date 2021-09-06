@@ -136,6 +136,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
 		}
 
+		// If we are transferring the database to a different project, then we create a project activity in both
+		// the old project and new project.
+		var existingDatabase *api.Database
+		if databasePatch.ProjectId != nil {
+			existingDatabase, err = s.DatabaseService.FindDatabase(context.Background(), &api.DatabaseFind{
+				ID: &databasePatch.ID,
+			})
+			if err != nil {
+				if common.ErrorCode(err) == common.ENOTFOUND {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
+			}
+		}
+
 		database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.ENOTFOUND {
@@ -146,6 +161,59 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated database relationship: %v", database.Name)).SetInternal(err)
+		}
+
+		// Create transferring database project activity.
+		if databasePatch.ProjectId != nil {
+			bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
+				DatabaseId:   database.ID,
+				DatabaseName: database.Name,
+			})
+			if err == nil {
+				existingDatabase.Project, err = s.ComposeProjectlById(context.Background(), existingDatabase.ProjectId)
+				if err == nil {
+					activityCreate := &api.ActivityCreate{
+						CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+						ContainerId: existingDatabase.ProjectId,
+						Type:        api.ActivityProjectDatabaseTransfer,
+						Level:       api.ACTIVITY_INFO,
+						Comment: fmt.Sprintf("Transferred out database %q to project %q.",
+							database.Name, database.Project.Name),
+						Payload: string(bytes),
+					}
+					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+				}
+
+				if err != nil {
+					s.l.Warn("Failed to create project activity after transferring database",
+						zap.Int("database_id", database.ID),
+						zap.String("database_name", database.Name),
+						zap.Int("old_project_id", existingDatabase.ProjectId),
+						zap.Int("new_project_id", database.ProjectId),
+						zap.Error(err))
+				}
+
+				{
+					activityCreate := &api.ActivityCreate{
+						CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+						ContainerId: database.ProjectId,
+						Type:        api.ActivityProjectDatabaseTransfer,
+						Level:       api.ACTIVITY_INFO,
+						Comment: fmt.Sprintf("Transferred in database %q from project %q.",
+							existingDatabase.Name, existingDatabase.Project.Name),
+						Payload: string(bytes),
+					}
+					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					if err != nil {
+						s.l.Warn("Failed to create project activity after transferring database",
+							zap.Int("database_id", database.ID),
+							zap.String("database_name", database.Name),
+							zap.Int("old_project_id", existingDatabase.ProjectId),
+							zap.Int("new_project_id", database.ProjectId),
+							zap.Error(err))
+					}
+				}
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

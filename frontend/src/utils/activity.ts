@@ -35,6 +35,8 @@ export function activityName(type: ActivityType): string {
       return "Deactivate member";
     case "bb.project.repository.push":
       return "Repository push event";
+    case "bb.project.database.transfer":
+      return "Database transfer";
   }
 }
 
