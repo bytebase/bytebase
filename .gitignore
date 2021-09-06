@@ -25,3 +25,8 @@ data
 
 # build folder
 bytebase-build
+
+# IntelliJ (Goland, IDEA) folder
+.idea
+
+.DS_Store
