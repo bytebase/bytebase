@@ -51,7 +51,7 @@ import { projectSlug } from "../utils";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
-  "{{ENV_NAME}}/{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}.sql";
+  "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
 const CHOOSE_REPOSITORY_STEP = 1;
