@@ -16,8 +16,8 @@ func TestParseMigrationInfo(t *testing.T) {
 
 	tests := []test{
 		{
-			filePath:         "001foo__db1",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}",
+			filePath:         "db1__001foo",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -31,8 +31,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "1.2.3__db foo_+-=/_#?!$.",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}",
+			filePath:         "db foo_+-=/_#?!$.__1.2.3",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
 				Version:     "1.2.3",
 				Namespace:   "db foo_+-=/_#?!$.",
@@ -46,8 +46,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "bytebase/001foo__db1",
-			filePathTemplate: "bytebase/{{VERSION}}__{{DB_NAME}}",
+			filePath:         "bytebase/db1__001foo",
+			filePathTemplate: "bytebase/{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -61,8 +61,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "bytebase/dev/001foo__db1",
-			filePathTemplate: "bytebase/{{ENV_NAME}}/{{VERSION}}__{{DB_NAME}}",
+			filePath:         "bytebase/dev/db1__001foo",
+			filePathTemplate: "bytebase/{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -76,8 +76,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "001foo__db1__create_t1",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{DESCRIPTION}}",
+			filePath:         "db1__001foo__create_t1",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{DESCRIPTION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -91,8 +91,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "001foo__db1__migrate",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}",
+			filePath:         "db1__001foo__migrate",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -106,8 +106,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "001foo__db1__baseline",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}",
+			filePath:         "db1__001foo__baseline",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -121,8 +121,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "001foo__db1__baseline__create_t1",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}",
+			filePath:         "db1__001foo__baseline__create_t1",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
@@ -136,8 +136,8 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "001foo__db_shop1__baseline__create_t1",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}__{{TYPE}}__{{DESCRIPTION}}",
+			filePath:         "db_shop1__001foo__baseline__create_t1",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}",
 			want: MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db_shop1",
@@ -152,7 +152,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		},
 		{
 			filePath:         "db",
-			filePathTemplate: "{{VERSION}}__{{DB_NAME}}",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
 				Version:     "",
 				Namespace:   "",

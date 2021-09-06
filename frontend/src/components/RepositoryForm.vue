@@ -126,7 +126,7 @@ import { reactive } from "@vue/reactivity";
 import { PropType } from "@vue/runtime-core";
 import { ExternalRepositoryInfo, RepositoryConfig, VCSType } from "../types";
 
-const REQUIRED_PLACEHOLDER = "{{VERSION}}, {{DB_NAME}}, {{TYPE}}";
+const REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}, {{DESCRIPTION}}";
 
 interface LocalState {}
