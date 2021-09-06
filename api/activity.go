@@ -27,6 +27,9 @@ const (
 	// Project related
 	ActivityProjectRepositoryPush   ActivityType = "bb.project.repository.push"
 	ActivityProjectDatabaseTransfer ActivityType = "bb.project.database.transfer"
+	ActivityProjectMemberCreate     ActivityType = "bb.project.member.create"
+	ActivityProjectMemberDelete     ActivityType = "bb.project.member.delete"
+	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 )
 
 func (e ActivityType) String() string {
@@ -53,6 +56,12 @@ func (e ActivityType) String() string {
 		return "bb.project.repository.push"
 	case ActivityProjectDatabaseTransfer:
 		return "bb.project.database.transfer"
+	case ActivityProjectMemberCreate:
+		return "bb.project.member.create"
+	case ActivityProjectMemberDelete:
+		return "bb.project.member.delete"
+	case ActivityProjectMemberRoleUpdate:
+		return "bb.project.member.role.update"
 	}
 	return "bb.activity.unknown"
 }

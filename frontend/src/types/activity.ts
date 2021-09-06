@@ -21,12 +21,48 @@ export type MemberActivityType =
 
 export type ProjectActivityType =
   | "bb.project.repository.push"
-  | "bb.project.database.transfer";
+  | "bb.project.database.transfer"
+  | "bb.project.member.create"
+  | "bb.project.member.delete"
+  | "bb.project.member.role.update";
 
 export type ActivityType =
   | IssueActivityType
   | MemberActivityType
   | ProjectActivityType;
+
+export function activityName(type: ActivityType): string {
+  switch (type) {
+    case "bb.issue.create":
+      return "Create issue";
+    case "bb.issue.comment.create":
+      return "Create comment";
+    case "bb.issue.field.update":
+      return "Update issue field";
+    case "bb.issue.status.update":
+      return "Update issue status";
+    case "bb.pipeline.task.status.update":
+      return "Update issue task status";
+    case "bb.member.create":
+      return "Create member";
+    case "bb.member.role.update":
+      return "Update role";
+    case "bb.member.activate":
+      return "Activate member";
+    case "bb.member.deactivate":
+      return "Deactivate member";
+    case "bb.project.repository.push":
+      return "Repository push event";
+    case "bb.project.database.transfer":
+      return "Database transfer";
+    case "bb.project.member.create":
+      return "Add project member";
+    case "bb.project.member.delete":
+      return "Delete project member";
+    case "bb.project.member.role.update":
+      return "Change project member role";
+  }
+}
 
 export type ActivityLevel = "INFO" | "WARN" | "ERROR";
 

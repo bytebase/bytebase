@@ -61,6 +61,24 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 	return list, nil
 }
 
+func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) (*api.ProjectMember, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := findProjectMemberList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	} else if len(list) == 0 {
+		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project member not found: %+v", find)}
+	} else if len(list) > 1 {
+		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d project members with filter %+v, expect 1", len(list), find)}
+	}
+	return list[0], nil
+}
+
 // PatchProjectMember updates an existing projectMember by ID.
 // Returns ENOTFOUND if projectMember does not exist.
 func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {

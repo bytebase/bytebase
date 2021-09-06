@@ -127,11 +127,12 @@
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import {
-  ActivityProjectRepositoryPushPayload,
   Activity,
+  ActivityProjectRepositoryPushPayload,
   ActivityProjectDatabaseTransferPayload,
+  activityName,
 } from "../types";
-import { activityName, issueSlug } from "../utils";
+import { issueSlug } from "../utils";
 
 type Link = {
   title: string;

@@ -4,40 +4,12 @@ import {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
-  ActivityType,
 } from "../types";
 
 let store: Store<any>;
 
 export function registerStoreWithActivityUtil(theStore: Store<any>) {
   store = theStore;
-}
-
-export function activityName(type: ActivityType): string {
-  switch (type) {
-    case "bb.issue.create":
-      return "Create issue";
-    case "bb.issue.comment.create":
-      return "Create comment";
-    case "bb.issue.field.update":
-      return "Update issue field";
-    case "bb.issue.status.update":
-      return "Update issue status";
-    case "bb.pipeline.task.status.update":
-      return "Update issue task status";
-    case "bb.member.create":
-      return "Create member";
-    case "bb.member.role.update":
-      return "Update role";
-    case "bb.member.activate":
-      return "Activate member";
-    case "bb.member.deactivate":
-      return "Deactivate member";
-    case "bb.project.repository.push":
-      return "Repository push event";
-    case "bb.project.database.transfer":
-      return "Database transfer";
-  }
 }
 
 export function issueActivityActionSentence(activity: Activity): string {
