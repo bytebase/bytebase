@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
@@ -39,6 +40,26 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created project membership relationship").SetInternal(err)
 		}
 
+		{
+			activityCreate := &api.ActivityCreate{
+				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+				ContainerId: projectId,
+				Type:        api.ActivityProjectMemberCreate,
+				Level:       api.ACTIVITY_INFO,
+				Comment: fmt.Sprintf("Granted %s to %s (%s).",
+					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
+			}
+			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			if err != nil {
+				s.l.Warn("Failed to create project activity after creating member",
+					zap.Int("project_id", projectId),
+					zap.Int("principal_id", projectMember.Principal.ID),
+					zap.String("principal_name", projectMember.Principal.Name),
+					zap.String("role", projectMember.Role),
+					zap.Error(err))
+			}
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create projectMember response").SetInternal(err)
@@ -47,7 +68,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectId/member/:memberId", func(c echo.Context) error {
-		_, err := strconv.Atoi(c.Param("projectId"))
+		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
 		}
@@ -55,6 +76,14 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		id, err := strconv.Atoi(c.Param("memberId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberId"))).SetInternal(err)
+		}
+
+		existingProjectMember, err := s.ProjectMemberService.FindProjectMember(context.Background(), &api.ProjectMemberFind{ID: &id})
+		if err != nil {
+			if common.ErrorCode(err) == common.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
 		}
 
 		projectMemberPatch := &api.ProjectMemberPatch{
@@ -77,6 +106,27 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project membership relationship").SetInternal(err)
 		}
 
+		{
+			activityCreate := &api.ActivityCreate{
+				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+				ContainerId: projectId,
+				Type:        api.ActivityProjectMemberRoleUpdate,
+				Level:       api.ACTIVITY_INFO,
+				Comment: fmt.Sprintf("Changed %s (%s) from %s to %s.",
+					projectMember.Principal.Name, projectMember.Principal.Email, existingProjectMember.Role, projectMember.Role),
+			}
+			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			if err != nil {
+				s.l.Warn("Failed to create project activity after updating member role",
+					zap.Int("project_id", projectId),
+					zap.Int("principal_id", projectMember.Principal.ID),
+					zap.String("principal_name", projectMember.Principal.Name),
+					zap.String("old_role", existingProjectMember.Role),
+					zap.String("new_role", projectMember.Role),
+					zap.Error(err))
+			}
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project membership change response: %v", id)).SetInternal(err)
@@ -85,7 +135,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/project/:projectId/member/:memberId", func(c echo.Context) error {
-		_, err := strconv.Atoi(c.Param("projectId"))
+		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
 		}
@@ -93,6 +143,14 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		id, err := strconv.Atoi(c.Param("memberId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberId"))).SetInternal(err)
+		}
+
+		projectMember, err := s.ProjectMemberService.FindProjectMember(context.Background(), &api.ProjectMemberFind{ID: &id})
+		if err != nil {
+			if common.ErrorCode(err) == common.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
 		}
 
 		projectMemberDelete := &api.ProjectMemberDelete{
@@ -105,6 +163,29 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
+		}
+
+		{
+			projectMember.Principal, err = s.ComposePrincipalById(context.Background(), projectMember.PrincipalId)
+			if err == nil {
+				activityCreate := &api.ActivityCreate{
+					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
+					ContainerId: projectId,
+					Type:        api.ActivityProjectMemberDelete,
+					Level:       api.ACTIVITY_INFO,
+					Comment: fmt.Sprintf("Revoked %s from %s (%s).",
+						projectMember.Role, projectMember.Principal.Name, projectMember.Principal.Email),
+				}
+				_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			}
+			if err != nil {
+				s.l.Warn("Failed to create project activity after deleting member",
+					zap.Int("project_id", projectId),
+					zap.Int("principal_id", projectMember.Principal.ID),
+					zap.String("principal_name", projectMember.Principal.Name),
+					zap.String("role", projectMember.Role),
+					zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
