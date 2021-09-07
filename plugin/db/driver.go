@@ -238,6 +238,7 @@ type MigrationHistory struct {
 	Version           string
 	Description       string
 	Statement         string
+	Schema            string
 	ExecutionDuration int
 	IssueId           string
 	Payload           string
@@ -277,7 +278,7 @@ type Driver interface {
 	NeedsSetupMigration(ctx context.Context) (bool, error)
 	// Create or upgrade migration related tables
 	SetupMigrationIfNeeded(ctx context.Context) error
-	// Execute migration will apply the statement and record the migration history on success.
+	// Execute migration will apply the statement and record the migration history, the schema after migration on success.
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)

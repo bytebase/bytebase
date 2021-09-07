@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"database/sql"
 	_ "embed"
@@ -535,7 +536,14 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		}
 	}
 
-	// Phase 3 - Record migration
+	// Phase 3 - Dump the schema after migration
+	var buf bytes.Buffer
+	err = dumpTxn(ctx, tx, m.Database, &buf, true /*schemaOnly*/)
+	if err != nil {
+		return formatError(err)
+	}
+
+	// Phase 4 - Record migration
 	const query = `
 		INSERT INTO bytebase.migration_history (
 			created_by,
@@ -549,11 +557,12 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			version,
 			description,
 			statement,
+			` + "`schema`," + `
 			execution_duration,
 			issue_id,
 			payload
 		)
-		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err = tx.ExecContext(ctx, query,
 		m.Creator,
@@ -565,6 +574,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		m.Version,
 		m.Description,
 		statement,
+		buf.String(),
 		time.Now().Unix()-startedTs,
 		m.IssueId,
 		m.Payload,
@@ -607,6 +617,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 			version,
 			description,
 		    statement,
+			` + "`schema`," + `
 		    execution_duration,
 			issue_id,
 			payload
@@ -640,6 +651,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 			&history.Version,
 			&history.Description,
 			&history.Statement,
+			&history.Schema,
 			&history.ExecutionDuration,
 			&history.IssueId,
 			&history.Payload,
@@ -776,7 +788,7 @@ func formatError(err error) error {
 }
 
 func formatErrorWithQuery(err error, query string) error {
-	return fmt.Errorf("failed to execute \"%s\"\n\n%w", query, err)
+	return fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query)
 }
 
 // Dump and restore
@@ -837,6 +849,70 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
+	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	s := ""
+	delimiter := false
+	for sc.Scan() {
+		line := sc.Text()
+
+		execute := false
+		switch {
+		case s == "" && line == "":
+			continue
+		case strings.HasPrefix(line, "--"):
+			continue
+		case line == "DELIMITER ;;":
+			delimiter = true
+			continue
+		case line == "DELIMITER ;" && delimiter:
+			delimiter = false
+			execute = true
+		case strings.HasSuffix(line, ";"):
+			s = s + line + "\n"
+			if !delimiter {
+				execute = true
+			}
+		default:
+			s = s + line + "\n"
+			continue
+		}
+		if execute {
+			_, err := txn.Exec(s)
+			if err != nil {
+				return fmt.Errorf("execute query %q failed: %v", s, err)
+			}
+			s = ""
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
 	dbNames, err := getDatabases(txn)
 	if err != nil {
@@ -937,62 +1013,6 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 				return err
 			}
 		}
-	}
-
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	s := ""
-	delimiter := false
-	for sc.Scan() {
-		line := sc.Text()
-
-		execute := false
-		switch {
-		case s == "" && line == "":
-			continue
-		case strings.HasPrefix(line, "--"):
-			continue
-		case line == "DELIMITER ;;":
-			delimiter = true
-			continue
-		case line == "DELIMITER ;" && delimiter:
-			delimiter = false
-			execute = true
-		case strings.HasSuffix(line, ";"):
-			s = s + line + "\n"
-			if !delimiter {
-				execute = true
-			}
-		default:
-			s = s + line + "\n"
-			continue
-		}
-		if execute {
-			_, err := txn.Exec(s)
-			if err != nil {
-				return fmt.Errorf("execute query %q failed: %v", s, err)
-			}
-			s = ""
-		}
-	}
-	if err := sc.Err(); err != nil {
-		return err
-	}
-
-	if err := txn.Commit(); err != nil {
-		return err
 	}
 
 	return nil
