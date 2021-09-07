@@ -1,4 +1,4 @@
-package db
+package pg
 
 import (
 	"bufio"
@@ -8,32 +8,33 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bytebase/bytebase/plugin/db"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
 var (
-	_ Driver = (*PostgresDriver)(nil)
+	_ db.Driver = (*PostgresDriver)(nil)
 )
 
 func init() {
-	register(Postgres, newPostgresDriver)
+	db.Register(db.Postgres, newPostgresDriver)
 }
 
 type PostgresDriver struct {
 	l             *zap.Logger
-	connectionCtx ConnectionContext
+	connectionCtx db.ConnectionContext
 
 	db *sql.DB
 }
 
-func newPostgresDriver(config DriverConfig) Driver {
+func newPostgresDriver(config db.DriverConfig) db.Driver {
 	return &PostgresDriver{
 		l: config.Logger,
 	}
 }
 
-func (driver *PostgresDriver) open(config ConnectionConfig, ctx ConnectionContext) (Driver, error) {
+func (driver *PostgresDriver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -45,7 +46,7 @@ func (driver *PostgresDriver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-func (driver *PostgresDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error) {
+func (driver *PostgresDriver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
@@ -69,11 +70,11 @@ func (driver *PostgresDriver) SetupMigrationIfNeeded(ctx context.Context) error 
 	return fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error {
+func (driver *PostgresDriver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error) {
+func (driver *PostgresDriver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

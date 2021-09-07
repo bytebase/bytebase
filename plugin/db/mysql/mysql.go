@@ -1,4 +1,4 @@
-package db
+package mysql
 
 import (
 	"bufio"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
@@ -25,27 +26,27 @@ var (
 		"sys":                true,
 	}
 
-	_ Driver = (*MySQLDriver)(nil)
+	_ db.Driver = (*MySQLDriver)(nil)
 )
 
 func init() {
-	register(MySQL, newMySQLDriver)
+	db.Register(db.MySQL, newMySQLDriver)
 }
 
 type MySQLDriver struct {
 	l             *zap.Logger
-	connectionCtx ConnectionContext
+	connectionCtx db.ConnectionContext
 
 	db *sql.DB
 }
 
-func newMySQLDriver(config DriverConfig) Driver {
+func newMySQLDriver(config db.DriverConfig) db.Driver {
 	return &MySQLDriver{
 		l: config.Logger,
 	}
 }
 
-func (driver *MySQLDriver) open(config ConnectionConfig, ctx ConnectionContext) (Driver, error) {
+func (driver *MySQLDriver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -97,7 +98,7 @@ func (driver *MySQLDriver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error) {
+func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	// Query MySQL version
 	query := "SELECT VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
@@ -131,7 +132,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 		FROM mysql.user
 		WHERE user NOT LIKE 'mysql.%'
 	`
-	userList := make([]*DBUser, 0)
+	userList := make([]*db.DBUser, 0)
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -171,7 +172,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 			grantList = append(grantList, grant)
 		}
 
-		userList = append(userList, &DBUser{
+		userList = append(userList, &db.DBUser{
 			Name:  name,
 			Grant: strings.Join(grantList, "\n"),
 		})
@@ -216,13 +217,13 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 	defer indexRows.Close()
 
 	// dbName/tableName -> indexList map
-	indexMap := make(map[string][]DBIndex)
+	indexMap := make(map[string][]db.DBIndex)
 	for indexRows.Next() {
 		var dbName string
 		var tableName string
 		var columnName sql.NullString
 		var expression sql.NullString
-		var index DBIndex
+		var index db.DBIndex
 		if err := indexRows.Scan(
 			&dbName,
 			&tableName,
@@ -249,7 +250,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 		if ok {
 			indexMap[key] = append(indexList, index)
 		} else {
-			list := make([]DBIndex, 0)
+			list := make([]db.DBIndex, 0)
 			indexMap[key] = append(list, index)
 		}
 	}
@@ -277,13 +278,13 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 	defer columnRows.Close()
 
 	// dbName/tableName -> columnList map
-	columnMap := make(map[string][]DBColumn)
+	columnMap := make(map[string][]db.DBColumn)
 	for columnRows.Next() {
 		var dbName string
 		var tableName string
 		var nullable string
 		var defaultStr sql.NullString
-		var column DBColumn
+		var column db.DBColumn
 		if err := columnRows.Scan(
 			&dbName,
 			&tableName,
@@ -308,7 +309,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 		if ok {
 			columnMap[key] = append(tableList, column)
 		} else {
-			list := make([]DBColumn, 0)
+			list := make([]db.DBColumn, 0)
 			columnMap[key] = append(list, column)
 		}
 	}
@@ -339,10 +340,10 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 	defer tableRows.Close()
 
 	// dbName -> tableList map
-	tableMap := make(map[string][]DBTable)
+	tableMap := make(map[string][]db.DBTable)
 	for tableRows.Next() {
 		var dbName string
-		var table DBTable
+		var table db.DBTable
 		if err := tableRows.Scan(
 			&dbName,
 			&table.Name,
@@ -369,7 +370,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 		if ok {
 			tableMap[dbName] = append(tableList, table)
 		} else {
-			list := make([]DBTable, 0)
+			list := make([]db.DBTable, 0)
 			tableMap[dbName] = append(list, table)
 		}
 	}
@@ -389,9 +390,9 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*DBUser, []*DBSche
 	}
 	defer rows.Close()
 
-	schemaList := make([]*DBSchema, 0)
+	schemaList := make([]*db.DBSchema, 0)
 	for rows.Next() {
-		var schema DBSchema
+		var schema db.DBSchema
 		if err := rows.Scan(
 			&schema.Name,
 			&schema.CharacterSet,
@@ -471,7 +472,7 @@ func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error {
+func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -501,7 +502,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Engine == VCS && m.Type != Baseline && m.Type != Branch {
+	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
 		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
 		if err != nil {
 			return err
@@ -513,7 +514,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	}
 
 	// VCS based SQL migration requires existing baselining
-	requireBaseline := m.Engine == VCS && m.Type == Migrate
+	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
 	sequence, err := findNextSequence(ctx, tx, m.Namespace, requireBaseline)
 	if err != nil {
 		return err
@@ -575,7 +576,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 	return nil
 }
 
-func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error) {
+func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -618,9 +619,9 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	list := make([]*MigrationHistory, 0)
+	list := make([]*db.MigrationHistory, 0)
 	for rows.Next() {
-		var history MigrationHistory
+		var history db.MigrationHistory
 		if err := rows.Scan(
 			&history.ID,
 			&history.Creator,
@@ -675,7 +676,7 @@ func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, erro
 	return true, nil
 }
 
-func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine MigrationEngine, version string) (bool, error) {
+func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
 	query := `
 		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND ` + "`engine` = ? AND version = ?" + `
 	`
@@ -695,7 +696,7 @@ func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, en
 	return false, nil
 }
 
-func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine MigrationEngine, version string) (*string, error) {
+func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (*string, error) {
 	query := `
 		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND ` + "`engine` = ? AND STRCMP(?, version) = -1" + `
 	`
