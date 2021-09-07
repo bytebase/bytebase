@@ -295,7 +295,10 @@ export default {
       }
 
       const stage = props.selectedStage as Stage;
-      if (stage.taskList[0].type == "bb.task.database.create") {
+      if (
+        stage.taskList[0].type == "bb.task.database.create" ||
+        stage.taskList[0].type == "bb.task.database.restore"
+      ) {
         if (props.create) {
           const stage = props.selectedStage as StageCreate;
           return stage.taskList[0].databaseName;
