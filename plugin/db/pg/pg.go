@@ -365,6 +365,12 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 }
 
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
 	s := ""
 	tokenName := ""
 	for sc.Scan() {
@@ -397,7 +403,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 		}
 
 		if execute {
-			_, err := driver.db.Exec(s)
+			_, err := txn.Exec(s)
 			if err != nil {
 				return fmt.Errorf("execute query %q failed: %v", s, err)
 			}
@@ -405,6 +411,10 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 		}
 	}
 	if err := sc.Err(); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
 		return err
 	}
 
