@@ -274,6 +274,63 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/instance/:instanceId/migration/history/:historyId", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("instanceId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Intance ID is not a number: %s", c.Param("instanceId"))).SetInternal(err)
+		}
+
+		historyId, err := strconv.Atoi(c.Param("historyId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("History ID is not a number: %s", c.Param("historyId"))).SetInternal(err)
+		}
+
+		instance, err := s.ComposeInstanceById(context.Background(), id)
+		if err != nil {
+			if common.ErrorCode(err) == common.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+
+		find := &db.MigrationHistoryFind{ID: &historyId}
+		driver, err := GetDatabaseDriver(instance, "", s.l)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
+		}
+		defer driver.Close(context.Background())
+		list, err := driver.FindMigrationHistoryList(context.Background(), find)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+		}
+		if len(list) == 0 {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %d not found for instance %q", historyId, instance.Name))
+		}
+		entry := list[0]
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &api.MigrationHistory{
+			ID:                entry.ID,
+			Creator:           entry.Creator,
+			CreatedTs:         entry.CreatedTs,
+			Updater:           entry.Updater,
+			UpdatedTs:         entry.UpdatedTs,
+			Database:          entry.Namespace,
+			Engine:            entry.Engine,
+			Type:              entry.Type,
+			Version:           entry.Version,
+			Description:       entry.Description,
+			Statement:         entry.Statement,
+			Schema:            entry.Schema,
+			ExecutionDuration: entry.ExecutionDuration,
+			IssueId:           entry.IssueId,
+			Payload:           entry.Payload,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Name)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.GET("/instance/:instanceId/migration/history", func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("instanceId"))
 		if err != nil {
@@ -303,32 +360,33 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		historyList := []*api.MigrationHistory{}
 		driver, err := GetDatabaseDriver(instance, "", s.l)
-		if err == nil {
-			defer driver.Close(context.Background())
-			list, err := driver.FindMigrationHistoryList(context.Background(), find)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-			}
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
+		}
+		defer driver.Close(context.Background())
+		list, err := driver.FindMigrationHistoryList(context.Background(), find)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+		}
 
-			for _, entry := range list {
-				historyList = append(historyList, &api.MigrationHistory{
-					ID:                entry.ID,
-					Creator:           entry.Creator,
-					CreatedTs:         entry.CreatedTs,
-					Updater:           entry.Updater,
-					UpdatedTs:         entry.UpdatedTs,
-					Database:          entry.Namespace,
-					Engine:            entry.Engine,
-					Type:              entry.Type,
-					Version:           entry.Version,
-					Description:       entry.Description,
-					Statement:         entry.Statement,
-					Schema:            entry.Schema,
-					ExecutionDuration: entry.ExecutionDuration,
-					IssueId:           entry.IssueId,
-					Payload:           entry.Payload,
-				})
-			}
+		for _, entry := range list {
+			historyList = append(historyList, &api.MigrationHistory{
+				ID:                entry.ID,
+				Creator:           entry.Creator,
+				CreatedTs:         entry.CreatedTs,
+				Updater:           entry.Updater,
+				UpdatedTs:         entry.UpdatedTs,
+				Database:          entry.Namespace,
+				Engine:            entry.Engine,
+				Type:              entry.Type,
+				Version:           entry.Version,
+				Description:       entry.Description,
+				Statement:         entry.Statement,
+				Schema:            entry.Schema,
+				ExecutionDuration: entry.ExecutionDuration,
+				IssueId:           entry.IssueId,
+				Payload:           entry.Payload,
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

@@ -5,6 +5,7 @@ import {
   Environment,
   Instance,
   IssueId,
+  MigrationHistory,
   Project,
   ProjectWebhook,
   Task,
@@ -61,6 +62,12 @@ export function databaseSlug(database: Database): string {
 
 export function dataSourceSlug(dataSource: DataSource): string {
   return [slug(dataSource.name), dataSource.id].join("-");
+}
+
+export function migrationHistorySlug(
+  migrationHistory: MigrationHistory
+): string {
+  return [slug(migrationHistory.version), migrationHistory.id].join("-");
 }
 
 export function fullDatabasePath(database: Database): string {

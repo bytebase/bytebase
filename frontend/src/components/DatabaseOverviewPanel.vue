@@ -64,6 +64,7 @@
       </div>
       <MigrationHistoryTable
         v-if="state.migrationSetupStatus == 'OK'"
+        :databaseSectionList="[database]"
         :historySectionList="migrationHistorySectionList"
       />
       <BBAttention

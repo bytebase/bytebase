@@ -34,6 +34,7 @@ p, OWNER, /instance/{id}/user, GET
 p, OWNER, /instance/{id}/migration, POST
 p, OWNER, /instance/{id}/migration/status, GET
 p, OWNER, /instance/{id}/migration/history, GET
+p, OWNER, /instance/{id}/migration/history/{historyId}, GET
 p, OWNER, /database, POST
 p, OWNER, /database, GET
 p, OWNER, /database/{id}, GET

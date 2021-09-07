@@ -109,6 +109,20 @@ const getters = {
       }
 
       {
+        // /db/:databaseSlug/history/:migrationHistorySlug
+        // Total 3 elements, 2nd element is the database slug, 3rd element is the migration history slug
+        const migrationHistoryComponents = currentRoute.path.match(
+          "/db/([0-9a-zA-Z_-]+)/history/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined, undefined];
+        if (migrationHistoryComponents[1] && migrationHistoryComponents[2]) {
+          return {
+            databaseSlug: migrationHistoryComponents[1],
+            migrationHistorySlug: migrationHistoryComponents[2],
+          };
+        }
+      }
+
+      {
         // /db/:databaseSlug
         // Total 2 elements, 2nd element is the database slug
         const databaseComponents = currentRoute.path.match(

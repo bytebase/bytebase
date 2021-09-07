@@ -1,3 +1,4 @@
+import { MigrationHistoryId } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
@@ -99,6 +100,7 @@ export interface EnvironmentState {
 export interface InstanceState {
   instanceById: Map<InstanceId, Instance>;
   instanceUserListById: Map<InstanceId, InstanceUser[]>;
+  migrationHistoryById: Map<MigrationHistoryId, MigrationHistory>;
   // The key is a concatenation of instance id and database name
   migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }

@@ -11,6 +11,7 @@ import {
   InstancePatch,
   InstanceState,
   MigrationHistory,
+  MigrationHistoryId,
   ResourceIdentifier,
   ResourceObject,
   RowStatus,
@@ -73,6 +74,7 @@ function convertMigrationHistory(history: ResourceObject): MigrationHistory {
 const state: () => InstanceState = () => ({
   instanceById: new Map(),
   instanceUserListById: new Map(),
+  migrationHistoryById: new Map(),
   migrationHistoryListByIdAndDatabaseName: new Map(),
 });
 
@@ -125,6 +127,12 @@ const getters = {
     (state: InstanceState) =>
     (instanceId: InstanceId): InstanceUser[] => {
       return state.instanceUserListById.get(instanceId) || [];
+    },
+
+  migrationHistoryById:
+    (state: InstanceState) =>
+    (migrationHistoryId: MigrationHistoryId): MigrationHistory | undefined => {
+      return state.migrationHistoryById.get(migrationHistoryId);
     },
 
   migrationHistoryListByInstanceIdAndDatabaseName:
@@ -269,6 +277,30 @@ const actions = {
     return rootGetters["sql/convert"](data);
   },
 
+  async fetchMigrationHistoryById(
+    { commit, rootGetters }: any,
+    {
+      instanceId,
+      migrationHistoryId,
+    }: {
+      instanceId: InstanceId;
+      migrationHistoryId: MigrationHistoryId;
+    }
+  ) {
+    const data = (
+      await axios.get(
+        `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`
+      )
+    ).data;
+    const migrationHistory = convertMigrationHistory(data.data);
+
+    commit("setMigrationHistoryById", {
+      migrationHistoryId,
+      migrationHistory,
+    });
+    return migrationHistory;
+  },
+
   async fetchMigrationHistory(
     { commit }: any,
     {
@@ -335,6 +367,19 @@ const mutations = {
     }
   ) {
     state.instanceUserListById.set(instanceId, instanceUserList);
+  },
+
+  setMigrationHistoryById(
+    state: InstanceState,
+    {
+      migrationHistoryId,
+      migrationHistory,
+    }: {
+      migrationHistoryId: MigrationHistoryId;
+      migrationHistory: MigrationHistory;
+    }
+  ) {
+    state.migrationHistoryById.set(migrationHistoryId, migrationHistory);
   },
 
   setMigrationHistoryListByInstanceIdAndDatabaseName(
