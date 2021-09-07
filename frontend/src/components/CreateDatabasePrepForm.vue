@@ -303,6 +303,7 @@ export default {
               databaseName: state.databaseName,
               characterSet: state.characterSet,
               collation: state.collation,
+              migrationType: "MIGRATE",
             },
           ],
         },
@@ -324,6 +325,7 @@ export default {
               rollbackStatement: "",
               databaseName: state.databaseName,
               backupId: props.backup.id,
+              migrationType: "MIGRATE",
             },
           ],
         });
