@@ -265,7 +265,7 @@ type ConnectionContext struct {
 }
 
 type Driver interface {
-	open(config ConnectionConfig, ctx ConnectionContext) (Driver, error)
+	Open(config ConnectionConfig, ctx ConnectionContext) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
@@ -292,7 +292,7 @@ type Driver interface {
 // Register makes a database driver available by the provided type.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
-func register(dbType Type, f DriverFunc) {
+func Register(dbType Type, f DriverFunc) {
 	driversMu.Lock()
 	defer driversMu.Unlock()
 	if f == nil {
@@ -313,7 +313,7 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 		return nil, fmt.Errorf("db: unknown driver %v", dbType)
 	}
 
-	driver, err := f(driverConfig).open(connectionConfig, ctx)
+	driver, err := f(driverConfig).Open(connectionConfig, ctx)
 	if err != nil {
 		return nil, err
 	}
