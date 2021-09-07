@@ -117,6 +117,9 @@
             </svg>
           </button>
         </a>
+        <div class="mb-2 textinfolabel">
+          The schema snapshot recorded after applying this migration version
+        </div>
         <div v-highlight class="border p-2 whitespace-pre-wrap">
           {{ migrationHistory.schema }}
         </div>
