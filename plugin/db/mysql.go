@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	register(Mysql, newDriver)
+	register(Mysql, newMySQLDriver)
 }
 
 type MySQLDriver struct {
@@ -39,7 +39,7 @@ type MySQLDriver struct {
 	db *sql.DB
 }
 
-func newDriver(config DriverConfig) Driver {
+func newMySQLDriver(config DriverConfig) Driver {
 	return &MySQLDriver{
 		l: config.Logger,
 	}

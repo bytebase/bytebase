@@ -16,14 +16,18 @@ import (
 type Type string
 
 const (
-	Mysql Type = "MYSQL"
+	Mysql    Type = "MYSQL"
+	Postgres Type = "POSTGRES"
 )
 
 func (e Type) String() string {
 	switch e {
 	case Mysql:
 		return "MYSQL"
+	case Postgres:
+		return "POSTGRES"
 	}
+
 	return "UNKNOWN"
 }
 
