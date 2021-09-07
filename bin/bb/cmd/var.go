@@ -4,13 +4,13 @@ package cmd
 import "go.uber.org/zap"
 
 var (
-	databaseType    string
-	username        string
-	password        string
-	hostname        string
-	port            string
-	database        string
-	fileOrDirectory string
+	databaseType string
+	username     string
+	password     string
+	hostname     string
+	port         string
+	database     string
+	file         string
 
 	// SSL flags.
 	sslCA   string // server-ca.pem
