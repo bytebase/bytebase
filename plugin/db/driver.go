@@ -1,8 +1,10 @@
 package db
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -244,11 +246,12 @@ type MigrationHistoryFind struct {
 }
 
 type ConnectionConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Database string
+	Host      string
+	Port      string
+	Username  string
+	Password  string
+	Database  string
+	TlsConfig TlsConfig
 }
 
 // Context not used for establishing the db connection, but is useful for logging.
@@ -274,6 +277,12 @@ type Driver interface {
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) error
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
+
+	// Dump and restore
+	// Dump the database, if dbName is empty, then dump all databases.
+	Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error
+	// Restore the database from sc.
+	Restore(ctx context.Context, sc *bufio.Scanner) error
 }
 
 // Register makes a database driver available by the provided type.

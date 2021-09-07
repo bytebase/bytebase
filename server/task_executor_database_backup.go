@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/bin/bb/connect"
-	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -59,7 +57,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	backupErr := backupDatabase(task.Instance, task.Database, backup, server.dataDir)
+	backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.dataDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
 	comment := ""
@@ -84,13 +82,12 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func backupDatabase(instance *api.Instance, database *api.Database, backup *api.Backup, dataDir string) error {
-	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
+func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
+	driver, err := GetDatabaseDriver(instance, databaseName, exec.l)
 	if err != nil {
-		return fmt.Errorf("failed to connect instance %q at %q:%q with user %q: %w", instance.Name, instance.Host, instance.Port, instance.Username, err)
+		return err
 	}
-	defer conn.Close()
-	dp := mysqldump.New(conn)
+	defer driver.Close(ctx)
 
 	f, err := os.Create(filepath.Join(dataDir, backup.Path))
 	if err != nil {
@@ -98,7 +95,7 @@ func backupDatabase(instance *api.Instance, database *api.Database, backup *api.
 	}
 	defer f.Close()
 
-	if err := dp.Dump(database.Name, f, false /* schemaOnly */, false /* dumpAll */); err != nil {
+	if err := driver.Dump(ctx, databaseName, f, false /* schemaOnly */); err != nil {
 		return err
 	}
 
