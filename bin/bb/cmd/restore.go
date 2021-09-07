@@ -89,6 +89,6 @@ func restoreDatabase(databaseType, username, password, hostname, port, database,
 		}
 		return nil
 	default:
-		return fmt.Errorf("database type %q not supported; supported types: mysql, pg.", databaseType)
+		return fmt.Errorf("database type %q not supported; supported types: mysql, pg", databaseType)
 	}
 }
