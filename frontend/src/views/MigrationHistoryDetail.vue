@@ -20,7 +20,7 @@
             </div>
           </div>
           <p class="text-control">
-            Type {{ migrationHistory.type }} -
+            {{ migrationHistory.engine }} {{ migrationHistory.type }} -
             {{ migrationHistory.description }}
           </p>
           <dl
@@ -37,7 +37,7 @@
                 :to="`/issue/${migrationHistory.issueId}`"
                 class="normal-link"
               >
-                {{ migrationHistory.issueId }} ({{ migrationHistory.engine }})
+                {{ migrationHistory.issueId }}
               </router-link>
             </dd>
             <dt class="sr-only">Duration</dt>
