@@ -568,7 +568,9 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *MigrationInf
 		return formatErrorWithQuery(err, query)
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -642,6 +644,10 @@ func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *M
 		list = append(list, &history)
 	}
 	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
