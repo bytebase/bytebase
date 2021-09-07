@@ -56,8 +56,10 @@ CREATE TABLE bytebase.migration_history (
     `type` ENUM('BASELINE', 'MIGRATE', 'BRANCH') NOT NULL,
     version TEXT NOT NULL,
     description TEXT NOT NULL,
-    -- Recorded the migration statement
+    -- Record the migration statement
     statement TEXT NOT NULL,
+    -- Record the schema after migration
+    `schema` TEXT NOT NULL,
     execution_duration INTEGER NOT NULL,
     issue_id TEXT NOT NULL,
     payload TEXT NOT NULL

@@ -323,6 +323,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					Version:           entry.Version,
 					Description:       entry.Description,
 					Statement:         entry.Statement,
+					Schema:            entry.Schema,
 					ExecutionDuration: entry.ExecutionDuration,
 					IssueId:           entry.IssueId,
 					Payload:           entry.Payload,

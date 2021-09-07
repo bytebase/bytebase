@@ -85,6 +85,7 @@ export type MigrationHistory = {
   version: string;
   description: string;
   statement: string;
+  schema: string;
   executionDuration: number;
   issueId: number;
   payload?: MigrationHistoryPayload;
