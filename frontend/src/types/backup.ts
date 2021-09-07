@@ -24,6 +24,7 @@ export type Backup = {
   status: BackupStatus;
   type: BackupType;
   storageBackend: BackupStorageBackend;
+  migrationHistoryVersion: string;
   path: string;
   comment: string;
 };

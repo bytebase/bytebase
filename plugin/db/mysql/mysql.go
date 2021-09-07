@@ -605,6 +605,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Database; v != nil {
 		where, args = append(where, "namespace = ?"), append(args, *v)
 	}
+	if v := find.Version; v != nil {
+		where, args = append(where, "version = ?"), append(args, *v)
+	}
 
 	var query = `
 			SELECT 

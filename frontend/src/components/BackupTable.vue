@@ -17,10 +17,11 @@
       <BBTableHeaderCell class="w-48" :title="columnList[2].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+      <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
       <BBTableHeaderCell
         v-if="allowEdit"
         class="w-4"
-        :title="columnList[5].title"
+        :title="columnList[6].title"
       />
     </template>
     <template v-slot:body="{ rowData: backup }">
@@ -84,6 +85,11 @@
         }}
       </BBTableCell>
       <BBTableCell>
+        <div class="normal-link" @click.prevent="gotoMigrationHistory(backup)">
+          {{ backup.migrationHistoryVersion }}
+        </div>
+      </BBTableCell>
+      <BBTableCell>
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
       <BBTableCell>
@@ -132,10 +138,11 @@
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { Backup, Database } from "../types";
-import { bytesToString } from "../utils";
+import { Backup, Database, MigrationHistory } from "../types";
+import { bytesToString, databaseSlug, migrationHistorySlug } from "../utils";
 import { useStore } from "vuex";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
+import { useRouter } from "vue-router";
 
 const EDIT_COLUMN_LIST: BBTableColumn[] = [
   {
@@ -146,6 +153,9 @@ const EDIT_COLUMN_LIST: BBTableColumn[] = [
   },
   {
     title: "Comment",
+  },
+  {
+    title: "Schema version",
   },
   {
     title: "Time",
@@ -167,6 +177,9 @@ const NON_EDIT_COLUMN_LIST: BBTableColumn[] = [
   },
   {
     title: "Comment",
+  },
+  {
+    title: "Schema version",
   },
   {
     title: "Time",
@@ -199,6 +212,7 @@ export default {
     },
   },
   setup(props, ctx) {
+    const router = useRouter();
     const store = useStore();
 
     const state = reactive<LocalState>({
@@ -248,12 +262,32 @@ export default {
       }
     };
 
+    const gotoMigrationHistory = (backup: Backup) => {
+      store
+        .dispatch("instance/fetchMigrationHistoryByVersion", {
+          instanceId: props.database.instance.id,
+          databaseName: props.database.name,
+          version: backup.migrationHistoryVersion,
+        })
+        .then((history: MigrationHistory) => {
+          router.push({
+            name: "workspace.database.history.detail",
+            params: {
+              databaseSlug: databaseSlug(props.database),
+              migrationHistorySlug: migrationHistorySlug(history),
+            },
+            hash: "#schema",
+          });
+        });
+    };
+
     const columnList = computed(() => {
       return props.allowEdit ? EDIT_COLUMN_LIST : NON_EDIT_COLUMN_LIST;
     });
 
     return {
       state,
+      gotoMigrationHistory,
       columnList,
       bytesToString,
       backupSectionList,
