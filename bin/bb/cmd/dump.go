@@ -13,13 +13,17 @@ import (
 )
 
 func init() {
-	dumpCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql, or pg).")
+	dumpCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
 	dumpCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
 	dumpCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
 	dumpCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
 	dumpCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	dumpCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
-	dumpCmd.Flags().StringVar(&directory, "directory", "", "Directory to dump baselines; output to stdout if unspecified.")
+	dumpCmd.Flags().StringVar(&resultFileOrDirectory, "file", "",
+		`Result file or directory to store the dump.
+For MySQL, it behaves like mysqldump --result-file; Output to stdout if unspecified.
+For PostgreSQL, it behaves like pgdump --file; Output to stdout if unspecified. If specified and when --database is not specified, it points to the directory containing files for each database dump.`,
+	)
 
 	// tls flags for SSL connection.
 	dumpCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
@@ -41,22 +45,23 @@ var (
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			return dumpDatabase(databaseType, username, password, hostname, port, database, directory, tlsCfg, schemaOnly)
+			return dumpDatabase(databaseType, username, password, hostname, port, database, resultFileOrDirectory, tlsCfg, schemaOnly)
 		},
 	}
 )
 
 // dumpDatabase exports the schema of a database instance.
-// All non-system databases will be exported to the input directory in the format of database_name.sql for each database.
-// When directory isn't specified, the schema will be exported to stdout.
-func dumpDatabase(databaseType, username, password, hostname, port, database, directory string, tlsCfg connect.TlsConfig, schemaOnly bool) error {
-	if directory != "" {
-		dirInfo, err := os.Stat(directory)
+// When fileOrDirectory isn't specified, the schema will be exported to stdout.
+func dumpDatabase(databaseType, username, password, hostname, port, database, fileOrDirectory string, tlsCfg connect.TlsConfig, schemaOnly bool) error {
+	// For PostgreSQL, if we export all databases, then we treat fileOrDirectory as a directory
+	// and check its existence before proceeding.
+	if databaseType == "pg" && database == "" {
+		dirInfo, err := os.Stat(fileOrDirectory)
 		if os.IsNotExist(err) {
-			return fmt.Errorf("directory %q does not exist", directory)
+			return fmt.Errorf("directory %q does not exist", fileOrDirectory)
 		}
 		if !dirInfo.IsDir() {
-			return fmt.Errorf("path %q isn't a directory", directory)
+			return fmt.Errorf("path %q isn't a directory", fileOrDirectory)
 		}
 	}
 
@@ -81,13 +86,15 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 		if err != nil {
 			return err
 		}
-		for _, dbName := range databases {
-			out, err := getOutFile(dbName, directory)
+		out := os.Stdout
+		if fileOrDirectory != "" {
+			out, err = os.Create(fileOrDirectory)
 			if err != nil {
-				return fmt.Errorf("getOutFile(%s, %s) got error: %s", dbName, directory, err)
+				return fmt.Errorf("failed to create database dump file %s, got error: %s", fileOrDirectory, err)
 			}
-			defer out.Close()
-
+		}
+		defer out.Close()
+		for _, dbName := range databases {
 			if err := dp.Dump(dbName, out, schemaOnly, dumpAll); err != nil {
 				return err
 			}
@@ -106,9 +113,17 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 			return err
 		}
 		for _, dbName := range databases {
-			out, err := getOutFile(dbName, directory)
-			if err != nil {
-				return fmt.Errorf("getOutFile(%s, %s) got error: %s", dbName, directory, err)
+			out := os.Stdout
+			if fileOrDirectory != "" {
+				outputFileOrDirectory := fileOrDirectory
+				if database == "" {
+					outputFileOrDirectory = path.Join(fileOrDirectory, fmt.Sprintf("%s.sql", dbName))
+				}
+
+				out, err = os.Create(outputFileOrDirectory)
+				if err != nil {
+					return fmt.Errorf("failed to create database dump file %s, got error: %s", outputFileOrDirectory, err)
+				}
 			}
 			defer out.Close()
 
@@ -119,19 +134,5 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, di
 		return nil
 	default:
 		return fmt.Errorf("database type %q not supported; supported types: mysql, pg", databaseType)
-	}
-}
-
-// getOutFile gets the file descriptor to export the dump.
-func getOutFile(dbName, directory string) (*os.File, error) {
-	if directory == "" {
-		return os.Stdout, nil
-	} else {
-		path := path.Join(directory, fmt.Sprintf("%s.sql", dbName))
-		f, err := os.Create(path)
-		if err != nil {
-			return nil, err
-		}
-		return f, nil
 	}
 }

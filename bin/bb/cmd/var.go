@@ -2,14 +2,14 @@
 package cmd
 
 var (
-	databaseType string
-	username     string
-	password     string
-	hostname     string
-	port         string
-	database     string
-	directory    string
-	file         string
+	databaseType          string
+	username              string
+	password              string
+	hostname              string
+	port                  string
+	database              string
+	resultFileOrDirectory string
+	file                  string
 
 	// SSL flags.
 	sslCA               string // server-ca.pem
