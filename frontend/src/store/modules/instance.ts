@@ -301,6 +301,39 @@ const actions = {
     return migrationHistory;
   },
 
+  async fetchMigrationHistoryByVersion(
+    { commit }: any,
+    {
+      instanceId,
+      databaseName,
+      version,
+    }: {
+      instanceId: InstanceId;
+      databaseName: string;
+      version: string;
+    }
+  ) {
+    const data = (
+      await axios.get(
+        `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`
+      )
+    ).data.data;
+    const historyList = data.map((history: ResourceObject) => {
+      return convertMigrationHistory(history);
+    });
+
+    if (historyList.length > 0) {
+      commit("setMigrationHistoryById", {
+        migrationHistoryId: historyList[0].id,
+        migrationHistory: historyList[0],
+      });
+      return historyList[0];
+    }
+    throw new Error(
+      `Migration version ${version} not found in database ${databaseName}.`
+    );
+  },
+
   async fetchMigrationHistory(
     { commit }: any,
     {

@@ -350,6 +350,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if databaseStr != "" {
 			find.Database = &databaseStr
 		}
+		versionStr := c.QueryParams().Get("version")
+		if versionStr != "" {
+			find.Version = &versionStr
+		}
 		if limitStr := c.QueryParam("limit"); limitStr != "" {
 			limit, err := strconv.Atoi(limitStr)
 			if err != nil {
