@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	register(Mysql, newMySQLDriver)
+	register(MySQL, newMySQLDriver)
 }
 
 type MySQLDriver struct {

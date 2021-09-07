@@ -63,7 +63,7 @@ func restoreDatabase(databaseType, username, password, hostname, port, database,
 		}
 
 		db, err := db.Open(
-			db.Mysql,
+			db.MySQL,
 			db.DriverConfig{Logger: logger},
 			db.ConnectionConfig{
 				Host:      hostname,

@@ -74,7 +74,7 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, fi
 		}
 
 		db, err := db.Open(
-			db.Mysql,
+			db.MySQL,
 			db.DriverConfig{Logger: logger},
 			db.ConnectionConfig{
 				Host:      hostname,
