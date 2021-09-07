@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"os"
+	"io"
 	"regexp"
 	"strings"
 
@@ -323,7 +323,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 }
 
 // Dump and restore
-func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
@@ -421,7 +421,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
-func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out *os.File, schemaOnly bool, includeUseDatabase bool) error {
+func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	if err := driver.switchDatabase(database); err != nil {
 		return err
 	}
@@ -434,14 +434,14 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 
 	// Database header.
 	header := fmt.Sprintf(databaseHeaderFmt, database)
-	if _, err := out.WriteString(header); err != nil {
+	if _, err := io.WriteString(out, header); err != nil {
 		return err
 	}
 	// Database statement.
 	if includeUseDatabase {
 		// Use database statement.
 		useStmt := fmt.Sprintf(useDatabaseFmt, database)
-		if _, err := out.WriteString(useStmt); err != nil {
+		if _, err := io.WriteString(out, useStmt); err != nil {
 			return err
 		}
 	}
@@ -452,7 +452,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return err
 	}
 	for _, schema := range schemas {
-		if _, err := out.WriteString(schema.Statement()); err != nil {
+		if _, err := io.WriteString(out, schema.Statement()); err != nil {
 			return err
 		}
 	}
@@ -463,7 +463,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get sequences from database %q: %s", database, err)
 	}
 	for _, seq := range seqs {
-		if _, err := out.WriteString(seq.Statement()); err != nil {
+		if _, err := io.WriteString(out, seq.Statement()); err != nil {
 			return err
 		}
 	}
@@ -476,7 +476,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 
 	constraints := make(map[string]bool)
 	for _, tbl := range tables {
-		if _, err := out.WriteString(tbl.Statement()); err != nil {
+		if _, err := io.WriteString(out, tbl.Statement()); err != nil {
 			return err
 		}
 		for _, constraint := range tbl.constraints {
@@ -496,7 +496,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get views from database %q: %s", database, err)
 	}
 	for _, view := range views {
-		if _, err := out.WriteString(view.Statement()); err != nil {
+		if _, err := io.WriteString(out, view.Statement()); err != nil {
 			return err
 		}
 	}
@@ -511,7 +511,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		if constraints[key] {
 			continue
 		}
-		if _, err := out.WriteString(idx.Statement()); err != nil {
+		if _, err := io.WriteString(out, idx.Statement()); err != nil {
 			return err
 		}
 	}
@@ -522,7 +522,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get functions from database %q: %s", database, err)
 	}
 	for _, f := range fs {
-		if _, err := out.WriteString(f.Statement()); err != nil {
+		if _, err := io.WriteString(out, f.Statement()); err != nil {
 			return err
 		}
 	}
@@ -533,7 +533,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get triggers from database %q: %s", database, err)
 	}
 	for _, tr := range triggers {
-		if _, err := out.WriteString(tr.Statement()); err != nil {
+		if _, err := io.WriteString(out, tr.Statement()); err != nil {
 			return err
 		}
 	}
@@ -544,7 +544,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get event triggers from database %q: %s", database, err)
 	}
 	for _, evt := range events {
-		if _, err := out.WriteString(evt.Statement()); err != nil {
+		if _, err := io.WriteString(out, evt.Statement()); err != nil {
 			return err
 		}
 	}
@@ -1070,7 +1070,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 // exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, tbl *tableSchema, out *os.File) error {
+func exportTableData(txn *sql.Tx, tbl *tableSchema, out io.Writer) error {
 	query := fmt.Sprintf("SELECT * FROM %s.%s;", tbl.schemaName, tbl.name)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1106,11 +1106,11 @@ func exportTableData(txn *sql.Tx, tbl *tableSchema, out *os.File) error {
 			}
 		}
 		stmt := fmt.Sprintf("INSERT INTO %s.%s VALUES (%s);\n", tbl.schemaName, tbl.name, strings.Join(tokens, ", "))
-		if _, err := out.WriteString(stmt); err != nil {
+		if _, err := io.WriteString(out, stmt); err != nil {
 			return err
 		}
 	}
-	if _, err := out.WriteString("\n"); err != nil {
+	if _, err := io.WriteString(out, "\n"); err != nil {
 		return err
 	}
 	return nil

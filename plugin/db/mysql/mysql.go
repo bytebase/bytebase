@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 	"time"
 
@@ -823,7 +823,7 @@ const (
 		"DELIMITER ;\n"
 )
 
-func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -863,7 +863,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 	for _, dbName := range dumpableDbNames {
 		// Database header.
 		header := fmt.Sprintf(databaseHeaderFmt, dbName)
-		if _, err := out.WriteString(header); err != nil {
+		if _, err := io.WriteString(out, header); err != nil {
 			return err
 		}
 		// Include "USE DATABASE xxx" if dumping multiple databases.
@@ -872,12 +872,12 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 			if err != nil {
 				return fmt.Errorf("failed to get database %q: %s", dbName, err)
 			}
-			if _, err := out.WriteString(dbStmt); err != nil {
+			if _, err := io.WriteString(out, dbStmt); err != nil {
 				return err
 			}
 			// Use database statement.
 			useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
-			if _, err := out.WriteString(useStmt); err != nil {
+			if _, err := io.WriteString(out, useStmt); err != nil {
 				return err
 			}
 		}
@@ -888,7 +888,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
 		}
 		for _, tbl := range tables {
-			if _, err := out.WriteString(fmt.Sprintf("%s\n", tbl.statement)); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.statement)); err != nil {
 				return err
 			}
 			if !schemaOnly && tbl.tableType == "BASE TABLE" {
@@ -906,7 +906,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 			return fmt.Errorf("failed to get routines of database %q: %s", dbName, err)
 		}
 		for _, rt := range routines {
-			if _, err := out.WriteString(fmt.Sprintf("%s\n", rt.statement)); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", rt.statement)); err != nil {
 				return err
 			}
 		}
@@ -917,7 +917,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 			return fmt.Errorf("failed to get events of database %q: %s", dbName, err)
 		}
 		for _, et := range events {
-			if _, err := out.WriteString(fmt.Sprintf("%s\n", et.statement)); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", et.statement)); err != nil {
 				return err
 			}
 		}
@@ -928,7 +928,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, s
 			return fmt.Errorf("failed to get triggers of database %q: %s", dbName, err)
 		}
 		for _, tr := range triggers {
-			if _, err := out.WriteString(fmt.Sprintf("%s\n", tr.statement)); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tr.statement)); err != nil {
 				return err
 			}
 		}
@@ -1127,7 +1127,7 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 }
 
 // exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, out *os.File) error {
+func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, out io.Writer) error {
 	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1167,11 +1167,11 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 			dbPrefix = fmt.Sprintf("`%s`.", dbName)
 		}
 		stmt := fmt.Sprintf("INSERT INTO %s`%s` VALUES (%s);\n", dbPrefix, tblName, strings.Join(tokens, ", "))
-		if _, err := out.WriteString(stmt); err != nil {
+		if _, err := io.WriteString(out, stmt); err != nil {
 			return err
 		}
 	}
-	if _, err := out.WriteString("\n"); err != nil {
+	if _, err := io.WriteString(out, "\n"); err != nil {
 		return err
 	}
 	return nil
