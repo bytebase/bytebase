@@ -137,6 +137,7 @@ export default {
       const databaseSlug = routeSlug.databaseSlug;
       const tableName = routeSlug.tableName;
       const dataSourceSlug = routeSlug.dataSourceSlug;
+      const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
 
       const list: Array<BreadcrumbItem> = [];
@@ -171,7 +172,7 @@ export default {
           path: "/db",
         });
 
-        if (tableName || dataSourceSlug) {
+        if (tableName || dataSourceSlug || migrationHistory) {
           const database = store.getters["database/databaseById"](
             idFromSlug(databaseSlug)
           );

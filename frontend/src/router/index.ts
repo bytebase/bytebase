@@ -11,7 +11,7 @@ import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import { store } from "../store";
-import { QuickActionType } from "../types";
+import { Database, QuickActionType } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -646,6 +646,24 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("../views/DataSourceDetail.vue"),
                 props: true,
               },
+              {
+                path: "history/:migrationHistorySlug",
+                name: "workspace.database.history.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.migrationHistorySlug as string;
+                    return (
+                      "Migration - " +
+                      store.getters["instance/migrationHistoryById"](
+                        idFromSlug(slug)
+                      ).version
+                    );
+                  },
+                  allowBookmark: true,
+                },
+                component: () => import("../views/MigrationHistoryDetail.vue"),
+                props: true,
+              },
             ],
           },
           {
@@ -852,6 +870,7 @@ router.beforeEach((to, from, next) => {
   const databaseSlug = routerSlug.databaseSlug;
   const tableName = routerSlug.tableName;
   const dataSourceSlug = routerSlug.dataSourceSlug;
+  const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
 
   if (principalId) {
@@ -955,8 +974,8 @@ router.beforeEach((to, from, next) => {
       .dispatch("database/fetchDatabaseById", {
         databaseId: idFromSlug(databaseSlug),
       })
-      .then((database) => {
-        if (!tableName && !dataSourceSlug) {
+      .then((database: Database) => {
+        if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
           next();
         } else if (tableName) {
           store
@@ -979,6 +998,22 @@ router.beforeEach((to, from, next) => {
             .dispatch("dataSource/fetchDataSourceById", {
               dataSourceId: idFromSlug(dataSourceSlug),
               databaseId: database.id,
+            })
+            .then(() => {
+              next();
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+              throw error;
+            });
+        } else if (migrationHistorySlug) {
+          store
+            .dispatch("instance/fetchMigrationHistoryById", {
+              instanceId: database.instance.id,
+              migrationHistoryId: idFromSlug(migrationHistorySlug),
             })
             .then(() => {
               next();

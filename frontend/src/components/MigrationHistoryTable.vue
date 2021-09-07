@@ -6,7 +6,7 @@
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
-    :rowClickable="false"
+    @click-row="clickHistory"
   >
     <template v-slot:header>
       <template v-if="mode == 'DATABASE'">
@@ -72,9 +72,10 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { MigrationHistory } from "../types";
-import { secondsToString } from "../utils";
+import { Database, MigrationHistory } from "../types";
+import { databaseSlug, migrationHistorySlug, secondsToString } from "../utils";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import { useRouter } from "vue-router";
 
 type Mode = "DATABASE" | "PROJECT";
 
@@ -144,15 +145,31 @@ export default {
       default: "DATABASE",
       type: String as PropType<Mode>,
     },
+    databaseSectionList: {
+      required: true,
+      type: Object as PropType<Database[]>,
+    },
     historySectionList: {
       required: true,
       type: Object as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
     },
   },
   setup(props, ctx) {
+    const router = useRouter();
+
+    const clickHistory = function (section: number, row: number) {
+      const history = props.historySectionList[section].list[row];
+      router.push(
+        `/db/${databaseSlug(
+          props.databaseSectionList[section]
+        )}/history/${migrationHistorySlug(history)}`
+      );
+    };
+
     return {
       columnList: columnListMap.get(props.mode),
       secondsToString,
+      clickHistory,
     };
   },
 };

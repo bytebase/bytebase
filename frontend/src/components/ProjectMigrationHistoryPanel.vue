@@ -7,6 +7,7 @@
     <template v-if="state.migrationHistorySectionList.length > 0">
       <MigrationHistoryTable
         :mode="'PROJECT'"
+        :databaseSectionList="state.databaseSectionList"
         :historySectionList="state.migrationHistorySectionList"
       />
     </template>
@@ -56,6 +57,7 @@ import { fullDatabasePath } from "../utils";
 const MAX_MIGRAION_HISTORY_COUNT = 5;
 
 interface LocalState {
+  databaseSectionList: Database[];
   migrationHistorySectionList: BBTableSectionDataSource<MigrationHistory>[];
 }
 
@@ -79,10 +81,12 @@ export default {
     const router = useRouter();
 
     const state = reactive<LocalState>({
+      databaseSectionList: [],
       migrationHistorySectionList: [],
     });
 
     const fetchMigrationHistory = (databaseList: Database[]) => {
+      state.databaseSectionList = [];
       state.migrationHistorySectionList = [];
       for (const database of databaseList) {
         store
@@ -97,6 +101,8 @@ export default {
                 })
                 .then((migrationHistoryList: MigrationHistory[]) => {
                   if (migrationHistoryList.length > 0) {
+                    state.databaseSectionList.push(database);
+
                     const title = `${database.name} (${database.instance.environment.name})`;
                     const index = state.migrationHistorySectionList.findIndex(
                       (item: BBTableSectionDataSource<MigrationHistory>) => {

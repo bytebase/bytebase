@@ -53,6 +53,7 @@ export type RouterSlug = {
   databaseSlug?: string;
   tableName?: string;
   dataSourceSlug?: string;
+  migrationHistorySlug?: string;
   vcsSlug?: string;
 };
 

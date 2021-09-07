@@ -599,6 +599,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	defer tx.Rollback()
 
 	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
 	if v := find.Database; v != nil {
 		where, args = append(where, "namespace = ?"), append(args, *v)
 	}
