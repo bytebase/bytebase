@@ -3,12 +3,13 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/bytebase/bytebase/bin/bb/connect"
-	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
 	"github.com/bytebase/bytebase/bin/bb/restore/pgrestore"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +20,7 @@ func init() {
 	restoreCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
 	restoreCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	restoreCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
-	restoreCmd.Flags().StringVar(&file, "file", "", "Directory to dump baselines; output to stdout if unspecified.")
+	restoreCmd.Flags().StringVar(&fileOrDirectory, "file", "", "Result file or directory to store the dump, see dump --file for more details.")
 	restoreCmd.MarkFlagRequired("database")
 	restoreCmd.MarkFlagRequired("file")
 
@@ -36,18 +37,18 @@ var (
 		Use:   "restore",
 		Short: "restores the schema of a database instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := connect.TlsConfig{
+			tlsCfg := db.TlsConfig{
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			return restoreDatabase(databaseType, username, password, hostname, port, database, file, tlsCfg)
+			return restoreDatabase(databaseType, username, password, hostname, port, database, fileOrDirectory, tlsCfg)
 		},
 	}
 )
 
 // restoreDatabase restores the schema of a database instance.
-func restoreDatabase(databaseType, username, password, hostname, port, database, file string, tlsCfg connect.TlsConfig) error {
+func restoreDatabase(databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig) error {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
@@ -60,18 +61,27 @@ func restoreDatabase(databaseType, username, password, hostname, port, database,
 		if username == "" {
 			username = "root"
 		}
-		tlsConfig, err := tlsCfg.GetSslConfig()
-		if err != nil {
-			return fmt.Errorf("TlsConfig.GetSslConfig() got error: %v", err)
-		}
-		conn, err := connect.NewMysql(username, password, hostname, port, database, tlsConfig)
-		if err != nil {
-			return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", username, password, hostname, port, err)
-		}
-		defer conn.Close()
 
-		if err := mysqlrestore.Restore(conn, sc); err != nil {
-			return fmt.Errorf("mysqlrestore.Restore() got error: %v", err)
+		db, err := db.Open(
+			db.Mysql,
+			db.DriverConfig{Logger: logger},
+			db.ConnectionConfig{
+				Host:      hostname,
+				Port:      port,
+				Username:  username,
+				Password:  password,
+				Database:  database,
+				TlsConfig: tlsCfg,
+			},
+			db.ConnectionContext{},
+		)
+		if err != nil {
+			return err
+		}
+		defer db.Close(context.Background())
+
+		if err := db.Restore(context.Background(), sc); err != nil {
+			return fmt.Errorf("failed to restore from database dump %s got error: %w", file, err)
 		}
 		return nil
 	case "pg":

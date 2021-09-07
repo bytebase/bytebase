@@ -1,22 +1,24 @@
 // cmd is the command surface of Bytebase bb tool provided by bytebase.com.
 package cmd
 
+import "go.uber.org/zap"
+
 var (
-	databaseType          string
-	username              string
-	password              string
-	hostname              string
-	port                  string
-	database              string
-	resultFileOrDirectory string
-	file                  string
+	databaseType    string
+	username        string
+	password        string
+	hostname        string
+	port            string
+	database        string
+	fileOrDirectory string
 
 	// SSL flags.
-	sslCA               string // server-ca.pem
-	sslCert             string // client-cert.pem
-	sslKey              string // client-key.pem
-	sslVerifyServerName string // The server name to be verified.
+	sslCA   string // server-ca.pem
+	sslCert string // client-cert.pem
+	sslKey  string // client-key.pem
 
 	// Dump options.
 	schemaOnly bool
+
+	logger *zap.Logger
 )

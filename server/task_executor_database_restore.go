@@ -10,8 +10,6 @@ import (
 	"strconv"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/bin/bb/connect"
-	"github.com/bytebase/bytebase/bin/bb/restore/mysqlrestore"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
@@ -86,7 +84,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := restoreDatabase(targetDatabase, backup, server.dataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.dataDir); err != nil {
 		return true, "", err
 	}
 
@@ -113,13 +111,12 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 }
 
 // restoreDatabase will restore the database from a backup
-func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string) error {
-	instance := database.Instance
-	conn, err := connect.NewMysql(instance.Username, instance.Password, instance.Host, instance.Port, database.Name, nil /* tlsConfig */)
+func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
+	driver, err := GetDatabaseDriver(instance, databaseName, exec.l)
 	if err != nil {
-		return fmt.Errorf("failed to connect database: %w", err)
+		return err
 	}
-	defer conn.Close()
+	defer driver.Close(ctx)
 
 	backupPath := backup.Path
 	if !filepath.IsAbs(backupPath) {
@@ -132,7 +129,8 @@ func restoreDatabase(database *api.Database, backup *api.Backup, dataDir string)
 	}
 	defer f.Close()
 	sc := bufio.NewScanner(f)
-	if err := mysqlrestore.Restore(conn, sc); err != nil {
+
+	if err := driver.Restore(ctx, sc); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil

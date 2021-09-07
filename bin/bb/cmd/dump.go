@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 
 	"github.com/bytebase/bytebase/bin/bb/connect"
-	"github.com/bytebase/bytebase/bin/bb/dump/mysqldump"
 	"github.com/bytebase/bytebase/bin/bb/dump/pgdump"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +20,7 @@ func init() {
 	dumpCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
 	dumpCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	dumpCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
-	dumpCmd.Flags().StringVar(&resultFileOrDirectory, "file", "",
+	dumpCmd.Flags().StringVar(&fileOrDirectory, "file", "",
 		`Result file or directory to store the dump.
 For MySQL, it behaves like mysqldump --result-file; Output to stdout if unspecified.
 For PostgreSQL, it behaves like pgdump --file; Output to stdout if unspecified. If specified and when --database is not specified, it points to the directory containing files for each database dump.`,
@@ -40,19 +41,19 @@ var (
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := connect.TlsConfig{
+			tlsCfg := db.TlsConfig{
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			return dumpDatabase(databaseType, username, password, hostname, port, database, resultFileOrDirectory, tlsCfg, schemaOnly)
+			return dumpDatabase(databaseType, username, password, hostname, port, database, fileOrDirectory, tlsCfg, schemaOnly)
 		},
 	}
 )
 
 // dumpDatabase exports the schema of a database instance.
 // When fileOrDirectory isn't specified, the schema will be exported to stdout.
-func dumpDatabase(databaseType, username, password, hostname, port, database, fileOrDirectory string, tlsCfg connect.TlsConfig, schemaOnly bool) error {
+func dumpDatabase(databaseType, username, password, hostname, port, database, fileOrDirectory string, tlsCfg db.TlsConfig, schemaOnly bool) error {
 	// For PostgreSQL, if we export all databases, then we treat fileOrDirectory as a directory
 	// and check its existence before proceeding.
 	if databaseType == "pg" && database == "" {
@@ -71,33 +72,36 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, fi
 		if username == "" {
 			username = "root"
 		}
-		tlsConfig, err := tlsCfg.GetSslConfig()
-		if err != nil {
-			return fmt.Errorf("TlsConfig.GetSslConfig() got error: %v", err)
-		}
-		conn, err := connect.NewMysql(username, password, hostname, port, "" /* database */, tlsConfig)
-		if err != nil {
-			return fmt.Errorf("connect.NewMysql(%q, %q, %q, %q) got error: %v", username, password, hostname, port, err)
-		}
-		defer conn.Close()
 
-		dp := mysqldump.New(conn)
-		databases, err := dp.GetDumpableDatabases(database)
+		db, err := db.Open(
+			db.Mysql,
+			db.DriverConfig{Logger: logger},
+			db.ConnectionConfig{
+				Host:      hostname,
+				Port:      port,
+				Username:  username,
+				Password:  password,
+				Database:  database,
+				TlsConfig: tlsCfg,
+			},
+			db.ConnectionContext{},
+		)
 		if err != nil {
 			return err
 		}
+		defer db.Close(context.Background())
+
 		out := os.Stdout
 		if fileOrDirectory != "" {
 			out, err = os.Create(fileOrDirectory)
 			if err != nil {
-				return fmt.Errorf("failed to create database dump file %s, got error: %s", fileOrDirectory, err)
+				return fmt.Errorf("failed to create dump file %s, got error: %w", fileOrDirectory, err)
 			}
 		}
 		defer out.Close()
-		for _, dbName := range databases {
-			if err := dp.Dump(dbName, out, schemaOnly, dumpAll); err != nil {
-				return err
-			}
+
+		if err := db.Dump(context.Background(), database, out, schemaOnly); err != nil {
+			return fmt.Errorf("failed to create dump %s, got error: %w", fileOrDirectory, err)
 		}
 		return nil
 	case "pg":
