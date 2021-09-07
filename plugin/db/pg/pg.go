@@ -14,43 +14,43 @@ import (
 )
 
 var (
-	_ db.Driver = (*PostgresDriver)(nil)
+	_ db.Driver = (*Driver)(nil)
 )
 
 func init() {
-	db.Register(db.Postgres, newPostgresDriver)
+	db.Register(db.Postgres, newDriver)
 }
 
-type PostgresDriver struct {
+type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 
 	db *sql.DB
 }
 
-func newPostgresDriver(config db.DriverConfig) db.Driver {
-	return &PostgresDriver{
+func newDriver(config db.DriverConfig) db.Driver {
+	return &Driver{
 		l: config.Logger,
 	}
 }
 
-func (driver *PostgresDriver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) Close(ctx context.Context) error {
+func (driver *Driver) Close(ctx context.Context) error {
 	return driver.db.Close()
 }
 
-func (driver *PostgresDriver) Ping(ctx context.Context) error {
+func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-func (driver *PostgresDriver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -62,27 +62,27 @@ func (driver *PostgresDriver) Execute(ctx context.Context, statement string) err
 }
 
 // Migration related
-func (driver *PostgresDriver) NeedsSetupMigration(ctx context.Context) (bool, error) {
+func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) SetupMigrationIfNeeded(ctx context.Context) error {
+func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // Dump and restore
-func (driver *PostgresDriver) Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (driver *PostgresDriver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
 	return fmt.Errorf("not implemented")
 }

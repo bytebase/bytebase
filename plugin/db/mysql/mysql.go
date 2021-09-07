@@ -26,27 +26,27 @@ var (
 		"sys":                true,
 	}
 
-	_ db.Driver = (*MySQLDriver)(nil)
+	_ db.Driver = (*Driver)(nil)
 )
 
 func init() {
-	db.Register(db.MySQL, newMySQLDriver)
+	db.Register(db.MySQL, newDriver)
 }
 
-type MySQLDriver struct {
+type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 
 	db *sql.DB
 }
 
-func newMySQLDriver(config db.DriverConfig) db.Driver {
-	return &MySQLDriver{
+func newDriver(config db.DriverConfig) db.Driver {
+	return &Driver{
 		l: config.Logger,
 	}
 }
 
-func (driver *MySQLDriver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -90,15 +90,15 @@ func (driver *MySQLDriver) Open(config db.ConnectionConfig, ctx db.ConnectionCon
 	return driver, nil
 }
 
-func (driver *MySQLDriver) Close(ctx context.Context) error {
+func (driver *Driver) Close(ctx context.Context) error {
 	return driver.db.Close()
 }
 
-func (driver *MySQLDriver) Ping(ctx context.Context) error {
+func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	// Query MySQL version
 	query := "SELECT VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
@@ -412,7 +412,7 @@ func (driver *MySQLDriver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.
 	return userList, schemaList, err
 }
 
-func (driver *MySQLDriver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -424,7 +424,7 @@ func (driver *MySQLDriver) Execute(ctx context.Context, statement string) error 
 }
 
 // Migration related
-func (driver *MySQLDriver) NeedsSetupMigration(ctx context.Context) (bool, error) {
+func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	const query = `
 		SELECT 
 		    1
@@ -444,7 +444,7 @@ func (driver *MySQLDriver) NeedsSetupMigration(ctx context.Context) (bool, error
 	return true, nil
 }
 
-func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
+func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
 		return nil
@@ -472,7 +472,7 @@ func (driver *MySQLDriver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -576,7 +576,7 @@ func (driver *MySQLDriver) ExecuteMigration(ctx context.Context, m *db.Migration
 	return nil
 }
 
-func (driver *MySQLDriver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -823,7 +823,7 @@ const (
 		"DELIMITER ;\n"
 )
 
-func (driver *MySQLDriver) Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out *os.File, schemaOnly bool) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -941,7 +941,7 @@ func (driver *MySQLDriver) Dump(ctx context.Context, database string, out *os.Fi
 	return nil
 }
 
-func (driver *MySQLDriver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
