@@ -66,6 +66,7 @@ func (driver *Driver) Open(config db.ConnectionConfig, ctx db.ConnectionContext)
 		return nil, fmt.Errorf("sql: tls config error: %v", err)
 	}
 
+	passwordlessDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", config.Username, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
@@ -77,7 +78,7 @@ func (driver *Driver) Open(config db.ConnectionConfig, ctx db.ConnectionContext)
 		dsn += fmt.Sprintf("?tls=%s", tlsKey)
 	}
 	driver.l.Debug("Opening MySQL driver",
-		zap.String("dsn", dsn),
+		zap.String("dsn", passwordlessDSN),
 		zap.String("environment", ctx.EnvironmentName),
 		zap.String("database", ctx.InstanceName),
 	)
