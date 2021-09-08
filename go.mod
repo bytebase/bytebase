@@ -5,8 +5,8 @@ go 1.16
 require (
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/casbin/casbin/v2 v2.29.2
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
