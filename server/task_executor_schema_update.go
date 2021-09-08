@@ -158,7 +158,10 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageId)
 		}
 
-		branch := "master"
+		// Writes back the latest schema file to the same branch as the push event.
+		// Ref format refs/heads/<<branch>>
+		refComponents := strings.Split(payload.VCSPushEvent.Ref, "/")
+		branch := refComponents[len(refComponents)-1]
 		latestSchemaFile := fmt.Sprintf("%s__#LATEST.sql", databaseName)
 		filePath := fmt.Sprintf("projects/%s/repository/files/%s", repository.ExternalId, url.QueryEscape(latestSchemaFile))
 		getFilePath := filePath + "?ref=" + url.QueryEscape(branch)
