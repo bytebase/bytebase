@@ -853,9 +853,21 @@ export default {
     const selectedStage = computed((): Stage | StageCreate => {
       const stageSlug = router.currentRoute.value.query.stage as string;
       const taskSlug = router.currentRoute.value.query.task as string;
+      // For stage slug, we support both index based and id based.
+      // Index based is used when creating the new task and is the one used when clicking the UI.
+      // Id based is used when the context only has access to the stage id (e.g. Task only contains StageId)
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
-        return issue.value.pipeline.stageList[index];
+        if (index < issue.value.pipeline.stageList.length) {
+          return issue.value.pipeline.stageList[index];
+        }
+        const stageId = idFromSlug(stageSlug);
+        const stageList = (issue.value as Issue).pipeline.stageList;
+        for (const stage of stageList) {
+          if (stage.id == stageId) {
+            return stage;
+          }
+        }
       } else if (!state.create && taskSlug) {
         const taskId = idFromSlug(taskSlug);
         const stageList = (issue.value as Issue).pipeline.stageList;
