@@ -178,7 +178,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		IssueId:     issueId,
 		Payload:     "",
 	}
-	if err := targetDriver.ExecuteMigration(ctx, m, ""); err != nil {
+	if _, err := targetDriver.ExecuteMigration(ctx, m, ""); err != nil {
 		return fmt.Errorf("failed to create migration history: %w", err)
 	}
 	return nil

@@ -479,10 +479,10 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, error) {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer tx.Rollback()
 
@@ -492,19 +492,19 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	// Check if the same migration version has alraedy been applied
 	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if duplicate {
-		return fmt.Errorf("database %q has already applied version %s", m.Database, m.Version)
+		return "", fmt.Errorf("database %q has already applied version %s", m.Database, m.Version)
 	}
 
 	// Check if there is any higher version already been applied
 	version, err := checkOutofOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if version != nil {
-		return fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version)
+		return "", fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version)
 	}
 
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
@@ -512,11 +512,11 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
 		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		if !hasBaseline {
-			return fmt.Errorf("%s has not created migration baseline yet", m.Database)
+			return "", fmt.Errorf("%s has not created migration baseline yet", m.Database)
 		}
 	}
 
@@ -524,7 +524,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
 	sequence, err := findNextSequence(ctx, tx, m.Namespace, requireBaseline)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Phase 2 - Executing migration
@@ -533,15 +533,15 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if statement != "" {
 		_, err = tx.ExecContext(ctx, statement)
 		if err != nil {
-			return formatError(err)
+			return "", formatError(err)
 		}
 	}
 
 	// Phase 3 - Dump the schema after migration
-	var buf bytes.Buffer
-	err = dumpTxn(ctx, tx, m.Database, &buf, true /*schemaOnly*/)
+	var schemaBuf bytes.Buffer
+	err = dumpTxn(ctx, tx, m.Database, &schemaBuf, true /*schemaOnly*/)
 	if err != nil {
-		return formatError(err)
+		return "", formatError(err)
 	}
 
 	// Phase 4 - Record migration
@@ -575,21 +575,21 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		m.Version,
 		m.Description,
 		statement,
-		buf.String(),
+		schemaBuf.String(),
 		time.Now().Unix()-startedTs,
 		m.IssueId,
 		m.Payload,
 	)
 
 	if err != nil {
-		return formatErrorWithQuery(err, query)
+		return "", formatErrorWithQuery(err, query)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return schemaBuf.String(), nil
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

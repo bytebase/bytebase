@@ -153,10 +153,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 				databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
 				if err != nil {
-					createIgnoredFileActivity(fmt.Errorf("failed to find database matching committed file database %q", mi.Database))
+					createIgnoredFileActivity(fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database))
 					continue
 				} else if len(databaseList) == 0 {
-					createIgnoredFileActivity(fmt.Errorf("project ID %d does not own committed file database %q", repository.ProjectId, mi.Database))
+					createIgnoredFileActivity(fmt.Errorf("project ID %d does not own database %q referenced by the committed file", repository.ProjectId, mi.Database))
 					continue
 				}
 
