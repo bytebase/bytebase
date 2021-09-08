@@ -15,8 +15,6 @@
       <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[2].title" />
       <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[3].title" />
       <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[4].title" />
-      <BBTableHeaderCell class="w-8" :title="COLUMN_LIST[5].title" />
-      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[6].title" />
     </template>
     <template v-slot:body="{ rowData: index }">
       <BBTableCell :leftPadding="4">
