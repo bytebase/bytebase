@@ -157,24 +157,6 @@
             </div>
 
             <div class="col-span-1 col-start-1">
-              <dt class="text-sm font-medium text-control-light">
-                Sync status
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                <span>{{ table.syncStatus }}</span>
-              </dd>
-            </div>
-
-            <div class="col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                Last successful sync
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                {{ humanizeTs(table.lastSuccessfulSyncTs) }}
-              </dd>
-            </div>
-
-            <div class="col-span-1 col-start-1">
               <dt class="text-sm font-medium text-control-light">Updated</dt>
               <dd class="mt-1 text-sm text-main">
                 {{ humanizeTs(table.updatedTs) }}
