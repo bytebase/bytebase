@@ -133,7 +133,22 @@ func (s *TaskScheduler) Run() error {
 						done, detail, err := executor.RunOnce(context.Background(), s.server, task)
 						time.Sleep(time.Second * 30)
 						if done {
-							if err != nil {
+							if err == nil {
+								taskStatusPatch := &api.TaskStatusPatch{
+									ID:        task.ID,
+									UpdaterId: api.SYSTEM_BOT_ID,
+									Status:    api.TaskDone,
+									Comment:   detail,
+								}
+								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
+								if err != nil {
+									s.l.Error("Failed to mark task as DONE",
+										zap.Int("id", task.ID),
+										zap.String("name", task.Name),
+										zap.Error(err),
+									)
+								}
+							} else {
 								s.l.Debug("Failed to run task",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
@@ -146,22 +161,14 @@ func (s *TaskScheduler) Run() error {
 									Status:    api.TaskFailed,
 									Comment:   err.Error(),
 								}
-								s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
-							}
-
-							taskStatusPatch := &api.TaskStatusPatch{
-								ID:        task.ID,
-								UpdaterId: api.SYSTEM_BOT_ID,
-								Status:    api.TaskDone,
-								Comment:   detail,
-							}
-							_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
-							if err != nil {
-								s.l.Error("Failed to mark task as DONE",
-									zap.Int("id", task.ID),
-									zap.String("name", task.Name),
-									zap.Error(err),
-								)
+								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
+								if err != nil {
+									s.l.Error("Failed to mark task as FAILED",
+										zap.Int("id", task.ID),
+										zap.String("name", task.Name),
+										zap.Error(err),
+									)
+								}
 							}
 						} else if err != nil {
 							s.l.Debug("Encountered transient error running task, will retry",
