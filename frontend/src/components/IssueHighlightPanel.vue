@@ -46,7 +46,7 @@
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
             </template>
             <a :href="vcsBranchURL" target="_blank" class="normal-link">
-              {{ `${vcsBranch}@${pushEvent.repoFullPath}` }}
+              {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
             <span>
               commit
@@ -145,7 +145,7 @@ export default {
     const vcsBranchURL = computed((): string => {
       if (pushEvent.value) {
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
-          return `${pushEvent.value.repoUrl}/-/tree/${vcsBranch.value}`;
+          return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
         }
       }
       return "";

@@ -63,9 +63,9 @@ export type VCSFileCommit = {
 export type VCSPushEvent = {
   vcsType: VCSType;
   ref: string;
-  repoId: string;
-  repoUrl: string;
-  repoFullPath: string;
+  repositoryId: string;
+  repositoryUrl: string;
+  repositoryFullPath: string;
   authorName: string;
   fileCommit: VCSFileCommit;
 };
