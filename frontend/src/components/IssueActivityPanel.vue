@@ -279,6 +279,37 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="actionIcon(activity) == 'commit'">
+                  <div class="relative pl-0.5">
+                    <div
+                      class="
+                        w-7
+                        h-7
+                        bg-control-bg
+                        rounded-full
+                        ring-4 ring-white
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      <svg
+                        class="w-5 h-5 text-control"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </template>
                 <div class="ml-3 min-w-0 flex-1">
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
@@ -461,6 +492,30 @@
                     <template v-else>
                       {{ activity.comment }}
                     </template>
+                    <template
+                      v-if="activity.type == 'bb.pipeline.task.file.commit'"
+                    >
+                      <a
+                        :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
+                        target="__blank"
+                        class="normal-link flex flex-row items-center"
+                        >View commit
+                        <svg
+                          class="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          ></path>
+                        </svg>
+                      </a>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -573,6 +628,7 @@ import {
   SYSTEM_BOT_ID,
   ActivityCreate,
   IssueSubscriber,
+  ActivityTaskFileCommitPayload,
 } from "../types";
 import {
   findTaskById,
@@ -604,7 +660,8 @@ type ActionIconType =
   | "approve"
   | "cancel"
   | "fail"
-  | "complete";
+  | "complete"
+  | "commit";
 
 export default {
   name: "IssueActivityPanel",
@@ -792,6 +849,8 @@ export default {
             return "fail";
           }
         }
+      } else if (activity.type == "bb.pipeline.task.file.commit") {
+        return "commit";
       }
 
       return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
@@ -869,6 +928,10 @@ export default {
             str += ` task ${task.name}`;
           }
           return str;
+        }
+        case "bb.pipeline.task.file.commit": {
+          const payload = activity.payload as ActivityTaskFileCommitPayload;
+          return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
         }
       }
       return "";
