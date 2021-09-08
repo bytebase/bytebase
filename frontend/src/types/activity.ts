@@ -11,7 +11,8 @@ export type IssueActivityType =
   | "bb.issue.comment.create"
   | "bb.issue.field.update"
   | "bb.issue.status.update"
-  | "bb.pipeline.task.status.update";
+  | "bb.pipeline.task.status.update"
+  | "bb.pipeline.task.file.commit";
 
 export type MemberActivityType =
   | "bb.member.create"
@@ -43,6 +44,8 @@ export function activityName(type: ActivityType): string {
       return "Update issue status";
     case "bb.pipeline.task.status.update":
       return "Update issue task status";
+    case "bb.pipeline.task.file.commit":
+      return "Commit file";
     case "bb.member.create":
       return "Create member";
     case "bb.member.role.update":
@@ -96,6 +99,15 @@ export type ActivityTaskStatusUpdatePayload = {
   taskName: string;
 };
 
+export type ActivityTaskFileCommitPayload = {
+  taskId: TaskId;
+  vcsInstanceUrl: string;
+  repositoryFullPath: string;
+  branch: string;
+  filePath: string;
+  commitId: string;
+};
+
 export type ActivityMemberCreatePayload = {
   principalId: PrincipalId;
   principalName: string;
@@ -136,6 +148,7 @@ export type ActionPayloadType =
   | ActivityIssueFieldUpdatePayload
   | ActivityIssueStatusUpdatePayload
   | ActivityTaskStatusUpdatePayload
+  | ActivityTaskFileCommitPayload
   | ActivityMemberCreatePayload
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload

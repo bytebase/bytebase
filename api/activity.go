@@ -17,6 +17,7 @@ const (
 	ActivityIssueFieldUpdate         ActivityType = "bb.issue.field.update"
 	ActivityIssueStatusUpdate        ActivityType = "bb.issue.status.update"
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
+	ActivityPipelineTaskFileCommit   ActivityType = "bb.pipeline.task.file.commit"
 
 	// Member related
 	ActivityMemberCreate     ActivityType = "bb.member.create"
@@ -44,6 +45,8 @@ func (e ActivityType) String() string {
 		return "bb.issue.status.update"
 	case ActivityPipelineTaskStatusUpdate:
 		return "bb.pipeline.task.status.update"
+	case ActivityPipelineTaskFileCommit:
+		return "bb.pipeline.task.file.commit"
 	case ActivityMemberCreate:
 		return "bb.member.create"
 	case ActivityMemberRoleUpdate:
@@ -124,6 +127,15 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`
+}
+
+type ActivityPipelineTaskFileCommitPayload struct {
+	TaskId             int    `json:"taskId"`
+	VCSInstanceURL     string `json:"vcsInstanceUrl,omitempty"`
+	RepositoryFullPath string `json:"repositoryFullPath,omitempty"`
+	Branch             string `json:"branch,omitempty"`
+	FilePath           string `json:"filePath,omitempty"`
+	CommitId           string `json:"commitId,omitempty"`
 }
 
 type ActivityMemberCreatePayload struct {

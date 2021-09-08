@@ -160,30 +160,79 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			return true, "", fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 
+		// Writes back the latest schema file to the same branch as the push event.
+		// Ref format refs/heads/<<branch>>
+		refComponents := strings.Split(payload.VCSPushEvent.Ref, "/")
+		branch := refComponents[len(refComponents)-1]
+
 		bytebaseURL := ""
 		if issue != nil {
 			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageId)
 		}
 
-		if err := writeBackLatestSchema(server, repository, payload.VCSPushEvent, mi, latestSchemaFile, schema, bytebaseURL); err != nil {
+		commitId, err := writeBackLatestSchema(server, repository, payload.VCSPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		if err != nil {
 			return true, "", err
+		}
+
+		// Create file commit activity
+		{
+			payload, err := json.Marshal(api.ActivityPipelineTaskFileCommitPayload{
+				TaskId:             task.ID,
+				VCSInstanceURL:     repository.VCS.InstanceURL,
+				RepositoryFullPath: payload.VCSPushEvent.RepositoryFullPath,
+				Branch:             branch,
+				FilePath:           latestSchemaFile,
+				CommitId:           commitId,
+			})
+			if err != nil {
+				exec.l.Error("Failed to marshal file commit activity after writing back the latest schema",
+					zap.Int("task_id", task.ID),
+					zap.String("repository", repository.WebURL),
+					zap.String("file_path", latestSchemaFile),
+					zap.Error(err),
+				)
+			}
+
+			containerId := task.PipelineId
+			if issue != nil {
+				containerId = issue.ID
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorId:   task.CreatorId,
+				ContainerId: containerId,
+				Type:        api.ActivityPipelineTaskFileCommit,
+				Level:       api.ACTIVITY_INFO,
+				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
+					mi.Version,
+					mi.Database,
+				),
+				Payload: string(payload),
+			}
+
+			_, err = server.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			if err != nil {
+				exec.l.Error("Failed to create file commit activity after writing back the latest schema",
+					zap.Int("task_id", task.ID),
+					zap.String("repository", repository.WebURL),
+					zap.String("file_path", latestSchemaFile),
+					zap.Error(err),
+				)
+			}
 		}
 	}
 
-	detail = fmt.Sprintf("Applied migration version %s to database %q", mi.Version, databaseName)
+	detail = fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
 	if mi.Type == db.Baseline {
-		detail = fmt.Sprintf("Established baseline version %s for database %q", mi.Version, databaseName)
+		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, databaseName)
 	}
 
 	return true, detail, nil
 }
 
 // Writes back the latest schema to the repository after migration
-func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent *common.VCSPushEvent, mi *db.MigrationInfo, latestSchemaFile string, schema string, bytebaseURL string) error {
-	// Writes back the latest schema file to the same branch as the push event.
-	// Ref format refs/heads/<<branch>>
-	refComponents := strings.Split(pushEvent.Ref, "/")
-	branch := refComponents[len(refComponents)-1]
+// Returns the commit id on success.
+func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent *common.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	filePath := fmt.Sprintf("projects/%s/repository/files/%s", repository.ExternalId, url.QueryEscape(latestSchemaFile))
 	getFilePath := filePath + "?ref=" + url.QueryEscape(branch)
 
@@ -193,14 +242,14 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 		repository.AccessToken,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to fetch latest schema file from %s, err: %w", repository.VCS.InstanceURL, err)
+		return "", fmt.Errorf("failed to fetch latest schema file from %s, err: %w", repository.VCS.InstanceURL, err)
 	}
 	defer getResp.Body.Close()
 
 	createSchemaFile := false
 	verb := "Update"
 	if getResp.StatusCode >= 300 && getResp.StatusCode != 404 {
-		return fmt.Errorf("failed to fetch latest schema file from %s, status code: %d",
+		return "", fmt.Errorf("failed to fetch latest schema file from %s, status code: %d",
 			repository.VCS.InstanceURL,
 			getResp.StatusCode,
 		)
@@ -228,17 +277,17 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 	if createSchemaFile {
 		body, err := json.Marshal(schemaFileCommit)
 		if err != nil {
-			return fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
+			return "", fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
 		}
 
 		resp, err := gitlab.POST(repository.VCS.InstanceURL, filePath, repository.AccessToken, bytes.NewBuffer(body))
 		if err != nil {
-			return fmt.Errorf("failed to create file %s after applying migration %s to %q, err: %w", filePath, mi.Version, mi.Database, err)
+			return "", fmt.Errorf("failed to create file %s after applying migration %s to %q, err: %w", filePath, mi.Version, mi.Database, err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode >= 300 {
-			return fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d",
+			return "", fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d",
 				filePath,
 				mi.Version,
 				mi.Database,
@@ -248,23 +297,23 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 	} else {
 		file := &gitlab.File{}
 		if err := json.NewDecoder(getResp.Body).Decode(file); err != nil {
-			return fmt.Errorf("failed to unmarshal file response %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
+			return "", fmt.Errorf("failed to unmarshal file response %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
 		}
 
 		schemaFileCommit.LastCommitId = file.LastCommitId
 		body, err := json.Marshal(schemaFileCommit)
 		if err != nil {
-			return fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
+			return "", fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
 		}
 
 		resp, err := gitlab.PUT(repository.VCS.InstanceURL, filePath, repository.AccessToken, bytes.NewBuffer(body))
 		if err != nil {
-			return fmt.Errorf("failed to create file %s after applying migration %s to %q, error: %w", filePath, mi.Version, mi.Database, err)
+			return "", fmt.Errorf("failed to create file %s after applying migration %s to %q, error: %w", filePath, mi.Version, mi.Database, err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode >= 300 {
-			return fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d",
+			return "", fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d",
 				filePath,
 				mi.Version,
 				mi.Database,
@@ -272,5 +321,28 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 			)
 		}
 	}
-	return nil
+
+	// GitLab API doesn't return the commit on write, so we have to call GET again
+	getResp, err = gitlab.GET(
+		repository.VCS.InstanceURL,
+		getFilePath,
+		repository.AccessToken,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch latest schema file after update, VCS instance: %s, err: %w", repository.VCS.InstanceURL, err)
+	}
+	defer getResp.Body.Close()
+
+	if getResp.StatusCode >= 300 && getResp.StatusCode != 404 {
+		return "", fmt.Errorf("failed to fetch latest schema file after update, VCS instance: %s, status code: %d",
+			repository.VCS.InstanceURL,
+			getResp.StatusCode,
+		)
+	}
+
+	file := &gitlab.File{}
+	if err := json.NewDecoder(getResp.Body).Decode(file); err != nil {
+		return "", fmt.Errorf("failed to unmarshal file response %s after update, VCS instance: %s", filePath, repository.VCS.InstanceURL)
+	}
+	return file.LastCommitId, nil
 }
