@@ -192,7 +192,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 				SEQ_IN_INDEX,
 				INDEX_TYPE,
 				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
-				'YES',
+				1,
 				INDEX_COMMENT
 			FROM information_schema.STATISTICS
 			WHERE ` + indexWhere
@@ -322,7 +322,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			SELECT
 				TABLE_SCHEMA, 
 				TABLE_NAME,
-				UNIX_TIMESTAMP(CREATE_TIME),
+				IFNULL(UNIX_TIMESTAMP(CREATE_TIME), 0),
 				IFNULL(UNIX_TIMESTAMP(UPDATE_TIME), 0),
 				TABLE_TYPE,
 				IFNULL(ENGINE, ''),
