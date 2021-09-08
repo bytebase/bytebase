@@ -32,8 +32,8 @@ func NewCacheService(logger *zap.Logger) *CacheService {
 }
 
 func (s *CacheService) FindCache(namespace api.CacheNamespace, id int, entry interface{}) (bool, error) {
-	buf1 := []byte{0, 0, 0, 0}
-	binary.LittleEndian.PutUint32(buf1, uint32(id))
+	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	binary.LittleEndian.PutUint64(buf1, uint64(id))
 
 	buf2, has := s.cache.HasGet(nil, append([]byte(namespace), buf1...))
 	if has {
@@ -48,8 +48,8 @@ func (s *CacheService) FindCache(namespace api.CacheNamespace, id int, entry int
 }
 
 func (s *CacheService) UpsertCache(namespace api.CacheNamespace, id int, entry interface{}) error {
-	buf1 := []byte{0, 0, 0, 0}
-	binary.LittleEndian.PutUint32(buf1, uint32(id))
+	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	binary.LittleEndian.PutUint64(buf1, uint64(id))
 
 	var buf2 bytes.Buffer
 	enc := gob.NewEncoder(&buf2)
