@@ -205,7 +205,8 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	if v := find.StatusList; v != nil {
 		list := []string{}
 		for _, status := range *v {
-			list = append(list, fmt.Sprintf("'%s'", status))
+			list = append(list, "?")
+			args = append(args, status)
 		}
 		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
 	}
