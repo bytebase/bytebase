@@ -184,10 +184,9 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		createSchemaFile := false
 		verb := "Update"
 		if getResp.StatusCode >= 300 && getResp.StatusCode != 404 {
-			return true, "", fmt.Errorf("failed to fetch latest schema file from %s, status code: %d, status: %s",
+			return true, "", fmt.Errorf("failed to fetch latest schema file from %s, status code: %d",
 				repository.VCS.InstanceURL,
 				getResp.StatusCode,
-				getResp.Status,
 			)
 		} else if getResp.StatusCode == 404 {
 			createSchemaFile = true
@@ -223,12 +222,11 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 300 {
-				return true, "", fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d, status: %s",
+				return true, "", fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d",
 					filePath,
 					mi.Version,
 					databaseName,
 					resp.StatusCode,
-					resp.Status,
 				)
 			}
 		} else {
@@ -250,12 +248,11 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 300 {
-				return true, "", fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d, status: %s",
+				return true, "", fmt.Errorf("failed to create file %s after applying migration %s to %q, status code: %d",
 					filePath,
 					mi.Version,
 					databaseName,
 					resp.StatusCode,
-					resp.Status,
 				)
 			}
 		}

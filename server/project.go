@@ -188,10 +188,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 			if resp.StatusCode >= 300 {
 				return echo.NewHTTPError(http.StatusInternalServerError,
-					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d, status: %s",
+					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d",
 						repositoryCreate.ProjectId,
 						resp.StatusCode,
-						resp.Status,
 					))
 			}
 
