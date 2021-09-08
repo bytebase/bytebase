@@ -151,72 +151,73 @@
         </div>
       </div>
     </main>
-  </div>
-  <BBModal
-    v-if="state.showModal"
-    :title="'Transfer project'"
-    @close="state.showModal = false"
-  >
-    <div class="col-span-1 w-64">
-      <label for="user" class="textlabel"> Project </label>
-      <!-- Only allow to transfer database to the project having OWNER role -->
-      <ProjectSelect
-        class="mt-1"
-        id="project"
-        name="project"
-        :allowedRoleList="['OWNER']"
-        :includeDefaultProject="true"
-        :selectedId="state.editingProjectId"
-        @select-project-id="
-          (projectId) => {
-            state.editingProjectId = projectId;
-          }
-        "
-      />
+
+    <BBModal
+      v-if="state.showModal"
+      :title="'Transfer project'"
+      @close="state.showModal = false"
+    >
+      <div class="col-span-1 w-64">
+        <label for="user" class="textlabel"> Project </label>
+        <!-- Only allow to transfer database to the project having OWNER role -->
+        <ProjectSelect
+          class="mt-1"
+          id="project"
+          name="project"
+          :allowedRoleList="['OWNER']"
+          :includeDefaultProject="true"
+          :selectedId="state.editingProjectId"
+          @select-project-id="
+            (projectId) => {
+              state.editingProjectId = projectId;
+            }
+          "
+        />
+      </div>
+      <div class="pt-6 flex justify-end">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showModal = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="state.editingProjectId == database.project.id"
+          @click.prevent="
+            updateProject(state.editingProjectId);
+            state.showModal = false;
+          "
+        >
+          Transfer
+        </button>
+      </div>
+    </BBModal>
+    <BBTabFilter
+      class="px-3 pb-2 border-b border-block-border"
+      :responsive="false"
+      :tabList="databaseTabItemList.map((item) => item.name)"
+      :selectedIndex="state.selectedIndex"
+      @select-index="
+        (index) => {
+          selectTab(index);
+        }
+      "
+    />
+    <div class="py-6 px-6">
+      <template v-if="state.selectedIndex == OVERVIEW_TAB">
+        <DatabaseOverviewPanel id="overview" :database="database" />
+      </template>
+      <template v-if="state.selectedIndex == BACKUP_TAB">
+        <DatabaseBackupPanel
+          :database="database"
+          :allowAdmin="allowAdmin"
+          :allowEdit="allowEdit"
+        />
+      </template>
     </div>
-    <div class="pt-6 flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="state.showModal = false"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        :disabled="state.editingProjectId == database.project.id"
-        @click.prevent="
-          updateProject(state.editingProjectId);
-          state.showModal = false;
-        "
-      >
-        Transfer
-      </button>
-    </div>
-  </BBModal>
-  <BBTabFilter
-    class="px-3 pb-2 border-b border-block-border"
-    :responsive="false"
-    :tabList="databaseTabItemList.map((item) => item.name)"
-    :selectedIndex="state.selectedIndex"
-    @select-index="
-      (index) => {
-        selectTab(index);
-      }
-    "
-  />
-  <div class="py-6 px-6">
-    <template v-if="state.selectedIndex == OVERVIEW_TAB">
-      <DatabaseOverviewPanel id="overview" :database="database" />
-    </template>
-    <template v-if="state.selectedIndex == BACKUP_TAB">
-      <DatabaseBackupPanel
-        :database="database"
-        :allowAdmin="allowAdmin"
-        :allowEdit="allowEdit"
-      />
-    </template>
   </div>
 </template>
 
