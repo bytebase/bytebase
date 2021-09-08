@@ -8,107 +8,122 @@
     :rightBordered="true"
   >
     <template v-slot:body="{ rowData: activity }">
-      <BBTableCell :leftPadding="4" class="w-4">
-        <span
-          class="
-            w-5
-            h-5
-            flex
-            items-center
-            justify-center
-            rounded-full
-            select-none
-          "
-        >
-          <template v-if="activity.level === `INFO`">
-            <svg
-              class="text-info"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+      <BBTableCell :leftPadding="4" class="w-8">
+        <div class="flex flew-row space-x-1">
+          <span
+            v-if="activity.level != `INFO`"
+            class="
+              w-5
+              h-5
+              flex
+              items-center
+              justify-center
+              rounded-full
+              select-none
+            "
+          >
+            <template v-if="activity.level === `WARN`">
+              <svg
+                class="text-warning"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </template>
+            <template v-else-if="activity.level === `ERROR`">
+              <svg
+                class="text-error"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </template>
+          </span>
+          <span>{{ activityName(activity.type) }}</span>
+          <template v-if="activityTypeLink(activity)">
+            <a
+              v-if="activityTypeLink(activity).external"
+              :href="activityTypeLink(activity).path"
+              target="_blank"
+              class="normal-link flex flex-row items-center"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-          </template>
-          <template v-else-if="activity.level === `WARN`">
-            <svg
-              class="text-warning"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+              <span>{{ activityTypeLink(activity).title }}</span>
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                ></path>
+              </svg>
+            </a>
+            <router-link
+              v-else
+              class="normal-link"
+              :to="activityTypeLink(activity).path"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
+              {{ activityTypeLink(activity).title }}
+            </router-link>
           </template>
-          <template v-else-if="activity.level === `ERROR`">
-            <svg
-              class="text-error"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-          </template>
-        </span>
+        </div>
       </BBTableCell>
-      <BBTableCell class="w-8">
-        {{ activityName(activity.type) }}
-        <template v-if="activityTypeLink(activity)">
-          <a
-            v-if="activityTypeLink(activity).external"
-            :href="activityTypeLink(activity).path"
-            target="_blank"
-            class="normal-link"
-          >
-            {{ activityTypeLink(activity).title }}
-          </a>
-          <router-link
-            v-else
-            class="normal-link"
-            :to="activityTypeLink(activity).path"
-          >
-            {{ activityTypeLink(activity).title }}
-          </router-link>
-        </template>
-      </BBTableCell>
-      <BBTableCell class="w-24">
-        {{ activity.comment }}
-        <template v-if="activityCommentLink(activity)">
-          <a
-            v-if="activityCommentLink(activity).external"
-            :href="activityCommentLink(activity).path"
-            target="_blank"
-            class="normal-link"
-          >
-            {{ activityCommentLink(activity).title }}
-          </a>
-          <router-link
-            v-else
-            class="normal-link"
-            :to="activityCommentLink(activity).path"
-          >
-            {{ activityCommentLink(activity).title }}
-          </router-link>
-        </template>
+      <BBTableCell class="w-96">
+        <div class="flex flex-row space-x-1">
+          <span>{{ activity.comment }}</span>
+          <template v-if="activityCommentLink(activity)">
+            <a
+              v-if="activityCommentLink(activity).external"
+              :href="activityCommentLink(activity).path"
+              target="_blank"
+              class="normal-link flex flex-row items-center"
+            >
+              <span>{{ activityCommentLink(activity).title }}</span>
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                ></path>
+              </svg>
+            </a>
+            <router-link
+              v-else
+              class="normal-link"
+              :to="activityCommentLink(activity).path"
+            >
+              {{ activityCommentLink(activity).title }}
+            </router-link>
+          </template>
+        </div>
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ humanizeTs(activity.createdTs) }}
@@ -142,10 +157,7 @@ type Link = {
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
-    title: "",
-  },
-  {
-    title: "Type",
+    title: "Name",
   },
   {
     title: "Comment",
