@@ -314,8 +314,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) error {
-	return fmt.Errorf("not implemented")
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, error) {
+	return "", fmt.Errorf("not implemented")
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
