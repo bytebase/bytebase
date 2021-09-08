@@ -111,7 +111,7 @@ export default {
     },
     migrationType: {
       required: true,
-      type: Object as PropType<MigrationType>,
+      type: String as PropType<MigrationType>,
     },
     showApplyStatement: {
       required: true,
