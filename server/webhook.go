@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -78,6 +79,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				if err != nil {
 					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", added), zap.String("timestamp", commit.Timestamp), zap.Error(err))
 				}
+
+				// Ignored the schema file we auto generated to the repository.
+				if repository.SchemaPathTemplate != "" {
+					placeholderList := []string{
+						"ENV_NAME",
+						"DB_NAME",
+					}
+					schemafilePathRegex := repository.SchemaPathTemplate
+					for _, placeholder := range placeholderList {
+						schemafilePathRegex = strings.ReplaceAll(schemafilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+					}
+					myRegex, err := regexp.Compile(schemafilePathRegex)
+					if err != nil {
+						s.l.Warn("Invalid schema path template.", zap.String("schema_path_template",
+							repository.SchemaPathTemplate),
+							zap.Error(err),
+						)
+					}
+					if myRegex.MatchString(added) {
+						continue
+					}
+				}
+
 				vcsPushEvent := common.VCSPushEvent{
 					VCSType:            repository.VCS.Type,
 					BaseDirectory:      repository.BaseDirectory,

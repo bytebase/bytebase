@@ -73,7 +73,7 @@
       <div class="textlabel">
         File path template <span class="text-red-600">*</span>
         <a
-          href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files"
+          href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#file-path-template"
           target="__blank"
           class="font-normal normal-link"
         >
@@ -94,8 +94,8 @@
       />
       <div class="mt-2 textinfolabel">
         <span class="text-red-600">*</span> Required placeholders:
-        {{ REQUIRED_PLACEHOLDER }}. Optional placeholders:
-        {{ OPTIONAL_PLACEHOLDER }}
+        {{ FILE_REQUIRED_PLACEHOLDER }}; optional placeholders:
+        {{ FILE_OPTIONAL_PLACEHOLDER }}
       </div>
       <div class="mt-2 textinfolabel">
         • File path example for normal migration type:
@@ -118,6 +118,53 @@
         }}
       </div>
     </div>
+    <div>
+      <div class="textlabel">
+        Schema path template
+        <a
+          href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#schema-path-template"
+          target="__blank"
+          class="font-normal normal-link"
+        >
+          config guide</a
+        >
+      </div>
+      <div class="mt-1 textinfolabel">
+        When specified, after each migration, Bytebase will write the latest
+        schema to the schema path relative to the base directory in the same
+        branch as the original commit triggering the migration. Leave empty if
+        you don't want Bytebase to do this.
+        <span class="font-medium text-main"
+          >Make sure the changed branch is not protected or allow repository
+          maintainer to push to that protected branch</span
+        >.
+      </div>
+      <input
+        id="schemapathtemplate"
+        name="schemapathtemplate"
+        type="text"
+        class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
+        v-model="repositoryConfig.schemaPathTemplate"
+      />
+      <div class="mt-2 textinfolabel">
+        <span class="text-red-600">*</span> If specified, required placeholder:
+        {{ SCHEMA_REQUIRED_PLACEHOLDER }}; optional placeholder:
+        {{ SCHEMA_OPTIONAL_PLACEHOLDER }}
+      </div>
+      <div
+        v-if="repositoryConfig.schemaPathTemplate"
+        class="mt-2 textinfolabel"
+      >
+        • Schema path example:
+        {{
+          sampleSchemaPath(
+            repositoryConfig.baseDirectory,
+            repositoryConfig.schemaPathTemplate
+          )
+        }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -126,8 +173,10 @@ import { reactive } from "@vue/reactivity";
 import { PropType } from "@vue/runtime-core";
 import { ExternalRepositoryInfo, RepositoryConfig, VCSType } from "../types";
 
-const REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
-const OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}, {{DESCRIPTION}}";
+const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
+const FILE_OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}, {{DESCRIPTION}}";
+const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
+const SCHEMA_OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}";
 
 interface LocalState {}
 
@@ -205,11 +254,38 @@ export default {
       return result;
     };
 
+    const sampleSchemaPath = (
+      baseDirectory: string,
+      schemaPathTemplate: string
+    ): string => {
+      type Item = {
+        placeholder: string;
+        sampleText: string;
+      };
+
+      const placeholderList: Item[] = [
+        {
+          placeholder: "{{DB_NAME}}",
+          sampleText: "db1",
+        },
+      ];
+
+      let result: string = `${baseDirectory}/${schemaPathTemplate}`;
+      for (const item of placeholderList) {
+        const re = new RegExp(item.placeholder, "g");
+        result = result.replace(re, item.sampleText);
+      }
+      return result;
+    };
+
     return {
-      REQUIRED_PLACEHOLDER,
-      OPTIONAL_PLACEHOLDER,
+      FILE_REQUIRED_PLACEHOLDER,
+      FILE_OPTIONAL_PLACEHOLDER,
+      SCHEMA_REQUIRED_PLACEHOLDER,
+      SCHEMA_OPTIONAL_PLACEHOLDER,
       state,
       sampleFilePath,
+      sampleSchemaPath,
     };
   },
 };

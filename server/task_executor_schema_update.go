@@ -152,9 +152,12 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, "", err
 	}
 
-	// If VCS based, then we will write back the latest schema file after migration.
-	if payload.VCSPushEvent != nil {
-		latestSchemaFile := fmt.Sprintf("%s__#LATEST.sql", databaseName)
+	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
+	if payload.VCSPushEvent != nil && repository.SchemaPathTemplate != "" {
+		latestSchemaFile := filepath.Join(repository.BaseDirectory, repository.SchemaPathTemplate)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
+
 		repository.VCS, err = server.ComposeVCSById(context.Background(), repository.VCSId)
 		if err != nil {
 			return true, "", fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)

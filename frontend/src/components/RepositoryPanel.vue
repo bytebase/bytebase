@@ -23,6 +23,15 @@
     >
     <span v-else class="font-medium text-main">default branch</span>, Bytebase
     will automatically kicks off the task to apply the new schema change.
+    <template v-if="state.repositoryConfig.schemaPathTemplate"
+      >After applying the schema change, if schema path template is specified,
+      Bytebase will also write the latest schema to the specified schema path
+      location
+      <span class="font-medium text-main">{{
+        state.repositoryConfig.schemaPathTemplate
+      }}</span
+      >.</template
+    >
   </div>
   <RepositoryForm
     class="mt-4"
@@ -98,6 +107,7 @@ export default {
         baseDirectory: props.repository.baseDirectory,
         branchFilter: props.repository.branchFilter,
         filePathTemplate: props.repository.filePathTemplate,
+        schemaPathTemplate: props.repository.schemaPathTemplate,
       },
     });
 
@@ -108,6 +118,7 @@ export default {
           baseDirectory: cur.baseDirectory,
           branchFilter: cur.branchFilter,
           filePathTemplate: cur.filePathTemplate,
+          schemaPathTemplate: cur.schemaPathTemplate,
         };
       }
     );
@@ -129,7 +140,9 @@ export default {
           props.repository.baseDirectory !=
             state.repositoryConfig.baseDirectory ||
           props.repository.filePathTemplate !=
-            state.repositoryConfig.filePathTemplate)
+            state.repositoryConfig.filePathTemplate ||
+          props.repository.schemaPathTemplate !=
+            state.repositoryConfig.schemaPathTemplate)
       );
     });
 
@@ -163,6 +176,13 @@ export default {
       ) {
         repositoryPatch.filePathTemplate =
           state.repositoryConfig.filePathTemplate;
+      }
+      if (
+        props.repository.schemaPathTemplate !=
+        state.repositoryConfig.schemaPathTemplate
+      ) {
+        repositoryPatch.schemaPathTemplate =
+          state.repositoryConfig.schemaPathTemplate;
       }
       store
         .dispatch("repository/updateRepositoryByProjectId", {
