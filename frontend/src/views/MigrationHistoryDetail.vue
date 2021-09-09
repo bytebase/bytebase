@@ -56,6 +56,37 @@
               {{ humanizeTs(migrationHistory.createdTs) }}
             </dd>
           </dl>
+          <div
+            v-if="pushEvent"
+            class="
+              mt-1
+              text-sm text-control-light
+              flex flex-row
+              items-center
+              space-x-1
+            "
+          >
+            <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
+              <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
+            </template>
+            <a :href="vcsBranchURL" target="_blank" class="normal-link">
+              {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
+            </a>
+            <span>
+              commit
+              <a
+                :href="pushEvent.fileCommit.url"
+                target="_blank"
+                class="normal-link"
+              >
+                {{ pushEvent.fileCommit.id.substring(0, 7) }}:
+              </a>
+              <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
+              by
+              {{ pushEvent.authorName }} at
+              {{ moment(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -135,6 +166,11 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import { idFromSlug, secondsToString } from "../utils";
+import {
+  MigrationHistory,
+  MigrationHistoryPayload,
+  VCSPushEvent,
+} from "../types";
 
 export default {
   name: "MigrationHistoryDetail",
@@ -158,10 +194,35 @@ export default {
       );
     });
 
-    const migrationHistory = computed(() => {
+    const migrationHistory = computed((): MigrationHistory => {
       return store.getters["instance/migrationHistoryById"](
         idFromSlug(props.migrationHistorySlug)
       );
+    });
+
+    const pushEvent = computed((): VCSPushEvent | undefined => {
+      console.log(migrationHistory.value.payload);
+      return (migrationHistory.value.payload as MigrationHistoryPayload)
+        .pushEvent;
+    });
+
+    const vcsBranch = computed((): string => {
+      if (pushEvent.value) {
+        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+          const parts = pushEvent.value.ref.split("/");
+          return parts[parts.length - 1];
+        }
+      }
+      return "";
+    });
+
+    const vcsBranchURL = computed((): string => {
+      if (pushEvent.value) {
+        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+          return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
+        }
+      }
+      return "";
     });
 
     const copyStatement = () => {
@@ -188,6 +249,9 @@ export default {
       secondsToString,
       database,
       migrationHistory,
+      pushEvent,
+      vcsBranch,
+      vcsBranchURL,
       copyStatement,
       copySchema,
     };
