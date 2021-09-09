@@ -52,6 +52,8 @@ import { projectSlug } from "../utils";
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
+// Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
+const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
 const CHOOSE_REPOSITORY_STEP = 1;
@@ -109,6 +111,7 @@ export default {
           baseDirectory: "",
           branchFilter: "",
           filePathTemplate: DEFAULT_FILE_PATH_TEMPLATE,
+          schemaPathTemplate: DEFAULT_SCHEMA_PATH_TEMPLATE,
         },
       },
       currentStep: CHOOSE_PROVIDER_STEP,
@@ -144,6 +147,7 @@ export default {
           branchFilter: state.config.repositoryConfig.branchFilter,
           baseDirectory: state.config.repositoryConfig.baseDirectory,
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
+          schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
           externalId: state.config.repositoryInfo.externalId,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,

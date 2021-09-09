@@ -12,6 +12,7 @@ INSERT INTO
         branch_filter,
         base_directory,
         file_path_template,
+        schema_path_template,
         external_id,
         external_webhook_id,
         webhook_url_host,
@@ -34,6 +35,7 @@ VALUES
         "master",
         "bytebase",
         "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+        "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
         -- Refers to the bytebase-demo/blog
         "13",
         -- Refers to the webhook in bytebase-demo/blog
@@ -59,6 +61,7 @@ INSERT INTO
         branch_filter,
         base_directory,
         file_path_template,
+        schema_path_template,
         external_id,
         external_webhook_id,
         webhook_url_host,
@@ -81,6 +84,7 @@ VALUES
         "master",
         "bytebase",
         "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+        "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
         -- Refers to the bytebase-demo/shop
         "14",
         -- Refers to the webhook in bytebase-demo/shop

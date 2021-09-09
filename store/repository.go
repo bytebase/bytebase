@@ -152,6 +152,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 			branch_filter,
 			base_directory,
 			file_path_template,
+			schema_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -161,8 +162,8 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 			expires_ts,
 			refresh_token
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -174,6 +175,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		create.BranchFilter,
 		create.BaseDirectory,
 		create.FilePathTemplate,
+		create.SchemaPathTemplate,
 		create.ExternalId,
 		create.ExternalWebhookId,
 		create.WebhookURLHost,
@@ -205,6 +207,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		&repository.BranchFilter,
 		&repository.BaseDirectory,
 		&repository.FilePathTemplate,
+		&repository.SchemaPathTemplate,
 		&repository.ExternalId,
 		&repository.ExternalWebhookId,
 		&repository.WebhookURLHost,
@@ -251,6 +254,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			branch_filter,
 			base_directory,
 			file_path_template,
+			schema_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -286,6 +290,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			&repository.BranchFilter,
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
+			&repository.SchemaPathTemplate,
 			&repository.ExternalId,
 			&repository.ExternalWebhookId,
 			&repository.WebhookURLHost,
@@ -320,6 +325,9 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 	if v := patch.FilePathTemplate; v != nil {
 		set, args = append(set, "file_path_template = ?"), append(args, *v)
 	}
+	if v := patch.SchemaPathTemplate; v != nil {
+		set, args = append(set, "schema_path_template = ?"), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -328,7 +336,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		args...,
 	)
@@ -353,6 +361,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 			&repository.BranchFilter,
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
+			&repository.SchemaPathTemplate,
 			&repository.ExternalId,
 			&repository.ExternalWebhookId,
 			&repository.WebhookURLHost,
