@@ -2,12 +2,12 @@
 <a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/frontend/src/assets/logo.svg" height="56px" /></a>
 </p>
 
+<p align="center">
+<img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
+<img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
+</p>
+
 ---
-
-[![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-alpha-red)
-
-[![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2)](https://discord.gg/Gqk4NefZJM)
 
 ### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
 
@@ -112,3 +112,7 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
     ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
+
+## 🎠 Community
+
+[![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4)](https://discord.gg/Gqk4NefZJM)
