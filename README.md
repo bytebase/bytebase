@@ -3,6 +3,8 @@
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-red)
 
+![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner1)
+
 ### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
 
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
