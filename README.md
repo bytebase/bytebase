@@ -9,15 +9,20 @@
 
 ---
 
-### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
+[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
 
-> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
-> issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
-
-[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs. It supports 2 mainstream schema change workflow:
-
-- UI based SQL review
-- Version control based schema migration (Database-as-Code)
+- [x] Web-based schema change and management workspace for teams
+- [x] Version control based schema migration (Database-as-Code)
+- [x] Classic UI based schema migraiton (SQL Review)
+- [x] Detailed migration history
+- [x] Backup and restore
+- [x] Role-based access control (RBAC)
+- [x] MySQL support
+- [x] GitLab CE/EE support
+- [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
+- [ ] PostgreSQL support
+- [ ] GitLab.com support
+- [ ] GitHub support
 
 <figcaption align = "center">Fig.1 - Dashboard</figcaption>
 
@@ -115,4 +120,11 @@ Bytebase should now be running at https://localhost:3000 and change either front
 
 ## 🎠 Community
 
+> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
+> issue when upgrading to the new version. Please contact support@bytebase.com or join our Discord server, and we will help you manually upgrade the schema.
+
 [![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4)](https://discord.gg/Gqk4NefZJM)
+
+## 🧲 Jobs
+
+We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
