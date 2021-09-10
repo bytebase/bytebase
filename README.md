@@ -36,25 +36,7 @@
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
 
-### Supported database engines
-
-- MySQL
-
-#### Planned
-
-- PostgreSQL
-
-### Supported VCS
-
-- GitLab EE/CE
-
-#### Planned
-
-- GitHub Enterprise
-- GitLab.com
-- GitHub.com
-
-**Visit [docs.bytebase.com](https://docs.bytebase.com) for more details**
+**Checkout [docs.bytebase.com](https://docs.bytebase.com) for more details**
 
 ## ⚙️ Installation
 
