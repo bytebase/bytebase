@@ -3,6 +3,8 @@
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-red)
 
+![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2)
+
 ### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
 
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
@@ -106,7 +108,3 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
     ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
-
-## 🎠 Community
-
-<iframe src="https://discord.com/widget?id=861117579216420874&theme=dark" width="175" height="250" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
