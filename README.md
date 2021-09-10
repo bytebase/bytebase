@@ -3,7 +3,7 @@
 [![apache license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-red)
 
-![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2)
+[![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2)](https://discord.gg/Gqk4NefZJM)
 
 ### 🧲 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
 
