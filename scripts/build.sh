@@ -17,6 +17,7 @@ fi
 
 if [ -z "$1" ];
 then
+  mkdir -p bytebase-build
   OUTPUT_DIR=$( cd bytebase-build &> /dev/null && pwd )
 else
   OUTPUT_DIR="$1"
@@ -45,7 +46,7 @@ echo "Step 1 - building bytebase frontend..."
 
 if command -v yarn &> /dev/null
 then
-    yarn --cwd ./frontend release
+    yarn --cwd ./frontend && yarn --cwd ./frontend release
 else
     npm --prefix ./frontend run release
 fi
