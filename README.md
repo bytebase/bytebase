@@ -105,7 +105,7 @@ Bytebase should now be running at https://localhost:3000 and change either front
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
 > issue when upgrading to the new version. Please contact support@bytebase.com or join our Discord server, and we will help you manually upgrade the schema.
 
-[![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4)](https://discord.gg/Gqk4NefZJM)
+[![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2)](https://discord.gg/Gqk4NefZJM)
 
 ## 🧲 Jobs
 
