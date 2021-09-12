@@ -168,7 +168,16 @@ input[type="number"] {
                     whitespace-pre
                   "
                 >
-                  {{ GRANT_STATEMENT }}
+                  <span
+                    >CREATE USER bytebase@'%' IDENTIFIED BY '<span
+                      class="text-red-600"
+                      >&#123;&#123;YOUR_SECRET_PWD&#125;&#125;</span
+                    >';{{ "\n\n" }}GRANT ALTER, ALTER ROUTINE, CREATE, CREATE
+                    ROUTINE, CREATE USER, {{ "\n" }}CREATE VIEW, DELETE, DROP,
+                    EXECUTE, INDEX, PROCESS, REFERENCES, {{ "\n" }}SELECT, SHOW
+                    DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE {{ "\n" }}ON
+                    *.* to bytebase@'%';</span
+                  >
                 </span>
                 <button
                   tabindex="-1"
@@ -235,7 +244,7 @@ input[type="number"] {
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              placeholder="sensitive - write only"
+              placeholder="YOUR_SECRET_PWD - write only"
               :disabled="!allowEdit"
               :value="create ? state.instance.password : state.updatedPassword"
               @input="
