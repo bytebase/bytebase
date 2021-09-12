@@ -62,7 +62,7 @@ VALUES
         101,
         'MySQL Test (You can follow the "External Link" field to bring up the MySQL server)',
         'MYSQL',
-        '172.17.0.1',
+        'host.docker.internal',
         '3306',
         'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
     );
@@ -140,7 +140,7 @@ VALUES
         102,
         'MySQL Prod (You can follow the "External Link" field to bring up the MySQL server)',
         'MYSQL',
-        '172.17.0.1',
+        'host.docker.internal',
         '3306',
         'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
     );
