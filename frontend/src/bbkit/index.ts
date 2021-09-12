@@ -8,20 +8,21 @@ import BBContextMenu from "./BBContextMenu.vue";
 import BBModal from "./BBModal.vue";
 import BBNotification from "./BBNotification.vue";
 import BBOutline from "./BBOutline.vue";
-import BBSwitch from "./BBSwitch.vue";
 import BBSelect from "./BBSelect.vue";
+import BBSpin from "./BBSpin.vue";
 import BBStepBar from "./BBStepBar.vue";
 import BBStepTab from "./BBStepTab.vue";
+import BBSwitch from "./BBSwitch.vue";
 import BBTab from "./BBTab.vue";
-import BBTabPanel from "./BBTabPanel.vue";
 import BBTabFilter from "./BBTabFilter.vue";
-import BBTextField from "./BBTextField.vue";
 import {
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
 } from "./BBTable";
+import BBTabPanel from "./BBTabPanel.vue";
+import BBTextField from "./BBTextField.vue";
 
 export {
   BBAlert,
@@ -35,6 +36,7 @@ export {
   BBNotification,
   BBOutline,
   BBSelect,
+  BBSpin,
   BBStepBar,
   BBStepTab,
   BBSwitch,

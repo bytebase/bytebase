@@ -272,22 +272,28 @@ input[type="number"] {
     <!-- Action Button Group -->
     <div class="pt-4">
       <!-- Create button group -->
-      <div v-if="create" class="flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!allowCreate"
-          @click.prevent="tryCreate"
-        >
-          Create
-        </button>
+      <div v-if="create" class="flex justify-between">
+        <div>
+          <BBSpin v-if="state.creating" :title="'Creating...'" />
+        </div>
+        <div>
+          <button
+            type="button"
+            class="btn-normal py-2 px-4"
+            :disabled="state.creating"
+            @click.prevent="cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+            :disabled="!allowCreate || state.creating"
+            @click.prevent="tryCreate"
+          >
+            Create
+          </button>
+        </div>
       </div>
       <!-- Update button group -->
       <div v-else class="flex justify-end">
@@ -351,6 +357,7 @@ interface LocalState {
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
   showCreateUserExample: boolean;
+  creating: boolean;
 }
 
 export default {
@@ -394,6 +401,7 @@ export default {
       showCreateInstanceWarningModal: false,
       createInstanceWarning: "",
       showCreateUserExample: props.create,
+      creating: false,
     });
 
     const allowCreate = computed(() => {
@@ -460,9 +468,11 @@ export default {
     // stored in that data source object instead of in the instance self.
     // Conceptually, data source is the proper place to store connnection info (thinking of DSN)
     const doCreate = () => {
+      state.creating = true;
       store
         .dispatch("instance/createInstance", state.instance)
         .then((createdInstance) => {
+          state.creating = false;
           emit("dismiss");
 
           router.push(`/instance/${instanceSlug(createdInstance)}`);

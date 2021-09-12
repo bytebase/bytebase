@@ -20,6 +20,9 @@ import {
 } from "../../types";
 import { InstanceUser } from "../../types/InstanceUser";
 
+// Create migration schema might take a while (e.g TiDB)
+const CREATE_MIGRATION_SCHEMA_TIMEOUT = 30000;
+
 function convert(
   instance: ResourceObject,
   includedList: ResourceObject[],
@@ -190,12 +193,18 @@ const actions = {
     newInstance: InstanceCreate
   ) {
     const data = (
-      await axios.post(`/api/instance`, {
-        data: {
-          type: "InstanceCreate",
-          attributes: newInstance,
+      await axios.post(
+        `/api/instance`,
+        {
+          data: {
+            type: "InstanceCreate",
+            attributes: newInstance,
+          },
         },
-      })
+        {
+          timeout: CREATE_MIGRATION_SCHEMA_TIMEOUT,
+        }
+      )
     ).data;
     const createdInstance = convert(data.data, data.included, rootGetters);
 
@@ -278,8 +287,11 @@ const actions = {
     { rootGetters }: any,
     instanceId: InstanceId
   ): Promise<SqlResultSet> {
-    const data = (await axios.post(`/api/instance/${instanceId}/migration`))
-      .data.data;
+    const data = (
+      await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
+        timeout: CREATE_MIGRATION_SCHEMA_TIMEOUT,
+      })
+    ).data.data;
 
     return rootGetters["sql/convert"](data);
   },
