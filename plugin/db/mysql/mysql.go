@@ -470,7 +470,10 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
-		if err := driver.Execute(ctx, migrationSchema); err != nil {
+		// Do not wrap it in a single transaction here because:
+		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
+		// 2. For TiDB, the created database/table is not visible to the followup statements from the same transaction.
+		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
