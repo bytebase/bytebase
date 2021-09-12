@@ -86,6 +86,12 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 1.  Install [Air](https://github.com/cosmtrek/air#installation)
 
+1.  Pull source
+
+    ```bash
+    $ git clone https://github.com/bytebase/bytebase
+    ```
+
 1.  Start backend using air (with live reload)
 
     ```bash
