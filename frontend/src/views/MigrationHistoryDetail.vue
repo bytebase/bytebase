@@ -66,7 +66,7 @@
               space-x-1
             "
           >
-            <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
+            <template v-if="pushEvent?.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
             </template>
             <a :href="vcsBranchURL" target="_blank" class="normal-link">
@@ -203,7 +203,7 @@ export default {
     const pushEvent = computed((): VCSPushEvent | undefined => {
       console.log(migrationHistory.value.payload);
       return (migrationHistory.value.payload as MigrationHistoryPayload)
-        .pushEvent;
+        ?.pushEvent;
     });
 
     const vcsBranch = computed((): string => {
