@@ -91,7 +91,8 @@ input[type="number"] {
           />
         </div>
 
-        <div class="sm:col-span-3 sm:col-start-1">
+        <!--Do not show external link on create to reduce cognitive load-->
+        <div v-if="!create" class="sm:col-span-3 sm:col-start-1">
           <label for="externallink" class="textlabel inline-flex">
             <span class="">External Link</span>
             <button
