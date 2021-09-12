@@ -17,6 +17,7 @@ fi
 
 if [ -z "$1" ];
 then
+  mkdir -p bytebase-build
   OUTPUT_DIR=$( cd bytebase-build &> /dev/null && pwd )
 else
   OUTPUT_DIR="$1"
