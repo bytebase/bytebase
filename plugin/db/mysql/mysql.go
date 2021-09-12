@@ -345,6 +345,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	tableMap := make(map[string][]db.DBTable)
 	for tableRows.Next() {
 		var dbName string
+		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
+		var tableCollation sql.NullString
 		var table db.DBTable
 		if err := tableRows.Scan(
 			&dbName,
@@ -353,7 +355,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			&table.UpdatedTs,
 			&table.Type,
 			&table.Engine,
-			&table.Collation,
+			&tableCollation,
 			&table.RowCount,
 			&table.DataSize,
 			&table.IndexSize,
@@ -362,6 +364,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			&table.Comment,
 		); err != nil {
 			return nil, nil, err
+		}
+
+		if tableCollation.Valid {
+			table.Collation = tableCollation.String
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, table.Name)
