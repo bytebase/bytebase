@@ -146,13 +146,23 @@ input[type="number"] {
               class="mt-1 text-sm text-gray-500"
               :class="create ? 'max-w-xl' : ''"
             >
-              This is the connection used by Bytebase to perform DDL and DML
-              operations. We recommend you to create a separate user
-              'bytebase@%' to operate. Below is an example to create such an
-              user and grant it with the needed privileges.
+              This is the connection user used by Bytebase to perform DDL and
+              DML operations.
+              <span
+                v-if="!create"
+                class="normal-link"
+                @click="toggleCreateUserExample"
+                >Show how to create</span
+              >
             </p>
-            <div class="mt-2 text-sm text-main">
-              <div class="flex flex-row">
+            <div
+              v-if="state.showCreateUserExample"
+              class="mt-2 text-sm text-main"
+            >
+              Below is an example to create user 'bytebase@%' with password
+              <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
+              with the needed privileges.
+              <div class="mt-2 flex flex-row">
                 <span
                   class="
                     flex-1
@@ -168,16 +178,7 @@ input[type="number"] {
                     whitespace-pre
                   "
                 >
-                  <span
-                    >CREATE USER bytebase@'%' IDENTIFIED BY '<span
-                      class="text-red-600"
-                      >&#123;&#123;YOUR_DB_PWD&#125;&#125;</span
-                    >';{{ "\n\n" }}GRANT ALTER, ALTER ROUTINE, CREATE, CREATE
-                    ROUTINE, CREATE USER, {{ "\n" }}CREATE VIEW, DELETE, DROP,
-                    EXECUTE, INDEX, PROCESS, REFERENCES, {{ "\n" }}SELECT, SHOW
-                    DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE {{ "\n" }}ON
-                    *.* to bytebase@'%';</span
-                  >
+                  {{ GRANT_STATEMENT }}
                 </span>
                 <button
                   tabindex="-1"
@@ -340,7 +341,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 
 const GRANT_STATEMENT =
-  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_DB_PWD}}';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, \nCREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
+  "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, \nCREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
 
 interface LocalState {
   originalInstance?: Instance;
@@ -349,6 +350,7 @@ interface LocalState {
   updatedPassword: string;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
+  showCreateUserExample: boolean;
 }
 
 export default {
@@ -391,6 +393,7 @@ export default {
       updatedPassword: "",
       showCreateInstanceWarningModal: false,
       createInstanceWarning: "",
+      showCreateUserExample: props.create,
     });
 
     const allowCreate = computed(() => {
@@ -419,6 +422,10 @@ export default {
         !isEmpty(state.updatedPassword)
       );
     });
+
+    const toggleCreateUserExample = () => {
+      state.showCreateUserExample = !state.showCreateUserExample;
+    };
 
     const updateInstance = (field: string, value: string) => {
       (state.instance as any)[field] = value;
@@ -561,6 +568,7 @@ export default {
       allowEdit,
       showTestConnection,
       valueChanged,
+      toggleCreateUserExample,
       updateInstance,
       cancel,
       tryCreate,
