@@ -45,13 +45,13 @@
 ### Run on localhost:8080
 
 ```bash
-$ docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.5.0 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.5.0 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-$ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.5.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.5.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 🕊 Interested in contributing?
@@ -89,19 +89,19 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 1.  Pull source
 
     ```bash
-    $ git clone https://github.com/bytebase/bytebase
+    git clone https://github.com/bytebase/bytebase
     ```
 
 1.  Start backend using air (with live reload)
 
     ```bash
-    $ air -c scripts/.air.toml
+    air -c scripts/.air.toml
     ```
 
 1.  Start frontend (with live reload)
 
     ```bash
-    $ cd frontend && yarn && yarn dev
+    cd frontend && yarn && yarn dev
     ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
