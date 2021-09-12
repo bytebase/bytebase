@@ -69,7 +69,7 @@ input[type="number"] {
             type="text"
             id="host"
             name="host"
-            placeholder="e.g. 127.0.0.1 | localhost | /tmp/mysql.sock"
+            placeholder="e.g. host.docker.internal | <<ip>> | <<local socket>>"
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
             :value="state.instance.host"
@@ -327,7 +327,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { instanceSlug, isDBAOrOwner } from "../utils";
+import { instanceSlug, isDBAOrOwner, isDev } from "../utils";
 import {
   Instance,
   InstanceCreate,
@@ -383,7 +383,9 @@ export default {
             environmentId: UNKNOWN_ID,
             name: "New Instance",
             engine: "MYSQL",
-            host: "127.0.0.1",
+            // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
+            // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
+            host: isDev() ? "127.0.0.1" : "host.docker.internal",
             username: "",
           },
       updatedPassword: "",
