@@ -48,7 +48,7 @@
 $ docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.5.0 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
-### Run on https://bytebase.example.com
+### Run on http&#58;//github.com
 
 ```bash
 $ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.5.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
