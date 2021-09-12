@@ -17,6 +17,7 @@ import {
   BBNotification,
   BBOutline,
   BBSelect,
+  BBSpin,
   BBStepBar,
   BBStepTab,
   BBSwitch,
@@ -170,6 +171,7 @@ Promise.all([
     .component("BBModal", BBModal)
     .component("BBNotification", BBNotification)
     .component("BBOutline", BBOutline)
+    .component("BBSpin", BBSpin)
     .component("BBSelect", BBSelect)
     .component("BBStepBar", BBStepBar)
     .component("BBStepTab", BBStepTab)
