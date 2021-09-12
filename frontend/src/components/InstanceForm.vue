@@ -16,8 +16,8 @@ input[type="number"] {
   <form class="space-y-6 divide-y divide-block-border">
     <div class="space-y-6 divide-y divide-block-border px-1">
       <!-- Instance Name -->
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
-        <div class="sm:col-span-2 sm:col-start-1">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+        <div class="sm:col-span-3 sm:col-start-1">
           <label for="environment" class="textlabel">
             Environment <span v-if="create" style="color: red">*</span>
           </label>
@@ -44,7 +44,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="sm:col-span-2 sm:col-start-1">
+        <div class="sm:col-span-3 sm:col-start-1">
           <label for="name" class="textlabel">
             Instance Name <span style="color: red">*</span>
           </label>
@@ -60,7 +60,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="sm:col-span-2 sm:col-start-1">
+        <div class="sm:col-span-3 sm:col-start-1">
           <label for="host" class="textlabel block">
             Host or Socket <span style="color: red">*</span>
           </label>
@@ -171,7 +171,7 @@ input[type="number"] {
                   <span
                     >CREATE USER bytebase@'%' IDENTIFIED BY '<span
                       class="text-red-600"
-                      >&#123;&#123;YOUR_SECRET_PWD&#125;&#125;</span
+                      >&#123;&#123;YOUR_DB_PWD&#125;&#125;</span
                     >';{{ "\n\n" }}GRANT ALTER, ALTER ROUTINE, CREATE, CREATE
                     ROUTINE, CREATE USER, {{ "\n" }}CREATE VIEW, DELETE, DROP,
                     EXECUTE, INDEX, PROCESS, REFERENCES, {{ "\n" }}SELECT, SHOW
@@ -244,7 +244,7 @@ input[type="number"] {
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              placeholder="YOUR_SECRET_PWD - write only"
+              placeholder="YOUR_DB_PWD - write only"
               :disabled="!allowEdit"
               :value="create ? state.instance.password : state.updatedPassword"
               @input="
@@ -340,7 +340,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 
 const GRANT_STATEMENT =
-  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_SECRET_PWD}}';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, \nCREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
+  "CREATE USER bytebase@'%' IDENTIFIED BY '{{YOUR_DB_PWD}}';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE USER, \nCREATE VIEW, DELETE, DROP, EXECUTE, INDEX, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
 
 interface LocalState {
   originalInstance?: Instance;
