@@ -201,7 +201,6 @@ export default {
     });
 
     const pushEvent = computed((): VCSPushEvent | undefined => {
-      console.log(migrationHistory.value.payload);
       return (migrationHistory.value.payload as MigrationHistoryPayload)
         ?.pushEvent;
     });
