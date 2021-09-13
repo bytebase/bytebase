@@ -57,7 +57,7 @@ input[type="number"] {
         class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4"
         :class="create ? 'pt-4' : ''"
       >
-        <div class="sm:col-span-3 sm:col-start-1">
+        <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             <template v-if="!create">
               <img
@@ -87,7 +87,7 @@ input[type="number"] {
           />
         </div>
 
-        <div class="sm:col-span-3 sm:col-start-1">
+        <div class="sm:col-span-2 sm:col-start-1">
           <label for="environment" class="textlabel">
             Environment <span v-if="create" style="color: red">*</span>
           </label>
