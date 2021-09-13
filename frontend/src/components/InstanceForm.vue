@@ -15,8 +15,78 @@ input[type="number"] {
 <template>
   <form class="space-y-6 divide-y divide-block-border">
     <div class="space-y-6 divide-y divide-block-border px-1">
+      <div v-if="create" class="grid grid-cols-1 gap-4 sm:grid-cols-6">
+        <template v-for="(engine, index) in ['MYSQL', 'TIDB']" :key="index">
+          <div
+            class="
+              flex
+              justify-center
+              px-2
+              py-4
+              border border-control-border
+              hover:bg-control-bg-hover
+              cursor-pointer
+            "
+            @click.capture="state.instance.engine = engine"
+          >
+            <div class="flex flex-col items-center">
+              <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
+                   https://github.com/vitejs/vite/issues/1265 -->
+              <template v-if="engine == 'MYSQL'">
+                <img class="h-8 w-auto" src="../assets/db-mysql.png" alt="" />
+              </template>
+              <template v-else-if="engine == 'TIDB'">
+                <img class="h-8 w-auto" src="../assets/db-tidb.png" />
+              </template>
+              <p class="mt-1 text-center textlabel">
+                {{ engineName(engine) }}
+              </p>
+              <div class="mt-3 radio text-sm">
+                <input
+                  type="radio"
+                  class="btn"
+                  :checked="state.instance.engine == engine"
+                />
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
       <!-- Instance Name -->
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+      <div
+        class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4"
+        :class="create ? 'pt-4' : ''"
+      >
+        <div class="sm:col-span-3 sm:col-start-1">
+          <label for="name" class="textlabel flex flex-row items-center">
+            <template v-if="!create">
+              <img
+                v-if="state.instance.engine == 'MYSQL'"
+                class="h-6 w-auto mr-2"
+                src="../assets/db-mysql.png"
+                alt=""
+              />
+              <img
+                v-else-if="state.instance.engine == 'TIDB'"
+                class="h-6 w-auto mr-2"
+                src="../assets/db-tidb.png"
+                alt=""
+              />
+            </template>
+            Instance Name&nbsp;<span style="color: red">*</span>
+          </label>
+          <input
+            required
+            id="name"
+            name="name"
+            type="text"
+            class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
+            :value="state.instance.name"
+            @input="updateInstance('name', $event.target.value)"
+          />
+        </div>
+
         <div class="sm:col-span-3 sm:col-start-1">
           <label for="environment" class="textlabel">
             Environment <span v-if="create" style="color: red">*</span>
@@ -41,22 +111,6 @@ input[type="number"] {
                 }
               }
             "
-          />
-        </div>
-
-        <div class="sm:col-span-3 sm:col-start-1">
-          <label for="name" class="textlabel">
-            Instance Name <span style="color: red">*</span>
-          </label>
-          <input
-            required
-            id="name"
-            name="name"
-            type="text"
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :value="state.instance.name"
-            @input="updateInstance('name', $event.target.value)"
           />
         </div>
 
@@ -343,6 +397,7 @@ import {
   InstancePatch,
   ConnectionInfo,
   SqlResultSet,
+  EngineType,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 
@@ -430,6 +485,15 @@ export default {
         !isEmpty(state.updatedPassword)
       );
     });
+
+    const engineName = (type: EngineType): string => {
+      switch (type) {
+        case "MYSQL":
+          return "MySQL";
+        case "TIDB":
+          return "TiDB";
+      }
+    };
 
     const toggleCreateUserExample = () => {
       state.showCreateUserExample = !state.showCreateUserExample;
@@ -578,6 +642,7 @@ export default {
       allowEdit,
       showTestConnection,
       valueChanged,
+      engineName,
       toggleCreateUserExample,
       updateInstance,
       cancel,

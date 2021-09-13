@@ -18,6 +18,7 @@ type Type string
 const (
 	MySQL    Type = "MYSQL"
 	Postgres Type = "POSTGRES"
+	TiDB     Type = "TIDB"
 )
 
 func (e Type) String() string {
@@ -26,6 +27,8 @@ func (e Type) String() string {
 		return "MYSQL"
 	case Postgres:
 		return "POSTGRES"
+	case TiDB:
+		return "TIDB"
 	}
 
 	return "UNKNOWN"
@@ -269,7 +272,9 @@ type ConnectionContext struct {
 }
 
 type Driver interface {
-	Open(config ConnectionConfig, ctx ConnectionContext) (Driver, error)
+	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
+	// So we pass the dbType to tell the exact engine.
+	Open(dbType Type, config ConnectionConfig, ctx ConnectionContext) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
@@ -318,7 +323,7 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 		return nil, fmt.Errorf("db: unknown driver %v", dbType)
 	}
 
-	driver, err := f(driverConfig).Open(connectionConfig, ctx)
+	driver, err := f(driverConfig).Open(dbType, connectionConfig, ctx)
 	if err != nil {
 		return nil, err
 	}

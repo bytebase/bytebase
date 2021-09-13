@@ -8,11 +8,16 @@
     @click-row="clickInstance"
   >
     <template v-slot:body="{ rowData: instance }">
-      <BBTableCell :leftPadding="4" class="w-8">
+      <BBTableCell :leftPadding="4" class="w-4">
         <img
           v-if="instance.engine == 'MYSQL'"
-          class="h-10 w-auto"
-          src="../assets/db-mysql.svg"
+          class="h-6 w-auto"
+          src="../assets/db-mysql.png"
+        />
+        <img
+          v-else-if="instance.engine == 'TIDB'"
+          class="h-6 w-auto"
+          src="../assets/db-tidb.png"
         />
       </BBTableCell>
       <BBTableCell class="w-32">

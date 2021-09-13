@@ -34,11 +34,13 @@ var (
 
 func init() {
 	db.Register(db.MySQL, newDriver)
+	db.Register(db.TiDB, newDriver)
 }
 
 type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
+	dbType        db.Type
 
 	db *sql.DB
 }
@@ -49,7 +51,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
-func (driver *Driver) Open(config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -88,6 +90,7 @@ func (driver *Driver) Open(config db.ConnectionConfig, ctx db.ConnectionContext)
 	if err != nil {
 		panic(err)
 	}
+	driver.dbType = dbType
 	driver.db = db
 	driver.connectionCtx = ctx
 
@@ -861,7 +864,12 @@ const (
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	options := sql.TxOptions{}
+	// TiDB does not support readonly, so we only set for MySQL.
+	if driver.dbType == "MYSQL" {
+		options.ReadOnly = true
+	}
+	txn, err := driver.db.BeginTx(ctx, &options)
 	if err != nil {
 		return err
 	}
