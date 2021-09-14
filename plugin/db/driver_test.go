@@ -170,9 +170,9 @@ func TestParseMigrationInfo(t *testing.T) {
 		mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate)
 		if err != nil {
 			if tc.wantErr == "" {
-				t.Errorf("filePath=%s, filePathTemplate=%s: expected no error, got %w", tc.filePath, tc.filePathTemplate, err)
+				t.Errorf("filePath=%s, filePathTemplate=%s: expected no error, got %v", tc.filePath, tc.filePathTemplate, err)
 			} else if !strings.Contains(err.Error(), tc.wantErr) {
-				t.Errorf("filePath=%s, filePathTemplate=%s: expected error %s, got %w", tc.filePath, tc.filePathTemplate, tc.wantErr, err)
+				t.Errorf("filePath=%s, filePathTemplate=%s: expected error %s, got %v", tc.filePath, tc.filePathTemplate, tc.wantErr, err)
 			}
 		} else {
 			if !reflect.DeepEqual(tc.want, *mi) {
