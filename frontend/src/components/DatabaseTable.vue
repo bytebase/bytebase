@@ -46,7 +46,7 @@
       <BBTableCell v-if="showEnvironmentColumn" class="w-12">
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
-      <BBTableCell v-if="showInstanceColumn" class="w-24">
+      <BBTableCell class="w-24">
         {{ instanceName(database.instance) }}
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -93,10 +93,7 @@ import { cloneDeep, isEmpty } from "lodash";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
-const columnListMap: Map<
-  Mode | "ALL_HIDE_INSTANCE" | "ALL_HIDE_INSTANCE_SHORT",
-  BBTableColumn[]
-> = new Map([
+const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
   [
     "ALL",
     [
@@ -137,40 +134,6 @@ const columnListMap: Map<
       },
       {
         title: "Sync status",
-      },
-    ],
-  ],
-  [
-    "ALL_HIDE_INSTANCE",
-    [
-      {
-        title: "Name",
-      },
-      {
-        title: "Project",
-      },
-      {
-        title: "Environment",
-      },
-      {
-        title: "Sync status",
-      },
-      {
-        title: "Last successful sync",
-      },
-    ],
-  ],
-  [
-    "ALL_HIDE_INSTANCE_SHORT",
-    [
-      {
-        title: "Name",
-      },
-      {
-        title: "Project",
-      },
-      {
-        title: "Environment",
       },
     ],
   ],
@@ -264,30 +227,12 @@ export default {
       return props.mode != "INSTANCE";
     });
 
-    const showInstanceColumn = computed(() => {
-      return (
-        (props.mode == "ALL" || props.mode == "ALL_SHORT") &&
-        isDBAOrOwner(currentUser.value.role)
-      );
-    });
-
     const showMiscColumn = computed(() => {
       return props.mode != "ALL_SHORT" && props.mode != "PROJECT_SHORT";
     });
 
     const columnList = computed(() => {
-      var list: BBTableColumn[] = [];
-      if (
-        (props.mode == "ALL" || props.mode == "ALL_SHORT") &&
-        !showInstanceColumn.value
-      ) {
-        list =
-          props.mode == "ALL"
-            ? columnListMap.get("ALL_HIDE_INSTANCE")!
-            : columnListMap.get("ALL_HIDE_INSTANCE_SHORT")!;
-      } else {
-        list = columnListMap.get(props.mode)!;
-      }
+      var list: BBTableColumn[] = columnListMap.get(props.mode)!;
       if (showConsoleLink.value) {
         // Use cloneDeep, otherwise it will alter the one in columnListMap
         list = cloneDeep(list);
@@ -327,7 +272,6 @@ export default {
     return {
       showProjectColumn,
       showEnvironmentColumn,
-      showInstanceColumn,
       showMiscColumn,
       columnList,
       showConsoleLink,
