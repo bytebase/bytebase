@@ -173,7 +173,7 @@
         :bordered="true"
         :customClick="true"
         :databaseList="databaseList"
-        @select-database-id="selectDatabaseId"
+        @select-database="selectDatabase"
       />
     </template>
     <!-- Create button group -->
@@ -204,6 +204,7 @@ import { useRouter } from "vue-router";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import {
   baseDirectoryWebURL,
+  Database,
   DatabaseId,
   EnvironmentId,
   Project,
@@ -312,10 +313,8 @@ export default {
       });
     };
 
-    const selectDatabaseId = (databaseId: DatabaseId) => {
+    const selectDatabase = (database: Database) => {
       emit("dismiss");
-
-      const database = store.getters["database/databaseById"](databaseId);
 
       if (database.project.workflowType == "UI") {
         router.push({
@@ -363,7 +362,7 @@ export default {
       databaseList,
       allowGenerateMultiDb,
       generateMultDb,
-      selectDatabaseId,
+      selectDatabase,
       selectDatabaseIdForEnvironment,
       clearDatabaseIdForEnvironment,
       cancel,

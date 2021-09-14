@@ -226,7 +226,7 @@ const columnListMap: Map<
 
 export default {
   name: "DatabaseTable",
-  emits: ["select-database-id"],
+  emits: ["select-database"],
   components: {},
   props: {
     bordered: {
@@ -318,7 +318,7 @@ export default {
     const clickDatabase = function (section: number, row: number) {
       const database = props.databaseList[row];
       if (props.customClick) {
-        emit("select-database-id", database.id);
+        emit("select-database", database);
       } else {
         router.push(`/db/${databaseSlug(database)}`);
       }
