@@ -111,7 +111,7 @@ export default {
                     );
                     const newItem = {
                       title: title,
-                      link: fullDatabasePath(database),
+                      link: `${fullDatabasePath(database)}#migration-history`,
                       list: migrationHistoryList,
                     };
                     if (index >= 0) {

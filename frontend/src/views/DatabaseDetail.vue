@@ -208,7 +208,10 @@
     />
     <div class="py-6 px-6">
       <template v-if="state.selectedIndex == OVERVIEW_TAB">
-        <DatabaseOverviewPanel id="overview" :database="database" />
+        <DatabaseOverviewPanel :database="database" />
+      </template>
+      <template v-if="state.selectedIndex == MIGRAITON_HISTORY_TAB">
+        <DatabaseMigrationHistoryPanel :database="database" />
       </template>
       <template v-if="state.selectedIndex == BACKUP_TAB">
         <DatabaseBackupPanel
@@ -228,8 +231,9 @@ import { useRouter } from "vue-router";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
+import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
-import { consoleLink, idFromSlug, instanceSlug, isDBAOrOwner } from "../utils";
+import { consoleLink, idFromSlug, isDBAOrOwner } from "../utils";
 import {
   ProjectId,
   UNKNOWN_ID,
@@ -240,7 +244,8 @@ import {
 import { isEmpty } from "lodash";
 
 const OVERVIEW_TAB = 0;
-const BACKUP_TAB = 1;
+const MIGRAITON_HISTORY_TAB = 1;
+const BACKUP_TAB = 2;
 
 type DatabaseTabItem = {
   name: string;
@@ -249,6 +254,7 @@ type DatabaseTabItem = {
 
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: "Overview", hash: "overview" },
+  { name: "Migration History", hash: "migration-history" },
   { name: "Backups", hash: "backup" },
 ];
 
@@ -270,6 +276,7 @@ export default {
     MemberSelect,
     ProjectSelect,
     DatabaseOverviewPanel,
+    DatabaseMigrationHistoryPanel,
     DatabaseBackupPanel,
   },
   setup(props, ctx) {
@@ -463,6 +470,7 @@ export default {
 
     return {
       OVERVIEW_TAB,
+      MIGRAITON_HISTORY_TAB,
       BACKUP_TAB,
       state,
       database,

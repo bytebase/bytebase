@@ -59,20 +59,6 @@
         :mode="'VIEW'"
         :tableList="tableList.filter((item) => item.type == 'VIEW')"
       />
-      <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
-        Migration History
-      </div>
-      <MigrationHistoryTable
-        v-if="state.migrationSetupStatus == 'OK'"
-        :databaseSectionList="[database]"
-        :historySectionList="migrationHistorySectionList"
-      />
-      <BBAttention
-        v-else
-        :title="attentionTitle"
-        :actionText="allowConfigInstance ? 'Config instance' : ''"
-        @click-action="configInstance"
-      />
     </div>
 
     <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -187,22 +173,12 @@ import { useRouter } from "vue-router";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
-import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
-import {
-  Database,
-  DataSource,
-  DataSourcePatch,
-  MigrationSchemaStatus,
-  InstanceMigration,
-  MigrationHistory,
-} from "../types";
-import { cloneDeep, isEmpty, isEqual } from "lodash";
-import { BBTableSectionDataSource } from "../bbkit/types";
+import { Database, DataSource, DataSourcePatch } from "../types";
+import { cloneDeep, isEqual } from "lodash";
 
 interface LocalState {
   editingDataSource?: DataSource;
-  migrationSetupStatus: MigrationSchemaStatus;
 }
 
 export default {
@@ -217,15 +193,12 @@ export default {
     DataSourceConnectionPanel,
     DataSourceTable,
     TableTable,
-    MigrationHistoryTable,
   },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
 
-    const state = reactive<LocalState>({
-      migrationSetupStatus: "OK",
-    });
+    const state = reactive<LocalState>({});
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -235,22 +208,6 @@ export default {
 
     watchEffect(prepareTableList);
 
-    const prepareMigrationHistoryList = () => {
-      store
-        .dispatch("instance/checkMigrationSetup", props.database.instance.id)
-        .then((migration: InstanceMigration) => {
-          state.migrationSetupStatus = migration.status;
-          if (state.migrationSetupStatus == "OK") {
-            store.dispatch("instance/fetchMigrationHistory", {
-              instanceId: props.database.instance.id,
-              databaseName: props.database.name,
-            });
-          }
-        });
-    };
-
-    watchEffect(prepareMigrationHistoryList);
-
     const hasDataSourceFeature = computed(() =>
       store.getters["plan/feature"]("bb.data-source")
     );
@@ -258,28 +215,6 @@ export default {
     const tableList = computed(() => {
       return store.getters["table/tableListByDatabaseId"](props.database.id);
     });
-
-    const attentionTitle = computed((): string => {
-      if (state.migrationSetupStatus == "NOT_EXIST") {
-        return `Missing migration history schema on instance "${props.database.instance.name}"`;
-      } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return `Unable to connect instance "${props.database.instance.name}" to retrieve migration history`;
-      }
-      return "";
-    });
-
-    const migrationHistorySectionList = computed(
-      (): BBTableSectionDataSource<MigrationHistory>[] => {
-        return [
-          {
-            title: "",
-            list: store.getters[
-              "instance/migrationHistoryListByInstanceIdAndDatabaseName"
-            ](props.database.instance.id, props.database.name),
-          },
-        ];
-      }
-    );
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -370,8 +305,6 @@ export default {
       timezoneString,
       state,
       tableList,
-      attentionTitle,
-      migrationHistorySectionList,
       hasDataSourceFeature,
       allowConfigInstance,
       allowViewDataSource,
