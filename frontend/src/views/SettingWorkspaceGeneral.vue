@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-2 space-y-6 divide-y divide-gray-200">
+  <div class="mt-2 space-y-6 divide-y divide-block-border">
     <div>
       <h3 class="text-lg leading-6 font-medium text-main">SQL Console URL</h3>
       <p class="mt-1 textinfolabel">

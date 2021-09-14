@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 space-y-6 divide-y divide-gray-200">
+  <div class="px-4 space-y-6 divide-y divide-block-border">
     <div class="mt-2 grid grid-cols-1 gap-x-4 sm:grid-cols-4">
       <template v-if="mode == 'ISSUE' && transition.type == 'RESOLVE'">
         <template v-for="(field, index) in outputFieldList" :key="index">
