@@ -5,6 +5,8 @@
     :showHeader="true"
     :leftBordered="bordered"
     :rightBordered="bordered"
+    :topBordered="bordered"
+    :bottomBordered="bordered"
     @click-row="clickDatabase"
   >
     <template v-slot:body="{ rowData: database }">
