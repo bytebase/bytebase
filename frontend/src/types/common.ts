@@ -67,7 +67,9 @@ export type Command = {
 export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.create"
   | "quickaction.bb.environment.reorder";
-export type ProjectQuickActionType = "quickaction.bb.project.create";
+export type ProjectQuickActionType =
+  | "quickaction.bb.project.create"
+  | "quickaction.bb.project.default";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type UserQuickActionType = "quickaction.bb.user.manage";
 export type DatabaseQuickActionType =
