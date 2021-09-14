@@ -313,11 +313,9 @@ const actions = {
   async transferProject(
     { commit, rootGetters }: any,
     {
-      instanceId,
       databaseId,
       projectId,
     }: {
-      instanceId: InstanceId;
       databaseId: DatabaseId;
       projectId: ProjectId;
     }
