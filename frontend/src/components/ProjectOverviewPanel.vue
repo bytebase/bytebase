@@ -14,6 +14,10 @@
 
     <div class="space-y-2">
       <p class="text-lg font-medium leading-7 text-main">Databases</p>
+      <BBAttention
+        v-if="project.id == DEFAULT_PROJECT_ID"
+        :title="'Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.'"
+      />
       <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" />
     </div>
 
@@ -48,7 +52,13 @@ import { useStore } from "vuex";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import IssueTable from "../components/IssueTable.vue";
-import { Activity, Database, Issue, Project } from "../types";
+import {
+  Activity,
+  Database,
+  Issue,
+  Project,
+  DEFAULT_PROJECT_ID,
+} from "../types";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
@@ -122,6 +132,7 @@ export default {
     watchEffect(prepareIssueList);
 
     return {
+      DEFAULT_PROJECT_ID,
       state,
     };
   },
