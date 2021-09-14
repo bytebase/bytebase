@@ -1,9 +1,8 @@
+import { EngineType } from ".";
 import { InstanceId } from "./id";
 
-export type DBType = "MYSQL";
-
 export type ConnectionInfo = {
-  dbType: DBType;
+  dbType: EngineType;
   host: string;
   port?: string;
   // In mysql, username can be empty which means anonymous user
