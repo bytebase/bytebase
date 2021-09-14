@@ -418,7 +418,6 @@ export default {
     const updateProject = (newProjectId: ProjectId) => {
       store
         .dispatch("database/transferProject", {
-          instanceId: database.value.instance.id,
           databaseId: database.value.id,
           projectId: newProjectId,
         })
