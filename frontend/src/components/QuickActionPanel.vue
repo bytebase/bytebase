@@ -326,6 +326,31 @@
           Create Project
         </h3>
       </div>
+
+      <div
+        v-if="quickAction == 'quickaction.bb.project.default'"
+        class="flex flex-col items-center w-28"
+      >
+        <button class="btn-icon-primary p-3" @click.prevent="goDefaultProject">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+            ></path>
+          </svg>
+        </button>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          Default Project
+        </h3>
+      </div>
     </template>
   </div>
   <BBModal
@@ -377,7 +402,7 @@ import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
-import { ProjectId, QuickActionType } from "../types";
+import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 
 interface LocalState {
@@ -428,6 +453,15 @@ export default {
       state.showModal = true;
     };
 
+    const goDefaultProject = () => {
+      router.push({
+        name: "workspace.project.detail",
+        params: {
+          projectSlug: DEFAULT_PROJECT_ID,
+        },
+      });
+    };
+
     const createInstance = () => {
       state.modalTitle = "Create instance";
       state.modalSubtitle = "";
@@ -468,6 +502,7 @@ export default {
       state,
       projectId,
       createProject,
+      goDefaultProject,
       createInstance,
       alterSchema,
       createDatabase,
