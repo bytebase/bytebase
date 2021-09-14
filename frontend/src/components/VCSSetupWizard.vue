@@ -1,5 +1,9 @@
 <template>
-  <BBAttention v-if="showAttention" :description="attentionText" />
+  <BBAttention
+    v-if="showAttention"
+    :style="'WARN'"
+    :description="attentionText"
+  />
   <BBStepTab
     class="mt-4"
     :stepItemList="stepList"

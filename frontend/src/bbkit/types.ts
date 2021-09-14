@@ -69,4 +69,6 @@ export type BBNotificationItem = {
 
 export type BBAlertStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
 
+export type BBAttentionStyle = "INFO" | "WARN" | "CRITICAL";
+
 export type BBAvatarSizeType = "SMALL" | "NORMAL" | "LARGE" | "HUGE";

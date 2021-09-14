@@ -16,6 +16,7 @@
       <p class="text-lg font-medium leading-7 text-main">Databases</p>
       <BBAttention
         v-if="project.id == DEFAULT_PROJECT_ID"
+        :style="`INFO`"
         :title="'Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.'"
       />
       <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" />
