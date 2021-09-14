@@ -351,6 +351,31 @@
           Default Project
         </h3>
       </div>
+
+      <div
+        v-if="quickAction == 'quickaction.bb.project.database.transfer'"
+        class="flex flex-col items-center w-28"
+      >
+        <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 13l-7 7-7-7m14-8l-7 7-7-7"
+            ></path>
+          </svg>
+        </button>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          Transfer in DB
+        </h3>
+      </div>
     </template>
   </div>
   <BBModal
@@ -390,6 +415,16 @@
     >
       <RequestDatabasePrepForm @dismiss="state.showModal = false" />
     </template>
+    <template
+      v-else-if="
+        state.quickActionType == 'quickaction.bb.project.database.transfer'
+      "
+    >
+      <TransferDatabaseForm
+        :projectId="projectId"
+        @dismiss="state.showModal = false"
+      />
+    </template>
   </BBModal>
 </template>
 
@@ -402,6 +437,7 @@ import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
+import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
 import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 
@@ -420,6 +456,7 @@ export default {
     AlterSchemaPrepForm,
     CreateDatabasePrepForm,
     RequestDatabasePrepForm,
+    TransferDatabaseForm,
   },
   props: {
     quickActionList: {
@@ -460,6 +497,13 @@ export default {
           projectSlug: DEFAULT_PROJECT_ID,
         },
       });
+    };
+
+    const transferDatabase = () => {
+      state.modalTitle = "Transfer in database from other projects";
+      state.modalSubtitle = "";
+      state.quickActionType = "quickaction.bb.project.database.transfer";
+      state.showModal = true;
     };
 
     const createInstance = () => {
@@ -503,6 +547,7 @@ export default {
       projectId,
       createProject,
       goDefaultProject,
+      transferDatabase,
       createInstance,
       alterSchema,
       createDatabase,

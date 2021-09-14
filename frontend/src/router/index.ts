@@ -448,6 +448,7 @@ const routes: Array<RouteRecordRaw> = [
                     ? [
                         "quickaction.bb.database.schema.update",
                         "quickaction.bb.database.create",
+                        "quickaction.bb.project.database.transfer",
                       ]
                     : [];
                   return new Map([
