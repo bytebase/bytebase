@@ -19,7 +19,16 @@
         :style="`INFO`"
         :title="'Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.'"
       />
-      <DatabaseTable :mode="'PROJECT'" :databaseList="databaseList" />
+      <DatabaseTable
+        v-if="databaseList.length > 0"
+        :mode="'PROJECT'"
+        :databaseList="databaseList"
+      />
+      <div v-else class="text-center textinfolabel">
+        No database belongs to this project. You can add database by clicking
+        <span class="text-main">New DB</span> or
+        <span class="text-main">Transfer in DB</span> from the top action bar.
+      </div>
     </div>
 
     <div class="space-y-2">
