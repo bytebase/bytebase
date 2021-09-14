@@ -137,8 +137,8 @@ input[type="number"] {
             type="number"
             id="port"
             name="port"
-            placeholder="3306"
             class="textfield mt-1 w-full"
+            :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
             @input="updateInstance('port', $event.target.value)"
@@ -486,6 +486,13 @@ export default {
       );
     });
 
+    const defaultPort = computed(() => {
+      if (state.instance.engine == "TIDB") {
+        return "4000";
+      }
+      return "3306";
+    });
+
     const engineName = (type: EngineType): string => {
       switch (type) {
         case "MYSQL":
@@ -509,7 +516,7 @@ export default {
 
     const tryCreate = () => {
       const connectionInfo: ConnectionInfo = {
-        dbType: "MYSQL",
+        dbType: state.instance.engine,
         username: state.instance.username,
         password: state.instance.password,
         host: state.instance.host,
@@ -604,7 +611,7 @@ export default {
 
     const testConnection = () => {
       const connectionInfo: ConnectionInfo = {
-        dbType: "MYSQL",
+        dbType: state.instance.engine,
         username: state.instance.username,
         password: props.create
           ? state.instance.password
@@ -642,6 +649,7 @@ export default {
       allowEdit,
       showTestConnection,
       valueChanged,
+      defaultPort,
       engineName,
       toggleCreateUserExample,
       updateInstance,

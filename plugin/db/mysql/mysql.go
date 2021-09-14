@@ -62,6 +62,9 @@ func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.Co
 	port := config.Port
 	if port == "" {
 		port = "3306"
+		if dbType == db.TiDB {
+			port = "4000"
+		}
 	}
 
 	tlsConfig, err := config.TlsConfig.GetSslConfig()
