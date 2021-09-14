@@ -119,16 +119,6 @@ export default {
       });
     };
 
-    const logo = computed(() => {
-      for (const item of PROJECT_HOOK_TYPE_ITEM_LIST) {
-        if (item.type == props.projectWebhook.type) {
-          return item.logo;
-        }
-      }
-
-      return "";
-    });
-
     const activityListStr = computed(() => {
       const list = props.projectWebhook.activityList.map((activity) => {
         for (const item of PROJECT_HOOK_ACTIVITY_ITEM_LIST) {
@@ -146,7 +136,6 @@ export default {
       state,
       redirectURL,
       viewProjectWebhook,
-      logo,
       activityListStr,
     };
   },
