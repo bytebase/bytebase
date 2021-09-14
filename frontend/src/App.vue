@@ -70,26 +70,28 @@ export default {
         .then((notification: Notification | undefined) => {
           if (notification) {
             if (
-              state.notificationList.length < MAX_NOTIFICATION_DISPLAY_COUNT
+              state.notificationList.length >= MAX_NOTIFICATION_DISPLAY_COUNT
             ) {
-              const item: BBNotificationItem = {
-                style: notification.style,
-                title: notification.title,
-                description: notification.description || "",
-                link: notification.link || "",
-                linkTitle: notification.linkTitle || "",
-              };
-              state.notificationList.push(item);
-              if (!notification.manualHide) {
-                setTimeout(
-                  () => {
-                    removeNotification(item);
-                  },
-                  notification.style == "CRITICAL"
-                    ? CRITICAL_NOTIFICAITON_DURATION
-                    : NOTIFICAITON_DURATION
-                );
-              }
+              state.notificationList.pop();
+            }
+
+            const item: BBNotificationItem = {
+              style: notification.style,
+              title: notification.title,
+              description: notification.description || "",
+              link: notification.link || "",
+              linkTitle: notification.linkTitle || "",
+            };
+            state.notificationList.unshift(item);
+            if (!notification.manualHide) {
+              setTimeout(
+                () => {
+                  removeNotification(item);
+                },
+                notification.style == "CRITICAL"
+                  ? CRITICAL_NOTIFICAITON_DURATION
+                  : NOTIFICAITON_DURATION
+              );
             }
           }
         });
