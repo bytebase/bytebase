@@ -162,7 +162,7 @@
             tracking-tight
           "
         >
-          Create DB
+          New DB
         </h3>
       </div>
 
@@ -323,7 +323,7 @@
           </svg>
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Create Project
+          New Project
         </h3>
       </div>
 
