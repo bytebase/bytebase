@@ -1,5 +1,5 @@
 <template>
-  <BBAttention :description="attentionText" />
+  <BBAttention :style="'WARN'" :description="attentionText" />
   <div class="mt-4 space-y-2">
     <div class="flex justify-between items-center">
       <button class="btn-icon" @click.prevent="prepareRepositoryList">

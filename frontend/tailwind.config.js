@@ -10,7 +10,17 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
     // "w-xxx" is used by BBTab
     // "pl-xxx" is used by BBOutline
-    safelist: [/^w-/, /^pl-/],
+    // "bg-xxx", "text-xxx" is used by BBAttention
+    safelist: [
+      /^w-/,
+      /^pl-/,
+      /^bg-blue-/,
+      /^text-blue-/,
+      /^bg-yellow-/,
+      /^text-yellow-/,
+      /^bg-red-/,
+      /^text-red-/,
+    ],
   },
   theme: {
     extend: {

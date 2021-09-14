@@ -8,6 +8,7 @@
     />
     <BBAttention
       v-else
+      :style="`WARN`"
       :title="attentionTitle"
       :actionText="allowConfigInstance ? 'Config instance' : ''"
       @click-action="configInstance"

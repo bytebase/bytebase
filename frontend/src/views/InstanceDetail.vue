@@ -3,6 +3,7 @@
     <ArchiveBanner v-if="instance.rowStatus == 'ARCHIVED'" />
     <BBAttention
       v-else-if="state.migrationSetupStatus != 'OK'"
+      :style="'WARN'"
       :title="attentionTitle"
       :description="attentionText"
       :actionText="attentionActionText"
