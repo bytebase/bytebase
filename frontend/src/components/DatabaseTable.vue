@@ -9,7 +9,31 @@
   >
     <template v-slot:body="{ rowData: database }">
       <BBTableCell :leftPadding="4" class="w-16">
-        {{ database.name }}
+        <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
+          <span>
+            {{ database.name }}
+          </span>
+          <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
+            <span class="tooltip"
+              >Last sync status {{ database.syncStatus }} at
+              {{ humanizeTs(database.lastSuccessfulSyncTs) }}</span
+            >
+            <svg
+              class="w-5 h-5 text-error"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+          </div>
+        </div>
       </BBTableCell>
       <BBTableCell v-if="showProjectColumn" class="w-16">
         <div class="flex flex-row space-x-2 items-center">
@@ -43,13 +67,13 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showEnvironmentColumn" class="w-12">
+      <BBTableCell v-if="showEnvironmentColumn" class="w-16">
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
-      <BBTableCell class="w-24">
+      <BBTableCell class="w-32">
         {{ instanceName(database.instance) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell v-if="showMiscColumn" class="w-8">
         {{ database.syncStatus }}
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-16">
@@ -132,9 +156,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
       {
         title: "Instance",
       },
-      {
-        title: "Sync status",
-      },
     ],
   ],
   [
@@ -164,6 +185,9 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Environment",
       },
       {
+        title: "Instance",
+      },
+      {
         title: "Sync status",
       },
       {
@@ -181,7 +205,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Environment",
       },
       {
-        title: "Sync status",
+        title: "Instance",
       },
     ],
   ],
