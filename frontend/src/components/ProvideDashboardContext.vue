@@ -18,6 +18,7 @@ export default {
     );
 
     await Promise.all([
+      store.dispatch("setting/fetchSetting"),
       // Fetch so MemberSelect can have the data.
       store.dispatch("member/fetchMemberList"),
       // Though fetchMemberList also return the principal info, it's possible that a principal is no longer a member.
