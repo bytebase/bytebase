@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 space-y-6 divide-y divide-gray-200">
+  <div class="px-4 space-y-6 divide-y divide-block-border">
     <div class="mt-2 grid grid-cols-1 gap-x-4 sm:grid-cols-4">
       <div class="sm:col-span-4 w-112 min-w-full">
         <label for="about" class="textlabel"> Note </label>
@@ -7,7 +7,16 @@
           <textarea
             ref="commentTextArea"
             rows="3"
-            class="textarea block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
+            class="
+              textarea
+              block
+              w-full
+              resize-none
+              mt-1
+              text-sm text-control
+              rounded-md
+              whitespace-pre-wrap
+            "
             placeholder="(Optional) Add a note..."
             v-model="state.comment"
             @input="

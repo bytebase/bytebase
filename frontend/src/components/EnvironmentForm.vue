@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-2 space-y-6 divide-y divide-gray-200">
+  <div class="px-4 py-2 space-y-6 divide-y divide-block-border">
     <div class="grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
