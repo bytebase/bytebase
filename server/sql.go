@@ -34,7 +34,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		}
 
 		db, err := db.Open(
-			connectionInfo.DBType,
+			connectionInfo.Engine,
 			db.DriverConfig{Logger: s.l},
 			db.ConnectionConfig{
 				Username: connectionInfo.Username,

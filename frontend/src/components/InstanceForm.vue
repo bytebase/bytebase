@@ -516,7 +516,7 @@ export default {
 
     const tryCreate = () => {
       const connectionInfo: ConnectionInfo = {
-        dbType: state.instance.engine,
+        engine: state.instance.engine,
         username: state.instance.username,
         password: state.instance.password,
         host: state.instance.host,
@@ -611,7 +611,7 @@ export default {
 
     const testConnection = () => {
       const connectionInfo: ConnectionInfo = {
-        dbType: state.instance.engine,
+        engine: state.instance.engine,
         username: state.instance.username,
         password: props.create
           ? state.instance.password

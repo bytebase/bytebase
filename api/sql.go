@@ -7,7 +7,7 @@ import (
 )
 
 type ConnectionInfo struct {
-	DBType     db.Type `jsonapi:"attr,dbType"`
+	Engine     db.Type `jsonapi:"attr,engine"`
 	Host       string  `jsonapi:"attr,host"`
 	Port       string  `jsonapi:"attr,port"`
 	Username   string  `jsonapi:"attr,username"`
