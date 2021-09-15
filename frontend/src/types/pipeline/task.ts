@@ -94,7 +94,7 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   backupId?: BackupId;
-  migrationType: MigrationType;
+  migrationType?: MigrationType;
 };
 
 export type TaskStatusPatch = {
