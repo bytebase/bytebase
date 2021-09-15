@@ -53,7 +53,7 @@ VALUES
         103,
         103,
         'Pipeline - Create table ''tbl1''',
-        'OPEN'
+        'CANCELED'
     );
 
 -- Pipeline for simulating webhook push event to create table for blog project dev database.
