@@ -75,25 +75,15 @@
 
     <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
-      <template
-        v-if="
-          currentPipelineType == 'MULTI_SINGLE_TASK_STAGE' ||
-          currentPipelineType == 'SINGLE_STAGE'
-        "
-      >
-        <PipelineSimpleFlow
-          :create="state.create"
-          :pipeline="issue.pipeline"
-          :selectedStage="selectedStage"
-          @select-stage-id="selectStageId"
-        />
-        <div
-          v-if="!state.create"
-          class="px-4 py-4 md:flex md:flex-col border-b"
-        >
-          <IssueStagePanel :stage="selectedStage" />
-        </div>
-      </template>
+      <PipelineSimpleFlow
+        :create="state.create"
+        :pipeline="issue.pipeline"
+        :selectedStage="selectedStage"
+        @select-stage-id="selectStageId"
+      />
+      <div v-if="!state.create" class="px-4 py-4 md:flex md:flex-col border-b">
+        <IssueStagePanel :stage="selectedStage" />
+      </div>
     </template>
 
     <!-- Output Panel -->
