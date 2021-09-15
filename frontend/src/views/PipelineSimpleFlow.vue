@@ -184,7 +184,7 @@ import {
   Task,
   TaskCreate,
 } from "../types";
-import { activeTask } from "../utils";
+import { activeTask, activeTaskInStage } from "../utils";
 import isEmpty from "lodash-es/isEmpty";
 
 interface FlowItem {
@@ -219,7 +219,8 @@ export default {
 
     const itemList = computed<FlowItem[]>(() => {
       return props.pipeline.stageList.map((stage, index) => {
-        const task = stage.taskList[0];
+        let activeTask = stage.taskList[0];
+        let taskName = activeTask.name;
         let valid = true;
         if (props.create) {
           for (const task of stage.taskList) {
@@ -233,13 +234,26 @@ export default {
               }
             }
           }
+        } else {
+          activeTask = activeTaskInStage(stage as Stage);
+          if (stage.taskList.length > 1) {
+            for (let i = 0; i < stage.taskList.length; i++) {
+              if ((stage.taskList[i] as Task).id == (activeTask as Task).id) {
+                taskName = `${activeTask.name} (${i + 1}/${
+                  stage.taskList.length
+                })`;
+                break;
+              }
+            }
+          }
         }
+
         return {
           stageId: props.create ? index : (stage as Stage).id,
           stageName: stage.name,
-          taskId: props.create ? index : (task as Task).id,
-          taskName: task.name,
-          taskStatus: task.status,
+          taskId: props.create ? index : (activeTask as Task).id,
+          taskName: taskName,
+          taskStatus: activeTask.status,
           valid,
         };
       });
