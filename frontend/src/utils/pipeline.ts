@@ -4,13 +4,13 @@ import {
   EMPTY_ID,
   Environment,
   Pipeline,
-  Task,
-  TaskStatus,
-  Stage,
-  UNKNOWN_ID,
-  unknown,
-  TaskId,
   PipelineCreate,
+  Stage,
+  Task,
+  TaskId,
+  TaskStatus,
+  unknown,
+  UNKNOWN_ID,
 } from "../types";
 
 export type PipelineType =
@@ -111,6 +111,27 @@ export function activeTask(pipeline: Pipeline): Task {
   const theLastTask = lastTask(pipeline);
   if (theLastTask.id != EMPTY_ID) {
     return theLastTask;
+  }
+
+  return empty("TASK") as Task;
+}
+
+export function activeTaskInStage(stage: Stage): Task {
+  for (const task of stage.taskList) {
+    if (
+      task.status == "PENDING" ||
+      task.status == "PENDING_APPROVAL" ||
+      task.status == "RUNNING" ||
+      // "FAILED" is also a transient task status, which requires user
+      // to take further action (e.g. Skip, Retry)
+      task.status == "FAILED"
+    ) {
+      return task;
+    }
+  }
+
+  if (stage.taskList.length > 0) {
+    return stage.taskList[stage.taskList.length - 1];
   }
 
   return empty("TASK") as Task;
