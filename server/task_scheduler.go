@@ -66,24 +66,12 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
-					for _, stage := range pipeline.StageList {
-						for _, task := range stage.TaskList {
-							if task.Status != api.TaskDone {
-								if task.Status == api.TaskPending {
-									_, err = s.Schedule(context.Background(), task)
-									if err != nil {
-										s.l.Error("Failed to schedule next running task",
-											zap.Int("id", task.ID),
-											zap.String("name", task.Name),
-											zap.Error(err),
-										)
-									}
-								}
-								goto PIPELINE_END
-							}
-						}
+					if err := s.server.ScheduleNextTaskIfNeeded(context.Background(), pipeline); err != nil {
+						s.l.Error("Failed to schedule next running task",
+							zap.Int("pipeline_id", pipeline.ID),
+							zap.Error(err),
+						)
 					}
-				PIPELINE_END:
 				}
 
 				// Inspect all running tasks
