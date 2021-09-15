@@ -118,7 +118,6 @@
               ></path>
             </svg>
           </template>
-          <span class="sr-only">{{ step.title }}</span>
         </div>
       </li>
     </ol>

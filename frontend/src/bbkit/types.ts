@@ -34,7 +34,6 @@ export type BBStepStatus =
   | "SKIPPED";
 
 export type BBStep = {
-  title: string;
   status: BBStepStatus;
   payload: any;
 };
