@@ -136,6 +136,7 @@ import {
   activeTask,
   allTaskList,
   stageSlug,
+  activeTaskInStage,
 } from "../utils";
 import { Issue, Task } from "../types";
 
@@ -248,8 +249,8 @@ export default {
     };
 
     const taskStepList = function (issue: Issue): BBStep[] {
-      const list: Task[] = allTaskList(issue.pipeline);
-      return list.map((task) => {
+      return issue.pipeline.stageList.map((stage) => {
+        const task = activeTaskInStage(stage);
         let status: BBStepStatus = task.status;
         if (status == "PENDING" || status == "PENDING_APPROVAL") {
           if (activeTask(issue.pipeline).id == task.id) {
@@ -260,7 +261,6 @@ export default {
           }
         }
         return {
-          title: task.name,
           status,
           payload: task,
         };
