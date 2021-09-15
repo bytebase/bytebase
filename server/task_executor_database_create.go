@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -54,7 +56,44 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("sql", payload.Statement),
 	)
 
-	if err := driver.Execute(ctx, payload.Statement); err != nil {
+	// Create a baseline migration history upon creating the database.
+	mi := &db.MigrationInfo{
+		Version:     defaultMigrationVersionFromTaskId(task.ID),
+		Namespace:   payload.DatabaseName,
+		Database:    payload.DatabaseName,
+		Environment: instance.Environment.Name,
+		Engine:      db.UI,
+		Type:        db.Baseline,
+		Description: "Create database",
+	}
+	creator, err := server.ComposePrincipalById(context.Background(), task.CreatorId)
+	if err != nil {
+		// If somehow we unable to find the principal, we just emit the error since it's not
+		// critical enough to fail the entire operation.
+		exec.l.Error("Failed to fetch creator for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	} else {
+		mi.Creator = creator.Name
+	}
+
+	issueFind := &api.IssueFind{
+		PipelineId: &task.PipelineId,
+	}
+	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	if err != nil {
+		// If somehow we unable to find the issue, we just emit the error since it's not
+		// critical enough to fail the entire operation.
+		exec.l.Error("Failed to fetch containing issue for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	} else {
+		mi.IssueId = strconv.Itoa(issue.ID)
+	}
+
+	if _, err := driver.ExecuteMigration(ctx, mi, payload.Statement); err != nil {
 		return true, "", err
 	}
 
