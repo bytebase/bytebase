@@ -27,6 +27,8 @@ export type TaskId = IdType;
 
 export type TaskRunId = IdType;
 
+export type TaskCheckRunId = IdType;
+
 export type ActivityId = IdType;
 
 export type InboxId = IdType;

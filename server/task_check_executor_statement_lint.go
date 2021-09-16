@@ -34,18 +34,18 @@ func (exec *TaskCheckStatementLintExecutor) Run(ctx context.Context, server *Ser
 
 	result = []api.TaskCheckResult{}
 	for _, advice := range adviceList {
-		level := api.TaskCheckLevelInfo
-		switch advice.Severity {
-		case advisor.Info:
-			level = api.TaskCheckLevelInfo
+		status := api.TaskCheckStatusSuccess
+		switch advice.Status {
+		case advisor.Success:
+			status = api.TaskCheckStatusSuccess
 		case advisor.Warn:
-			level = api.TaskCheckLevelWarn
+			status = api.TaskCheckStatusWarn
 		case advisor.Error:
-			level = api.TaskCheckLevelError
+			status = api.TaskCheckStatusError
 		}
 
 		result = append(result, api.TaskCheckResult{
-			Level:   level,
+			Status:  status,
 			Title:   advice.Title,
 			Content: advice.Content,
 		})

@@ -1,3 +1,4 @@
+import { TaskCheckRunId } from "..";
 import { Database } from "../database";
 import {
   BackupId,
@@ -62,6 +63,7 @@ export type Task = {
 
   // Related fields
   taskRunList: TaskRun[];
+  taskCheckRunList: TaskCheckRun[];
   pipeline: Pipeline;
   stage: Stage;
 
@@ -120,5 +122,44 @@ export type TaskRun = {
   status: TaskRunStatus;
   type: TaskType;
   comment: string;
+  payload?: TaskPayload;
+};
+
+export type TaskCheckRunStatus = "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+
+export type TaskCheckType = "bb.task-check.database.statement.advise";
+
+export type TaskCheckDatabaseStatementAdvisePayload = {
+  statement: string;
+};
+
+export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
+
+export type TaskCheckResult = {
+  status: TaskCheckStatus;
+  title: string;
+  content: string;
+};
+
+export type TaskCheckRunResultPayload = {
+  resultList: TaskCheckResult[];
+};
+
+export type TaskCheckRun = {
+  id: TaskCheckRunId;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  updatedTs: number;
+
+  // Domain specific fields
+  taskId: TaskId;
+  name: string;
+  status: TaskCheckRunStatus;
+  type: TaskCheckType;
+  comment: string;
+  result: TaskCheckRunResultPayload;
   payload?: TaskPayload;
 };

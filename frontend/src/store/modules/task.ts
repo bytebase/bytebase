@@ -11,6 +11,7 @@ import {
   Stage,
   StageId,
   Task,
+  TaskCheckRun,
   TaskId,
   TaskRun,
   TaskState,
@@ -32,6 +33,30 @@ function convertTaskRun(
   return {
     ...(taskRun.attributes as Omit<TaskRun, "id" | "payload">),
     id: parseInt(taskRun.id),
+    payload,
+  };
+}
+
+function convertTaskCheckRun(
+  taskCheckRun: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): TaskCheckRun {
+  const result = taskCheckRun.attributes.result
+    ? JSON.parse(taskCheckRun.attributes.result as string)
+    : undefined;
+
+  const payload = taskCheckRun.attributes.payload
+    ? JSON.parse(taskCheckRun.attributes.payload as string)
+    : undefined;
+
+  return {
+    ...(taskCheckRun.attributes as Omit<
+      TaskCheckRun,
+      "id" | "result" | "payload"
+    >),
+    id: parseInt(taskCheckRun.id),
+    result,
     payload,
   };
 }
@@ -61,6 +86,25 @@ function convertPartial(
             rootGetters
           );
           taskRunList.push(taskRun);
+        }
+      }
+    }
+  }
+
+  const taskCheckRunList: TaskCheckRun[] = [];
+  const taskCheckRunIdList = task.relationships!.taskCheckRun
+    .data as ResourceIdentifier[];
+  // Needs to iterate through taskIdList to maintain the order
+  for (const idItem of taskCheckRunIdList) {
+    for (const item of includedList || []) {
+      if (item.type == "taskCheckRun") {
+        if (idItem.id == item.id) {
+          const taskCheckRun: TaskCheckRun = convertTaskCheckRun(
+            item,
+            includedList,
+            rootGetters
+          );
+          taskCheckRunList.push(taskCheckRun);
         }
       }
     }
@@ -98,6 +142,7 @@ function convertPartial(
       | "instance"
       | "database"
       | "taskRunList"
+      | "taskCheckRunList"
       | "pipeline"
       | "stage"
     >),
@@ -108,6 +153,7 @@ function convertPartial(
     instance,
     database,
     taskRunList,
+    taskCheckRunList,
   };
 }
 
