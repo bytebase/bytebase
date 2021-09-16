@@ -8,7 +8,7 @@
   <BBTabFilter
     class="px-3 pb-2 border-b border-block-border"
     :responsive="false"
-    :tabList="projectTabItemList.map((item) => item.name)"
+    :tabItemList="tabItemList"
     :selectedIndex="state.selectedIndex"
     @select-index="
       (index) => {
@@ -33,6 +33,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
 const WEBHOOK_TAB = 3;
@@ -104,6 +105,15 @@ export default {
       return false;
     });
 
+    const tabItemList = computed((): BBTabFilterItem[] => {
+      return projectTabItemList.map((item) => {
+        return {
+          title: item.name,
+          alert: false,
+        };
+      });
+    });
+
     const selectProjectTabOnHash = () => {
       if (router.currentRoute.value.name == "workspace.project.detail") {
         if (router.currentRoute.value.hash) {
@@ -150,8 +160,8 @@ export default {
       state,
       project,
       allowEdit,
+      tabItemList,
       selectTab,
-      projectTabItemList,
     };
   },
 };

@@ -20,7 +20,7 @@
       <div v-else>
         <div class="mb-4 flex items-center justify-between">
           <BBTabFilter
-            :tabList="['Databases', 'Users']"
+            :tabItemList="tabItemList"
             :selectedIndex="state.selectedIndex"
             @select-index="
               (index) => {
@@ -107,6 +107,7 @@ import {
   MigrationSchemaStatus,
   SqlResultSet,
 } from "../types";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -229,6 +230,19 @@ export default {
       );
     });
 
+    const tabItemList = computed((): BBTabFilterItem[] => {
+      return [
+        {
+          title: "Databases",
+          alert: false,
+        },
+        {
+          title: "Users",
+          alert: false,
+        },
+      ];
+    });
+
     const doArchive = () => {
       store
         .dispatch("instance/patchInstance", {
@@ -319,6 +333,7 @@ export default {
       databaseList,
       instanceUserList,
       allowEdit,
+      tabItemList,
       doArchive,
       doRestore,
       doCreateMigrationSchema,
