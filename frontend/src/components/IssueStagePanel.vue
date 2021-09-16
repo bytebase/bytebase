@@ -22,7 +22,7 @@
       </div>
       <div class="mb-2">
         <BBTabFilter
-          :tabItemList="tabItemList"
+          :tabItemList="tabItemList(task)"
           :selectedIndex="state.selectedIndex"
           @select-index="
             (index) => {
@@ -77,12 +77,32 @@ export default {
       (curStage, _) => {}
     );
 
-    const tabItemList = computed((): BBTabFilterItem[] => {
+    const tabItemList = (task: Task): BBTabFilterItem[] => {
+      let showRunAlert = false;
+      let showCheckAlert = false;
+
+      for (const run of task.taskRunList) {
+        if (run.status == "FAILED") {
+          showRunAlert = true;
+          break;
+        }
+      }
+      for (const run of task.taskCheckRunList) {
+        for (const result of run.result.resultList) {
+          if (result.status == "ERROR") {
+            showCheckAlert = true;
+            break;
+          }
+        }
+        if (showCheckAlert) {
+          break;
+        }
+      }
       return [
-        { title: "Run", alert: false },
-        { title: "Check", alert: false },
+        { title: "Run", alert: showRunAlert },
+        { title: "Check", alert: showCheckAlert },
       ];
-    });
+    };
 
     const activeTask = computed((): Task => {
       return activeTaskInStage(props.stage);
