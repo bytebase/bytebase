@@ -13,18 +13,18 @@ import (
 type Severity string
 
 const (
-	INFO  Severity = "INFO"
-	WARN  Severity = "WARN"
-	ERROR Severity = "ERROR"
+	Info  Severity = "INFO"
+	Warn  Severity = "WARN"
+	Error Severity = "ERROR"
 )
 
 func (e Severity) String() string {
 	switch e {
-	case INFO:
+	case Info:
 		return "INFO"
-	case WARN:
+	case Warn:
 		return "WARN"
-	case ERROR:
+	case Error:
 		return "ERROR"
 	}
 	return "UNKNOWN"
