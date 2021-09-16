@@ -219,8 +219,13 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	if v := find.StageId; v != nil {
 		where, args = append(where, "stage_id = ?"), append(args, *v)
 	}
-	if v := find.Status; v != nil {
-		where, args = append(where, "`status` = ?"), append(args, *v)
+	if v := find.StatusList; v != nil {
+		list := []string{}
+		for _, status := range *v {
+			list = append(list, "?")
+			args = append(args, status)
+		}
+		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
 	}
 
 	rows, err := tx.QueryContext(ctx, `

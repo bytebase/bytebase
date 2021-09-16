@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+// These are special onboarding tasks for demo purpose when bootstraping the workspace.
 const ONBOARDING_TASK_ID1 = 101
 const ONBOARDING_TASK_ID2 = 102
 
@@ -149,7 +150,7 @@ type TaskFind struct {
 	StageId    *int
 
 	// Domain specific fields
-	Status *TaskStatus `jsonapi:"attr,status"`
+	StatusList *[]TaskStatus
 }
 
 func (find *TaskFind) String() string {
