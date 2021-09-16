@@ -37,7 +37,7 @@
       />
       <TaskCheckRunTable
         v-else-if="state.selectedIndex == CHECK_TAB"
-        :taskCheckRunList="task.taskCheckRunList"
+        :taskCheckRunList="filteredTaskCheckRunList(task.taskCheckRunList)"
       />
     </div>
   </div>
@@ -47,7 +47,7 @@
 import { reactive, watch, PropType, computed } from "vue";
 import TaskCheckRunTable from "../components/TaskCheckRunTable.vue";
 import TaskRunTable from "../components/TaskRunTable.vue";
-import { Stage, Task } from "../types";
+import { Stage, Task, TaskCheckRun, TaskCheckType } from "../types";
 import { activeTaskInStage } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 
@@ -77,6 +77,20 @@ export default {
       (curStage, _) => {}
     );
 
+    // For a particular check type, only returns the most recent one
+    const filteredTaskCheckRunList = (list: TaskCheckRun[]): TaskCheckRun[] => {
+      const result: TaskCheckRun[] = [];
+      for (const run of list) {
+        const index = result.findIndex((item) => item.type == run.type);
+        if (index >= 0 && result[index].updatedTs < run.updatedTs) {
+          result[index] = run;
+        } else {
+          result.push(run);
+        }
+      }
+      return result;
+    };
+
     const tabItemList = (task: Task): BBTabFilterItem[] => {
       let showRunAlert = false;
       let showCheckAlert = false;
@@ -87,7 +101,7 @@ export default {
           break;
         }
       }
-      for (const run of task.taskCheckRunList) {
+      for (const run of filteredTaskCheckRunList(task.taskCheckRunList)) {
         for (const result of run.result.resultList) {
           if (result.status == "ERROR") {
             showCheckAlert = true;
@@ -108,7 +122,14 @@ export default {
       return activeTaskInStage(props.stage);
     });
 
-    return { RUN_TAB, CHECK_TAB, state, tabItemList, activeTask };
+    return {
+      RUN_TAB,
+      CHECK_TAB,
+      state,
+      filteredTaskCheckRunList,
+      tabItemList,
+      activeTask,
+    };
   },
 };
 </script>
