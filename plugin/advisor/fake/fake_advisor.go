@@ -22,17 +22,17 @@ type Advisor struct {
 func (adv *Advisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
 	return []advisor.Advice{
 		{
-			Severity: advisor.INFO,
+			Severity: advisor.Info,
 			Title:    "INFO check",
 			Content:  "Fake check returnings INFO result",
 		},
 		{
-			Severity: advisor.WARN,
+			Severity: advisor.Warn,
 			Title:    "WARN check",
 			Content:  "Fake check returnings WARN result",
 		},
 		{
-			Severity: advisor.ERROR,
+			Severity: advisor.Error,
 			Title:    "ERROR check",
 			Content:  "Fake check returnings ERROR result",
 		},
