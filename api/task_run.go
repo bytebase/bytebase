@@ -73,7 +73,7 @@ type TaskRunFind struct {
 	TaskId *int
 
 	// Domain specific fields
-	StatusList []TaskRunStatus
+	StatusList *[]TaskRunStatus
 }
 
 func (find *TaskRunFind) String() string {
