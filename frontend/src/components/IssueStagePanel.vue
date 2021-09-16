@@ -113,8 +113,8 @@ export default {
         }
       }
       return [
-        { title: "Run", alert: showRunAlert },
-        { title: "Check", alert: showCheckAlert },
+        { title: "Runs", alert: showRunAlert },
+        { title: "Checks", alert: showCheckAlert },
       ];
     };
 
