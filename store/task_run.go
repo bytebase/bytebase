@@ -103,7 +103,7 @@ func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *ap
 // PatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
 func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
 	// Build UPDATE clause.
-	set, args := []string{}, []interface{}{}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
 	set, args = append(set, "comment = ?"), append(args, patch.Comment)
 
