@@ -17,8 +17,8 @@ function convert(
   rootGetters: any
 ): Activity {
   const payload = activity.attributes.payload
-    ? JSON.parse(activity.attributes.payload as string)
-    : undefined;
+    ? JSON.parse(activity.attributes.payload as string) || {}
+    : {};
 
   return {
     ...(activity.attributes as Omit<Activity, "id">),

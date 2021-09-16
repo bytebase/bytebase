@@ -24,7 +24,7 @@ const stateByKey = function (
   }
   const localStorageState = localStorage.getItem(module);
   if (localStorageState) {
-    return JSON.parse(localStorageState)[key];
+    return JSON.parse(localStorageState)[key] || false;
   }
   return false;
 };
@@ -35,37 +35,39 @@ const saveStateByKey = function (
   state: boolean
 ): boolean {
   const item = localStorage.getItem(module);
-  const fullState = item ? JSON.parse(item) : {};
+  const fullState = item ? JSON.parse(item) || {} : {};
   fullState[key] = state;
   localStorage.setItem(module, JSON.stringify(fullState));
   return fullState[key];
 };
 
 const getters = {
-  collapseStateByKey: (state: UIState) => (key: string): boolean => {
-    return stateByKey(state.collapseStateByKey, COLLAPSE_MODULE, key);
-  },
+  collapseStateByKey:
+    (state: UIState) =>
+    (key: string): boolean => {
+      return stateByKey(state.collapseStateByKey, COLLAPSE_MODULE, key);
+    },
 
-  introStateByKey: (state: UIState) => (key: string): boolean => {
-    return stateByKey(state.introStateByKey, INTRO_MODULE, key);
-  },
+  introStateByKey:
+    (state: UIState) =>
+    (key: string): boolean => {
+      return stateByKey(state.introStateByKey, INTRO_MODULE, key);
+    },
 };
 
 const actions = {
   async restoreState({ commit }: any) {
     const storedCollapseState = localStorage.getItem(COLLAPSE_MODULE);
     const collapseState = storedCollapseState
-      ? JSON.parse(storedCollapseState)
+      ? JSON.parse(storedCollapseState) || {}
       : {};
-    if (collapseState) {
-      commit("setCollapseState", collapseState);
-    }
+    commit("setCollapseState", collapseState);
 
     const storedIntroState = localStorage.getItem(INTRO_MODULE);
-    const introState = storedIntroState ? JSON.parse(storedIntroState) : {};
-    if (introState) {
-      commit("setIntroState", introState);
-    }
+    const introState = storedIntroState
+      ? JSON.parse(storedIntroState) || {}
+      : {};
+    commit("setIntroState", introState);
   },
 
   async savecollapseStateByKey(

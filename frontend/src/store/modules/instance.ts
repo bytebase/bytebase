@@ -66,8 +66,8 @@ function convertUser(
 
 function convertMigrationHistory(history: ResourceObject): MigrationHistory {
   const payload = history.attributes.payload
-    ? JSON.parse(history.attributes.payload as string)
-    : undefined;
+    ? JSON.parse(history.attributes.payload as string) || {}
+    : {};
   return {
     ...(history.attributes as Omit<
       MigrationHistory,
