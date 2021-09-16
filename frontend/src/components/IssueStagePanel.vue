@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div v-for="(task, index) in stage.taskList" :key="index">
-      <div class="flex flex-row items-center mb-2 space-x-1">
+      <div class="flex flex-row items-center space-x-1">
         <svg
           v-if="stage.taskList.length > 1 && activeTask.id == task.id"
           class="w-5 h-5 text-info"
@@ -20,18 +20,42 @@
           {{ task.name }}
         </div>
       </div>
-      <TaskRunTable :taskRunList="task.taskRunList" />
+      <div class="mb-2">
+        <BBTabFilter
+          :tabList="tabList"
+          :selectedIndex="state.selectedIndex"
+          @select-index="
+            (index) => {
+              state.selectedIndex = index;
+            }
+          "
+        />
+      </div>
+      <TaskRunTable
+        v-if="state.selectedIndex == RUN_TAB"
+        :taskRunList="task.taskRunList"
+      />
+      <TaskCheckRunTable
+        v-else-if="state.selectedIndex == CHECK_TAB"
+        :taskCheckRunList="task.taskCheckRunList"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { reactive, watch, PropType, computed } from "vue";
+import TaskCheckRunTable from "../components/TaskCheckRunTable.vue";
 import TaskRunTable from "../components/TaskRunTable.vue";
 import { Stage, Task } from "../types";
 import { activeTaskInStage } from "../utils";
 
-interface LocalState {}
+const RUN_TAB = 0;
+const CHECK_TAB = 1;
+
+interface LocalState {
+  selectedIndex: number;
+}
 
 export default {
   name: "IssueStagePanel",
@@ -41,20 +65,26 @@ export default {
       type: Object as PropType<Stage>,
     },
   },
-  components: { TaskRunTable },
+  components: { TaskCheckRunTable, TaskRunTable },
   setup(props, { emit }) {
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      selectedIndex: RUN_TAB,
+    });
 
     watch(
       () => props.stage,
       (curStage, _) => {}
     );
 
+    const tabList = computed((): string[] => {
+      return ["Run", "Check"];
+    });
+
     const activeTask = computed((): Task => {
       return activeTaskInStage(props.stage);
     });
 
-    return { state, activeTask };
+    return { RUN_TAB, CHECK_TAB, state, tabList, activeTask };
   },
 };
 </script>

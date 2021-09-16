@@ -10,17 +10,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type Severity string
+type Status string
 
 const (
-	Info  Severity = "INFO"
-	Warn  Severity = "WARN"
-	Error Severity = "ERROR"
+	Success Status = "SUCCESS"
+	Warn    Status = "WARN"
+	Error   Status = "ERROR"
 )
 
-func (e Severity) String() string {
+func (e Status) String() string {
 	switch e {
-	case Info:
+	case Success:
 		return "INFO"
 	case Warn:
 		return "WARN"
@@ -37,9 +37,9 @@ const (
 )
 
 type Advice struct {
-	Severity Severity
-	Title    string
-	Content  string
+	Status  Status
+	Title   string
+	Content string
 }
 
 type AdvisorContext struct {

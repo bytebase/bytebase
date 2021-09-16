@@ -30,21 +30,21 @@ func (e TaskCheckRunStatus) String() string {
 	return "UNKNOWN"
 }
 
-type TaskCheckLevel string
+type TaskCheckStatus string
 
 const (
-	TaskCheckLevelInfo  TaskCheckLevel = "INFO"
-	TaskCheckLevelWarn  TaskCheckLevel = "WARN"
-	TaskCheckLevelError TaskCheckLevel = "ERROR"
+	TaskCheckStatusSuccess TaskCheckStatus = "SUCCESS"
+	TaskCheckStatusWarn    TaskCheckStatus = "WARN"
+	TaskCheckStatusError   TaskCheckStatus = "ERROR"
 )
 
-func (e TaskCheckLevel) String() string {
+func (e TaskCheckStatus) String() string {
 	switch e {
-	case TaskCheckLevelInfo:
-		return "INFO"
-	case TaskCheckLevelWarn:
+	case TaskCheckStatusSuccess:
+		return "SUCCESS"
+	case TaskCheckStatusWarn:
 		return "WARN"
-	case TaskCheckLevelError:
+	case TaskCheckStatusError:
 		return "ERROR"
 	}
 	return "UNKNOWN"
@@ -62,9 +62,9 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 }
 
 type TaskCheckResult struct {
-	Level   TaskCheckLevel `json:"level"`
-	Title   string         `json:"title"`
-	Content string         `json:"content"`
+	Status  TaskCheckStatus `json:"status"`
+	Title   string          `json:"title"`
+	Content string          `json:"content"`
 }
 
 type TaskCheckRunResultPayload struct {
