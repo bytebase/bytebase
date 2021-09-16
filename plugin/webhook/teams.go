@@ -110,7 +110,7 @@ func (receiver *TeamsReceiver) post(context WebhookContext) error {
 	defer resp.Body.Close()
 
 	if string(b) != "1" {
-		return fmt.Errorf("%s", string(b))
+		return fmt.Errorf("%s", fmt.Sprintf("%.100s", string(b)))
 	}
 
 	return nil
