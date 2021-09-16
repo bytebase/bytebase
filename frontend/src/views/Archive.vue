@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
       <BBTabFilter
-        :tabList="tabList"
+        :tabItemList="tabItemList"
         :selectedIndex="state.selectedIndex"
         @select-index="
           (index) => {
@@ -52,6 +52,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -109,10 +110,14 @@ export default {
       return store.getters["environment/environmentList"](["ARCHIVED"]);
     });
 
-    const tabList = computed((): string[] => {
+    const tabItemList = computed((): BBTabFilterItem[] => {
       return isDBAOrOwner(currentUser.value.role)
-        ? ["Project", "Instance", "Environment"]
-        : ["Project"];
+        ? [
+            { title: "Project", alert: false },
+            { title: "Instance", alert: false },
+            { title: "Environment", alert: false },
+          ]
+        : [{ title: "Project", alert: false }];
     });
 
     const filteredProjectList = (list: Project[]) => {
@@ -160,7 +165,7 @@ export default {
       projectList,
       instanceList,
       environmentList,
-      tabList,
+      tabItemList,
       filteredProjectList,
       filteredInstanceList,
       filteredEnvironmentList,

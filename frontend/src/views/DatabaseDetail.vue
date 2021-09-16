@@ -198,7 +198,7 @@
     <BBTabFilter
       class="px-3 pb-2 border-b border-block-border"
       :responsive="false"
-      :tabList="databaseTabItemList.map((item) => item.name)"
+      :tabItemList="tabItemList"
       :selectedIndex="state.selectedIndex"
       @select-index="
         (index) => {
@@ -242,6 +242,7 @@ import {
   baseDirectoryWebURL,
 } from "../types";
 import { isEmpty } from "lodash";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
 const MIGRAITON_HISTORY_TAB = 1;
@@ -384,6 +385,12 @@ export default {
       return "Alter Schema";
     });
 
+    const tabItemList = computed((): BBTabFilterItem[] => {
+      return databaseTabItemList.map((item) => {
+        return { title: item.name, alert: false };
+      });
+    });
+
     const tryTransferProject = () => {
       state.editingProjectId = database.value.project.id;
       state.showModal = true;
@@ -477,12 +484,12 @@ export default {
       allowChangeProject,
       allowAdmin,
       allowEdit,
+      tabItemList,
       tryTransferProject,
       alterSchema,
       alterSchemaText,
       updateProject,
       selectTab,
-      databaseTabItemList,
     };
   },
 };

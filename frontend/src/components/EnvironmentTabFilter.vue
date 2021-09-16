@@ -1,6 +1,6 @@
 <template>
   <BBTabFilter
-    :tabList="tabList"
+    :tabItemList="tabItemList"
     :selectedIndex="state.selectedIndex"
     @select-index="
       (index) => {
@@ -19,7 +19,7 @@ import { computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Environment } from "../types";
-import environment from "../store/modules/environment";
+import { BBTabFilterItem } from "../bbkit/types";
 
 interface LocalState {
   selectedIndex: number;
@@ -64,11 +64,19 @@ export default {
       }
     );
 
-    const tabList = computed(() => {
-      const list = ["All"];
+    const tabItemList = computed((): BBTabFilterItem[] => {
+      const list: BBTabFilterItem[] = [
+        {
+          title: "All",
+          alert: false,
+        },
+      ];
       list.push(
         ...environmentList.value.map((environment: Environment) => {
-          return environment.name;
+          return {
+            title: environment.name,
+            alert: false,
+          };
         })
       );
       return list;
@@ -77,7 +85,7 @@ export default {
     return {
       state,
       environmentList,
-      tabList,
+      tabItemList,
     };
   },
 };

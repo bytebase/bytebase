@@ -22,7 +22,7 @@
       </div>
       <div class="mb-2">
         <BBTabFilter
-          :tabList="tabList"
+          :tabItemList="tabItemList"
           :selectedIndex="state.selectedIndex"
           @select-index="
             (index) => {
@@ -49,6 +49,7 @@ import TaskCheckRunTable from "../components/TaskCheckRunTable.vue";
 import TaskRunTable from "../components/TaskRunTable.vue";
 import { Stage, Task } from "../types";
 import { activeTaskInStage } from "../utils";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const RUN_TAB = 0;
 const CHECK_TAB = 1;
@@ -76,15 +77,18 @@ export default {
       (curStage, _) => {}
     );
 
-    const tabList = computed((): string[] => {
-      return ["Run", "Check"];
+    const tabItemList = computed((): BBTabFilterItem[] => {
+      return [
+        { title: "Run", alert: false },
+        { title: "Check", alert: false },
+      ];
     });
 
     const activeTask = computed((): Task => {
       return activeTaskInStage(props.stage);
     });
 
-    return { RUN_TAB, CHECK_TAB, state, tabList, activeTask };
+    return { RUN_TAB, CHECK_TAB, state, tabItemList, activeTask };
   },
 };
 </script>

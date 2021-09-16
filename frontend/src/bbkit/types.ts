@@ -22,6 +22,11 @@ export type BBTabItem = {
   id: string;
 };
 
+export type BBTabFilterItem = {
+  title: string;
+  alert: boolean;
+};
+
 export type BBStepStatus =
   | "PENDING"
   | "PENDING_ACTIVE"

@@ -13,25 +13,54 @@
         "
       >
         <option
-          v-for="(item, index) in tabList"
+          v-for="(item, index) in tabItemList"
           :key="index"
           :value="index"
           :selected="index == selectedIndex"
         >
-          {{ item }}
+          {{ item.title }}
         </option>
       </select>
     </div>
     <div :class="responsive ? 'hidden sm:block' : 'block'">
       <div class="flex space-x-4" aria-label="Tabs">
         <button
-          v-for="(item, index) in tabList"
+          v-for="(item, index) in tabItemList"
           :key="index"
-          class="tab px-3 py-1"
+          class="tab px-3 py-1 flex items-center"
           :class="buttonClass(index == selectedIndex)"
           @click.prevent="$emit('select-index', index)"
         >
-          {{ item }}
+          {{ item.title }}
+          <span
+            v-if="item.alert"
+            class="
+              flex
+              items-center
+              justify-center
+              rounded-full
+              select-none
+              ml-2
+              w-4
+              h-4
+              text-white
+            "
+            :class="index == selectedIndex ? 'bg-gray-600' : 'bg-red-600'"
+          >
+            <span
+              class="
+                h-2
+                w-2
+                rounded-full
+                text-center
+                pb-6
+                font-normal
+                text-base
+              "
+              aria-hidden="true"
+              >!</span
+            >
+          </span>
         </button>
       </div>
     </div>
@@ -40,14 +69,15 @@
 
 <script lang="ts">
 import { PropType } from "vue";
+import { BBTabFilterItem } from "./types";
 
 export default {
   name: "BBTabFilter",
   emits: ["select-index"],
   props: {
-    tabList: {
+    tabItemList: {
       required: true,
-      type: Object as PropType<String[]>,
+      type: Object as PropType<BBTabFilterItem[]>,
     },
     selectedIndex: {
       required: true,
