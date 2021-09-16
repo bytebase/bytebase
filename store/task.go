@@ -21,12 +21,13 @@ type TaskService struct {
 	l  *zap.Logger
 	db *DB
 
-	TaskRunService api.TaskRunService
+	TaskRunService      api.TaskRunService
+	TaskCheckRunService api.TaskCheckRunService
 }
 
 // NewTaskService returns a new instance of TaskService.
-func NewTaskService(logger *zap.Logger, db *DB, taskRunService api.TaskRunService) *TaskService {
-	return &TaskService{l: logger, db: db, TaskRunService: taskRunService}
+func NewTaskService(logger *zap.Logger, db *DB, taskRunService api.TaskRunService, taskCheckRunService api.TaskCheckRunService) *TaskService {
+	return &TaskService{l: logger, db: db, TaskRunService: taskRunService, TaskCheckRunService: taskCheckRunService}
 }
 
 // CreateTask creates a new task.
@@ -169,6 +170,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 	var task api.Task
 	var databaseId sql.NullInt32
 	task.TaskRunList = []*api.TaskRun{}
+	task.TaskCheckRunList = []*api.TaskCheckRun{}
 	if err := row.Scan(
 		&task.ID,
 		&task.CreatorId,
@@ -282,6 +284,14 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			return nil, err
 		}
 
+		taskCheckRunFind := &api.TaskCheckRunFind{
+			TaskId: &task.ID,
+		}
+		task.TaskCheckRunList, err = s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx.Tx, taskCheckRunFind)
+		if err != nil {
+			return nil, err
+		}
+
 		list = append(list, &task)
 	}
 	if err := rows.Err(); err != nil {
@@ -306,7 +316,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 	if !(task.Status == api.TaskPendingApproval && patch.Status == api.TaskPending) {
 		taskRunFind := &api.TaskRunFind{
 			TaskId: &task.ID,
-			StatusList: []api.TaskRunStatus{
+			StatusList: &[]api.TaskRunStatus{
 				api.TaskRunRunning,
 			},
 		}
@@ -336,9 +346,10 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			}
 		} else {
 			taskRunStatusPatch := &api.TaskRunStatusPatch{
-				ID:      &taskRun.ID,
-				TaskId:  &patch.ID,
-				Comment: patch.Comment,
+				ID:        &taskRun.ID,
+				UpdaterId: patch.UpdaterId,
+				TaskId:    &patch.ID,
+				Comment:   patch.Comment,
 			}
 			switch patch.Status {
 			case api.TaskDone:
@@ -400,6 +411,14 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			TaskId: &task.ID,
 		}
 		task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx.Tx, taskRunFind)
+		if err != nil {
+			return nil, err
+		}
+
+		taskCheckRunFind := &api.TaskCheckRunFind{
+			TaskId: &task.ID,
+		}
+		task.TaskCheckRunList, err = s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx.Tx, taskCheckRunFind)
 		if err != nil {
 			return nil, err
 		}

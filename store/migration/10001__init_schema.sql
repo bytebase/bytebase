@@ -832,6 +832,50 @@ WHERE
 
 END;
 
+-- task check run table stores the task check run
+CREATE TABLE task_check_run (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    task_id INTEGER NOT NULL REFERENCES task (id),
+    name TEXT NOT NULL,
+    `status` TEXT NOT NULL CHECK (
+        `status` IN (
+            'RUNNING',
+            'DONE',
+            'FAILED',
+            "CANCELED"
+        )
+    ),
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task-check.%'),
+    comment TEXT NOT NULL DEFAULT '',
+    -- result saves the task check run result in json format
+    result  TEXT NOT NULL DEFAULT '',
+    payload TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('task_check_run', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_task_check_run_modification_time`
+AFTER
+UPDATE
+    ON `task_check_run` FOR EACH ROW BEGIN
+UPDATE
+    `task_check_run`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Pipeline related END
 -----------------------
 -- issue

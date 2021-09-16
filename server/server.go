@@ -19,9 +19,10 @@ import (
 )
 
 type Server struct {
-	TaskScheduler *TaskScheduler
-	SchemaSyncer  *SchemaSyncer
-	BackupRunner  *BackupRunner
+	TaskScheduler      *TaskScheduler
+	TaskCheckScheduler *TaskCheckScheduler
+	SchemaSyncer       *SchemaSyncer
+	BackupRunner       *BackupRunner
 
 	ActivityManager *ActivityManager
 
@@ -47,6 +48,7 @@ type Server struct {
 	PipelineService        api.PipelineService
 	StageService           api.StageService
 	TaskService            api.TaskService
+	TaskCheckRunService    api.TaskCheckRunService
 	ActivityService        api.ActivityService
 	InboxService           api.InboxService
 	BookmarkService        api.BookmarkService
@@ -108,18 +110,23 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	}
 
 	if !readonly {
-		scheduler := NewTaskScheduler(logger, s)
+		taskScheduler := NewTaskScheduler(logger, s)
 		defaultExecutor := NewDefaultTaskExecutor(logger)
 		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
 		sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
 		backupDBExecutor := NewDatabaseBackupTaskExecutor(logger)
 		restoreDBExecutor := NewDatabaseRestoreTaskExecutor(logger)
-		scheduler.Register(string(api.TaskGeneral), defaultExecutor)
-		scheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
-		scheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
-		scheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
-		scheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
-		s.TaskScheduler = scheduler
+		taskScheduler.Register(string(api.TaskGeneral), defaultExecutor)
+		taskScheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+		taskScheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
+		taskScheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
+		s.TaskScheduler = taskScheduler
+
+		taskCheckScheduler := NewTaskCheckScheduler(logger, s)
+		statementLintExecutor := NewTaskCheckStatementLintExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementLintExecutor)
+		s.TaskCheckScheduler = taskCheckScheduler
 
 		schemaSyncer := NewSchemaSyncer(logger, s)
 		s.SchemaSyncer = schemaSyncer
@@ -196,6 +203,10 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 func (server *Server) Run() error {
 	if !server.readonly {
 		if err := server.TaskScheduler.Run(); err != nil {
+			return err
+		}
+
+		if err := server.TaskCheckScheduler.Run(); err != nil {
 			return err
 		}
 

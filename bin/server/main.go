@@ -8,6 +8,9 @@ import (
 
 	// Register mysql driver
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+
+	// Register fake advisor
+	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
 )
 
 func main() {
