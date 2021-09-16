@@ -47,10 +47,15 @@ func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) error {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
+			skipIfAlreadyDone := true
 			if task.Status == api.TaskPendingApproval {
-				return nil
+				return s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone)
 			}
+
 			if task.Status == api.TaskPending {
+				if err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
+					return err
+				}
 				_, err := s.TaskScheduler.Schedule(context.Background(), task)
 				if err != nil {
 					return err

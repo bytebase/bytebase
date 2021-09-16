@@ -103,9 +103,10 @@ type Task struct {
 	InstanceId int
 	Instance   *Instance `jsonapi:"relation,instance"`
 	// Tasks like creating database may not have database.
-	DatabaseId  *int
-	Database    *Database  `jsonapi:"relation,database"`
-	TaskRunList []*TaskRun `jsonapi:"relation,taskRun"`
+	DatabaseId       *int
+	Database         *Database       `jsonapi:"relation,database"`
+	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
+	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
 
 	// Domain specific fields
 	Name    string     `jsonapi:"attr,name"`

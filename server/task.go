@@ -132,6 +132,18 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task) er
 		}
 	}
 
+	for _, taskCheckRun := range task.TaskCheckRunList {
+		taskCheckRun.Creator, err = s.ComposePrincipalById(context.Background(), taskCheckRun.CreatorId)
+		if err != nil {
+			return err
+		}
+
+		taskCheckRun.Updater, err = s.ComposePrincipalById(context.Background(), taskCheckRun.UpdaterId)
+		if err != nil {
+			return err
+		}
+	}
+
 	task.Instance, err = s.ComposeInstanceById(context.Background(), task.InstanceId)
 	if err != nil {
 		return err
@@ -247,6 +259,11 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 
 	// Schedule the task if it's being just approved
 	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
+		skipIfAlreadyDone := false
+		if err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
+			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
+		}
+
 		updatedTask, err = s.TaskScheduler.Schedule(ctx, updatedTask)
 		if err != nil {
 			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
