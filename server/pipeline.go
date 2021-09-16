@@ -47,6 +47,11 @@ func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) error {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
+			// Should short circuit upon reaching failed task.
+			if task.Status == api.TaskFailed {
+				return nil
+			}
+
 			skipIfAlreadyDone := true
 			if task.Status == api.TaskPendingApproval {
 				return s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone)
