@@ -260,7 +260,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Schedule the task if it's being just approved
 	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
 		skipIfAlreadyDone := false
-		if err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
+		if err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
 			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
 		}
 
