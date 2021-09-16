@@ -87,6 +87,9 @@ func (find *TaskRunFind) String() string {
 type TaskRunStatusPatch struct {
 	ID *int
 
+	// Standard fields
+	UpdaterId int
+
 	// Related fields
 	TaskId *int
 
