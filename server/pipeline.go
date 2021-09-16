@@ -47,6 +47,9 @@ func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) error {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				return nil
+			}
 			if task.Status == api.TaskPending {
 				_, err := s.TaskScheduler.Schedule(context.Background(), task)
 				if err != nil {
