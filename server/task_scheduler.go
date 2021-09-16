@@ -75,9 +75,9 @@ func (s *TaskScheduler) Run() error {
 				}
 
 				// Inspect all running tasks
-				taskStatus := api.TaskRunning
+				taskStatusList := []api.TaskStatus{api.TaskRunning}
 				taskFind := &api.TaskFind{
-					Status: &taskStatus,
+					StatusList: &taskStatusList,
 				}
 				taskList, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {
