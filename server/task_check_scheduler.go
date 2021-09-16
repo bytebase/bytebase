@@ -172,7 +172,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:         creatorId,
 			TaskId:            task.ID,
-			Name:              fmt.Sprintf("%q statement lint %d", task.Name, time.Now().Unix()),
+			Name:              "Statement lint",
 			Type:              api.TaskCheckDatabaseStatementAdvise,
 			Payload:           string(payload),
 			SkipIfAlreadyDone: skipIfAlreadyDone,
