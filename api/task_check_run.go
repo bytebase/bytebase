@@ -105,6 +105,7 @@ type TaskCheckRunCreate struct {
 	// Domain specific fields
 	Name    string        `jsonapi:"attr,name"`
 	Type    TaskCheckType `jsonapi:"attr,type"`
+	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
 
 	// If true, then we will skip creating the task check run if there has already been a DONE check run

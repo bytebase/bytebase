@@ -94,9 +94,10 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
+			comment,
 			payload
 		)
-		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?)
+		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, comment, result, payload"+`
 	`,
 		create.CreatorId,
@@ -104,6 +105,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 		create.TaskId,
 		create.Name,
 		create.Type,
+		create.Comment,
 		create.Payload,
 	)
 
