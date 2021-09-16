@@ -824,7 +824,7 @@ AFTER
 UPDATE
     ON `task_run` FOR EACH ROW BEGIN
 UPDATE
-    `task`
+    `task_run`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE
