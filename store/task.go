@@ -272,7 +272,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		taskRunFind := &api.TaskRunFind{
 			TaskId: &task.ID,
 		}
-		task.TaskRunList, err = s.TaskRunService.FindTaskRunList(ctx, tx.Tx, taskRunFind)
+		task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
 			return nil, err
 		}
@@ -305,7 +305,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 				api.TaskRunRunning,
 			},
 		}
-		taskRun, err := s.TaskRunService.FindTaskRun(ctx, tx.Tx, taskRunFind)
+		taskRun, err := s.TaskRunService.FindTaskRunTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.ENOTFOUND {
 				if patch.Status != api.TaskRunning {
@@ -326,7 +326,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 				Type:      task.Type,
 				Payload:   task.Payload,
 			}
-			if _, err := s.TaskRunService.CreateTaskRun(ctx, tx.Tx, taskRunCreate); err != nil {
+			if _, err := s.TaskRunService.CreateTaskRunTx(ctx, tx.Tx, taskRunCreate); err != nil {
 				return nil, err
 			}
 		} else {
@@ -345,7 +345,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			case api.TaskCanceled:
 				taskRunStatusPatch.Status = api.TaskRunCanceled
 			}
-			if _, err := s.TaskRunService.PatchTaskRunStatus(ctx, tx.Tx, taskRunStatusPatch); err != nil {
+			if _, err := s.TaskRunService.PatchTaskRunStatusTx(ctx, tx.Tx, taskRunStatusPatch); err != nil {
 				return nil, err
 			}
 		}
@@ -394,7 +394,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		taskRunFind := &api.TaskRunFind{
 			TaskId: &task.ID,
 		}
-		task.TaskRunList, err = s.TaskRunService.FindTaskRunList(ctx, tx.Tx, taskRunFind)
+		task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
 			return nil, err
 		}

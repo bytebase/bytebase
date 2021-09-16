@@ -97,8 +97,8 @@ type TaskRunStatusPatch struct {
 }
 
 type TaskRunService interface {
-	CreateTaskRun(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
-	FindTaskRunList(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
-	FindTaskRun(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRun, error)
-	PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRun, error)
+	CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
+	FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
+	FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRun, error)
+	PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRun, error)
 }

@@ -26,8 +26,8 @@ func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
 	return &TaskRunService{l: logger, db: db}
 }
 
-// CreateTaskRun creates a new taskRun.
-func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
+// CreateTaskRunTx creates a new taskRun.
+func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task_run (
 			creator_id,
@@ -75,8 +75,8 @@ func (s *TaskRunService) CreateTaskRun(ctx context.Context, tx *sql.Tx, create *
 	return &taskRun, nil
 }
 
-// FindTaskRunList retrieves a list of taskRuns based on find.
-func (s *TaskRunService) FindTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
+// FindTaskRunListTx retrieves a list of taskRuns based on find.
+func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
 	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return []*api.TaskRun{}, err
@@ -85,10 +85,10 @@ func (s *TaskRunService) FindTaskRunList(ctx context.Context, tx *sql.Tx, find *
 	return list, nil
 }
 
-// FindTaskRun retrieves a single taskRun based on find.
+// FindTaskRunTx retrieves a single taskRun based on find.
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *TaskRunService) FindTaskRun(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRun, error) {
+func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRun, error) {
 	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -100,8 +100,8 @@ func (s *TaskRunService) FindTaskRun(ctx context.Context, tx *sql.Tx, find *api.
 	return list[0], nil
 }
 
-// PatchTaskRunStatus updates a taskRun status. Returns the new state of the taskRun after update.
-func (s *TaskRunService) PatchTaskRunStatus(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
+// PatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
+func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
 	// Build UPDATE clause.
 	set, args := []string{}, []interface{}{}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
