@@ -252,6 +252,8 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 					if err != nil {
 						// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
 						m.s.l.Warn("Failed to post webhook event after changing the issue status",
+							zap.String("webhook_type", hook.Type),
+							zap.String("webhook_name", hook.Name),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("status", string(meta.issue.Status)),
 							zap.Error(err))
