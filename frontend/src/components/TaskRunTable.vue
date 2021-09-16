@@ -8,7 +8,7 @@
     :rowClickable="false"
   >
     <template v-slot:body="{ rowData: taskRun }">
-      <BBTableCell :leftPadding="4" class="table-cell w-12">
+      <BBTableCell :leftPadding="4" class="table-cell w-4">
         <div class="flex flex-row space-x-2">
           <div
             class="
@@ -68,9 +68,6 @@
                 ></path></svg
             ></template>
           </div>
-          <div class="flex items-center capitalize">
-            {{ taskRun.status.toLowerCase() }}
-          </div>
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
@@ -106,7 +103,7 @@ import { TaskRun, TaskRunStatus } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
-    title: "Status",
+    title: "",
   },
   {
     title: "Comment",
