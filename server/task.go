@@ -80,6 +80,34 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
+		// If we have updated the statement, then we trigger a syntax check
+		if task.Type == api.TaskDatabaseSchemaUpdate && taskPatch.Statement != nil {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+				Statement: *taskPatch.Statement,
+				DbType:    updatedTask.Database.Instance.Engine,
+				Charset:   updatedTask.Database.CharacterSet,
+				Collation: updatedTask.Database.Collation,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+			}
+			_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(context.Background(), &api.TaskCheckRunCreate{
+				CreatorId:         api.SYSTEM_BOT_ID,
+				TaskId:            task.ID,
+				Type:              api.TaskCheckDatabaseStatementSyntax,
+				Payload:           string(payload),
+				SkipIfAlreadyDone: false,
+			})
+			if err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				s.l.Error("Failed to trigger syntax check after changing task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedTask); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", updatedTask.Name)).SetInternal(err)
