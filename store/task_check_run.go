@@ -40,6 +40,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskId:     &create.TaskId,
+		Type:       &create.Type,
 		StatusList: &statusList,
 	}
 
@@ -255,6 +256,9 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 	}
 	if v := find.TaskId; v != nil {
 		where, args = append(where, "task_id = ?"), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, "`type` = ?"), append(args, *v)
 	}
 	if v := find.StatusList; v != nil {
 		list := []string{}
