@@ -48,8 +48,8 @@ func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) (*api.Task, error) {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
-			// Should short circuit upon reaching failed task.
-			if task.Status == api.TaskFailed {
+			// Should short circuit upon reaching RUNNING or FAILED task.
+			if task.Status == api.TaskRunning || task.Status == api.TaskFailed {
 				return nil, nil
 			}
 
