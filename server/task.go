@@ -27,6 +27,66 @@ var (
 )
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
+	g.PATCH("/pipeline/:pipelineId/task/:taskId", func(c echo.Context) error {
+		taskId, err := strconv.Atoi(c.Param("taskId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskId"))).SetInternal(err)
+		}
+
+		taskPatch := &api.TaskPatch{
+			ID:        taskId,
+			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task request").SetInternal(err)
+		}
+
+		taskFind := &api.TaskFind{
+			ID: &taskId,
+		}
+		task, err := s.TaskService.FindTask(context.Background(), taskFind)
+		if err != nil {
+			if common.ErrorCode(err) == common.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
+		}
+
+		if taskPatch.Statement != nil {
+			if task.Type == api.TaskDatabaseSchemaUpdate {
+				payload := &api.TaskDatabaseSchemaUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema udpate payload").SetInternal(err)
+				}
+				payload.Statement = *taskPatch.Statement
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+				}
+				payloadStr := string(bytes)
+				taskPatch.Payload = &payloadStr
+			}
+		}
+
+		updatedTask, err := s.TaskService.PatchTask(context.Background(), taskPatch)
+		if err != nil {
+			if common.ErrorCode(err) == common.EINVALID {
+				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
+		}
+
+		if err := s.ComposeTaskRelationship(context.Background(), updatedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", updatedTask.Name)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.PATCH("/pipeline/:pipelineId/task/:taskId/status", func(c echo.Context) error {
 		taskId, err := strconv.Atoi(c.Param("taskId"))
 		if err != nil {
