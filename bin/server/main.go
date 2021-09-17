@@ -11,6 +11,8 @@ import (
 
 	// Register fake advisor
 	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
+	// Register mysql advisor
+	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
 )
 
 func main() {

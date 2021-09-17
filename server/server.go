@@ -124,8 +124,9 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		s.TaskScheduler = taskScheduler
 
 		taskCheckScheduler := NewTaskCheckScheduler(logger, s)
-		statementLintExecutor := NewTaskCheckStatementLintExecutor(logger)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementLintExecutor)
+		statementExecutor := NewTaskCheckStatementAdvisorExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementExecutor)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementExecutor)
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		schemaSyncer := NewSchemaSyncer(logger, s)

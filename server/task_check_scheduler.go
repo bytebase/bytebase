@@ -172,8 +172,20 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:         creatorId,
 			TaskId:            task.ID,
-			Name:              "Statement lint",
-			Type:              api.TaskCheckDatabaseStatementAdvise,
+			Name:              "Fake check",
+			Type:              api.TaskCheckDatabaseStatementFakeAdvise,
+			Payload:           string(payload),
+			SkipIfAlreadyDone: skipIfAlreadyDone,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorId:         creatorId,
+			TaskId:            task.ID,
+			Name:              "Syntax check",
+			Type:              api.TaskCheckDatabaseStatementSyntax,
 			Payload:           string(payload),
 			SkipIfAlreadyDone: skipIfAlreadyDone,
 		})
