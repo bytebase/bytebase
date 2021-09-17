@@ -53,6 +53,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if taskPatch.Statement != nil {
+			if task.Status != api.TaskPending && task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Can not update task in %v state", task.Status))
+			}
+
 			if task.Type == api.TaskDatabaseSchemaUpdate {
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {

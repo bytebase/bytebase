@@ -1045,7 +1045,10 @@ export default {
         ((issue.value as Issue).status == "OPEN" &&
           (issue.value as Issue).creator.id == currentUser.value.id &&
           // Only allow if it's UI workflow
-          (issue.value as Issue).project.workflowType == "UI")
+          (issue.value as Issue).project.workflowType == "UI" &&
+          (selectedTask.value.status == "PENDING" ||
+            selectedTask.value.status == "PENDING_APPROVAL" ||
+            selectedTask.value.status == "FAILED"))
       );
     });
 
