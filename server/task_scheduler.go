@@ -66,7 +66,7 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
-					if err := s.server.ScheduleNextTaskIfNeeded(context.Background(), pipeline); err != nil {
+					if _, err := s.server.ScheduleNextTaskIfNeeded(context.Background(), pipeline); err != nil {
 						s.l.Error("Failed to schedule next running task",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),

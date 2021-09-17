@@ -482,7 +482,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	if err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
+	if _, err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 

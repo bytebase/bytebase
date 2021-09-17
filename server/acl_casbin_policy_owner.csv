@@ -64,6 +64,7 @@ p, OWNER, /bookmark, POST
 p, OWNER, /bookmark, GET
 p, OWNER, /bookmark/{id}, DELETE_SELF
 p, OWNER, /pipeline/{pipelineId}/task/{taskId}/status, PATCH
+p, OWNER, /pipeline/{pipelineId}/task/{taskId}/check, POST
 p, OWNER, /sql/ping, POST
 p, OWNER, /sql/syncschema, POST
 p, OWNER, /vcs, POST
