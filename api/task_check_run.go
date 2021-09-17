@@ -92,7 +92,6 @@ type TaskCheckRun struct {
 	TaskId int `jsonapi:"attr,taskId"`
 
 	// Domain specific fields
-	Name    string             `jsonapi:"attr,name"`
 	Status  TaskCheckRunStatus `jsonapi:"attr,status"`
 	Type    TaskCheckType      `jsonapi:"attr,type"`
 	Comment string             `jsonapi:"attr,comment"`
@@ -109,7 +108,6 @@ type TaskCheckRunCreate struct {
 	TaskId int
 
 	// Domain specific fields
-	Name    string        `jsonapi:"attr,name"`
 	Type    TaskCheckType `jsonapi:"attr,type"`
 	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`

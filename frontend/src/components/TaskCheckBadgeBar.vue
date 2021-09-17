@@ -116,7 +116,7 @@
             ></path>
           </svg>
         </template>
-        {{ checkRun.name }}
+        {{ name(checkRun) }}
       </button>
     </template>
   </div>
@@ -187,6 +187,15 @@ export default {
       return value;
     };
 
+    const name = (taskCheckRun: TaskCheckRun): string => {
+      switch (taskCheckRun.type) {
+        case "bb.task-check.database.statement.fake-advise":
+          return "Fake";
+        case "bb.task-check.database.statement.syntax":
+          return "Syntax";
+      }
+    };
+
     const selectTaskCheckRun = (taskCheckRun: TaskCheckRun) => {
       emit("select-task-check-run", taskCheckRun);
     };
@@ -195,6 +204,7 @@ export default {
       state,
       filteredTaskCheckRunList,
       taskCheckStatus,
+      name,
       selectTaskCheckRun,
     };
   },
