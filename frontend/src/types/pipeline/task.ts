@@ -99,6 +99,10 @@ export type TaskCreate = {
   migrationType?: MigrationType;
 };
 
+export type TaskPatch = {
+  statement?: string;
+};
+
 export type TaskStatusPatch = {
   // Domain specific fields
   status: TaskStatus;

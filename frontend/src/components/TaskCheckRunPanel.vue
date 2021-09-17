@@ -10,7 +10,7 @@
     :rowClickable="false"
   >
     <template v-slot:body="{ rowData: checkResult }">
-      <BBTableCell :leftPadding="4" class="table-cell w-12">
+      <BBTableCell :leftPadding="4" class="table-cell w-4">
         <div class="flex flex-row space-x-2">
           <div
             class="
@@ -71,9 +71,6 @@
       <BBTableCell class="table-cell w-48">
         {{ checkResult.content }}
       </BBTableCell>
-      <BBTableCell class="table-cell w-16">
-        {{ humanizeTs(taskCheckRun.createdTs) }}
-      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -92,9 +89,6 @@ const columnList: BBTableColumn[] = [
   },
   {
     title: "Detail",
-  },
-  {
-    title: "Created",
   },
 ];
 

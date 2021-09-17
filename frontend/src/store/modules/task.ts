@@ -13,6 +13,7 @@ import {
   Task,
   TaskCheckRun,
   TaskId,
+  TaskPatch,
   TaskRun,
   TaskState,
   TaskStatusPatch,
@@ -198,6 +199,35 @@ const actions = {
         data: {
           type: "taskStatusPatch",
           attributes: taskStatusPatch,
+        },
+      })
+    ).data;
+    const task = convertPartial(data.data, data.included, rootGetters);
+
+    dispatch("issue/fetchIssueById", issueId, { root: true });
+
+    return task;
+  },
+
+  async patchTask(
+    { dispatch, rootGetters }: any,
+    {
+      issueId,
+      pipelineId,
+      taskId,
+      taskPatch,
+    }: {
+      issueId: IssueId;
+      pipelineId: PipelineId;
+      taskId: TaskId;
+      taskPatch: TaskPatch;
+    }
+  ) {
+    const data = (
+      await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}`, {
+        data: {
+          type: "taskPatch",
+          attributes: taskPatch,
         },
       })
     ).data;

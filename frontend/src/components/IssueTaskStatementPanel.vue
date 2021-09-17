@@ -1,31 +1,101 @@
 <template>
-  <div class="flex items-center space-x-4">
-    <div
-      class="text-sm font-medium"
-      :class="
-        !rollback && isEmpty(state.editStatement)
-          ? 'text-red-600'
-          : 'text-control'
-      "
-    >
-      {{ rollback ? "Rollback SQL" : "SQL" }}
-      <span v-if="create && !rollback" class="text-red-600">*</span>
-      <span v-if="!create && migrationType == 'BASELINE'" class="text-accent"
-        >(This is a baseline migration and bytebase won't apply the SQL to the
-        database, it will only record a baseline history)</span
+  <div class="flex justify-between">
+    <div class="flex space-x-4">
+      <div
+        class="text-sm font-medium"
+        :class="
+          !rollback && isEmpty(state.editStatement)
+            ? 'text-red-600'
+            : 'text-control'
+        "
       >
+        {{ rollback ? "Rollback SQL" : "SQL" }}
+        <span v-if="create && !rollback" class="text-red-600">*</span>
+        <span v-if="!create && migrationType == 'BASELINE'" class="text-accent"
+          >(This is a baseline migration and bytebase won't apply the SQL to the
+          database, it will only record a baseline history)</span
+        >
+      </div>
+      <button
+        v-if="showApplyStatement"
+        :disabled="isEmpty(state.editStatement)"
+        type="button"
+        class="btn-small"
+        @click.prevent="
+          $emit('apply-statement-to-other-stages', state.editStatement)
+        "
+      >
+        Apply to other stages
+      </button>
     </div>
-    <button
-      v-if="showApplyStatement"
-      :disabled="isEmpty(state.editStatement)"
-      type="button"
-      class="btn-small"
-      @click.prevent="
-        $emit('apply-statement-to-other-stages', state.editStatement)
-      "
-    >
-      Apply to other stages
-    </button>
+    <div v-if="!create" class="space-x-2">
+      <button
+        v-if="allowEdit && !state.editing"
+        type="button"
+        class="btn-icon"
+        @click.prevent="beginEdit"
+      >
+        <!-- Heroicon name: solid/pencil -->
+        <!-- Use h-5 to avoid flickering when show/hide icon -->
+        <svg
+          class="h-5 w-5"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+          />
+        </svg>
+      </button>
+      <!-- mt-0.5 is to prevent jiggling betweening switching edit/none-edit -->
+      <button
+        v-if="state.editing"
+        type="button"
+        class="
+          mt-0.5
+          px-3
+          rounded-sm
+          text-control
+          hover:bg-control-bg-hover
+          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
+          text-sm
+          leading-5
+          font-normal
+          focus:ring-control focus:outline-none
+          focus-visible:ring-2
+          focus:ring-offset-2
+        "
+        @click.prevent="cancelEdit"
+      >
+        Cancel
+      </button>
+      <button
+        v-if="state.editing"
+        type="button"
+        class="
+          mt-0.5
+          px-3
+          border border-control-border
+          rounded-sm
+          text-control
+          bg-control-bg
+          hover:bg-control-bg-hover
+          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
+          text-sm
+          leading-5
+          font-normal
+          focus:ring-control focus:outline-none
+          focus-visible:ring-2
+          focus:ring-offset-2
+        "
+        :disabled="state.editStatement == statement"
+        @click.prevent="saveEdit"
+      >
+        Save
+      </button>
+    </div>
   </div>
   <label class="sr-only">SQL statement</label>
   <template v-if="state.editing">
@@ -86,7 +156,7 @@ import {
   PropType,
 } from "vue";
 import { sizeToFit } from "../utils";
-import { MigrationType } from "../types";
+import { MigrationType, Task, TaskCreate } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -102,6 +172,10 @@ export default {
       type: String,
     },
     create: {
+      required: true,
+      type: Boolean,
+    },
+    allowEdit: {
       required: true,
       type: Boolean,
     },
@@ -164,9 +238,31 @@ export default {
       }
     );
 
+    const beginEdit = () => {
+      state.editStatement = props.statement;
+      state.editing = true;
+      nextTick(() => {
+        editStatementTextArea.value.focus();
+      });
+    };
+
+    const saveEdit = () => {
+      emit("update-statement", state.editStatement, () => {
+        state.editing = false;
+      });
+    };
+
+    const cancelEdit = () => {
+      state.editStatement = props.statement;
+      state.editing = false;
+    };
+
     return {
       editStatementTextArea,
       state,
+      beginEdit,
+      saveEdit,
+      cancelEdit,
     };
   },
 };
