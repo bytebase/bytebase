@@ -162,7 +162,6 @@ export type TaskCheckRun = {
 
   // Domain specific fields
   taskId: TaskId;
-  name: string;
   status: TaskCheckRunStatus;
   type: TaskCheckType;
   comment: string;

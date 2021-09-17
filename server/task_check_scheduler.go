@@ -61,7 +61,6 @@ func (s *TaskCheckScheduler) Run() error {
 						s.l.Error("Skip running task check run with unknown type",
 							zap.Int("id", taskCheckRun.ID),
 							zap.Int("task_id", taskCheckRun.TaskId),
-							zap.String("name", taskCheckRun.Name),
 							zap.String("type", string(taskCheckRun.Type)),
 						)
 						continue
@@ -87,7 +86,6 @@ func (s *TaskCheckScheduler) Run() error {
 								s.l.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskId),
-									zap.String("name", taskCheckRun.Name),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(err),
 								)
@@ -105,7 +103,6 @@ func (s *TaskCheckScheduler) Run() error {
 								s.l.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskId),
-									zap.String("name", taskCheckRun.Name),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(err),
 								)
@@ -114,7 +111,6 @@ func (s *TaskCheckScheduler) Run() error {
 							s.l.Debug("Failed to run task check",
 								zap.Int("id", taskCheckRun.ID),
 								zap.Int("task_id", taskCheckRun.TaskId),
-								zap.String("name", taskCheckRun.Name),
 								zap.String("type", string(taskCheckRun.Type)),
 								zap.Error(err),
 							)
@@ -129,7 +125,6 @@ func (s *TaskCheckScheduler) Run() error {
 								s.l.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskId),
-									zap.String("name", taskCheckRun.Name),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(err),
 								)
@@ -183,7 +178,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:         creatorId,
 			TaskId:            task.ID,
-			Name:              "Fake check",
 			Type:              api.TaskCheckDatabaseStatementFakeAdvise,
 			Payload:           string(payload),
 			SkipIfAlreadyDone: skipIfAlreadyDone,
@@ -195,7 +189,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:         creatorId,
 			TaskId:            task.ID,
-			Name:              "Syntax check",
 			Type:              api.TaskCheckDatabaseStatementSyntax,
 			Payload:           string(payload),
 			SkipIfAlreadyDone: skipIfAlreadyDone,

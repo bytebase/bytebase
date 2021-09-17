@@ -92,19 +92,17 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 			creator_id,
 			updater_id,
 			task_id,
-			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
 			comment,
 			payload
 		)
-		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, comment, result, payload"+`
+		VALUES (?, ?, ?, 'RUNNING', ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, comment, result, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.TaskId,
-		create.Name,
 		create.Type,
 		create.Comment,
 		create.Payload,
@@ -124,7 +122,6 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 		&taskCheckRun.UpdaterId,
 		&taskCheckRun.UpdatedTs,
 		&taskCheckRun.TaskId,
-		&taskCheckRun.Name,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
 		&taskCheckRun.Comment,
@@ -216,7 +213,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		UPDATE task_check_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, comment, result, payload"+`
 	`,
 		args...,
 	)
@@ -235,7 +232,6 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		&taskCheckRun.UpdaterId,
 		&taskCheckRun.UpdatedTs,
 		&taskCheckRun.TaskId,
-		&taskCheckRun.Name,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
 		&taskCheckRun.Comment,
@@ -277,7 +273,6 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			updater_id,
 		    updated_ts,
 			task_id,
-			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
 			comment,
@@ -303,7 +298,6 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			&taskCheckRun.UpdaterId,
 			&taskCheckRun.UpdatedTs,
 			&taskCheckRun.TaskId,
-			&taskCheckRun.Name,
 			&taskCheckRun.Status,
 			&taskCheckRun.Type,
 			&taskCheckRun.Comment,
