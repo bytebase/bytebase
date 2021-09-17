@@ -163,8 +163,20 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 			return nil, fmt.Errorf("invalid database schema update payload: %w", err)
 		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: task.DatabaseId,
+		}
+		database, err := s.server.ComposeDatabaseByFind(context.Background(), databaseFind)
+		if err != nil {
+			return nil, err
+		}
+
 		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 			Statement: taskPayload.Statement,
+			DbType:    database.Instance.Engine,
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
