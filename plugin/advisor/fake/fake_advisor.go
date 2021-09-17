@@ -24,17 +24,17 @@ func (adv *Advisor) Check(ctx advisor.AdvisorContext, statement string) ([]advis
 		{
 			Status:  advisor.Success,
 			Title:   "INFO check",
-			Content: "Fake check returnings INFO result",
+			Content: statement,
 		},
 		{
 			Status:  advisor.Warn,
 			Title:   "WARN check",
-			Content: "Fake check returnings WARN result",
+			Content: statement,
 		},
 		{
 			Status:  advisor.Error,
 			Title:   "ERROR check",
-			Content: "Fake check returnings ERROR result",
+			Content: statement,
 		},
 	}, nil
 }
