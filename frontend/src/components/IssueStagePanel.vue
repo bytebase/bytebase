@@ -20,43 +20,18 @@
           {{ task.name }}
         </div>
       </div>
-      <div class="mb-2">
-        <BBTabFilter
-          :tabItemList="tabItemList(task)"
-          :selectedIndex="state.selectedIndex"
-          @select-index="
-            (index) => {
-              state.selectedIndex = index;
-            }
-          "
-        />
-      </div>
-      <TaskRunTable
-        v-if="state.selectedIndex == RUN_TAB"
-        :taskRunList="task.taskRunList"
-      />
-      <TaskCheckRunTable
-        v-else-if="state.selectedIndex == CHECK_TAB"
-        :taskCheckRunList="filteredTaskCheckRunList(task.taskCheckRunList)"
-      />
+      <TaskRunTable :taskRunList="task.taskRunList" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { reactive, watch, PropType, computed } from "vue";
-import TaskCheckRunTable from "../components/TaskCheckRunTable.vue";
 import TaskRunTable from "../components/TaskRunTable.vue";
-import { Stage, Task, TaskCheckRun, TaskCheckType } from "../types";
+import { Stage, Task } from "../types";
 import { activeTaskInStage } from "../utils";
-import { BBTabFilterItem } from "../bbkit/types";
 
-const RUN_TAB = 0;
-const CHECK_TAB = 1;
-
-interface LocalState {
-  selectedIndex: number;
-}
+interface LocalState {}
 
 export default {
   name: "IssueStagePanel",
@@ -66,68 +41,21 @@ export default {
       type: Object as PropType<Stage>,
     },
   },
-  components: { TaskCheckRunTable, TaskRunTable },
+  components: { TaskRunTable },
   setup(props, { emit }) {
-    const state = reactive<LocalState>({
-      selectedIndex: RUN_TAB,
-    });
+    const state = reactive<LocalState>({});
 
     watch(
       () => props.stage,
       (curStage, _) => {}
     );
 
-    // For a particular check type, only returns the most recent one
-    const filteredTaskCheckRunList = (list: TaskCheckRun[]): TaskCheckRun[] => {
-      const result: TaskCheckRun[] = [];
-      for (const run of list) {
-        const index = result.findIndex((item) => item.type == run.type);
-        if (index >= 0 && result[index].updatedTs < run.updatedTs) {
-          result[index] = run;
-        } else {
-          result.push(run);
-        }
-      }
-      return result;
-    };
-
-    const tabItemList = (task: Task): BBTabFilterItem[] => {
-      let showRunAlert = false;
-      let showCheckAlert = false;
-
-      for (const run of task.taskRunList) {
-        if (run.status == "FAILED") {
-          showRunAlert = true;
-          break;
-        }
-      }
-      for (const run of filteredTaskCheckRunList(task.taskCheckRunList)) {
-        for (const result of run.result.resultList) {
-          if (result.status == "ERROR") {
-            showCheckAlert = true;
-            break;
-          }
-        }
-        if (showCheckAlert) {
-          break;
-        }
-      }
-      return [
-        { title: "Runs", alert: showRunAlert },
-        { title: "Checks", alert: showCheckAlert },
-      ];
-    };
-
     const activeTask = computed((): Task => {
       return activeTaskInStage(props.stage);
     });
 
     return {
-      RUN_TAB,
-      CHECK_TAB,
       state,
-      filteredTaskCheckRunList,
-      tabItemList,
       activeTask,
     };
   },

@@ -135,8 +135,14 @@
             />
           </div>
           <div class="lg:hidden border-t border-block-border" />
-          <div class="w-full py-6 pr-4">
+          <div class="w-full py-4 pr-4">
             <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
+              <div v-if="!state.create" class="mb-4">
+                <TaskCheckBar
+                  :task="selectedTask"
+                  @run-checks="runTaskChecks"
+                />
+              </div>
               <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel. 
                    The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
                    to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
@@ -262,6 +268,7 @@ import IssueActivityPanel from "../components/IssueActivityPanel.vue";
 import IssueSidebar from "../components/IssueSidebar.vue";
 import IssueStatusTransitionButtonGroup from "../components/IssueStatusTransitionButtonGroup.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
+import TaskCheckBar from "../components/TaskCheckBar.vue";
 import {
   UNKNOWN_ID,
   Issue,
@@ -328,6 +335,7 @@ export default {
     IssueSidebar,
     IssueStatusTransitionButtonGroup,
     PipelineSimpleFlow,
+    TaskCheckBar,
   },
 
   setup(props, ctx) {
@@ -817,6 +825,18 @@ export default {
         });
     };
 
+    const runTaskChecks = (task: Task) => {
+      store
+        .dispatch("task/runChecks", {
+          issueId: (issue.value as Issue).id,
+          pipelineId: (issue.value as Issue).pipeline.id,
+          taskId: task.id,
+        })
+        .then(() => {
+          pollIssue(POST_CHANGE_POLL_INTERVAL);
+        });
+    };
+
     const patchIssue = (
       issuePatch: IssuePatch,
       postUpdated?: (updatedIssue: Issue) => void
@@ -1091,10 +1111,12 @@ export default {
       doRollback,
       changeIssueStatus,
       changeTaskStatus,
+      runTaskChecks,
       currentPipelineType,
       currentUser,
       issueTemplate,
       selectedStage,
+      selectedTask,
       selectStageId,
       statement,
       rollbackStatement,
