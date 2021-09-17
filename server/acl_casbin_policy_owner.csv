@@ -63,6 +63,7 @@ p, OWNER, /inbox/{id}, PATCH_SELF
 p, OWNER, /bookmark, POST
 p, OWNER, /bookmark, GET
 p, OWNER, /bookmark/{id}, DELETE_SELF
+p, OWNER, /pipeline/{pipelineId}/task/{taskId}, PATCH
 p, OWNER, /pipeline/{pipelineId}/task/{taskId}/status, PATCH
 p, OWNER, /pipeline/{pipelineId}/task/{taskId}/check, POST
 p, OWNER, /sql/ping, POST

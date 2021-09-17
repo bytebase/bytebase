@@ -79,6 +79,27 @@ func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Ta
 	return s.findTask(ctx, tx, find)
 }
 
+// PatchTask updates an existing task.
+// Returns ENOTFOUND if task does not exist.
+func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	task, err := s.patchTask(ctx, tx, patch)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return task, nil
+}
+
 // PatchTaskStatus updates an existing task status and the correspondng task run status atomically.
 // Returns ENOTFOUND if task does not exist.
 func (s *TaskService) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
@@ -301,6 +322,55 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 }
 
 // patchTask updates a task by ID. Returns the new state of the task after update.
+func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatch) (*api.Task, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, "payload = ?"), append(args, *v)
+	}
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, `
+		UPDATE task
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = ?
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var task api.Task
+		if err := row.Scan(
+			&task.ID,
+			&task.CreatorId,
+			&task.CreatedTs,
+			&task.UpdaterId,
+			&task.UpdatedTs,
+			&task.PipelineId,
+			&task.StageId,
+			&task.InstanceId,
+			&task.DatabaseId,
+			&task.Name,
+			&task.Status,
+			&task.Type,
+			&task.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &task, nil
+	}
+
+	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("task ID not found: %d", patch.ID)}
+}
+
+// patchTaskStatus updates a task status by ID. Returns the new state of the task after update.
 func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.TaskStatusPatch) (*api.Task, error) {
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to

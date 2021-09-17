@@ -162,6 +162,18 @@ func (find *TaskFind) String() string {
 	return string(str)
 }
 
+type TaskPatch struct {
+	ID int
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterId int
+
+	// Domain specific fields
+	Statement *string `jsonapi:"attr,statement"`
+	Payload   *string
+}
+
 type TaskStatusPatch struct {
 	ID int
 
@@ -178,5 +190,6 @@ type TaskService interface {
 	CreateTask(ctx context.Context, create *TaskCreate) (*Task, error)
 	FindTaskList(ctx context.Context, find *TaskFind) ([]*Task, error)
 	FindTask(ctx context.Context, find *TaskFind) (*Task, error)
+	PatchTask(ctx context.Context, patch *TaskPatch) (*Task, error)
 	PatchTaskStatus(ctx context.Context, patch *TaskStatusPatch) (*Task, error)
 }

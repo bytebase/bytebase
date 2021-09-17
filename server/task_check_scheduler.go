@@ -80,7 +80,6 @@ func (s *TaskCheckScheduler) Run() error {
 						checkResultList, err := executor.Run(context.Background(), s.server, taskCheckRun)
 
 						if err == nil {
-							fmt.Printf("result %v", checkResultList)
 							bytes, err := json.Marshal(api.TaskCheckRunResultPayload{
 								ResultList: checkResultList,
 							})
