@@ -152,6 +152,7 @@
                 <IssueTaskStatementPanel
                   :statement="selectedStatement"
                   :create="state.create"
+                  :allowEdit="true"
                   :rollback="false"
                   :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
@@ -168,6 +169,7 @@
                   <IssueTaskStatementPanel
                     :statement="statement(stage)"
                     :create="state.create"
+                    :allowEdit="allowEditStatement"
                     :rollback="false"
                     :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
@@ -184,6 +186,7 @@
                 <IssueTaskStatementPanel
                   :statement="selectedRollbackStatement"
                   :create="state.create"
+                  :allowEdit="false"
                   :rollback="true"
                   :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
@@ -202,6 +205,7 @@
                   <IssueTaskStatementPanel
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
+                    :allowEdit="false"
                     :rollback="true"
                     :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
@@ -297,6 +301,7 @@ import {
   Project,
   IssueId,
   MigrationType,
+  TaskPatch,
 } from "../types";
 import {
   defaulTemplate,
@@ -671,10 +676,22 @@ export default {
       }
     };
 
-    // We only allow updating statement/rollbackStatement upon issue creation.
-    const updateStatement = (newStatement: string) => {
-      const stage = selectedStage.value as StageCreate;
-      stage.taskList[0].statement = newStatement;
+    const updateStatement = (
+      newStatement: string,
+      postUpdated?: (updatedTask: Task) => void
+    ) => {
+      if (state.create) {
+        const stage = selectedStage.value as StageCreate;
+        stage.taskList[0].statement = newStatement;
+      } else {
+        patchTask(
+          (selectedTask.value as Task).id,
+          {
+            statement: newStatement,
+          },
+          postUpdated
+        );
+      }
     };
 
     const applyStatementToOtherStages = (newStatement: string) => {
@@ -856,6 +873,28 @@ export default {
         });
     };
 
+    const patchTask = (
+      taskId: TaskId,
+      taskPatch: TaskPatch,
+      postUpdated?: (updatedTask: Task) => void
+    ) => {
+      store
+        .dispatch("task/patchTask", {
+          issueId: (issue.value as Issue).id,
+          pipelineId: (issue.value as Issue).pipeline.id,
+          taskId,
+          taskPatch,
+        })
+        .then((updatedTask) => {
+          // task/patchTask already fetches the new issue, so we schedule
+          // the next poll in NORMAL_POLL_INTERVAL
+          pollIssue(NORMAL_POLL_INTERVAL);
+          if (postUpdated) {
+            postUpdated(updatedTask);
+          }
+        });
+    };
+
     const currentPipelineType = computed((): PipelineType => {
       return pipelineType(issue.value.pipeline);
     });
@@ -1000,8 +1039,14 @@ export default {
       );
     });
 
-    const allowEditSql = computed(() => {
-      return state.create;
+    const allowEditStatement = computed(() => {
+      return (
+        state.create ||
+        ((issue.value as Issue).status == "OPEN" &&
+          (issue.value as Issue).creator.id == currentUser.value.id &&
+          // Only allow if it's UI workflow
+          (issue.value as Issue).project.workflowType == "UI")
+      );
     });
 
     // For now, we only support rollback for schema update issue when all below conditions met:
@@ -1126,7 +1171,7 @@ export default {
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,
-      allowEditSql,
+      allowEditStatement,
       allowRollback,
       showCancelBanner,
       showSuccessBanner,
