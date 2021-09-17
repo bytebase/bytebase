@@ -207,6 +207,28 @@ const actions = {
 
     return task;
   },
+
+  async runChecks(
+    { dispatch, rootGetters }: any,
+    {
+      issueId,
+      pipelineId,
+      taskId,
+    }: {
+      issueId: IssueId;
+      pipelineId: PipelineId;
+      taskId: TaskId;
+    }
+  ) {
+    const data = (
+      await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/check`)
+    ).data;
+    const task = convertPartial(data.data, data.included, rootGetters);
+
+    dispatch("issue/fetchIssueById", issueId, { root: true });
+
+    return task;
+  },
 };
 
 const mutations = {};

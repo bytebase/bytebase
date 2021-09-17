@@ -1,20 +1,14 @@
 <template>
   <BBTable
     :columnList="columnList"
-    :sectionDataSource="checkSectionList"
+    :dataSource="taskCheckRun.result.resultList"
     :showHeader="false"
     :leftBordered="true"
     :rightBordered="true"
+    :topBordered="true"
+    :bottomBordered="true"
     :rowClickable="false"
   >
-    <template v-slot:header>
-      <BBTableHeaderCell
-        :leftPadding="4"
-        class="w-4"
-        :title="columnList[0].title"
-      />
-      <BBTableHeaderCell class="w-48" :title="columnList[1].title" />
-    </template>
     <template v-slot:body="{ rowData: checkResult }">
       <BBTableCell :leftPadding="4" class="table-cell w-12">
         <div class="flex flex-row space-x-2">
@@ -71,36 +65,46 @@
           </div>
         </div>
       </BBTableCell>
+      <BBTableCell class="table-cell w-16">
+        {{ checkResult.title }}
+      </BBTableCell>
       <BBTableCell class="table-cell w-48">
         {{ checkResult.content }}
+      </BBTableCell>
+      <BBTableCell class="table-cell w-16">
+        {{ humanizeTs(taskCheckRun.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
-import PrincipalAvatar from "./PrincipalAvatar.vue";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { TaskCheckStatus, TaskCheckResult, TaskCheckRun } from "../types";
-import { humanizeTs } from "../utils";
+import { PropType } from "vue";
+import { BBTableColumn } from "../bbkit/types";
+import { TaskCheckStatus, TaskCheckRun } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
     title: "",
   },
   {
+    title: "Title",
+  },
+  {
     title: "Detail",
+  },
+  {
+    title: "Created",
   },
 ];
 
 export default {
-  name: "TaskCheckRunTable",
-  components: { PrincipalAvatar },
+  name: "TaskCheckRunPanel",
+  components: {},
   props: {
-    taskCheckRunList: {
+    taskCheckRun: {
       required: true,
-      type: Object as PropType<TaskCheckRun[]>,
+      type: Object as PropType<TaskCheckRun>,
     },
   },
   setup(props, ctx) {
@@ -115,29 +119,9 @@ export default {
       }
     };
 
-    const checkSectionList = computed(() => {
-      const sectionList: BBTableSectionDataSource<TaskCheckResult>[] = [];
-      for (const taskCheck of props.taskCheckRunList) {
-        let title = "";
-        switch (taskCheck.type) {
-          case "bb.task-check.database.statement.advise":
-            title = "Statement lint";
-            break;
-        }
-
-        sectionList.push({
-          title: `${title} at ${humanizeTs(taskCheck.updatedTs)}`,
-          list: taskCheck.result.resultList,
-        });
-      }
-
-      return sectionList;
-    });
-
     return {
       columnList,
       statusIconClass,
-      checkSectionList,
     };
   },
 };
