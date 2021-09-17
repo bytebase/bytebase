@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 type TaskCheckRunStatus string
@@ -59,7 +61,10 @@ const (
 )
 
 type TaskCheckDatabaseStatementAdvisePayload struct {
-	Statement string `json:"statement,omitempty"`
+	Statement string  `json:"statement,omitempty"`
+	DbType    db.Type `json:"dbType,omitempty"`
+	Charset   string  `json:"charset,omitempty"`
+	Collation string  `json:"collation,omitempty"`
 }
 
 type TaskCheckResult struct {

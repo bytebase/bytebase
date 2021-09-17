@@ -7,7 +7,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +34,16 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		advisorType = advisor.MySQLSyntax
 	}
 
-	adviceList, err := advisor.Check(db.MySQL, advisorType, advisor.AdvisorContext{Logger: exec.l}, payload.Statement)
+	adviceList, err := advisor.Check(
+		payload.DbType,
+		advisorType,
+		advisor.AdvisorContext{
+			Logger:    exec.l,
+			Charset:   payload.Charset,
+			Collation: payload.Collation,
+		},
+		payload.Statement,
+	)
 	if err != nil {
 		return []api.TaskCheckResult{}, fmt.Errorf("failed to lint statement: %w", err)
 	}

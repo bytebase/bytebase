@@ -44,7 +44,9 @@ type Advice struct {
 }
 
 type AdvisorContext struct {
-	Logger *zap.Logger
+	Logger    *zap.Logger
+	Charset   string
+	Collation string
 }
 
 type Advisor interface {

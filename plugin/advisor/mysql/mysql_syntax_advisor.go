@@ -24,7 +24,7 @@ type Advisor struct {
 func (adv *Advisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
 	p := parser.New()
 
-	_, warns, err := p.Parse(statement, "", "")
+	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)
 	if err != nil {
 		return []advisor.Advice{
 			{
