@@ -70,6 +70,41 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.POST("/pipeline/:pipelineId/task/:taskId/check", func(c echo.Context) error {
+		taskId, err := strconv.Atoi(c.Param("taskId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskId"))).SetInternal(err)
+		}
+
+		taskFind := &api.TaskFind{
+			ID: &taskId,
+		}
+		task, err := s.TaskService.FindTask(context.Background(), taskFind)
+		if err != nil {
+			if common.ErrorCode(err) == common.ENOTFOUND {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
+		}
+
+		skipIfAlreadyDone := false
+		updatedTask, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(context.Background(), task, c.Get(GetPrincipalIdContextKey()).(int), skipIfAlreadyDone)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
+		}
+
+		if err := s.ComposeTaskRelationship(context.Background(), updatedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", updatedTask.Name)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) ComposeTaskListByPipelineAndStageId(ctx context.Context, pipelineId int, stageId int) ([]*api.Task, error) {
@@ -260,7 +295,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Schedule the task if it's being just approved
 	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
 		skipIfAlreadyDone := false
-		if err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
+		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
 			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
 		}
 

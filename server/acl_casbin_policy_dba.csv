@@ -60,6 +60,7 @@ p, DBA, /bookmark, POST
 p, DBA, /bookmark, GET
 p, DBA, /bookmark/{id}, DELETE_SELF
 p, DBA, /pipeline/{pipelineId}/task/{taskId}/status, PATCH
+p, DBA, /pipeline/{pipelineId}/task/{taskId}/check, POST
 p, DBA, /sql/ping, POST
 p, DBA, /sql/syncschema, POST
 p, DBA, /vcs, POST

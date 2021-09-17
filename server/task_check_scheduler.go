@@ -157,17 +157,17 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorId int, skipIfAlreadyDone bool) error {
+func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorId int, skipIfAlreadyDone bool) (*api.Task, error) {
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return fmt.Errorf("invalid database schema update payload: %w", err)
+			return nil, fmt.Errorf("invalid database schema update payload: %w", err)
 		}
 		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 			Statement: taskPayload.Statement,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
+			return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
 		}
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:         creatorId,
@@ -177,8 +177,19 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			Payload:           string(payload),
 			SkipIfAlreadyDone: skipIfAlreadyDone,
 		})
+		if err != nil {
+			return nil, err
+		}
 
-		return err
+		taskCheckRunFind := &api.TaskCheckRunFind{
+			TaskId: &task.ID,
+		}
+		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+		if err != nil {
+			return nil, err
+		}
+
+		return task, err
 	}
-	return nil
+	return task, nil
 }
