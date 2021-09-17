@@ -120,6 +120,7 @@ type TaskCheckRunFind struct {
 
 	// Related fields
 	TaskId *int
+	Type   *TaskCheckType
 
 	// Domain specific fields
 	StatusList *[]TaskCheckRunStatus
