@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center space-x-2">
+  <div class="flex items-center space-x-4">
     <button
       type="button"
       class="btn-small py-0.5"
@@ -21,17 +21,19 @@
       :title="`Check result for '${task.name}'`"
       @close="dimissModal"
     >
-      <div class="divide-y divide-block-border space-y-4 w-208">
-        <TaskCheckBadgeBar
-          :taskCheckRunList="task.taskCheckRunList"
-          :showSelection="true"
-          :selectedTaskCheckRun="state.selectedTaskCheckRun"
-          @select-task-check-run="
-            (checkRun) => {
-              viewCheckRunDetail(checkRun);
-            }
-          "
-        />
+      <div class="space-y-4 w-208">
+        <div>
+          <TaskCheckBadgeBar
+            :taskCheckRunList="task.taskCheckRunList"
+            :showSelection="true"
+            :selectedTaskCheckRun="state.selectedTaskCheckRun"
+            @select-task-check-run="
+              (checkRun) => {
+                viewCheckRunDetail(checkRun);
+              }
+            "
+          />
+        </div>
         <BBTabFilter
           class="pt-4"
           :tabItemList="tabItemList"
