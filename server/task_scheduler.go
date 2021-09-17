@@ -119,7 +119,6 @@ func (s *TaskScheduler) Run() error {
 							delete(runningTasks, task.ID)
 						}()
 						done, detail, err := executor.RunOnce(context.Background(), s.server, task)
-						time.Sleep(time.Second * 30)
 						if done {
 							if err == nil {
 								taskStatusPatch := &api.TaskStatusPatch{
