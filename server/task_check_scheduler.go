@@ -173,7 +173,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			Collation: database.Collation,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
+			return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
 		}
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:         creatorId,
