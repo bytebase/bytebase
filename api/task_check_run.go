@@ -54,7 +54,8 @@ func (e TaskCheckStatus) String() string {
 type TaskCheckType string
 
 const (
-	TaskCheckDatabaseStatementAdvise TaskCheckType = "bb.task-check.database.statement.advise"
+	TaskCheckDatabaseStatementFakeAdvise TaskCheckType = "bb.task-check.database.statement.fake-advise"
+	TaskCheckDatabaseStatementSyntax     TaskCheckType = "bb.task-check.database.statement.syntax"
 )
 
 type TaskCheckDatabaseStatementAdvisePayload struct {
