@@ -391,7 +391,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
 		}
 
-		updatedTask, err = s.TaskScheduler.Schedule(ctx, updatedTask)
+		updatedTask, err = s.TaskScheduler.ScheduleIfNeeded(ctx, updatedTask)
 		if err != nil {
 			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
 		}

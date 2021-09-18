@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -186,11 +187,73 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 	s.executors[taskType] = executor
 }
 
-func (s *TaskScheduler) Schedule(ctx context.Context, task *api.Task) (*api.Task, error) {
+// We will schedule the task if its required check does not contain error in the latest run
+func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
+	// For now, only schema update task has required task check
+	if task.Type == api.TaskDatabaseSchemaUpdate {
+		pass, err := passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
+		if err != nil {
+			return nil, err
+		}
+		if !pass {
+			return task, nil
+		}
+
+		pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+		if err != nil {
+			return nil, err
+		}
+		if !pass {
+			return task, nil
+		}
+	}
 	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SYSTEM_BOT_ID)
 	if err != nil {
 		return nil, err
 	}
 
 	return updatedTask, nil
+}
+
+func passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskId:     &task.ID,
+		Type:       &checkType,
+		StatusList: &statusList,
+		Latest:     true,
+	}
+
+	taskCheckRunList, err := server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
+	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+		server.l.Debug("Task is waiting for check to pass",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.String("task_type", string(task.Type)),
+			zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+		)
+		return false, nil
+	}
+
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status == api.TaskCheckStatusError {
+			server.l.Debug("Task is waiting for check to pass",
+				zap.Int("task_id", task.ID),
+				zap.String("task_name", task.Name),
+				zap.String("task_type", string(task.Type)),
+				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+			)
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
