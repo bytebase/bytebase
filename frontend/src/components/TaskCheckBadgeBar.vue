@@ -11,15 +11,15 @@
           px-3
           py-0.5
           rounded-full
-          text-sm
-          border border-control-border
-          hover:bg-control-bg-hover
-          text-main
+          text-sm text-main
         "
         :class="
-          showSelection && checkRun.type == state.selectedTaskCheckRun.type
-            ? 'bg-control-bg-hover'
-            : ''
+          allowSelection
+            ? stickySelection &&
+              checkRun.type == state.selectedTaskCheckRun.type
+              ? 'cursor-pointer border border-control-border hover:bg-control-bg-hover bg-control-bg-hover'
+              : 'cursor-pointer border border-control-border hover:bg-control-bg-hover'
+            : 'cursor-default'
         "
         @click.prevent="selectTaskCheckRun(checkRun)"
       >
@@ -127,7 +127,11 @@ export default {
       required: true,
       type: Object as PropType<TaskCheckRun[]>,
     },
-    showSelection: {
+    allowSelection: {
+      default: true,
+      type: Boolean,
+    },
+    stickySelection: {
       default: false,
       type: Boolean,
     },

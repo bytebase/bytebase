@@ -44,6 +44,38 @@
         </template>
       </template>
 
+      <div
+        v-if="mode == 'TASK' && task.taskCheckRunList.length > 0"
+        class="sm:col-span-4 mb-4 space-y-4"
+      >
+        <template v-if="runningCheckCount > 0">
+          <BBAttention
+            :style="'INFO'"
+            :title="`${runningCheckCount} check(s) in progress...`"
+          />
+        </template>
+        <template v-else>
+          <BBAttention
+            v-if="checkSummary.errorCount > 0"
+            :style="'CRITICAL'"
+            :title="
+              allowSubmit
+                ? `Check found ${checkSummary.errorCount} error(s) and ${checkSummary.warnCount} warning(s)`
+                : `Check found ${checkSummary.errorCount} error(s) and ${checkSummary.warnCount} warning(s), please fix before proceeding`
+            "
+          />
+          <BBAttention
+            v-else-if="checkSummary.warnCount > 0"
+            :style="'WARN'"
+            :title="`Check found ${checkSummary.warnCount} warning(s)`"
+          />
+        </template>
+        <TaskCheckBadgeBar
+          :taskCheckRunList="task.taskCheckRunList"
+          :allowSelection="false"
+        />
+      </div>
+
       <div class="sm:col-span-4 w-112 min-w-full">
         <label for="about" class="textlabel"> Note </label>
         <div class="mt-1">
@@ -90,6 +122,7 @@
         type="button"
         class="ml-3 px-4 py-2"
         v-bind:class="submitButtonStyle"
+        :disabled="!allowSubmit"
         @click.prevent="$emit('submit', state.comment)"
       >
         {{ okText }}
@@ -102,9 +135,16 @@
 import { computed, reactive, ref, PropType } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
-import { Issue, IssueStatusTransition } from "../types";
+import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
+import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
 import { OutputField, IssueBuiltinFieldId } from "../plugins";
 import { activeEnvironment, TaskStatusTransition } from "../utils";
+
+type CheckSummary = {
+  successCount: number;
+  warnCount: number;
+  errorCount: number;
+};
 
 interface LocalState {
   comment: string;
@@ -127,6 +167,10 @@ export default {
       required: true,
       type: Object as PropType<Issue>,
     },
+    // Applicable when mode = 'TASK'
+    task: {
+      type: Object as PropType<Task>,
+    },
     transition: {
       required: true,
       type: Object as PropType<IssueStatusTransition | TaskStatusTransition>,
@@ -136,7 +180,7 @@ export default {
       type: Object as PropType<OutputField[]>,
     },
   },
-  components: { DatabaseSelect },
+  components: { DatabaseSelect, TaskCheckBadgeBar },
   setup(props, { emit }) {
     const commentTextArea = ref("");
 
@@ -180,11 +224,80 @@ export default {
       }
     });
 
+    // Disable submit if in TASK mode and there exists RUNNING check or check error and we are transitioning to RUNNING
+    const allowSubmit = computed(() => {
+      switch (props.mode) {
+        case "ISSUE": {
+          return true;
+        }
+        case "TASK": {
+          switch ((props.transition as TaskStatusTransition).to) {
+            case "RUNNING":
+              return (
+                runningCheckCount.value == 0 &&
+                checkSummary.value.errorCount == 0
+              );
+            default:
+              return true;
+          }
+        }
+      }
+    });
+
+    const runningCheckCount = computed((): number => {
+      let count = 0;
+      for (const run of props.task!.taskCheckRunList) {
+        if (run.status == "RUNNING") {
+          count++;
+        }
+      }
+      return count;
+    });
+
+    const checkSummary = computed((): CheckSummary => {
+      const summary: CheckSummary = {
+        successCount: 0,
+        warnCount: 0,
+        errorCount: 0,
+      };
+
+      // For a particular check type, only counts the most recent one
+      const list: TaskCheckRun[] = [];
+      for (const run of props.task!.taskCheckRunList) {
+        const index = list.findIndex((item) => item.type == run.type);
+        if (index >= 0 && list[index].createdTs < run.createdTs) {
+          list[index] = run;
+        } else {
+          list.push(run);
+        }
+      }
+
+      for (const check of list) {
+        if (check.status == "DONE") {
+          for (const result of check.result.resultList) {
+            if (result.status == "SUCCESS") {
+              summary.successCount++;
+            } else if (result.status == "WARN") {
+              summary.warnCount++;
+            } else if (result.status == "ERROR") {
+              summary.errorCount++;
+            }
+          }
+        } else if (check.status == "FAILED") {
+          summary.errorCount++;
+        }
+      }
+      return summary;
+    });
+
     return {
       state,
       environmentId,
       commentTextArea,
       submitButtonStyle,
+      allowSubmit,
+      runningCheckCount,
+      checkSummary,
     };
   },
 };
