@@ -5,22 +5,8 @@
       :key="index"
     >
       <button
-        class="
-          inline-flex
-          items-center
-          px-3
-          py-0.5
-          rounded-full
-          text-sm text-main
-        "
-        :class="
-          allowSelection
-            ? stickySelection &&
-              checkRun.type == state.selectedTaskCheckRun.type
-              ? 'cursor-pointer border border-control-border hover:bg-control-bg-hover bg-control-bg-hover'
-              : 'cursor-pointer border border-control-border hover:bg-control-bg-hover'
-            : 'cursor-default'
-        "
+        class="inline-flex items-center px-3 py-0.5 rounded-full text-sm"
+        :class="buttonStyle(checkRun)"
         @click.prevent="selectTaskCheckRun(checkRun)"
       >
         <template v-if="checkRun.status == 'RUNNING'">
@@ -152,6 +138,66 @@ export default {
       }
     );
 
+    const buttonStyle = (checkRun: TaskCheckRun): string => {
+      let bgColor = "";
+      let bgHoverColor = "";
+      let textColor = "";
+      switch (checkRun.status) {
+        case "RUNNING":
+          bgColor = "bg-blue-100";
+          bgHoverColor = "bg-blue-300";
+          textColor = "text-blue-800";
+          break;
+        case "FAILED":
+          bgColor = "bg-red-100";
+          bgHoverColor = "bg-red-300";
+          textColor = "text-red-800";
+          break;
+        case "CANCELED":
+          bgColor = "bg-yellow-100";
+          bgHoverColor = "bg-yellow-300";
+          textColor = "text-yellow-800";
+          break;
+        case "DONE":
+          switch (taskCheckStatus(checkRun)) {
+            case "SUCCESS":
+              bgColor = "bg-gray-100";
+              bgHoverColor = "bg-gray-300";
+              textColor = "text-gray-800";
+              break;
+            case "WARN":
+              bgColor = "bg-yellow-100";
+              bgHoverColor = "bg-yellow-300";
+              textColor = "text-yellow-800";
+              break;
+            case "ERROR":
+              bgColor = "bg-red-100";
+              bgHoverColor = "bg-red-300";
+              textColor = "text-red-800";
+              break;
+          }
+          break;
+      }
+
+      const styleList: string[] = [textColor];
+      if (props.allowSelection) {
+        styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
+        if (
+          props.stickySelection &&
+          checkRun.type == state.selectedTaskCheckRun?.type
+        ) {
+          styleList.push(bgHoverColor);
+        } else {
+          styleList.push(bgColor);
+        }
+      } else {
+        styleList.push(bgColor);
+        styleList.push("cursor-default");
+      }
+
+      return styleList.join(" ");
+    };
+
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
       const result: TaskCheckRun[] = [];
@@ -197,6 +243,7 @@ export default {
 
     return {
       state,
+      buttonStyle,
       filteredTaskCheckRunList,
       taskCheckStatus,
       name,
