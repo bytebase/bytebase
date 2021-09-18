@@ -72,6 +72,9 @@ DELETE FROM
     environment;
 
 DELETE FROM
+    policy;
+
+DELETE FROM
     project_webhook;
 
 DELETE FROM
