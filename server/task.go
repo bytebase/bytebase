@@ -96,11 +96,11 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
 			}
 			_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(context.Background(), &api.TaskCheckRunCreate{
-				CreatorId:         api.SYSTEM_BOT_ID,
-				TaskId:            task.ID,
-				Type:              api.TaskCheckDatabaseStatementSyntax,
-				Payload:           string(payload),
-				SkipIfAlreadyDone: false,
+				CreatorId:               api.SYSTEM_BOT_ID,
+				TaskId:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementSyntax,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: false,
 			})
 			if err != nil {
 				// It's OK if we failed to trigger a check, just emit an error log
@@ -180,8 +180,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 
-		skipIfAlreadyDone := false
-		updatedTask, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(context.Background(), task, c.Get(GetPrincipalIdContextKey()).(int), skipIfAlreadyDone)
+		skipIfAlreadyTerminated := false
+		updatedTask, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(context.Background(), task, c.Get(GetPrincipalIdContextKey()).(int), skipIfAlreadyTerminated)
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
@@ -386,8 +386,8 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 
 	// Schedule the task if it's being just approved
 	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
-		skipIfAlreadyDone := false
-		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
+		skipIfAlreadyTerminated := false
+		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SYSTEM_BOT_ID, skipIfAlreadyTerminated); err != nil {
 			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
 		}
 

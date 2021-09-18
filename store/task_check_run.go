@@ -35,8 +35,10 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	defer tx.Rollback()
 
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
-	if create.SkipIfAlreadyDone {
+	if create.SkipIfAlreadyTerminated {
 		statusList = append(statusList, api.TaskCheckRunDone)
+		statusList = append(statusList, api.TaskCheckRunFailed)
+		statusList = append(statusList, api.TaskCheckRunCanceled)
 	}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskId:     &create.TaskId,
@@ -50,9 +52,11 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	}
 
 	runningCount := 0
-	if create.SkipIfAlreadyDone {
+	if create.SkipIfAlreadyTerminated {
 		for _, taskCheckRun := range taskCheckRunList {
-			if taskCheckRun.Status == api.TaskCheckRunDone {
+			if taskCheckRun.Status == api.TaskCheckRunDone ||
+				taskCheckRun.Status == api.TaskCheckRunFailed ||
+				taskCheckRun.Status == api.TaskCheckRunCanceled {
 				return taskCheckRun, nil
 			} else if taskCheckRun.Status == api.TaskCheckRunRunning {
 				runningCount++
