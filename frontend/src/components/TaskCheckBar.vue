@@ -122,10 +122,11 @@ export default {
 
     const showRunCheckButton = computed((): boolean => {
       return (
-        props.task.status == "PENDING" ||
-        props.task.status == "PENDING_APPROVAL" ||
-        props.task.status == "RUNNING" ||
-        props.task.status == "FAILED"
+        props.task.type == "bb.task.database.schema.update" &&
+        (props.task.status == "PENDING" ||
+          props.task.status == "PENDING_APPROVAL" ||
+          props.task.status == "RUNNING" ||
+          props.task.status == "FAILED")
       );
     });
 
