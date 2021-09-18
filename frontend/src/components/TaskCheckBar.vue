@@ -124,7 +124,8 @@ export default {
       return (
         props.task.status == "PENDING" ||
         props.task.status == "PENDING_APPROVAL" ||
-        props.task.status == "RUNNING"
+        props.task.status == "RUNNING" ||
+        props.task.status == "FAILED"
       );
     });
 
