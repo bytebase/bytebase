@@ -602,6 +602,21 @@ export default {
       }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
+    const pollOnCreateStateChange = () => {
+      let interval = NORMAL_POLL_INTERVAL;
+      // We will poll faster if meets either of the conditon
+      // 1. Created the database create issue, expect creation result quickly.
+      // 2. Update the database schema, will do connection and syntax check.
+      if (
+        (issue.value.type == "bb.issue.database.create" ||
+          issue.value.type == "bb.issue.database.schema.update") &&
+        Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000
+      ) {
+        interval = POST_CHANGE_POLL_INTERVAL;
+      }
+      pollIssue(interval);
+    };
+
     onMounted(() => {
       // Always scroll to top, the scrollBehavior doesn't seem to work.
       // The hypothesis is that because the scroll bar is in the nested
@@ -609,15 +624,7 @@ export default {
       // won't work.
       document.getElementById("issue-detail-top")!.scrollIntoView();
       if (!state.create) {
-        let interval = NORMAL_POLL_INTERVAL;
-        // If we just created the database create issue, we will poll fast since it should return result soon.
-        if (
-          issue.value.type == "bb.issue.database.create" &&
-          Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000
-        ) {
-          interval = POST_CHANGE_POLL_INTERVAL;
-        }
-        pollIssue(interval);
+        pollOnCreateStateChange();
       }
     });
 
@@ -633,7 +640,7 @@ export default {
         const oldCreate = state.create;
         state.create = cur.toLowerCase() == "new";
         if (!state.create && oldCreate) {
-          pollIssue(NORMAL_POLL_INTERVAL);
+          pollOnCreateStateChange();
         } else if (state.create && !oldCreate) {
           clearInterval(state.pollIssueTimer);
           state.newIssue = buildNewIssue();
@@ -886,9 +893,9 @@ export default {
           taskPatch,
         })
         .then((updatedTask) => {
-          // task/patchTask already fetches the new issue, so we schedule
-          // the next poll in NORMAL_POLL_INTERVAL
-          pollIssue(NORMAL_POLL_INTERVAL);
+          // For now, the only task/patchTask is to change statement, which will trigger async task check.
+          // Thus we use the short poll interval
+          pollIssue(POST_CHANGE_POLL_INTERVAL);
           if (postUpdated) {
             postUpdated(updatedTask);
           }
