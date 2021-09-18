@@ -102,6 +102,7 @@
       :mode="updateStatusModalState.mode"
       :okText="updateStatusModalState.okText"
       :issue="issue"
+      :task="currentTask"
       :transition="updateStatusModalState.transition"
       :outputFieldList="issueTemplate.outputFieldList"
       @submit="
@@ -249,7 +250,7 @@ export default {
     const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
       updateStatusModalState.mode = "TASK";
       updateStatusModalState.okText = transition.buttonName;
-      const task = activeTask((props.issue as Issue).pipeline);
+      const task = currentTask.value;
       switch (transition.type) {
         case "RUN":
           updateStatusModalState.style = "INFO";
@@ -316,9 +317,8 @@ export default {
         return list
           .filter((item) => {
             const pipeline = (props.issue as Issue).pipeline;
-            const currentTask = activeTask(pipeline);
             // Disallow any issue status transition if the active task is in RUNNING state.
-            if (currentTask.status == "RUNNING") {
+            if (currentTask.value.status == "RUNNING") {
               return false;
             }
 
@@ -327,8 +327,8 @@ export default {
             if (
               item == "RESOLVE" &&
               taskList.length > 0 &&
-              (currentTask.id != taskList[taskList.length - 1].id ||
-                currentTask.status != "DONE")
+              (currentTask.value.id != taskList[taskList.length - 1].id ||
+                currentTask.value.status != "DONE")
             ) {
               return false;
             }
@@ -342,6 +342,10 @@ export default {
           .reverse();
       }
     );
+
+    const currentTask = computed(() => {
+      return activeTask((props.issue as Issue).pipeline);
+    });
 
     const allowIssueStatusTransition = (
       transition: IssueStatusTransition
@@ -443,6 +447,7 @@ export default {
       tryStartTaskStatusTransition,
       doTaskStatusTransition,
       applicableIssueStatusTransitionList,
+      currentTask,
       allowIssueStatusTransition,
       tryStartIssueStatusTransition,
       doIssueStatusTransition,

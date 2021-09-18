@@ -25,7 +25,8 @@
         <div>
           <TaskCheckBadgeBar
             :taskCheckRunList="task.taskCheckRunList"
-            :showSelection="true"
+            :allowSelection="true"
+            :stickySelection="true"
             :selectedTaskCheckRun="state.selectedTaskCheckRun"
             @select-task-check-run="
               (checkRun) => {
