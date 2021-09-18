@@ -18,6 +18,7 @@
 - [x] Backup and restore
 - [x] Role-based access control (RBAC)
 - [x] MySQL support
+- [x] TiDB support
 - [x] GitLab CE/EE support
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
 - [ ] PostgreSQL support
