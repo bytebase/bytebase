@@ -10,7 +10,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-if [ `dirname "${BASH_SOURCE[0]}"` != "scripts" ]
+if [ `dirname "${BASH_SOURCE[0]}"` != "./scripts" ]
 then
   echo "${RED}Precheck failed.${NC} Build script must run from root directory: scripts/build_docker.sh"; exit 1;
 fi
