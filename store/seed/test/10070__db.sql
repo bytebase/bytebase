@@ -461,3 +461,31 @@ VALUES
         'OK',
         0
     );
+
+-- Database for prod environment instance 6006
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts
+    )
+VALUES
+    (
+        7018,
+        101,
+        101,
+        6006,
+        1,
+        '*',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        0
+    );
