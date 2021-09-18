@@ -166,6 +166,16 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
+		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorId:               creatorId,
+			TaskId:                  task.ID,
+			Type:                    api.TaskCheckDatabaseConnect,
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 			Statement: taskPayload.Statement,
 			DbType:    database.Instance.Engine,
@@ -175,17 +185,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
 		}
-		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorId:               creatorId,
-			TaskId:                  task.ID,
-			Type:                    api.TaskCheckDatabaseStatementFakeAdvise,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
-			return nil, err
-		}
-
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorId:               creatorId,
 			TaskId:                  task.ID,
