@@ -45,7 +45,7 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		payload.Statement,
 	)
 	if err != nil {
-		return []api.TaskCheckResult{}, fmt.Errorf("failed to lint statement: %w", err)
+		return []api.TaskCheckResult{}, fmt.Errorf("failed to check statement: %w", err)
 	}
 
 	result = []api.TaskCheckResult{}
