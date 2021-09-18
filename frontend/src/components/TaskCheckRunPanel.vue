@@ -2,7 +2,7 @@
   <div>
     <BBTable
       :columnList="columnList"
-      :dataSource="taskCheckRun.result.resultList"
+      :dataSource="checkResultList"
       :showHeader="false"
       :leftBordered="true"
       :rightBordered="true"
@@ -80,9 +80,9 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { TaskCheckStatus, TaskCheckRun } from "../types";
+import { TaskCheckStatus, TaskCheckRun, TaskCheckResult } from "../types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -117,9 +117,34 @@ export default {
       }
     };
 
+    const checkResultList = computed((): TaskCheckResult[] => {
+      if (props.taskCheckRun.status == "DONE") {
+        return props.taskCheckRun.result.resultList;
+      } else if (props.taskCheckRun.status == "FAILED") {
+        return [
+          {
+            status: "ERROR",
+            title: "Error",
+            content: props.taskCheckRun.comment,
+          },
+        ];
+      } else if (props.taskCheckRun.status == "CANCELED") {
+        return [
+          {
+            status: "WARN",
+            title: "Canceled",
+            content: "",
+          },
+        ];
+      }
+
+      return [];
+    });
+
     return {
       columnList,
       statusIconClass,
+      checkResultList,
     };
   },
 };
