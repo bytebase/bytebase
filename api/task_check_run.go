@@ -117,7 +117,7 @@ type TaskCheckRunCreate struct {
 	// for this (TaskId, Type) pair. The check is done at the store layer so that we can wrap it in the
 	// same transaction.
 	// This is NOT persisted into the db
-	SkipIfAlreadyDone bool
+	SkipIfAlreadyTerminated bool
 }
 
 type TaskCheckRunFind struct {
@@ -155,8 +155,8 @@ type TaskCheckRunStatusPatch struct {
 type TaskCheckRunService interface {
 	// For a particular task and a particular check type, we only create a new TaskCheckRun if matches all conditions below:
 	// 1. There is no existing RUNNING check run. If this is the case, then returns that RUNNING check run.
-	// 2. If SkipIfAlreadyDone is false, or if SkipIfAlreadyDone is true and there is no DONE check run. If this is the case,
-	//    then returns that DONE check run.
+	// 2. If SkipIfAlreadyTerminated is false, or if SkipIfAlreadyTerminated is true and there is no DONE/FAILED/CANCELED check run. If this is the case,
+	//    then returns that terminated check run.
 	CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) (*TaskCheckRun, error)
 	CreateTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *TaskCheckRunCreate) (*TaskCheckRun, error)
 	FindTaskCheckRunList(ctx context.Context, find *TaskCheckRunFind) ([]*TaskCheckRun, error)

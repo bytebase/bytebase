@@ -53,13 +53,13 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 				return nil, nil
 			}
 
-			skipIfAlreadyDone := true
+			skipIfAlreadyTerminated := true
 			if task.Status == api.TaskPendingApproval {
-				return s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone)
+				return s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyTerminated)
 			}
 
 			if task.Status == api.TaskPending {
-				if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyDone); err != nil {
+				if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyTerminated); err != nil {
 					return nil, err
 				}
 				updatedTask, err := s.TaskScheduler.Schedule(context.Background(), task)

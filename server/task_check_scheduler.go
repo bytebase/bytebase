@@ -151,7 +151,7 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorId int, skipIfAlreadyDone bool) (*api.Task, error) {
+func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorId int, skipIfAlreadyTerminated bool) (*api.Task, error) {
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
@@ -176,22 +176,22 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
 		}
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorId:         creatorId,
-			TaskId:            task.ID,
-			Type:              api.TaskCheckDatabaseStatementFakeAdvise,
-			Payload:           string(payload),
-			SkipIfAlreadyDone: skipIfAlreadyDone,
+			CreatorId:               creatorId,
+			TaskId:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementFakeAdvise,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorId:         creatorId,
-			TaskId:            task.ID,
-			Type:              api.TaskCheckDatabaseStatementSyntax,
-			Payload:           string(payload),
-			SkipIfAlreadyDone: skipIfAlreadyDone,
+			CreatorId:               creatorId,
+			TaskId:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementSyntax,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
 		if err != nil {
 			return nil, err
