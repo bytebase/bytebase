@@ -10,16 +10,23 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
     // "w-xxx" is used by BBTab
     // "pl-xxx" is used by BBOutline
-    // "bg-xxx", "text-xxx" is used by BBAttention, TaskCheckBadgeBar
+    // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar
+    // "hover:bg-xxx" is used by TaskCheckBadgeBar
     safelist: [
       /^w-/,
       /^pl-/,
+      /^bg-gray-/,
+      /^text-gray-/,
       /^bg-blue-/,
       /^text-blue-/,
       /^bg-yellow-/,
       /^text-yellow-/,
       /^bg-red-/,
       /^text-red-/,
+      /^hover:bg-gray-/,
+      /^hover:bg-blue-/,
+      /^hover:bg-yellow-/,
+      /^hover:bg-red-/,
     ],
   },
   theme: {
