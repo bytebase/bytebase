@@ -165,6 +165,42 @@ WHERE
 
 END;
 
+-- Policy
+-- policy stores the policies for each environment.
+CREATE TABLE policy (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    environment_id INTEGER NOT NULL REFERENCES environment (id),
+    type TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE INDEX idx_policy_environment_id ON policy(environment_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('policy', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_policy_modification_time`
+AFTER
+UPDATE
+    ON `policy` FOR EACH ROW BEGIN
+UPDATE
+    `policy`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Project
 CREATE TABLE project (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
