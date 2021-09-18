@@ -15,6 +15,7 @@ var (
 
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLSyntax, &Advisor{})
+	advisor.Register(db.TiDB, advisor.MySQLSyntax, &Advisor{})
 }
 
 type Advisor struct {
