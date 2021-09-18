@@ -69,10 +69,10 @@ DELETE FROM
     instance;
 
 DELETE FROM
-    environment;
-
-DELETE FROM
     policy;
+    
+DELETE FROM
+    environment;
 
 DELETE FROM
     project_webhook;
