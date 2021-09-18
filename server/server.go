@@ -110,27 +110,42 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	}
 
 	if !readonly {
+		// Task scheduler
 		taskScheduler := NewTaskScheduler(logger, s)
+
 		defaultExecutor := NewDefaultTaskExecutor(logger)
-		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
-		sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
-		backupDBExecutor := NewDatabaseBackupTaskExecutor(logger)
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskGeneral), defaultExecutor)
+
+		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
+
+		sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+
+		backupDBExecutor := NewDatabaseBackupTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
+
+		restoreDBExecutor := NewDatabaseRestoreTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
+
 		s.TaskScheduler = taskScheduler
 
+		// Task check scheduler
 		taskCheckScheduler := NewTaskCheckScheduler(logger, s)
+
 		statementExecutor := NewTaskCheckStatementAdvisorExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementExecutor)
+
+		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)
+
 		s.TaskCheckScheduler = taskCheckScheduler
 
-		schemaSyncer := NewSchemaSyncer(logger, s)
-		s.SchemaSyncer = schemaSyncer
+		// Schema syncer
+		s.SchemaSyncer = NewSchemaSyncer(logger, s)
+
+		// Backup runner
 		s.BackupRunner = NewBackupRunner(logger, s, backupRunnerInterval)
 	}
 

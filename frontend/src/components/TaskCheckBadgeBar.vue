@@ -186,6 +186,8 @@ export default {
           return "Fake";
         case "bb.task-check.database.statement.syntax":
           return "Syntax";
+        case "bb.task-check.database.connect":
+          return "Connection";
       }
     };
 

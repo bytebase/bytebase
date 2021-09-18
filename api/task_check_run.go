@@ -58,6 +58,7 @@ type TaskCheckType string
 const (
 	TaskCheckDatabaseStatementFakeAdvise TaskCheckType = "bb.task-check.database.statement.fake-advise"
 	TaskCheckDatabaseStatementSyntax     TaskCheckType = "bb.task-check.database.statement.syntax"
+	TaskCheckDatabaseConnect             TaskCheckType = "bb.task-check.database.connect"
 )
 
 type TaskCheckDatabaseStatementAdvisePayload struct {
