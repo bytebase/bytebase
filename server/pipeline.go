@@ -62,7 +62,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 				if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyTerminated); err != nil {
 					return nil, err
 				}
-				updatedTask, err := s.TaskScheduler.Schedule(context.Background(), task)
+				updatedTask, err := s.TaskScheduler.ScheduleIfNeeded(context.Background(), task)
 				if err != nil {
 					return nil, err
 				}
