@@ -1,6 +1,7 @@
 <template>
   <div class="flex items-center space-x-4">
     <button
+      v-if="showRunCheckButton"
       type="button"
       class="btn-small py-0.5"
       :disabled="hasRunningTaskCheck"
@@ -119,6 +120,14 @@ export default {
       });
     });
 
+    const showRunCheckButton = computed((): boolean => {
+      return (
+        props.task.status == "PENDING" ||
+        props.task.status == "PENDING_APPROVAL" ||
+        props.task.status == "RUNNING"
+      );
+    });
+
     const hasRunningTaskCheck = computed((): boolean => {
       for (const check of props.task.taskCheckRunList) {
         if (check.status == "RUNNING") {
@@ -160,6 +169,7 @@ export default {
       state,
       tabTaskCheckRunList,
       tabItemList,
+      showRunCheckButton,
       hasRunningTaskCheck,
       taskCheckStatus,
       viewCheckRunDetail,
