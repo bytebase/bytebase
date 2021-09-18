@@ -157,7 +157,7 @@ export default {
       const result: TaskCheckRun[] = [];
       for (const run of props.taskCheckRunList) {
         const index = result.findIndex((item) => item.type == run.type);
-        if (index >= 0 && result[index].createdTs < run.createdTs) {
+        if (index >= 0 && result[index].updatedTs < run.updatedTs) {
           result[index] = run;
         } else {
           result.push(run);
