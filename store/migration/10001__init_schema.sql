@@ -167,6 +167,7 @@ END;
 
 -- Policy
 -- policy stores the policies for each environment.
+-- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy. 
 CREATE TABLE policy (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -177,13 +178,13 @@ CREATE TABLE policy (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    name TEXT NOT NULL,
+    type TEXT NOT NULL,
     payload TEXT NOT NULL
 );
 
 CREATE INDEX idx_policy_environment_id ON policy(environment_id);
 
-CREATE UNIQUE INDEX idx_policy_environment_id_name ON policy(environment_id, name);
+CREATE UNIQUE INDEX idx_policy_environment_id_type ON policy(environment_id, type);
 
 INSERT INTO
     sqlite_sequence (name, seq)

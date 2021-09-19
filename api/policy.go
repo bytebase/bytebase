@@ -23,7 +23,7 @@ type Policy struct {
 	Environment *Environment
 
 	// Domain specific fields
-	Name    string `jsonapi:"attr,name"`
+	Type    string `jsonapi:"attr,type"`
 	Payload string `jsonapi:"attr,payload"`
 }
 
@@ -35,7 +35,7 @@ type PolicyFind struct {
 	EnvironmentId *int
 
 	// Domain specific fields
-	Name *string `jsonapi:"attr,name"`
+	Type *string `jsonapi:"attr,type"`
 }
 
 // PolicyUpsert is the message to upsert a policy.
@@ -50,7 +50,7 @@ type PolicyUpsert struct {
 	EnvironmentId int `jsonapi:"attr,environmentId"`
 
 	// Domain specific fields
-	Name    string `jsonapi:"attr,name"`
+	Type    string `jsonapi:"attr,type"`
 	Payload string `jsonapi:"attr,payload"`
 }
 
