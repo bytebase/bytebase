@@ -88,13 +88,7 @@
 
       <template v-if="databaseName">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          <span class="mr-1">Database</span>
-          <template v-if="instance.engine == 'MYSQL'">
-            <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
-          </template>
-          <template v-else-if="instance.engine == 'TIDB'">
-            <img class="h-4 w-auto" src="../assets/db-tidb.png" />
-          </template>
+          Database
         </h2>
         <div
           @click.prevent="clickDatabase"
@@ -110,7 +104,13 @@
 
       <template v-if="showInstance">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Instance
+          <span class="mr-1">Instance</span>
+          <template v-if="instance.engine == 'MYSQL'">
+            <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
+          </template>
+          <template v-else-if="instance.engine == 'TIDB'">
+            <img class="h-4 w-auto" src="../assets/db-tidb.png" />
+          </template>
         </h2>
         <router-link
           :to="`/instance/${instanceSlug(instance)}`"
