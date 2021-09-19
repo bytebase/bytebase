@@ -73,7 +73,15 @@
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
       <BBTableCell class="w-32">
-        {{ instanceName(database.instance) }}
+        <div class="flex flex-row items-center space-x-1">
+          <template v-if="database.instance.engine == 'MYSQL'">
+            <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
+          </template>
+          <template v-else-if="database.instance.engine == 'TIDB'">
+            <img class="h-4 w-auto" src="../assets/db-tidb.png" />
+          </template>
+          <span>{{ instanceName(database.instance) }}</span>
+        </div>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-8">
         {{ database.syncStatus }}
