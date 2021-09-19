@@ -22,7 +22,7 @@ p, DBA, /project/{projectId}/webhook/{webhookId}/test, GET
 p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
-p, DBA, /policy/{type}, GET
+p, DBA, /policy/{type}/environment/{environmentId}, GET
 p, DBA, /instance, POST
 p, DBA, /instance, GET
 p, DBA, /instance/{id}, GET

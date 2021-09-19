@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/google/jsonapi"
@@ -11,12 +12,18 @@ import (
 )
 
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
-	g.PATCH("/policy/:type", func(c echo.Context) error {
+	g.PATCH("/policy/:type/environment/:environmentId", func(c echo.Context) error {
+		environmentID, err := strconv.Atoi(c.Param("environmentId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
 		policyUpsert := &api.PolicyUpsert{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set policy request").SetInternal(err)
 		}
 		pType := api.PolicyType(c.Param("type"))
+		policyUpsert.EnvironmentId = environmentID
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
 
@@ -32,13 +39,15 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/policy/:type", func(c echo.Context) error {
-		policyFind := &api.PolicyFind{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyFind); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted get policy request").SetInternal(err)
+	g.GET("/policy/:type/environment/:environmentId", func(c echo.Context) error {
+		environmentID, err := strconv.Atoi(c.Param("environmentId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
+		policyFind := &api.PolicyFind{}
 		pType := api.PolicyType(c.Param("type"))
 		policyFind.Type = &pType
+		policyFind.EnvironmentId = &environmentID
 
 		policy, err := s.PolicyService.FindPolicy(context.Background(), policyFind)
 		if err != nil {

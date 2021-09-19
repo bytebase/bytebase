@@ -20,7 +20,7 @@ p, DEVELOPER, /project/{projectId}/webhook/{webhookId}, PATCH
 p, DEVELOPER, /project/{projectId}/webhook/{webhookId}, DELETE
 p, DEVELOPER, /project/{projectId}/webhook/{webhookId}/test, GET
 p, DEVELOPER, /environment, GET
-p, DEVELOPER, /policy/{type}, GET
+p, DEVELOPER, /policy/{type}/environment/{environmentId}, GET
 p, DEVELOPER, /instance, GET
 p, DEVELOPER, /instance/{id}, GET
 p, DEVELOPER, /instance/{id}/user, GET
