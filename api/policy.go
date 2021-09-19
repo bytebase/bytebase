@@ -73,7 +73,7 @@ type PolicyUpsert struct {
 	UpdaterId int
 
 	// Related fields
-	EnvironmentId int `jsonapi:"attr,environmentId"`
+	EnvironmentId int
 
 	// Domain specific fields
 	Type    PolicyType `jsonapi:"attr,type"`
