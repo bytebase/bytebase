@@ -16,7 +16,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set policy request").SetInternal(err)
 		}
-		pType := c.Param("type")
+		pType := api.PolicyType(c.Param("type"))
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
 
@@ -37,7 +37,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyFind); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted get policy request").SetInternal(err)
 		}
-		pType := c.Param("type")
+		pType := api.PolicyType(c.Param("type"))
 		policyFind.Type = &pType
 
 		policy, err := s.PolicyService.FindPolicy(context.Background(), policyFind)
