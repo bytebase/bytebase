@@ -58,8 +58,8 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 	if v := find.EnvironmentId; v != nil {
 		where, args = append(where, "environment_id = ?"), append(args, *v)
 	}
-	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+	if v := find.Type; v != nil {
+		where, args = append(where, "type = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -70,7 +70,7 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 			updater_id,
 			updated_ts,
 			environment_id,
-			name,
+			type,
 			payload
 		FROM policy
 		WHERE `+strings.Join(where, " AND "),
@@ -92,7 +92,7 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 			&policy.UpdaterId,
 			&policy.UpdatedTs,
 			&policy.Environment,
-			&policy.Name,
+			&policy.Type,
 			&policy.Payload,
 		); err != nil {
 			return nil, FormatError(err)
@@ -136,18 +136,18 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 			creator_id,
 			updater_id,
 			environment_id,
-			name,
+			type,
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT(environment_id, name) DO UPDATE SET
+		ON CONFLICT(environment_id, type) DO UPDATE SET
 				payload = excluded.payload
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, environment_id, name, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, environment_id, type, payload
 		`,
 		upsert.UpdaterId,
 		upsert.UpdaterId,
 		upsert.EnvironmentId,
-		upsert.Name,
+		upsert.Type,
 		upsert.Payload,
 	)
 
@@ -165,7 +165,7 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 		&policy.UpdaterId,
 		&policy.UpdatedTs,
 		&policy.EnvironmentId,
-		&policy.Name,
+		&policy.Type,
 		&policy.Payload,
 	); err != nil {
 		return nil, FormatError(err)
