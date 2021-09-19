@@ -281,6 +281,7 @@ func (m *main) Run() error {
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
+	s.PolicyService = store.NewPolicyService(m.l, db, s.CacheService)
 	s.ProjectService = store.NewProjectService(m.l, db, s.CacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)

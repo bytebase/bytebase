@@ -31,6 +31,7 @@ type Server struct {
 	SettingService         api.SettingService
 	PrincipalService       api.PrincipalService
 	MemberService          api.MemberService
+	PolicyService          api.PolicyService
 	ProjectService         api.ProjectService
 	ProjectMemberService   api.ProjectMemberService
 	ProjectWebhookService  api.ProjectWebhookService
