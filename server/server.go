@@ -191,6 +191,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
 	s.registerMemberRoutes(apiGroup)
+	s.registerPolicyRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
 	s.registerProjectWebhookRoutes(apiGroup)
 	s.registerProjectMemberRoutes(apiGroup)
