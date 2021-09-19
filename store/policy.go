@@ -31,6 +31,12 @@ func NewPolicyService(logger *zap.Logger, db *DB, cache api.CacheService) *Polic
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
+	// Validate policy type existence.
+	if find.Type != nil && *find.Type != "" {
+		if err := api.ValidatePolicy(*find.Type, ""); err != nil {
+			return nil, &common.Error{Code: common.EINVALID, Message: err.Error()}
+		}
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -38,11 +44,15 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	defer tx.Rollback()
 
 	list, err := s.findPolicy(ctx, tx, find)
-	// TODO(spinningbot): handle the default.
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("policy not found: %+v", find)}
+		// Return the default policy when there is no stored policy.
+		return &api.Policy{
+			EnvironmentId: *find.EnvironmentId,
+			Type:          *find.Type,
+			Payload:       api.GetDefaultPolicy(*find.Type),
+		}, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d policy with filter %+v, expect 1. ", len(list), find)}
 	}
@@ -110,6 +120,12 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 
 // UpsertPolicy sets a policy for an environment.
 func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
+	// Validate policy.
+	if upsert.Type != "" {
+		if err := api.ValidatePolicy(upsert.Type, upsert.Payload); err != nil {
+			return nil, &common.Error{Code: common.EINVALID, Message: err.Error()}
+		}
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
