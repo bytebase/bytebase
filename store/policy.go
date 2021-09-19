@@ -38,6 +38,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	defer tx.Rollback()
 
 	list, err := s.findPolicy(ctx, tx, find)
+	// TODO(spinningbot): handle the default.
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
