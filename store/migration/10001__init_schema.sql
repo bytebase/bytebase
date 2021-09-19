@@ -177,11 +177,13 @@ CREATE TABLE policy (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    type TEXT NOT NULL,
+    name TEXT NOT NULL,
     payload TEXT NOT NULL
 );
 
 CREATE INDEX idx_policy_environment_id ON policy(environment_id);
+
+CREATE UNIQUE INDEX idx_policy_environment_id_name ON policy(environment_id, name);
 
 INSERT INTO
     sqlite_sequence (name, seq)
