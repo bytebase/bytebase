@@ -8,26 +8,37 @@ import (
 // PolicyType is the type or name of a policy.
 type PolicyType string
 
+// ApprovalPolicyValue is value for approval policy.
+type ApprovalPolicyValue string
+
+// BackupPlanPolicyValue is value for backup plan policy.
+type BackupPlanPolicyValue string
+
 const (
 	// PolicyTypeApprovalPolicy is the approval policy type.
 	PolicyTypeApprovalPolicy PolicyType = "approval_policy"
+	// PolicyTypeBackupPlan is the backup plan policy type.
+	PolicyTypeBackupPlan PolicyType = "backup_plan"
+
+	// ApprovalPolicyValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
+	ApprovalPolicyValueManualNever ApprovalPolicyValue = "MANUAL_APPROVAL_NEVER"
+	// ApprovalPolicyValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
+	ApprovalPolicyValueManualAlways ApprovalPolicyValue = "MANUAL_APPROVAL_ALWAYS"
+
+	// BackupPlanPolicyValueNever is NEVER backup plan policy value.
+	BackupPlanPolicyValueNever BackupPlanPolicyValue = "NEVER"
+	// BackupPlanPolicyValueDaily is DAILY backup plan policy value.
+	BackupPlanPolicyValueDaily BackupPlanPolicyValue = "DAILY"
+	// BackupPlanPolicyValueWeekly is WEEKLY backup plan policy value.
+	BackupPlanPolicyValueWeekly BackupPlanPolicyValue = "WEEKLY"
 )
 
 var (
 	// PolicyTypes is a set of all policy types.
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypeApprovalPolicy: true,
+		PolicyTypeBackupPlan:     true,
 	}
-)
-
-// ApprovalPolicyValue is value for approval policy.
-type ApprovalPolicyValue string
-
-const (
-	// ApprovalPolicyValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
-	ApprovalPolicyValueManualNever ApprovalPolicyValue = "MANUAL_APPROVAL_NEVER"
-	// ApprovalPolicyValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
-	ApprovalPolicyValueManualAlways ApprovalPolicyValue = "MANUAL_APPROVAL_ALWAYS"
 )
 
 type Policy struct {
@@ -101,6 +112,11 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if pv != ApprovalPolicyValueManualNever && pv != ApprovalPolicyValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
+	case PolicyTypeBackupPlan:
+		pv := BackupPlanPolicyValue(payload)
+		if pv != BackupPlanPolicyValueNever && pv != BackupPlanPolicyValueDaily && pv != BackupPlanPolicyValueWeekly {
+			return fmt.Errorf("invalid backup plan policy value: %q", payload)
+		}
 	}
 	return nil
 }
@@ -111,6 +127,8 @@ func GetDefaultPolicy(pType PolicyType) string {
 	switch pType {
 	case PolicyTypeApprovalPolicy:
 		return ""
+	case PolicyTypeBackupPlan:
+		return string(BackupPlanPolicyValueNever)
 	}
 	return ""
 }
