@@ -36,17 +36,13 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	}
 	defer tx.Rollback()
 
-	database, err := s.createDatabase(ctx, tx.Tx, create)
+	database, err := s.CreateDatabaseTx(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
-		return nil, err
 	}
 
 	return database, nil
