@@ -20,12 +20,18 @@ type DatabaseService struct {
 	l  *zap.Logger
 	db *DB
 
-	cache api.CacheService
+	cache         api.CacheService
+	policyService api.PolicyService
 }
 
 // NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService) *DatabaseService {
-	return &DatabaseService{l: logger, db: db, cache: cache}
+func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, policyService api.PolicyService) *DatabaseService {
+	return &DatabaseService{
+		l:             logger,
+		db:            db,
+		cache:         cache,
+		policyService: policyService,
+	}
 }
 
 // CreateDatabase creates a new database.
@@ -52,6 +58,18 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	database, err := s.createDatabase(ctx, tx, create)
 	if err != nil {
 		return nil, err
+	}
+	pType := api.PolicyTypeBackupPlan
+	policy, err := s.policyService.FindPolicy(ctx, &api.PolicyFind{
+		EnvironmentId: &create.EnvironmentId,
+		Type:          &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	backupPlanPolicy := api.BackupPlanPolicyValue(policy.Payload)
+	if backupPlanPolicy != api.BackupPlanPolicyValueNever {
+		// TODO(spinningbot): enforce automatic backup.
 	}
 
 	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {

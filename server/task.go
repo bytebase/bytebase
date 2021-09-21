@@ -410,18 +410,25 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			return nil, fmt.Errorf("invalid create database task payload: %w", err)
 		}
 
+		instance, err := s.InstanceService.FindInstance(context.Background(), &api.InstanceFind{
+			ID: &task.InstanceId,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("invalid instance ID: %v", task.InstanceId)
+		}
 		z, offset := time.Now().Zone()
 		databaseCreate := &api.DatabaseCreate{
 			CreatorId:      taskStatusPatch.UpdaterId,
 			ProjectId:      payload.ProjectId,
 			InstanceId:     task.InstanceId,
+			EnvironmentId:  instance.EnvironmentId,
 			Name:           payload.DatabaseName,
 			CharacterSet:   payload.CharacterSet,
 			Collation:      payload.Collation,
 			TimezoneName:   z,
 			TimezoneOffset: offset,
 		}
-		_, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+		_, err = s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			// Just emits an error instead of failing, since we have another periodic job to sync db info.
 			// Though the db will be assigned to the default project instead of the desired project in that case.

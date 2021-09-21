@@ -336,6 +336,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 						CreatorId:      api.SYSTEM_BOT_ID,
 						ProjectId:      api.DEFAULT_PROJECT_ID,
 						InstanceId:     instance.ID,
+						EnvironmentId:  instance.EnvironmentId,
 						Name:           schema.Name,
 						CharacterSet:   schema.CharacterSet,
 						Collation:      schema.Collation,
