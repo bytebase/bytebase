@@ -65,8 +65,9 @@ type DatabaseCreate struct {
 	CreatorId int
 
 	// Related fields
-	ProjectId  int `jsonapi:"attr,projectId"`
-	InstanceId int `jsonapi:"attr,instanceId"`
+	ProjectId     int `jsonapi:"attr,projectId"`
+	InstanceId    int `jsonapi:"attr,instanceId"`
+	EnvironmentId int
 
 	// Domain specific fields
 	Name           string `jsonapi:"attr,name"`

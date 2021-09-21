@@ -27,6 +27,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		databaseCreate.TimezoneName = z
 		databaseCreate.TimezoneOffset = offset
+		instance, err := s.InstanceService.FindInstance(context.Background(), &api.InstanceFind{ID: &databaseCreate.InstanceId})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
+		}
+		databaseCreate.EnvironmentId = instance.EnvironmentId
 
 		database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 		if err != nil {
