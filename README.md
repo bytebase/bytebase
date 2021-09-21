@@ -39,7 +39,7 @@
 
 **Checkout [docs.bytebase.com](https://docs.bytebase.com) for more details**
 
-## ⚙️ Installation
+## Installation
 
 [Detailed installation guide](https://docs.bytebase.com/install/docker)
 
