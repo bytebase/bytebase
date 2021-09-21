@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -22,15 +23,17 @@ type DatabaseService struct {
 
 	cache         api.CacheService
 	policyService api.PolicyService
+	backupService api.BackupService
 }
 
 // NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, policyService api.PolicyService) *DatabaseService {
+func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, policyService api.PolicyService, backupService api.BackupService) *DatabaseService {
 	return &DatabaseService{
 		l:             logger,
 		db:            db,
 		cache:         cache,
 		policyService: policyService,
+		backupService: backupService,
 	}
 }
 
@@ -55,10 +58,6 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 }
 
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
-	database, err := s.createDatabase(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
 	pType := api.PolicyTypeBackupPlan
 	policy, err := s.policyService.FindPolicy(ctx, &api.PolicyFind{
 		EnvironmentId: &create.EnvironmentId,
@@ -68,8 +67,29 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 		return nil, err
 	}
 	backupPlanPolicy := api.BackupPlanPolicyValue(policy.Payload)
+
+	database, err := s.createDatabase(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enable automatic backup setting based on backup plan policy.
 	if backupPlanPolicy != api.BackupPlanPolicyValueNever {
-		// TODO(spinningbot): enforce automatic backup.
+		backupSettingUpsert := &api.BackupSettingUpsert{
+			UpdaterId:  api.SYSTEM_BOT_ID,
+			DatabaseId: database.ID,
+			Enabled:    true,
+			Hour:       rand.Intn(24),
+		}
+		switch backupPlanPolicy {
+		case api.BackupPlanPolicyValueDaily:
+			backupSettingUpsert.DayOfWeek = -1
+		case api.BackupPlanPolicyValueWeekly:
+			backupSettingUpsert.DayOfWeek = rand.Intn(7)
+		}
+		if _, err := s.backupService.UpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {

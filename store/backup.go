@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -364,7 +365,7 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	}
 	defer tx.Rollback()
 
-	backup, err := s.upsertBackupSetting(ctx, tx, upsert)
+	backup, err := s.UpsertBackupSettingTx(ctx, tx.Tx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -376,8 +377,8 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	return backup, nil
 }
 
-// upsertBackupSetting updates an existing backup setting.
-func (s *BackupService) upsertBackupSetting(ctx context.Context, tx *Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+// UpsertBackupSettingTx updates an existing backup setting.
+func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	// Upsert row into backup_setting.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup_setting (
