@@ -320,6 +320,7 @@ export const unknown = (
     instance: UNKNOWN_INSTANCE,
     database: UNKNOWN_DATABASE,
     taskRunList: [],
+    taskCheckRunList: [],
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -629,6 +630,7 @@ export const empty = (
     instance: EMPTY_INSTANCE,
     database: EMPTY_DATABASE,
     taskRunList: [],
+    taskCheckRunList: [],
   };
 
   const EMPTY_ACTIVITY: Activity = {
