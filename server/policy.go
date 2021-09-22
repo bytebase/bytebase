@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
-	g.PATCH("/policy/:type/environment/:environmentId", func(c echo.Context) error {
+	g.PATCH("/policy/environment/:environmentId", func(c echo.Context) error {
 		environmentID, err := strconv.Atoi(c.Param("environmentId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -22,7 +22,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set policy request").SetInternal(err)
 		}
-		pType := api.PolicyType(c.Param("type"))
+		pType := api.PolicyType(c.QueryParam("type"))
 		policyUpsert.EnvironmentId = environmentID
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
@@ -39,13 +39,13 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/policy/:type/environment/:environmentId", func(c echo.Context) error {
+	g.GET("/policy/environment/:environmentId", func(c echo.Context) error {
 		environmentID, err := strconv.Atoi(c.Param("environmentId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 		policyFind := &api.PolicyFind{}
-		pType := api.PolicyType(c.Param("type"))
+		pType := api.PolicyType(c.QueryParam("type"))
 		policyFind.Type = &pType
 		policyFind.EnvironmentId = &environmentID
 
