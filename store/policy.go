@@ -49,6 +49,8 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 		return nil, err
 	} else if len(list) == 0 {
 		ret = &api.Policy{
+			CreatorId:     api.SYSTEM_BOT_ID,
+			UpdaterId:     api.SYSTEM_BOT_ID,
 			EnvironmentId: *find.EnvironmentId,
 			Type:          *find.Type,
 		}
