@@ -45,6 +45,7 @@
     <EnvironmentForm
       :create="true"
       :environment="DEFAULT_NEW_ENVIRONMENT"
+      :backupPolicy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -81,12 +82,25 @@ import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentCreate, Principal } from "../types";
+import {
+  Environment,
+  EnvironmentCreate,
+  Policy,
+  PolicyUpsert,
+  Principal,
+} from "../types";
 import { BBTabItem } from "../bbkit/types";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
   approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
+};
+
+// The default value should be consistent with the GetDefaultPolicy from the backend.
+const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
+  payload: {
+    schedule: "NEVER",
+  },
 };
 
 interface LocalState {
@@ -211,12 +225,23 @@ export default {
       state.showCreateModal = true;
     };
 
-    const doCreate = (newEnvironment: EnvironmentCreate) => {
+    const doCreate = (
+      newEnvironment: EnvironmentCreate,
+      backupPolicy: Policy
+    ) => {
       store
         .dispatch("environment/createEnvironment", newEnvironment)
-        .then(() => {
-          state.showCreateModal = false;
-          selectEnvironment(environmentList.value.length - 1);
+        .then((environment: Environment) => {
+          store
+            .dispatch("policy/upsertPolicyByEnvironmentAndType", {
+              environmentId: environment.id,
+              type: "backup_plan",
+              policyUpsert: { payload: backupPolicy.payload },
+            })
+            .then((policy: Policy) => {
+              state.showCreateModal = false;
+              selectEnvironment(environmentList.value.length - 1);
+            });
         });
     };
 
@@ -287,6 +312,7 @@ export default {
 
     return {
       DEFAULT_NEW_ENVIRONMENT,
+      DEFAULT_NEW_BACKUP_PLAN_POLICY,
       state,
       environmentList,
       tabItemList,

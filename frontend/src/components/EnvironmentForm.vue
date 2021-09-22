@@ -72,6 +72,72 @@
           </div>
         </div>
       </div>
+      <div class="col-span-1">
+        <label class="textlabel"> Database backup schedule policy </label>
+        <div class="mt-1 textinfolabel">Enforce database backup schedule</div>
+        <div class="mt-4 flex flex-col space-y-4">
+          <div class="flex space-x-4">
+            <input
+              tabindex="-1"
+              type="radio"
+              class="
+                text-accent
+                disabled:text-accent-disabled
+                focus:ring-accent
+              "
+              value="NEVER"
+              :disabled="!allowEdit"
+              v-model="state.backupPolicy.payload.schedule"
+            />
+            <div class="-mt-0.5">
+              <div class="textlabel">Not enforced</div>
+              <div class="mt-1 textinfolabel">
+                No backup schedule is enforced.
+              </div>
+            </div>
+          </div>
+          <div class="flex space-x-4">
+            <input
+              tabindex="-1"
+              type="radio"
+              class="
+                text-accent
+                disabled:text-accent-disabled
+                focus:ring-accent
+              "
+              value="DAILY"
+              :disabled="!allowEdit"
+              v-model="state.backupPolicy.payload.schedule"
+            />
+            <div class="-mt-0.5">
+              <div class="textlabel">Daily backup</div>
+              <div class="mt-1 textinfolabel">
+                Enforce every database to backup daily.
+              </div>
+            </div>
+          </div>
+          <div class="flex space-x-4">
+            <input
+              tabindex="-1"
+              type="radio"
+              class="
+                text-accent
+                disabled:text-accent-disabled
+                focus:ring-accent
+              "
+              value="WEEKLY"
+              :disabled="!allowEdit"
+              v-model="state.backupPolicy.payload.schedule"
+            />
+            <div class="-mt-0.5">
+              <div class="textlabel">Weekly backup</div>
+              <div class="mt-1 textinfolabel">
+                Enforce every database to backup weekly.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Create button group -->
     <div v-if="create" class="flex justify-end pt-5">
@@ -141,21 +207,27 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, watch } from "vue";
+import { computed, reactive, PropType, watch, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import isEmpty from "lodash-es/isEmpty";
-import { Environment, EnvironmentCreate, EnvironmentPatch } from "../types";
+import {
+  Environment,
+  EnvironmentCreate,
+  EnvironmentPatch,
+  Policy,
+} from "../types";
 import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
+  backupPolicy: Policy;
 }
 
 export default {
   name: "EnvironmentForm",
-  emits: ["create", "update", "cancel", "archive", "restore"],
+  emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   props: {
     create: {
       type: Boolean,
@@ -165,17 +237,29 @@ export default {
       required: true,
       type: Object as PropType<Environment | EnvironmentCreate>,
     },
+    backupPolicy: {
+      required: true,
+      type: Object as PropType<Policy>,
+    },
   },
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
       environment: cloneDeep(props.environment),
+      backupPolicy: cloneDeep(props.backupPolicy),
     });
 
     watch(
       () => props.environment,
       (cur: Environment | EnvironmentCreate) => {
         state.environment = cloneDeep(cur);
+      }
+    );
+
+    watch(
+      () => props.backupPolicy,
+      (cur: Policy) => {
+        state.backupPolicy = cloneDeep(cur);
       }
     );
 
@@ -202,7 +286,10 @@ export default {
     });
 
     const valueChanged = computed(() => {
-      return !isEqual(props.environment, state.environment);
+      return (
+        !isEqual(props.environment, state.environment) ||
+        !isEqual(props.backupPolicy, state.backupPolicy)
+      );
     });
 
     const allowCreate = computed(() => {
@@ -214,21 +301,35 @@ export default {
     };
 
     const createEnvironment = () => {
-      emit("create", state.environment);
+      emit("create", state.environment, state.backupPolicy);
     };
 
     const updateEnvironment = () => {
-      const patchedEnvironment: EnvironmentPatch = {};
-
-      if (state.environment.name != props.environment!.name) {
-        patchedEnvironment.name = state.environment.name;
-      }
       if (
+        state.environment.name != props.environment!.name ||
         state.environment.approvalPolicy != props.environment!.approvalPolicy
       ) {
-        patchedEnvironment.approvalPolicy = state.environment.approvalPolicy;
+        const patchedEnvironment: EnvironmentPatch = {};
+
+        if (state.environment.name != props.environment!.name) {
+          patchedEnvironment.name = state.environment.name;
+        }
+        if (
+          state.environment.approvalPolicy != props.environment!.approvalPolicy
+        ) {
+          patchedEnvironment.approvalPolicy = state.environment.approvalPolicy;
+        }
+        emit("update", patchedEnvironment);
       }
-      emit("update", patchedEnvironment);
+
+      if (state.backupPolicy != props.backupPolicy) {
+        emit(
+          "update-policy",
+          (state.environment as Environment).id,
+          "backup_plan",
+          state.backupPolicy
+        );
+      }
     };
 
     const archiveEnvironment = () => {

@@ -1,3 +1,4 @@
+import { Policy } from ".";
 import { Activity } from "./activity";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
@@ -107,6 +108,7 @@ export type ResourceType =
   | "BACKUP_SETTING"
   | "ISSUE"
   | "PIPELINE"
+  | "POLICY"
   | "STAGE"
   | "TASK"
   | "ACTIVITY"
@@ -130,6 +132,7 @@ export const unknown = (
   | BackupSetting
   | Issue
   | Pipeline
+  | Policy
   | Stage
   | Task
   | Activity
@@ -277,6 +280,17 @@ export const unknown = (
     stageList: [],
   };
 
+  const UNKNOWN_POLICY: Policy = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    environment: UNKNOWN_ENVIRONMENT,
+    type: "approval_policy",
+    payload: "",
+  };
+
   const UNKNOWN_ISSUE: Issue = {
     id: UNKNOWN_ID,
     project: UNKNOWN_PROJECT,
@@ -409,6 +423,8 @@ export const unknown = (
       return UNKNOWN_ISSUE;
     case "PIPELINE":
       return UNKNOWN_PIPELINE;
+    case "POLICY":
+      return UNKNOWN_POLICY;
     case "STAGE":
       return UNKNOWN_STAGE;
     case "TASK":
@@ -442,6 +458,7 @@ export const empty = (
   | BackupSetting
   | Issue
   | Pipeline
+  | Policy
   | Stage
   | Task
   | Activity
@@ -587,6 +604,17 @@ export const empty = (
     stageList: [],
   };
 
+  const EMPTY_POLICY: Policy = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    environment: EMPTY_ENVIRONMENT,
+    type: "approval_policy",
+    payload: "",
+  };
+
   const EMPTY_ISSUE: Issue = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
@@ -719,6 +747,8 @@ export const empty = (
       return EMPTY_ISSUE;
     case "PIPELINE":
       return EMPTY_PIPELINE;
+    case "POLICY":
+      return EMPTY_POLICY;
     case "STAGE":
       return EMPTY_STAGE;
     case "TASK":
