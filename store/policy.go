@@ -111,7 +111,7 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 			&policy.CreatedTs,
 			&policy.UpdaterId,
 			&policy.UpdatedTs,
-			&policy.Environment,
+			&policy.EnvironmentId,
 			&policy.Type,
 			&policy.Payload,
 		); err != nil {
