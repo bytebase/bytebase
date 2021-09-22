@@ -66,7 +66,10 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	if err != nil {
 		return nil, err
 	}
-	backupPlanPolicy := api.BackupPlanPolicyValue(policy.Payload)
+	backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
+	if err != nil {
+		return nil, err
+	}
 
 	database, err := s.createDatabase(ctx, tx, create)
 	if err != nil {
@@ -74,17 +77,17 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	}
 
 	// Enable automatic backup setting based on backup plan policy.
-	if backupPlanPolicy != api.BackupPlanPolicyValueNever {
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleNever {
 		backupSettingUpsert := &api.BackupSettingUpsert{
 			UpdaterId:  api.SYSTEM_BOT_ID,
 			DatabaseId: database.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),
 		}
-		switch backupPlanPolicy {
-		case api.BackupPlanPolicyValueDaily:
+		switch backupPlanPolicy.Schedule {
+		case api.BackupPlanPolicyScheduleDaily:
 			backupSettingUpsert.DayOfWeek = -1
-		case api.BackupPlanPolicyValueWeekly:
+		case api.BackupPlanPolicyScheduleWeekly:
 			backupSettingUpsert.DayOfWeek = rand.Intn(7)
 		}
 		if _, err := s.backupService.UpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {

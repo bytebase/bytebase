@@ -23,6 +23,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set policy request").SetInternal(err)
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
+		if err := api.ValidatePolicy(pType, ""); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
+		}
 		policyUpsert.EnvironmentId = environmentID
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
@@ -46,6 +49,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 		policyFind := &api.PolicyFind{}
 		pType := api.PolicyType(c.QueryParam("type"))
+		if err := api.ValidatePolicy(pType, ""); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
+		}
 		policyFind.Type = &pType
 		policyFind.EnvironmentId = &environmentID
 
