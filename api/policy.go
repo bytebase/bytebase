@@ -100,7 +100,7 @@ type PolicyService interface {
 
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
-	Schedule BackupPlanPolicySchedule `jsonapi:"attr,schedule"`
+	Schedule BackupPlanPolicySchedule `json:"schedule"`
 }
 
 func (bp BackupPlanPolicy) String() (string, error) {
