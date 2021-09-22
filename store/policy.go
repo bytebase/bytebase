@@ -44,20 +44,29 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	defer tx.Rollback()
 
 	list, err := s.findPolicy(ctx, tx, find)
+	var ret *api.Policy
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		// Return the default policy when there is no stored policy.
-		return &api.Policy{
+		ret = &api.Policy{
 			EnvironmentId: *find.EnvironmentId,
 			Type:          *find.Type,
-			Payload:       api.GetDefaultPolicy(*find.Type),
-		}, nil
+		}
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d policy with filter %+v, expect 1. ", len(list), find)}
+	} else {
+		ret = list[0]
 	}
 
-	return list[0], nil
+	if ret.Payload == "" {
+		// Return the default policy when there is no stored policy.
+		payload, err := api.GetDefaultPolicy(*find.Type)
+		if err != nil {
+			return nil, &common.Error{Code: common.EINTERNAL, Message: err.Error()}
+		}
+		ret.Payload = payload
+	}
+	return ret, nil
 }
 
 func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.PolicyFind) (_ []*api.Policy, err error) {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
@@ -11,8 +12,8 @@ type PolicyType string
 // ApprovalPolicyValue is value for approval policy.
 type ApprovalPolicyValue string
 
-// BackupPlanPolicyValue is value for backup plan policy.
-type BackupPlanPolicyValue string
+// BackupPlanPolicySchedule is value for backup plan policy.
+type BackupPlanPolicySchedule string
 
 const (
 	// PolicyTypeApprovalPolicy is the approval policy type.
@@ -25,12 +26,12 @@ const (
 	// ApprovalPolicyValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
 	ApprovalPolicyValueManualAlways ApprovalPolicyValue = "MANUAL_APPROVAL_ALWAYS"
 
-	// BackupPlanPolicyValueNever is NEVER backup plan policy value.
-	BackupPlanPolicyValueNever BackupPlanPolicyValue = "NEVER"
-	// BackupPlanPolicyValueDaily is DAILY backup plan policy value.
-	BackupPlanPolicyValueDaily BackupPlanPolicyValue = "DAILY"
-	// BackupPlanPolicyValueWeekly is WEEKLY backup plan policy value.
-	BackupPlanPolicyValueWeekly BackupPlanPolicyValue = "WEEKLY"
+	// BackupPlanPolicyScheduleNever is NEVER backup plan policy value.
+	BackupPlanPolicyScheduleNever BackupPlanPolicySchedule = "NEVER"
+	// BackupPlanPolicyScheduleDaily is DAILY backup plan policy value.
+	BackupPlanPolicyScheduleDaily BackupPlanPolicySchedule = "DAILY"
+	// BackupPlanPolicyScheduleWeekly is WEEKLY backup plan policy value.
+	BackupPlanPolicyScheduleWeekly BackupPlanPolicySchedule = "WEEKLY"
 )
 
 var (
@@ -87,14 +88,36 @@ type PolicyUpsert struct {
 	EnvironmentId int
 
 	// Domain specific fields
-	Type    PolicyType `jsonapi:"attr,type"`
-	Payload string     `jsonapi:"attr,payload"`
+	Type    PolicyType
+	Payload string `jsonapi:"attr,payload"`
 }
 
 // PolicyService is the backend for policies.
 type PolicyService interface {
 	FindPolicy(ctx context.Context, find *PolicyFind) (*Policy, error)
 	UpsertPolicy(ctx context.Context, upsert *PolicyUpsert) (*Policy, error)
+}
+
+// BackupPlanPolicy is the policy configuration for backup plan.
+type BackupPlanPolicy struct {
+	Schedule BackupPlanPolicySchedule `jsonapi:"attr,schedule"`
+}
+
+func (bp BackupPlanPolicy) String() (string, error) {
+	s, err := json.Marshal(bp)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// UnmarshalBackupPlanPolicy will unmarshal payload to backup plan policy.
+func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
+	var bp BackupPlanPolicy
+	if err := json.Unmarshal([]byte(payload), &bp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal backup plan policy %q: %q", payload, err)
+	}
+	return &bp, nil
 }
 
 // ValidatePolicy will validate the policy type and payload values.
@@ -113,9 +136,12 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
 	case PolicyTypeBackupPlan:
-		pv := BackupPlanPolicyValue(payload)
-		if pv != BackupPlanPolicyValueNever && pv != BackupPlanPolicyValueDaily && pv != BackupPlanPolicyValueWeekly {
-			return fmt.Errorf("invalid backup plan policy value: %q", payload)
+		bp, err := UnmarshalBackupPlanPolicy(payload)
+		if err != nil {
+			return err
+		}
+		if bp.Schedule != BackupPlanPolicyScheduleNever && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
+			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
 	}
 	return nil
@@ -123,12 +149,14 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 
 // GetDefaultPolicy will return the default value for the given policy type.
 // The default policy can be empty when we don't have anything to enforce at runtime.
-func GetDefaultPolicy(pType PolicyType) string {
+func GetDefaultPolicy(pType PolicyType) (string, error) {
 	switch pType {
 	case PolicyTypeApprovalPolicy:
-		return ""
+		return "", nil
 	case PolicyTypeBackupPlan:
-		return string(BackupPlanPolicyValueNever)
+		return BackupPlanPolicy{
+			Schedule: BackupPlanPolicyScheduleNever,
+		}.String()
 	}
-	return ""
+	return "", nil
 }
