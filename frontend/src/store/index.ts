@@ -19,6 +19,7 @@ import member from "./modules/member";
 import notification from "./modules/notification";
 import pipeline from "./modules/pipeline";
 import plan from "./modules/plan";
+import policy from "./modules/policy";
 import principal from "./modules/principal";
 import project from "./modules/project";
 import projectWebhook from "./modules/projectWebhook";
@@ -55,6 +56,7 @@ export const store: Store<any> = createStore({
     notification,
     pipeline,
     plan,
+    policy,
     principal,
     project,
     projectWebhook,
