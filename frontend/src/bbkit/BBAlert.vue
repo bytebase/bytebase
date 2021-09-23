@@ -294,7 +294,7 @@ export default {
     },
     inProgress: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     // Any payload pass through to "ok" and "cancel" events
     payload: {},
