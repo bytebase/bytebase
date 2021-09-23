@@ -5,11 +5,6 @@ import (
 	"encoding/json"
 )
 
-// Approval policy only controls updating schema on the existing database.
-// For creating new database, Developer always requires manual approval, while Owner and DBA doesn't
-// TODO(spinningbot): remove this once fully migrate to standard policy type.
-type ApprovalPolicy string
-
 type Environment struct {
 	ID int `jsonapi:"primary,environment"`
 
@@ -23,9 +18,8 @@ type Environment struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Name           string         `jsonapi:"attr,name"`
-	Order          int            `jsonapi:"attr,order"`
-	ApprovalPolicy ApprovalPolicy `jsonapi:"attr,approvalPolicy"`
+	Name  string `jsonapi:"attr,name"`
+	Order int    `jsonapi:"attr,order"`
 }
 
 type EnvironmentCreate struct {
@@ -34,8 +28,7 @@ type EnvironmentCreate struct {
 	CreatorId int
 
 	// Domain specific fields
-	Name           string         `jsonapi:"attr,name"`
-	ApprovalPolicy ApprovalPolicy `jsonapi:"attr,approvalPolicy"`
+	Name string `jsonapi:"attr,name"`
 }
 
 type EnvironmentFind struct {
@@ -62,9 +55,8 @@ type EnvironmentPatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name           *string `jsonapi:"attr,name"`
-	Order          *int    `jsonapi:"attr,order"`
-	ApprovalPolicy *string `jsonapi:"attr,approvalPolicy"`
+	Name  *string `jsonapi:"attr,name"`
+	Order *int    `jsonapi:"attr,order"`
 }
 
 type EnvironmentDelete struct {
