@@ -141,7 +141,7 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	BackupId          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *common.VCSPushEvent
-	MigrationType     db.MigrationType
+	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
 type TaskFind struct {

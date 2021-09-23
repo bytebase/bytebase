@@ -1,6 +1,16 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <div class="text-lg leading-6 font-medium text-main">Migration History</div>
+    <div class="text-lg leading-6 font-medium text-main">
+      Migration History
+      <button
+        v-if="allowEdit && database.project.workflowType == 'VCS'"
+        type="button"
+        class="ml-4 btn-primary"
+        @click.prevent="state.showBaselineModal = true"
+      >
+        Establish new baseline
+      </button>
+    </div>
     <MigrationHistoryTable
       v-if="state.migrationSetupStatus == 'OK'"
       :databaseSectionList="[database]"
@@ -14,6 +24,22 @@
       @click-action="configInstance"
     />
   </div>
+
+  <BBAlert
+    v-if="state.showBaselineModal"
+    :style="'INFO'"
+    :okText="'Establish baseline'"
+    :cancelText="'Cancel'"
+    :title="`Establish new baseline for \'${database.name}\'`"
+    :description="'Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.\n\nFor VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.'"
+    @ok="
+      () => {
+        doCreateBaseline();
+      }
+    "
+    @cancel="state.showBaselineModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -28,10 +54,12 @@ import {
 } from "../types";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { instanceSlug, isDBAOrOwner } from "../utils";
+import { instanceSlug, isDBAOrOwner, issueSlug } from "../utils";
+import { templateForType } from "../plugins";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
+  showBaselineModal: boolean;
 }
 
 export default {
@@ -42,6 +70,10 @@ export default {
       required: true,
       type: Object as PropType<Database>,
     },
+    allowEdit: {
+      required: true,
+      type: Boolean,
+    },
   },
   setup(props, ctx) {
     const store = useStore();
@@ -49,6 +81,7 @@ export default {
 
     const state = reactive<LocalState>({
       migrationSetupStatus: "OK",
+      showBaselineModal: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -103,12 +136,29 @@ export default {
       router.push(`/instance/${instanceSlug(props.database.instance)}`);
     };
 
+    const doCreateBaseline = () => {
+      state.showBaselineModal = false;
+      router.push({
+        name: "workspace.issue.detail",
+        params: {
+          issueSlug: "new",
+        },
+        query: {
+          template: "bb.issue.database.schema.baseline",
+          name: `Establish ${props.database.name} baseline`,
+          project: props.database.project.id,
+          databaseList: `${props.database.id}`,
+        },
+      });
+    };
+
     return {
       state,
       allowConfigInstance,
       attentionTitle,
       migrationHistorySectionList,
       configInstance,
+      doCreateBaseline,
     };
   },
 };
