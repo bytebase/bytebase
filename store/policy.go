@@ -199,3 +199,16 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 
 	return &policy, nil
 }
+
+// GetBackupPlanPolicy will get the backup plan policy for an environment.
+func (s *PolicyService) GetBackupPlanPolicy(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
+	pType := api.PolicyTypeBackupPlan
+	policy, err := s.FindPolicy(ctx, &api.PolicyFind{
+		EnvironmentId: &environmentID,
+		Type:          &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.UnmarshalBackupPlanPolicy(policy.Payload)
+}

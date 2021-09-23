@@ -182,7 +182,8 @@ type BackupSettingUpsert struct {
 	UpdaterId int
 
 	// Related fields
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	DatabaseId    int `jsonapi:"attr,databaseId"`
+	EnvironmentId int
 
 	// Domain specific fields
 	Enabled   bool `jsonapi:"attr,enabled"`
