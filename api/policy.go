@@ -17,9 +17,9 @@ type BackupPlanPolicySchedule string
 
 const (
 	// PolicyTypeApprovalPolicy is the approval policy type.
-	PolicyTypeApprovalPolicy PolicyType = "approval_policy"
+	PolicyTypeApprovalPolicy PolicyType = "bb.policy.approval_policy"
 	// PolicyTypeBackupPlan is the backup plan policy type.
-	PolicyTypeBackupPlan PolicyType = "backup_plan"
+	PolicyTypeBackupPlan PolicyType = "bb.policy.backup_plan"
 
 	// ApprovalPolicyValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
 	ApprovalPolicyValueManualNever ApprovalPolicyValue = "MANUAL_APPROVAL_NEVER"
