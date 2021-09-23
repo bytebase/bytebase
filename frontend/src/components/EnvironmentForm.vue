@@ -39,7 +39,7 @@
               "
               value="MANUAL_APPROVAL_ALWAYS"
               :disabled="!allowEdit"
-              v-model="state.environment.approvalPolicy"
+              v-model="state.approvalPolicy.payload.value"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Require manual approval</div>
@@ -61,7 +61,7 @@
               "
               value="MANUAL_APPROVAL_NEVER"
               :disabled="!allowEdit"
-              v-model="state.environment.approvalPolicy"
+              v-model="state.approvalPolicy.payload.value"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Skip manual approval</div>
@@ -222,6 +222,7 @@ import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
+  approvalPolicy: Policy;
   backupPolicy: Policy;
 }
 
@@ -237,6 +238,10 @@ export default {
       required: true,
       type: Object as PropType<Environment | EnvironmentCreate>,
     },
+    approvalPolicy: {
+      required: true,
+      type: Object as PropType<Policy>,
+    },
     backupPolicy: {
       required: true,
       type: Object as PropType<Policy>,
@@ -246,6 +251,7 @@ export default {
     const store = useStore();
     const state = reactive<LocalState>({
       environment: cloneDeep(props.environment),
+      approvalPolicy: cloneDeep(props.approvalPolicy),
       backupPolicy: cloneDeep(props.backupPolicy),
     });
 
@@ -253,6 +259,13 @@ export default {
       () => props.environment,
       (cur: Environment | EnvironmentCreate) => {
         state.environment = cloneDeep(cur);
+      }
+    );
+
+    watch(
+      () => props.approvalPolicy,
+      (cur: Policy) => {
+        state.approvalPolicy = cloneDeep(cur);
       }
     );
 
@@ -288,6 +301,7 @@ export default {
     const valueChanged = computed(() => {
       return (
         !isEqual(props.environment, state.environment) ||
+        !isEqual(props.approvalPolicy, state.approvalPolicy) ||
         !isEqual(props.backupPolicy, state.backupPolicy)
       );
     });
@@ -301,25 +315,29 @@ export default {
     };
 
     const createEnvironment = () => {
-      emit("create", state.environment, state.backupPolicy);
+      emit(
+        "create",
+        state.environment,
+        state.approvalPolicy,
+        state.backupPolicy
+      );
     };
 
     const updateEnvironment = () => {
-      if (
-        state.environment.name != props.environment!.name ||
-        state.environment.approvalPolicy != props.environment!.approvalPolicy
-      ) {
+      if (state.environment.name != props.environment!.name) {
         const patchedEnvironment: EnvironmentPatch = {};
 
-        if (state.environment.name != props.environment!.name) {
-          patchedEnvironment.name = state.environment.name;
-        }
-        if (
-          state.environment.approvalPolicy != props.environment!.approvalPolicy
-        ) {
-          patchedEnvironment.approvalPolicy = state.environment.approvalPolicy;
-        }
+        patchedEnvironment.name = state.environment.name;
         emit("update", patchedEnvironment);
+      }
+
+      if (state.approvalPolicy != props.approvalPolicy) {
+        emit(
+          "update-policy",
+          (state.environment as Environment).id,
+          "bb.policy.pipeline-approval",
+          state.approvalPolicy
+        );
       }
 
       if (state.backupPolicy != props.backupPolicy) {

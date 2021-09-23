@@ -174,7 +174,6 @@ export const unknown = (
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
-    approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
   };
 
   const UNKNOWN_PROJECT: Project = {
@@ -288,7 +287,9 @@ export const unknown = (
     updatedTs: 0,
     environment: UNKNOWN_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
-    payload: "",
+    payload: {
+      value: "MANUAL_APPROVAL_ALWAYS",
+    },
   };
 
   const UNKNOWN_ISSUE: Issue = {
@@ -498,7 +499,6 @@ export const empty = (
     rowStatus: "NORMAL",
     name: "",
     order: 0,
-    approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
   };
 
   const EMPTY_PROJECT: Project = {
@@ -612,7 +612,9 @@ export const empty = (
     updatedTs: 0,
     environment: EMPTY_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
-    payload: "",
+    payload: {
+      value: "MANUAL_APPROVAL_ALWAYS",
+    },
   };
 
   const EMPTY_ISSUE: Issue = {

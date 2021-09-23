@@ -4,7 +4,13 @@ export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan";
 
-export type PolicyApporvalPolicyPayload = {};
+export type PipelineApprovalPolicyValue =
+  | "MANUAL_APPROVAL_NEVER"
+  | "MANUAL_APPROVAL_ALWAYS";
+
+export type PipelineApporvalPolicyPayload = {
+  value: PipelineApprovalPolicyValue;
+};
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
@@ -13,7 +19,7 @@ export type PolicyBackupPlanPolicyPayload = {
 };
 
 export type PolicyPayload =
-  | PolicyApporvalPolicyPayload
+  | PipelineApporvalPolicyPayload
   | PolicyBackupPlanPolicyPayload;
 
 export type Policy = {

@@ -45,6 +45,7 @@
     <EnvironmentForm
       :create="true"
       :environment="DEFAULT_NEW_ENVIRONMENT"
+      :approvalPolicy="DEFAULT_NEW_APPROVAL_POLICY"
       :backupPolicy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
@@ -93,7 +94,13 @@ import { BBTabItem } from "../bbkit/types";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
-  approvalPolicy: "MANUAL_APPROVAL_ALWAYS",
+};
+
+// The default value should be consistent with the GetDefaultPolicy from the backend.
+const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
+  payload: {
+    value: "MANUAL_APPROVAL_ALWAYS",
+  },
 };
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
@@ -227,21 +234,27 @@ export default {
 
     const doCreate = (
       newEnvironment: EnvironmentCreate,
+      approvalPolicy: Policy,
       backupPolicy: Policy
     ) => {
       store
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((environment: Environment) => {
-          store
-            .dispatch("policy/upsertPolicyByEnvironmentAndType", {
+          Promise.all([
+            store.dispatch("policy/upsertPolicyByEnvironmentAndType", {
+              environmentId: environment.id,
+              type: "bb.policy.pipeline-approval",
+              policyUpsert: { payload: approvalPolicy.payload },
+            }),
+            store.dispatch("policy/upsertPolicyByEnvironmentAndType", {
               environmentId: environment.id,
               type: "bb.policy.backup-plan",
               policyUpsert: { payload: backupPolicy.payload },
-            })
-            .then((policy: Policy) => {
-              state.showCreateModal = false;
-              selectEnvironment(environmentList.value.length - 1);
-            });
+            }),
+          ]).then(() => {
+            state.showCreateModal = false;
+            selectEnvironment(environmentList.value.length - 1);
+          });
         });
     };
 
@@ -312,6 +325,7 @@ export default {
 
     return {
       DEFAULT_NEW_ENVIRONMENT,
+      DEFAULT_NEW_APPROVAL_POLICY,
       DEFAULT_NEW_BACKUP_PLAN_POLICY,
       state,
       environmentList,

@@ -5,6 +5,7 @@
   <EnvironmentForm
     v-if="state.environment"
     :environment="state.environment"
+    :approvalPolicy="state.approvalPolicy"
     :backupPolicy="state.backupPolicy"
     @update="doUpdate"
     @archive="doArchive"
@@ -31,6 +32,7 @@ import { idFromSlug } from "../utils";
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
+  approvalPolicy: Policy;
   backupPolicy: Policy;
 }
 
@@ -55,10 +57,20 @@ export default {
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
+      approvalPolicy: unknown("POLICY") as Policy,
       backupPolicy: unknown("POLICY") as Policy,
     });
 
     const preparePolicy = () => {
+      store
+        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+          environmentId: (state.environment as Environment).id,
+          type: "bb.policy.pipeline-approval",
+        })
+        .then((policy: Policy) => {
+          state.approvalPolicy = policy;
+        });
+
       store
         .dispatch("policy/fetchPolicyByEnvironmentAndType", {
           environmentId: (state.environment as Environment).id,
