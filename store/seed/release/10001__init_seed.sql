@@ -5,8 +5,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -14,8 +13,24 @@ VALUES
         1,
         1,
         'Test',
-        0,
-        "MANUAL_APPROVAL_NEVER"
+        0
+    );
+
+INSERT INTO
+    policy (
+        creator_id,
+        updater_id,
+        environment_id,
+        type,
+        payload
+    )
+VALUES
+    (
+        1,
+        1,
+        101,
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
 INSERT INTO
@@ -24,8 +39,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -33,8 +47,24 @@ VALUES
         1,
         1,
         'Prod',
+        1
+    );
+
+INSERT INTO
+    policy (
+        creator_id,
+        updater_id,
+        environment_id,
+        type,
+        payload
+    )
+VALUES
+    (
         1,
-        "MANUAL_APPROVAL_ALWAYS"
+        1,
+        102,
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
     );
 
 -- Create 1 "test", 1 "prod" instance (including * database and admin data source)
