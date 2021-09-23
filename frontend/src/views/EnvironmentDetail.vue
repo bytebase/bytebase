@@ -5,19 +5,34 @@
   <EnvironmentForm
     v-if="state.environment"
     :environment="state.environment"
+    :backupPolicy="state.backupPolicy"
     @update="doUpdate"
     @archive="doArchive"
     @restore="doRestore"
+    @update-policy="updatePolicy"
   />
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentPatch } from "../types";
+import {
+  Environment,
+  EnvironmentId,
+  EnvironmentPatch,
+  Policy,
+  PolicyType,
+  unknown,
+} from "../types";
 import { idFromSlug } from "../utils";
+
+interface LocalState {
+  environment: Environment;
+  showArchiveModal: boolean;
+  backupPolicy: Policy;
+}
 
 export default {
   name: "EnvironmentDetail",
@@ -35,12 +50,26 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
 
-    const state = reactive({
+    const state = reactive<LocalState>({
       environment: store.getters["environment/environmentById"](
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
+      backupPolicy: unknown("POLICY") as Policy,
     });
+
+    const preparePolicy = () => {
+      store
+        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+          environmentId: (state.environment as Environment).id,
+          type: "backup_plan",
+        })
+        .then((policy: Policy) => {
+          state.backupPolicy = policy;
+        });
+    };
+
+    watchEffect(preparePolicy);
 
     const assignEnvironment = (environment: Environment) => {
       state.environment = environment;
@@ -84,11 +113,30 @@ export default {
         });
     };
 
+    const updatePolicy = (
+      environmentId: EnvironmentId,
+      type: PolicyType,
+      policy: Policy
+    ) => {
+      store
+        .dispatch("policy/upsertPolicyByEnvironmentAndType", {
+          environmentId,
+          type: type,
+          policyUpsert: {
+            payload: policy.payload,
+          },
+        })
+        .then((policy: Policy) => {
+          state.backupPolicy = policy;
+        });
+    };
+
     return {
       state,
       doUpdate,
       doArchive,
       doRestore,
+      updatePolicy,
     };
   },
 };
