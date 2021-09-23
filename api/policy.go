@@ -95,7 +95,29 @@ type PolicyService interface {
 	FindPolicy(ctx context.Context, find *PolicyFind) (*Policy, error)
 	UpsertPolicy(ctx context.Context, upsert *PolicyUpsert) (*Policy, error)
 	GetBackupPlanPolicy(ctx context.Context, environmentID int) (*BackupPlanPolicy, error)
-	GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (PipelineApprovalValue, error)
+	GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*PipelineApprovalPolicy, error)
+}
+
+// PipelineApprovalPolicy is the policy configuration for pipeline approval
+type PipelineApprovalPolicy struct {
+	Value PipelineApprovalValue `json:"value"`
+}
+
+func (pa PipelineApprovalPolicy) String() (string, error) {
+	s, err := json.Marshal(pa)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// UnmarshalPipelineApprovalPolicy will unmarshal payload to pipeline approval policy.
+func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, error) {
+	var pa PipelineApprovalPolicy
+	if err := json.Unmarshal([]byte(payload), &pa); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q: %q", payload, err)
+	}
+	return &pa, nil
 }
 
 // BackupPlanPolicy is the policy configuration for backup plan.
@@ -131,8 +153,11 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 
 	switch pType {
 	case PolicyTypePipelineApproval:
-		pv := PipelineApprovalValue(payload)
-		if pv != PipelineApprovalValueManualNever && pv != PipelineApprovalValueManualAlways {
+		pa, err := UnmarshalPipelineApprovalPolicy(payload)
+		if err != nil {
+			return err
+		}
+		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
 	case PolicyTypeBackupPlan:
@@ -152,7 +177,9 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 func GetDefaultPolicy(pType PolicyType) (string, error) {
 	switch pType {
 	case PolicyTypePipelineApproval:
-		return "", nil
+		return PipelineApprovalPolicy{
+			Value: PipelineApprovalValueManualAlways,
+		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,

@@ -233,7 +233,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 								createIgnoredFileActivity(fmt.Errorf("failed to find pipeline approval policy for environment %v", database.Instance.EnvironmentId))
 								continue
 							}
-							pipelineApprovalByEnv[database.Instance.EnvironmentId] = p
+							pipelineApprovalByEnv[database.Instance.EnvironmentId] = p.Value
 						}
 					}
 
