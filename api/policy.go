@@ -95,6 +95,7 @@ type PolicyService interface {
 	FindPolicy(ctx context.Context, find *PolicyFind) (*Policy, error)
 	UpsertPolicy(ctx context.Context, upsert *PolicyUpsert) (*Policy, error)
 	GetBackupPlanPolicy(ctx context.Context, environmentID int) (*BackupPlanPolicy, error)
+	GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (PipelineApprovalValue, error)
 }
 
 // BackupPlanPolicy is the policy configuration for backup plan.
