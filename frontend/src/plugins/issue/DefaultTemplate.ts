@@ -15,7 +15,7 @@ const template: IssueTemplate = {
         stageList: [
           {
             name: "Troubleshoot database",
-            environmentId: ctx.environmentList[0].id,
+            environmentId: UNKNOWN_ID,
             taskList: [
               {
                 name: "Troubleshoot database",

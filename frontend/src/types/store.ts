@@ -1,4 +1,4 @@
-import { MigrationHistoryId } from ".";
+import { EnvironmentId, MigrationHistoryId, Policy, PolicyType } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
@@ -84,6 +84,10 @@ export interface PipelineState {}
 export interface StageState {}
 
 export interface TaskState {}
+
+export interface PolicyState {
+  policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
+}
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;

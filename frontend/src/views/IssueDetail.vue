@@ -302,6 +302,7 @@ import {
   IssueId,
   MigrationType,
   TaskPatch,
+  Policy,
 } from "../types";
 import {
   defaulTemplate,
@@ -438,7 +439,8 @@ export default {
         }
 
         if (validState) {
-          const environmentList: Environment[] = [];
+          let environmentList: Environment[] = [];
+          const approvalPolicyList: Policy[] = [];
           const databaseList: Database[] = [];
           const statementList: string[] = [];
           const rollbackStatementList: string[] = [];
@@ -459,6 +461,12 @@ export default {
                 )
               ) {
                 environmentList.push(stage.environment);
+                approvalPolicyList.push(
+                  store.getters["policy/policyByEnvironmentIdAndType"](
+                    stage.environment.id,
+                    "bb.policy.pipeline-approval"
+                  )
+                );
                 databaseList.push(task.database!);
                 statementList.push(
                   (task.payload as TaskDatabaseSchemaUpdatePayload)
@@ -474,7 +482,8 @@ export default {
           if (environmentList.length == 0) {
             newIssue = {
               ...defaulTemplate().buildIssue({
-                environmentList: store.getters["environment/environmentList"](),
+                environmentList: [],
+                approvalPolicyList: [],
                 databaseList: [],
                 currentUser: currentUser.value,
               }),
@@ -485,6 +494,7 @@ export default {
             newIssue = {
               ...newIssueTemplate.value.buildIssue({
                 environmentList,
+                approvalPolicyList,
                 databaseList,
                 statementList,
                 rollbackStatementList,
@@ -501,7 +511,8 @@ export default {
         } else {
           newIssue = {
             ...defaulTemplate().buildIssue({
-              environmentList: store.getters["environment/environmentList"](),
+              environmentList: [],
+              approvalPolicyList: [],
               databaseList: [],
               currentUser: currentUser.value,
             }),
@@ -524,6 +535,7 @@ export default {
         }
 
         const environmentList: Environment[] = [];
+        const approvalPolicyList: Policy[] = [];
         if (router.currentRoute.value.query.environment) {
           environmentList.push(
             store.getters["environment/environmentById"](
@@ -540,9 +552,19 @@ export default {
           );
         }
 
+        for (const environment of environmentList) {
+          approvalPolicyList.push(
+            store.getters["policy/policyByEnvironmentIdAndType"](
+              environment.id,
+              "bb.policy.pipeline-approval"
+            )
+          );
+        }
+
         newIssue = {
           ...newIssueTemplate.value.buildIssue({
             environmentList,
+            approvalPolicyList,
             databaseList,
             currentUser: currentUser.value,
           }),

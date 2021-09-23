@@ -1,15 +1,15 @@
 import axios from "axios";
 import {
-  EnvironmentId,
-  Environment,
-  EnvironmentCreate,
-  EnvironmentState,
-  ResourceObject,
-  unknown,
-  RowStatus,
-  EnvironmentPatch,
   empty,
   EMPTY_ID,
+  Environment,
+  EnvironmentCreate,
+  EnvironmentId,
+  EnvironmentPatch,
+  EnvironmentState,
+  ResourceObject,
+  RowStatus,
+  unknown,
 } from "../../types";
 
 function convert(
@@ -66,7 +66,7 @@ const getters = {
 
 const actions = {
   async fetchEnvironmentList(
-    { commit, rootGetters }: any,
+    { dispatch, commit, rootGetters }: any,
     rowStatusList?: RowStatus[]
   ) {
     const path =
@@ -79,11 +79,24 @@ const actions = {
 
     commit("upsertEnvironmentList", environmentList);
 
+    for (const environment of environmentList) {
+      await dispatch(
+        "policy/fetchPolicyByEnvironmentAndType",
+        {
+          environmentId: environment.id,
+          type: "bb.policy.pipeline-approval",
+        },
+        {
+          root: true,
+        }
+      );
+    }
+
     return environmentList;
   },
 
   async createEnvironment(
-    { commit, rootGetters }: any,
+    { dispatch, commit, rootGetters }: any,
     newEnvironment: EnvironmentCreate
   ) {
     const data = (
@@ -97,6 +110,17 @@ const actions = {
     const createdEnvironment = convert(data.data, data.included, rootGetters);
 
     commit("upsertEnvironmentList", [createdEnvironment]);
+
+    await dispatch(
+      "policy/fetchPolicyByEnvironmentAndType",
+      {
+        environmentId: createdEnvironment.id,
+        type: "bb.policy.pipeline-approval",
+      },
+      {
+        root: true,
+      }
+    );
 
     return createdEnvironment;
   },
