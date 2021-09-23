@@ -62,7 +62,7 @@ export default {
       store
         .dispatch("policy/fetchPolicyByEnvironmentAndType", {
           environmentId: (state.environment as Environment).id,
-          type: "backup_plan",
+          type: "bb.policy.backup-plan",
         })
         .then((policy: Policy) => {
           state.backupPolicy = policy;

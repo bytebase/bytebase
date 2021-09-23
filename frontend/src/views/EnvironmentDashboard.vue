@@ -99,7 +99,7 @@ const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
   payload: {
-    schedule: "NEVER",
+    schedule: "UNSET",
   },
 };
 
@@ -235,7 +235,7 @@ export default {
           store
             .dispatch("policy/upsertPolicyByEnvironmentAndType", {
               environmentId: environment.id,
-              type: "backup_plan",
+              type: "bb.policy.backup-plan",
               policyUpsert: { payload: backupPolicy.payload },
             })
             .then((policy: Policy) => {
