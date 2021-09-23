@@ -9,22 +9,22 @@ import (
 // PolicyType is the type or name of a policy.
 type PolicyType string
 
-// ApprovalPolicyValue is value for approval policy.
-type ApprovalPolicyValue string
+// PipelineApprovalValue is value for approval policy.
+type PipelineApprovalValue string
 
 // BackupPlanPolicySchedule is value for backup plan policy.
 type BackupPlanPolicySchedule string
 
 const (
-	// PolicyTypeApprovalPolicy is the approval policy type.
-	PolicyTypeApprovalPolicy PolicyType = "bb.policy.approval_policy"
+	// PolicyTypePipelineApproval is the approval policy type.
+	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.
-	PolicyTypeBackupPlan PolicyType = "bb.policy.backup_plan"
+	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 
-	// ApprovalPolicyValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
-	ApprovalPolicyValueManualNever ApprovalPolicyValue = "MANUAL_APPROVAL_NEVER"
-	// ApprovalPolicyValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
-	ApprovalPolicyValueManualAlways ApprovalPolicyValue = "MANUAL_APPROVAL_ALWAYS"
+	// PipelineApprovalValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
+	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
+	// PipelineApprovalValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
+	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
@@ -37,8 +37,8 @@ const (
 var (
 	// PolicyTypes is a set of all policy types.
 	PolicyTypes = map[PolicyType]bool{
-		PolicyTypeApprovalPolicy: true,
-		PolicyTypeBackupPlan:     true,
+		PolicyTypePipelineApproval: true,
+		PolicyTypeBackupPlan:       true,
 	}
 )
 
@@ -129,9 +129,9 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 	}
 
 	switch pType {
-	case PolicyTypeApprovalPolicy:
-		pv := ApprovalPolicyValue(payload)
-		if pv != ApprovalPolicyValueManualNever && pv != ApprovalPolicyValueManualAlways {
+	case PolicyTypePipelineApproval:
+		pv := PipelineApprovalValue(payload)
+		if pv != PipelineApprovalValueManualNever && pv != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
 	case PolicyTypeBackupPlan:
@@ -150,7 +150,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 // The default policy can be empty when we don't have anything to enforce at runtime.
 func GetDefaultPolicy(pType PolicyType) (string, error) {
 	switch pType {
-	case PolicyTypeApprovalPolicy:
+	case PolicyTypePipelineApproval:
 		return "", nil
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
