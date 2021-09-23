@@ -1,10 +1,12 @@
 import { Environment, PolicyId, Principal } from ".";
 
-export type PolicyType = "approval_policy" | "backup_plan";
+export type PolicyType =
+  | "bb.policy.pipeline-approval"
+  | "bb.policy.backup-plan";
 
 export type PolicyApporvalPolicyPayload = {};
 
-export type BackupPlanPolicySchedule = "NEVER" | "DAILY" | "WEEKLY";
+export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
 export type PolicyBackupPlanPolicyPayload = {
   schedule: BackupPlanPolicySchedule;

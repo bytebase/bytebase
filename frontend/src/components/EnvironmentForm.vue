@@ -85,7 +85,7 @@
                 disabled:text-accent-disabled
                 focus:ring-accent
               "
-              value="NEVER"
+              value="UNSET"
               :disabled="!allowEdit"
               v-model="state.backupPolicy.payload.schedule"
             />
@@ -326,7 +326,7 @@ export default {
         emit(
           "update-policy",
           (state.environment as Environment).id,
-          "backup_plan",
+          "bb.policy.backup-plan",
           state.backupPolicy
         );
       }

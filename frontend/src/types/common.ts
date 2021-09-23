@@ -287,7 +287,7 @@ export const unknown = (
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     environment: UNKNOWN_ENVIRONMENT,
-    type: "approval_policy",
+    type: "bb.policy.pipeline-approval",
     payload: "",
   };
 
@@ -611,7 +611,7 @@ export const empty = (
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     environment: EMPTY_ENVIRONMENT,
-    type: "approval_policy",
+    type: "bb.policy.pipeline-approval",
     payload: "",
   };
 
