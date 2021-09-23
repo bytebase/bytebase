@@ -58,15 +58,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 }
 
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
-	pType := api.PolicyTypeBackupPlan
-	policy, err := s.policyService.FindPolicy(ctx, &api.PolicyFind{
-		EnvironmentId: &create.EnvironmentId,
-		Type:          &pType,
-	})
-	if err != nil {
-		return nil, err
-	}
-	backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
+	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +69,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	}
 
 	// Enable automatic backup setting based on backup plan policy.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleNever {
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
 			UpdaterId:  api.SYSTEM_BOT_ID,
 			DatabaseId: database.ID,

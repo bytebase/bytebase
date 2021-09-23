@@ -482,13 +482,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		db, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.ENOTFOUND {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
+		backupSettingUpsert.EnvironmentId = db.Instance.Environment.ID
 
 		backupSetting, err := s.BackupService.UpsertBackupSetting(context.Background(), backupSettingUpsert)
 		if err != nil {

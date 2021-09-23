@@ -26,8 +26,8 @@ const (
 	// ApprovalPolicyValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
 	ApprovalPolicyValueManualAlways ApprovalPolicyValue = "MANUAL_APPROVAL_ALWAYS"
 
-	// BackupPlanPolicyScheduleNever is NEVER backup plan policy value.
-	BackupPlanPolicyScheduleNever BackupPlanPolicySchedule = "NEVER"
+	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
+	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
 	// BackupPlanPolicyScheduleDaily is DAILY backup plan policy value.
 	BackupPlanPolicyScheduleDaily BackupPlanPolicySchedule = "DAILY"
 	// BackupPlanPolicyScheduleWeekly is WEEKLY backup plan policy value.
@@ -96,6 +96,7 @@ type PolicyUpsert struct {
 type PolicyService interface {
 	FindPolicy(ctx context.Context, find *PolicyFind) (*Policy, error)
 	UpsertPolicy(ctx context.Context, upsert *PolicyUpsert) (*Policy, error)
+	GetBackupPlanPolicy(ctx context.Context, environmentID int) (*BackupPlanPolicy, error)
 }
 
 // BackupPlanPolicy is the policy configuration for backup plan.
@@ -140,7 +141,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if err != nil {
 			return err
 		}
-		if bp.Schedule != BackupPlanPolicyScheduleNever && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
+		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
 	}
@@ -155,7 +156,7 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return "", nil
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
-			Schedule: BackupPlanPolicyScheduleNever,
+			Schedule: BackupPlanPolicyScheduleUnset,
 		}.String()
 	}
 	return "", nil

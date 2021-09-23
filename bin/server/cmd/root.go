@@ -287,7 +287,7 @@ func (m *main) Run() error {
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
 	s.EnvironmentService = store.NewEnvironmentService(m.l, db, s.CacheService)
 	s.DataSourceService = store.NewDataSourceService(m.l, db)
-	s.BackupService = store.NewBackupService(m.l, db)
+	s.BackupService = store.NewBackupService(m.l, db, s.PolicyService)
 	s.DatabaseService = store.NewDatabaseService(m.l, db, s.CacheService, s.PolicyService, s.BackupService)
 	s.InstanceService = store.NewInstanceService(m.l, db, s.CacheService, s.DatabaseService, s.DataSourceService)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)

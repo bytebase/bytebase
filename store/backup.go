@@ -17,13 +17,14 @@ var (
 
 // BackupService represents a service for managing backup.
 type BackupService struct {
-	l  *zap.Logger
-	db *DB
+	l             *zap.Logger
+	db            *DB
+	policyService api.PolicyService
 }
 
 // NewBackupService returns a new instance of BackupService.
-func NewBackupService(logger *zap.Logger, db *DB) *BackupService {
-	return &BackupService{l: logger, db: db}
+func NewBackupService(logger *zap.Logger, db *DB, policyService api.PolicyService) *BackupService {
+	return &BackupService{l: logger, db: db, policyService: policyService}
 }
 
 // CreateBackup creates a new backup.
@@ -359,6 +360,27 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 
 // UpsertBackupSetting sets the backup settings for a database.
 func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, upsert.EnvironmentId)
+	if err != nil {
+		return nil, err
+	}
+	// Backup plan policy check for backup setting mutation.
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
+		if !upsert.Enabled {
+			return nil, &common.Error{Code: common.EINVALID, Message: fmt.Sprintf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+		}
+		switch backupPlanPolicy.Schedule {
+		case api.BackupPlanPolicyScheduleDaily:
+			if upsert.DayOfWeek != -1 {
+				return nil, &common.Error{Code: common.EINVALID, Message: fmt.Sprintf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		case api.BackupPlanPolicyScheduleWeekly:
+			if upsert.DayOfWeek == -1 {
+				return nil, &common.Error{Code: common.EINVALID, Message: fmt.Sprintf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
