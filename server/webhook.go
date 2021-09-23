@@ -212,6 +212,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					filterdDatabaseList = databaseList
 				}
 
+				var pipelineApprovalByEnv = map[int]api.PipelineApprovalValue{}
 				{
 					// It could happen that for a particular environment a project contain 2 database with the same name.
 					// We will emit warning in this case.
@@ -223,6 +224,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						} else {
 							list := make([]*api.Database, 0)
 							databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
+						}
+
+						// Load pipeline approval policy per environment.
+						if _, ok := pipelineApprovalByEnv[database.Instance.EnvironmentId]; !ok {
+							p, err := s.PolicyService.GetPipelineApprovalPolicy(context.Background(), database.Instance.EnvironmentId)
+							if err != nil {
+								createIgnoredFileActivity(fmt.Errorf("failed to find pipeline approval policy for environment %v", database.Instance.EnvironmentId))
+								continue
+							}
+							pipelineApprovalByEnv[database.Instance.EnvironmentId] = p
 						}
 					}
 
@@ -248,7 +259,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				for _, database := range filterdDatabaseList {
 					databaseID := database.ID
 					taskStatus := api.TaskPendingApproval
-					if database.Instance.Environment.ApprovalPolicy == api.ManualApprovalNever {
+					if pipelineApprovalByEnv[database.Instance.Environment.ID] == api.PipelineApprovalValueManualNever {
 						taskStatus = api.TaskPending
 					}
 					task := &api.TaskCreate{

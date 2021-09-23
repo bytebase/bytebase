@@ -7,23 +7,8 @@ import (
 
 // Approval policy only controls updating schema on the existing database.
 // For creating new database, Developer always requires manual approval, while Owner and DBA doesn't
+// TODO(spinningbot): remove this once fully migrate to standard policy type.
 type ApprovalPolicy string
-
-const (
-	// We name this way because we may add approval policy lying in between. (e.g. only DDL change requires manual approval)
-	ManualApprovalNever  ApprovalPolicy = "MANUAL_APPROVAL_NEVER"
-	ManualApprovalAlways ApprovalPolicy = "MANUAL_APPROVAL_ALWAYS"
-)
-
-func (e ApprovalPolicy) String() string {
-	switch e {
-	case ManualApprovalNever:
-		return "MANUAL_APPROVAL_NEVER"
-	case ManualApprovalAlways:
-		return "MANUAL_APPROVAL_ALWAYS"
-	}
-	return "UNKNOWN"
-}
 
 type Environment struct {
 	ID int `jsonapi:"primary,environment"`
