@@ -4,8 +4,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -13,8 +12,7 @@ VALUES
         101,
         101,
         'Dev',
-        0,
-        'MANUAL_APPROVAL_NEVER'
+        0
     );
 
 INSERT INTO
@@ -23,8 +21,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -32,8 +29,7 @@ VALUES
         101,
         101,
         'Integration',
-        1,
-        'MANUAL_APPROVAL_NEVER'
+        1
     );
 
 INSERT INTO
@@ -42,8 +38,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -51,8 +46,7 @@ VALUES
         101,
         101,
         'Staging',
-        2,
-        'MANUAL_APPROVAL_ALWAYS'
+        2
     );
 
 INSERT INTO
@@ -61,8 +55,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -70,8 +63,7 @@ VALUES
         101,
         101,
         'Prod',
-        3,
-        'MANUAL_APPROVAL_ALWAYS'
+        3
     );
 
 INSERT INTO
@@ -81,8 +73,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `order`,
-        approval_policy
+        `order`
     )
 VALUES
     (
@@ -91,6 +82,5 @@ VALUES
         101,
         101,
         'Archived Env 1',
-        4,
-        'MANUAL_APPROVAL_NEVER'
+        4
     );
