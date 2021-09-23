@@ -17,7 +17,7 @@ function convert(
   rootGetters: any
 ): Activity {
   const payload = activity.attributes.payload
-    ? JSON.parse(activity.attributes.payload as string) || {}
+    ? JSON.parse((activity.attributes.payload as string) || "{}")
     : {};
 
   return {

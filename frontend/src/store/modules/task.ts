@@ -28,7 +28,7 @@ function convertTaskRun(
   rootGetters: any
 ): TaskRun {
   const payload = taskRun.attributes.payload
-    ? JSON.parse(taskRun.attributes.payload as string) || {}
+    ? JSON.parse((taskRun.attributes.payload as string) || "{}")
     : {};
 
   return {
@@ -44,11 +44,11 @@ function convertTaskCheckRun(
   rootGetters: any
 ): TaskCheckRun {
   const result = taskCheckRun.attributes.result
-    ? JSON.parse(taskCheckRun.attributes.result as string) || {}
+    ? JSON.parse((taskCheckRun.attributes.result as string) || "{}")
     : {};
 
   const payload = taskCheckRun.attributes.payload
-    ? JSON.parse(taskCheckRun.attributes.payload as string) || {}
+    ? JSON.parse((taskCheckRun.attributes.payload as string) || "{}")
     : {};
 
   return {
@@ -70,7 +70,7 @@ function convertPartial(
   const creator = task.attributes.creator as Principal;
   const updater = task.attributes.updater as Principal;
   const payload = task.attributes.payload
-    ? JSON.parse(task.attributes.payload as string) || {}
+    ? JSON.parse((task.attributes.payload as string) || "{}")
     : {};
 
   const taskRunList: TaskRun[] = [];

@@ -35,7 +35,7 @@ const saveStateByKey = function (
   state: boolean
 ): boolean {
   const item = localStorage.getItem(module);
-  const fullState = item ? JSON.parse(item) || {} : {};
+  const fullState = item ? JSON.parse(item) : {};
   fullState[key] = state;
   localStorage.setItem(module, JSON.stringify(fullState));
   return fullState[key];
@@ -59,14 +59,12 @@ const actions = {
   async restoreState({ commit }: any) {
     const storedCollapseState = localStorage.getItem(COLLAPSE_MODULE);
     const collapseState = storedCollapseState
-      ? JSON.parse(storedCollapseState) || {}
+      ? JSON.parse(storedCollapseState)
       : {};
     commit("setCollapseState", collapseState);
 
     const storedIntroState = localStorage.getItem(INTRO_MODULE);
-    const introState = storedIntroState
-      ? JSON.parse(storedIntroState) || {}
-      : {};
+    const introState = storedIntroState ? JSON.parse(storedIntroState) : {};
     commit("setIntroState", introState);
   },
 
