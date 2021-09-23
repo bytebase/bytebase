@@ -231,7 +231,10 @@
         <DatabaseOverviewPanel :database="database" />
       </template>
       <template v-if="state.selectedIndex == MIGRAITON_HISTORY_TAB">
-        <DatabaseMigrationHistoryPanel :database="database" />
+        <DatabaseMigrationHistoryPanel
+          :database="database"
+          :allowEdit="allowEdit"
+        />
       </template>
       <template v-if="state.selectedIndex == BACKUP_TAB">
         <DatabaseBackupPanel

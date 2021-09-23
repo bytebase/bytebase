@@ -1,22 +1,26 @@
-import { FieldId, IssueTemplate, FieldInfo } from "../types";
 import { IssueType } from "../../types";
-import DefaultTemplate from "./DefaultTemplate";
+import { FieldId, FieldInfo, IssueTemplate } from "../types";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
 import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
+import DatabaseSchemaBaselineTemplate from "./DatabaseSchemaBaselineTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
+import DefaultTemplate from "./DefaultTemplate";
+
+type TemplateType = IssueType | "bb.issue.database.schema.baseline";
 
 const allIssueTemplateList: IssueTemplate[] = [
   DefaultTemplate,
   DatabaseCreateTemplate,
   DatabaseGrantTemplate,
   DatabaseSchemaUpdateTemplate,
+  DatabaseSchemaBaselineTemplate,
 ];
 
 export function defaulTemplate(): IssueTemplate {
   return DefaultTemplate;
 }
 
-export function templateForType(type: IssueType): IssueTemplate | undefined {
+export function templateForType(type: TemplateType): IssueTemplate | undefined {
   return allIssueTemplateList.find((template) => template.type === type);
 }
 
