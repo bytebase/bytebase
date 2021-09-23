@@ -134,6 +134,23 @@ func (e MigrationType) String() string {
 	return "UNKNOWN"
 }
 
+type MigrationStatus string
+
+const (
+	Pending MigrationStatus = "PENDING"
+	Done    MigrationStatus = "DONE"
+)
+
+func (e MigrationStatus) String() string {
+	switch e {
+	case Pending:
+		return "PENDING"
+	case Done:
+		return "DONE"
+	}
+	return "UNKNOWN"
+}
+
 type MigrationInfoPayload struct {
 	VCSPushEvent *common.VCSPushEvent `json:"pushEvent,omitempty"`
 }
@@ -145,6 +162,7 @@ type MigrationInfo struct {
 	Environment string
 	Engine      MigrationEngine
 	Type        MigrationType
+	Status      MigrationStatus
 	Description string
 	Creator     string
 	IssueId     string
@@ -238,6 +256,7 @@ type MigrationHistory struct {
 	Sequence          int
 	Engine            MigrationEngine
 	Type              MigrationType
+	Status            MigrationStatus
 	Version           string
 	Description       string
 	Statement         string

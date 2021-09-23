@@ -125,6 +125,7 @@ type MigrationHistory struct {
 	Database          string             `jsonapi:"attr,database"`
 	Engine            db.MigrationEngine `jsonapi:"attr,engine"`
 	Type              db.MigrationType   `jsonapi:"attr,type"`
+	Status            db.MigrationStatus `jsonapi:"attr,status"`
 	Version           string             `jsonapi:"attr,version"`
 	Description       string             `jsonapi:"attr,description"`
 	Statement         string             `jsonapi:"attr,statement"`
