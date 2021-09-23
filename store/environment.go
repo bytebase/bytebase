@@ -166,17 +166,15 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 			creator_id,
 			updater_id,
 			name,
-			`+"`order`"+`,
-			approval_policy
+			`+"`order`"+`
 		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`, approval_policy"+`
+		VALUES (?, ?, ?, ?)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
 		create.Name,
 		order+1,
-		create.ApprovalPolicy,
 	)
 
 	if err2 != nil {
@@ -195,7 +193,6 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 		&environment.UpdatedTs,
 		&environment.Name,
 		&environment.Order,
-		&environment.ApprovalPolicy,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -222,8 +219,7 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 		    updater_id,
 		    updated_ts,
 		    name,
-		    `+"`order`"+`,
-			approval_policy
+		    `+"`order`"+`
 		FROM environment
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -246,7 +242,6 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 			&environment.UpdatedTs,
 			&environment.Name,
 			&environment.Order,
-			&environment.ApprovalPolicy,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -273,9 +268,6 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 	if v := patch.Order; v != nil {
 		set, args = append(set, "`order` = ?"), append(args, *v)
 	}
-	if v := patch.ApprovalPolicy; v != nil {
-		set, args = append(set, "approval_policy = ?"), append(args, *v)
-	}
 
 	args = append(args, patch.ID)
 
@@ -284,7 +276,7 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 		UPDATE environment
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`, approval_policy"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`"+`
 	`,
 		args...,
 	)
@@ -304,7 +296,6 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 			&environment.UpdatedTs,
 			&environment.Name,
 			&environment.Order,
-			&environment.ApprovalPolicy,
 		); err != nil {
 			return nil, FormatError(err)
 		}
