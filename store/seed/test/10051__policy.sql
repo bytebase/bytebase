@@ -13,8 +13,8 @@ VALUES
         101,
         101,
         5001,
-        'approval_policy',
-        'MANUAL_APPROVAL_NEVER'
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
 INSERT INTO
@@ -32,8 +32,8 @@ VALUES
         101,
         101,
         5002,
-        'approval_policy',
-        'MANUAL_APPROVAL_NEVER'
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
 INSERT INTO
@@ -51,8 +51,8 @@ VALUES
         101,
         101,
         5003,
-        'approval_policy',
-        'MANUAL_APPROVAL_ALWAYS'
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
     );
 
 INSERT INTO
@@ -70,8 +70,8 @@ VALUES
         101,
         101,
         5004,
-        'approval_policy',
-        'MANUAL_APPROVAL_NEVER'
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
 INSERT INTO
@@ -89,8 +89,8 @@ VALUES
         101,
         101,
         5005,
-        'approval_policy',
-        'MANUAL_APPROVAL_NEVER'
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
 -- Test upsert.
@@ -107,8 +107,8 @@ VALUES
         101,
         101,
         5004,
-        'approval_policy',
-        'MANUAL_APPROVAL_ALWAYS'
+        'bb.policy.pipeline-approval',
+        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
     )
     ON CONFLICT(environment_id, type) DO UPDATE SET
 				payload = excluded.payload;

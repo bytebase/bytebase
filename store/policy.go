@@ -216,14 +216,14 @@ func (s *PolicyService) GetBackupPlanPolicy(ctx context.Context, environmentID i
 }
 
 // GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.
-func (s *PolicyService) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (api.PipelineApprovalValue, error) {
+func (s *PolicyService) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
 	pType := api.PolicyTypePipelineApproval
 	policy, err := s.FindPolicy(ctx, &api.PolicyFind{
 		EnvironmentId: &environmentID,
 		Type:          &pType,
 	})
 	if err != nil {
-		return api.PipelineApprovalValueManualNever, err
+		return nil, err
 	}
-	return api.PipelineApprovalValue(policy.Payload), nil
+	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 }
