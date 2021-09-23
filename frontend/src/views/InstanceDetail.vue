@@ -80,9 +80,9 @@
     :okText="'Create'"
     :title="'Create migration schema?'"
     :description="'Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.'"
+    :inProgress="state.creatingMigrationSchema"
     @ok="
       () => {
-        state.showCreateMigrationSchemaModal = false;
         doCreateMigrationSchema();
       }
     "
@@ -116,6 +116,7 @@ interface LocalState {
   selectedIndex: number;
   migrationSetupStatus: MigrationSchemaStatus;
   showCreateMigrationSchemaModal: boolean;
+  creatingMigrationSchema: boolean;
 }
 
 export default {
@@ -142,6 +143,7 @@ export default {
       selectedIndex: DATABASE_TAB,
       migrationSetupStatus: "OK",
       showCreateMigrationSchemaModal: false,
+      creatingMigrationSchema: false,
     });
 
     const instance = computed((): Instance => {
@@ -278,9 +280,11 @@ export default {
     };
 
     const doCreateMigrationSchema = () => {
+      state.creatingMigrationSchema = true;
       store
         .dispatch("instance/createMigrationSetup", instance.value.id)
         .then((resultSet: SqlResultSet) => {
+          state.creatingMigrationSchema = false;
           if (resultSet.error) {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
@@ -296,6 +300,7 @@ export default {
               title: `Successfully created migration schema for '${instance.value.name}'.`,
             });
           }
+          state.showCreateMigrationSchemaModal = false;
         });
     };
 
