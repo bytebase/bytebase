@@ -28,7 +28,7 @@ const template: IssueTemplate = {
     return {
       name:
         ctx.databaseList.length == 1
-          ? `Establish ${ctx.databaseList[0].name} baseline`
+          ? `[${ctx.databaseList[0].name}] Establish baseline`
           : "Establish database baseline",
       type: "bb.issue.database.schema.update",
       description: "",
@@ -37,7 +37,7 @@ const template: IssueTemplate = {
         stageList,
         name:
           ctx.databaseList.length == 1
-            ? `Establish ${ctx.databaseList[0].name} baseline pipeline`
+            ? `[${ctx.databaseList[0].name}] Establish baseline pipeline`
             : "Establish database baseline pipeline",
       },
       payload,
