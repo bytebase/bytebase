@@ -13,6 +13,8 @@ export type SettingId = IdType;
 
 export type BookmarkId = IdType;
 
+export type PolicyId = IdType;
+
 export type ProjectId = IdType;
 
 export type ProjectWebhookId = IdType;

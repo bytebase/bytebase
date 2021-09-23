@@ -43,7 +43,7 @@ var (
 )
 
 type Policy struct {
-	ID int `jsonapi:"primary,environment"`
+	ID int `jsonapi:"primary,policy"`
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
@@ -55,10 +55,8 @@ type Policy struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentId int `jsonapi:"attr,environmentId"`
-	// Do not return this to the client since the client always has the database context and fetching the
-	// database object and all its own related objects is a bit expensive.
-	Environment *Environment
+	EnvironmentId int
+	Environment   *Environment `jsonapi:"relation,environment"`
 
 	// Domain specific fields
 	Type    PolicyType `jsonapi:"attr,type"`
@@ -101,7 +99,7 @@ type PolicyService interface {
 
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
-	Schedule BackupPlanPolicySchedule `jsonapi:"attr,schedule"`
+	Schedule BackupPlanPolicySchedule `json:"schedule"`
 }
 
 func (bp BackupPlanPolicy) String() (string, error) {

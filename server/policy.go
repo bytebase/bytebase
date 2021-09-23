@@ -35,6 +35,10 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
 		}
 
+		if err := s.ComposePolicyRelationship(context.Background(), policy); err != nil {
+			return err
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create set policy response").SetInternal(err)
@@ -60,10 +64,35 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy for type %q", pType)).SetInternal(err)
 		}
 
+		if err := s.ComposePolicyRelationship(context.Background(), policy); err != nil {
+			return err
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get policy response: %v", pType)).SetInternal(err)
 		}
 		return nil
 	})
+}
+
+func (s *Server) ComposePolicyRelationship(ctx context.Context, policy *api.Policy) error {
+	var err error
+
+	policy.Creator, err = s.ComposePrincipalById(context.Background(), policy.CreatorId)
+	if err != nil {
+		return err
+	}
+
+	policy.Updater, err = s.ComposePrincipalById(context.Background(), policy.UpdaterId)
+	if err != nil {
+		return err
+	}
+
+	policy.Environment, err = s.ComposeEnvironmentById(context.Background(), policy.EnvironmentId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
