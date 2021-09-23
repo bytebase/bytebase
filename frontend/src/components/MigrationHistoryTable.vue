@@ -12,32 +12,37 @@
       <template v-if="mode == 'DATABASE'">
         <BBTableHeaderCell
           :leftPadding="4"
-          class="w-8"
+          class="w-2"
+          :title="columnList[0].title"
+        />
+        <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-32" :title="columnList[6].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[8].title" />
+      </template>
+      <template v-else>
+        <BBTableHeaderCell
+          :leftPadding="4"
+          class="w-2"
           :title="columnList[0].title"
         />
         <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-32" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-32" :title="columnList[5].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
       </template>
-      <template v-else>
-        <BBTableHeaderCell
-          :leftPadding="4"
-          class="w-16"
-          :title="columnList[0].title"
-        />
-        <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-32" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
-      </template>
     </template>
     <template v-slot:body="{ rowData: history }">
+      <BBTableCell>
+        <MigrationHistoryStatusIcon :status="history.status" />
+      </BBTableCell>
       <BBTableCell v-if="mode == 'DATABASE'" :leftPadding="4">
         {{ history.engine }}
       </BBTableCell>
@@ -75,6 +80,7 @@ import { PropType } from "vue";
 import { Database, MigrationHistory } from "../types";
 import { databaseSlug, migrationHistorySlug, secondsToString } from "../utils";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import MigrationHistoryStatusIcon from "./MigrationHistoryStatusIcon.vue";
 import { useRouter } from "vue-router";
 
 type Mode = "DATABASE" | "PROJECT";
@@ -83,6 +89,9 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
   [
     "DATABASE",
     [
+      {
+        title: "",
+      },
       {
         title: "Workflow",
       },
@@ -112,6 +121,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
   [
     "PROJECT",
     [
+      { title: "" },
       {
         title: "Version",
       },
@@ -139,7 +149,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 
 export default {
   name: "MigrationHistoryTable",
-  components: {},
+  components: { MigrationHistoryStatusIcon },
   props: {
     mode: {
       default: "DATABASE",

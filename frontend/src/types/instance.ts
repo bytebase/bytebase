@@ -69,6 +69,8 @@ export type MigrationEngine = "UI" | "VCS";
 
 export type MigrationType = "BASELINE" | "MIGRATE" | "BRANCH";
 
+export type MigrationStatus = "PENDING" | "DONE";
+
 export type MigrationHistoryPayload = {
   pushEvent?: VCSPushEvent;
 };
@@ -82,6 +84,7 @@ export type MigrationHistory = {
   database: string;
   engine: MigrationEngine;
   type: MigrationType;
+  status: MigrationStatus;
   version: string;
   description: string;
   statement: string;

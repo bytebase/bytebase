@@ -12,12 +12,11 @@
       >
         <div class="flex-1 min-w-0 space-y-3">
           <!-- Summary -->
-          <div class="flex items-center">
-            <div class="flex items-center">
-              <h1 class="pt-2 text-xl font-bold leading-6 text-main truncate">
-                Version {{ migrationHistory.version }}
-              </h1>
-            </div>
+          <div class="pt-2 flex items-center space-x-2">
+            <MigrationHistoryStatusIcon :status="migrationHistory.status" />
+            <h1 class="text-xl font-bold leading-6 text-main truncate">
+              Version {{ migrationHistory.version }}
+            </h1>
           </div>
           <p class="text-control">
             {{ migrationHistory.engine }} {{ migrationHistory.type }} -
@@ -165,6 +164,7 @@ import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
+import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
 import { idFromSlug, secondsToString } from "../utils";
 import {
   MigrationHistory,
@@ -184,7 +184,7 @@ export default {
       type: String,
     },
   },
-  components: { ColumnTable, IndexTable },
+  components: { ColumnTable, IndexTable, MigrationHistoryStatusIcon },
   setup(props, ctx) {
     const store = useStore();
 
