@@ -1,4 +1,9 @@
-import { IssueCreate, StageCreate, UNKNOWN_ID } from "../../types";
+import {
+  IssueCreate,
+  PipelineApporvalPolicyPayload,
+  StageCreate,
+  UNKNOWN_ID,
+} from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
@@ -16,7 +21,10 @@ const template: IssueTemplate = {
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
             status:
-              ctx.environmentList[i].approvalPolicy == "MANUAL_APPROVAL_ALWAYS"
+              (
+                ctx.approvalPolicyList[i]
+                  .payload as PipelineApporvalPolicyPayload
+              ).value == "MANUAL_APPROVAL_ALWAYS"
                 ? "PENDING_APPROVAL"
                 : "PENDING",
             type: "bb.task.database.schema.update",
