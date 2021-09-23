@@ -503,8 +503,6 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	}
 	defer tx.Rollback()
 
-	startedTs := time.Now().Unix()
-
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
 	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
@@ -544,25 +542,16 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		return "", err
 	}
 
-	// Phase 2 - Executing migration
-	// Branch migration type always has empty sql.
-	// Baseline migration type could also has empty sql when the database is newly created.
-	if statement != "" {
-		_, err = tx.ExecContext(ctx, statement)
-		if err != nil {
-			return "", formatError(err)
-		}
-	}
-
-	// Phase 3 - Dump the schema after migration
+	// Phase 2 - Record migration history as PENDING
+	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
+	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
+	// update the record to DONE together with the updated schema.
 	var schemaBuf bytes.Buffer
 	err = dumpTxn(ctx, tx, m.Database, &schemaBuf, true /*schemaOnly*/)
 	if err != nil {
 		return "", formatError(err)
 	}
-
-	// Phase 4 - Record migration
-	const query = `
+	query := `
 		INSERT INTO bytebase.migration_history (
 			created_by,
 			created_ts,
@@ -572,6 +561,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			sequence,
 			` + "`engine`," + `
 			` + "`type`," + `
+			` + "`status`," + `
 			version,
 			description,
 			statement,
@@ -580,9 +570,9 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			issue_id,
 			payload
 		)
-		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
 	`
-	_, err = tx.ExecContext(ctx, query,
+	res, err := tx.ExecContext(ctx, query,
 		m.Creator,
 		m.Creator,
 		m.Namespace,
@@ -593,7 +583,6 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		m.Description,
 		statement,
 		schemaBuf.String(),
-		time.Now().Unix()-startedTs,
 		m.IssueId,
 		m.Payload,
 	)
@@ -602,11 +591,64 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		return "", formatErrorWithQuery(err, query)
 	}
 
+	insertedId, err := res.LastInsertId()
+	if err != nil {
+		return "", formatErrorWithQuery(err, query)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return "", err
 	}
 
-	return schemaBuf.String(), nil
+	// Phase 3 - Executing migration
+	// Branch migration type always has empty sql.
+	// Baseline migration type could also has empty sql when the database is newly created.
+	startedTs := time.Now().Unix()
+	if statement != "" {
+		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
+		_, err = driver.db.ExecContext(ctx, statement)
+		if err != nil {
+			return "", formatError(err)
+		}
+	}
+	duration := time.Now().Unix() - startedTs
+
+	afterTx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer afterTx.Rollback()
+
+	// Phase 4 - Dump the schema after migration
+	var afterSchemaBuf bytes.Buffer
+	err = dumpTxn(ctx, afterTx, m.Database, &afterSchemaBuf, true /*schemaOnly*/)
+	if err != nil {
+		return "", formatError(err)
+	}
+
+	// Phase 5 - Update the migration history with 'DONE', execution_duration, updated schema.
+	query = `
+		UPDATE bytebase.migration_history SET
+			` + "`status` = 'DONE'," + `
+			` + "execution_duration = ?," + `
+			` + "`schema` = ?" + `
+			WHERE id = ?
+	`
+	_, err = afterTx.ExecContext(ctx, query,
+		duration,
+		afterSchemaBuf.String(),
+		insertedId,
+	)
+
+	if err != nil {
+		return "", formatErrorWithQuery(err, query)
+	}
+
+	if err := afterTx.Commit(); err != nil {
+		return "", err
+	}
+
+	return afterSchemaBuf.String(), nil
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
@@ -638,6 +680,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 			sequence,
 			` + "`engine`," + `
 			` + "`type`," + `
+			` + "`status`," + `
 			version,
 			description,
 		    statement,
@@ -672,6 +715,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 			&history.Sequence,
 			&history.Engine,
 			&history.Type,
+			&history.Status,
 			&history.Version,
 			&history.Description,
 			&history.Statement,
