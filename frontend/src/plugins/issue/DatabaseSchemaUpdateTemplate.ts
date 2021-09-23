@@ -32,13 +32,19 @@ const template: IssueTemplate = {
       });
     }
     return {
-      name: "Update database schema",
+      name:
+        ctx.databaseList.length == 1
+          ? `[${ctx.databaseList[0].name}] Update schema`
+          : "Update database schema",
       type: "bb.issue.database.schema.update",
       description: "",
       assigneeId: UNKNOWN_ID,
       pipeline: {
         stageList,
-        name: "Update database schema pipeline",
+        name:
+          ctx.databaseList.length == 1
+            ? `[${ctx.databaseList[0].name}] Update schema pipeline`
+            : "Update database schema pipeline",
       },
       payload,
     };
