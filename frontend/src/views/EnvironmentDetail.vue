@@ -3,7 +3,7 @@
     <ArchiveBanner v-if="state.environment.rowStatus == 'ARCHIVED'" />
   </div>
   <EnvironmentForm
-    v-if="state.environment"
+    v-if="state.approvalPolicy && state.backupPolicy"
     :environment="state.environment"
     :approvalPolicy="state.approvalPolicy"
     :backupPolicy="state.backupPolicy"
@@ -32,8 +32,8 @@ import { idFromSlug } from "../utils";
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
-  approvalPolicy: Policy;
-  backupPolicy: Policy;
+  approvalPolicy?: Policy;
+  backupPolicy?: Policy;
 }
 
 export default {
@@ -57,8 +57,6 @@ export default {
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
-      approvalPolicy: unknown("POLICY") as Policy,
-      backupPolicy: unknown("POLICY") as Policy,
     });
 
     const preparePolicy = () => {
