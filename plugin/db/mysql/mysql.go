@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
@@ -856,7 +857,7 @@ func formatError(err error) error {
 }
 
 func formatErrorWithQuery(err error, query string) error {
-	return fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query)
+	return common.Errorf(common.DbExecutionError, fmt.Sprintf("failed to execute error: %v\n\nquery:\n%q", err, query))
 }
 
 // Dump and restore
