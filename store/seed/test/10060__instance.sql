@@ -116,6 +116,31 @@ VALUES
         101,
         101,
         5001,
+        'Localhost Dev PostgreSQL',
+        'POSTGRES',
+        '127.0.0.1',
+        '5432',
+        ""
+    );
+
+INSERT INTO
+    instance (
+        id,
+        creator_id,
+        updater_id,
+        environment_id,
+        name,
+        `engine`,
+        host,
+        port,
+        external_link
+    )
+VALUES
+    (
+        6006,
+        101,
+        101,
+        5001,
         'Localhost Dev TiDB',
         'TIDB',
         '127.0.0.1',
@@ -138,7 +163,7 @@ INSERT INTO
     )
 VALUES
     (
-        6006,
+        6007,
         'ARCHIVED',
         101,
         101,

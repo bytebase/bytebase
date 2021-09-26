@@ -434,7 +434,7 @@ VALUES
         0
     );
 
--- Database for prod environment instance 6005
+-- Database for dev environment PostgreSQL instance 6005
 INSERT INTO
     db (
         id,
@@ -462,7 +462,7 @@ VALUES
         0
     );
 
--- Database for prod environment instance 6006
+-- Database for dev environment TiDB instance 6006
 INSERT INTO
     db (
         id,
@@ -483,6 +483,34 @@ VALUES
         101,
         6006,
         1,
+        '*',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        0
+    );
+
+-- Database for prod environment archived mysql instance 6007
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts
+    )
+VALUES
+    (
+        7019,
+        101,
+        101,
+        6007,
+        3001,
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
