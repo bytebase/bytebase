@@ -128,10 +128,9 @@ type TaskCreate struct {
 	DatabaseId *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
-	// This is derived from the environment policy
-	Status TaskStatus
-	Type   TaskType `jsonapi:"attr,type"`
+	Name   string     `jsonapi:"attr,name"`
+	Status TaskStatus `jsonapi:"attr,status"`
+	Type   TaskType   `jsonapi:"attr,type"`
 	// Payload is dirived from fields below it
 	Payload           string
 	Statement         string `jsonapi:"attr,statement"`
