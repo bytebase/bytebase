@@ -78,7 +78,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 
 		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceId)).SetInternal(err)
@@ -110,7 +110,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
 				createTable, err := s.TableService.CreateTable(context.Background(), tableCreate)
 				if err != nil {
-					if common.ErrorCode(err) == common.ECONFLICT {
+					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
@@ -121,7 +121,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
 				_, err := s.ColumnService.CreateColumn(context.Background(), columnCreate)
 				if err != nil {
-					if common.ErrorCode(err) == common.ECONFLICT {
+					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
 					}
 					return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Failed to import new column: %s. Error %w", instance.Name, database.Name, table.Name, columnCreate.Name, err)
@@ -132,7 +132,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 			var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
 				_, err := s.IndexService.CreateIndex(context.Background(), indexCreate)
 				if err != nil {
-					if common.ErrorCode(err) == common.ECONFLICT {
+					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
 					}
 					return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to import new index and expression: %s(%s). Error %w", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression, err)
@@ -170,7 +170,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 					_, err := s.ColumnService.FindColumn(context.Background(), columnFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							columnCreate := &api.ColumnCreate{
 								CreatorId:    api.SYSTEM_BOT_ID,
 								DatabaseId:   database.ID,
@@ -203,7 +203,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 					_, err := s.IndexService.FindIndex(context.Background(), indexFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							indexCreate := &api.IndexCreate{
 								CreatorId:  api.SYSTEM_BOT_ID,
 								DatabaseId: database.ID,
@@ -309,7 +309,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 					database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, database.Name, err)
@@ -345,7 +345,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 					database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
 					if err != nil {
-						if common.ErrorCode(err) == common.ECONFLICT {
+						if common.ErrorCode(err) == common.Conflict {
 							return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
@@ -380,7 +380,7 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 					}
 					database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error: %w", instance.Name, database.Name, err)

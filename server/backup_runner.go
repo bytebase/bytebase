@@ -110,7 +110,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 	}
 	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)
 	if err != nil {
-		if common.ErrorCode(err) == common.ECONFLICT {
+		if common.ErrorCode(err) == common.Conflict {
 			// Automatic backup already exists.
 			return nil
 		}

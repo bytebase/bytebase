@@ -34,7 +34,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	// Validate policy type existence.
 	if find.Type != nil && *find.Type != "" {
 		if err := api.ValidatePolicy(*find.Type, ""); err != nil {
-			return nil, &common.Error{Code: common.EINVALID, Message: err.Error()}
+			return nil, &common.Error{Code: common.Invalid, Message: err.Error()}
 		}
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -55,7 +55,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 			Type:          *find.Type,
 		}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d policy with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d policy with filter %+v, expect 1. ", len(list), find)}
 	} else {
 		ret = list[0]
 	}
@@ -64,7 +64,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 		// Return the default policy when there is no stored policy.
 		payload, err := api.GetDefaultPolicy(*find.Type)
 		if err != nil {
-			return nil, &common.Error{Code: common.EINTERNAL, Message: err.Error()}
+			return nil, &common.Error{Code: common.Internal, Message: err.Error()}
 		}
 		ret.Payload = payload
 	}
@@ -134,7 +134,7 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 	// Validate policy.
 	if upsert.Type != "" {
 		if err := api.ValidatePolicy(upsert.Type, upsert.Payload); err != nil {
-			return nil, &common.Error{Code: common.EINVALID, Message: err.Error()}
+			return nil, &common.Error{Code: common.Invalid, Message: err.Error()}
 		}
 	}
 	tx, err := s.db.BeginTx(ctx, nil)

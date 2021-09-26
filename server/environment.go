@@ -24,7 +24,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		environment, err := s.EnvironmentService.CreateEnvironment(context.Background(), environmentCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Environment name already exists: %s", environmentCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create environment").SetInternal(err)
@@ -81,7 +81,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		environment, err := s.EnvironmentService.PatchEnvironment(context.Background(), environmentPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", id)).SetInternal(err)
@@ -109,7 +109,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			environmentPatch.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
 			_, err = s.EnvironmentService.PatchEnvironment(context.Background(), environmentPatch)
 			if err != nil {
-				if common.ErrorCode(err) == common.ENOTFOUND {
+				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", environmentPatch.ID))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", environmentPatch.ID)).SetInternal(err)

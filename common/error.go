@@ -5,18 +5,18 @@ import (
 	"fmt"
 )
 
+type Code int
+
 // Application error codes.
-//
-// NOTE: These are meant to be generic and they map well to HTTP error codes.
-// Different applications can have very different error code requirements so
-// these should be expanded as needed (or introduce subcodes).
 const (
-	ECONFLICT       = "conflict"
-	EINTERNAL       = "internal"
-	EINVALID        = "invalid"
-	ENOTFOUND       = "not_found"
-	ENOTIMPLEMENTED = "not_implemented"
-	EUNAUTHORIZED   = "unauthorized"
+	// 0 ~ 99 general error
+	Ok             Code = 0
+	Internal       Code = 1
+	NotAuthorized  Code = 2
+	Invalid        Code = 3
+	NotFound       Code = 4
+	Conflict       Code = 5
+	NotImplemented Code = 6
 )
 
 // Error represents an application-specific error. Application errors can be
@@ -28,7 +28,7 @@ const (
 // reported to the operator of the application (not the end user).
 type Error struct {
 	// Machine-readable error code.
-	Code string
+	Code Code
 
 	// Human-readable error message.
 	Message string
@@ -36,19 +36,19 @@ type Error struct {
 
 // Error implements the error interface. Not used by the application otherwise.
 func (e *Error) Error() string {
-	return fmt.Sprintf("bytebase error: code=%s message=%s", e.Code, e.Message)
+	return fmt.Sprintf("bytebase error: code=%d message=%s", e.Code, e.Message)
 }
 
 // ErrorCode unwraps an application error and returns its code.
 // Non-application errors always return EINTERNAL.
-func ErrorCode(err error) string {
+func ErrorCode(err error) Code {
 	var e *Error
 	if err == nil {
-		return ""
+		return Ok
 	} else if errors.As(err, &e) {
 		return e.Code
 	}
-	return EINTERNAL
+	return Internal
 }
 
 // ErrorMessage unwraps an application error and returns its message.
@@ -64,7 +64,7 @@ func ErrorMessage(err error) string {
 }
 
 // Errorf is a helper function to return an Error with a given code and formatted message.
-func Errorf(code string, format string, args ...interface{}) *Error {
+func Errorf(code Code, format string, args ...interface{}) *Error {
 	return &Error{
 		Code:    code,
 		Message: fmt.Sprintf(format, args...),

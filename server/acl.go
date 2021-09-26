@@ -43,7 +43,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		}
 		member, err := s.MemberService.FindMember(context.Background(), memberFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
@@ -71,7 +71,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 					}
 					activity, err := s.ActivityService.FindActivity(context.Background(), activityFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityId))
 						}
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
@@ -92,7 +92,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 					}
 					bookmark, err := s.BookmarkService.FindBookmark(context.Background(), bookmarkFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Bookmark ID not found: %d", bookmarkId))
 						}
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
@@ -113,7 +113,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 					}
 					inbox, err := s.InboxService.FindInbox(context.Background(), inboxFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.ENOTFOUND {
+						if common.ErrorCode(err) == common.NotFound {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Inbox ID not found: %d", inboxId))
 						}
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)

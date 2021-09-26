@@ -75,9 +75,9 @@ func (s *ProjectWebhookService) FindProjectWebhook(ctx context.Context, find *ap
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project hook not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("project hook not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d project hooks with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d project hooks with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -298,7 +298,7 @@ func patchProjectWebhook(ctx context.Context, tx *Tx, patch *api.ProjectWebhookP
 		return &projectWebhook, nil
 	}
 
-	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project hook ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("project hook ID not found: %d", patch.ID)}
 }
 
 // deleteProjectWebhook permanently deletes a projectWebhook by ID.
@@ -311,7 +311,7 @@ func deleteProjectWebhook(ctx context.Context, tx *Tx, delete *api.ProjectWebhoo
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("project hook ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("project hook ID not found: %d", delete.ID)}
 	}
 
 	return nil

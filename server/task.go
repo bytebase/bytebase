@@ -46,7 +46,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(context.Background(), taskFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
@@ -74,7 +74,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		updatedTask, err := s.TaskService.PatchTask(context.Background(), taskPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.EINVALID {
+			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
@@ -138,7 +138,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(context.Background(), taskFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
@@ -146,7 +146,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		updatedTask, err := s.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.EINVALID {
+			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
@@ -174,7 +174,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(context.Background(), taskFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
@@ -319,7 +319,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 
 	if !allowTransition {
 		return nil, &common.Error{
-			Code:    common.EINVALID,
+			Code:    common.Invalid,
 			Message: fmt.Sprintf("Invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
@@ -337,7 +337,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	issue, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
-		if common.ErrorCode(err) != common.ENOTFOUND {
+		if common.ErrorCode(err) != common.NotFound {
 			return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 		}
 	}

@@ -28,7 +28,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 
 		issueSubscriber, err := s.IssueSubscriberService.CreateIssueSubscriber(context.Background(), issueSubscriberCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Subscriber %d already exists in issue %d", issueSubscriberCreate.SubscriberId, issueSubscriberCreate.IssueId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberId, issueSubscriberCreate.IssueId)).SetInternal(err)
@@ -89,7 +89,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		}
 		err = s.IssueSubscriberService.DeleteIssueSubscriber(context.Background(), issueSubscriberDelete)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Subscriber %d not found in issue %d", subscriberId, issueId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete subscriber %d from issue %d", subscriberId, issueId)).SetInternal(err)

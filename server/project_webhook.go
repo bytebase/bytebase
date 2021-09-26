@@ -58,7 +58,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 		hook, err := s.ProjectWebhookService.CreateProjectWebhook(context.Background(), hookCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Webhook url already exists in the project: %s", hookCreate.URL))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project webhook").SetInternal(err)
@@ -91,7 +91,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		hook, err := s.ProjectWebhookService.FindProjectWebhook(context.Background(), find)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
@@ -129,10 +129,10 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 		hook, err := s.ProjectWebhookService.PatchProjectWebhook(context.Background(), hookPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 			}
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Hook url already exists in the project: %s", *hookPatch.URL))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project webhook ID: %v", id)).SetInternal(err)
@@ -166,7 +166,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		err = s.ProjectWebhookService.DeleteProjectWebhook(context.Background(), hookDelete)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project webhook ID: %v", id)).SetInternal(err)
@@ -188,7 +188,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		project, err := s.ProjectService.FindProject(context.Background(), projectFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectId)).SetInternal(err)
@@ -204,7 +204,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		hook, err := s.ProjectWebhookService.FindProjectWebhook(context.Background(), find)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)

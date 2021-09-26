@@ -75,9 +75,9 @@ func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("table not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("table not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d tables with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d tables with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -312,7 +312,7 @@ func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TableP
 		return &table, nil
 	}
 
-	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("table ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("table ID not found: %d", patch.ID)}
 }
 
 // deleteTable permanently deletes tables from a database.
