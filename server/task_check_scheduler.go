@@ -120,7 +120,7 @@ func (s *TaskCheckScheduler) Run() error {
 								ID:        &taskCheckRun.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
 								Status:    api.TaskCheckRunFailed,
-								Code:      common.Internal,
+								Code:      common.ErrorCode(err),
 								Comment:   err.Error(),
 							}
 							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(context.Background(), taskCheckRunStatusPatch)

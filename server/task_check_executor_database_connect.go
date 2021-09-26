@@ -25,7 +25,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	}
 	task, err := server.TaskService.FindTask(ctx, taskFind)
 	if err != nil {
-		return []api.TaskCheckResult{}, fmt.Errorf("failed to connect database: %w", err)
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err.Error())
 	}
 
 	databaseFind := &api.DatabaseFind{
@@ -33,12 +33,12 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	}
 	database, err := server.ComposeDatabaseByFind(ctx, databaseFind)
 	if err != nil {
-		return []api.TaskCheckResult{}, fmt.Errorf("failed to connect database: %w", err)
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err.Error())
 	}
 
 	driver, err := GetDatabaseDriver(database.Instance, database.Name, exec.l)
 	if err != nil {
-		return []api.TaskCheckResult{}, fmt.Errorf("failed to connect database %q: %w", database.Name, err)
+		return []api.TaskCheckResult{}, err
 	}
 	defer driver.Close(ctx)
 
