@@ -656,7 +656,7 @@ func GetDatabaseDriver(instance *api.Instance, databaseName string, logger *zap.
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect database %s/%s at %q:%q with user %q: %w", instance.Name, databaseName, instance.Host, instance.Port, instance.Username, err)
+		return nil, common.Errorf(common.DbConnectionFailure, fmt.Sprintf("failed to connect database %s/%s at %q:%q with user %q: %v", instance.Name, databaseName, instance.Host, instance.Port, instance.Username, err))
 	}
 	return driver, nil
 }
