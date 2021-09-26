@@ -15,6 +15,9 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:embed pg_migration_schema.sql
+var migrationSchema string
+
 var (
 	systemDatabases = map[string]bool{
 		"template0": true,
