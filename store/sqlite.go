@@ -334,29 +334,29 @@ func FormatError(err error) error {
 
 	switch err.Error() {
 	case "UNIQUE constraint failed: principal.email":
-		return common.Errorf(common.Conflict, "email already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("email already exists"))
 	case "UNIQUE constraint failed: member.principal_id":
-		return common.Errorf(common.Conflict, "member already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("member already exists"))
 	case "UNIQUE constraint failed: environment.name":
-		return common.Errorf(common.Conflict, "environment name already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("environment name already exists"))
 	case "UNIQUE constraint failed: project.key":
-		return common.Errorf(common.Conflict, "project key already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("project key already exists"))
 	case "UNIQUE constraint failed: project_webhook.project_id, project_webhook.url":
-		return common.Errorf(common.Conflict, "webhook url already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
 	case "UNIQUE constraint failed: project_member.project_id, project_member.principal_id":
-		return common.Errorf(common.Conflict, "project member already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("project member already exists"))
 	case "UNIQUE constraint failed: db.instance_id, db.name":
-		return common.Errorf(common.Conflict, "database name already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("database name already exists"))
 	case "UNIQUE constraint failed: data_source.instance_id, data_source.name":
-		return common.Errorf(common.Conflict, "data source name already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("data source name already exists"))
 	case "UNIQUE constraint failed: backup.database_id, backup.name":
-		return common.Errorf(common.Conflict, "backup name already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("backup name already exists"))
 	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
-		return common.Errorf(common.Conflict, "bookmark already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("bookmark already exists"))
 	case "UNIQUE constraint failed: repository.project_id":
-		return common.Errorf(common.Conflict, "project has already linked repository")
+		return common.Errorf(common.Conflict, fmt.Errorf("project has already linked repository"))
 	case "UNIQUE constraint failed: issue_subscriber.issue_id, issue_subscriber.subscriber_id":
-		return common.Errorf(common.Conflict, "issue subscriber already exists")
+		return common.Errorf(common.Conflict, fmt.Errorf("issue subscriber already exists"))
 	default:
 		return err
 	}

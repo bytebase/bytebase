@@ -179,7 +179,7 @@ func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDel
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("instance user ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance user ID not found: %d", delete.ID)}
 	}
 
 	return nil

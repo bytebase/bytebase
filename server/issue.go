@@ -499,7 +499,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
+					return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
 				}
 			}
 		}

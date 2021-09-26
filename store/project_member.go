@@ -72,9 +72,9 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("project member not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d project members with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d project members with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -262,7 +262,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		return &projectMember, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("project member ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
 }
 
 // deleteProjectMember permanently deletes a projectMember by ID.
@@ -275,7 +275,7 @@ func deleteProjectMember(ctx context.Context, tx *Tx, delete *api.ProjectMemberD
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("project member ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", delete.ID)}
 	}
 
 	return nil

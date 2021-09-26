@@ -75,9 +75,9 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("index not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("index not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d indexs with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indexs with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -287,5 +287,5 @@ func (s *IndexService) patchIndex(ctx context.Context, tx *Tx, patch *api.IndexP
 		return &index, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("index ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("index ID not found: %d", patch.ID)}
 }

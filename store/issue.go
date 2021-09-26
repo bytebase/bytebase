@@ -90,9 +90,9 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("issue not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("issue not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d issues with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d issues with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := s.cache.UpsertCache(api.IssueCache, list[0].ID, list[0]); err != nil {
@@ -332,5 +332,5 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		return &issue, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("unable to find issue ID to update: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
 }

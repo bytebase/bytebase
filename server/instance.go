@@ -471,5 +471,5 @@ func (s *Server) FindInstanceAdminPasswordById(ctx context.Context, instanceId i
 			return dataSource.Password, nil
 		}
 	}
-	return "", &common.Error{Code: common.NotFound, Message: fmt.Sprintf("missing admin password for instance: %d", instanceId)}
+	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance: %d", instanceId)}
 }

@@ -28,20 +28,20 @@ const (
 // unwrapped by the caller to extract out the code & message.
 //
 // Any non-application error (such as a disk error) should be reported as an
-// EINTERNAL error and the human user should only see "Internal error" as the
+// Internal error and the human user should only see "Internal error" as the
 // message. These low-level internal error details should only be logged and
 // reported to the operator of the application (not the end user).
 type Error struct {
 	// Machine-readable error code.
 	Code Code
 
-	// Human-readable error message.
-	Message string
+	// Embeded error.
+	Err error
 }
 
 // Error implements the error interface. Not used by the application otherwise.
 func (e *Error) Error() string {
-	return fmt.Sprintf("bytebase error: code=%d message=%s", e.Code, e.Message)
+	return fmt.Sprintf("bytebase error: code=%d message=%v", e.Code, e.Err)
 }
 
 // ErrorCode unwraps an application error and returns its code.
@@ -63,15 +63,15 @@ func ErrorMessage(err error) string {
 	if err == nil {
 		return ""
 	} else if errors.As(err, &e) {
-		return e.Message
+		return e.Err.Error()
 	}
 	return "Internal error."
 }
 
-// Errorf is a helper function to return an Error with a given code and formatted message.
-func Errorf(code Code, format string, args ...interface{}) *Error {
+// Errorf is a helper function to return an Error with a given code and error.
+func Errorf(code Code, err error) *Error {
 	return &Error{
-		Code:    code,
-		Message: fmt.Sprintf(format, args...),
+		Code: code,
+		Err:  err,
 	}
 }

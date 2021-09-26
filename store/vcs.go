@@ -75,9 +75,9 @@ func (s *VCSService) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCS, 
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("vcs not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d vcss with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d vcss with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -285,7 +285,7 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 		return &vcs, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("vcs ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
 }
 
 // deleteVCS permanently deletes a vcs by ID.
@@ -298,7 +298,7 @@ func deleteVCS(ctx context.Context, tx *Tx, delete *api.VCSDelete) error {
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("vcs ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", delete.ID)}
 	}
 
 	return nil
