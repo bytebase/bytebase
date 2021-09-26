@@ -511,7 +511,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		return "", err
 	}
 	if duplicate {
-		return "", fmt.Errorf("database %q has already applied version %s", m.Database, m.Version)
+		return "", common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 	}
 
 	// Check if there is any higher version already been applied
@@ -520,7 +520,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		return "", err
 	}
 	if version != nil {
-		return "", fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version)
+		return "", common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
 	}
 
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
@@ -532,7 +532,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		}
 
 		if !hasBaseline {
-			return "", fmt.Errorf("%s has not created migration baseline yet", m.Database)
+			return "", common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
 		}
 	}
 
@@ -836,7 +836,7 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, require
 		}
 
 		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace)
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
 	}
 
 	return int(sequence.Int32), nil

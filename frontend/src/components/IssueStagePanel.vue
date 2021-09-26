@@ -20,7 +20,7 @@
           {{ task.name }}
         </div>
       </div>
-      <TaskRunTable :taskRunList="task.taskRunList" />
+      <TaskRunTable :task="task" />
     </div>
   </div>
 </template>

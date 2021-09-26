@@ -183,7 +183,8 @@ type TaskStatusPatch struct {
 
 	// Domain specific fields
 	Status  TaskStatus `jsonapi:"attr,status"`
-	Comment string     `jsonapi:"attr,comment"`
+	Code    *common.Code
+	Comment *string `jsonapi:"attr,comment"`
 }
 
 type TaskService interface {
