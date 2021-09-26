@@ -882,6 +882,7 @@ CREATE TABLE task_check_run (
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task-check.%'),
+    code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task check run result in json format
     result  TEXT NOT NULL DEFAULT '',

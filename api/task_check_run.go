@@ -97,6 +97,7 @@ type TaskCheckRun struct {
 	// Domain specific fields
 	Status  TaskCheckRunStatus `jsonapi:"attr,status"`
 	Type    TaskCheckType      `jsonapi:"attr,type"`
+	Code    common.Code        `jsonapi:"attr,code"`
 	Comment string             `jsonapi:"attr,comment"`
 	Result  string             `jsonapi:"attr,result"`
 	Payload string             `jsonapi:"attr,payload"`
@@ -151,6 +152,7 @@ type TaskCheckRunStatusPatch struct {
 
 	// Domain specific fields
 	Status TaskCheckRunStatus
+	Code   common.Code
 	// Records the status detail (e.g. error message on failure)
 	Comment string
 	Result  string

@@ -166,6 +166,7 @@ export type TaskCheckRun = {
   taskId: TaskId;
   status: TaskCheckRunStatus;
   type: TaskCheckType;
+  code: ErrorCode;
   comment: string;
   result: TaskCheckRunResultPayload;
   payload?: TaskPayload;
