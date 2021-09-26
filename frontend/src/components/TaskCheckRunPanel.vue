@@ -125,6 +125,7 @@ export default {
           {
             status: "ERROR",
             title: "Error",
+            code: props.taskCheckRun.code,
             content: props.taskCheckRun.comment,
           },
         ];
@@ -133,6 +134,7 @@ export default {
           {
             status: "WARN",
             title: "Canceled",
+            code: props.taskCheckRun.code,
             content: "",
           },
         ];

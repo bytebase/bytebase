@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -96,6 +97,7 @@ func (s *TaskCheckScheduler) Run() error {
 								ID:        &taskCheckRun.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
 								Status:    api.TaskCheckRunDone,
+								Code:      common.Ok,
 								Result:    string(bytes),
 							}
 							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(context.Background(), taskCheckRunStatusPatch)
@@ -118,6 +120,7 @@ func (s *TaskCheckScheduler) Run() error {
 								ID:        &taskCheckRun.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
 								Status:    api.TaskCheckRunFailed,
+								Code:      common.Internal,
 								Comment:   err.Error(),
 							}
 							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(context.Background(), taskCheckRunStatusPatch)

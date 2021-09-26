@@ -102,7 +102,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 			payload
 		)
 		VALUES (?, ?, ?, 'RUNNING', ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
 	`,
 		create.CreatorId,
 		create.CreatorId,
@@ -128,6 +128,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 		&taskCheckRun.TaskId,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
+		&taskCheckRun.Code,
 		&taskCheckRun.Comment,
 		&taskCheckRun.Result,
 		&taskCheckRun.Payload,
@@ -204,6 +205,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
+	set, args = append(set, "code = ?"), append(args, patch.Code)
 	set, args = append(set, "comment = ?"), append(args, patch.Comment)
 	set, args = append(set, "result = ?"), append(args, patch.Result)
 
@@ -217,7 +219,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		UPDATE task_check_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
 	`,
 		args...,
 	)
@@ -238,6 +240,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		&taskCheckRun.TaskId,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
+		&taskCheckRun.Code,
 		&taskCheckRun.Comment,
 		&taskCheckRun.Result,
 		&taskCheckRun.Payload,
@@ -284,6 +287,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			task_id,
 			`+"`status`,"+`
 			`+"`type`,"+`
+			code,
 			comment,
 			result,
 			payload
@@ -309,6 +313,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			&taskCheckRun.TaskId,
 			&taskCheckRun.Status,
 			&taskCheckRun.Type,
+			&taskCheckRun.Code,
 			&taskCheckRun.Comment,
 			&taskCheckRun.Result,
 			&taskCheckRun.Payload,
