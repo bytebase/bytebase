@@ -23,7 +23,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 
 		bookmark, err := s.BookmarkService.CreateBookmark(context.Background(), bookmarkCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Bookmark already exists: %s", bookmarkCreate.Link))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create bookmark").SetInternal(err)
@@ -75,7 +75,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		}
 		err = s.BookmarkService.DeleteBookmark(context.Background(), bookmarkDelete)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete bookmark ID: %v", id)).SetInternal(err)

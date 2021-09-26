@@ -82,7 +82,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 
 		inbox, err := s.InboxService.PatchInbox(context.Background(), inboxPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)

@@ -24,7 +24,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		member, err := s.MemberService.CreateMember(context.Background(), memberCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member for user ID already exists: %d", memberCreate.PrincipalId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create member").SetInternal(err)
@@ -37,7 +37,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 			user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.ENOTFOUND {
+				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", member.PrincipalId))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", member.PrincipalId)).SetInternal(err)
@@ -108,7 +108,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 		member, err := s.MemberService.FindMember(context.Background(), memberFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find member ID: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find member ID: %d", id)).SetInternal(err)
@@ -124,7 +124,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		updatedMember, err := s.MemberService.PatchMember(context.Background(), memberPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch member ID: %v", id)).SetInternal(err)
@@ -137,7 +137,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 			user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.ENOTFOUND {
+				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", updatedMember.PrincipalId))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", updatedMember.PrincipalId)).SetInternal(err)

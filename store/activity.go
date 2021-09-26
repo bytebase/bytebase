@@ -75,9 +75,9 @@ func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFi
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("activity not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("activity not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -282,7 +282,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 		return &activity, nil
 	}
 
-	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("activity ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("activity ID not found: %d", patch.ID)}
 }
 
 // deleteActivity permanently deletes a activity by ID.
@@ -295,7 +295,7 @@ func deleteActivity(ctx context.Context, tx *Tx, delete *api.ActivityDelete) err
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("activity ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("activity ID not found: %d", delete.ID)}
 	}
 
 	return nil

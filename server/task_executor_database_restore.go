@@ -69,7 +69,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 	targetDatabase, err := server.ComposeDatabaseByFind(context.Background(), targetDatabaseFind)
 	if err != nil {
-		if common.ErrorCode(err) == common.ENOTFOUND {
+		if common.ErrorCode(err) == common.NotFound {
 			return true, "", fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 		}
 		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
@@ -152,7 +152,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	issue, err := server.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
-		if common.ErrorCode(err) != common.ENOTFOUND {
+		if common.ErrorCode(err) != common.NotFound {
 			return fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 		}
 	}

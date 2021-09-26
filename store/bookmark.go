@@ -75,9 +75,9 @@ func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFi
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("bookmark not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("bookmark not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -207,7 +207,7 @@ func deleteBookmark(ctx context.Context, tx *Tx, delete *api.BookmarkDelete) err
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("bookmark ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("bookmark ID not found: %d", delete.ID)}
 	}
 
 	return nil

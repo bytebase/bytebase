@@ -27,7 +27,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		projectCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		project, err := s.ProjectService.CreateProject(context.Background(), projectCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
@@ -95,7 +95,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		project, err := s.ComposeProjectlById(context.Background(), id)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
@@ -124,7 +124,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		project, err := s.ProjectService.PatchProject(context.Background(), projectPatch)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
@@ -161,7 +161,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSId)).SetInternal(err)
@@ -210,7 +210,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.RepositoryService.CreateRepository(context.Background(), repositoryCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.ECONFLICT {
+			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project %d has already linked repository", repositoryCreate.ProjectId))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)

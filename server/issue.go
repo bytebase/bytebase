@@ -140,7 +140,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.ComposeIssueById(context.Background(), id)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
@@ -172,7 +172,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
@@ -264,7 +264,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.ComposeIssueById(context.Background(), id)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
@@ -272,9 +272,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		updatedIssue, err := s.ChangeIssueStatus(context.Background(), issue, issueStatusPatch.Status, issueStatusPatch.UpdaterId, issueStatusPatch.Comment)
 		if err != nil {
-			if common.ErrorCode(err) == common.ENOTFOUND {
+			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
-			} else if common.ErrorCode(err) == common.ECONFLICT {
+			} else if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict).SetInternal(err)
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
@@ -499,7 +499,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
+					return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
 				}
 			}
 		}
@@ -536,7 +536,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 	updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
 	if err != nil {
-		if common.ErrorCode(err) == common.ENOTFOUND {
+		if common.ErrorCode(err) == common.NotFound {
 			return nil, fmt.Errorf("failed to update issue status: %v, error: %w", issue.Name, err)
 		}
 		return nil, fmt.Errorf("failed update issue status: %v, error: %w", issue.Name, err)

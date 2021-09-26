@@ -61,9 +61,9 @@ func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("backup not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("backup not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d backups with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d backups with filter %+v, expect 1. ", len(list), find)}
 	}
 
 	return list[0], nil
@@ -276,7 +276,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 		return &backup, nil
 	}
 
-	return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("backup ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("backup ID not found: %d", patch.ID)}
 }
 
 // FindBackupSetting finds the backup setting for a database.
@@ -293,9 +293,9 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.ENOTFOUND, Message: fmt.Sprintf("backup setting not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("backup setting not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.ECONFLICT, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
 	}
 
 	return list[0], nil
@@ -367,16 +367,16 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	// Backup plan policy check for backup setting mutation.
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		if !upsert.Enabled {
-			return nil, &common.Error{Code: common.EINVALID, Message: fmt.Sprintf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			return nil, &common.Error{Code: common.Invalid, Message: fmt.Sprintf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
 		}
 		switch backupPlanPolicy.Schedule {
 		case api.BackupPlanPolicyScheduleDaily:
 			if upsert.DayOfWeek != -1 {
-				return nil, &common.Error{Code: common.EINVALID, Message: fmt.Sprintf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+				return nil, &common.Error{Code: common.Invalid, Message: fmt.Sprintf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
 			}
 		case api.BackupPlanPolicyScheduleWeekly:
 			if upsert.DayOfWeek == -1 {
-				return nil, &common.Error{Code: common.EINVALID, Message: fmt.Sprintf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+				return nil, &common.Error{Code: common.Invalid, Message: fmt.Sprintf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
 			}
 		}
 	}
