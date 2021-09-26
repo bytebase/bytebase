@@ -11,6 +11,7 @@ export enum GeneralErrorCode {
 export enum DBErrorCode {
   CONNECTION_ERROR = 101,
   SYNTAX_ERROR = 102,
+  EXECUTION_ERROR = 103,
 }
 
 export type ErrorCode = GeneralErrorCode | DBErrorCode;

@@ -21,6 +21,7 @@ const (
 	// 101 ~ 199 db error
 	DbConnectionFailure    Code = 101
 	DbStatementSyntaxError Code = 102
+	DbExecutionError       Code = 103
 )
 
 // Error represents an application-specific error. Application errors can be
