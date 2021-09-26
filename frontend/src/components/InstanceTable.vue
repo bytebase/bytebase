@@ -15,6 +15,11 @@
           src="../assets/db-mysql.png"
         />
         <img
+          v-if="instance.engine == 'POSTGRES'"
+          class="h-6 w-auto"
+          src="../assets/db-postgres.png"
+        />
+        <img
           v-else-if="instance.engine == 'TIDB'"
           class="h-6 w-auto"
           src="../assets/db-tidb.png"

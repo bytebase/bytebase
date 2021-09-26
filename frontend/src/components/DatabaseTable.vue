@@ -77,6 +77,9 @@
           <template v-if="database.instance.engine == 'MYSQL'">
             <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
           </template>
+          <template v-if="database.instance.engine == 'POSTGRES'">
+            <img class="h-4 w-auto" src="../assets/db-postgres.png" alt="" />
+          </template>
           <template v-else-if="database.instance.engine == 'TIDB'">
             <img class="h-4 w-auto" src="../assets/db-tidb.png" />
           </template>

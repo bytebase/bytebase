@@ -119,7 +119,7 @@ VALUES
         7017,
         'Admin data source',
         'ADMIN',
-        'root',
+        'postgres',
         ''
     );
 
@@ -142,6 +142,31 @@ VALUES
         1,
         6006,
         7018,
+        'Admin data source',
+        'ADMIN',
+        'root',
+        ''
+    );
+
+INSERT INTO
+    data_source (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        database_id,
+        name,
+        TYPE,
+        username,
+        PASSWORD
+    )
+VALUES
+    (
+        8007,
+        1,
+        1,
+        6006,
+        7019,
         'Admin data source',
         'ADMIN',
         'admin',

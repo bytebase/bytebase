@@ -4,7 +4,7 @@ import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
-export type EngineType = "MYSQL" | "TIDB";
+export type EngineType = "MYSQL" | "POSTGRES" | "TIDB";
 
 export type Instance = {
   id: InstanceId;

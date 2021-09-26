@@ -16,7 +16,10 @@ input[type="number"] {
   <form class="space-y-6 divide-y divide-block-border">
     <div class="space-y-6 divide-y divide-block-border px-1">
       <div v-if="create" class="grid grid-cols-1 gap-4 sm:grid-cols-6">
-        <template v-for="(engine, index) in ['MYSQL', 'TIDB']" :key="index">
+        <template
+          v-for="(engine, index) in ['MYSQL', 'POSTGRES', 'TIDB']"
+          :key="index"
+        >
           <div
             class="
               flex
@@ -34,6 +37,13 @@ input[type="number"] {
                    https://github.com/vitejs/vite/issues/1265 -->
               <template v-if="engine == 'MYSQL'">
                 <img class="h-8 w-auto" src="../assets/db-mysql.png" alt="" />
+              </template>
+              <template v-if="engine == 'POSTGRES'">
+                <img
+                  class="h-8 w-auto"
+                  src="../assets/db-postgres.png"
+                  alt=""
+                />
               </template>
               <template v-else-if="engine == 'TIDB'">
                 <img class="h-8 w-auto" src="../assets/db-tidb.png" />
@@ -64,6 +74,12 @@ input[type="number"] {
                 v-if="state.instance.engine == 'MYSQL'"
                 class="h-6 w-auto mr-2"
                 src="../assets/db-mysql.png"
+                alt=""
+              />
+              <img
+                v-if="state.instance.engine == 'POSTGRES'"
+                class="h-6 w-auto mr-2"
+                src="../assets/db-postgres.png"
                 alt=""
               />
               <img
@@ -487,7 +503,9 @@ export default {
     });
 
     const defaultPort = computed(() => {
-      if (state.instance.engine == "TIDB") {
+      if (state.instance.engine == "POSTGRES") {
+        return "5432";
+      } else if (state.instance.engine == "TIDB") {
         return "4000";
       }
       return "3306";
@@ -497,6 +515,8 @@ export default {
       switch (type) {
         case "MYSQL":
           return "MySQL";
+        case "POSTGRES":
+          return "PostgreSQL";
         case "TIDB":
           return "TiDB";
       }
