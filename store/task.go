@@ -223,9 +223,9 @@ func (s *TaskService) findTask(ctx context.Context, tx *Tx, find *api.TaskFind) 
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("task not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d tasks with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tasks with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -367,7 +367,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 		return &task, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("task ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task ID not found: %d", patch.ID)}
 }
 
 // patchTaskStatus updates a task status by ID. Returns the new state of the task after update.
@@ -496,5 +496,5 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		return &task, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("task ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task ID not found: %d", patch.ID)}
 }

@@ -87,9 +87,9 @@ func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind)
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("setting not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d activities with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -243,5 +243,5 @@ func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Se
 		return &setting, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("setting not found: %s", patch.Name)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
 }

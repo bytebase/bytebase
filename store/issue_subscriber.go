@@ -167,7 +167,7 @@ func deleteIssueSubscriber(ctx context.Context, tx *Tx, delete *api.IssueSubscri
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Message: fmt.Sprintf("subscriber %d not found in issue %d", delete.SubscriberId, delete.IssueId)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("subscriber %d not found in issue %d", delete.SubscriberId, delete.IssueId)}
 	}
 
 	return nil

@@ -80,9 +80,9 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("data source not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("data source not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d data sources with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -272,5 +272,5 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 		return &dataSource, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("dataSource ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("dataSource ID not found: %d", patch.ID)}
 }

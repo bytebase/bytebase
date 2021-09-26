@@ -100,9 +100,9 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	if err != nil {
 		return nil, err
 	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("member not found: %+v", find)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member not found: %+v", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Message: fmt.Sprintf("found %d members with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalId, list[0]); err != nil {
@@ -288,5 +288,5 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		return &member, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Message: fmt.Sprintf("member ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
 }
