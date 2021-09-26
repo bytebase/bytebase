@@ -41,6 +41,6 @@ VALUES
         'DONE',
         'bb.task-check.database.statement.syntax',
         '',
-        '{"resultList":[{"status":"SUCCESS","title":"Syntax OK","content":"OK"}]}',
+        '{"resultList":[{"status":"SUCCESS","code":0,"title":"Syntax OK","content":"OK"}]}',
         '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","dbType":"MYSQL","charset":"utf8mb4","collation":"utf8mb4_general_ci"}'
     );

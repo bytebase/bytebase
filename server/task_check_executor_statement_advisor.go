@@ -51,17 +51,21 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 	result = []api.TaskCheckResult{}
 	for _, advice := range adviceList {
 		status := api.TaskCheckStatusSuccess
+		code := api.TaskCheckOk
 		switch advice.Status {
 		case advisor.Success:
 			status = api.TaskCheckStatusSuccess
 		case advisor.Warn:
 			status = api.TaskCheckStatusWarn
+			code = api.TaskCheckStatementSyntax
 		case advisor.Error:
 			status = api.TaskCheckStatusError
+			code = api.TaskCheckStatementSyntax
 		}
 
 		result = append(result, api.TaskCheckResult{
 			Status:  status,
+			Code:    code,
 			Title:   advice.Title,
 			Content: advice.Content,
 		})

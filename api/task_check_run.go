@@ -61,6 +61,17 @@ const (
 	TaskCheckDatabaseConnect             TaskCheckType = "bb.task-check.database.connect"
 )
 
+type TaskCheckCode int
+
+const (
+	// 0 ~ 99 Common error code
+	TaskCheckOk           TaskCheckCode = 0
+	TaskCheckDbConnection TaskCheckCode = 1
+
+	// 101 ~ 199 statement advisor error code
+	TaskCheckStatementSyntax TaskCheckCode = 101
+)
+
 type TaskCheckDatabaseStatementAdvisePayload struct {
 	Statement string  `json:"statement,omitempty"`
 	DbType    db.Type `json:"dbType,omitempty"`
@@ -70,6 +81,7 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 
 type TaskCheckResult struct {
 	Status  TaskCheckStatus `json:"status"`
+	Code    TaskCheckCode   `json:"code"`
 	Title   string          `json:"title"`
 	Content string          `json:"content"`
 }

@@ -45,6 +45,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
+				Code:    api.TaskCheckDbConnection,
 				Title:   fmt.Sprintf("failed to connect %q", database.Name),
 				Content: err.Error(),
 			},
@@ -54,6 +55,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	return []api.TaskCheckResult{
 		{
 			Status:  api.TaskCheckStatusSuccess,
+			Code:    api.TaskCheckOk,
 			Title:   fmt.Sprintf("Successfully connected %q", database.Name),
 			Content: "",
 		},
