@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -122,11 +123,13 @@ func (s *TaskScheduler) Run() error {
 						done, detail, err := executor.RunOnce(context.Background(), s.server, task)
 						if done {
 							if err == nil {
+								code := common.Ok
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
 									UpdaterId: api.SYSTEM_BOT_ID,
 									Status:    api.TaskDone,
-									Comment:   detail,
+									Code:      &code,
+									Comment:   &detail,
 								}
 								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 								if err != nil {
@@ -143,11 +146,14 @@ func (s *TaskScheduler) Run() error {
 									zap.String("type", string(task.Type)),
 									zap.Error(err),
 								)
+								code := common.ErrorCode(err)
+								comment := err.Error()
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
 									UpdaterId: api.SYSTEM_BOT_ID,
 									Status:    api.TaskFailed,
-									Comment:   err.Error(),
+									Code:      &code,
+									Comment:   &comment,
 								}
 								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 								if err != nil {

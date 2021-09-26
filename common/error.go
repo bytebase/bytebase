@@ -2,7 +2,6 @@ package common
 
 import (
 	"errors"
-	"fmt"
 )
 
 type Code int
@@ -22,6 +21,12 @@ const (
 	DbConnectionFailure    Code = 101
 	DbStatementSyntaxError Code = 102
 	DbExecutionError       Code = 103
+
+	// 201 db migration error
+	// Db migration is a core feature, so we separate it from the db error
+	MigrationAlreadyApplied  Code = 201
+	MigrationOutOfOrder      Code = 202
+	MigrationBaselineMissing Code = 203
 )
 
 // Error represents an application-specific error. Application errors can be
@@ -41,7 +46,7 @@ type Error struct {
 
 // Error implements the error interface. Not used by the application otherwise.
 func (e *Error) Error() string {
-	return fmt.Sprintf("bytebase error: code=%d message=%v", e.Code, e.Err)
+	return e.Err.Error()
 }
 
 // ErrorCode unwraps an application error and returns its code.

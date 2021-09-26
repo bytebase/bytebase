@@ -370,9 +370,11 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		CreatorId:   taskStatusPatch.UpdaterId,
 		ContainerId: containerId,
 		Type:        api.ActivityPipelineTaskStatusUpdate,
-		Comment:     taskStatusPatch.Comment,
 		Level:       level,
 		Payload:     string(payload),
+	}
+	if taskStatusPatch.Comment != nil {
+		activityCreate.Comment = *taskStatusPatch.Comment
 	}
 
 	activityMeta := ActivityMeta{}

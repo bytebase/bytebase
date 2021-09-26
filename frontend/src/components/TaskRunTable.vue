@@ -1,7 +1,7 @@
 <template>
   <BBTable
     :columnList="columnList"
-    :dataSource="taskRunList"
+    :dataSource="task.taskRunList"
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
@@ -72,6 +72,13 @@
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
         {{ taskRun.comment }}
+        <template v-if="commentLink(taskRun).link">
+          <router-link
+            class="ml-1 normal-link"
+            :to="commentLink(taskRun).link"
+            >{{ commentLink(taskRun).title }}</router-link
+          >
+        </template>
       </BBTableCell>
       <BBTableCell class="table-cell w-12">
         <div class="flex flex-row items-center space-x-2">
@@ -99,7 +106,14 @@
 import { PropType } from "vue";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
-import { TaskRun, TaskRunStatus } from "../types";
+import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
+import { useStore } from "vuex";
+import { databaseSlug } from "../utils";
+
+type CommentLink = {
+  title: string;
+  link: string;
+};
 
 const columnList: BBTableColumn[] = [
   {
@@ -123,12 +137,14 @@ export default {
   name: "TaskRunTable",
   components: { PrincipalAvatar },
   props: {
-    taskRunList: {
+    task: {
       required: true,
-      type: Object as PropType<TaskRun[]>,
+      type: Object as PropType<Task>,
     },
   },
   setup(props, ctx) {
+    const store = useStore();
+
     const statusIconClass = (status: TaskRunStatus) => {
       switch (status) {
         case "RUNNING":
@@ -142,9 +158,22 @@ export default {
       }
     };
 
+    const commentLink = (taskRun: TaskRun): CommentLink | undefined => {
+      if (taskRun.status == "FAILED") {
+        if (taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING) {
+          return {
+            title: "view migration history",
+            link: `/db/${databaseSlug(props.task.database!)}#migration-history`,
+          };
+        }
+      }
+      return undefined;
+    };
+
     return {
       columnList,
       statusIconClass,
+      commentLink,
     };
   },
 };

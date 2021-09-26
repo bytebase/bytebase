@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 type TaskRunStatus string
@@ -48,6 +50,7 @@ type TaskRun struct {
 	Name    string        `jsonapi:"attr,name"`
 	Status  TaskRunStatus `jsonapi:"attr,status"`
 	Type    TaskType      `jsonapi:"attr,type"`
+	Code    common.Code   `jsonapi:"attr,code"`
 	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
 }
@@ -95,8 +98,9 @@ type TaskRunStatusPatch struct {
 
 	// Domain specific fields
 	Status TaskRunStatus
+	Code   *common.Code
 	// Records the status detail (e.g. error message on failure)
-	Comment string
+	Comment *string
 }
 
 type TaskRunService interface {

@@ -14,4 +14,10 @@ export enum DBErrorCode {
   EXECUTION_ERROR = 103,
 }
 
-export type ErrorCode = GeneralErrorCode | DBErrorCode;
+export enum MigrationErrorCode {
+  MIGRAITON_ALREADY_APPLIED = 201,
+  MGIRATION_OUT_OF_ORDER = 202,
+  MIGRATION_BASELINE_MISSING = 203,
+}
+
+export type ErrorCode = GeneralErrorCode | DBErrorCode | MigrationErrorCode;

@@ -125,6 +125,7 @@ export type TaskRun = {
   name: string;
   status: TaskRunStatus;
   type: TaskType;
+  code: ErrorCode;
   comment: string;
   payload?: TaskPayload;
 };
