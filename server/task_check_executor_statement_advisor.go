@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"go.uber.org/zap"
 )
@@ -51,16 +52,16 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 	result = []api.TaskCheckResult{}
 	for _, advice := range adviceList {
 		status := api.TaskCheckStatusSuccess
-		code := api.TaskCheckOk
+		code := common.Ok
 		switch advice.Status {
 		case advisor.Success:
 			status = api.TaskCheckStatusSuccess
 		case advisor.Warn:
 			status = api.TaskCheckStatusWarn
-			code = api.TaskCheckStatementSyntax
+			code = common.DbStatementSyntaxError
 		case advisor.Error:
 			status = api.TaskCheckStatusError
-			code = api.TaskCheckStatementSyntax
+			code = common.DbStatementSyntaxError
 		}
 
 		result = append(result, api.TaskCheckResult{

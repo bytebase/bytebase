@@ -17,6 +17,10 @@ const (
 	NotFound       Code = 4
 	Conflict       Code = 5
 	NotImplemented Code = 6
+
+	// 101 ~ 199 db error
+	DbConnectionFailure    Code = 101
+	DbStatementSyntaxError Code = 102
 )
 
 // Error represents an application-specific error. Application errors can be

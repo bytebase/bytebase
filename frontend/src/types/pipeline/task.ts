@@ -1,4 +1,4 @@
-import { TaskCheckRunId } from "..";
+import { ErrorCode, TaskCheckRunId } from "..";
 import { Database } from "../database";
 import {
   BackupId,
@@ -142,22 +142,9 @@ export type TaskCheckDatabaseStatementAdvisePayload = {
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 
-export enum TaskCheckCommonError {
-  OK = 0,
-  DB_CONNECTION = 1,
-}
-
-export enum TaskCheckStatementAdvisorError {
-  SYNTAX = 101,
-}
-
-export type TaskCheckCode =
-  | TaskCheckCommonError
-  | TaskCheckStatementAdvisorError;
-
 export type TaskCheckResult = {
   status: TaskCheckStatus;
-  code: TaskCheckCode;
+  code: ErrorCode;
   title: string;
   content: string;
 };

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +46,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
-				Code:    api.TaskCheckDbConnection,
+				Code:    common.DbConnectionFailure,
 				Title:   fmt.Sprintf("failed to connect %q", database.Name),
 				Content: err.Error(),
 			},
@@ -55,7 +56,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	return []api.TaskCheckResult{
 		{
 			Status:  api.TaskCheckStatusSuccess,
-			Code:    api.TaskCheckOk,
+			Code:    common.Ok,
 			Title:   fmt.Sprintf("Successfully connected %q", database.Name),
 			Content: "",
 		},
