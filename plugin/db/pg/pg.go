@@ -176,8 +176,9 @@ var (
 		"--\n" +
 		"-- PostgreSQL database structure for %s\n" +
 		"--\n"
-	useDatabaseFmt = "\\connect %s;\n\n"
-	asToken        = regexp.MustCompile("(AS )[$]([a-z]+)[$]")
+	useDatabaseFmt   = "\\connect %s;\n\n"
+	asToken          = regexp.MustCompile("(AS )[$]([a-z]+)[$]")
+	bytebaseDatabase = "bytebase"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -310,7 +311,41 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Migration related
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	return false, fmt.Errorf("not implemented")
+	dbNames, err := driver.getDatabases()
+	if err != nil {
+		return false, err
+	}
+	exist := false
+	for _, dbName := range dbNames {
+		if dbName == bytebaseDatabase {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		return false, nil
+	}
+	if err := driver.switchDatabase(bytebaseDatabase); err != nil {
+		return false, err
+	}
+
+	const query = `
+		SELECT 
+		    1
+		FROM information_schema.tables
+		WHERE table_name = 'migration_history'
+	`
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return false, formatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
@@ -323,6 +358,10 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func formatErrorWithQuery(err error, query string) error {
+	return fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query)
 }
 
 // Dump and restore
