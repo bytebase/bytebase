@@ -176,9 +176,10 @@ var (
 		"--\n" +
 		"-- PostgreSQL database structure for %s\n" +
 		"--\n"
-	useDatabaseFmt   = "\\connect %s;\n\n"
-	asToken          = regexp.MustCompile("(AS )[$]([a-z]+)[$]")
-	bytebaseDatabase = "bytebase"
+	useDatabaseFmt             = "\\connect %s;\n\n"
+	asToken                    = regexp.MustCompile("(AS )[$]([a-z]+)[$]")
+	bytebaseDatabase           = "bytebase"
+	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -311,19 +312,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Migration related
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	dbNames, err := driver.getDatabases()
+	exist, err := driver.hasBytebaseDatabase(ctx)
 	if err != nil {
 		return false, err
 	}
-	exist := false
-	for _, dbName := range dbNames {
-		if dbName == bytebaseDatabase {
-			exist = true
-			break
-		}
-	}
 	if !exist {
-		return false, nil
+		return true, nil
 	}
 	if err := driver.switchDatabase(bytebaseDatabase); err != nil {
 		return false, err
@@ -348,8 +342,78 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
+	dbNames, err := driver.getDatabases()
+	if err != nil {
+		return false, err
+	}
+	exist := false
+	for _, dbName := range dbNames {
+		if dbName == bytebaseDatabase {
+			exist = true
+			break
+		}
+	}
+	return exist, nil
+}
+
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
-	return fmt.Errorf("not implemented")
+	setup, err := driver.NeedsSetupMigration(ctx)
+	if err != nil {
+		return nil
+	}
+
+	if setup {
+		driver.l.Info("Bytebase migration schema not found, creating schema...",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
+
+		exist, err := driver.hasBytebaseDatabase(ctx)
+		if err != nil {
+			driver.l.Error("Failed to find bytebase database.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
+			return fmt.Errorf("failed to find bytebase database error: %v", err)
+		}
+
+		if !exist {
+			if _, err := driver.db.ExecContext(ctx, createBytebaseDatabaseStmt); err != nil {
+				driver.l.Error("Failed to create bytebase database.",
+					zap.Error(err),
+					zap.String("environment", driver.connectionCtx.EnvironmentName),
+					zap.String("database", driver.connectionCtx.InstanceName),
+				)
+				return formatErrorWithQuery(err, createBytebaseDatabaseStmt)
+			}
+		}
+
+		if err := driver.switchDatabase(bytebaseDatabase); err != nil {
+			driver.l.Error("Failed to switch to bytebase database.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
+			return fmt.Errorf("failed to switch to bytebase database error: %v", err)
+		}
+
+		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
+			driver.l.Error("Failed to initialize migration schema.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
+			return formatErrorWithQuery(err, migrationSchema)
+		}
+		driver.l.Info("Successfully created migration schema.",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
+	}
+
+	return nil
 }
 
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, error) {
