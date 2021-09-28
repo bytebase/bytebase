@@ -11,8 +11,6 @@
 <a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/main.webp" height="250px" /></a>
 </p>
 
----
-
 [Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
 
 - [x] Web-based schema change and management workspace for teams
