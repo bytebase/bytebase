@@ -1,10 +1,14 @@
 <p align="center">
-<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/be87525c1228fe00cdcc3585859664bdd3167aca/frontend/src/assets/logo.svg" height="56px" /></a>
+<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/frontend/src/assets/logo.svg" height="56px" /></a>
 </p>
 
 <p align="center">
 <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
+</p>
+
+<p align="center">
+<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/main.webp" height="250px" /></a>
 </p>
 
 ---
@@ -107,13 +111,11 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
 
-## 🎠 Community
+## Notice
 
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
 > issue when upgrading to the new version. Please contact support@bytebase.com or join our Discord server, and we will help you manually upgrade the schema.
 
-[![Join our Discord community](https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2)](https://discord.gg/Gqk4NefZJM)
-
-## 🧲 Jobs
+## We are hiring
 
 We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
