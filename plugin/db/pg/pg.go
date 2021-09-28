@@ -329,17 +329,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		FROM information_schema.tables
 		WHERE table_name = 'migration_history'
 	`
-	rows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return false, formatErrorWithQuery(err, query)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return false, nil
-	}
-
-	return true, nil
+	return db.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
@@ -386,7 +376,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
 				)
-				return formatErrorWithQuery(err, createBytebaseDatabaseStmt)
+				return db.FormatErrorWithQuery(err, createBytebaseDatabaseStmt)
 			}
 		}
 
@@ -405,7 +395,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
-			return formatErrorWithQuery(err, migrationSchema)
+			return db.FormatErrorWithQuery(err, migrationSchema)
 		}
 		driver.l.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -422,10 +412,6 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	return nil, fmt.Errorf("not implemented")
-}
-
-func formatErrorWithQuery(err error, query string) error {
-	return fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query)
 }
 
 // Dump and restore
