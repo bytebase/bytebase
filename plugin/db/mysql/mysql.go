@@ -114,7 +114,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	query := "SELECT VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, formatErrorWithQuery(err, query)
+		return nil, nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer versionRow.Close()
 
@@ -147,7 +147,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
-		return nil, nil, formatErrorWithQuery(err, query)
+		return nil, nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer userRows.Close()
 
@@ -170,7 +170,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			query,
 		)
 		if err != nil {
-			return nil, nil, formatErrorWithQuery(err, query)
+			return nil, nil, db.FormatErrorWithQuery(err, query)
 		}
 		defer grantRows.Close()
 
@@ -223,7 +223,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 	indexRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, formatErrorWithQuery(err, query)
+		return nil, nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer indexRows.Close()
 
@@ -284,7 +284,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			WHERE ` + columnWhere
 	columnRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, formatErrorWithQuery(err, query)
+		return nil, nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer columnRows.Close()
 
@@ -346,7 +346,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, formatErrorWithQuery(err, query)
+		return nil, nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer tableRows.Close()
 
@@ -403,7 +403,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		WHERE ` + where
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, formatErrorWithQuery(err, query)
+		return nil, nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -453,17 +453,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'
 		`
-	rows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return false, formatErrorWithQuery(err, query)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return false, nil
-	}
-
-	return true, nil
+	return db.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
@@ -486,7 +476,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
-			return formatErrorWithQuery(err, migrationSchema)
+			return db.FormatErrorWithQuery(err, migrationSchema)
 		}
 		driver.l.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -589,12 +579,12 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 
 	if err != nil {
-		return "", formatErrorWithQuery(err, query)
+		return "", db.FormatErrorWithQuery(err, query)
 	}
 
 	insertedId, err := res.LastInsertId()
 	if err != nil {
-		return "", formatErrorWithQuery(err, query)
+		return "", db.FormatErrorWithQuery(err, query)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -642,7 +632,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 
 	if err != nil {
-		return "", formatErrorWithQuery(err, query)
+		return "", db.FormatErrorWithQuery(err, query)
 	}
 
 	if err := afterTx.Commit(); err != nil {
@@ -698,7 +688,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, formatErrorWithQuery(err, query)
+		return nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -751,7 +741,7 @@ func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, erro
 	)
 
 	if err != nil {
-		return false, formatErrorWithQuery(err, query)
+		return false, db.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -772,7 +762,7 @@ func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, en
 	)
 
 	if err != nil {
-		return false, formatErrorWithQuery(err, query)
+		return false, db.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -792,7 +782,7 @@ func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, e
 	)
 
 	if err != nil {
-		return nil, formatErrorWithQuery(err, query)
+		return nil, db.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -819,7 +809,7 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, require
 	)
 
 	if err != nil {
-		return -1, formatErrorWithQuery(err, query)
+		return -1, db.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -854,10 +844,6 @@ func formatError(err error) error {
 	}
 
 	return err
-}
-
-func formatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
 }
 
 // Dump and restore
