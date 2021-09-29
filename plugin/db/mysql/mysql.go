@@ -2,17 +2,16 @@ package mysql
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"database/sql"
 	_ "embed"
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
@@ -114,7 +113,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	query := "SELECT VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, db.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer versionRow.Close()
 
@@ -147,7 +146,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
-		return nil, nil, db.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer userRows.Close()
 
@@ -170,7 +169,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			query,
 		)
 		if err != nil {
-			return nil, nil, db.FormatErrorWithQuery(err, query)
+			return nil, nil, util.FormatErrorWithQuery(err, query)
 		}
 		defer grantRows.Close()
 
@@ -223,7 +222,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 	indexRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, db.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer indexRows.Close()
 
@@ -284,7 +283,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			WHERE ` + columnWhere
 	columnRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, db.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer columnRows.Close()
 
@@ -346,7 +345,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, db.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer tableRows.Close()
 
@@ -403,7 +402,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		WHERE ` + where
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, db.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -453,7 +452,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'
 		`
-	return db.NeedsSetupMigrationSchema(ctx, driver.db, query)
+	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
@@ -476,7 +475,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
-			return db.FormatErrorWithQuery(err, migrationSchema)
+			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		driver.l.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -487,159 +486,47 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// ExecuteMigration will execute the migration for MySQL.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, error) {
-	tx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
-	// Phase 1 - Precheck before executing migration
-	// Check if the same migration version has alraedy been applied
-	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
-	if err != nil {
-		return "", err
-	}
-	if duplicate {
-		return "", common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
-	}
-
-	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
-	if err != nil {
-		return "", err
-	}
-	if version != nil {
-		return "", common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
-	}
-
-	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
-	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		hasBaseline, err := findBaseline(ctx, tx, m.Namespace)
-		if err != nil {
-			return "", err
-		}
-
-		if !hasBaseline {
-			return "", common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
-		}
-	}
-
-	// VCS based SQL migration requires existing baselining
-	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
-	sequence, err := findNextSequence(ctx, tx, m.Namespace, requireBaseline)
-	if err != nil {
-		return "", err
-	}
-
-	// Phase 2 - Record migration history as PENDING
-	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
-	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
-	// update the record to DONE together with the updated schema.
-	var schemaBuf bytes.Buffer
-	err = dumpTxn(ctx, tx, m.Database, &schemaBuf, true /*schemaOnly*/)
-	if err != nil {
-		return "", formatError(err)
-	}
-	query := `
-		INSERT INTO bytebase.migration_history (
-			created_by,
-			created_ts,
-			updated_by,
-			updated_ts,
-			namespace,
-			sequence,
-			` + "`engine`," + `
-			` + "`type`," + `
-			` + "`status`," + `
-			version,
-			description,
-			statement,
-			` + "`schema`," + `
-			execution_duration,
-			issue_id,
-			payload
-		)
-		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
-	`
-	res, err := tx.ExecContext(ctx, query,
-		m.Creator,
-		m.Creator,
-		m.Namespace,
+	insertHistoryQuery := `
+	INSERT INTO bytebase.migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		namespace,
 		sequence,
-		m.Engine,
-		m.Type,
-		m.Version,
-		m.Description,
+		` + "`engine`," + `
+		` + "`type`," + `
+		` + "`status`," + `
+		version,
+		description,
 		statement,
-		schemaBuf.String(),
-		m.IssueId,
-		m.Payload,
+		` + "`schema`," + `
+		execution_duration,
+		issue_id,
+		payload
 	)
-
-	if err != nil {
-		return "", db.FormatErrorWithQuery(err, query)
-	}
-
-	insertedId, err := res.LastInsertId()
-	if err != nil {
-		return "", db.FormatErrorWithQuery(err, query)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return "", err
-	}
-
-	// Phase 3 - Executing migration
-	// Branch migration type always has empty sql.
-	// Baseline migration type could also has empty sql when the database is newly created.
-	startedTs := time.Now().Unix()
-	if statement != "" {
-		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
-		_, err = driver.db.ExecContext(ctx, statement)
-		if err != nil {
-			return "", formatError(err)
-		}
-	}
-	duration := time.Now().Unix() - startedTs
-
-	afterTx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer afterTx.Rollback()
-
-	// Phase 4 - Dump the schema after migration
-	var afterSchemaBuf bytes.Buffer
-	err = dumpTxn(ctx, afterTx, m.Database, &afterSchemaBuf, true /*schemaOnly*/)
-	if err != nil {
-		return "", formatError(err)
-	}
-
-	// Phase 5 - Update the migration history with 'DONE', execution_duration, updated schema.
-	query = `
+	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
+`
+	updateHistoryQuery := `
 		UPDATE bytebase.migration_history SET
 			` + "`status` = 'DONE'," + `
 			` + "execution_duration = ?," + `
 			` + "`schema` = ?" + `
 			WHERE id = ?
 	`
-	_, err = afterTx.ExecContext(ctx, query,
-		duration,
-		afterSchemaBuf.String(),
-		insertedId,
-	)
 
-	if err != nil {
-		return "", db.FormatErrorWithQuery(err, query)
+	args := util.MigrationExecutionArgs{
+		CheckDuplicateVersion:  checkDuplicateVersion,
+		CheckOutofOrderVersion: checkOutofOrderVersion,
+		FindBaseline:           findBaseline,
+		FindNextSequence:       findNextSequence,
+		DumpTxn:                dumpTxn,
+		InsertHistoryQuery:     insertHistoryQuery,
+		UpdateHistoryQuery:     updateHistoryQuery,
 	}
-
-	if err := afterTx.Commit(); err != nil {
-		return "", err
-	}
-
-	return afterSchemaBuf.String(), nil
+	return util.ExecuteMigration(ctx, driver.db, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
@@ -688,7 +575,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, db.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -741,7 +628,7 @@ func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, erro
 	)
 
 	if err != nil {
-		return false, db.FormatErrorWithQuery(err, query)
+		return false, util.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -762,7 +649,7 @@ func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, en
 	)
 
 	if err != nil {
-		return false, db.FormatErrorWithQuery(err, query)
+		return false, util.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -782,7 +669,7 @@ func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, e
 	)
 
 	if err != nil {
-		return nil, db.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
@@ -809,7 +696,7 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, require
 	)
 
 	if err != nil {
-		return -1, db.FormatErrorWithQuery(err, query)
+		return -1, util.FormatErrorWithQuery(err, query)
 	}
 	defer row.Close()
 
