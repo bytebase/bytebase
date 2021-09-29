@@ -192,6 +192,19 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "control-center",
+            name: "workspace.control-center",
+            meta: { title: () => "Control Center" },
+            components: {
+              content: () => import("../views/ControlCenterDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             path: "archive",
             name: "workspace.archive",
             meta: { title: () => "Archive" },
@@ -860,6 +873,7 @@ router.beforeEach((to, from, next) => {
     to.name === "oauth-callback" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
+    to.name === "workspace.control-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
