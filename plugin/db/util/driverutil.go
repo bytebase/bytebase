@@ -35,13 +35,10 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 
 // MigrationExecutionArgs includes the arguments for ExecuteMigration().
 type MigrationExecutionArgs struct {
-	CheckDuplicateVersion  func(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error)
-	CheckOutofOrderVersion func(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (*string, error)
-	FindBaseline           func(ctx context.Context, tx *sql.Tx, namespace string) (bool, error)
-	FindNextSequence       func(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error)
-	DumpTxn                func(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error
-	InsertHistoryQuery     string
-	UpdateHistoryQuery     string
+	DumpTxn            func(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error
+	InsertHistoryQuery string
+	UpdateHistoryQuery string
+	TablePrefix        string
 }
 
 // ExecuteMigration will execute the database migration.
@@ -54,7 +51,7 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	duplicate, err := args.CheckDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
+	duplicate, err := checkDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
 	if err != nil {
 		return "", err
 	}
@@ -63,7 +60,7 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := args.CheckOutofOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
+	version, err := checkOutofOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +71,7 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		hasBaseline, err := args.FindBaseline(ctx, tx, m.Namespace)
+		hasBaseline, err := findBaseline(ctx, tx, m.Namespace, args.TablePrefix)
 		if err != nil {
 			return "", err
 		}
@@ -86,7 +83,7 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 
 	// VCS based SQL migration requires existing baselining
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
-	sequence, err := args.FindNextSequence(ctx, tx, m.Namespace, requireBaseline)
+	sequence, err := findNextSequence(ctx, tx, m.Namespace, requireBaseline, args.TablePrefix)
 	if err != nil {
 		return "", err
 	}
@@ -171,6 +168,115 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 	}
 
 	return afterSchemaBuf.String(), nil
+}
+
+func findBaseline(ctx context.Context, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
+	query := `
+		SELECT 1 FROM ` +
+		tablePrefix + `migration_history ` +
+		`WHERE namespace = ? AND ` + "`type` = 'BASELINE'" + `
+	`
+	args := []interface{}{namespace}
+	row, err := tx.QueryContext(ctx, query,
+		args...,
+	)
+
+	if err != nil {
+		return false, FormatErrorWithQuery(err, query)
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (bool, error) {
+	query := `
+		SELECT 1 FROM ` +
+		tablePrefix + `migration_history ` +
+		`WHERE namespace = ? AND ` + "`engine` = ? AND version = ?" + `
+	`
+	args := []interface{}{namespace, engine.String(), version}
+	row, err := tx.QueryContext(ctx, query,
+		args...,
+	)
+
+	if err != nil {
+		return false, FormatErrorWithQuery(err, query)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		return true, nil
+	}
+	return false, nil
+}
+
+func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (*string, error) {
+	query := `
+		SELECT MIN(version) FROM ` +
+		tablePrefix + `migration_history ` +
+		`WHERE namespace = ? AND ` + "`engine` = ? AND STRCMP(?, version) = -1" + `
+	`
+	args := []interface{}{namespace, engine.String(), version}
+	row, err := tx.QueryContext(ctx, query,
+		args...,
+	)
+
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, query)
+	}
+	defer row.Close()
+
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
+}
+
+func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool, tablePrefix string) (int, error) {
+	query := `
+		SELECT MAX(sequence) + 1 FROM ` +
+		tablePrefix + `migration_history ` +
+		`WHERE namespace = ?
+	`
+	args := []interface{}{namespace}
+	row, err := tx.QueryContext(ctx, query,
+		args...,
+	)
+
+	if err != nil {
+		return -1, FormatErrorWithQuery(err, query)
+	}
+	defer row.Close()
+
+	var sequence sql.NullInt32
+	row.Next()
+	if err := row.Scan(&sequence); err != nil {
+		return -1, err
+	}
+
+	if !sequence.Valid {
+		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
+		if !requireBaseline {
+			return 1, nil
+		}
+
+		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+	}
+
+	return int(sequence.Int32), nil
 }
 
 func formatError(err error) error {

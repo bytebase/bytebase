@@ -408,7 +408,43 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, error) {
-	return "", fmt.Errorf("not implemented")
+	insertHistoryQuery := `
+	INSERT INTO migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		namespace,
+		sequence,
+		` + "`engine`," + `
+		` + "`type`," + `
+		` + "`status`," + `
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		execution_duration,
+		issue_id,
+		payload
+	)
+	VALUES (?, EXTRACT(epoch from NOW()), ?, EXTRACT(epoch from NOW()), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
+`
+	updateHistoryQuery := `
+		UPDATE migration_history SET
+			` + "`status` = 'DONE'," + `
+			` + "execution_duration = ?," + `
+			` + "`schema` = ?" + `
+			WHERE id = ?
+	`
+
+	args := util.MigrationExecutionArgs{
+		// TODO(spinningbot): implement dumpTxn.
+		// DumpTxn:            dumpTxn,
+		InsertHistoryQuery: insertHistoryQuery,
+		UpdateHistoryQuery: updateHistoryQuery,
+		TablePrefix:        "",
+	}
+	return util.ExecuteMigration(ctx, driver.db, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

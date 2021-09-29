@@ -9,7 +9,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/go-sql-driver/mysql"
@@ -518,13 +517,10 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	`
 
 	args := util.MigrationExecutionArgs{
-		CheckDuplicateVersion:  checkDuplicateVersion,
-		CheckOutofOrderVersion: checkOutofOrderVersion,
-		FindBaseline:           findBaseline,
-		FindNextSequence:       findNextSequence,
-		DumpTxn:                dumpTxn,
-		InsertHistoryQuery:     insertHistoryQuery,
-		UpdateHistoryQuery:     updateHistoryQuery,
+		DumpTxn:            dumpTxn,
+		InsertHistoryQuery: insertHistoryQuery,
+		UpdateHistoryQuery: updateHistoryQuery,
+		TablePrefix:        "bytebase.",
 	}
 	return util.ExecuteMigration(ctx, driver.db, m, statement, args)
 }
@@ -616,121 +612,6 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 
 	return list, nil
-}
-
-func findBaseline(ctx context.Context, tx *sql.Tx, namespace string) (bool, error) {
-	query := `
-		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND ` + "`type` = 'BASELINE'" + `
-	`
-	args := []interface{}{namespace}
-	row, err := tx.QueryContext(ctx, query,
-		args...,
-	)
-
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, query)
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func checkDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
-	query := `
-		SELECT 1 FROM bytebase.migration_history WHERE namespace = ? AND ` + "`engine` = ? AND version = ?" + `
-	`
-	args := []interface{}{namespace, engine.String(), version}
-	row, err := tx.QueryContext(ctx, query,
-		args...,
-	)
-
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, query)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
-}
-
-func checkOutofOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (*string, error) {
-	query := `
-		SELECT MIN(version) FROM bytebase.migration_history WHERE namespace = ? AND ` + "`engine` = ? AND STRCMP(?, version) = -1" + `
-	`
-	args := []interface{}{namespace, engine.String(), version}
-	row, err := tx.QueryContext(ctx, query,
-		args...,
-	)
-
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	defer row.Close()
-
-	var minVersion sql.NullString
-	row.Next()
-	if err := row.Scan(&minVersion); err != nil {
-		return nil, err
-	}
-
-	if minVersion.Valid {
-		return &minVersion.String, nil
-	}
-
-	return nil, nil
-}
-
-func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
-	query := `
-		SELECT MAX(sequence) + 1 FROM bytebase.migration_history WHERE namespace = ?
-	`
-	args := []interface{}{namespace}
-	row, err := tx.QueryContext(ctx, query,
-		args...,
-	)
-
-	if err != nil {
-		return -1, util.FormatErrorWithQuery(err, query)
-	}
-	defer row.Close()
-
-	var sequence sql.NullInt32
-	row.Next()
-	if err := row.Scan(&sequence); err != nil {
-		return -1, err
-	}
-
-	if !sequence.Valid {
-		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
-		if !requireBaseline {
-			return 1, nil
-		}
-
-		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
-	}
-
-	return int(sequence.Int32), nil
-}
-
-func formatError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_version") {
-		return fmt.Errorf("version has already been applied")
-	} else if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_sequence") {
-		return fmt.Errorf("concurrent migration")
-	}
-
-	return err
 }
 
 // Dump and restore
