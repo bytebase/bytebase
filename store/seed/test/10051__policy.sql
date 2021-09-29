@@ -19,7 +19,6 @@ VALUES
 
 INSERT INTO
     policy (
-        id,
         creator_id,
         updater_id,
         environment_id,
@@ -28,7 +27,6 @@ INSERT INTO
     )
 VALUES
     (
-        5102,
         101,
         101,
         5002,
@@ -38,7 +36,6 @@ VALUES
 
 INSERT INTO
     policy (
-        id,
         creator_id,
         updater_id,
         environment_id,
@@ -47,7 +44,6 @@ INSERT INTO
     )
 VALUES
     (
-        5103,
         101,
         101,
         5003,
@@ -57,7 +53,6 @@ VALUES
 
 INSERT INTO
     policy (
-        id,
         creator_id,
         updater_id,
         environment_id,
@@ -66,7 +61,6 @@ INSERT INTO
     )
 VALUES
     (
-        5104,
         101,
         101,
         5004,
@@ -76,7 +70,6 @@ VALUES
 
 INSERT INTO
     policy (
-        id,
         creator_id,
         updater_id,
         environment_id,
@@ -85,12 +78,45 @@ INSERT INTO
     )
 VALUES
     (
-        5105,
         101,
         101,
         5005,
         'bb.policy.pipeline-approval',
         '{"value":"MANUAL_APPROVAL_NEVER"}'
+    );
+
+INSERT INTO
+    policy (
+        creator_id,
+        updater_id,
+        environment_id,
+        type,
+        payload
+    )
+VALUES
+    (
+        101,
+        101,
+        5003,
+        'bb.policy.backup-plan',
+        '{"schedule":"WEEKLY"}'
+    );
+
+INSERT INTO
+    policy (
+        creator_id,
+        updater_id,
+        environment_id,
+        type,
+        payload
+    )
+VALUES
+    (
+        101,
+        101,
+        5004,
+        'bb.policy.backup-plan',
+        '{"schedule":"DAILY"}'
     );
 
 -- Test upsert.
