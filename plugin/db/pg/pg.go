@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
@@ -329,7 +330,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		FROM information_schema.tables
 		WHERE table_name = 'migration_history'
 	`
-	return db.NeedsSetupMigrationSchema(ctx, driver.db, query)
+	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
@@ -376,7 +377,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
 				)
-				return db.FormatErrorWithQuery(err, createBytebaseDatabaseStmt)
+				return util.FormatErrorWithQuery(err, createBytebaseDatabaseStmt)
 			}
 		}
 
@@ -395,7 +396,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
-			return db.FormatErrorWithQuery(err, migrationSchema)
+			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		driver.l.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),

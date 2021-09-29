@@ -3,7 +3,6 @@ package db
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"regexp"
@@ -353,24 +352,4 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 	}
 
 	return driver, nil
-}
-
-// FormatErrorWithQuery will format the error with failed query.
-func FormatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
-}
-
-// NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.
-func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string) (bool, error) {
-	rows, err := sqldb.QueryContext(ctx, query)
-	if err != nil {
-		return false, FormatErrorWithQuery(err, query)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return false, nil
-	}
-
-	return true, nil
 }
