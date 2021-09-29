@@ -37,7 +37,6 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 type MigrationExecutionArgs struct {
 	DumpTxn            func(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error
 	InsertHistoryQuery string
-	UpdateHistoryQuery string
 	TablePrefix        string
 }
 
@@ -153,14 +152,23 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 
 	// Phase 5 - Update the migration history with 'DONE', execution_duration, updated schema.
 
-	_, err = afterTx.ExecContext(ctx, args.UpdateHistoryQuery,
+	updateHistoryQuery := `
+	UPDATE ` +
+		args.TablePrefix + `migration_history ` +
+		`SET
+		` + "`status` = 'DONE'," + `
+		` + "execution_duration = ?," + `
+		` + "`schema` = ?" + `
+		WHERE id = ?
+`
+	_, err = afterTx.ExecContext(ctx, updateHistoryQuery,
 		duration,
 		afterSchemaBuf.String(),
 		insertedId,
 	)
 
 	if err != nil {
-		return "", FormatErrorWithQuery(err, args.UpdateHistoryQuery)
+		return "", FormatErrorWithQuery(err, updateHistoryQuery)
 	}
 
 	if err := afterTx.Commit(); err != nil {
@@ -277,6 +285,97 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, require
 	}
 
 	return int(sequence.Int32), nil
+}
+
+// FindMigrationHistoryList will find the list of migration history.
+func FindMigrationHistoryList(ctx context.Context, sqldb *sql.DB, find *db.MigrationHistoryFind, tablePrefix string) ([]*db.MigrationHistory, error) {
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.Database; v != nil {
+		where, args = append(where, "namespace = ?"), append(args, *v)
+	}
+	if v := find.Version; v != nil {
+		where, args = append(where, "version = ?"), append(args, *v)
+	}
+
+	var query = `
+			SELECT 
+		    id,
+			created_by,
+		    created_ts,
+		    updated_by,
+		    updated_ts,
+			namespace,
+			sequence,
+			` + "`engine`," + `
+			` + "`type`," + `
+			` + "`status`," + `
+			version,
+			description,
+		    statement,
+			` + "`schema`," + `
+		    execution_duration,
+			issue_id,
+			payload
+		FROM ` +
+		tablePrefix + `migration_history ` +
+		`WHERE ` + strings.Join(where, " AND ") + `
+		ORDER BY created_ts DESC`
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	list := make([]*db.MigrationHistory, 0)
+	for rows.Next() {
+		var history db.MigrationHistory
+		if err := rows.Scan(
+			&history.ID,
+			&history.Creator,
+			&history.CreatedTs,
+			&history.Updater,
+			&history.UpdatedTs,
+			&history.Namespace,
+			&history.Sequence,
+			&history.Engine,
+			&history.Type,
+			&history.Status,
+			&history.Version,
+			&history.Description,
+			&history.Statement,
+			&history.Schema,
+			&history.ExecutionDuration,
+			&history.IssueId,
+			&history.Payload,
+		); err != nil {
+			return nil, err
+		}
+
+		list = append(list, &history)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
 
 func formatError(err error) error {
