@@ -10,13 +10,20 @@
             <span class="ml-1 text-success">enabled</span>
           </div>
           <button
-            v-if="allowAdmin"
+            v-if="allowDisableAutoBackup"
             type="button"
             class="ml-4 btn-normal"
             @click.prevent="toggleAutoBackup(false)"
           >
             Disable automatic backup
           </button>
+          <router-link
+            v-else
+            class="normal-link text-sm"
+            :to="`/environment/${database.instance.environment.id}`"
+          >
+            {{ `${backupPolicy} backup enforced and can't be disabled` }}
+          </router-link>
         </div>
         <div class="mt-2 text-control">
           Backup will be taken on every
@@ -87,6 +94,7 @@ import {
   BackupSettingUpsert,
   Database,
   NORMAL_POLL_INTERVAL,
+  PolicyBackupPlanPolicyPayload,
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   UNKNOWN_ID,
@@ -144,6 +152,15 @@ export default {
     };
 
     watchEffect(prepareBackupList);
+
+    const prepareBackupPolicy = () => {
+      store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
+        environmentId: props.database.instance.environment.id,
+        type: "bb.policy.backup-plan",
+      });
+    };
+
+    watchEffect(prepareBackupPolicy);
 
     const assignBackupSetting = (backupSetting: BackupSetting) => {
       state.autoBackupEnabled = backupSetting.enabled;
@@ -208,6 +225,18 @@ export default {
       return `${String(hour).padStart(2, "0")}:00 (${
         Intl.DateTimeFormat().resolvedOptions().timeZone
       })`;
+    });
+
+    const backupPolicy = computed(() => {
+      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
+        props.database.instance.environment.id,
+        "bb.policy.backup-plan"
+      );
+      return (policy.payload as PolicyBackupPlanPolicyPayload).schedule;
+    });
+
+    const allowDisableAutoBackup = computed(() => {
+      return props.allowAdmin && backupPolicy.value == "UNSET";
     });
 
     const createBackup = (backupName: string) => {
@@ -325,6 +354,8 @@ export default {
       backupList,
       autoBackupWeekdayText,
       autoBackupHourText,
+      allowDisableAutoBackup,
+      backupPolicy,
       createBackup,
       toggleAutoBackup,
     };
