@@ -508,110 +508,17 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
 `
-	updateHistoryQuery := `
-		UPDATE bytebase.migration_history SET
-			` + "`status` = 'DONE'," + `
-			` + "execution_duration = ?," + `
-			` + "`schema` = ?" + `
-			WHERE id = ?
-	`
 
 	args := util.MigrationExecutionArgs{
 		DumpTxn:            dumpTxn,
 		InsertHistoryQuery: insertHistoryQuery,
-		UpdateHistoryQuery: updateHistoryQuery,
 		TablePrefix:        "bytebase.",
 	}
 	return util.ExecuteMigration(ctx, driver.db, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	tx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
-	}
-	if v := find.Database; v != nil {
-		where, args = append(where, "namespace = ?"), append(args, *v)
-	}
-	if v := find.Version; v != nil {
-		where, args = append(where, "version = ?"), append(args, *v)
-	}
-
-	var query = `
-			SELECT 
-		    id,
-			created_by,
-		    created_ts,
-		    updated_by,
-		    updated_ts,
-			namespace,
-			sequence,
-			` + "`engine`," + `
-			` + "`type`," + `
-			` + "`status`," + `
-			version,
-			description,
-		    statement,
-			` + "`schema`," + `
-		    execution_duration,
-			issue_id,
-			payload
-		FROM bytebase.migration_history
-		WHERE ` + strings.Join(where, " AND ") + `
-		ORDER BY created_ts DESC`
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*db.MigrationHistory, 0)
-	for rows.Next() {
-		var history db.MigrationHistory
-		if err := rows.Scan(
-			&history.ID,
-			&history.Creator,
-			&history.CreatedTs,
-			&history.Updater,
-			&history.UpdatedTs,
-			&history.Namespace,
-			&history.Sequence,
-			&history.Engine,
-			&history.Type,
-			&history.Status,
-			&history.Version,
-			&history.Description,
-			&history.Statement,
-			&history.Schema,
-			&history.ExecutionDuration,
-			&history.IssueId,
-			&history.Payload,
-		); err != nil {
-			return nil, err
-		}
-
-		list = append(list, &history)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return list, nil
+	return util.FindMigrationHistoryList(ctx, driver.db, find, "bytebase.")
 }
 
 // Dump and restore
