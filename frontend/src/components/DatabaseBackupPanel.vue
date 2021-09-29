@@ -192,6 +192,9 @@ export default {
         state.autoBackupHour,
         state.autoBackupDayOfWeek
       );
+      if (dayOfWeek == -1) {
+        return "day";
+      }
       if (dayOfWeek == 0) {
         return "Sunday";
       }
@@ -305,7 +308,11 @@ export default {
         databaseId: props.database.id,
         enabled: on,
         hour: on ? hour : state.autoBackupHour,
-        dayOfWeek: on ? dayOfWeek : state.autoBackupDayOfWeek,
+        dayOfWeek: on
+          ? backupPolicy.value == "DAILY"
+            ? -1
+            : dayOfWeek
+          : state.autoBackupDayOfWeek,
       };
       store
         .dispatch("backup/upsertBackupSetting", {
