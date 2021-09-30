@@ -23,6 +23,7 @@ type Server struct {
 	TaskCheckScheduler *TaskCheckScheduler
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
+	AnomalyScanner     *AnomalyScanner
 
 	ActivityManager *ActivityManager
 
@@ -148,6 +149,9 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(logger, s, backupRunnerInterval)
+
+		// Anomaly scanner
+		s.AnomalyScanner = NewAnomalyScanner(logger, s)
 	}
 
 	// Middleware
@@ -233,6 +237,10 @@ func (server *Server) Run() error {
 		}
 
 		if err := server.BackupRunner.Run(); err != nil {
+			return err
+		}
+
+		if err := server.AnomalyScanner.Run(); err != nil {
 			return err
 		}
 	}
