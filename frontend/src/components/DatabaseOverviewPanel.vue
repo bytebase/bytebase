@@ -1,8 +1,44 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div v-if="database.anomalyList.length > 0">
-      <div class="text-lg leading-6 font-medium text-main mb-4">Anomalies</div>
+      <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
+        Anomalies
+        <svg
+          class="ml-1 w-6 h-6 text-warning"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+      </div>
       <AnomalyTable :anomalyList="database.anomalyList" />
+    </div>
+    <div
+      v-else
+      class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
+    >
+      No anomalies detected
+      <svg
+        class="ml-1 w-6 h-6 text-success"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        ></path>
+      </svg>
     </div>
 
     <!-- Description list -->
