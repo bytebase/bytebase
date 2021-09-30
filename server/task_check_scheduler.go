@@ -56,6 +56,7 @@ func (s *TaskCheckScheduler) Run() error {
 				taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(context.Background(), taskCheckRunFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
+					return
 				}
 
 				for _, taskCheckRun := range taskCheckRunList {

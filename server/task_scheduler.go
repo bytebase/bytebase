@@ -56,6 +56,7 @@ func (s *TaskScheduler) Run() error {
 				pipelineList, err := s.server.PipelineService.FindPipelineList(context.Background(), pipelineFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
+					return
 				}
 				for _, pipeline := range pipelineList {
 					if pipeline.ID == api.ONBOARDING_PIPELINE_ID {
@@ -86,6 +87,7 @@ func (s *TaskScheduler) Run() error {
 				taskList, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
+					return
 				}
 
 				for _, task := range taskList {

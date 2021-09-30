@@ -51,6 +51,7 @@ func (s *SchemaSyncer) Run() error {
 				list, err := s.server.InstanceService.FindInstanceList(context.Background(), instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instances", zap.Error(err))
+					return
 				}
 
 				for _, instance := range list {
