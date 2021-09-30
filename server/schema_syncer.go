@@ -28,6 +28,7 @@ type SchemaSyncer struct {
 func (s *SchemaSyncer) Run() error {
 	go func() {
 		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", SCHEMA_SYNC_INTERVAL))
+		runningTasks := make(map[int]bool)
 		for {
 			func() {
 				defer func() {
@@ -50,6 +51,10 @@ func (s *SchemaSyncer) Run() error {
 				}
 
 				for _, instance := range list {
+					if _, ok := runningTasks[instance.ID]; ok {
+						continue
+					}
+					runningTasks[instance.ID] = true
 					if err := s.server.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 						s.l.Error("Failed to sync instance",
 							zap.Int("id", instance.ID),
@@ -58,6 +63,9 @@ func (s *SchemaSyncer) Run() error {
 						continue
 					}
 					go func(instance *api.Instance) {
+						defer func() {
+							delete(runningTasks, instance.ID)
+						}()
 						resultSet := s.server.SyncSchema(instance)
 						if resultSet.Error != "" {
 							s.l.Debug("Failed to sync instance",
