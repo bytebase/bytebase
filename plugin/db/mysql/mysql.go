@@ -510,11 +510,10 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 `
 
 	args := util.MigrationExecutionArgs{
-		DumpTxn:            dumpTxn,
 		InsertHistoryQuery: insertHistoryQuery,
 		TablePrefix:        "bytebase.",
 	}
-	return util.ExecuteMigration(ctx, driver.db, m, statement, args)
+	return util.ExecuteMigration(ctx, driver, driver.db, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

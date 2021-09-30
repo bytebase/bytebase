@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
@@ -35,13 +34,17 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 
 // MigrationExecutionArgs includes the arguments for ExecuteMigration().
 type MigrationExecutionArgs struct {
-	DumpTxn            func(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error
 	InsertHistoryQuery string
 	TablePrefix        string
 }
 
 // ExecuteMigration will execute the database migration.
-func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (string, error) {
+func ExecuteMigration(ctx context.Context, driver db.Driver, sqldb *sql.DB, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (string, error) {
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(ctx, m.Database, &schemaBuf, true /*schemaOnly*/); err != nil {
+		return "", formatError(err)
+	}
+
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -91,11 +94,6 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	var schemaBuf bytes.Buffer
-	err = args.DumpTxn(ctx, tx, m.Database, &schemaBuf, true /*schemaOnly*/)
-	if err != nil {
-		return "", formatError(err)
-	}
 	res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
 		m.Creator,
 		m.Creator,
@@ -137,21 +135,13 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 	}
 	duration := time.Now().Unix() - startedTs
 
-	afterTx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer afterTx.Rollback()
-
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	err = args.DumpTxn(ctx, afterTx, m.Database, &afterSchemaBuf, true /*schemaOnly*/)
-	if err != nil {
+	if err = driver.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return "", formatError(err)
 	}
 
 	// Phase 5 - Update the migration history with 'DONE', execution_duration, updated schema.
-
 	updateHistoryQuery := `
 	UPDATE ` +
 		args.TablePrefix + `migration_history ` +
@@ -161,6 +151,11 @@ func ExecuteMigration(ctx context.Context, sqldb *sql.DB, m *db.MigrationInfo, s
 		` + "`schema` = ?" + `
 		WHERE id = ?
 `
+	afterTx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer afterTx.Rollback()
 	_, err = afterTx.ExecContext(ctx, updateHistoryQuery,
 		duration,
 		afterSchemaBuf.String(),
