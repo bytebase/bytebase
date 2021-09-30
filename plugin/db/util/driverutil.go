@@ -12,6 +12,10 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+const (
+	bytebaseDatabase = "bytebase"
+)
+
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
@@ -39,12 +43,16 @@ type MigrationExecutionArgs struct {
 }
 
 // ExecuteMigration will execute the database migration.
-func ExecuteMigration(ctx context.Context, driver db.Driver, sqldb *sql.DB, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (string, error) {
+func ExecuteMigration(ctx context.Context, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (string, error) {
 	var schemaBuf bytes.Buffer
 	if err := driver.Dump(ctx, m.Database, &schemaBuf, true /*schemaOnly*/); err != nil {
 		return "", formatError(err)
 	}
 
+	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
+		return "", err
+	}
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -151,7 +159,11 @@ func ExecuteMigration(ctx context.Context, driver db.Driver, sqldb *sql.DB, m *d
 		` + "`schema` = ?" + `
 		WHERE id = ?
 `
-	afterTx, err := sqldb.BeginTx(ctx, nil)
+	afterSqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
+		return "", err
+	}
+	afterTx, err := afterSqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
 	}

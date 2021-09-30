@@ -296,6 +296,13 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
+func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+	if err := driver.switchDatabase(database); err != nil {
+		return nil, err
+	}
+	return driver.db, nil
+}
+
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	return nil, nil, fmt.Errorf("not implemented")
 }
@@ -434,7 +441,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		InsertHistoryQuery: insertHistoryQuery,
 		TablePrefix:        "",
 	}
-	return util.ExecuteMigration(ctx, driver, driver.db, m, statement, args)
+	return util.ExecuteMigration(ctx, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

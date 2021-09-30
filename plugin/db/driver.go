@@ -3,6 +3,7 @@ package db
 import (
 	"bufio"
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"regexp"
@@ -297,6 +298,7 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
+	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error)
 	Execute(ctx context.Context, statement string) error
 
