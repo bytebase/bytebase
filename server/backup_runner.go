@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -32,6 +33,7 @@ func (s *BackupRunner) Run() error {
 	go func() {
 		s.l.Debug(fmt.Sprintf("Auto backup runner started and will run every %v", s.backupRunnerInterval))
 		runningTasks := make(map[int]bool)
+		mu := sync.RWMutex{}
 		for {
 			s.l.Debug("New auto backup round started...")
 			func() {
@@ -57,10 +59,14 @@ func (s *BackupRunner) Run() error {
 				}
 
 				for _, backupSetting := range list {
+					mu.Lock()
 					if _, ok := runningTasks[backupSetting.ID]; ok {
+						mu.Unlock()
 						continue
 					}
 					runningTasks[backupSetting.ID] = true
+					mu.Unlock()
+
 					databaseFind := &api.DatabaseFind{
 						ID: &backupSetting.DatabaseId,
 					}
@@ -81,7 +87,9 @@ func (s *BackupRunner) Run() error {
 							zap.String("backup", backupName),
 						)
 						defer func() {
+							mu.Lock()
 							delete(runningTasks, backupSettingId)
+							mu.Unlock()
 						}()
 						if err := s.scheduleBackupTask(database, backupName); err != nil {
 							s.l.Error("Failed to create automatic backup for database",

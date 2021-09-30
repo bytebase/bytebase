@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -34,6 +35,7 @@ func (s *TaskScheduler) Run() error {
 	go func() {
 		s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", TASK_SCHEDULE_INTERVAL))
 		runningTasks := make(map[int]bool)
+		mu := sync.RWMutex{}
 		for {
 			func() {
 				defer func() {
@@ -112,13 +114,19 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
+					mu.Lock()
 					if _, ok := runningTasks[task.ID]; ok {
+						mu.Unlock()
 						continue
 					}
 					runningTasks[task.ID] = true
+					mu.Unlock()
+
 					go func(task *api.Task) {
 						defer func() {
+							mu.Lock()
 							delete(runningTasks, task.ID)
+							mu.Unlock()
 						}()
 						done, detail, err := executor.RunOnce(context.Background(), s.server, task)
 						if done {
