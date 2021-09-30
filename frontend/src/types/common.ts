@@ -1,5 +1,6 @@
 import { Policy } from ".";
 import { Activity } from "./activity";
+import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Database } from "./database";
@@ -115,7 +116,8 @@ export type ResourceType =
   | "INBOX"
   | "BOOKMARK"
   | "VCS"
-  | "REPOSITORY";
+  | "REPOSITORY"
+  | "ANOMALY";
 
 export const unknown = (
   type: ResourceType
@@ -139,7 +141,8 @@ export const unknown = (
   | Inbox
   | Bookmark
   | VCS
-  | Repository => {
+  | Repository
+  | Anomaly => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -232,6 +235,7 @@ export const unknown = (
     instance: UNKNOWN_INSTANCE,
     project: UNKNOWN_PROJECT,
     dataSourceList: [],
+    anomalyList: [],
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
@@ -399,6 +403,24 @@ export const unknown = (
     externalId: UNKNOWN_ID.toString(),
   };
 
+  const UNKNOWN_ANOMALY: Anomaly = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    instanceId: UNKNOWN_ID,
+    instance: UNKNOWN_INSTANCE,
+    databaseId: UNKNOWN_ID,
+    database: UNKNOWN_DATABASE,
+    type: "bb.anomaly.backup.policy-violation",
+    payload: {
+      environmentId: UNKNOWN_ID,
+      expectedSchedule: "DAILY",
+      actualSchedule: "UNSET",
+    },
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -440,6 +462,8 @@ export const unknown = (
       return UNKNOWN_VCS;
     case "REPOSITORY":
       return UNKONWN_REPOSITORY;
+    case "ANOMALY":
+      return UNKNOWN_ANOMALY;
   }
 };
 
@@ -466,7 +490,8 @@ export const empty = (
   | Inbox
   | Bookmark
   | VCS
-  | Repository => {
+  | Repository
+  | Anomaly => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -557,6 +582,7 @@ export const empty = (
     instance: EMPTY_INSTANCE,
     project: EMPTY_PROJECT,
     dataSourceList: [],
+    anomalyList: [],
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
@@ -724,6 +750,24 @@ export const empty = (
     externalId: EMPTY_ID.toString(),
   };
 
+  const EMPTY_ANOMALY: Anomaly = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    instanceId: EMPTY_ID,
+    instance: EMPTY_INSTANCE,
+    databaseId: EMPTY_ID,
+    database: EMPTY_DATABASE,
+    type: "bb.anomaly.backup.policy-violation",
+    payload: {
+      environmentId: EMPTY_ID,
+      expectedSchedule: "DAILY",
+      actualSchedule: "UNSET",
+    },
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -765,5 +809,7 @@ export const empty = (
       return EMPTY_VCS;
     case "REPOSITORY":
       return EMPTY_REPOSITORY;
+    case "ANOMALY":
+      return EMPTY_ANOMALY;
   }
 };
