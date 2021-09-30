@@ -33,6 +33,7 @@ func (s *BackupRunner) Run() error {
 		s.l.Debug(fmt.Sprintf("Auto backup runner started and will run every %v", s.backupRunnerInterval))
 		runningTasks := make(map[int]bool)
 		for {
+			s.l.Debug("New auto backup round started...")
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -75,6 +76,10 @@ func (s *BackupRunner) Run() error {
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupSettingId int, backupName string) {
+						s.l.Debug("Schedule auto backup",
+							zap.String("database", database.Name),
+							zap.String("backup", backupName),
+						)
 						defer func() {
 							delete(runningTasks, backupSettingId)
 						}()
