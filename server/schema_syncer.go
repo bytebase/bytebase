@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -29,6 +30,7 @@ func (s *SchemaSyncer) Run() error {
 	go func() {
 		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", SCHEMA_SYNC_INTERVAL))
 		runningTasks := make(map[int]bool)
+		mu := sync.RWMutex{}
 		for {
 			s.l.Debug("New schema syncer round started...")
 			func() {
@@ -52,10 +54,14 @@ func (s *SchemaSyncer) Run() error {
 				}
 
 				for _, instance := range list {
+					mu.Lock()
 					if _, ok := runningTasks[instance.ID]; ok {
+						mu.Unlock()
 						continue
 					}
 					runningTasks[instance.ID] = true
+					mu.Unlock()
+
 					if err := s.server.ComposeInstanceRelationship(context.Background(), instance); err != nil {
 						s.l.Error("Failed to sync instance",
 							zap.Int("id", instance.ID),
@@ -66,7 +72,9 @@ func (s *SchemaSyncer) Run() error {
 					go func(instance *api.Instance) {
 						s.l.Debug("Sync instance schema", zap.String("instance", instance.Name))
 						defer func() {
+							mu.Lock()
 							delete(runningTasks, instance.ID)
+							mu.Unlock()
 						}()
 						resultSet := s.server.SyncSchema(instance)
 						if resultSet.Error != "" {
