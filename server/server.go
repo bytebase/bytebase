@@ -56,6 +56,7 @@ type Server struct {
 	BookmarkService        api.BookmarkService
 	VCSService             api.VCSService
 	RepositoryService      api.RepositoryService
+	AnomalyService         api.AnomalyService
 
 	e *echo.Echo
 
