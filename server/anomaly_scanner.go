@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -115,20 +117,85 @@ func (s *AnomalyScanner) Run() error {
 							return
 						}
 						for _, database := range dbList {
+							var backupPolicyAnomalyPayload *api.AnomalyBackupPolicyViolationPayload
 							if backupPlanPolicyMap[instance.EnvironmentId].Schedule != api.BackupPlanPolicyScheduleUnset {
 								backupSettingFind := &api.BackupSettingFind{
 									DatabaseId: &database.ID,
 								}
 								backupSetting, err := s.server.BackupService.FindBackupSetting(context.Background(), backupSettingFind)
+								schedule := api.BackupPlanPolicyScheduleUnset
 								if err != nil {
-									s.l.Error("Failed to retrieve backup setting",
+									if common.ErrorCode(err) != common.NotFound {
+										s.l.Error("Failed to retrieve backup setting",
+											zap.String("instance", instance.Name),
+											zap.String("database", database.Name),
+											zap.Error(err))
+										return
+									}
+								} else {
+									if backupSetting.Enabled && backupSetting.Hour != -1 {
+										if backupSetting.DayOfWeek == -1 {
+											schedule = api.BackupPlanPolicyScheduleDaily
+										} else {
+											schedule = api.BackupPlanPolicyScheduleWeekly
+										}
+									}
+								}
+
+								if backupPlanPolicyMap[instance.EnvironmentId].Schedule == api.BackupPlanPolicyScheduleDaily &&
+									schedule != api.BackupPlanPolicyScheduleDaily {
+									backupPolicyAnomalyPayload = &api.AnomalyBackupPolicyViolationPayload{
+										EnvironmentId:          instance.EnvironmentId,
+										ExpectedBackupSchedule: backupPlanPolicyMap[instance.EnvironmentId].Schedule,
+										ActualBackupSchedule:   schedule,
+									}
+								} else if backupPlanPolicyMap[instance.EnvironmentId].Schedule == api.BackupPlanPolicyScheduleWeekly &&
+									schedule == api.BackupPlanPolicyScheduleUnset {
+									backupPolicyAnomalyPayload = &api.AnomalyBackupPolicyViolationPayload{
+										EnvironmentId:          instance.EnvironmentId,
+										ExpectedBackupSchedule: backupPlanPolicyMap[instance.EnvironmentId].Schedule,
+										ActualBackupSchedule:   schedule,
+									}
+								}
+							}
+
+							if backupPolicyAnomalyPayload != nil {
+								payload, err := json.Marshal(*backupPolicyAnomalyPayload)
+								if err != nil {
+									s.l.Error("Failed to marshal anomaly payload",
 										zap.String("instance", instance.Name),
 										zap.String("database", database.Name),
+										zap.String("type", string(api.AnomalyBackupPolicyViolation)),
 										zap.Error(err))
 									return
 								}
-								if !backupSetting.Enabled {
-									s.l.Info(fmt.Sprintf("Database %s not enabled backup", database.Name))
+								_, err = s.server.AnomalyService.UpsertAnomaly(context.Background(), &api.AnomalyUpsert{
+									CreatorId:  api.SYSTEM_BOT_ID,
+									InstanceId: instance.ID,
+									DatabaseId: database.ID,
+									Type:       api.AnomalyBackupPolicyViolation,
+									Payload:    string(payload),
+								})
+								if err != nil {
+									s.l.Error("Failed to create anomaly",
+										zap.String("instance", instance.Name),
+										zap.String("database", database.Name),
+										zap.String("type", string(api.AnomalyBackupPolicyViolation)),
+										zap.Error(err))
+									return
+								}
+							} else {
+								err := s.server.AnomalyService.ArchiveAnomaly(context.Background(), &api.AnomalyArchive{
+									DatabaseId: database.ID,
+									Type:       api.AnomalyBackupPolicyViolation,
+								})
+								if err != nil && common.ErrorCode(err) != common.NotFound {
+									s.l.Error("Failed to close anomaly",
+										zap.String("instance", instance.Name),
+										zap.String("database", database.Name),
+										zap.String("type", string(api.AnomalyBackupPolicyViolation)),
+										zap.Error(err))
+									return
 								}
 							}
 						}

@@ -305,6 +305,7 @@ func (m *main) Run() error {
 	s.BookmarkService = store.NewBookmarkService(m.l, db)
 	s.VCSService = store.NewVCSService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
+	s.AnomalyService = store.NewAnomalyService(m.l, db)
 
 	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
 
