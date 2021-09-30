@@ -56,6 +56,7 @@ func (s *BackupRunner) Run() error {
 				list, err := s.server.BackupService.FindBackupSettingsMatch(context.Background(), match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
+					return
 				}
 
 				for _, backupSetting := range list {
