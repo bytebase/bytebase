@@ -19,7 +19,14 @@ export type AnomalyBackupPolicyViolationPayload = {
   actualSchedule: BackupPlanPolicySchedule;
 };
 
-export type AnomalyPayload = AnomalyBackupPolicyViolationPayload;
+export type AnomalyBackupMissingPayload = {
+  expectedSchedule: BackupPlanPolicySchedule;
+  lastBackupTs: number;
+};
+
+export type AnomalyPayload =
+  | AnomalyBackupPolicyViolationPayload
+  | AnomalyBackupMissingPayload;
 
 export type Anomaly = {
   id: AnomalyId;

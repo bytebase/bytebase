@@ -19,6 +19,12 @@ type AnomalyBackupPolicyViolationPayload struct {
 	ActualBackupSchedule   BackupPlanPolicySchedule `json:"actualSchedule,omitempty"`
 }
 
+type AnomalyBackupMissingPayload struct {
+	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
+	// Time of last successful backup created
+	LastBackupTs int64 `json:"lastBackupTs,omitempty"`
+}
+
 type Anomaly struct {
 	ID int `jsonapi:"primary,anomaly"`
 
