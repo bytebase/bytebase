@@ -1182,3 +1182,43 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- Anomaly
+-- anomaly stores various anomalies found by the scanner.
+-- For now, anomaly is associated with a particular database. In the future, we may relax it a bit to have instance level anomalys.
+CREATE TABLE anomaly (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    database_id INTEGER NOT NULL REFERENCES db (id),
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.anomaly.%'),
+    payload TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_anomaly_database_id ON anomaly(database_id);
+
+CREATE UNIQUE INDEX idx_anomaly_database_id_type ON anomaly(database_id, type);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('anomaly', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_anomaly_modification_time`
+AFTER
+UPDATE
+    ON `anomaly` FOR EACH ROW BEGIN
+UPDATE
+    `anomaly`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
