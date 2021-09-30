@@ -30,6 +30,7 @@ func (s *SchemaSyncer) Run() error {
 		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", SCHEMA_SYNC_INTERVAL))
 		runningTasks := make(map[int]bool)
 		for {
+			s.l.Debug("New schema syncer round started...")
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -63,6 +64,7 @@ func (s *SchemaSyncer) Run() error {
 						continue
 					}
 					go func(instance *api.Instance) {
+						s.l.Debug("Sync instance schema", zap.String("instance", instance.Name))
 						defer func() {
 							delete(runningTasks, instance.ID)
 						}()
