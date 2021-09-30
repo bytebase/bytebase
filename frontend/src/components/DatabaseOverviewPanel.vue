@@ -1,7 +1,12 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
+    <div v-if="database.anomalyList.length > 0">
+      <div class="text-lg leading-6 font-medium text-main mb-4">Anomalies</div>
+      <AnomalyTable :anomalyList="database.anomalyList" />
+    </div>
+
     <!-- Description list -->
-    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4">
       <div class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">Character set</dt>
         <dd class="mt-1 text-sm text-main">
@@ -170,6 +175,7 @@
 import { computed, reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import AnomalyTable from "../components/AnomalyTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
@@ -190,6 +196,7 @@ export default {
     },
   },
   components: {
+    AnomalyTable,
     DataSourceConnectionPanel,
     DataSourceTable,
     TableTable,

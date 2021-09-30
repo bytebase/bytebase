@@ -3,6 +3,7 @@ import { createStore, Store } from "vuex";
 import activity from "./modules/activity";
 // Actuator module
 import actuator from "./modules/actuator";
+import anomaly from "./modules/anomaly";
 import auth from "./modules/auth";
 import backup from "./modules/backup";
 import bookmark from "./modules/bookmark";
@@ -70,6 +71,7 @@ export const store: Store<any> = createStore({
     task,
     uistate,
     vcs,
+    anomaly,
   },
   strict: !isProd,
 });

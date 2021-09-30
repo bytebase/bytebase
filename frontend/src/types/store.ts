@@ -147,6 +147,8 @@ export interface RepositoryState {
   repositoryByProjectId: Map<ProjectId, Repository>;
 }
 
+export interface AnomalyState {}
+
 export interface NotificationState {
   notificationByModule: Map<string, Notification[]>;
 }
