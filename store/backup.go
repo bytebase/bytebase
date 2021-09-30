@@ -175,6 +175,9 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 	if v := find.Name; v != nil {
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
+	if v := find.Status; v != nil {
+		where, args = append(where, "`status` = ?"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -192,7 +195,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 			path,
 			comment
 		FROM backup
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY created_ts DESC`,
 		args...,
 	)
 	if err != nil {

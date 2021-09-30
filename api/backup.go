@@ -116,7 +116,8 @@ type BackupFind struct {
 	DatabaseId *int
 
 	// Domain specific fields
-	Name *string
+	Name   *string
+	Status *BackupStatus
 }
 
 func (find *BackupFind) String() string {
@@ -201,6 +202,7 @@ type BackupSettingsMatch struct {
 type BackupService interface {
 	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
 	FindBackup(ctx context.Context, find *BackupFind) (*Backup, error)
+	// Returns backup list in created_ts descending order.
 	FindBackupList(ctx context.Context, find *BackupFind) ([]*Backup, error)
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
 	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSetting, error)
