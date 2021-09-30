@@ -172,7 +172,7 @@ CREATE TABLE policy (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    type TEXT NOT NULL,
+    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.policy.%'),
     payload TEXT NOT NULL
 );
 
