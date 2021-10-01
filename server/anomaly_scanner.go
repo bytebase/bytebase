@@ -185,7 +185,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(instance *api.Instance, database *ap
 					zap.String("type", string(api.AnomalyBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				_, err = s.server.AnomalyService.UpsertAnomaly(context.Background(), &api.AnomalyUpsert{
+				_, err = s.server.AnomalyService.UpsertActiveAnomaly(context.Background(), &api.AnomalyUpsert{
 					CreatorId:  api.SYSTEM_BOT_ID,
 					InstanceId: instance.ID,
 					DatabaseId: database.ID,
@@ -216,67 +216,85 @@ func (s *AnomalyScanner) checkBackupAnomaly(instance *api.Instance, database *ap
 	}
 
 	// Check backup missing
-	// The anomaly fires if backup is enabled, however no succesful backup has been taken during the period.
-	if backupSetting != nil && backupSetting.Enabled {
-		expectedSchedule := api.BackupPlanPolicyScheduleWeekly
-		backupMaxAge := time.Duration(7*24) * time.Hour
-		if backupSetting.DayOfWeek == -1 {
-			expectedSchedule = api.BackupPlanPolicyScheduleDaily
-			backupMaxAge = time.Duration(24) * time.Hour
+	{
+		var backupMissingAnomalyPayload *api.AnomalyBackupMissingPayload
+		// The anomaly fires if backup is enabled, however no succesful backup has been taken during the period.
+		if backupSetting != nil && backupSetting.Enabled {
+			expectedSchedule := api.BackupPlanPolicyScheduleWeekly
+			backupMaxAge := time.Duration(7*24) * time.Hour
+			if backupSetting.DayOfWeek == -1 {
+				expectedSchedule = api.BackupPlanPolicyScheduleDaily
+				backupMaxAge = time.Duration(24) * time.Hour
+			}
+
+			// Ignore if backup setting has been changed after the max age.
+			if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
+				status := api.BackupStatusDone
+				backupFind := &api.BackupFind{
+					DatabaseId: &database.ID,
+					Status:     &status,
+				}
+				backupList, err := s.server.BackupService.FindBackupList(context.Background(), backupFind)
+				if err != nil {
+					s.l.Error("Failed to retrieve backup list",
+						zap.String("instance", instance.Name),
+						zap.String("database", database.Name),
+						zap.Error(err))
+				}
+
+				hasValidBackup := false
+				if len(backupList) > 0 {
+					if backupList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
+						hasValidBackup = true
+					}
+				}
+
+				if !hasValidBackup {
+					backupMissingAnomalyPayload = &api.AnomalyBackupMissingPayload{
+						ExpectedBackupSchedule: expectedSchedule,
+					}
+					if len(backupList) > 0 {
+						backupMissingAnomalyPayload.LastBackupTs = backupList[0].UpdatedTs
+					}
+				}
+			}
 		}
 
-		// Ignore if backup setting has been changed after the max age.
-		if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
-			status := api.BackupStatusDone
-			backupFind := &api.BackupFind{
-				DatabaseId: &database.ID,
-				Status:     &status,
-			}
-			backupList, err := s.server.BackupService.FindBackupList(context.Background(), backupFind)
+		if backupMissingAnomalyPayload != nil {
+			payload, err := json.Marshal(*backupMissingAnomalyPayload)
 			if err != nil {
-				s.l.Error("Failed to retrieve backup list",
+				s.l.Error("Failed to marshal anomaly payload",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
+					zap.String("type", string(api.AnomalyBackupMissing)),
 					zap.Error(err))
-			}
-
-			hasValidBackup := false
-			if len(backupList) > 0 {
-				if backupList[0].CreatedTs >= time.Now().Add(-backupMaxAge).Unix() {
-					hasValidBackup = true
-				}
-			}
-
-			if !hasValidBackup {
-				backupMissingAnomalyPayload := &api.AnomalyBackupMissingPayload{
-					ExpectedBackupSchedule: expectedSchedule,
-				}
-				if len(backupList) > 0 {
-					backupMissingAnomalyPayload.LastBackupTs = backupList[0].CreatedTs
-				}
-				payload, err := json.Marshal(*backupMissingAnomalyPayload)
+			} else {
+				_, err = s.server.AnomalyService.UpsertActiveAnomaly(context.Background(), &api.AnomalyUpsert{
+					CreatorId:  api.SYSTEM_BOT_ID,
+					InstanceId: instance.ID,
+					DatabaseId: database.ID,
+					Type:       api.AnomalyBackupMissing,
+					Payload:    string(payload),
+				})
 				if err != nil {
-					s.l.Error("Failed to marshal anomaly payload",
+					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),
 						zap.String("type", string(api.AnomalyBackupMissing)),
 						zap.Error(err))
-				} else {
-					_, err = s.server.AnomalyService.UpsertAnomaly(context.Background(), &api.AnomalyUpsert{
-						CreatorId:  api.SYSTEM_BOT_ID,
-						InstanceId: instance.ID,
-						DatabaseId: database.ID,
-						Type:       api.AnomalyBackupMissing,
-						Payload:    string(payload),
-					})
-					if err != nil {
-						s.l.Error("Failed to create anomaly",
-							zap.String("instance", instance.Name),
-							zap.String("database", database.Name),
-							zap.String("type", string(api.AnomalyBackupMissing)),
-							zap.Error(err))
-					}
 				}
+			}
+		} else {
+			err := s.server.AnomalyService.ArchiveAnomaly(context.Background(), &api.AnomalyArchive{
+				DatabaseId: database.ID,
+				Type:       api.AnomalyBackupMissing,
+			})
+			if err != nil && common.ErrorCode(err) != common.NotFound {
+				s.l.Error("Failed to close anomaly",
+					zap.String("instance", instance.Name),
+					zap.String("database", database.Name),
+					zap.String("type", string(api.AnomalyBackupMissing)),
+					zap.Error(err))
 			}
 		}
 	}

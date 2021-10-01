@@ -64,6 +64,7 @@ type AnomalyFind struct {
 
 	// Related fields
 	DatabaseId int
+	Type       *AnomalyType
 }
 
 func (find *AnomalyFind) String() string {
@@ -80,8 +81,8 @@ type AnomalyArchive struct {
 }
 
 type AnomalyService interface {
-	// UpsertAnomaly would update the existing user if name matches.
-	UpsertAnomaly(ctx context.Context, upsert *AnomalyUpsert) (*Anomaly, error)
+	// UpsertActiveAnomaly would update the existing active anomaly if both database id and type match, otherwise create a new one.
+	UpsertActiveAnomaly(ctx context.Context, upsert *AnomalyUpsert) (*Anomaly, error)
 	FindAnomalyList(ctx context.Context, find *AnomalyFind) ([]*Anomaly, error)
 	ArchiveAnomaly(ctx context.Context, archive *AnomalyArchive) error
 }
