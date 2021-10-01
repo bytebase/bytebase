@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  Anomaly,
   Backup,
   Database,
   DatabaseCreate,
@@ -52,6 +53,15 @@ function convert(
     : undefined;
   let sourceBackup: Backup | undefined = undefined;
 
+  const anomalyIdList = database.relationships!.anomaly
+    .data as ResourceIdentifier[];
+  const anomalyList: Anomaly[] = [];
+  for (const item of anomalyIdList) {
+    const anomaly = unknown("ANOMALY") as Anomaly;
+    anomaly.id = parseInt(item.id);
+    anomalyList.push(anomaly);
+  }
+
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item, includedList);
@@ -64,25 +74,30 @@ function convert(
     }
   }
 
-  // Only able to assign an empty data source list, otherwise would cause circular dependency.
-  // This should be fine as we shouldn't access data source via dataSource.database.dataSourceList
-  const databaseWithoutDataSourceList = {
+  // Only able to assign an empty data source list / anomaly list, otherwise would cause circular dependency.
+  // This should be fine as e.g. we shouldn't access data source via dataSource.database.dataSourceList
+  const databaseWPartial = {
     ...(database.attributes as Omit<
       Database,
-      "id" | "instance" | "project" | "dataSourceList" | "sourceBackup"
+      | "id"
+      | "instance"
+      | "project"
+      | "dataSourceList"
+      | "sourceBackup"
+      | "anomalyList"
     >),
     id: parseInt(database.id),
     instance,
     project,
     dataSourceList: [],
     sourceBackup,
+    anomalyList: [],
   };
 
   for (const item of includedList || []) {
     if (
       item.type == "data-source" &&
-      (item.relationships!.database.data as ResourceIdentifier).id ==
-        database.id
+      item.attributes.databaseId == database.id
     ) {
       const i = dataSourceList.findIndex(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
@@ -90,14 +105,26 @@ function convert(
       if (i != -1) {
         dataSourceList[i] = rootGetters["dataSource/convert"](item);
         dataSourceList[i].instance = instance;
-        dataSourceList[i].database = databaseWithoutDataSourceList;
+        dataSourceList[i].database = databaseWPartial;
+      }
+    }
+
+    if (item.type == "anomaly" && item.attributes.databaseId == database.id) {
+      const i = anomalyList.findIndex(
+        (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
+      );
+      if (i != -1) {
+        anomalyList[i] = rootGetters["anomaly/convert"](item);
+        anomalyList[i].instance = instance;
+        anomalyList[i].database = databaseWPartial;
       }
     }
   }
 
   return {
+    ...(databaseWPartial as Omit<Database, "dataSourceList" | "anomalyList">),
     dataSourceList,
-    ...(databaseWithoutDataSourceList as Omit<Database, "dataSourceList">),
+    anomalyList,
   };
 }
 

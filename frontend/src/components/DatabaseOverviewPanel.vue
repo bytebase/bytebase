@@ -1,7 +1,48 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
+    <div v-if="database.anomalyList.length > 0">
+      <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
+        Anomalies
+        <svg
+          class="ml-1 w-6 h-6 text-warning"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+      </div>
+      <AnomalyTable :anomalyList="database.anomalyList" />
+    </div>
+    <div
+      v-else
+      class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
+    >
+      No anomalies detected
+      <svg
+        class="ml-1 w-6 h-6 text-success"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        ></path>
+      </svg>
+    </div>
+
     <!-- Description list -->
-    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4">
       <div class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">Character set</dt>
         <dd class="mt-1 text-sm text-main">
@@ -170,6 +211,7 @@
 import { computed, reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import AnomalyTable from "../components/AnomalyTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
@@ -190,6 +232,7 @@ export default {
     },
   },
   components: {
+    AnomalyTable,
     DataSourceConnectionPanel,
     DataSourceTable,
     TableTable,

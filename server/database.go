@@ -603,6 +603,25 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 
 	database.DataSourceList = []*api.DataSource{}
 
+	rowStatus := api.Normal
+	database.AnomalyList, err = s.AnomalyService.FindAnomalyList(context.Background(), &api.AnomalyFind{
+		RowStatus:  &rowStatus,
+		DatabaseId: database.ID,
+	})
+	if err != nil {
+		return err
+	}
+	for _, anomaly := range database.AnomalyList {
+		anomaly.Creator, err = s.ComposePrincipalById(context.Background(), anomaly.CreatorId)
+		if err != nil {
+			return err
+		}
+		anomaly.Updater, err = s.ComposePrincipalById(context.Background(), anomaly.UpdaterId)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

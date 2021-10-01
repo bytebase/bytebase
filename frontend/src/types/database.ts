@@ -2,6 +2,7 @@
 // in the "database" object.
 // Physically, a database belongs to an instance. Logically, it belongs to a project.
 
+import { Anomaly } from ".";
 import { Backup } from "./backup";
 import { DataSource } from "./dataSource";
 import { DatabaseId, InstanceId, IssueId, ProjectId } from "./id";
@@ -21,6 +22,7 @@ export type Database = {
   project: Project;
   dataSourceList: DataSource[];
   sourceBackup?: Backup;
+  anomalyList: Anomaly[];
 
   // Standard fields
   creator: Principal;
