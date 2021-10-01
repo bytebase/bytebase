@@ -320,7 +320,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	if !allowTransition {
 		return nil, &common.Error{
 			Code: common.Invalid,
-			Err:  fmt.Errorf("Invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
+			Err:  fmt.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
 	updatedTask, err := s.TaskService.PatchTaskStatus(ctx, taskStatusPatch)

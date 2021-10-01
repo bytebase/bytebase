@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -34,6 +35,7 @@ func (s *TaskCheckScheduler) Run() error {
 	go func() {
 		s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", TASK_SCHEDULE_INTERVAL))
 		runningTaskChecks := make(map[int]bool)
+		mu := sync.RWMutex{}
 		for {
 			func() {
 				defer func() {
@@ -54,6 +56,7 @@ func (s *TaskCheckScheduler) Run() error {
 				taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(context.Background(), taskCheckRunFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
+					return
 				}
 
 				for _, taskCheckRun := range taskCheckRunList {
@@ -67,15 +70,19 @@ func (s *TaskCheckScheduler) Run() error {
 						continue
 					}
 
+					mu.Lock()
 					if _, ok := runningTaskChecks[taskCheckRun.ID]; ok {
+						mu.Unlock()
 						continue
 					}
-
 					runningTaskChecks[taskCheckRun.ID] = true
+					mu.Unlock()
 
 					go func(taskCheckRun *api.TaskCheckRun) {
 						defer func() {
+							mu.Lock()
 							delete(runningTaskChecks, taskCheckRun.ID)
+							mu.Unlock()
 						}()
 						checkResultList, err := executor.Run(context.Background(), s.server, taskCheckRun)
 

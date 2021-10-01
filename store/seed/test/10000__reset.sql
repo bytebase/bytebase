@@ -6,6 +6,9 @@ WHERE
     name != 'bb.auth.secret';
 
 DELETE FROM
+    anomaly;
+
+DELETE FROM
     repository;
 
 DELETE FROM

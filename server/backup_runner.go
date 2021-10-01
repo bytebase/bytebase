@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -31,7 +32,10 @@ type BackupRunner struct {
 func (s *BackupRunner) Run() error {
 	go func() {
 		s.l.Debug(fmt.Sprintf("Auto backup runner started and will run every %v", s.backupRunnerInterval))
+		runningTasks := make(map[int]bool)
+		mu := sync.RWMutex{}
 		for {
+			s.l.Debug("New auto backup round started...")
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -52,9 +56,18 @@ func (s *BackupRunner) Run() error {
 				list, err := s.server.BackupService.FindBackupSettingsMatch(context.Background(), match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
+					return
 				}
 
 				for _, backupSetting := range list {
+					mu.Lock()
+					if _, ok := runningTasks[backupSetting.ID]; ok {
+						mu.Unlock()
+						continue
+					}
+					runningTasks[backupSetting.ID] = true
+					mu.Unlock()
+
 					databaseFind := &api.DatabaseFind{
 						ID: &backupSetting.DatabaseId,
 					}
@@ -69,13 +82,22 @@ func (s *BackupRunner) Run() error {
 					backupSetting.Database = database
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
-					go func(database *api.Database, backupName string) {
+					go func(database *api.Database, backupSettingId int, backupName string) {
+						s.l.Debug("Schedule auto backup",
+							zap.String("database", database.Name),
+							zap.String("backup", backupName),
+						)
+						defer func() {
+							mu.Lock()
+							delete(runningTasks, backupSettingId)
+							mu.Unlock()
+						}()
 						if err := s.scheduleBackupTask(database, backupName); err != nil {
 							s.l.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
 								zap.String("error", err.Error()))
 						}
-					}(database, backupName)
+					}(database, backupSetting.ID, backupName)
 				}
 			}()
 
