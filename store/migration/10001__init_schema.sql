@@ -1201,9 +1201,7 @@ CREATE TABLE anomaly (
     payload TEXT NOT NULL DEFAULT ''
 );
 
-CREATE INDEX idx_anomaly_database_id ON anomaly(database_id);
-
-CREATE UNIQUE INDEX idx_anomaly_database_id_type ON anomaly(database_id, type);
+CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row_status, type);
 
 INSERT INTO
     sqlite_sequence (name, seq)
