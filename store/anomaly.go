@@ -25,17 +25,44 @@ func NewAnomalyService(logger *zap.Logger, db *DB) *AnomalyService {
 	return &AnomalyService{l: logger, db: db}
 }
 
-// UpsertAnomaly would update the existing user if name matches.
-func (s *AnomalyService) UpsertAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
+// UpsertActiveAnomaly would update the existing active anomaly if both database id and type match, otherwise create a new one.
+// Do not use ON CONFLICT (upsert syntax) as it will consume autoincrement id. Functional wise, this is fine, but
+// from the UX perspective, it's not great, since user will see large id gaps.
+func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	anomaly, err := upsertAnomaly(ctx, tx, upsert)
+	status := api.Normal
+	find := &api.AnomalyFind{
+		RowStatus:  &status,
+		DatabaseId: upsert.DatabaseId,
+		Type:       &upsert.Type,
+	}
+	list, err := findAnomalyList(ctx, tx, find)
 	if err != nil {
 		return nil, err
+	}
+
+	var anomaly *api.Anomaly
+	if len(list) == 0 {
+		anomaly, err = createAnomaly(ctx, tx, upsert)
+		if err != nil {
+			return nil, err
+		}
+	} else if len(list) == 1 {
+		anomaly, err = patchAnomaly(ctx, tx, &anomalyPatch{
+			ID:        list[0].ID,
+			UpdaterId: upsert.CreatorId,
+			Payload:   upsert.Payload,
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -82,9 +109,9 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	return nil
 }
 
-// upsertAnomaly upserts a new anomaly.
-func upsertAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
-	// Upsert row into database.
+// createAnomaly creates a new anomaly.
+func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
+	// Inserts row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO anomaly (
 			creator_id,
@@ -95,9 +122,6 @@ func upsertAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT (database_id, `+"`type`"+`) DO UPDATE SET
-			updater_id = excluded.updater_id,
-			payload = excluded.payload
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, `+"`type`"+`, payload
 	`,
 		upsert.CreatorId,
@@ -138,6 +162,9 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 	where, args = append(where, "database_id = ?"), append(args, find.DatabaseId)
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, "`type` = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -186,6 +213,61 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 	}
 
 	return list, nil
+}
+
+type anomalyPatch struct {
+	ID int
+
+	// Standard fields
+	UpdaterId int
+
+	// Domain specific fields
+	Payload string
+}
+
+// patchAnomaly patches an anomaly
+func patchAnomaly(ctx context.Context, tx *Tx, patch *anomalyPatch) (*api.Anomaly, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args = append(set, "payload = ?"), append(args, patch.Payload)
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, `
+		UPDATE anomaly
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = ?
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, `+"`type`"+`, payload
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var anomaly api.Anomaly
+	if err := row.Scan(
+		&anomaly.ID,
+		&anomaly.CreatorId,
+		&anomaly.CreatedTs,
+		&anomaly.UpdaterId,
+		&anomaly.UpdatedTs,
+		&anomaly.InstanceId,
+		&anomaly.DatabaseId,
+		&anomaly.Type,
+		&anomaly.Payload,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &anomaly, err
 }
 
 // archiveAnomaly archives an anomaly by ID.
