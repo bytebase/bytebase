@@ -103,7 +103,7 @@ export default {
           return (
             missingSentence +
             (payload.lastBackupTs
-              ? `last successful backup taken at ${humanizeTs(
+              ? `last successful backup taken on ${humanizeTs(
                   payload.lastBackupTs
                 )}.`
               : "no successful backup taken.")
