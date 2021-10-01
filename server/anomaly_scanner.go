@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ANOMALY_SCAN_INTERVAL = time.Duration(1) * time.Second
+	ANOMALY_SCAN_INTERVAL = time.Duration(30) * time.Minute
 )
 
 func NewAnomalyScanner(logger *zap.Logger, server *Server) *AnomalyScanner {
