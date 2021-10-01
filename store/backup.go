@@ -195,7 +195,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 			path,
 			comment
 		FROM backup
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY created_ts DESC`,
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
 		args...,
 	)
 	if err != nil {
