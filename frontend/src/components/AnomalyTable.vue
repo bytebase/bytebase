@@ -81,7 +81,7 @@ export default {
     const typeName = (type: AnomalyType) => {
       switch (type) {
         case "bb.anomaly.backup.policy-violation":
-          return "Violate backup enforcement";
+          return "Backup enforcement violation";
         case "bb.anomaly.backup.missing":
           return "Missing backup";
       }
