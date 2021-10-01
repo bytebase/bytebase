@@ -304,7 +304,82 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 }
 
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
-	return nil, nil, fmt.Errorf("not implemented")
+	excludedDatabases := map[string]bool{
+		// Skip our internal "bytebase" database
+		"bytebase": true,
+	}
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabases[k] = true
+	}
+
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Query db info
+	dbNames, err := driver.getDatabases()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
+	}
+
+	schemaList := make([]*db.DBSchema, 0)
+	for _, dbName := range dbNames {
+		if _, ok := excludedDatabases[dbName]; ok {
+			continue
+		}
+
+		var schema db.DBSchema
+		schema.Name = dbName
+
+		schemaList = append(schemaList, &schema)
+	}
+
+	return userList, schemaList, err
+}
+
+func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
+	// Query user info
+	query := `
+		SELECT usename AS role_name,
+			CASE 
+				 WHEN usesuper AND usecreatedb THEN 
+				 CAST('superuser, create database' AS pg_catalog.text)
+				 WHEN usesuper THEN 
+					CAST('superuser' AS pg_catalog.text)
+				 WHEN usecreatedb THEN 
+					CAST('create database' AS pg_catalog.text)
+				 ELSE 
+					CAST('' AS pg_catalog.text)
+			END role_attributes
+		FROM pg_catalog.pg_user
+		ORDER BY role_name
+			`
+	userList := make([]*db.DBUser, 0)
+	userRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer userRows.Close()
+
+	for userRows.Next() {
+		var role string
+		var attr string
+		if err := userRows.Scan(
+			&role,
+			&attr,
+		); err != nil {
+			return nil, err
+		}
+
+		userList = append(userList, &db.DBUser{
+			Name:  role,
+			Grant: attr,
+		})
+	}
+	return userList, nil
 }
 
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
