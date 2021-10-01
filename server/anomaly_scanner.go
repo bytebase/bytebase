@@ -98,7 +98,8 @@ func (s *AnomalyScanner) Run() error {
 					runningTasks[instance.ID] = true
 					mu.Unlock()
 
-					go func(instance *api.Instance) {
+					// Do NOT use go-routine otherwise would cause "database locked" in underlying SQLite
+					func(instance *api.Instance) {
 						s.l.Debug("Scan instance anomaly", zap.String("instance", instance.Name))
 						defer func() {
 							mu.Lock()
