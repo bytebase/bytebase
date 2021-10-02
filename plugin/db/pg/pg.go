@@ -334,6 +334,33 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		var schema db.DBSchema
 		schema.Name = dbName
 
+		txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+		if err != nil {
+			return nil, nil, err
+		}
+		defer txn.Rollback()
+
+		// Table statements.
+		tables, err := getPgTables(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
+		}
+		for _, tbl := range tables {
+			var dbTable db.DBTable
+			dbTable.Name = fmt.Sprintf("%s.%s ", tbl.schemaName, tbl.name)
+			dbTable.Type = "BASE TABLE"
+			for _, col := range tbl.columns {
+				var dbColumn db.DBColumn
+				dbColumn.Name = col.columnName
+				dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
+			}
+
+			schema.TableList = append(schema.TableList, dbTable)
+		}
+		if err := txn.Commit(); err != nil {
+			return nil, nil, err
+		}
+
 		schemaList = append(schemaList, &schema)
 	}
 
