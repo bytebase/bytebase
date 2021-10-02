@@ -11,6 +11,7 @@ type AnomalyType string
 const (
 	AnomalyBackupPolicyViolation AnomalyType = "bb.anomaly.backup.policy-violation"
 	AnomalyBackupMissing         AnomalyType = "bb.anomaly.backup.missing"
+	AnomalyDatabaseConnection    AnomalyType = "bb.anomaly.database.connection"
 )
 
 type AnomalyBackupPolicyViolationPayload struct {
@@ -23,6 +24,11 @@ type AnomalyBackupMissingPayload struct {
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	// Time of last successful backup created
 	LastBackupTs int64 `json:"lastBackupTs,omitempty"`
+}
+
+type AnomalyDatabaseConnectionPayload struct {
+	// Connection failure detail
+	Detail string `json:"detail,omitempty"`
 }
 
 type Anomaly struct {
