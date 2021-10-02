@@ -378,7 +378,11 @@ func (p *QueryParams) QueryString() string {
 		}
 		var parts []string
 		for _, param := range params {
-			parts = append(parts, fmt.Sprintf("%s = ?", param))
+			v := fmt.Sprintf("%s = ?", param)
+			if strings.Contains(param, "?") {
+				v = param
+			}
+			parts = append(parts, v)
 		}
 		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 	}
@@ -388,7 +392,11 @@ func (p *QueryParams) QueryString() string {
 		}
 		var parts []string
 		for i, param := range params {
-			parts = append(parts, fmt.Sprintf("%s=$%v", param, i+1))
+			v := fmt.Sprintf("%s=$%v", param, i+1)
+			if strings.Contains(param, "?") {
+				v = strings.ReplaceAll(param, "?", fmt.Sprintf("%v", i+1))
+			}
+			parts = append(parts, v)
 		}
 		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 	}

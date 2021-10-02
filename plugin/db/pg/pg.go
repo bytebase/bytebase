@@ -554,14 +554,24 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		issue_id,
 		payload
 	)
-	VALUES (?, EXTRACT(epoch from NOW()), ?, EXTRACT(epoch from NOW()), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
+	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, %6, 'PENDING', $7, $8, $9, $10, 0, $11, $12)
+`
+	updateHistoryQuery := `
+UPDATE ` +
+		`migration_history ` +
+		`SET
+	` + "`status` = 'DONE'," + `
+	` + "execution_duration = $1," + `
+	` + "`schema` = $2" + `
+	WHERE id = $3
 `
 
 	args := util.MigrationExecutionArgs{
 		InsertHistoryQuery: insertHistoryQuery,
+		UpdateHistoryQuery: updateHistoryQuery,
 		TablePrefix:        "",
 	}
-	return util.ExecuteMigration(ctx, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, db.Postgres, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
