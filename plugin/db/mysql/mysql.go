@@ -522,7 +522,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return util.FindMigrationHistoryList(ctx, driver, find, "bytebase.")
+	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, "bytebase.")
 }
 
 // Dump and restore
