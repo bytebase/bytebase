@@ -513,12 +513,21 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
 `
-
+	updateHistoryQuery := `
+	UPDATE ` +
+		`bytebase.migration_history ` +
+		`SET
+		` + "`status` = 'DONE'," + `
+		` + "execution_duration = ?," + `
+		` + "`schema` = ?" + `
+		WHERE id = ?
+`
 	args := util.MigrationExecutionArgs{
 		InsertHistoryQuery: insertHistoryQuery,
+		UpdateHistoryQuery: updateHistoryQuery,
 		TablePrefix:        "bytebase.",
 	}
-	return util.ExecuteMigration(ctx, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, db.MySQL, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
