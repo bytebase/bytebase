@@ -38,6 +38,7 @@ import {
   AnomalyBackupMissingPayload,
   AnomalyBackupPolicyViolationPayload,
   AnomalyDatabaseConnectionPayload,
+  AnomalyDatabaseSchemaDriftPayload,
   AnomalyType,
   Column,
 } from "../types";
@@ -87,6 +88,8 @@ export default {
           return "Missing backup";
         case "bb.anomaly.database.connection":
           return "Connection failure";
+        case "bb.anomaly.database.schema.drift":
+          return "Schema drift";
       }
     };
 
@@ -116,6 +119,10 @@ export default {
           const payload = anomaly.payload as AnomalyDatabaseConnectionPayload;
           return payload.detail;
         }
+        case "bb.anomaly.database.schema.drift": {
+          const payload = anomaly.payload as AnomalyDatabaseSchemaDriftPayload;
+          return "";
+        }
       }
     };
 
@@ -136,6 +143,11 @@ export default {
           return {
             link: `/instance/${instanceSlug(anomaly.instance)}`,
             title: "Check instance",
+          };
+        case "bb.anomaly.database.schema.drift":
+          return {
+            link: `#migration-history`,
+            title: "Check migration",
           };
       }
     };
