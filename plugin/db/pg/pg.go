@@ -340,6 +340,17 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		}
 		defer txn.Rollback()
 
+		// Index statements.
+		indicesMap := make(map[string][]*indexSchema)
+		indices, err := getIndices(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+		}
+		for _, idx := range indices {
+			key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
+			indicesMap[key] = append(indicesMap[key], idx)
+		}
+
 		// Table statements.
 		tables, err := getPgTables(txn)
 		if err != nil {
@@ -353,6 +364,13 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 				var dbColumn db.DBColumn
 				dbColumn.Name = col.columnName
 				dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
+			}
+			indices := indicesMap[dbTable.Name]
+			for _, idx := range indices {
+				var dbIndex db.DBIndex
+				dbIndex.Name = idx.name
+				dbIndex.Expression = idx.Statement()
+				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
 			}
 
 			schema.TableList = append(schema.TableList, dbTable)
