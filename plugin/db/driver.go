@@ -356,3 +356,49 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 
 	return driver, nil
 }
+
+// QueryParams is a list of query parameters for prepared query.
+type QueryParams struct {
+	DatabaseType Type
+	Names        []string
+	Params       []interface{}
+}
+
+// AddParam adds a parameter to QueryParams.
+func (p *QueryParams) AddParam(name string, param interface{}) {
+	p.Names = append(p.Names, name)
+	p.Params = append(p.Params, param)
+}
+
+// QueryString returns the query where clause string for the query parameters.
+func (p *QueryParams) QueryString() string {
+	mysqlQuery := func(params []string) string {
+		if len(params) == 0 {
+			return ""
+		}
+		var parts []string
+		for _, param := range params {
+			parts = append(parts, fmt.Sprintf("%s = ?", param))
+		}
+		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+	}
+	pgQuery := func(params []string) string {
+		if len(params) == 0 {
+			return ""
+		}
+		var parts []string
+		for i, param := range params {
+			parts = append(parts, fmt.Sprintf("%s=$%v", param, i+1))
+		}
+		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+	}
+	switch p.DatabaseType {
+	case MySQL:
+		return mysqlQuery(p.Names)
+	case TiDB:
+		return mysqlQuery(p.Names)
+	case Postgres:
+		return pgQuery(p.Names)
+	}
+	return ""
+}

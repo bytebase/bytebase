@@ -295,7 +295,7 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, require
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.MigrationHistoryFind, tablePrefix string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Driver, find *db.MigrationHistoryFind, tablePrefix string) ([]*db.MigrationHistory, error) {
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return nil, err
@@ -306,45 +306,45 @@ func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.Mi
 	}
 	defer tx.Rollback()
 
-	where, args := []string{"1 = 1"}, []interface{}{}
+	queryParams := &db.QueryParams{DatabaseType: dbType}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		// queryParams.AddParam("id", *v)
 	}
 	if v := find.Database; v != nil {
-		where, args = append(where, "namespace = ?"), append(args, *v)
+		// queryParams.AddParam("namespace", *v)
 	}
 	if v := find.Version; v != nil {
-		where, args = append(where, "version = ?"), append(args, *v)
+		// queryParams.AddParam("version", *v)
 	}
 
 	var query = `
-			SELECT 
-		    id,
+		SELECT
+			id,
 			created_by,
-		    created_ts,
-		    updated_by,
-		    updated_ts,
+			created_ts,
+			updated_by,
+			updated_ts,
 			namespace,
 			sequence,
-			` + "`engine`," + `
-			` + "`type`," + `
-			` + "`status`," + `
+			engine,
+			type,
+			status,
 			version,
 			description,
-		    statement,
-			` + "`schema`," + `
-		    execution_duration,
+			statement,
+			"schema",
+			execution_duration,
 			issue_id,
 			payload
 		FROM ` +
 		tablePrefix + `migration_history ` +
-		`WHERE ` + strings.Join(where, " AND ") + `
-		ORDER BY created_ts DESC`
+		queryParams.QueryString() +
+		`ORDER BY created_ts DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, query, queryParams.Params...)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, query)
 	}
