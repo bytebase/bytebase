@@ -37,11 +37,12 @@ import {
   Anomaly,
   AnomalyBackupMissingPayload,
   AnomalyBackupPolicyViolationPayload,
+  AnomalyDatabaseConnectionPayload,
   AnomalyType,
   Column,
 } from "../types";
 import { useStore } from "vuex";
-import { humanizeTs } from "../utils";
+import { humanizeTs, instanceSlug } from "../utils";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -84,6 +85,8 @@ export default {
           return "Backup enforcement violation";
         case "bb.anomaly.backup.missing":
           return "Missing backup";
+        case "bb.anomaly.database.connection":
+          return "Connection failure";
       }
     };
 
@@ -97,7 +100,7 @@ export default {
             anomaly.payload as AnomalyBackupPolicyViolationPayload;
           return `'${environment.name}' environment requires ${payload.expectedSchedule} auto-backup.`;
         }
-        case "bb.anomaly.backup.missing":
+        case "bb.anomaly.backup.missing": {
           const payload = anomaly.payload as AnomalyBackupMissingPayload;
           const missingSentence = `Missing ${payload.expectedSchedule} backup, `;
           return (
@@ -108,6 +111,11 @@ export default {
                 )}.`
               : "no successful backup taken.")
           );
+        }
+        case "bb.anomaly.database.connection": {
+          const payload = anomaly.payload as AnomalyDatabaseConnectionPayload;
+          return payload.detail;
+        }
       }
     };
 
@@ -123,6 +131,11 @@ export default {
           return {
             link: `#backup`,
             title: "View backup",
+          };
+        case "bb.anomaly.database.connection":
+          return {
+            link: `/instance/${instanceSlug(anomaly.instance)}`,
+            title: "Check instance",
           };
       }
     };

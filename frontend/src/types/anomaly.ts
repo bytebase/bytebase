@@ -11,7 +11,8 @@ import {
 
 export type AnomalyType =
   | "bb.anomaly.backup.policy-violation"
-  | "bb.anomaly.backup.missing";
+  | "bb.anomaly.backup.missing"
+  | "bb.anomaly.database.connection";
 
 export type AnomalyBackupPolicyViolationPayload = {
   environmentId: EnvironmentId;
@@ -24,9 +25,14 @@ export type AnomalyBackupMissingPayload = {
   lastBackupTs: number;
 };
 
+export type AnomalyDatabaseConnectionPayload = {
+  detail: string;
+};
+
 export type AnomalyPayload =
   | AnomalyBackupPolicyViolationPayload
-  | AnomalyBackupMissingPayload;
+  | AnomalyBackupMissingPayload
+  | AnomalyDatabaseConnectionPayload;
 
 export type Anomaly = {
   id: AnomalyId;
