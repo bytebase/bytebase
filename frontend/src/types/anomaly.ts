@@ -12,7 +12,8 @@ import {
 export type AnomalyType =
   | "bb.anomaly.backup.policy-violation"
   | "bb.anomaly.backup.missing"
-  | "bb.anomaly.database.connection";
+  | "bb.anomaly.database.connection"
+  | "bb.anomaly.database.schema.drift";
 
 export type AnomalyBackupPolicyViolationPayload = {
   environmentId: EnvironmentId;
@@ -29,10 +30,15 @@ export type AnomalyDatabaseConnectionPayload = {
   detail: string;
 };
 
+export type AnomalyDatabaseSchemaDriftPayload = {
+  detail: string;
+};
+
 export type AnomalyPayload =
   | AnomalyBackupPolicyViolationPayload
   | AnomalyBackupMissingPayload
-  | AnomalyDatabaseConnectionPayload;
+  | AnomalyDatabaseConnectionPayload
+  | AnomalyDatabaseSchemaDriftPayload;
 
 export type Anomaly = {
   id: AnomalyId;

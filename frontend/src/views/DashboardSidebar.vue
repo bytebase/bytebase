@@ -65,7 +65,6 @@
       </svg>
     </router-link>
     <router-link
-      v-if="false"
       to="/control-center"
       class="outline-item group flex items-center px-2 py-2"
     >

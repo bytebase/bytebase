@@ -12,6 +12,7 @@ const (
 	AnomalyBackupPolicyViolation AnomalyType = "bb.anomaly.backup.policy-violation"
 	AnomalyBackupMissing         AnomalyType = "bb.anomaly.backup.missing"
 	AnomalyDatabaseConnection    AnomalyType = "bb.anomaly.database.connection"
+	AnomalyDatabaseSchemaDrift   AnomalyType = "bb.anomaly.database.schema.drift"
 )
 
 type AnomalyBackupPolicyViolationPayload struct {
@@ -29,6 +30,9 @@ type AnomalyBackupMissingPayload struct {
 type AnomalyDatabaseConnectionPayload struct {
 	// Connection failure detail
 	Detail string `json:"detail,omitempty"`
+}
+
+type AnomalyDatabaseSchemaDriftPayload struct {
 }
 
 type Anomaly struct {
