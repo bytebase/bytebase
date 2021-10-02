@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/go-sql-driver/mysql"
@@ -667,7 +668,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			}
 		}
 		if !exist {
-			return fmt.Errorf("database %s not found", database)
+			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
 		}
 		dumpableDbNames = []string{database}
 	} else {
