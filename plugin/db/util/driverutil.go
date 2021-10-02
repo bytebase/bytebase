@@ -295,7 +295,11 @@ func findNextSequence(ctx context.Context, tx *sql.Tx, namespace string, require
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, sqldb *sql.DB, find *db.MigrationHistoryFind, tablePrefix string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.MigrationHistoryFind, tablePrefix string) ([]*db.MigrationHistory, error) {
+	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
+		return nil, err
+	}
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
