@@ -350,6 +350,7 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 	}
 
 	if err := driver.Ping(context.Background()); err != nil {
+		driver.Close(context.Background())
 		return nil, err
 	}
 
