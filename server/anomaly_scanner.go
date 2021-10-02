@@ -78,7 +78,7 @@ func (s *AnomalyScanner) Run() error {
 					}
 
 					for _, env := range environmentList {
-						if env.ID == instance.ID {
+						if env.ID == instance.EnvironmentId {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
@@ -86,7 +86,7 @@ func (s *AnomalyScanner) Run() error {
 						}
 					}
 
-					if instance.Environment != nil {
+					if instance.Environment == nil {
 						continue
 					}
 
