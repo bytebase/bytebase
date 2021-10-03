@@ -358,8 +358,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		}
 		for _, tbl := range tables {
 			var dbTable db.DBTable
-			dbTable.Name = fmt.Sprintf("%s.%s ", tbl.schemaName, tbl.name)
+			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 			dbTable.Type = "BASE TABLE"
+			dbTable.RowCount = tbl.rowCount
 			for _, col := range tbl.columns {
 				var dbColumn db.DBColumn
 				dbColumn.Name = col.columnName
@@ -370,11 +371,27 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 				var dbIndex db.DBIndex
 				dbIndex.Name = idx.name
 				dbIndex.Expression = idx.Statement()
+				dbIndex.Unique = idx.unique
 				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
 			}
 
 			schema.TableList = append(schema.TableList, dbTable)
 		}
+		// View statements.
+		views, err := getViews(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
+		}
+		for _, view := range views {
+			var dbTable db.DBTable
+			dbTable.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
+			dbTable.Type = "VIEW"
+			// Use comment for view statement.
+			dbTable.Comment = view.Statement()
+
+			schema.TableList = append(schema.TableList, dbTable)
+		}
+
 		if err := txn.Commit(); err != nil {
 			return nil, nil, err
 		}
@@ -860,6 +877,7 @@ type tableSchema struct {
 	tableowner  string
 	columns     []*columnSchema
 	constraints []*tableConstraint
+	rowCount    int64
 }
 
 // columnSchema describes the schema of a pg table column.
@@ -892,6 +910,7 @@ type indexSchema struct {
 	name       string
 	tableName  string
 	statement  string
+	unique     bool
 }
 
 // sequencePgSchema describes the schema of a pg sequence.
@@ -1164,9 +1183,12 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	}
 
 	for _, tbl := range tables {
+		if err := getTable(txn, tbl); err != nil {
+			return nil, fmt.Errorf("getTable(%q, %q) got error %v", tbl.schemaName, tbl.name, err)
+		}
 		columns, err := getTableColumns(txn, tbl.schemaName, tbl.name)
 		if err != nil {
-			return nil, fmt.Errorf("getTable(%q, %q) got error %v", tbl.schemaName, tbl.name, err)
+			return nil, fmt.Errorf("getTableColumns(%q, %q) got error %v", tbl.schemaName, tbl.name, err)
 		}
 		tbl.columns = columns
 
@@ -1175,6 +1197,23 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 		tbl.constraints = v
 	}
 	return tables, nil
+}
+
+func getTable(txn *sql.Tx, tbl *tableSchema) error {
+	query := fmt.Sprintf("SELECT COUNT(1) FROM %s.%s;", tbl.schemaName, tbl.name)
+	rows, err := txn.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&tbl.rowCount); err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("query %q returned multiple rows", query)
 }
 
 // getTableColumns gets the columns of a table.
@@ -1319,6 +1358,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 			return nil, err
 		}
 		idx.schemaName, idx.tableName, idx.name = quoteIdentifier(idx.schemaName), quoteIdentifier(idx.tableName), quoteIdentifier(idx.name)
+		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
 		indices = append(indices, &idx)
 	}
 
