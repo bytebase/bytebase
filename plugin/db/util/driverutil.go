@@ -330,7 +330,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 			version,
 			description,
 			statement,
-			` + "`schema`," + `
+			` + `"schema",` + `
 			execution_duration,
 			issue_id,
 			payload
