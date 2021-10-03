@@ -24,10 +24,31 @@
       </BBTableCell>
     </template>
   </BBTable>
+  <BBModal
+    v-if="state.showModal"
+    :title="`'${state.selectedAnomaly.database.name}' schema diff - ${state.selectedAnomaly.payload.version} vs Actual`"
+    @close="dimissModal"
+  >
+    <div class="space-y-4">
+      <code-diff
+        class="w-full"
+        :old-string="state.selectedAnomaly.payload.expect"
+        :new-string="state.selectedAnomaly.payload.actual"
+        :fileName="`${state.selectedAnomaly.payload.version} (left) vs Actual (right)`"
+        output-format="side-by-side"
+      />
+      <div class="flex justify-end px-4">
+        <button type="button" class="btn-primary" @click.prevent="dimissModal">
+          Close
+        </button>
+      </div>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { PropType, reactive } from "vue";
+import { CodeDiff } from "v-code-diff";
 import { BBTableColumn } from "../bbkit/types";
 import {
   Anomaly,
@@ -36,7 +57,6 @@ import {
   AnomalyDatabaseConnectionPayload,
   AnomalyDatabaseSchemaDriftPayload,
   AnomalyType,
-  Column,
 } from "../types";
 import { useStore } from "vuex";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
@@ -62,9 +82,14 @@ type Action = {
   title: string;
 };
 
+interface LocalState {
+  showModal: boolean;
+  selectedAnomaly?: Anomaly;
+}
+
 export default {
   name: "AnomalyTable",
-  components: {},
+  components: { CodeDiff },
   props: {
     anomalyList: {
       required: true,
@@ -74,6 +99,10 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();
+
+    const state = reactive<LocalState>({
+      showModal: false,
+    });
 
     const typeName = (type: AnomalyType) => {
       switch (type) {
@@ -116,7 +145,7 @@ export default {
         }
         case "bb.anomaly.database.schema.drift": {
           const payload = anomaly.payload as AnomalyDatabaseSchemaDriftPayload;
-          return "";
+          return `The recorded latest schema version ${payload.version} is different from the actual schema.`;
         }
       }
     };
@@ -165,24 +194,26 @@ export default {
         case "bb.anomaly.database.schema.drift":
           return {
             onClick: () => {
-              router.push({
-                name: "workspace.database.detail",
-                params: {
-                  databaseSlug: databaseSlug(anomaly.database),
-                },
-                hash: "#migration-history",
-              });
+              state.selectedAnomaly = anomaly;
+              state.showModal = true;
             },
-            title: "Check migration",
+            title: "View diff",
           };
       }
     };
 
+    const dimissModal = () => {
+      state.showModal = false;
+      state.selectedAnomaly = undefined;
+    };
+
     return {
       COLUMN_LIST,
+      state,
       typeName,
       detail,
       action,
+      dimissModal,
     };
   },
 };

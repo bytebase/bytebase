@@ -21,6 +21,7 @@
     "slug": "^4.0.2",
     "tailwindcss": "^2.2.2",
     "uuid": "^8.3.2",
+    "v-code-diff": "^0.3.4",
     "vue": "^3.2.4",
     "vue-router": "^4.0.8",
     "vuex": "^4.0.0"
