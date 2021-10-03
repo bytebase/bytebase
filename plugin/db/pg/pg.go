@@ -560,18 +560,18 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		updated_ts,
 		namespace,
 		sequence,
-		` + "`engine`," + `
-		` + "`type`," + `
-		` + "`status`," + `
+		engine,
+		type,
+		status,
 		version,
 		description,
 		statement,
-		` + "`schema`," + `
+		` + `"schema",` + `
 		execution_duration,
 		issue_id,
 		payload
 	)
-	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, %6, 'PENDING', $7, $8, $9, $10, 0, $11, $12)
+	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, 'PENDING', $7, $8, $9, $10, 0, $11, $12)
 `
 	updateHistoryQuery := `
 UPDATE ` +
