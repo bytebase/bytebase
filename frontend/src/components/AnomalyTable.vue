@@ -8,18 +8,65 @@
   >
     <template v-slot:body="{ rowData: anomaly }">
       <BBTableCell :leftPadding="4" class="w-4">
+        <svg
+          v-if="severity(anomaly) == 'MEDIUM'"
+          class="w-6 h-6 text-info"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+        <svg
+          v-else-if="severity(anomaly) == 'HIGH'"
+          class="w-6 h-6 text-warning"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          ></path>
+        </svg>
+        <svg
+          v-else-if="severity(anomaly) == 'CRITICAL'"
+          class="w-6 h-6 text-error"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+      </BBTableCell>
+      <BBTableCell class="">
         {{ typeName(anomaly.type) }}
       </BBTableCell>
-      <BBTableCell class="w-48">
+      <BBTableCell class="">
         {{ detail(anomaly) }}
         <span class="normal-link" @click.prevent="action(anomaly).onClick">
           {{ action(anomaly).title }}
         </span>
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="">
         {{ humanizeTs(anomaly.updatedTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="">
         {{ humanizeTs(anomaly.createdTs) }}
       </BBTableCell>
     </template>
@@ -62,7 +109,12 @@ import { useStore } from "vuex";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
 import { useRouter } from "vue-router";
 
+type Severity = "MEDIUM" | "HIGH" | "CRITICAL";
+
 const COLUMN_LIST: BBTableColumn[] = [
+  {
+    title: "",
+  },
   {
     title: "Type",
   },
@@ -202,6 +254,18 @@ export default {
       }
     };
 
+    const severity = (anomaly: Anomaly): Severity => {
+      switch (anomaly.type) {
+        case "bb.anomaly.backup.policy-violation":
+          return "MEDIUM";
+        case "bb.anomaly.backup.missing":
+          return "HIGH";
+        case "bb.anomaly.database.connection":
+        case "bb.anomaly.database.schema.drift":
+          return "CRITICAL";
+      }
+    };
+
     const dimissModal = () => {
       state.showModal = false;
       state.selectedAnomaly = undefined;
@@ -213,6 +277,7 @@ export default {
       typeName,
       detail,
       action,
+      severity,
       dimissModal,
     };
   },
