@@ -394,7 +394,7 @@ func (p *QueryParams) QueryString() string {
 		for i, param := range params {
 			v := fmt.Sprintf("%s=$%v", param, i+1)
 			if strings.Contains(param, "?") {
-				v = strings.ReplaceAll(param, "?", fmt.Sprintf("%v", i+1))
+				v = strings.ReplaceAll(param, "?", fmt.Sprintf("$%v", i+1))
 			}
 			parts = append(parts, v)
 		}
