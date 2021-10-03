@@ -46,8 +46,11 @@ type MigrationExecutionArgs struct {
 // ExecuteMigration will execute the database migration.
 func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (string, error) {
 	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, m.Database, &schemaBuf, true /*schemaOnly*/); err != nil {
-		return "", formatError(err)
+	// Don't record schema if the database hasn't exist yet.
+	if !m.CreateDatabase {
+		if err := driver.Dump(ctx, m.Database, &schemaBuf, true /*schemaOnly*/); err != nil {
+			return "", formatError(err)
+		}
 	}
 
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
@@ -154,6 +157,14 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	// Baseline migration type could also has empty sql when the database is newly created.
 	startedTs := time.Now().Unix()
 	if statement != "" {
+		// Switch to the database if we're creating a new database
+		if !m.CreateDatabase {
+			d, err := driver.GetDbConnection(ctx, m.Database)
+			if err != nil {
+				return "", err
+			}
+			sqldb = d
+		}
 		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
 		_, err = sqldb.ExecContext(ctx, statement)
 		if err != nil {

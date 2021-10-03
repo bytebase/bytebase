@@ -58,13 +58,14 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 	// Create a baseline migration history upon creating the database.
 	mi := &db.MigrationInfo{
-		Version:     defaultMigrationVersionFromTaskId(task.ID),
-		Namespace:   payload.DatabaseName,
-		Database:    payload.DatabaseName,
-		Environment: instance.Environment.Name,
-		Engine:      db.UI,
-		Type:        db.Baseline,
-		Description: "Create database",
+		Version:        defaultMigrationVersionFromTaskId(task.ID),
+		Namespace:      payload.DatabaseName,
+		Database:       payload.DatabaseName,
+		Environment:    instance.Environment.Name,
+		Engine:         db.UI,
+		Type:           db.Baseline,
+		Description:    "Create database",
+		CreateDatabase: true,
 	}
 	creator, err := server.ComposePrincipalById(context.Background(), task.CreatorId)
 	if err != nil {

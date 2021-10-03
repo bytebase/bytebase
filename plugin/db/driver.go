@@ -157,17 +157,18 @@ type MigrationInfoPayload struct {
 }
 
 type MigrationInfo struct {
-	Version     string
-	Namespace   string
-	Database    string
-	Environment string
-	Engine      MigrationEngine
-	Type        MigrationType
-	Status      MigrationStatus
-	Description string
-	Creator     string
-	IssueId     string
-	Payload     string
+	Version        string
+	Namespace      string
+	Database       string
+	Environment    string
+	Engine         MigrationEngine
+	Type           MigrationType
+	Status         MigrationStatus
+	Description    string
+	Creator        string
+	IssueId        string
+	Payload        string
+	CreateDatabase bool
 }
 
 // ParseMigrationInfo matches filePath against filePathTemplate
