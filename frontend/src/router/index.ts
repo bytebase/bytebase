@@ -700,7 +700,6 @@ const routes: Array<RouteRecordRaw> = [
           },
           {
             path: "instance/:instanceSlug",
-            name: "workspace.instance.detail",
             components: {
               content: InstanceLayout,
               leftSidebar: DashboardSidebar,

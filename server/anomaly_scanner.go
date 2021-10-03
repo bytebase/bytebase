@@ -221,20 +221,12 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 			goto SchemaDriftEnd
 		}
 		if len(list) > 0 {
-			if list[0].Schema == schemaBuf.String() {
-				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					DatabaseId: database.ID,
-					Type:       api.AnomalyDatabaseConnection,
-				})
-				if err != nil && common.ErrorCode(err) != common.NotFound {
-					s.l.Error("Failed to close anomaly",
-						zap.String("instance", instance.Name),
-						zap.String("database", database.Name),
-						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						zap.Error(err))
+			if list[0].Schema != schemaBuf.String() {
+				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{
+					Version: list[0].Version,
+					Expect:  list[0].Schema,
+					Actual:  schemaBuf.String(),
 				}
-			} else {
-				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{}
 				payload, err := json.Marshal(anomalyPayload)
 				if err != nil {
 					s.l.Error("Failed to marshal anomaly payload",
@@ -257,6 +249,18 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 							zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 							zap.Error(err))
 					}
+				}
+			} else {
+				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+					DatabaseId: database.ID,
+					Type:       api.AnomalyDatabaseConnection,
+				})
+				if err != nil && common.ErrorCode(err) != common.NotFound {
+					s.l.Error("Failed to close anomaly",
+						zap.String("instance", instance.Name),
+						zap.String("database", database.Name),
+						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+						zap.Error(err))
 				}
 			}
 		}
