@@ -575,12 +575,12 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	RETURNING id
 `
 	updateHistoryQuery := `
-UPDATE ` +
-		`migration_history ` +
-		`SET
-	` + "`status` = 'DONE'," + `
-	` + "execution_duration = $1," + `
-	` + "`schema` = $2" + `
+	UPDATE
+		migration_history
+	SET
+    status = 'DONE',
+	  execution_duration = $1,
+		"schema" = $2
 	WHERE id = $3
 `
 
