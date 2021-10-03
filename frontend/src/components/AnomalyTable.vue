@@ -8,30 +8,94 @@
   >
     <template v-slot:body="{ rowData: anomaly }">
       <BBTableCell :leftPadding="4" class="w-4">
+        <svg
+          v-if="severity(anomaly) == 'MEDIUM'"
+          class="w-6 h-6 text-info"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+        <svg
+          v-else-if="severity(anomaly) == 'HIGH'"
+          class="w-6 h-6 text-warning"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          ></path>
+        </svg>
+        <svg
+          v-else-if="severity(anomaly) == 'CRITICAL'"
+          class="w-6 h-6 text-error"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+      </BBTableCell>
+      <BBTableCell class="">
         {{ typeName(anomaly.type) }}
       </BBTableCell>
-      <BBTableCell class="w-48">
+      <BBTableCell class="">
         {{ detail(anomaly) }}
-        <router-link
-          :to="action(anomaly).link"
-          class="normal-link"
-          exact-active-class=""
-        >
+        <span class="normal-link" @click.prevent="action(anomaly).onClick">
           {{ action(anomaly).title }}
-        </router-link>
+        </span>
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="">
         {{ humanizeTs(anomaly.updatedTs) }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="">
         {{ humanizeTs(anomaly.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
+  <BBModal
+    v-if="state.showModal"
+    :title="`'${state.selectedAnomaly.database.name}' schema drift - ${state.selectedAnomaly.payload.version} vs Actual`"
+    @close="dimissModal"
+  >
+    <div class="space-y-4">
+      <code-diff
+        class="w-full"
+        :old-string="state.selectedAnomaly.payload.expect"
+        :new-string="state.selectedAnomaly.payload.actual"
+        :fileName="`${state.selectedAnomaly.payload.version} (left) vs Actual (right)`"
+        output-format="side-by-side"
+      />
+      <div class="flex justify-end px-4">
+        <button type="button" class="btn-primary" @click.prevent="dimissModal">
+          Close
+        </button>
+      </div>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { PropType, reactive } from "vue";
+import { CodeDiff } from "v-code-diff";
 import { BBTableColumn } from "../bbkit/types";
 import {
   Anomaly,
@@ -40,12 +104,17 @@ import {
   AnomalyDatabaseConnectionPayload,
   AnomalyDatabaseSchemaDriftPayload,
   AnomalyType,
-  Column,
 } from "../types";
 import { useStore } from "vuex";
-import { humanizeTs, instanceSlug } from "../utils";
+import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
+import { useRouter } from "vue-router";
+
+type Severity = "MEDIUM" | "HIGH" | "CRITICAL";
 
 const COLUMN_LIST: BBTableColumn[] = [
+  {
+    title: "",
+  },
   {
     title: "Type",
   },
@@ -61,18 +130,19 @@ const COLUMN_LIST: BBTableColumn[] = [
 ];
 
 type Action = {
-  link: string;
+  onClick: () => void;
   title: string;
 };
 
+interface LocalState {
+  showModal: boolean;
+  selectedAnomaly?: Anomaly;
+}
+
 export default {
   name: "AnomalyTable",
-  components: {},
+  components: { CodeDiff },
   props: {
-    columnList: {
-      required: true,
-      type: Object as PropType<Column[]>,
-    },
     anomalyList: {
       required: true,
       type: Object as PropType<Anomaly[]>,
@@ -80,6 +150,12 @@ export default {
   },
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
+
+    const state = reactive<LocalState>({
+      showModal: false,
+    });
+
     const typeName = (type: AnomalyType) => {
       switch (type) {
         case "bb.anomaly.backup.policy-violation":
@@ -121,7 +197,7 @@ export default {
         }
         case "bb.anomaly.database.schema.drift": {
           const payload = anomaly.payload as AnomalyDatabaseSchemaDriftPayload;
-          return "";
+          return `Recorded latest schema version ${payload.version} is different from the actual schema.`;
         }
       }
     };
@@ -130,33 +206,79 @@ export default {
       switch (anomaly.type) {
         case "bb.anomaly.backup.policy-violation": {
           return {
-            link: `#backup`,
+            onClick: () => {
+              router.push({
+                name: "workspace.database.detail",
+                params: {
+                  databaseSlug: databaseSlug(anomaly.database),
+                },
+                hash: "#backup",
+              });
+            },
             title: "Configure backup",
           };
         }
         case "bb.anomaly.backup.missing":
           return {
-            link: `#backup`,
+            onClick: () => {
+              router.push({
+                name: "workspace.database.detail",
+                params: {
+                  databaseSlug: databaseSlug(anomaly.database),
+                },
+                hash: "#backup",
+              });
+            },
             title: "View backup",
           };
         case "bb.anomaly.database.connection":
           return {
-            link: `/instance/${instanceSlug(anomaly.instance)}`,
+            onClick: () => {
+              router.push({
+                name: "workspace.instance.detail",
+                params: {
+                  instanceSlug: instanceSlug(anomaly.instance),
+                },
+              });
+            },
             title: "Check instance",
           };
         case "bb.anomaly.database.schema.drift":
           return {
-            link: `#migration-history`,
-            title: "Check migration",
+            onClick: () => {
+              state.selectedAnomaly = anomaly;
+              state.showModal = true;
+            },
+            title: "View diff",
           };
       }
     };
 
+    const severity = (anomaly: Anomaly): Severity => {
+      switch (anomaly.type) {
+        case "bb.anomaly.backup.policy-violation":
+          return "MEDIUM";
+        case "bb.anomaly.backup.missing":
+          return "HIGH";
+        case "bb.anomaly.database.connection":
+        case "bb.anomaly.database.schema.drift":
+          return "CRITICAL";
+      }
+    };
+
+    const dimissModal = () => {
+      state.showModal = false;
+      state.selectedAnomaly = undefined;
+    };
+
     return {
       COLUMN_LIST,
+      state,
       typeName,
       detail,
       action,
+      severity,
+      dimissModal,
     };
   },
 };

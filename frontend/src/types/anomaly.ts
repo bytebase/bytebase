@@ -31,7 +31,9 @@ export type AnomalyDatabaseConnectionPayload = {
 };
 
 export type AnomalyDatabaseSchemaDriftPayload = {
-  detail: string;
+  version: string;
+  expect: string;
+  actual: string;
 };
 
 export type AnomalyPayload =
