@@ -12,13 +12,9 @@
       </BBTableCell>
       <BBTableCell class="w-48">
         {{ detail(anomaly) }}
-        <router-link
-          :to="action(anomaly).link"
-          class="normal-link"
-          exact-active-class=""
-        >
+        <span class="normal-link" @click.prevent="action(anomaly).onClick">
           {{ action(anomaly).title }}
-        </router-link>
+        </span>
       </BBTableCell>
       <BBTableCell class="w-16">
         {{ humanizeTs(anomaly.updatedTs) }}
@@ -43,7 +39,8 @@ import {
   Column,
 } from "../types";
 import { useStore } from "vuex";
-import { humanizeTs, instanceSlug } from "../utils";
+import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
+import { useRouter } from "vue-router";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -61,7 +58,7 @@ const COLUMN_LIST: BBTableColumn[] = [
 ];
 
 type Action = {
-  link: string;
+  onClick: () => void;
   title: string;
 };
 
@@ -69,10 +66,6 @@ export default {
   name: "AnomalyTable",
   components: {},
   props: {
-    columnList: {
-      required: true,
-      type: Object as PropType<Column[]>,
-    },
     anomalyList: {
       required: true,
       type: Object as PropType<Anomaly[]>,
@@ -80,6 +73,8 @@ export default {
   },
   setup(props, ctx) {
     const store = useStore();
+    const router = useRouter();
+
     const typeName = (type: AnomalyType) => {
       switch (type) {
         case "bb.anomaly.backup.policy-violation":
@@ -130,23 +125,54 @@ export default {
       switch (anomaly.type) {
         case "bb.anomaly.backup.policy-violation": {
           return {
-            link: `#backup`,
+            onClick: () => {
+              router.push({
+                name: "workspace.database.detail",
+                params: {
+                  databaseSlug: databaseSlug(anomaly.database),
+                },
+                hash: "#backup",
+              });
+            },
             title: "Configure backup",
           };
         }
         case "bb.anomaly.backup.missing":
           return {
-            link: `#backup`,
+            onClick: () => {
+              router.push({
+                name: "workspace.database.detail",
+                params: {
+                  databaseSlug: databaseSlug(anomaly.database),
+                },
+                hash: "#backup",
+              });
+            },
             title: "View backup",
           };
         case "bb.anomaly.database.connection":
           return {
-            link: `/instance/${instanceSlug(anomaly.instance)}`,
+            onClick: () => {
+              router.push({
+                name: "workspace.instance.detail",
+                params: {
+                  instanceSlug: instanceSlug(anomaly.instance),
+                },
+              });
+            },
             title: "Check instance",
           };
         case "bb.anomaly.database.schema.drift":
           return {
-            link: `#migration-history`,
+            onClick: () => {
+              router.push({
+                name: "workspace.database.detail",
+                params: {
+                  databaseSlug: databaseSlug(anomaly.database),
+                },
+                hash: "#migration-history",
+              });
+            },
             title: "Check migration",
           };
       }
