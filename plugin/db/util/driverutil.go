@@ -103,28 +103,46 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
-		m.Creator,
-		m.Creator,
-		m.Namespace,
-		sequence,
-		m.Engine,
-		m.Type,
-		m.Version,
-		m.Description,
-		statement,
-		schemaBuf.String(),
-		m.IssueId,
-		m.Payload,
-	)
+	insertedId := int64(-1)
+	if dbType == db.Postgres {
+		tx.QueryRowContext(ctx, args.InsertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			schemaBuf.String(),
+			m.IssueId,
+			m.Payload,
+		).Scan(&insertedId)
+	} else {
+		res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			schemaBuf.String(),
+			m.IssueId,
+			m.Payload,
+		)
 
-	if err != nil {
-		return "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-	}
+		if err != nil {
+			return "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+		}
 
-	insertedId, err := res.LastInsertId()
-	if err != nil {
-		return "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+		insertedId, err = res.LastInsertId()
+		if err != nil {
+			return "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
