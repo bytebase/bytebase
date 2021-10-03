@@ -26,7 +26,7 @@
   </BBTable>
   <BBModal
     v-if="state.showModal"
-    :title="`'${state.selectedAnomaly.database.name}' schema diff - ${state.selectedAnomaly.payload.version} vs Actual`"
+    :title="`'${state.selectedAnomaly.database.name}' schema drift - ${state.selectedAnomaly.payload.version} vs Actual`"
     @close="dimissModal"
   >
     <div class="space-y-4">
