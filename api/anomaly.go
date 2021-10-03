@@ -33,6 +33,12 @@ type AnomalyDatabaseConnectionPayload struct {
 }
 
 type AnomalyDatabaseSchemaDriftPayload struct {
+	// The schema version corresponds to the expected schema
+	Version string `json:"version,omitempty"`
+	// The expected latest schema stored in the migration history table
+	Expect string `json:"expect,omitempty"`
+	// The actual schema dumped from the database
+	Actual string `json:"actual,omitempty"`
 }
 
 type Anomaly struct {
