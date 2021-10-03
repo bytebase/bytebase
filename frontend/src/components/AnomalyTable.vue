@@ -197,7 +197,7 @@ export default {
         }
         case "bb.anomaly.database.schema.drift": {
           const payload = anomaly.payload as AnomalyDatabaseSchemaDriftPayload;
-          return `The recorded latest schema version ${payload.version} is different from the actual schema.`;
+          return `Recorded latest schema version ${payload.version} is different from the actual schema.`;
         }
       }
     };
