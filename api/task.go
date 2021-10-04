@@ -185,6 +185,7 @@ type TaskStatusPatch struct {
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Code    *common.Code
 	Comment *string `jsonapi:"attr,comment"`
+	Result  *string
 }
 
 type TaskService interface {

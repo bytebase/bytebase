@@ -843,6 +843,8 @@ CREATE TABLE task_run (
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
+    -- result saves the task run result in json format
+    result  TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );
 

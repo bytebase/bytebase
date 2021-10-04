@@ -27,13 +27,17 @@ function convertTaskRun(
   includedList: ResourceObject[],
   rootGetters: any
 ): TaskRun {
+  const result = taskRun.attributes.result
+    ? JSON.parse((taskRun.attributes.result as string) || "{}")
+    : {};
   const payload = taskRun.attributes.payload
     ? JSON.parse((taskRun.attributes.payload as string) || "{}")
     : {};
 
   return {
-    ...(taskRun.attributes as Omit<TaskRun, "id" | "payload">),
+    ...(taskRun.attributes as Omit<TaskRun, "id" | "result" | "payload">),
     id: parseInt(taskRun.id),
+    result,
     payload,
   };
 }

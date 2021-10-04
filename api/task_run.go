@@ -32,6 +32,12 @@ func (e TaskRunStatus) String() string {
 	return "UNKNOWN"
 }
 
+type TaskRunResultPayload struct {
+	Detail      string `json:"detail,omitempty"`
+	MigrationId int64  `json:"migrationId,omitempty"`
+	Version     string `json:"version,omitempty"`
+}
+
 type TaskRun struct {
 	ID int `jsonapi:"primary,taskRun"`
 
@@ -52,6 +58,7 @@ type TaskRun struct {
 	Type    TaskType      `jsonapi:"attr,type"`
 	Code    common.Code   `jsonapi:"attr,code"`
 	Comment string        `jsonapi:"attr,comment"`
+	Result  string        `jsonapi:"attr,result"`
 	Payload string        `jsonapi:"attr,payload"`
 }
 
@@ -101,6 +108,7 @@ type TaskRunStatusPatch struct {
 	Code   *common.Code
 	// Records the status detail (e.g. error message on failure)
 	Comment *string
+	Result  *string
 }
 
 type TaskRunService interface {
