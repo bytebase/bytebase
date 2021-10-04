@@ -9,19 +9,19 @@ import (
 type AnomalyType string
 
 const (
-	AnomalyBackupPolicyViolation AnomalyType = "bb.anomaly.backup.policy-violation"
-	AnomalyBackupMissing         AnomalyType = "bb.anomaly.backup.missing"
-	AnomalyDatabaseConnection    AnomalyType = "bb.anomaly.database.connection"
-	AnomalyDatabaseSchemaDrift   AnomalyType = "bb.anomaly.database.schema.drift"
+	AnomalyDatabaseBackupPolicyViolation AnomalyType = "bb.anomaly.database.backup.policy-violation"
+	AnomalyDatabaseBackupMissing         AnomalyType = "bb.anomaly.database.backup.missing"
+	AnomalyDatabaseConnection            AnomalyType = "bb.anomaly.database.connection"
+	AnomalyDatabaseSchemaDrift           AnomalyType = "bb.anomaly.database.schema.drift"
 )
 
-type AnomalyBackupPolicyViolationPayload struct {
+type AnomalyDatabaseBackupPolicyViolationPayload struct {
 	EnvironmentId          int                      `json:"environmentId,omitempty"`
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	ActualBackupSchedule   BackupPlanPolicySchedule `json:"actualSchedule,omitempty"`
 }
 
-type AnomalyBackupMissingPayload struct {
+type AnomalyDatabaseBackupMissingPayload struct {
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	// Time of last successful backup created
 	LastBackupTs int64 `json:"lastBackupTs,omitempty"`

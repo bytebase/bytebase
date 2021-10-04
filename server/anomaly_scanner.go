@@ -294,18 +294,18 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 
 	// Check backup policy violation
 	{
-		var backupPolicyAnomalyPayload *api.AnomalyBackupPolicyViolationPayload
+		var backupPolicyAnomalyPayload *api.AnomalyDatabaseBackupPolicyViolationPayload
 		if policyMap[instance.EnvironmentId].Schedule != api.BackupPlanPolicyScheduleUnset {
 			if policyMap[instance.EnvironmentId].Schedule == api.BackupPlanPolicyScheduleDaily &&
 				schedule != api.BackupPlanPolicyScheduleDaily {
-				backupPolicyAnomalyPayload = &api.AnomalyBackupPolicyViolationPayload{
+				backupPolicyAnomalyPayload = &api.AnomalyDatabaseBackupPolicyViolationPayload{
 					EnvironmentId:          instance.EnvironmentId,
 					ExpectedBackupSchedule: policyMap[instance.EnvironmentId].Schedule,
 					ActualBackupSchedule:   schedule,
 				}
 			} else if policyMap[instance.EnvironmentId].Schedule == api.BackupPlanPolicyScheduleWeekly &&
 				schedule == api.BackupPlanPolicyScheduleUnset {
-				backupPolicyAnomalyPayload = &api.AnomalyBackupPolicyViolationPayload{
+				backupPolicyAnomalyPayload = &api.AnomalyDatabaseBackupPolicyViolationPayload{
 					EnvironmentId:          instance.EnvironmentId,
 					ExpectedBackupSchedule: policyMap[instance.EnvironmentId].Schedule,
 					ActualBackupSchedule:   schedule,
@@ -319,34 +319,34 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				s.l.Error("Failed to marshal anomaly payload",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
-					zap.String("type", string(api.AnomalyBackupPolicyViolation)),
+					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorId:  api.SYSTEM_BOT_ID,
 					InstanceId: instance.ID,
 					DatabaseId: database.ID,
-					Type:       api.AnomalyBackupPolicyViolation,
+					Type:       api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:    string(payload),
 				})
 				if err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),
-						zap.String("type", string(api.AnomalyBackupPolicyViolation)),
+						zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 						zap.Error(err))
 				}
 			}
 		} else {
 			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseId: database.ID,
-				Type:       api.AnomalyBackupPolicyViolation,
+				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				s.l.Error("Failed to close anomaly",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
-					zap.String("type", string(api.AnomalyBackupPolicyViolation)),
+					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			}
 		}
@@ -354,7 +354,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 
 	// Check backup missing
 	{
-		var backupMissingAnomalyPayload *api.AnomalyBackupMissingPayload
+		var backupMissingAnomalyPayload *api.AnomalyDatabaseBackupMissingPayload
 		// The anomaly fires if backup is enabled, however no succesful backup has been taken during the period.
 		if backupSetting != nil && backupSetting.Enabled {
 			expectedSchedule := api.BackupPlanPolicyScheduleWeekly
@@ -387,7 +387,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 
 				if !hasValidBackup {
-					backupMissingAnomalyPayload = &api.AnomalyBackupMissingPayload{
+					backupMissingAnomalyPayload = &api.AnomalyDatabaseBackupMissingPayload{
 						ExpectedBackupSchedule: expectedSchedule,
 					}
 					if len(backupList) > 0 {
@@ -403,34 +403,34 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				s.l.Error("Failed to marshal anomaly payload",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
-					zap.String("type", string(api.AnomalyBackupMissing)),
+					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorId:  api.SYSTEM_BOT_ID,
 					InstanceId: instance.ID,
 					DatabaseId: database.ID,
-					Type:       api.AnomalyBackupMissing,
+					Type:       api.AnomalyDatabaseBackupMissing,
 					Payload:    string(payload),
 				})
 				if err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),
-						zap.String("type", string(api.AnomalyBackupMissing)),
+						zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 						zap.Error(err))
 				}
 			}
 		} else {
 			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseId: database.ID,
-				Type:       api.AnomalyBackupMissing,
+				Type:       api.AnomalyDatabaseBackupMissing,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				s.l.Error("Failed to close anomaly",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
-					zap.String("type", string(api.AnomalyBackupMissing)),
+					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			}
 		}
