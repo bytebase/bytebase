@@ -1,13 +1,25 @@
 <template>
   <BBTable
     :columnList="COLUMN_LIST"
-    :dataSource="anomalyList"
+    :sectionDataSource="anomalySectionList"
+    :compactSection="true"
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
   >
+    <template v-slot:header>
+      <BBTableHeaderCell
+        :leftPadding="4"
+        class="w-4"
+        :title="COLUMN_LIST[0].title"
+      />
+      <BBTableHeaderCell :title="COLUMN_LIST[1].title" />
+      <BBTableHeaderCell :title="COLUMN_LIST[2].title" />
+      <BBTableHeaderCell :title="COLUMN_LIST[3].title" />
+      <BBTableHeaderCell :title="COLUMN_LIST[4].title" />
+    </template>
     <template v-slot:body="{ rowData: anomaly }">
-      <BBTableCell :leftPadding="4" class="w-4">
+      <BBTableCell :leftPadding="4">
         <svg
           v-if="severity(anomaly) == 'MEDIUM'"
           class="w-6 h-6 text-info"
@@ -54,19 +66,19 @@
           ></path>
         </svg>
       </BBTableCell>
-      <BBTableCell class="">
+      <BBTableCell>
         {{ typeName(anomaly.type) }}
       </BBTableCell>
-      <BBTableCell class="">
+      <BBTableCell>
         {{ detail(anomaly) }}
         <span class="normal-link" @click.prevent="action(anomaly).onClick">
           {{ action(anomaly).title }}
         </span>
       </BBTableCell>
-      <BBTableCell class="">
+      <BBTableCell>
         {{ humanizeTs(anomaly.updatedTs) }}
       </BBTableCell>
-      <BBTableCell class="">
+      <BBTableCell>
         {{ humanizeTs(anomaly.createdTs) }}
       </BBTableCell>
     </template>
@@ -94,9 +106,9 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { CodeDiff } from "v-code-diff";
-import { BBTableColumn } from "../bbkit/types";
+import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import {
   Anomaly,
   AnomalyDatabaseBackupMissingPayload,
@@ -145,12 +157,12 @@ export default {
   components: { CodeDiff },
   props: {
     mode: {
-      default: "NORMAL",
+      required: true,
       type: String as PropType<"INSTANCE" | "DATABASE">,
     },
-    anomalyList: {
+    anomalySectionList: {
       required: true,
-      type: Object as PropType<Anomaly[]>,
+      type: Object as PropType<BBTableSectionDataSource<Anomaly>[]>,
     },
   },
   setup(props, ctx) {

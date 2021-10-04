@@ -1,10 +1,13 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
-    <div v-if="database.anomalyList.length > 0">
+    <div v-if="anomalySectionList.length > 0">
       <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
         Anomalies
       </div>
-      <AnomalyTable :mode="'DATABASE'" :anomalyList="database.anomalyList" />
+      <AnomalyTable
+        :mode="'DATABASE'"
+        :anomalySectionList="anomalySectionList"
+      />
     </div>
     <div
       v-else
@@ -202,8 +205,9 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
-import { Database, DataSource, DataSourcePatch } from "../types";
+import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash";
+import { BBTableSectionDataSource } from "../bbkit/types";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -236,6 +240,17 @@ export default {
     };
 
     watchEffect(prepareTableList);
+
+    const anomalySectionList = computed(
+      (): BBTableSectionDataSource<Anomaly>[] => {
+        const list: BBTableSectionDataSource<Anomaly>[] = [];
+        list.push({
+          title: props.database.name,
+          list: props.database.anomalyList,
+        });
+        return list;
+      }
+    );
 
     const hasDataSourceFeature = computed(() =>
       store.getters["plan/feature"]("bb.data-source")
@@ -333,6 +348,7 @@ export default {
     return {
       timezoneString,
       state,
+      anomalySectionList,
       tableList,
       hasDataSourceFeature,
       allowConfigInstance,
