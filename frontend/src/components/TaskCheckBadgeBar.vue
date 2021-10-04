@@ -234,6 +234,8 @@ export default {
           return "Syntax";
         case "bb.task-check.database.connect":
           return "Connection";
+        case "bb.task-check.instance.migration-schema":
+          return "Migration schema";
       }
     };
 

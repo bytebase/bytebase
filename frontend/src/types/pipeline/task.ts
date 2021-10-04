@@ -142,7 +142,8 @@ export type TaskCheckRunStatus = "RUNNING" | "DONE" | "FAILED" | "CANCELED";
 export type TaskCheckType =
   | "bb.task-check.database.statement.fake-advise"
   | "bb.task-check.database.statement.syntax"
-  | "bb.task-check.database.connect";
+  | "bb.task-check.database.connect"
+  | "bb.task-check.instance.migration-schema";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;

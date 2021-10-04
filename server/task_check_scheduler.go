@@ -187,6 +187,16 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
+		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorId:               creatorId,
+			TaskId:                  task.ID,
+			Type:                    api.TaskCheckInstanceMigrationSchema,
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		// For now we only supported MySQL dialect syntax check
 		if database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
