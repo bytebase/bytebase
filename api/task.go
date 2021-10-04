@@ -58,7 +58,6 @@ const (
 type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
 	ProjectId    int    `json:"projectId,omitempty"`
-	Statement    string `json:"statement,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
 	Collation    string `json:"collation,omitempty"`
