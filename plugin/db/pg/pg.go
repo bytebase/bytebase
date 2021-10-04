@@ -269,6 +269,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	} else {
 		// Guess default database postgres, template1.
 		guesses = append(guesses, dsn)
+		guesses = append(guesses, dsn+" dbname=bytebase")
 		guesses = append(guesses, dsn+" dbname=postgres")
 		guesses = append(guesses, dsn+" dbname=template1")
 	}
