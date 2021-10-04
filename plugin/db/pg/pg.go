@@ -324,19 +324,22 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 
 	// Query db info
-	dbNames, err := driver.getDatabases()
+	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	schemaList := make([]*db.DBSchema, 0)
-	for _, dbName := range dbNames {
+	for _, database := range databases {
+		dbName := database.name
 		if _, ok := excludedDatabases[dbName]; ok {
 			continue
 		}
 
 		var schema db.DBSchema
 		schema.Name = dbName
+		schema.CharacterSet = database.encoding
+		schema.Collation = database.collate
 
 		sqldb, err := driver.GetDbConnection(ctx, dbName)
 		if err != nil {
@@ -489,13 +492,13 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 }
 
 func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
-	dbNames, err := driver.getDatabases()
+	databases, err := driver.getDatabases()
 	if err != nil {
 		return false, err
 	}
 	exist := false
-	for _, dbName := range dbNames {
-		if dbName == bytebaseDatabase {
+	for _, database := range databases {
+		if database.name == bytebaseDatabase {
 			exist = true
 			break
 		}
@@ -636,7 +639,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
-	dbNames, err := driver.getDatabases()
+	databases, err := driver.getDatabases()
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -644,8 +647,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	var dumpableDbNames []string
 	if database != "" {
 		exist := false
-		for _, n := range dbNames {
-			if n == database {
+		for _, n := range databases {
+			if n.name == database {
 				exist = true
 				break
 			}
@@ -655,11 +658,11 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		}
 		dumpableDbNames = []string{database}
 	} else {
-		for _, dbName := range dbNames {
-			if systemDatabases[dbName] {
+		for _, n := range databases {
+			if systemDatabases[n.name] {
 				continue
 			}
-			dumpableDbNames = append(dumpableDbNames, dbName)
+			dumpableDbNames = append(dumpableDbNames, n.name)
 		}
 	}
 
@@ -882,22 +885,29 @@ func (driver *Driver) switchDatabase(dbName string) error {
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases() ([]string, error) {
-	var dbNames []string
-	rows, err := driver.db.Query("SELECT datname FROM pg_database;")
+func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
+	var dbs []*pgDatabaseSchema
+	rows, err := driver.db.Query("SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var d pgDatabaseSchema
+		if err := rows.Scan(&d.name, &d.encoding, &d.collate); err != nil {
 			return nil, err
 		}
-		dbNames = append(dbNames, name)
+		dbs = append(dbs, &d)
 	}
-	return dbNames, nil
+	return dbs, nil
+}
+
+// pgDatabaseSchema describes a pg database schema.
+type pgDatabaseSchema struct {
+	name     string
+	encoding string
+	collate  string
 }
 
 // pgSchema describes a pg schema, a namespace for all schemas.
