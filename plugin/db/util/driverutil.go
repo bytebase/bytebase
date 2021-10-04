@@ -44,22 +44,23 @@ type MigrationExecutionArgs struct {
 }
 
 // ExecuteMigration will execute the database migration.
-func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (string, error) {
+// Returns the created migraiton history id and the updated schema on success.
+func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (int64, string, error) {
 	var schemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
 		if err := driver.Dump(ctx, m.Database, &schemaBuf, true /*schemaOnly*/); err != nil {
-			return "", formatError(err)
+			return -1, "", formatError(err)
 		}
 	}
 
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 	defer tx.Rollback()
 
@@ -67,19 +68,19 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	// Check if the same migration version has alraedy been applied
 	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 	if duplicate {
-		return "", common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
+		return -1, "", common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 	}
 
 	// Check if there is any higher version already been applied
 	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 	if version != nil {
-		return "", common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
+		return -1, "", common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
 	}
 
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
@@ -87,11 +88,11 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
 		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, args.TablePrefix)
 		if err != nil {
-			return "", err
+			return -1, "", err
 		}
 
 		if !hasBaseline {
-			return "", common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
+			return -1, "", common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
 		}
 	}
 
@@ -99,7 +100,7 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
 	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, args.TablePrefix)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 
 	// Phase 2 - Record migration history as PENDING
@@ -139,17 +140,17 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 		)
 
 		if err != nil {
-			return "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
 		}
 
 		insertedId, err = res.LastInsertId()
 		if err != nil {
-			return "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return "", err
+		return -1, "", err
 	}
 
 	// Phase 3 - Executing migration
@@ -161,14 +162,14 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 		if !m.CreateDatabase {
 			d, err := driver.GetDbConnection(ctx, m.Database)
 			if err != nil {
-				return "", err
+				return -1, "", err
 			}
 			sqldb = d
 		}
 		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
 		_, err = sqldb.ExecContext(ctx, statement)
 		if err != nil {
-			return "", formatError(err)
+			return -1, "", formatError(err)
 		}
 	}
 	duration := time.Now().Unix() - startedTs
@@ -176,17 +177,17 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if err = driver.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		return "", formatError(err)
+		return -1, "", formatError(err)
 	}
 
 	// Phase 5 - Update the migration history with 'DONE', execution_duration, updated schema.
 	afterSqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 	afterTx, err := afterSqldb.BeginTx(ctx, nil)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 	defer afterTx.Rollback()
 	_, err = afterTx.ExecContext(ctx, args.UpdateHistoryQuery,
@@ -196,14 +197,14 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	)
 
 	if err != nil {
-		return "", FormatErrorWithQuery(err, args.UpdateHistoryQuery)
+		return -1, "", FormatErrorWithQuery(err, args.UpdateHistoryQuery)
 	}
 
 	if err := afterTx.Commit(); err != nil {
-		return "", err
+		return -1, "", err
 	}
 
-	return afterSchemaBuf.String(), nil
+	return insertedId, afterSchemaBuf.String(), nil
 }
 
 func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {

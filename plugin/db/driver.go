@@ -309,8 +309,8 @@ type Driver interface {
 	// Create or upgrade migration related tables
 	SetupMigrationIfNeeded(ctx context.Context) error
 	// Execute migration will apply the statement and record the migration history, the schema after migration on success.
-	// It returns the schema after migration on success.
-	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (string, error)
+	// It returns the migration history id and the schema after migration on success.
+	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (int64, string, error)
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 

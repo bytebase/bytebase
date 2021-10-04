@@ -491,7 +491,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // ExecuteMigration will execute the migration for MySQL.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, error) {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	insertHistoryQuery := `
 	INSERT INTO bytebase.migration_history (
 		created_by,
