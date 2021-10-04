@@ -10,18 +10,18 @@ import {
 } from ".";
 
 export type AnomalyType =
-  | "bb.anomaly.backup.policy-violation"
-  | "bb.anomaly.backup.missing"
+  | "bb.anomaly.database.backup.policy-violation"
+  | "bb.anomaly.database.backup.missing"
   | "bb.anomaly.database.connection"
   | "bb.anomaly.database.schema.drift";
 
-export type AnomalyBackupPolicyViolationPayload = {
+export type AnomalyDatabaseBackupPolicyViolationPayload = {
   environmentId: EnvironmentId;
   expectedSchedule: BackupPlanPolicySchedule;
   actualSchedule: BackupPlanPolicySchedule;
 };
 
-export type AnomalyBackupMissingPayload = {
+export type AnomalyDatabaseBackupMissingPayload = {
   expectedSchedule: BackupPlanPolicySchedule;
   lastBackupTs: number;
 };
@@ -37,8 +37,8 @@ export type AnomalyDatabaseSchemaDriftPayload = {
 };
 
 export type AnomalyPayload =
-  | AnomalyBackupPolicyViolationPayload
-  | AnomalyBackupMissingPayload
+  | AnomalyDatabaseBackupPolicyViolationPayload
+  | AnomalyDatabaseBackupMissingPayload
   | AnomalyDatabaseConnectionPayload
   | AnomalyDatabaseSchemaDriftPayload;
 

@@ -99,8 +99,8 @@ import { CodeDiff } from "v-code-diff";
 import { BBTableColumn } from "../bbkit/types";
 import {
   Anomaly,
-  AnomalyBackupMissingPayload,
-  AnomalyBackupPolicyViolationPayload,
+  AnomalyDatabaseBackupMissingPayload,
+  AnomalyDatabaseBackupPolicyViolationPayload,
   AnomalyDatabaseConnectionPayload,
   AnomalyDatabaseSchemaDriftPayload,
   AnomalyType,
@@ -158,9 +158,9 @@ export default {
 
     const typeName = (type: AnomalyType) => {
       switch (type) {
-        case "bb.anomaly.backup.policy-violation":
+        case "bb.anomaly.database.backup.policy-violation":
           return "Backup enforcement violation";
-        case "bb.anomaly.backup.missing":
+        case "bb.anomaly.database.backup.missing":
           return "Missing backup";
         case "bb.anomaly.database.connection":
           return "Connection failure";
@@ -171,16 +171,17 @@ export default {
 
     const detail = (anomaly: Anomaly) => {
       switch (anomaly.type) {
-        case "bb.anomaly.backup.policy-violation": {
+        case "bb.anomaly.database.backup.policy-violation": {
           const environment = store.getters["environment/environmentById"](
             anomaly.instance.environment.id
           );
           const payload =
-            anomaly.payload as AnomalyBackupPolicyViolationPayload;
+            anomaly.payload as AnomalyDatabaseBackupPolicyViolationPayload;
           return `'${environment.name}' environment requires ${payload.expectedSchedule} auto-backup.`;
         }
-        case "bb.anomaly.backup.missing": {
-          const payload = anomaly.payload as AnomalyBackupMissingPayload;
+        case "bb.anomaly.database.backup.missing": {
+          const payload =
+            anomaly.payload as AnomalyDatabaseBackupMissingPayload;
           const missingSentence = `Missing ${payload.expectedSchedule} backup, `;
           return (
             missingSentence +
@@ -204,7 +205,7 @@ export default {
 
     const action = (anomaly: Anomaly): Action => {
       switch (anomaly.type) {
-        case "bb.anomaly.backup.policy-violation": {
+        case "bb.anomaly.database.backup.policy-violation": {
           return {
             onClick: () => {
               router.push({
@@ -218,7 +219,7 @@ export default {
             title: "Configure backup",
           };
         }
-        case "bb.anomaly.backup.missing":
+        case "bb.anomaly.database.backup.missing":
           return {
             onClick: () => {
               router.push({
@@ -256,9 +257,9 @@ export default {
 
     const severity = (anomaly: Anomaly): Severity => {
       switch (anomaly.type) {
-        case "bb.anomaly.backup.policy-violation":
+        case "bb.anomaly.database.backup.policy-violation":
           return "MEDIUM";
-        case "bb.anomaly.backup.missing":
+        case "bb.anomaly.database.backup.missing":
           return "HIGH";
         case "bb.anomaly.database.connection":
         case "bb.anomaly.database.schema.drift":
