@@ -192,11 +192,11 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "control-center",
-            name: "workspace.control-center",
-            meta: { title: () => "Control Center" },
+            path: "anomaly-center",
+            name: "workspace.anomaly-center",
+            meta: { title: () => "Anomaly Center" },
             components: {
-              content: () => import("../views/ControlCenterDashboard.vue"),
+              content: () => import("../views/AnomalyCenterDashboard.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -872,7 +872,7 @@ router.beforeEach((to, from, next) => {
     to.name === "oauth-callback" ||
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
-    to.name === "workspace.control-center" ||
+    to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
