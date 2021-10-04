@@ -334,7 +334,11 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		var schema db.DBSchema
 		schema.Name = dbName
 
-		txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+		sqldb, err := driver.GetDbConnection(ctx, dbName)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
+		}
+		txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 		if err != nil {
 			return nil, nil, err
 		}
