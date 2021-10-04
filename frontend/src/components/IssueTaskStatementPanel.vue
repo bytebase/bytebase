@@ -11,7 +11,9 @@
       >
         {{ rollback ? "Rollback SQL" : "SQL" }}
         <span v-if="create && !rollback" class="text-red-600">*</span>
-        <span v-if="!create && migrationType == 'BASELINE'" class="text-accent"
+        <span
+          v-if="!create && !rollback && migrationType == 'BASELINE'"
+          class="text-accent"
           >(This is a baseline migration and bytebase won't apply the SQL to the
           database, it will only record a baseline history)</span
         >
