@@ -420,6 +420,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 				UpdaterId: patch.UpdaterId,
 				TaskId:    &patch.ID,
 				Code:      patch.Code,
+				Result:    patch.Result,
 				Comment:   patch.Comment,
 			}
 			switch patch.Status {

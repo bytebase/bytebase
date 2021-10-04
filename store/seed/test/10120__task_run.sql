@@ -10,7 +10,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -24,7 +24,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Established baseline version 202106280000 for database ''shop''',
+        '{"detail":"Established baseline version 202106280000 for database ''shop''","migrationId":1,"version":"202106280000"}',
         '{"migrationType":"BASELINE","statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"14","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repositoryFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"c80352facbaefcde0c1c82340381be3286e5438d","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/c80352facbaefcde0c1c82340381be3286e5438d","authorName":"tianzhou","added":"bytebase/shop__v1__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -40,7 +40,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -54,7 +54,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Established baseline version 202106280000 for database ''shop''',
+        '{"detail":"Established baseline version 202106280000 for database ''shop''","migrationId":1,"version":"202106280000"}',
         '{"migrationType":"BASELINE","statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"14","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/shop","repositoryFullPath":"bytebase-demo/shop","authorName":"tianzhou","fileCommit":{"id":"c80352facbaefcde0c1c82340381be3286e5438d","title":"Create product table","message":"Create product table","createdTs":1624873354,"url":"http://gitlab.bytebase.com/bytebase-demo/shop/-/commit/c80352facbaefcde0c1c82340381be3286e5438d","authorName":"tianzhou","added":"bytebase/shop__v1__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -69,7 +69,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment
+        result
     )
 VALUES
     (
@@ -81,7 +81,7 @@ VALUES
         'FAILED',
         'bb.task.database.schema.update',
         103,
-        'table "tbl1" already exists'
+        '{"detail":"table \"tbl1\" already exists"}'
     );
 
 -- Task run for task 11008
@@ -96,7 +96,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -110,7 +110,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Established baseline version 202106280000 for database ''blog''',
+        '{"detail":"Established baseline version 202106280000 for database ''blog''","migrationId":1,"version":"202106280000"}',
         '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"d7f3b88b93c4d7f57b710980cdf92f72dcc4cd1e","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs":1624865383,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/d7f3b88b93c4d7f57b710980cdf92f72dcc4cd1e","authorName":"tianzhou","added":"bytebase/dev/blog__202106280000__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -126,7 +126,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -140,7 +140,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Established baseline version 202106280000 for database ''blog''',
+        '{"detail":"Established baseline version 202106280000 for database ''blog''","migrationId":1,"version":"202106280000"}',
         '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8f578d53e821c46421d69fd0aabd29921190a6c0","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs":1624865383,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8f578d53e821c46421d69fd0aabd29921190a6c0","authorName":"tianzhou","added":"bytebase/dev/blog__202106280000__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -156,7 +156,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -170,7 +170,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Established baseline version 202106280000 for database ''blog''',
+        '{"detail":"Established baseline version 202106280000 for database ''blog''","migrationId":1,"version":"202106280000"}',
         '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8f578d53e821c46421d69fd0aabd29921190a6c0","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs":1624865383,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8f578d53e821c46421d69fd0aabd29921190a6c0","authorName":"tianzhou","added":"bytebase/dev/blog__202106280000__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -186,7 +186,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -200,7 +200,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Established baseline version 202106280000 for database ''blog''',
+        '{"detail":"Established baseline version 202106280000 for database ''blog''","migrationId":1,"version":"202106280000"}',
         '{"migrationType":"BASELINE","statement":"CREATE TABLE `user` (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\temail TEXT NOT NULL\n);\n\nCREATE TABLE post (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tcontent TEXT NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n\nCREATE TABLE comment (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tcontent TEXT NOT NULL,\n\tpost_id INTEGER NOT NULL,\n\tauthor_id INTEGER NOT NULL,\n\tFOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,\n\tFOREIGN KEY (author_id) REFERENCES `user` (id) ON DELETE RESTRICT\n);\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8f578d53e821c46421d69fd0aabd29921190a6c0","title":"Create user, post, comment table for dev environment","message":"Create user, post, comment table for dev environment","createdTs":1624865383,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8f578d53e821c46421d69fd0aabd29921190a6c0","authorName":"tianzhou","added":"bytebase/dev/blog__202106280000__baseline__add_initial_schema.sql"}}}'
     );
 
@@ -216,7 +216,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -230,7 +230,7 @@ VALUES
         'FAILED',
         'bb.task.database.schema.update',
         201,
-        'database ''blog'' has already applied version 202106280100',
+        '{"detail":"database ''blog'' has already applied version 202106280100"}',
         '{"migrationType":"MIGRATE","statement":"ALTER TABLE `user` ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE post ADD COLUMN `created_at` DATETIME NOT NULL;\n\nALTER TABLE comment ADD COLUMN `created_at` DATETIME NOT NULL;\n","pushEvent":{"vcsType":"GITLAB_SELF_HOST","baseDir":"bytebase","ref":"refs/heads/master","repositoryId":"13","repositoryUrl":"http://gitlab.bytebase.com/bytebase-demo/blog","repositoryFullPath":"bytebase-demo/blog","authorName":"tianzhou","fileCommit":{"id":"8ff6482998059a861e1faa14658c65244577b54e","title":"Add created_at column to user,post,comment table for dev environment","message":"Add created_at column to user,post,comment table for dev environment","createdTs":1624869938,"url":"http://gitlab.bytebase.com/bytebase-demo/blog/-/commit/8ff6482998059a861e1faa14658c65244577b54e","authorName":"tianzhou","added":"bytebase/dev/blog__202106280100__migrate__add_created_at_column.sql"}}}'
     );
 
@@ -246,7 +246,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -260,7 +260,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update',
         0,
-        'Applied migration version 20210830011437.11013 to database "testdb_dev"',
+        '{"detail":"Applied migration version 20210830011437.11013 to database \"testdb_dev\"","migrationId":1,"version":"20210830011437.11013"}',
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT)"}'
     );
 
@@ -275,7 +275,7 @@ INSERT INTO
         name,
         `status`,
         `type`,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -288,7 +288,7 @@ VALUES
         'Update testdb_integration task run',
         'DONE',
         'bb.task.database.schema.update',
-        'Applied migration version 20210830011437.11014 to database "testdb_integration"',
+        '{"detail":"Applied migration version 20210830011437.11014 to database \"testdb_integration\"","migrationId":1,"version":"20210830011437.11014"}',
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT)"}'
     );
 
@@ -304,7 +304,7 @@ INSERT INTO
         `status`,
         `type`,
         code,
-        comment,
+        result,
         payload
     )
 VALUES
@@ -318,6 +318,6 @@ VALUES
         'FAILED',
         'bb.task.database.schema.update',
         103,
-        'table "tbl2" already exists',
+        '{"detail":"table \"tbl2\" already exists"}',
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT)"}'
     );

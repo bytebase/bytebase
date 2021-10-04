@@ -1,4 +1,4 @@
-import { ErrorCode, TaskCheckRunId } from "..";
+import { ErrorCode, MigrationHistoryId, TaskCheckRunId } from "..";
 import { Database } from "../database";
 import {
   BackupId,
@@ -112,6 +112,12 @@ export type TaskStatusPatch = {
 // TaskRun is one run of a particular task
 export type TaskRunStatus = "RUNNING" | "DONE" | "FAILED" | "CANCELED";
 
+export type TaskRunResultPayload = {
+  detail: string;
+  migrationId?: MigrationHistoryId;
+  version?: string;
+};
+
 export type TaskRun = {
   id: TaskRunId;
 
@@ -127,6 +133,7 @@ export type TaskRun = {
   type: TaskType;
   code: ErrorCode;
   comment: string;
+  result: TaskRunResultPayload;
   payload?: TaskPayload;
 };
 

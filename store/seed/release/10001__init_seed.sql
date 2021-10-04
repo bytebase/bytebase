@@ -372,6 +372,7 @@ INSERT INTO
         `status`,
         `type`,
         comment,
+        result,
         payload
     )
 VALUES
@@ -382,7 +383,8 @@ VALUES
         'Welcome',
         'FAILED',
         'bb.task.general',
-        'Something is not right...',
+        '',
+        '{"detail":"Something is not right..."}',
         ''
     );
 
