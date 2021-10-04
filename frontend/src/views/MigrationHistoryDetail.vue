@@ -117,7 +117,7 @@
             </svg>
           </button>
         </a>
-        <div v-highlight class="border p-2 whitespace-pre-wrap w-full">
+        <div v-highlight class="border px-2 whitespace-pre-wrap w-full">
           {{ migrationHistory.statement }}
         </div>
         <a
@@ -150,7 +150,7 @@
         <div class="mb-2 textinfolabel">
           The schema snapshot recorded after applying this migration version
         </div>
-        <div v-highlight class="border p-2 whitespace-pre-wrap w-full">
+        <div v-highlight class="border px-2 whitespace-pre-wrap w-full">
           {{ migrationHistory.schema }}
         </div>
       </div>
