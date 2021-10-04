@@ -1187,7 +1187,7 @@ END;
 
 -- Anomaly
 -- anomaly stores various anomalies found by the scanner.
--- For now, anomaly is associated with a particular database. In the future, we may relax it a bit to have instance level anomalys.
+-- For now, anomaly can be associated with a particular instance or database.
 CREATE TABLE anomaly (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -1198,11 +1198,13 @@ CREATE TABLE anomaly (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
-    database_id INTEGER NOT NULL REFERENCES db (id),
+    -- NULL if it's an instance anomaly
+    database_id INTEGER NULL REFERENCES db (id),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.anomaly.%'),
     payload TEXT NOT NULL DEFAULT ''
 );
 
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON anomaly(instance_id, row_status, type);
 CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row_status, type);
 
 INSERT INTO
