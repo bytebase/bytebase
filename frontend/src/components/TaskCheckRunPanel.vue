@@ -126,7 +126,7 @@ export default {
             status: "ERROR",
             title: "Error",
             code: props.taskCheckRun.code,
-            content: props.taskCheckRun.comment,
+            content: props.taskCheckRun.result.detail,
           },
         ];
       } else if (props.taskCheckRun.status == "CANCELED") {

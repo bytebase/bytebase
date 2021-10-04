@@ -78,6 +78,7 @@ type TaskCheckResult struct {
 }
 
 type TaskCheckRunResultPayload struct {
+	Detail     string            `json:"detail,omitempty"`
 	ResultList []TaskCheckResult `json:"resultList,omitempty"`
 }
 
@@ -154,9 +155,7 @@ type TaskCheckRunStatusPatch struct {
 	// Domain specific fields
 	Status TaskCheckRunStatus
 	Code   common.Code
-	// Records the status detail (e.g. error message on failure)
-	Comment string
-	Result  string
+	Result string
 }
 
 type TaskCheckRunService interface {
