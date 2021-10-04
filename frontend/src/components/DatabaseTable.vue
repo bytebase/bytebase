@@ -72,7 +72,7 @@
       <BBTableCell v-if="showEnvironmentColumn" class="w-16">
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
-      <BBTableCell class="w-32">
+      <BBTableCell v-if="showInstanceColumn" class="w-32">
         <div class="flex flex-row items-center space-x-1">
           <template v-if="database.instance.engine == 'MYSQL'">
             <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
@@ -256,6 +256,10 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const showInstanceColumn = computed(() => {
+      return props.mode != "INSTANCE";
+    });
+
     const showProjectColumn = computed(() => {
       return props.mode != "PROJECT" && props.mode != "PROJECT_SHORT";
     });
@@ -307,6 +311,7 @@ export default {
     };
 
     return {
+      showInstanceColumn,
       showProjectColumn,
       showEnvironmentColumn,
       showMiscColumn,
