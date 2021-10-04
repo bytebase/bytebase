@@ -71,7 +71,7 @@
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
-        {{ taskRun.comment }}
+        {{ comment(taskRun) }}
         <template v-if="commentLink(taskRun).link">
           <router-link
             class="ml-1 normal-link"
@@ -108,7 +108,7 @@ import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
 import { useStore } from "vuex";
-import { databaseSlug, instanceSlug } from "../utils";
+import { databaseSlug, instanceSlug, migrationHistorySlug } from "../utils";
 
 type CommentLink = {
   title: string;
@@ -158,8 +158,32 @@ export default {
       }
     };
 
-    const commentLink = (taskRun: TaskRun): CommentLink => {
+    const comment = (taskRun: TaskRun): string => {
       if (taskRun.status == "FAILED") {
+        return taskRun.result.detail;
+      }
+      // Returns result detail if we get the result, otherwise, returns the comment.
+      return taskRun.result.detail || taskRun.comment;
+    };
+
+    const commentLink = (taskRun: TaskRun): CommentLink => {
+      if (taskRun.status == "DONE") {
+        switch (taskRun.type) {
+          case "bb.task.database.create":
+          case "bb.task.database.schema.update":
+          case "bb.task.database.restore": {
+            return {
+              title: "view migration",
+              link: `/db/${databaseSlug(
+                props.task.database!
+              )}/history/${migrationHistorySlug(
+                taskRun.result.migrationId!,
+                taskRun.result.version!
+              )}`,
+            };
+          }
+        }
+      } else if (taskRun.status == "FAILED") {
         if (taskRun.code == MigrationErrorCode.MIGRATION_SCHEMA_MISSING) {
           return {
             title: "check instance",
@@ -183,6 +207,7 @@ export default {
     return {
       columnList,
       statusIconClass,
+      comment,
       commentLink,
     };
   },

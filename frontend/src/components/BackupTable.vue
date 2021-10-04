@@ -274,7 +274,10 @@ export default {
             name: "workspace.database.history.detail",
             params: {
               databaseSlug: databaseSlug(props.database),
-              migrationHistorySlug: migrationHistorySlug(history),
+              migrationHistorySlug: migrationHistorySlug(
+                history.id,
+                history.version
+              ),
             },
             hash: "#schema",
           });

@@ -27,7 +27,7 @@ type SchemaUpdateTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
+func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -41,13 +41,13 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}()
 
 	if task.Database == nil {
-		return true, "", fmt.Errorf("missing database when updating schema")
+		return true, nil, fmt.Errorf("missing database when updating schema")
 	}
 	databaseName := task.Database.Name
 
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, "", fmt.Errorf("invalid database schema update payload: %w", err)
+		return true, nil, fmt.Errorf("invalid database schema update payload: %w", err)
 	}
 
 	var repository *api.Repository
@@ -77,7 +77,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		}
 		repository, err = server.RepositoryService.FindRepository(context.Background(), repositoryFind)
 		if err != nil {
-			return true, "", fmt.Errorf("failed to find linked repository for database %q", databaseName)
+			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
 
 		mi, err = db.ParseMigrationInfo(
@@ -86,7 +86,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return true, "", fmt.Errorf("failed to start schema migration, error: %w", err)
+			return true, nil, fmt.Errorf("failed to start schema migration, error: %w", err)
 		}
 		mi.Creator = payload.VCSPushEvent.FileCommit.AuthorName
 
@@ -95,7 +95,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		}
 		bytes, err := json.Marshal(miPayload)
 		if err != nil {
-			return true, "", fmt.Errorf("failed to start schema migration, unable to marshal vcs push event payload %w", err)
+			return true, nil, fmt.Errorf("failed to start schema migration, unable to marshal vcs push event payload %w", err)
 		}
 		mi.Payload = string(bytes)
 	}
@@ -118,16 +118,16 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	sql := strings.TrimSpace(payload.Statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
 	if mi.Type != db.Baseline && sql == "" {
-		return true, "", fmt.Errorf("empty sql statement")
+		return true, nil, fmt.Errorf("empty sql statement")
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 
 	driver, err := GetDatabaseDriver(task.Instance, databaseName, exec.l)
 	if err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 	defer driver.Close(context.Background())
 
@@ -141,15 +141,15 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return true, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
+		return true, nil, fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
 	if setup {
-		return true, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
+		return true, nil, common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
 	}
 
-	schema, err := driver.ExecuteMigration(ctx, mi, sql)
+	migrationId, schema, err := driver.ExecuteMigration(ctx, mi, sql)
 	if err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
@@ -160,7 +160,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 		repository.VCS, err = server.ComposeVCSById(context.Background(), repository.VCSId)
 		if err != nil {
-			return true, "", fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
+			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 
 		// Writes back the latest schema file to the same branch as the push event.
@@ -175,7 +175,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 		commitId, err := writeBackLatestSchema(server, repository, payload.VCSPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
-			return true, "", err
+			return true, nil, err
 		}
 
 		// Create file commit activity
@@ -225,12 +225,16 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		}
 	}
 
-	detail = fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
+	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
 	if mi.Type == db.Baseline {
 		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, databaseName)
 	}
 
-	return true, detail, nil
+	return true, &api.TaskRunResultPayload{
+		Detail:      detail,
+		MigrationId: migrationId,
+		Version:     mi.Version,
+	}, nil
 }
 
 // Writes back the latest schema to the repository after migration
