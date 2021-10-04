@@ -173,7 +173,7 @@ export default {
           case "bb.task.database.schema.update":
           case "bb.task.database.restore": {
             return {
-              title: "view migration",
+              title: "View migration",
               link: `/db/${databaseSlug(
                 props.task.database!
               )}/history/${migrationHistorySlug(
@@ -186,14 +186,14 @@ export default {
       } else if (taskRun.status == "FAILED") {
         if (taskRun.code == MigrationErrorCode.MIGRATION_SCHEMA_MISSING) {
           return {
-            title: "check instance",
+            title: "Check instance",
             link: `/instance/${instanceSlug(props.task.instance)}`,
           };
         } else if (
           taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING
         ) {
           return {
-            title: "view migration history",
+            title: "View migration history",
             link: `/db/${databaseSlug(props.task.database!)}#migration-history`,
           };
         }
