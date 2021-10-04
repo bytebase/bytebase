@@ -165,6 +165,8 @@ export default {
       switch (type) {
         case "bb.anomaly.instance.connection":
           return "Connection failure";
+        case "bb.anomaly.instance.migration-schema":
+          return "Missing migration schema";
         case "bb.anomaly.database.backup.policy-violation":
           return "Backup enforcement violation";
         case "bb.anomaly.database.backup.missing":
@@ -182,6 +184,8 @@ export default {
           const payload = anomaly.payload as AnomalyInstanceConnectionPayload;
           return payload.detail;
         }
+        case "bb.anomaly.instance.migration-schema":
+          return "Please create migration schema on the instance first.";
         case "bb.anomaly.database.backup.policy-violation": {
           const environment = store.getters["environment/environmentById"](
             anomaly.instance.environment.id
@@ -217,6 +221,24 @@ export default {
     const action = (anomaly: Anomaly): Action => {
       switch (anomaly.type) {
         case "bb.anomaly.instance.connection":
+          if (props.mode == "INSTANCE") {
+            return {
+              onClick: () => {},
+              title: "",
+            };
+          }
+          return {
+            onClick: () => {
+              router.push({
+                name: "workspace.instance.detail",
+                params: {
+                  instanceSlug: instanceSlug(anomaly.instance),
+                },
+              });
+            },
+            title: "Check instance",
+          };
+        case "bb.anomaly.instance.migration-schema":
           if (props.mode == "INSTANCE") {
             return {
               onClick: () => {},
@@ -291,6 +313,7 @@ export default {
         case "bb.anomaly.database.backup.missing":
           return "HIGH";
         case "bb.anomaly.instance.connection":
+        case "bb.anomaly.instance.migration-schema":
         case "bb.anomaly.database.connection":
         case "bb.anomaly.database.schema.drift":
           return "CRITICAL";

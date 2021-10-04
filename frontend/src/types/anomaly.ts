@@ -11,6 +11,7 @@ import {
 
 export type AnomalyType =
   | "bb.anomaly.instance.connection"
+  | "bb.anomaly.instance.migration-schema"
   | "bb.anomaly.database.backup.policy-violation"
   | "bb.anomaly.database.backup.missing"
   | "bb.anomaly.database.connection"
