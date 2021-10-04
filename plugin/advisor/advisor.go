@@ -81,10 +81,6 @@ func Register(dbType db.Type, advType AdvisorType, f Advisor) {
 }
 
 func Check(dbType db.Type, advType AdvisorType, ctx AdvisorContext, statement string) ([]Advice, error) {
-	// TODO(spinningbot): skip Postgres SQL advisor check till it's supported.
-	if dbType == db.Postgres {
-		return nil, nil
-	}
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
