@@ -368,13 +368,16 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			for _, col := range tbl.columns {
 				var dbColumn db.DBColumn
 				dbColumn.Name = col.columnName
+				dbColumn.Type = col.dataType
+				dbColumn.Default = &col.columnDefault
+				dbColumn.Nullable = col.isNullable
 				dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
 			}
 			indices := indicesMap[dbTable.Name]
 			for _, idx := range indices {
 				var dbIndex db.DBIndex
 				dbIndex.Name = idx.name
-				dbIndex.Expression = idx.Statement()
+				dbIndex.Expression = idx.statement
 				dbIndex.Unique = idx.unique
 				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
 			}
