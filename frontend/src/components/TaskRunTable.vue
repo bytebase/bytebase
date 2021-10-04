@@ -158,7 +158,7 @@ export default {
       }
     };
 
-    const commentLink = (taskRun: TaskRun): CommentLink | undefined => {
+    const commentLink = (taskRun: TaskRun): CommentLink => {
       if (taskRun.status == "FAILED") {
         if (taskRun.code == MigrationErrorCode.MIGRATION_SCHEMA_MISSING) {
           return {
@@ -174,7 +174,10 @@ export default {
           };
         }
       }
-      return undefined;
+      return {
+        title: "",
+        link: "",
+      };
     };
 
     return {
