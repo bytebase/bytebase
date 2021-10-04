@@ -10,6 +10,7 @@ type AnomalyType string
 
 const (
 	AnomalyInstanceConnection            AnomalyType = "bb.anomaly.instance.connection"
+	AnomalyInstanceMigrationSchema       AnomalyType = "bb.anomaly.instance.migration-schema"
 	AnomalyDatabaseBackupPolicyViolation AnomalyType = "bb.anomaly.database.backup.policy-violation"
 	AnomalyDatabaseBackupMissing         AnomalyType = "bb.anomaly.database.backup.missing"
 	AnomalyDatabaseConnection            AnomalyType = "bb.anomaly.database.connection"

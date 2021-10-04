@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ANOMALY_SCAN_INTERVAL = time.Duration(30) * time.Minute
+	ANOMALY_SCAN_INTERVAL = time.Duration(1) * time.Second
 )
 
 func NewAnomalyScanner(logger *zap.Logger, server *Server) *AnomalyScanner {
@@ -115,7 +115,7 @@ func (s *AnomalyScanner) Run() error {
 							mu.Unlock()
 						}()
 
-						s.checkInstanceConnectionAnomaly(context.Background(), instance)
+						s.checkInstanceAnomaly(context.Background(), instance)
 
 						databaseFind := &api.DatabaseFind{
 							InstanceId: &instance.ID,
@@ -142,7 +142,7 @@ func (s *AnomalyScanner) Run() error {
 	return nil
 }
 
-func (s *AnomalyScanner) checkInstanceConnectionAnomaly(ctx context.Context, instance *api.Instance) {
+func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
 	driver, err := GetDatabaseDriver(instance, "", s.l)
 
 	// Check connection
@@ -170,6 +170,7 @@ func (s *AnomalyScanner) checkInstanceConnectionAnomaly(ctx context.Context, ins
 					zap.Error(err))
 			}
 		}
+		return
 	} else {
 		defer driver.Close(ctx)
 		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
@@ -181,6 +182,42 @@ func (s *AnomalyScanner) checkInstanceConnectionAnomaly(ctx context.Context, ins
 				zap.String("instance", instance.Name),
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
+		}
+	}
+
+	// Check migration schema
+	{
+		setup, err := driver.NeedsSetupMigration(ctx)
+		if err != nil {
+			s.l.Error("Failed to check migration schema",
+				zap.String("instance", instance.Name),
+				zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
+				zap.Error(err))
+		} else {
+			if setup {
+				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+					CreatorId:  api.SYSTEM_BOT_ID,
+					InstanceId: instance.ID,
+					Type:       api.AnomalyInstanceMigrationSchema,
+				})
+				if err != nil {
+					s.l.Error("Failed to create anomaly",
+						zap.String("instance", instance.Name),
+						zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
+						zap.Error(err))
+				}
+			} else {
+				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+					InstanceId: &instance.ID,
+					Type:       api.AnomalyInstanceMigrationSchema,
+				})
+				if err != nil && common.ErrorCode(err) != common.NotFound {
+					s.l.Error("Failed to close anomaly",
+						zap.String("instance", instance.Name),
+						zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
+						zap.Error(err))
+				}
+			}
 		}
 	}
 }
