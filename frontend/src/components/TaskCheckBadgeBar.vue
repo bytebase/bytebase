@@ -5,7 +5,15 @@
       :key="index"
     >
       <button
-        class="inline-flex items-center px-3 py-0.5 rounded-full text-sm"
+        class="
+          inline-flex
+          items-center
+          px-3
+          py-0.5
+          rounded-full
+          text-sm
+          border border-control-border
+        "
         :class="buttonStyle(checkRun)"
         @click.prevent="selectTaskCheckRun(checkRun)"
       >
