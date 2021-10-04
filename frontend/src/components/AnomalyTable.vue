@@ -103,6 +103,7 @@ import {
   AnomalyDatabaseBackupPolicyViolationPayload,
   AnomalyDatabaseConnectionPayload,
   AnomalyDatabaseSchemaDriftPayload,
+  AnomalyInstanceConnectionPayload,
   AnomalyType,
 } from "../types";
 import { useStore } from "vuex";
@@ -143,6 +144,10 @@ export default {
   name: "AnomalyTable",
   components: { CodeDiff },
   props: {
+    mode: {
+      default: "NORMAL",
+      type: String as PropType<"INSTANCE" | "DATABASE">,
+    },
     anomalyList: {
       required: true,
       type: Object as PropType<Anomaly[]>,
@@ -156,8 +161,10 @@ export default {
       showModal: false,
     });
 
-    const typeName = (type: AnomalyType) => {
+    const typeName = (type: AnomalyType): string => {
       switch (type) {
+        case "bb.anomaly.instance.connection":
+          return "Connection failure";
         case "bb.anomaly.database.backup.policy-violation":
           return "Backup enforcement violation";
         case "bb.anomaly.database.backup.missing":
@@ -169,8 +176,12 @@ export default {
       }
     };
 
-    const detail = (anomaly: Anomaly) => {
+    const detail = (anomaly: Anomaly): string => {
       switch (anomaly.type) {
+        case "bb.anomaly.instance.connection": {
+          const payload = anomaly.payload as AnomalyInstanceConnectionPayload;
+          return payload.detail;
+        }
         case "bb.anomaly.database.backup.policy-violation": {
           const environment = store.getters["environment/environmentById"](
             anomaly.instance.environment.id
@@ -205,13 +216,31 @@ export default {
 
     const action = (anomaly: Anomaly): Action => {
       switch (anomaly.type) {
+        case "bb.anomaly.instance.connection":
+          if (props.mode == "INSTANCE") {
+            return {
+              onClick: () => {},
+              title: "",
+            };
+          }
+          return {
+            onClick: () => {
+              router.push({
+                name: "workspace.instance.detail",
+                params: {
+                  instanceSlug: instanceSlug(anomaly.instance),
+                },
+              });
+            },
+            title: "Check instance",
+          };
         case "bb.anomaly.database.backup.policy-violation": {
           return {
             onClick: () => {
               router.push({
                 name: "workspace.database.detail",
                 params: {
-                  databaseSlug: databaseSlug(anomaly.database),
+                  databaseSlug: databaseSlug(anomaly.database!),
                 },
                 hash: "#backup",
               });
@@ -225,7 +254,7 @@ export default {
               router.push({
                 name: "workspace.database.detail",
                 params: {
-                  databaseSlug: databaseSlug(anomaly.database),
+                  databaseSlug: databaseSlug(anomaly.database!),
                 },
                 hash: "#backup",
               });
@@ -261,6 +290,7 @@ export default {
           return "MEDIUM";
         case "bb.anomaly.database.backup.missing":
           return "HIGH";
+        case "bb.anomaly.instance.connection":
         case "bb.anomaly.database.connection":
         case "bb.anomaly.database.schema.drift":
           return "CRITICAL";

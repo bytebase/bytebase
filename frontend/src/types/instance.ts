@@ -1,3 +1,4 @@
+import { Anomaly } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
@@ -11,6 +12,7 @@ export type Instance = {
 
   // Related fields
   environment: Environment;
+  anomalyList: Anomaly[];
 
   // Standard fields
   creator: Principal;

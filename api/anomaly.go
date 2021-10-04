@@ -9,11 +9,17 @@ import (
 type AnomalyType string
 
 const (
+	AnomalyInstanceConnection            AnomalyType = "bb.anomaly.instance.connection"
 	AnomalyDatabaseBackupPolicyViolation AnomalyType = "bb.anomaly.database.backup.policy-violation"
 	AnomalyDatabaseBackupMissing         AnomalyType = "bb.anomaly.database.backup.missing"
 	AnomalyDatabaseConnection            AnomalyType = "bb.anomaly.database.connection"
 	AnomalyDatabaseSchemaDrift           AnomalyType = "bb.anomaly.database.schema.drift"
 )
+
+type AnomalyInstanceConnectionPayload struct {
+	// Connection failure detail
+	Detail string `json:"detail,omitempty"`
+}
 
 type AnomalyDatabaseBackupPolicyViolationPayload struct {
 	EnvironmentId          int                      `json:"environmentId,omitempty"`
@@ -54,7 +60,8 @@ type Anomaly struct {
 
 	// Related fields
 	InstanceId int `jsonapi:"attr,instanceId"`
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	// Instance anomaly doesn't have databaseId
+	DatabaseId *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Type    AnomalyType `jsonapi:"attr,type"`
@@ -67,7 +74,7 @@ type AnomalyUpsert struct {
 
 	// Related fields
 	InstanceId int
-	DatabaseId int
+	DatabaseId *int
 
 	// Domain specific fields
 	Type    AnomalyType `jsonapi:"attr,type"`
@@ -79,8 +86,11 @@ type AnomalyFind struct {
 	RowStatus *RowStatus
 
 	// Related fields
-	DatabaseId int
+	InstanceId *int
+	DatabaseId *int
 	Type       *AnomalyType
+	// Only applicable if InstanceId is specified, if true, then we only return instance anomaly (database_id is NULL)
+	InstanceOnly bool
 }
 
 func (find *AnomalyFind) String() string {
@@ -92,7 +102,8 @@ func (find *AnomalyFind) String() string {
 }
 
 type AnomalyArchive struct {
-	DatabaseId int
+	InstanceId *int
+	DatabaseId *int
 	Type       AnomalyType
 }
 

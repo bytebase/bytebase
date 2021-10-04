@@ -441,6 +441,26 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 		return err
 	}
 
+	rowStatus := api.Normal
+	instance.AnomalyList, err = s.AnomalyService.FindAnomalyList(context.Background(), &api.AnomalyFind{
+		RowStatus:    &rowStatus,
+		InstanceId:   &instance.ID,
+		InstanceOnly: true,
+	})
+	if err != nil {
+		return err
+	}
+	for _, anomaly := range instance.AnomalyList {
+		anomaly.Creator, err = s.ComposePrincipalById(context.Background(), anomaly.CreatorId)
+		if err != nil {
+			return err
+		}
+		anomaly.Updater, err = s.ComposePrincipalById(context.Background(), anomaly.UpdaterId)
+		if err != nil {
+			return err
+		}
+	}
+
 	return s.ComposeInstanceAdminDataSource(context.Background(), instance)
 }
 

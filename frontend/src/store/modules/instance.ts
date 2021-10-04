@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  Anomaly,
   empty,
   EMPTY_ID,
   Environment,
@@ -34,6 +35,25 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
+  const anomalyIdList = instance.relationships!.anomaly
+    .data as ResourceIdentifier[];
+  const anomalyList: Anomaly[] = [];
+  for (const item of anomalyIdList) {
+    const anomaly = unknown("ANOMALY") as Anomaly;
+    anomaly.id = parseInt(item.id);
+    anomalyList.push(anomaly);
+  }
+
+  const instancePartial = {
+    ...(instance.attributes as Omit<
+      Instance,
+      "id" | "environment" | "anomalyList"
+    >),
+    id: parseInt(instance.id),
+    environment,
+    anomalyList: [],
+  };
+
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
@@ -42,14 +62,34 @@ function convert(
     ) {
       environment = rootGetters["environment/convert"](item, includedList);
     }
+
+    if (
+      item.type == "anomaly" &&
+      item.attributes.instanceId == instancePartial.id
+    ) {
+      const i = anomalyList.findIndex(
+        (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
+      );
+      if (i != -1) {
+        anomalyList[i] = rootGetters["anomaly/convert"](item);
+        anomalyList[i].instance = instancePartial;
+      }
+    }
+  }
+
+  for (const anomaly of anomalyList) {
+    anomaly.instance.environment = environment;
   }
 
   return {
-    ...(instance.attributes as Omit<Instance, "id" | "environment">),
-    id: parseInt(instance.id),
+    ...(instancePartial as Omit<
+      Instance,
+      "environment" | "password" | "anomalyList"
+    >),
     environment,
     // Password is not returned by the server, we just take extra caution here to redact it.
     password: "",
+    anomalyList,
   };
 }
 

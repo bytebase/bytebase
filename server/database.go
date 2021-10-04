@@ -606,7 +606,7 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	rowStatus := api.Normal
 	database.AnomalyList, err = s.AnomalyService.FindAnomalyList(context.Background(), &api.AnomalyFind{
 		RowStatus:  &rowStatus,
-		DatabaseId: database.ID,
+		DatabaseId: &database.ID,
 	})
 	if err != nil {
 		return err
