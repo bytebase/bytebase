@@ -42,7 +42,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 			{
 				Status:  api.TaskCheckStatusError,
 				Code:    common.DbConnectionFailure,
-				Title:   fmt.Sprintf("failed to connect %q", database.Name),
+				Title:   fmt.Sprintf("Failed to connect %q", database.Name),
 				Content: err.Error(),
 			},
 		}, nil
@@ -53,8 +53,8 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		{
 			Status:  api.TaskCheckStatusSuccess,
 			Code:    common.Ok,
-			Title:   fmt.Sprintf("Successfully connected %q", database.Name),
-			Content: "",
+			Title:   "OK",
+			Content: fmt.Sprintf("Successfully connected %q", database.Name),
 		},
 	}, nil
 }

@@ -143,6 +143,9 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)
 
+		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckInstanceMigrationSchema), migrationSchemaExecutor)
+
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer

@@ -237,6 +237,14 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			return task, nil
 		}
 
+		pass, err = passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
+		if err != nil {
+			return nil, err
+		}
+		if !pass {
+			return task, nil
+		}
+
 		instanceFind := &api.InstanceFind{
 			ID: &task.InstanceId,
 		}

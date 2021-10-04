@@ -60,6 +60,7 @@ const (
 	TaskCheckDatabaseStatementFakeAdvise TaskCheckType = "bb.task-check.database.statement.fake-advise"
 	TaskCheckDatabaseStatementSyntax     TaskCheckType = "bb.task-check.database.statement.syntax"
 	TaskCheckDatabaseConnect             TaskCheckType = "bb.task-check.database.connect"
+	TaskCheckInstanceMigrationSchema     TaskCheckType = "bb.task-check.instance.migration-schema"
 )
 
 type TaskCheckDatabaseStatementAdvisePayload struct {
@@ -70,14 +71,14 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 }
 
 type TaskCheckResult struct {
-	Status  TaskCheckStatus `json:"status"`
-	Code    common.Code     `json:"code"`
-	Title   string          `json:"title"`
-	Content string          `json:"content"`
+	Status  TaskCheckStatus `json:"status,omitempty"`
+	Code    common.Code     `json:"code,omitempty"`
+	Title   string          `json:"title,omitempty"`
+	Content string          `json:"content,omitempty"`
 }
 
 type TaskCheckRunResultPayload struct {
-	ResultList []TaskCheckResult `json:"resultList"`
+	ResultList []TaskCheckResult `json:"resultList,omitempty"`
 }
 
 type TaskCheckRun struct {
