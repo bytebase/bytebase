@@ -122,6 +122,7 @@ type MigrationHistory struct {
 	UpdatedTs int64  `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
+	ReleaseVersion    string             `jsonapi:"attr,releaseVersion"`
 	Database          string             `jsonapi:"attr,database"`
 	Engine            db.MigrationEngine `jsonapi:"attr,engine"`
 	Type              db.MigrationType   `jsonapi:"attr,type"`

@@ -52,7 +52,8 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 	var repository *api.Repository
 	mi := &db.MigrationInfo{
-		Type: payload.MigrationType,
+		ReleaseVersion: server.version,
+		Type:           payload.MigrationType,
 	}
 	if payload.VCSPushEvent == nil {
 		mi.Engine = db.UI

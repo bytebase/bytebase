@@ -11,6 +11,9 @@ CREATE TABLE bytebase.migration_history (
     created_ts BIGINT NOT NULL,
     updated_by TEXT NOT NULL,
     updated_ts BIGINT NOT NULL,
+    -- Record the client version creating this migration history. For Bytebase, we use its binary release version. Different Bytebase release might
+    -- record different history info and thie field helps to handle such situation properly. Moreover, it helps debugging.
+    release_version TEXT NOT NULL,
     -- Allows granular tracking of migration history (e.g If an application manages schemas for a multi-tenant service and each tenant has its own schema, that application can use namespace to record the tenant name to track the per-tenant schema migration)
     -- Since bytebase also manages different application databases from an instance, it leverages this field to track each database migration history.
     namespace TEXT NOT NULL,
@@ -22,6 +25,7 @@ CREATE TABLE bytebase.migration_history (
     -- MySQL runs DDL in its own transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
     `status` ENUM('PENDING', 'DONE') NOT NULL,
+    -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
     -- Record the migration statement

@@ -157,6 +157,7 @@ type MigrationInfoPayload struct {
 }
 
 type MigrationInfo struct {
+	ReleaseVersion string
 	Version        string
 	Namespace      string
 	Database       string
@@ -254,6 +255,7 @@ type MigrationHistory struct {
 	Updater   string
 	UpdatedTs int64
 
+	ReleaseVersion    string
 	Namespace         string
 	Sequence          int
 	Engine            MigrationEngine
