@@ -11,13 +11,16 @@
     />
     <div class="px-6 space-y-6">
       <div
-        v-if="instance.anomalyList.length > 0"
+        v-if="anomalySectionList.length > 0"
         class="border-b divide-block-border pb-6"
       >
         <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
           Anomalies
         </div>
-        <AnomalyTable :mode="'INSTANCE'" :anomalyList="instance.anomalyList" />
+        <AnomalyTable
+          :mode="'INSTANCE'"
+          :anomalySectionList="anomalySectionList"
+        />
       </div>
       <InstanceForm :create="false" :instance="instance" />
       <div
@@ -111,13 +114,14 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import {
+  Anomaly,
   Database,
   Instance,
   InstanceMigration,
   MigrationSchemaStatus,
   SqlResultSet,
 } from "../types";
-import { BBTabFilterItem } from "../bbkit/types";
+import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -175,6 +179,17 @@ export default {
       checkMigrationSetup();
     };
     watchEffect(prepareMigrationSchemaStatus);
+
+    const anomalySectionList = computed(
+      (): BBTableSectionDataSource<Anomaly>[] => {
+        const list: BBTableSectionDataSource<Anomaly>[] = [];
+        list.push({
+          title: instance.value.name,
+          list: instance.value.anomalyList,
+        });
+        return list;
+      }
+    );
 
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
@@ -341,6 +356,7 @@ export default {
       DATABASE_TAB,
       USER_TAB,
       state,
+      anomalySectionList,
       attentionTitle,
       attentionText,
       attentionActionText,
