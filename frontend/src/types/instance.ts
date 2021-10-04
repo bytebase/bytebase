@@ -89,6 +89,7 @@ export type MigrationHistory = {
   description: string;
   statement: string;
   schema: string;
+  schemaPrev: string;
   executionDuration: number;
   issueId: number;
   payload?: MigrationHistoryPayload;
