@@ -271,6 +271,19 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 
 	// Check schema drift
 	{
+		setup, err := driver.NeedsSetupMigration(ctx)
+		if err != nil {
+			s.l.Debug("Failed to check anomaly",
+				zap.String("instance", instance.Name),
+				zap.String("database", database.Name),
+				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+				zap.Error(err))
+			goto SchemaDriftEnd
+		}
+		// Skip drift check if migration schema is not ready (we have instance anomaly to cover that)
+		if setup {
+			goto SchemaDriftEnd
+		}
 		var schemaBuf bytes.Buffer
 		if err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
