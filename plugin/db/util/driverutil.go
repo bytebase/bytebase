@@ -259,7 +259,7 @@ func checkOutofOrderVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, nam
 	queryParams := &db.QueryParams{DatabaseType: dbType}
 	queryParams.AddParam("namespace", namespace)
 	queryParams.AddParam("engine", engine.String())
-	queryParams.AddParam("? < version", fmt.Sprintf("%s", version))
+	queryParams.AddParam("? < version", version)
 	query := `
 		SELECT MIN(version) FROM ` +
 		tablePrefix + `migration_history ` +
