@@ -124,12 +124,25 @@ func (s *TaskCheckScheduler) Run() error {
 								zap.String("type", string(taskCheckRun.Type)),
 								zap.Error(err),
 							)
+							bytes, err := json.Marshal(api.TaskCheckRunResultPayload{
+								Detail: err.Error(),
+							})
+							if err != nil {
+								s.l.Error("Failed to marshal task check run result",
+									zap.Int("id", taskCheckRun.ID),
+									zap.Int("task_id", taskCheckRun.TaskId),
+									zap.String("type", string(taskCheckRun.Type)),
+									zap.Error(err),
+								)
+								return
+							}
+
 							taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
 								ID:        &taskCheckRun.ID,
 								UpdaterId: api.SYSTEM_BOT_ID,
 								Status:    api.TaskCheckRunFailed,
 								Code:      common.ErrorCode(err),
-								Comment:   err.Error(),
+								Result:    string(bytes),
 							}
 							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(context.Background(), taskCheckRunStatusPatch)
 							if err != nil {

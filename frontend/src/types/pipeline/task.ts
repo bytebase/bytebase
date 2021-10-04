@@ -159,6 +159,7 @@ export type TaskCheckResult = {
 };
 
 export type TaskCheckRunResultPayload = {
+  detail: string;
   resultList: TaskCheckResult[];
 };
 

@@ -206,7 +206,6 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
 	set, args = append(set, "code = ?"), append(args, patch.Code)
-	set, args = append(set, "comment = ?"), append(args, patch.Comment)
 	set, args = append(set, "result = ?"), append(args, patch.Result)
 
 	// Build WHERE clause.
