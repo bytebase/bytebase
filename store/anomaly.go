@@ -55,18 +55,14 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 			return nil, err
 		}
 	} else if len(list) == 1 {
-		// Only update if payload differs, otherwise we would merely update the updated_ts
-		if list[0].Payload != upsert.Payload {
-			anomaly, err = patchAnomaly(ctx, tx, &anomalyPatch{
-				ID:        list[0].ID,
-				UpdaterId: upsert.CreatorId,
-				Payload:   upsert.Payload,
-			})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			anomaly = list[0]
+		// Even if field value does not change, we still patch to update the updated_ts
+		anomaly, err = patchAnomaly(ctx, tx, &anomalyPatch{
+			ID:        list[0].ID,
+			UpdaterId: upsert.CreatorId,
+			Payload:   upsert.Payload,
+		})
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
