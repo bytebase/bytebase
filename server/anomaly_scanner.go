@@ -132,6 +132,9 @@ func (s *AnomalyScanner) Run() error {
 							s.checkBackupAnomaly(context.Background(), instance, database, backupPlanPolicyMap)
 						}
 					}(instance)
+
+					// Sleep 1 second after finishing scanning each instance to avoid database lock error in SQLITE
+					time.Sleep(1 * time.Second)
 				}
 			}()
 
