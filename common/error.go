@@ -24,9 +24,10 @@ const (
 
 	// 201 db migration error
 	// Db migration is a core feature, so we separate it from the db error
-	MigrationAlreadyApplied  Code = 201
-	MigrationOutOfOrder      Code = 202
-	MigrationBaselineMissing Code = 203
+	MigrationSchemaMissing   Code = 201
+	MigrationAlreadyApplied  Code = 202
+	MigrationOutOfOrder      Code = 203
+	MigrationBaselineMissing Code = 204
 )
 
 // Error represents an application-specific error. Application errors can be

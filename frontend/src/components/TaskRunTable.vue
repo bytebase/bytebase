@@ -108,7 +108,7 @@ import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
 import { useStore } from "vuex";
-import { databaseSlug } from "../utils";
+import { databaseSlug, instanceSlug } from "../utils";
 
 type CommentLink = {
   title: string;
@@ -160,7 +160,14 @@ export default {
 
     const commentLink = (taskRun: TaskRun): CommentLink | undefined => {
       if (taskRun.status == "FAILED") {
-        if (taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING) {
+        if (taskRun.code == MigrationErrorCode.MIGRATION_SCHEMA_MISSING) {
+          return {
+            title: "check instance",
+            link: `/instance/${instanceSlug(props.task.instance)}`,
+          };
+        } else if (
+          taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING
+        ) {
           return {
             title: "view migration history",
             link: `/db/${databaseSlug(props.task.database!)}#migration-history`,

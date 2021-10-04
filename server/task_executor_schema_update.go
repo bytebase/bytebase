@@ -144,7 +144,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
 	if setup {
-		return true, "", fmt.Errorf("missing migration schema for instance %q", task.Instance.Name)
+		return true, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
 	}
 
 	schema, err := driver.ExecuteMigration(ctx, mi, sql)
