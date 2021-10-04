@@ -1,5 +1,10 @@
 <template>
   <div class="flex flex-col px-4">
+    <BBAttention
+      :style="'INFO'"
+      :title="'Anomaly detection'"
+      :description="'Bytebase periodically scans the managed resources and list the detected anomolies here. The list is refreshed roughly every 30 minutes.'"
+    />
     <div class="py-2 flex justify-between items-center">
       <BBTabFilter
         :tabItemList="tabItemList"
