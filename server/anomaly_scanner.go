@@ -67,7 +67,10 @@ func (s *AnomalyScanner) Run() error {
 					backupPlanPolicyMap[env.ID] = policy
 				}
 
-				instanceFind := &api.InstanceFind{}
+				rowStatus := api.Normal
+				instanceFind := &api.InstanceFind{
+					RowStatus: &rowStatus,
+				}
 				instanceList, err := s.server.InstanceService.FindInstanceList(context.Background(), instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
@@ -75,10 +78,6 @@ func (s *AnomalyScanner) Run() error {
 				}
 
 				for _, instance := range instanceList {
-					if instance.RowStatus != api.Normal {
-						continue
-					}
-
 					for _, env := range environmentList {
 						if env.ID == instance.EnvironmentId {
 							if env.RowStatus == api.Normal {
