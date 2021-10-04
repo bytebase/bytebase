@@ -131,16 +131,26 @@ func (s *TaskScheduler) Run() error {
 							delete(runningTasks, task.ID)
 							mu.Unlock()
 						}()
-						done, detail, err := executor.RunOnce(context.Background(), s.server, task)
+						done, result, err := executor.RunOnce(context.Background(), s.server, task)
 						if done {
 							if err == nil {
+								bytes, err := json.Marshal(*result)
+								if err != nil {
+									s.l.Error("Failed to marshal task run result",
+										zap.Int("task_id", task.ID),
+										zap.String("type", string(task.Type)),
+										zap.Error(err),
+									)
+									return
+								}
 								code := common.Ok
+								result := string(bytes)
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
 									UpdaterId: api.SYSTEM_BOT_ID,
 									Status:    api.TaskDone,
 									Code:      &code,
-									Comment:   &detail,
+									Result:    &result,
 								}
 								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 								if err != nil {
@@ -157,14 +167,25 @@ func (s *TaskScheduler) Run() error {
 									zap.String("type", string(task.Type)),
 									zap.Error(err),
 								)
+								bytes, err := json.Marshal(api.TaskRunResultPayload{
+									Detail: err.Error(),
+								})
+								if err != nil {
+									s.l.Error("Failed to marshal task run result",
+										zap.Int("task_id", task.ID),
+										zap.String("type", string(task.Type)),
+										zap.Error(err),
+									)
+									return
+								}
 								code := common.ErrorCode(err)
-								comment := err.Error()
+								result := string(bytes)
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
 									UpdaterId: api.SYSTEM_BOT_ID,
 									Status:    api.TaskFailed,
 									Code:      &code,
-									Comment:   &comment,
+									Result:    &result,
 								}
 								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
 								if err != nil {

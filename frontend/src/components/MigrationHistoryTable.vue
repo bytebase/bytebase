@@ -172,7 +172,7 @@ export default {
       router.push(
         `/db/${databaseSlug(
           props.databaseSectionList[section]
-        )}/history/${migrationHistorySlug(history)}`
+        )}/history/${migrationHistorySlug(history.id, history.version)}`
       );
     };
 

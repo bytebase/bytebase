@@ -25,7 +25,7 @@ type DatabaseBackupTaskExecutor struct {
 }
 
 // RunOnce will run database backup once.
-func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
+func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -40,16 +40,16 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, "", fmt.Errorf("invalid database backup payload: %w", err)
+		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 
 	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupId})
 	if err != nil {
-		return true, "", fmt.Errorf("failed to find backup: %w", err)
+		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
 	exec.l.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
@@ -71,14 +71,16 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		UpdaterId: api.SYSTEM_BOT_ID,
 		Comment:   comment,
 	}); err != nil {
-		return true, "", fmt.Errorf("failed to patch backup: %w", err)
+		return true, nil, fmt.Errorf("failed to patch backup: %w", err)
 	}
 
 	if backupErr != nil {
-		return true, "", backupErr
+		return true, nil, backupErr
 	}
 
-	return true, fmt.Sprintf("Backup database %q", task.Database.Name), nil
+	return true, &api.TaskRunResultPayload{
+		Detail: fmt.Sprintf("Backup database %q", task.Database.Name),
+	}, nil
 }
 
 // backupDatabase will take a backup of a database.

@@ -21,7 +21,7 @@ type DatabaseCreateTaskExecutor struct {
 	l *zap.Logger
 }
 
-func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
+func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -36,17 +36,17 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, "", fmt.Errorf("invalid create database payload: %w", err)
+		return true, nil, fmt.Errorf("invalid create database payload: %w", err)
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 
 	instance := task.Instance
 	driver, err := GetDatabaseDriver(task.Instance, "", exec.l)
 	if err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 	defer driver.Close(context.Background())
 
@@ -94,9 +94,14 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		mi.IssueId = strconv.Itoa(issue.ID)
 	}
 
-	if _, err := driver.ExecuteMigration(ctx, mi, payload.Statement); err != nil {
-		return true, "", err
+	migrationId, _, err := driver.ExecuteMigration(ctx, mi, payload.Statement)
+	if err != nil {
+		return true, nil, err
 	}
 
-	return true, fmt.Sprintf("Created database %q", payload.DatabaseName), nil
+	return true, &api.TaskRunResultPayload{
+		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
+		MigrationId: migrationId,
+		Version:     mi.Version,
+	}, nil
 }

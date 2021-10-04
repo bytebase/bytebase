@@ -28,7 +28,7 @@ type DatabaseRestoreTaskExecutor struct {
 }
 
 // RunOnce will run database restore once.
-func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, detail string, err error) {
+func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -43,16 +43,16 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	payload := &api.TaskDatabaseRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, "", fmt.Errorf("invalid database backup payload: %w", err)
+		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 
 	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupId})
 	if err != nil {
-		return true, "", fmt.Errorf("failed to find backup: %w", err)
+		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
 
 	sourceDatabaseFind := &api.DatabaseFind{
@@ -60,7 +60,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 	sourceDatabase, err := server.ComposeDatabaseByFind(context.Background(), sourceDatabaseFind)
 	if err != nil {
-		return true, "", fmt.Errorf("failed to find database for the backup: %w", err)
+		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
 	}
 
 	targetDatabaseFind := &api.DatabaseFind{
@@ -70,9 +70,9 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	targetDatabase, err := server.ComposeDatabaseByFind(context.Background(), targetDatabaseFind)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			return true, "", fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
+			return true, nil, fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 		}
-		return true, "", fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
+		return true, nil, fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 	}
 
 	exec.l.Debug("Start database restore from backup...",
@@ -85,13 +85,14 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	// Restore the database to the target database.
 	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.dataDir); err != nil {
-		return true, "", err
+		return true, nil, err
 	}
 
 	// TODO(tianzhou): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	if err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l); err != nil {
-		return true, "", err
+	migrationId, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l)
+	if err != nil {
+		return true, nil, err
 	}
 
 	// Patch the backup id after we successfully restore the database using the backup.
@@ -104,10 +105,14 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		SourceBackupId: &backup.ID,
 	}
 	if _, err = server.DatabaseService.PatchDatabase(context.Background(), databasePatch); err != nil {
-		return true, "", fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
+		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
 	}
 
-	return true, fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name), nil
+	return true, &api.TaskRunResultPayload{
+		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
+		MigrationId: migrationId,
+		Version:     version,
+	}, nil
 }
 
 // restoreDatabase will restore the database from a backup
@@ -139,10 +144,11 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 // createBranchMigrationHistory creates a migration history with "BRANCH" type. We choose NOT to copy over
 // all migrationhistory from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
-func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) error {
+// Returns migration history id and the version on success
+func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) (int64, string, error) {
 	targetDriver, err := GetDatabaseDriver(targetDatabase.Instance, targetDatabase.Name, logger)
 	if err != nil {
-		return err
+		return -1, "", err
 	}
 	defer targetDriver.Close(ctx)
 
@@ -153,7 +159,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		if common.ErrorCode(err) != common.NotFound {
-			return fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
+			return -1, "", fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 		}
 	}
 
@@ -178,8 +184,9 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		IssueId:     issueId,
 		Payload:     "",
 	}
-	if _, err := targetDriver.ExecuteMigration(ctx, m, ""); err != nil {
-		return fmt.Errorf("failed to create migration history: %w", err)
+	migrationId, _, err := targetDriver.ExecuteMigration(ctx, m, "")
+	if err != nil {
+		return -1, "", fmt.Errorf("failed to create migration history: %w", err)
 	}
-	return nil
+	return migrationId, m.Version, nil
 }
