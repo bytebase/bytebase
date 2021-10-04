@@ -38,11 +38,6 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 
 	driver, err := GetDatabaseDriver(database.Instance, database.Name, exec.l)
 	if err != nil {
-		return []api.TaskCheckResult{}, err
-	}
-	defer driver.Close(ctx)
-
-	if err := driver.Ping(ctx); err != nil {
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
@@ -52,6 +47,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 			},
 		}, nil
 	}
+	defer driver.Close(ctx)
 
 	return []api.TaskCheckResult{
 		{
