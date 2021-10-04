@@ -10,6 +10,15 @@
       @click-action="state.showCreateMigrationSchemaModal = true"
     />
     <div class="px-6 space-y-6">
+      <div
+        v-if="instance.anomalyList.length > 0"
+        class="border-b divide-block-border pb-6"
+      >
+        <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
+          Anomalies
+        </div>
+        <AnomalyTable :mode="'INSTANCE'" :anomalyList="instance.anomalyList" />
+      </div>
       <InstanceForm :create="false" :instance="instance" />
       <div
         v-if="hasDataSourceFeature"
@@ -94,6 +103,7 @@
 <script lang="ts">
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
+import AnomalyTable from "../components/AnomalyTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -122,6 +132,7 @@ interface LocalState {
 export default {
   name: "InstanceDetail",
   components: {
+    AnomalyTable,
     ArchiveBanner,
     DatabaseTable,
     DataSourceTable,

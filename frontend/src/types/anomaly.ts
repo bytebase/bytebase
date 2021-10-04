@@ -10,10 +10,15 @@ import {
 } from ".";
 
 export type AnomalyType =
+  | "bb.anomaly.instance.connection"
   | "bb.anomaly.database.backup.policy-violation"
   | "bb.anomaly.database.backup.missing"
   | "bb.anomaly.database.connection"
   | "bb.anomaly.database.schema.drift";
+
+export type AnomalyInstanceConnectionPayload = {
+  detail: string;
+};
 
 export type AnomalyDatabaseBackupPolicyViolationPayload = {
   environmentId: EnvironmentId;
@@ -48,8 +53,8 @@ export type Anomaly = {
   // Related fields
   instanceId: InstanceId;
   instance: Instance;
-  databaseId: DatabaseId;
-  database: Database;
+  databaseId?: DatabaseId;
+  database?: Database;
 
   // Standard fields
   creator: Principal;

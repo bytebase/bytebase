@@ -22,6 +22,8 @@ type Instance struct {
 	// Related fields
 	EnvironmentId int
 	Environment   *Environment `jsonapi:"relation,environment"`
+	// Anomalies are stored in a separate table, but just return here for convenience
+	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`

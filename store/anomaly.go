@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -38,6 +39,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 	status := api.Normal
 	find := &api.AnomalyFind{
 		RowStatus:  &status,
+		InstanceId: &upsert.InstanceId,
 		DatabaseId: upsert.DatabaseId,
 		Type:       &upsert.Type,
 	}
@@ -53,13 +55,18 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 			return nil, err
 		}
 	} else if len(list) == 1 {
-		anomaly, err = patchAnomaly(ctx, tx, &anomalyPatch{
-			ID:        list[0].ID,
-			UpdaterId: upsert.CreatorId,
-			Payload:   upsert.Payload,
-		})
-		if err != nil {
-			return nil, err
+		// Only update if payload differs, otherwise we would merely update the updated_ts
+		if list[0].Payload != upsert.Payload {
+			anomaly, err = patchAnomaly(ctx, tx, &anomalyPatch{
+				ID:        list[0].ID,
+				UpdaterId: upsert.CreatorId,
+				Payload:   upsert.Payload,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			anomaly = list[0]
 		}
 	} else {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
@@ -139,6 +146,7 @@ func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api
 
 	row.Next()
 	var anomaly api.Anomaly
+	databaseId := sql.NullInt32{}
 	if err := row.Scan(
 		&anomaly.ID,
 		&anomaly.CreatorId,
@@ -146,11 +154,15 @@ func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api
 		&anomaly.UpdaterId,
 		&anomaly.UpdatedTs,
 		&anomaly.InstanceId,
-		&anomaly.DatabaseId,
+		&databaseId,
 		&anomaly.Type,
 		&anomaly.Payload,
 	); err != nil {
 		return nil, FormatError(err)
+	}
+	if databaseId.Valid {
+		value := int(databaseId.Int32)
+		anomaly.DatabaseId = &value
 	}
 
 	return nil, err
@@ -159,7 +171,17 @@ func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api
 func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*api.Anomaly, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	where, args = append(where, "database_id = ?"), append(args, find.DatabaseId)
+	if v := find.InstanceId; v != nil {
+		where, args = append(where, "instance_id = ?"), append(args, *v)
+		if find.InstanceOnly {
+			where = append(where, "database_id is NULL")
+		}
+	}
+	if find.InstanceId == nil || !find.InstanceOnly {
+		if v := find.DatabaseId; v != nil {
+			where, args = append(where, "database_id = ?"), append(args, *v)
+		}
+	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
@@ -192,6 +214,7 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 	list := make([]*api.Anomaly, 0)
 	for rows.Next() {
 		var anomaly api.Anomaly
+		databaseId := sql.NullInt32{}
 		if err := rows.Scan(
 			&anomaly.ID,
 			&anomaly.CreatorId,
@@ -199,11 +222,15 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 			&anomaly.UpdaterId,
 			&anomaly.UpdatedTs,
 			&anomaly.InstanceId,
-			&anomaly.DatabaseId,
+			&databaseId,
 			&anomaly.Type,
 			&anomaly.Payload,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if databaseId.Valid {
+			value := int(databaseId.Int32)
+			anomaly.DatabaseId = &value
 		}
 
 		list = append(list, &anomaly)
@@ -253,6 +280,7 @@ func patchAnomaly(ctx context.Context, tx *Tx, patch *anomalyPatch) (*api.Anomal
 
 	row.Next()
 	var anomaly api.Anomaly
+	databaseId := sql.NullInt32{}
 	if err := row.Scan(
 		&anomaly.ID,
 		&anomaly.CreatorId,
@@ -266,26 +294,53 @@ func patchAnomaly(ctx context.Context, tx *Tx, patch *anomalyPatch) (*api.Anomal
 	); err != nil {
 		return nil, FormatError(err)
 	}
+	if databaseId.Valid {
+		value := int(databaseId.Int32)
+		anomaly.DatabaseId = &value
+	}
 
 	return &anomaly, err
 }
 
 // archiveAnomaly archives an anomaly by ID.
 func archiveAnomaly(ctx context.Context, tx *Tx, archive *api.AnomalyArchive) error {
-	// Remove row from database.
-	result, err := tx.ExecContext(ctx,
-		`UPDATE anomaly SET row_status = ? WHERE database_id = ? AND type = ?`,
-		api.Archived,
-		archive.DatabaseId,
-		archive.Type,
-	)
-	if err != nil {
-		return FormatError(err)
+	if archive.InstanceId == nil && archive.DatabaseId == nil {
+		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceId or databaseId")}
 	}
+	if archive.InstanceId != nil && archive.DatabaseId != nil {
+		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceId or databaseId, but not both")}
+	}
+	// Remove row from database.
+	if archive.InstanceId != nil {
+		result, err := tx.ExecContext(ctx,
+			`UPDATE anomaly SET row_status = ? WHERE instance_id = ? AND database_id IS NULL AND type = ?`,
+			api.Archived,
+			*archive.InstanceId,
+			archive.Type,
+		)
+		if err != nil {
+			return FormatError(err)
+		}
 
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found database: %d type: %s", archive.DatabaseId, archive.Type)}
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceId, archive.Type)}
+		}
+	} else if archive.DatabaseId != nil {
+		result, err := tx.ExecContext(ctx,
+			`UPDATE anomaly SET row_status = ? WHERE database_id = ? AND type = ?`,
+			api.Archived,
+			*archive.DatabaseId,
+			archive.Type,
+		)
+		if err != nil {
+			return FormatError(err)
+		}
+
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found database: %d type: %s", *archive.DatabaseId, archive.Type)}
+		}
 	}
 
 	return nil

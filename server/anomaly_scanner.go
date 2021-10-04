@@ -115,6 +115,8 @@ func (s *AnomalyScanner) Run() error {
 							mu.Unlock()
 						}()
 
+						s.checkInstanceConnectionAnomaly(context.Background(), instance)
+
 						databaseFind := &api.DatabaseFind{
 							InstanceId: &instance.ID,
 						}
@@ -140,8 +142,51 @@ func (s *AnomalyScanner) Run() error {
 	return nil
 }
 
-func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
+func (s *AnomalyScanner) checkInstanceConnectionAnomaly(ctx context.Context, instance *api.Instance) {
 	driver, err := GetDatabaseDriver(instance, "", s.l)
+
+	// Check connection
+	if err != nil {
+		anomalyPayload := api.AnomalyInstanceConnectionPayload{
+			Detail: err.Error(),
+		}
+		payload, err := json.Marshal(anomalyPayload)
+		if err != nil {
+			s.l.Error("Failed to marshal anomaly payload",
+				zap.String("instance", instance.Name),
+				zap.String("type", string(api.AnomalyInstanceConnection)),
+				zap.Error(err))
+		} else {
+			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				CreatorId:  api.SYSTEM_BOT_ID,
+				InstanceId: instance.ID,
+				Type:       api.AnomalyInstanceConnection,
+				Payload:    string(payload),
+			})
+			if err != nil {
+				s.l.Error("Failed to create anomaly",
+					zap.String("instance", instance.Name),
+					zap.String("type", string(api.AnomalyInstanceConnection)),
+					zap.Error(err))
+			}
+		}
+	} else {
+		defer driver.Close(ctx)
+		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			InstanceId: &instance.ID,
+			Type:       api.AnomalyInstanceConnection,
+		})
+		if err != nil && common.ErrorCode(err) != common.NotFound {
+			s.l.Error("Failed to close anomaly",
+				zap.String("instance", instance.Name),
+				zap.String("type", string(api.AnomalyInstanceConnection)),
+				zap.Error(err))
+		}
+	}
+}
+
+func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
+	driver, err := GetDatabaseDriver(instance, database.Name, s.l)
 
 	// Check connection
 	if err != nil {
@@ -159,7 +204,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorId:  api.SYSTEM_BOT_ID,
 				InstanceId: instance.ID,
-				DatabaseId: database.ID,
+				DatabaseId: &database.ID,
 				Type:       api.AnomalyDatabaseConnection,
 				Payload:    string(payload),
 			})
@@ -175,7 +220,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 	} else {
 		defer driver.Close(ctx)
 		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			DatabaseId: database.ID,
+			DatabaseId: &database.ID,
 			Type:       api.AnomalyDatabaseConnection,
 		})
 		if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -237,7 +282,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 					_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorId:  api.SYSTEM_BOT_ID,
 						InstanceId: instance.ID,
-						DatabaseId: database.ID,
+						DatabaseId: &database.ID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
 						Payload:    string(payload),
 					})
@@ -251,7 +296,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				}
 			} else {
 				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					DatabaseId: database.ID,
+					DatabaseId: &database.ID,
 					Type:       api.AnomalyDatabaseConnection,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -324,7 +369,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorId:  api.SYSTEM_BOT_ID,
 					InstanceId: instance.ID,
-					DatabaseId: database.ID,
+					DatabaseId: &database.ID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:    string(payload),
 				})
@@ -338,7 +383,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 			}
 		} else {
 			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseId: database.ID,
+				DatabaseId: &database.ID,
 				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -408,7 +453,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorId:  api.SYSTEM_BOT_ID,
 					InstanceId: instance.ID,
-					DatabaseId: database.ID,
+					DatabaseId: &database.ID,
 					Type:       api.AnomalyDatabaseBackupMissing,
 					Payload:    string(payload),
 				})
@@ -422,7 +467,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 			}
 		} else {
 			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseId: database.ID,
+				DatabaseId: &database.ID,
 				Type:       api.AnomalyDatabaseBackupMissing,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
