@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -186,24 +187,27 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-			Statement: taskPayload.Statement,
-			DbType:    database.Instance.Engine,
-			Charset:   database.CharacterSet,
-			Collation: database.Collation,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
-		}
-		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorId:               creatorId,
-			TaskId:                  task.ID,
-			Type:                    api.TaskCheckDatabaseStatementSyntax,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
-			return nil, err
+		// For now we only supported MySQL dialect syntax check
+		if database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+				Statement: taskPayload.Statement,
+				DbType:    database.Instance.Engine,
+				Charset:   database.CharacterSet,
+				Collation: database.Collation,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
+			}
+			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorId:               creatorId,
+				TaskId:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementSyntax,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		taskCheckRunFind := &api.TaskCheckRunFind{

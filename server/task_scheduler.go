@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -215,12 +216,22 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			return task, nil
 		}
 
-		pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+		instanceFind := &api.InstanceFind{
+			ID: &task.InstanceId,
+		}
+		instance, err := s.server.InstanceService.FindInstance(context.Background(), instanceFind)
 		if err != nil {
 			return nil, err
 		}
-		if !pass {
-			return task, nil
+		// For now we only supported MySQL dialect syntax check
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+			pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+			if err != nil {
+				return nil, err
+			}
+			if !pass {
+				return task, nil
+			}
 		}
 	}
 	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SYSTEM_BOT_ID)

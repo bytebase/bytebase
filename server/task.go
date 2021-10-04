@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -86,29 +87,32 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		// If we have updated the statement, then we trigger a syntax check
 		if task.Type == api.TaskDatabaseSchemaUpdate && taskPatch.Statement != nil {
-			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-				Statement: *taskPatch.Statement,
-				DbType:    updatedTask.Database.Instance.Engine,
-				Charset:   updatedTask.Database.CharacterSet,
-				Collation: updatedTask.Database.Collation,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
-			}
-			_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(context.Background(), &api.TaskCheckRunCreate{
-				CreatorId:               api.SYSTEM_BOT_ID,
-				TaskId:                  task.ID,
-				Type:                    api.TaskCheckDatabaseStatementSyntax,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: false,
-			})
-			if err != nil {
-				// It's OK if we failed to trigger a check, just emit an error log
-				s.l.Error("Failed to trigger syntax check after changing task statement",
-					zap.Int("task_id", task.ID),
-					zap.String("task_name", task.Name),
-					zap.Error(err),
-				)
+			// For now we only supported MySQL dialect syntax check
+			if updatedTask.Database.Instance.Engine == db.MySQL || updatedTask.Database.Instance.Engine == db.TiDB {
+				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+					Statement: *taskPatch.Statement,
+					DbType:    updatedTask.Database.Instance.Engine,
+					Charset:   updatedTask.Database.CharacterSet,
+					Collation: updatedTask.Database.Collation,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+				}
+				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(context.Background(), &api.TaskCheckRunCreate{
+					CreatorId:               api.SYSTEM_BOT_ID,
+					TaskId:                  task.ID,
+					Type:                    api.TaskCheckDatabaseStatementSyntax,
+					Payload:                 string(payload),
+					SkipIfAlreadyTerminated: false,
+				})
+				if err != nil {
+					// It's OK if we failed to trigger a check, just emit an error log
+					s.l.Error("Failed to trigger syntax check after changing task statement",
+						zap.Int("task_id", task.ID),
+						zap.String("task_name", task.Name),
+						zap.Error(err),
+					)
+				}
 			}
 		}
 
