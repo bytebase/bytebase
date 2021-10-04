@@ -46,10 +46,10 @@ type MigrationExecutionArgs struct {
 // ExecuteMigration will execute the database migration.
 // Returns the created migraiton history id and the updated schema on success.
 func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (int64, string, error) {
-	var schemaBuf bytes.Buffer
+	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
-		if err := driver.Dump(ctx, m.Database, &schemaBuf, true /*schemaOnly*/); err != nil {
+		if err := driver.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
 			return -1, "", formatError(err)
 		}
 	}
@@ -119,7 +119,8 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 			m.Version,
 			m.Description,
 			statement,
-			schemaBuf.String(),
+			prevSchemaBuf.String(),
+			prevSchemaBuf.String(),
 			m.IssueId,
 			m.Payload,
 		).Scan(&insertedId)
@@ -134,7 +135,8 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 			m.Version,
 			m.Description,
 			statement,
-			schemaBuf.String(),
+			prevSchemaBuf.String(),
+			prevSchemaBuf.String(),
 			m.IssueId,
 			m.Payload,
 		)
@@ -377,6 +379,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 			&history.Description,
 			&history.Statement,
 			&history.Schema,
+			&history.SchemaPrev,
 			&history.ExecutionDuration,
 			&history.IssueId,
 			&history.Payload,

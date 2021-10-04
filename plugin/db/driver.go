@@ -263,6 +263,7 @@ type MigrationHistory struct {
 	Description       string
 	Statement         string
 	Schema            string
+	SchemaPrev        string
 	ExecutionDuration int
 	IssueId           string
 	Payload           string

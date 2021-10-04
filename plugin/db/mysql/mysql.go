@@ -507,11 +507,12 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		description,
 		statement,
 		` + "`schema`," + `
+		schema_prev,
 		execution_duration,
 		issue_id,
 		payload
 	)
-	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
+	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
 `
 	updateHistoryQuery := `
 	UPDATE
@@ -547,6 +548,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		description,
 		statement,
 		` + "`schema`," + `
+		schema_prev,
 		execution_duration,
 		issue_id,
 		payload
