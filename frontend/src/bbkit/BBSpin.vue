@@ -30,7 +30,7 @@ export default {
   components: {},
   props: {
     title: {
-      required: true,
+      default: "",
       type: String,
     },
   },
