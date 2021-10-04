@@ -500,9 +500,9 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		updated_ts,
 		namespace,
 		sequence,
-		` + "`engine`," + `
-		` + "`type`," + `
-		` + "`status`," + `
+		engine,
+		type,
+		status,
 		version,
 		description,
 		statement,
@@ -514,14 +514,14 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, 0, ?, ?)
 `
 	updateHistoryQuery := `
-	UPDATE ` +
-		`bytebase.migration_history ` +
-		`SET
-		` + "`status` = 'DONE'," + `
-		` + "execution_duration = ?," + `
-		` + "`schema` = ?" + `
-		WHERE id = ?
-`
+	UPDATE
+		bytebase.migration_history
+	SET
+		status = 'DONE',
+		execution_duration = ?,
+	` + "`schema` = ?" + `
+	WHERE id = ?
+	`
 	args := util.MigrationExecutionArgs{
 		InsertHistoryQuery: insertHistoryQuery,
 		UpdateHistoryQuery: updateHistoryQuery,
@@ -531,7 +531,27 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, "bytebase.")
+	baseQuery := `
+	SELECT
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		execution_duration,
+		issue_id,
+		payload
+		FROM bytebase.migration_history `
+	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, baseQuery)
 }
 
 // Dump and restore

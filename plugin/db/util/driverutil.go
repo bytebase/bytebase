@@ -323,7 +323,7 @@ func findNextSequence(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Driver, find *db.MigrationHistoryFind, tablePrefix string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return nil, err
@@ -345,27 +345,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 		queryParams.AddParam("version", *v)
 	}
 
-	var query = `
-		SELECT
-			id,
-			created_by,
-			created_ts,
-			updated_by,
-			updated_ts,
-			namespace,
-			sequence,
-			engine,
-			type,
-			status,
-			version,
-			description,
-			statement,
-			` + `"schema",` + `
-			execution_duration,
-			issue_id,
-			payload
-		FROM ` +
-		tablePrefix + `migration_history ` +
+	var query = baseQuery +
 		queryParams.QueryString() +
 		`ORDER BY created_ts DESC`
 	if v := find.Limit; v != nil {

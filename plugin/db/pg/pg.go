@@ -593,7 +593,27 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return util.FindMigrationHistoryList(ctx, db.Postgres, driver, find, "")
+	baseQuery := `
+	SELECT
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + `"schema",` + `
+		execution_duration,
+		issue_id,
+		payload
+		FROM migration_history `
+	return util.FindMigrationHistoryList(ctx, db.Postgres, driver, find, baseQuery)
 }
 
 // Dump and restore
