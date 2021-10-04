@@ -2,7 +2,7 @@
   <BBTable
     :columnList="COLUMN_LIST"
     :sectionDataSource="anomalySectionList"
-    :compactSection="true"
+    :compactSection="!multiple"
     :showHeader="true"
     :leftBordered="true"
     :rightBordered="true"
@@ -163,6 +163,10 @@ export default {
     anomalySectionList: {
       required: true,
       type: Object as PropType<BBTableSectionDataSource<Anomaly>[]>,
+    },
+    multiple: {
+      default: false,
+      type: Boolean,
     },
   },
   setup(props, ctx) {
