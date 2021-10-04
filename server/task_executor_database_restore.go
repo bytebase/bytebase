@@ -173,16 +173,17 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
 	}
 	m := &db.MigrationInfo{
-		Version:     defaultMigrationVersionFromTaskId(task.ID),
-		Namespace:   targetDatabase.Name,
-		Database:    targetDatabase.Name,
-		Environment: targetDatabase.Instance.Environment.Name,
-		Engine:      db.MigrationEngine(targetDatabase.Project.WorkflowType),
-		Type:        db.Branch,
-		Description: description,
-		Creator:     task.Creator.Name,
-		IssueId:     issueId,
-		Payload:     "",
+		ReleaseVersion: server.version,
+		Version:        defaultMigrationVersionFromTaskId(task.ID),
+		Namespace:      targetDatabase.Name,
+		Database:       targetDatabase.Name,
+		Environment:    targetDatabase.Instance.Environment.Name,
+		Engine:         db.MigrationEngine(targetDatabase.Project.WorkflowType),
+		Type:           db.Branch,
+		Description:    description,
+		Creator:        task.Creator.Name,
+		IssueId:        issueId,
+		Payload:        "",
 	}
 	migrationId, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {

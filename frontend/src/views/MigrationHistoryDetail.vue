@@ -52,7 +52,8 @@
             <dt class="sr-only">Created</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Created&nbsp;-&nbsp;</span>
-              {{ humanizeTs(migrationHistory.createdTs) }}
+              {{ humanizeTs(migrationHistory.createdTs) }} by
+              {{ `version ${migrationHistory.releaseVersion}` }}
             </dd>
           </dl>
           <div

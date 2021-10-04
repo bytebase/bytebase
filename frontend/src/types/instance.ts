@@ -81,6 +81,7 @@ export type MigrationHistory = {
   createdTs: number;
   updater: string;
   updatedTs: number;
+  releaseVersion: string;
   database: string;
   engine: MigrationEngine;
   type: MigrationType;

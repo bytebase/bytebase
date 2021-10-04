@@ -498,6 +498,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		created_ts,
 		updated_by,
 		updated_ts,
+		release_version,
 		namespace,
 		sequence,
 		engine,
@@ -512,7 +513,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		issue_id,
 		payload
 	)
-	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
 `
 	updateHistoryQuery := `
 	UPDATE
@@ -539,6 +540,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		created_ts,
 		updated_by,
 		updated_ts,
+		release_version,
 		namespace,
 		sequence,
 		engine,
