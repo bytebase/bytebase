@@ -123,7 +123,7 @@
         <a
           href="#schema"
           id="schema"
-          class="flex items-center text-lg text-main mt-6 mb-2 hover:underline"
+          class="flex items-center text-lg text-main mt-6 hover:underline"
         >
           Schema Snapshot
           <button
@@ -147,10 +147,43 @@
             </svg>
           </button>
         </a>
-        <div class="mb-2 textinfolabel">
-          The schema snapshot recorded after applying this migration version
+        <div class="flex flex-row items-center space-x-2 mt-2">
+          <BBSwitch
+            v-if="migrationHistory.schemaPrev != migrationHistory.schema"
+            :label="'Show diff'"
+            :value="state.showDiff"
+            @toggle="
+              (on) => {
+                state.showDiff = on;
+              }
+            "
+          />
+          <div class="textinfolabel">
+            {{
+              state.showDiff
+                ? "The schema diff prev (left) vs new (right)"
+                : "The schema snapshot recorded after applying this migration version"
+            }}
+          </div>
+          <div
+            v-if="migrationHistory.schemaPrev == migrationHistory.schema"
+            class="text-sm font-normal text-accent"
+          >
+            (this migration has no schema change)
+          </div>
         </div>
-        <div v-highlight class="border px-2 whitespace-pre-wrap w-full">
+        <code-diff
+          v-if="state.showDiff"
+          class="mt-4 w-full"
+          :old-string="migrationHistory.schemaPrev"
+          :new-string="migrationHistory.schema"
+          output-format="side-by-side"
+        />
+        <div
+          v-else
+          v-highlight
+          class="border mt-2 px-2 whitespace-pre-wrap w-full"
+        >
           {{ migrationHistory.schema }}
         </div>
       </div>
@@ -159,9 +192,10 @@
 </template>
 
 <script lang="ts">
-import { computed } from "@vue/runtime-core";
+import { computed, reactive } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { CodeDiff } from "v-code-diff";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
@@ -171,6 +205,10 @@ import {
   MigrationHistoryPayload,
   VCSPushEvent,
 } from "../types";
+
+interface LocalState {
+  showDiff: Boolean;
+}
 
 export default {
   name: "MigrationHistoryDetail",
@@ -184,19 +222,24 @@ export default {
       type: String,
     },
   },
-  components: { ColumnTable, IndexTable, MigrationHistoryStatusIcon },
+  components: { CodeDiff, ColumnTable, IndexTable, MigrationHistoryStatusIcon },
   setup(props, ctx) {
     const store = useStore();
-
-    const database = computed(() => {
-      return store.getters["database/databaseById"](
-        idFromSlug(props.databaseSlug)
-      );
-    });
 
     const migrationHistory = computed((): MigrationHistory => {
       return store.getters["instance/migrationHistoryById"](
         idFromSlug(props.migrationHistorySlug)
+      );
+    });
+
+    const state = reactive<LocalState>({
+      showDiff:
+        migrationHistory.value.schema != migrationHistory.value.schemaPrev,
+    });
+
+    const database = computed(() => {
+      return store.getters["database/databaseById"](
+        idFromSlug(props.databaseSlug)
       );
     });
 
@@ -245,6 +288,7 @@ export default {
     };
 
     return {
+      state,
       secondsToString,
       database,
       migrationHistory,
