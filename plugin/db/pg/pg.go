@@ -285,7 +285,10 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		}
 		return dsn, nil
 	}
-	return "", fmt.Errorf("cannot find valid dsn for connecting %q, make sure the database exists", database)
+	if database != "" {
+		return "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
+	}
+	return "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
 }
 
 func (driver *Driver) Close(ctx context.Context) error {
