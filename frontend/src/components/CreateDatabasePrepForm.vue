@@ -298,7 +298,8 @@ export default {
                 : "PENDING_APPROVAL",
               type: "bb.task.database.create",
               instanceId: state.instanceId!,
-              statement: `CREATE DATABASE \`${state.databaseName}\`\nCHARACTER SET ${state.characterSet} COLLATE ${state.collation}`,
+              // statement is derived by backend.
+              statement: ``,
               rollbackStatement: "",
               databaseName: state.databaseName,
               characterSet: state.characterSet,

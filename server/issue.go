@@ -32,8 +32,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		for _, stageCreate := range issueCreate.Pipeline.StageList {
 			for _, taskCreate := range stageCreate.TaskList {
 				if taskCreate.Type == api.TaskDatabaseCreate {
-					if taskCreate.Statement == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+					if taskCreate.Statement != "" {
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement cannot be set.")
 					}
 					if taskCreate.DatabaseName == "" {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
@@ -374,7 +374,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			if taskCreate.Type == api.TaskDatabaseCreate {
 				payload := api.TaskDatabaseCreatePayload{}
 				payload.ProjectId = issueCreate.ProjectId
-				payload.Statement = taskCreate.Statement
+				// Statement is derived in the task executor.
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.CharacterSet = taskCreate.CharacterSet
 				payload.Collation = taskCreate.Collation

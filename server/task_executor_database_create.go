@@ -50,10 +50,19 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 	defer driver.Close(context.Background())
 
+	var statement string
+	switch instance.Engine {
+	case db.MySQL:
+		statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", payload.DatabaseName, payload.CharacterSet, payload.Collation)
+	case db.TiDB:
+		statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", payload.DatabaseName, payload.CharacterSet, payload.Collation)
+	case db.Postgres:
+		statement = fmt.Sprintf(`CREATE DATABASE "%s"`, payload.DatabaseName)
+	}
 	exec.l.Debug("Start creating database...",
 		zap.String("instance", instance.Name),
 		zap.String("database", payload.DatabaseName),
-		zap.String("sql", payload.Statement),
+		zap.String("sql", statement),
 	)
 
 	// Create a baseline migration history upon creating the database.
@@ -94,7 +103,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		mi.IssueId = strconv.Itoa(issue.ID)
 	}
 
-	migrationId, _, err := driver.ExecuteMigration(ctx, mi, payload.Statement)
+	migrationId, _, err := driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return true, nil, err
 	}
