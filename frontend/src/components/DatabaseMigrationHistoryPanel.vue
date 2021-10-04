@@ -3,7 +3,7 @@
     <div class="text-lg leading-6 font-medium text-main">
       Migration History
       <button
-        v-if="allowEdit && database.project.workflowType == 'VCS'"
+        v-if="allowEdit"
         type="button"
         class="ml-4 btn-primary"
         @click.prevent="state.showBaselineModal = true"
