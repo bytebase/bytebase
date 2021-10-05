@@ -386,11 +386,15 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			}
 			indices := indicesMap[dbTable.Name]
 			for _, idx := range indices {
-				var dbIndex db.DBIndex
-				dbIndex.Name = idx.name
-				dbIndex.Expression = idx.statement
-				dbIndex.Unique = idx.unique
-				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
+				for i, colExp := range idx.columnExpressions {
+					var dbIndex db.DBIndex
+					dbIndex.Name = idx.name
+					dbIndex.Expression = colExp
+					dbIndex.Position = i + 1
+					dbIndex.Type = idx.methodType
+					dbIndex.Unique = idx.unique
+					dbTable.IndexList = append(dbTable.IndexList, dbIndex)
+				}
 			}
 
 			schema.TableList = append(schema.TableList, dbTable)
@@ -966,6 +970,9 @@ type indexSchema struct {
 	tableName  string
 	statement  string
 	unique     bool
+	// methodType such as btree.
+	methodType        string
+	columnExpressions []string
 }
 
 // sequencePgSchema describes the schema of a pg sequence.
@@ -1419,10 +1426,69 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		}
 		idx.schemaName, idx.tableName, idx.name = quoteIdentifier(idx.schemaName), quoteIdentifier(idx.tableName), quoteIdentifier(idx.name)
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
+		idx.methodType = getIndexMethodType(idx.statement)
+		idx.columnExpressions, err = getIndexColumnExpressions(idx.statement)
+		if err != nil {
+			return nil, err
+		}
 		indices = append(indices, &idx)
 	}
 
 	return indices, nil
+}
+
+func getIndexMethodType(stmt string) string {
+	re := regexp.MustCompile(`USING (\w+) `)
+	matches := re.FindStringSubmatch(stmt)
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[1]
+}
+
+func getIndexColumnExpressions(stmt string) ([]string, error) {
+	rc := regexp.MustCompile(`\((.*)\)`)
+	rm := rc.FindStringSubmatch(stmt)
+	if len(rm) == 0 {
+		return nil, fmt.Errorf("invalid index statement: %q", stmt)
+	}
+	columnStmt := rm[1]
+
+	var cols []string
+	re := regexp.MustCompile(`\(\(.*\)\)`)
+	for {
+		if len(columnStmt) <= 0 {
+			break
+		}
+		// Get a token
+		token := ""
+		// Expression has format of "((exp))".
+		if strings.HasPrefix(columnStmt, "((") {
+			token = re.FindString(columnStmt)
+		} else {
+			i := strings.Index(columnStmt, ",")
+			if i < 0 {
+				token = columnStmt
+			} else {
+				token = columnStmt[:i]
+			}
+		}
+		// Strip token
+		if len(token) == 0 {
+			return nil, fmt.Errorf("invalid index statement: %q", stmt)
+		}
+		columnStmt = columnStmt[len(token):]
+		cols = append(cols, strings.TrimSpace(token))
+
+		// Trim space and remove a comma to prepare for the next tokenization.
+		columnStmt = strings.TrimSpace(columnStmt)
+		if len(columnStmt) > 0 && columnStmt[0] == ',' {
+			columnStmt = columnStmt[1:]
+		}
+		columnStmt = strings.TrimSpace(columnStmt)
+	}
+
+	return cols, nil
 }
 
 // exportTableData gets the data of a table.
