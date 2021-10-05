@@ -108,6 +108,9 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
 	}
 
+	// Sync database schema after restore is completed.
+	server.SyncSchema(targetDatabase.Instance)
+
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
 		MigrationId: migrationId,
