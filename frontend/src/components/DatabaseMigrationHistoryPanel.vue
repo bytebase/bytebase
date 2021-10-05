@@ -6,6 +6,7 @@
         v-if="allowEdit"
         type="button"
         class="ml-4 btn-primary"
+        :disabled="state.migrationSetupStatus != 'OK'"
         @click.prevent="state.showBaselineModal = true"
       >
         Establish new baseline
