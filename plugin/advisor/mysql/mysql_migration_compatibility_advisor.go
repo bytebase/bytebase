@@ -115,6 +115,16 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 					goto END
 				}
 			}
+
+			// MODIFY COLUMN / CHANGE COLUMN
+			// Due to the limitation that we don't know the current data type of the column before the change,
+			// so we treat all as incompatible. This generates false positive when:
+			// 1. Change to a compatible data type such as INT to BIGINT
+			// 2. Change property like comment, change it to NULL
+			if spec.Tp == ast.AlterTableModifyColumn || spec.Tp == ast.AlterTableChangeColumn {
+				compatible = false
+				goto END
+			}
 		}
 	}
 	// ALTER VIEW TBD: https://github.com/pingcap/parser/pull/1252
