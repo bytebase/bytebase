@@ -112,9 +112,19 @@ export default {
 
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
-        return `Missing migration history schema on instance "${props.database.instance.name}"`;
+        return (
+          `Missing migration history schema on instance "${props.database.instance.name}".` +
+          (isDBAOrOwner(currentUser.value.role)
+            ? ""
+            : " Please contact your DBA to config it.")
+        );
       } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return `Unable to connect instance "${props.database.instance.name}" to retrieve migration history`;
+        return (
+          `Unable to connect instance "${props.database.instance.name}" to retrieve migration history.` +
+          (isDBAOrOwner(currentUser.value.role)
+            ? ""
+            : " Please contact your DBA to config it.")
+        );
       }
       return "";
     });
