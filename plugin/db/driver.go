@@ -71,10 +71,11 @@ type DBTable struct {
 	// Engine is only applicable to MySQL series.
 	Engine string
 	// Collation is only applicable to MySQL series.
-	Collation     string
-	RowCount      int64
-	DataSize      int64
-	IndexSize     int64
+	Collation string
+	RowCount  int64
+	DataSize  int64
+	IndexSize int64
+	// DataFree is only applicable to MySQL series.
 	DataFree      int64
 	CreateOptions string
 	Comment       string
