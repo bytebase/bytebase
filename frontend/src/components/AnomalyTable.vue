@@ -21,7 +21,7 @@
     <template v-slot:body="{ rowData: anomaly }">
       <BBTableCell :leftPadding="4">
         <svg
-          v-if="severity(anomaly) == 'MEDIUM'"
+          v-if="anomaly.severity == 'MEDIUM'"
           class="w-6 h-6 text-info"
           fill="none"
           stroke="currentColor"
@@ -36,7 +36,7 @@
           ></path>
         </svg>
         <svg
-          v-else-if="severity(anomaly) == 'HIGH'"
+          v-else-if="anomaly.severity == 'HIGH'"
           class="w-6 h-6 text-warning"
           fill="none"
           stroke="currentColor"
@@ -51,7 +51,7 @@
           ></path>
         </svg>
         <svg
-          v-else-if="severity(anomaly) == 'CRITICAL'"
+          v-else-if="anomaly.severity == 'CRITICAL'"
           class="w-6 h-6 text-error"
           fill="none"
           stroke="currentColor"
@@ -121,8 +121,6 @@ import {
 import { useStore } from "vuex";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
 import { useRouter } from "vue-router";
-
-type Severity = "MEDIUM" | "HIGH" | "CRITICAL";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -306,20 +304,6 @@ export default {
       }
     };
 
-    const severity = (anomaly: Anomaly): Severity => {
-      switch (anomaly.type) {
-        case "bb.anomaly.database.backup.policy-violation":
-          return "MEDIUM";
-        case "bb.anomaly.database.backup.missing":
-          return "HIGH";
-        case "bb.anomaly.instance.connection":
-        case "bb.anomaly.instance.migration-schema":
-        case "bb.anomaly.database.connection":
-        case "bb.anomaly.database.schema.drift":
-          return "CRITICAL";
-      }
-    };
-
     const dimissModal = () => {
       state.showModal = false;
       state.selectedAnomaly = undefined;
@@ -331,7 +315,6 @@ export default {
       typeName,
       detail,
       action,
-      severity,
       dimissModal,
     };
   },

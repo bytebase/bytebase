@@ -415,6 +415,7 @@ export const unknown = (
     databaseId: UNKNOWN_ID,
     database: UNKNOWN_DATABASE,
     type: "bb.anomaly.database.backup.policy-violation",
+    severity: "MEDIUM",
     payload: {
       environmentId: UNKNOWN_ID,
       expectedSchedule: "DAILY",
@@ -763,6 +764,7 @@ export const empty = (
     databaseId: EMPTY_ID,
     database: EMPTY_DATABASE,
     type: "bb.anomaly.database.backup.policy-violation",
+    severity: "MEDIUM",
     payload: {
       environmentId: EMPTY_ID,
       expectedSchedule: "DAILY",
