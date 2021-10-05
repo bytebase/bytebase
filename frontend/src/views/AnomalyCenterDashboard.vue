@@ -3,7 +3,7 @@
     <BBAttention
       :style="'INFO'"
       :title="'Anomaly detection'"
-      :description="'Bytebase periodically scans the managed resources and list the detected anomolies here. The list is refreshed roughly every 10 minutes.'"
+      :description="'Bytebase periodically scans the managed resources and list the detected anomalies here. The list is refreshed roughly every 10 minutes.'"
     />
     <!-- This example requires Tailwind CSS v2.0+ -->
     <div class="mt-4 space-y-4">
