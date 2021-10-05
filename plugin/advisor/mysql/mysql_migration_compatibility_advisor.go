@@ -40,9 +40,7 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.AdvisorContext, statement str
 
 	c := &compatibilityChecker{}
 	for _, stmtNode := range root {
-		fmt.Printf("%+v\n", stmtNode)
 		(stmtNode).Accept(c)
-		fmt.Printf("%+v\n", c)
 	}
 
 	if len(c.advisorList) == 0 {
