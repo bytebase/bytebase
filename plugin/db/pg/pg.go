@@ -372,6 +372,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 			dbTable.Type = "BASE TABLE"
 			dbTable.RowCount = tbl.rowCount
+			dbTable.DataSize = tbl.tableSizeByte
+			dbTable.IndexSize = tbl.indexSizeByte
 			for _, col := range tbl.columns {
 				var dbColumn db.DBColumn
 				dbColumn.Name = col.columnName
@@ -920,12 +922,15 @@ type pgSchema struct {
 
 // tableSchema describes the schema of a pg table.
 type tableSchema struct {
-	schemaName  string
-	name        string
-	tableowner  string
+	schemaName    string
+	name          string
+	tableowner    string
+	rowCount      int64
+	tableSizeByte int64
+	indexSizeByte int64
+
 	columns     []*columnSchema
 	constraints []*tableConstraint
-	rowCount    int64
 }
 
 // columnSchema describes the schema of a pg table column.
@@ -1209,8 +1214,9 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 
 	var tables []*tableSchema
 	query := "" +
-		"SELECT * FROM pg_catalog.pg_tables " +
-		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
+		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, pg_table_size(c.oid), pg_indexes_size(c.oid) " +
+		"FROM pg_catalog.pg_tables tbl, pg_catalog.pg_class c " +
+		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema') AND tbl.schemaname=c.relnamespace::regnamespace::text AND tbl.tablename = c.relname;"
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -1220,14 +1226,15 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	for rows.Next() {
 		var tbl tableSchema
 		var schemaname, tablename, tableowner string
-		var tablespace sql.NullString
-		var hasindexes, hasrules, hastriggers, rowsecurity bool
-		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tablespace, &hasindexes, &hasrules, &hastriggers, &rowsecurity); err != nil {
+		var tableSizeByte, indexSizeByte int64
+		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tableSizeByte, &indexSizeByte); err != nil {
 			return nil, err
 		}
 		tbl.schemaName = quoteIdentifier(schemaname)
 		tbl.name = quoteIdentifier(tablename)
 		tbl.tableowner = tableowner
+		tbl.tableSizeByte = tableSizeByte
+		tbl.indexSizeByte = indexSizeByte
 
 		tables = append(tables, &tbl)
 	}
