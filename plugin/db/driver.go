@@ -47,8 +47,9 @@ type DBIndex struct {
 	Position   int
 	Type       string
 	Unique     bool
-	Visible    bool
-	Comment    string
+	// Visible is only applicable to MySQL series.
+	Visible bool
+	Comment string
 }
 
 type DBColumn struct {
