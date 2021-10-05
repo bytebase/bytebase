@@ -82,7 +82,7 @@
             class="flex-shrink-0 flex border-t border-block-border px-4 py-2"
           >
             <a
-              href="https://github.com/bytebase/bytebase/discussions"
+              href="https://docs.bytebase.com"
               target="_blank"
               class="
                 flex
@@ -161,7 +161,7 @@
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
           <a
-            href="https://github.com/bytebase/bytebase/discussions"
+            href="https://docs.bytebase.com"
             target="_blank"
             class="
               flex
