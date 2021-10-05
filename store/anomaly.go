@@ -160,6 +160,7 @@ func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api
 		value := int(databaseId.Int32)
 		anomaly.DatabaseId = &value
 	}
+	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
 
 	return nil, err
 }
@@ -228,6 +229,7 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 			value := int(databaseId.Int32)
 			anomaly.DatabaseId = &value
 		}
+		anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
 
 		list = append(list, &anomaly)
 	}
@@ -294,6 +296,7 @@ func patchAnomaly(ctx context.Context, tx *Tx, patch *anomalyPatch) (*api.Anomal
 		value := int(databaseId.Int32)
 		anomaly.DatabaseId = &value
 	}
+	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
 
 	return &anomaly, err
 }

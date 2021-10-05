@@ -12,6 +12,7 @@ module.exports = {
     // "pl-xxx" is used by BBOutline
     // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar
     // "hover:bg-xxx" is used by TaskCheckBadgeBar
+    // "grid-cols-xxx" is used by AnomalyCenterDashboard
     safelist: [
       /^w-/,
       /^pl-/,
@@ -27,6 +28,7 @@ module.exports = {
       /^hover:bg-blue-/,
       /^hover:bg-yellow-/,
       /^hover:bg-red-/,
+      /^grid-cols-/,
     ],
   },
   theme: {
