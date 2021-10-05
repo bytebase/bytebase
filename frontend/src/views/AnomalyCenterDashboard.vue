@@ -28,13 +28,11 @@
     </div>
     <AnomalyTable
       v-if="state.selectedIndex == DATABASE_TAB"
-      :mode="'DATABASE'"
       :anomalySectionList="databaseAnomalySectionList"
       :multiple="true"
     />
     <AnomalyTable
       v-if="state.selectedIndex == INSTANCE_TAB"
-      :mode="'INSTANCE'"
       :anomalySectionList="instanceAnomalySectionList"
       :multiple="true"
     />
