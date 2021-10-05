@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -40,6 +41,7 @@ const (
 
 type Advice struct {
 	Status  Status
+	Code    common.Code
 	Title   string
 	Content string
 }

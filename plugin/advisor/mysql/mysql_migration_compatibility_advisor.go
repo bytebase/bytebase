@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 
@@ -46,6 +47,7 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.AdvisorContext, statement str
 	if len(c.advisorList) == 0 {
 		c.advisorList = append(c.advisorList, advisor.Advice{
 			Status:  advisor.Success,
+			Code:    common.Ok,
 			Title:   "OK",
 			Content: "Migration is backward compatible"})
 	}
@@ -57,20 +59,20 @@ type compatibilityChecker struct {
 }
 
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
-	compatible := true
+	code := common.Ok
 	// DROP DATABASE
 	if _, ok := in.(*ast.DropDatabaseStmt); ok {
-		compatible = false
+		code = common.CompatibilityDropDatabase
 		goto END
 	}
 	// RENAME TABLE
 	if _, ok := in.(*ast.RenameTableStmt); ok {
-		compatible = false
+		code = common.CompatibilityRenameTable
 		goto END
 	}
 	// DROP TABLE/VIEW
 	if _, ok := in.(*ast.DropTableStmt); ok {
-		compatible = false
+		code = common.CompatibilityDropTable
 		goto END
 	}
 	// ALTER TABLE
@@ -78,29 +80,38 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, spec := range node.Specs {
 			fmt.Printf("spec %d: %+v\n\n", spec.Tp, spec)
 			// RENAME COLUMN
+			if spec.Tp == ast.AlterTableRenameColumn {
+				code = common.CompatibilityRenameColumn
+				goto END
+			}
 			// DROP COLUMN
-			if spec.Tp == ast.AlterTableRenameColumn ||
-				spec.Tp == ast.AlterTableDropColumn {
-				compatible = false
+			if spec.Tp == ast.AlterTableDropColumn {
+				code = common.CompatibilityDropColumn
 				goto END
 			}
 
 			if spec.Tp == ast.AlterTableAddConstraint {
 				// ADD PRIMARY KEY
+				if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
+					code = common.CompatibilityAddPrimaryKey
+					goto END
+				}
 				// ADD UNIQUE/UNIQUE KEY/UNIQUE INDEX
-				// ADD FOREIGN KEY
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
 					spec.Constraint.Tp == ast.ConstraintUniq ||
-					spec.Constraint.Tp == ast.ConstraintUniqKey ||
-					spec.Constraint.Tp == ast.ConstraintUniqIndex ||
-					spec.Constraint.Tp == ast.ConstraintForeignKey {
-					compatible = false
+					spec.Constraint.Tp == ast.ConstraintUniqKey {
+					code = common.CompatibilityAddUniqueKey
+					goto END
+				}
+				// ADD FOREIGN KEY
+				if spec.Constraint.Tp == ast.ConstraintForeignKey {
+					code = common.CompatibilityAddForeignKey
 					goto END
 				}
 				// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 				// ADD CHECK ENFORCED
 				if spec.Constraint.Tp == ast.ConstraintCheck && spec.Constraint.Enforced {
-					compatible = false
+					code = common.CompatibilityAddCheck
 					goto END
 				}
 			}
@@ -109,7 +120,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// ALTER CHECK ENFORCED
 			if spec.Tp == ast.AlterTableAlterCheck {
 				if spec.Constraint.Enforced {
-					compatible = false
+					code = common.CompatibilityAlterCheck
 					goto END
 				}
 			}
@@ -120,7 +131,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// 1. Change to a compatible data type such as INT to BIGINT
 			// 2. Change property like comment, change it to NULL
 			if spec.Tp == ast.AlterTableModifyColumn || spec.Tp == ast.AlterTableChangeColumn {
-				compatible = false
+				code = common.CompatibilityAlterColumn
 				goto END
 			}
 		}
@@ -132,15 +143,16 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// CREATE UNIQUE INDEX
 	if node, ok := in.(*ast.CreateIndexStmt); ok {
 		if node.KeyType == ast.IndexKeyTypeUnique {
-			compatible = false
+			code = common.CompatibilityAddUniqueKey
 			goto END
 		}
 	}
 
 END:
-	if !compatible {
+	if code != common.Ok {
 		v.advisorList = append(v.advisorList, advisor.Advice{
 			Status:  advisor.Warn,
+			Code:    code,
 			Title:   "Potential incompatible migration",
 			Content: fmt.Sprintf("%q may cause incompatibility with the existing data and code", in.Text()),
 		})
