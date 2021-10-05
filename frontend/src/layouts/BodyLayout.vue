@@ -64,15 +64,16 @@
           >
             <svg
               class="w-5 h-5 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"></path>
               <path
-                fill-rule="evenodd"
-                d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                clip-rule="evenodd"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
               ></path>
             </svg>
             Archive
@@ -95,7 +96,7 @@
             >
               <div class="flex items-center">
                 <svg
-                  class="w-5 h-5"
+                  class="w-5 h-5 mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -108,7 +109,7 @@
                     d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   ></path>
                 </svg>
-                <span class="ml-1 text-sm">Help</span>
+                <span class="text-sm">Help</span>
               </div>
               <div class="text-sm">{{ version }}</div>
             </a>
@@ -133,15 +134,16 @@
         >
           <svg
             class="w-5 h-5 mr-2"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"></path>
             <path
-              fill-rule="evenodd"
-              d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-              clip-rule="evenodd"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
             ></path>
           </svg>
           Archive
@@ -173,7 +175,7 @@
           >
             <div class="flex items-center py-1">
               <svg
-                class="w-5 h-5"
+                class="w-5 h-5 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -186,7 +188,7 @@
                   d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 ></path>
               </svg>
-              <span class="ml-1 text-sm">Help</span>
+              <span class="text-sm">Help</span>
             </div>
             <div class="text-sm">{{ version }}</div>
           </a>
