@@ -17,6 +17,29 @@ const (
 	AnomalyDatabaseSchemaDrift           AnomalyType = "bb.anomaly.database.schema.drift"
 )
 
+type AnomalySeverity string
+
+const (
+	AnomalySeverityMedium   AnomalySeverity = "MEDIUM"
+	AnomalySeverityHigh     AnomalySeverity = "HIGH"
+	AnomalySeverityCritical AnomalySeverity = "CRITICAL"
+)
+
+func AnomalySeverityFromType(anomalyType AnomalyType) AnomalySeverity {
+	switch anomalyType {
+	case AnomalyDatabaseBackupPolicyViolation:
+		return AnomalySeverityMedium
+	case AnomalyDatabaseBackupMissing:
+		return AnomalySeverityHigh
+	case AnomalyInstanceConnection:
+	case AnomalyInstanceMigrationSchema:
+	case AnomalyDatabaseConnection:
+	case AnomalyDatabaseSchemaDrift:
+		return AnomalySeverityCritical
+	}
+	return AnomalySeverityCritical
+}
+
 type AnomalyInstanceConnectionPayload struct {
 	// Connection failure detail
 	Detail string `json:"detail,omitempty"`
@@ -65,8 +88,10 @@ type Anomaly struct {
 	DatabaseId *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Type    AnomalyType `jsonapi:"attr,type"`
-	Payload string      `jsonapi:"attr,payload"`
+	Type AnomalyType `jsonapi:"attr,type"`
+	// Calculated field derived from type
+	Severity AnomalySeverity `jsonapi:"attr,severity"`
+	Payload  string          `jsonapi:"attr,payload"`
 }
 
 type AnomalyUpsert struct {
