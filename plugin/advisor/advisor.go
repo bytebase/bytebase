@@ -33,8 +33,9 @@ func (e Status) String() string {
 type AdvisorType string
 
 const (
-	Fake        AdvisorType = "bb.plugin.advisor.fake"
-	MySQLSyntax AdvisorType = "bb.plugin.advisor.mysql.syntax"
+	Fake                        AdvisorType = "bb.plugin.advisor.fake"
+	MySQLSyntax                 AdvisorType = "bb.plugin.advisor.mysql.syntax"
+	MySQLMigrationCompatibility AdvisorType = "bb.plugin.advisor.mysql.migration-compatibility"
 )
 
 type Advice struct {

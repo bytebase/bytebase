@@ -10,19 +10,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*Advisor)(nil)
+	_ advisor.Advisor = (*SyntaxAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLSyntax, &Advisor{})
-	advisor.Register(db.TiDB, advisor.MySQLSyntax, &Advisor{})
+	advisor.Register(db.MySQL, advisor.MySQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
 }
 
-type Advisor struct {
+type SyntaxAdvisor struct {
 }
 
 // A fake advisor to report 1 advice for each severity.
-func (adv *Advisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
+func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
 	p := parser.New()
 
 	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)
