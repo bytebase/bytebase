@@ -85,9 +85,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
-		// If we have updated the statement, then we trigger a syntax check
+		// If we have updated the statement, then we trigger syntax and compatibility check
 		if task.Type == api.TaskDatabaseSchemaUpdate && taskPatch.Statement != nil {
-			// For now we only supported MySQL dialect syntax check
+			// For now we only supported MySQL dialect check
 			if updatedTask.Database.Instance.Engine == db.MySQL || updatedTask.Database.Instance.Engine == db.TiDB {
 				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 					Statement: *taskPatch.Statement,
@@ -108,6 +108,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				if err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
 					s.l.Error("Failed to trigger syntax check after changing task statement",
+						zap.Int("task_id", task.ID),
+						zap.String("task_name", task.Name),
+						zap.Error(err),
+					)
+				}
+
+				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(context.Background(), &api.TaskCheckRunCreate{
+					CreatorId:               api.SYSTEM_BOT_ID,
+					TaskId:                  task.ID,
+					Type:                    api.TaskCheckDatabaseStatementCompatibility,
+					Payload:                 string(payload),
+					SkipIfAlreadyTerminated: false,
+				})
+				if err != nil {
+					// It's OK if we failed to trigger a check, just emit an error log
+					s.l.Error("Failed to trigger compatibility check after changing task statement",
 						zap.Int("task_id", task.ID),
 						zap.String("task_name", task.Name),
 						zap.Error(err),
