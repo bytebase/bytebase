@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	ANOMALY_SCAN_INTERVAL = time.Duration(30) * time.Minute
+	// The chosen interval is a balance between anomaly staleness tolerance and background load.
+	ANOMALY_SCAN_INTERVAL = time.Duration(10) * time.Minute
 )
 
 func NewAnomalyScanner(logger *zap.Logger, server *Server) *AnomalyScanner {
