@@ -10,18 +10,6 @@
       @click-action="state.showCreateMigrationSchemaModal = true"
     />
     <div class="px-6 space-y-6">
-      <div
-        v-if="anomalySectionList.length > 0"
-        class="border-b divide-block-border pb-6"
-      >
-        <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
-          Anomalies
-        </div>
-        <AnomalyTable
-          :mode="'INSTANCE'"
-          :anomalySectionList="anomalySectionList"
-        />
-      </div>
       <InstanceForm :create="false" :instance="instance" />
       <div
         v-if="hasDataSourceFeature"
@@ -106,7 +94,6 @@
 <script lang="ts">
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import AnomalyTable from "../components/AnomalyTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -136,7 +123,6 @@ interface LocalState {
 export default {
   name: "InstanceDetail",
   components: {
-    AnomalyTable,
     ArchiveBanner,
     DatabaseTable,
     DataSourceTable,
@@ -179,17 +165,6 @@ export default {
       checkMigrationSetup();
     };
     watchEffect(prepareMigrationSchemaStatus);
-
-    const anomalySectionList = computed(
-      (): BBTableSectionDataSource<Anomaly>[] => {
-        const list: BBTableSectionDataSource<Anomaly>[] = [];
-        list.push({
-          title: instance.value.name,
-          list: instance.value.anomalyList,
-        });
-        return list;
-      }
-    );
 
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
@@ -356,7 +331,6 @@ export default {
       DATABASE_TAB,
       USER_TAB,
       state,
-      anomalySectionList,
       attentionTitle,
       attentionText,
       attentionActionText,
