@@ -57,10 +57,11 @@ func (e TaskCheckStatus) String() string {
 type TaskCheckType string
 
 const (
-	TaskCheckDatabaseStatementFakeAdvise TaskCheckType = "bb.task-check.database.statement.fake-advise"
-	TaskCheckDatabaseStatementSyntax     TaskCheckType = "bb.task-check.database.statement.syntax"
-	TaskCheckDatabaseConnect             TaskCheckType = "bb.task-check.database.connect"
-	TaskCheckInstanceMigrationSchema     TaskCheckType = "bb.task-check.instance.migration-schema"
+	TaskCheckDatabaseStatementFakeAdvise    TaskCheckType = "bb.task-check.database.statement.fake-advise"
+	TaskCheckDatabaseStatementSyntax        TaskCheckType = "bb.task-check.database.statement.syntax"
+	TaskCheckDatabaseStatementCompatibility TaskCheckType = "bb.task-check.database.statement.compatibility"
+	TaskCheckDatabaseConnect                TaskCheckType = "bb.task-check.database.connect"
+	TaskCheckInstanceMigrationSchema        TaskCheckType = "bb.task-check.instance.migration-schema"
 )
 
 type TaskCheckDatabaseStatementAdvisePayload struct {

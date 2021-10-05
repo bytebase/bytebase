@@ -210,7 +210,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		// For now we only supported MySQL dialect syntax check
+		// For now we only supported MySQL dialect syntax and compatibility check
 		if database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: taskPayload.Statement,
@@ -225,6 +225,17 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				CreatorId:               creatorId,
 				TaskId:                  task.ID,
 				Type:                    api.TaskCheckDatabaseStatementSyntax,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorId:               creatorId,
+				TaskId:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementCompatibility,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 			})

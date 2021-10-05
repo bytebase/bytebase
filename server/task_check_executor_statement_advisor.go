@@ -33,6 +33,8 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		advisorType = advisor.Fake
 	case api.TaskCheckDatabaseStatementSyntax:
 		advisorType = advisor.MySQLSyntax
+	case api.TaskCheckDatabaseStatementCompatibility:
+		advisorType = advisor.MySQLMigrationCompatibility
 	}
 
 	adviceList, err := advisor.Check(

@@ -252,9 +252,17 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		if err != nil {
 			return nil, err
 		}
-		// For now we only supported MySQL dialect syntax check
+		// For now we only supported MySQL dialect syntax and compatibility check
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+			if err != nil {
+				return nil, err
+			}
+			if !pass {
+				return task, nil
+			}
+
+			pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
 			if err != nil {
 				return nil, err
 			}

@@ -240,6 +240,8 @@ export default {
           return "Fake";
         case "bb.task-check.database.statement.syntax":
           return "Syntax";
+        case "bb.task-check.database.statement.compatibility":
+          return "Compatibility";
         case "bb.task-check.database.connect":
           return "Connection";
         case "bb.task-check.instance.migration-schema":
