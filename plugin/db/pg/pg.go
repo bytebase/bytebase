@@ -372,10 +372,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 			dbTable.Type = "BASE TABLE"
 			dbTable.RowCount = tbl.rowCount
-			for i, col := range tbl.columns {
+			for _, col := range tbl.columns {
 				var dbColumn db.DBColumn
 				dbColumn.Name = col.columnName
-				dbColumn.Position = i + 1
+				dbColumn.Position = col.ordinalPosition
 				dbColumn.Default = &col.columnDefault
 				dbColumn.Type = col.dataType
 				dbColumn.Nullable = col.isNullable
@@ -932,6 +932,7 @@ type tableSchema struct {
 type columnSchema struct {
 	columnName             string
 	dataType               string
+	ordinalPosition        int
 	characterMaximumLength string
 	columnDefault          string
 	isNullable             bool
@@ -1268,7 +1269,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema, error) {
 	query := "" +
-		"SELECT column_name, data_type, character_maximum_length, column_default, is_nullable, collation_name " +
+		"SELECT column_name, data_type, ordinal_position, character_maximum_length, column_default, is_nullable, collation_name " +
 		"FROM INFORMATION_SCHEMA.COLUMNS " +
 		"WHERE table_schema=$1 AND table_name=$2;"
 	rows, err := txn.Query(query, schemaName, tableName)
@@ -1281,7 +1282,8 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 	for rows.Next() {
 		var columnName, dataType, isNullable string
 		var characterMaximumLength, columnDefault, collationName sql.NullString
-		if err := rows.Scan(&columnName, &dataType, &characterMaximumLength, &columnDefault, &isNullable, &collationName); err != nil {
+		var ordinalPosition int
+		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -1291,6 +1293,7 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		c := columnSchema{
 			columnName:             columnName,
 			dataType:               dataType,
+			ordinalPosition:        ordinalPosition,
 			characterMaximumLength: characterMaximumLength.String,
 			columnDefault:          columnDefault.String,
 			isNullable:             isNullBool,
