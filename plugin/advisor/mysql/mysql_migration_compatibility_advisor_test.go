@@ -251,3 +251,60 @@ func TestAlterTable(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestAlterTableChangeColumnType(t *testing.T) {
+	tests := []test{
+		{
+			statement: "ALTER TABLE t1 CHANGE f1 f2 TEXT",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Title:   "Incompatible migration",
+					Content: "ALTER TABLE t1 CHANGE f1 f2 TEXT is backward incompatible",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE t1 MODIFY f1 TEXT",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Title:   "Incompatible migration",
+					Content: "ALTER TABLE t1 MODIFY f1 TEXT is backward incompatible",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE t1 MODIFY f1 TEXT NULL",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Title:   "Incompatible migration",
+					Content: "ALTER TABLE t1 MODIFY f1 TEXT NULL is backward incompatible",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE t1 MODIFY f1 TEXT NOT NULL",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Title:   "Incompatible migration",
+					Content: "ALTER TABLE t1 MODIFY f1 TEXT NOT NULL is backward incompatible",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE t1 MODIFY f1 TEXT COMMENT 'bla'",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Title:   "Incompatible migration",
+					Content: "ALTER TABLE t1 MODIFY f1 TEXT COMMENT 'bla' is backward incompatible",
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
