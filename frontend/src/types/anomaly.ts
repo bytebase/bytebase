@@ -48,6 +48,8 @@ export type AnomalyPayload =
   | AnomalyDatabaseConnectionPayload
   | AnomalyDatabaseSchemaDriftPayload;
 
+export type AnomalySeverity = "MEDIUM" | "HIGH" | "CRITICAL";
+
 export type Anomaly = {
   id: AnomalyId;
 
@@ -64,5 +66,6 @@ export type Anomaly = {
   updatedTs: number;
 
   type: AnomalyType;
+  severity: AnomalySeverity;
   payload: AnomalyPayload;
 };
