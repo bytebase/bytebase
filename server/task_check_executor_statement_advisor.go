@@ -54,21 +54,18 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 	result = []api.TaskCheckResult{}
 	for _, advice := range adviceList {
 		status := api.TaskCheckStatusSuccess
-		code := common.Ok
 		switch advice.Status {
 		case advisor.Success:
 			status = api.TaskCheckStatusSuccess
 		case advisor.Warn:
 			status = api.TaskCheckStatusWarn
-			code = common.DbStatementSyntaxError
 		case advisor.Error:
 			status = api.TaskCheckStatusError
-			code = common.DbStatementSyntaxError
 		}
 
 		result = append(result, api.TaskCheckResult{
 			Status:  status,
-			Code:    code,
+			Code:    advice.Code,
 			Title:   advice.Title,
 			Content: advice.Content,
 		})

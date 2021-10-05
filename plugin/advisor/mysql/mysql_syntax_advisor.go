@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 
@@ -30,6 +31,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([
 		return []advisor.Advice{
 			{
 				Status:  advisor.Error,
+				Code:    common.DbStatementSyntaxError,
 				Title:   "Syntax error",
 				Content: err.Error(),
 			},
@@ -40,6 +42,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([
 	for _, warn := range warns {
 		advisorList = append(advisorList, advisor.Advice{
 			Status:  advisor.Warn,
+			Code:    common.DbStatementSyntaxError,
 			Title:   "Syntax Warning",
 			Content: warn.Error(),
 		})
@@ -47,6 +50,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([
 
 	advisorList = append(advisorList, advisor.Advice{
 		Status:  advisor.Success,
+		Code:    common.Ok,
 		Title:   "Syntax OK",
 		Content: "OK"})
 	return advisorList, nil
