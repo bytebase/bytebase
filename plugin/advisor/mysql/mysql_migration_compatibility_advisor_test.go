@@ -8,12 +8,32 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestBasic(t *testing.T) {
-	type test struct {
-		statement string
-		want      []advisor.Advice
-	}
+type test struct {
+	statement string
+	want      []advisor.Advice
+}
 
+func runTests(t *testing.T, tests []test) {
+	adv := CompatibilityAdvisor{}
+	logger, _ := zap.NewDevelopmentConfig().Build()
+	ctx := advisor.AdvisorContext{
+		Logger:    logger,
+		Charset:   "",
+		Collation: "",
+	}
+	for _, tc := range tests {
+		adviceList, err := adv.Check(ctx, tc.statement)
+		if err != nil {
+			t.Errorf("statement=%s: expected no error, got %v", tc.statement, err)
+		} else {
+			if !reflect.DeepEqual(tc.want, adviceList) {
+				t.Errorf("statement=%s: expected %+v, got %+v", tc.statement, tc.want, adviceList)
+			}
+		}
+	}
+}
+
+func TestBasic(t *testing.T) {
 	tests := []test{
 		{
 			statement: "DROP DATABASE d1",
@@ -82,31 +102,10 @@ func TestBasic(t *testing.T) {
 		},
 	}
 
-	adv := CompatibilityAdvisor{}
-	logger, _ := zap.NewDevelopmentConfig().Build()
-	ctx := advisor.AdvisorContext{
-		Logger:    logger,
-		Charset:   "",
-		Collation: "",
-	}
-	for _, tc := range tests {
-		adviceList, err := adv.Check(ctx, tc.statement)
-		if err != nil {
-			t.Errorf("statement=%s: expected no error, got %v", tc.statement, err)
-		} else {
-			if !reflect.DeepEqual(tc.want, adviceList) {
-				t.Errorf("statement=%s: expected %+v, got %+v", tc.statement, tc.want, adviceList)
-			}
-		}
-	}
+	runTests(t, tests)
 }
 
 func TestAlterTable(t *testing.T) {
-	type test struct {
-		statement string
-		want      []advisor.Advice
-	}
-
 	tests := []test{
 		{
 			statement: "ALTER TABLE t1 ADD f1 TEXT",
@@ -250,21 +249,5 @@ func TestAlterTable(t *testing.T) {
 		},
 	}
 
-	adv := CompatibilityAdvisor{}
-	logger, _ := zap.NewDevelopmentConfig().Build()
-	ctx := advisor.AdvisorContext{
-		Logger:    logger,
-		Charset:   "",
-		Collation: "",
-	}
-	for _, tc := range tests {
-		adviceList, err := adv.Check(ctx, tc.statement)
-		if err != nil {
-			t.Errorf("statement=%s: expected no error, got %v", tc.statement, err)
-		} else {
-			if !reflect.DeepEqual(tc.want, adviceList) {
-				t.Errorf("statement=%s: expected %+v, got %+v", tc.statement, tc.want, adviceList)
-			}
-		}
-	}
+	runTests(t, tests)
 }
