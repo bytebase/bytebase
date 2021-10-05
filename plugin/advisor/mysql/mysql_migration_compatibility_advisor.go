@@ -143,8 +143,8 @@ END:
 	if !compatible {
 		v.advisorList = append(v.advisorList, advisor.Advice{
 			Status:  advisor.Warn,
-			Title:   "Incompatible migration",
-			Content: fmt.Sprintf("%s is backward incompatible", in.Text()),
+			Title:   "Potential incompatible migration",
+			Content: fmt.Sprintf("%q may cause incompatibility with the existing data and code", in.Text()),
 		})
 	}
 	return in, false
