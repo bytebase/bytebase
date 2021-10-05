@@ -241,10 +241,12 @@ export default {
     const anomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
         const list: BBTableSectionDataSource<Anomaly>[] = [];
-        list.push({
-          title: props.database.name,
-          list: props.database.anomalyList,
-        });
+        if (props.database.anomalyList.length > 0) {
+          list.push({
+            title: props.database.name,
+            list: props.database.anomalyList,
+          });
+        }
         return list;
       }
     );
