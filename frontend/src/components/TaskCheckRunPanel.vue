@@ -73,6 +73,13 @@
         </BBTableCell>
         <BBTableCell class="table-cell w-48">
           {{ checkResult.content }}
+          <a
+            v-if="errorCodeLink(checkResult.code)"
+            class="normal-link"
+            :href="errorCodeLink(checkResult.code)"
+            target="__blank"
+            >view doc</a
+          >
         </BBTableCell>
       </template>
     </BBTable>
@@ -82,7 +89,14 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { TaskCheckStatus, TaskCheckRun, TaskCheckResult } from "../types";
+import {
+  TaskCheckStatus,
+  TaskCheckRun,
+  TaskCheckResult,
+  ErrorMeta,
+  ErrorCode,
+} from "../types";
+import errorJson from "../types/errorList.json";
 
 const columnList: BBTableColumn[] = [
   {
@@ -106,6 +120,8 @@ export default {
     },
   },
   setup(props, ctx) {
+    const errorList: ErrorMeta[] = errorJson as ErrorMeta[];
+
     const statusIconClass = (status: TaskCheckStatus) => {
       switch (status) {
         case "SUCCESS":
@@ -143,10 +159,16 @@ export default {
       return [];
     });
 
+    const errorCodeLink = (code: ErrorCode): string => {
+      const error = errorList.find((item) => item.code == code);
+      return error ? `https://bytebase.com/doc/error#${error.hash}` : "";
+    };
+
     return {
       columnList,
       statusIconClass,
       checkResultList,
+      errorCodeLink,
     };
   },
 };

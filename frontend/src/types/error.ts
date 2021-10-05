@@ -34,3 +34,21 @@ export enum CompatibilityErrorCode {
   COMPATIBILITY_ALTER_CHECK = 10010,
   COMPATIBILITY_ALTER_COLUMN = 10011,
 }
+
+export type ErrorCode =
+  | GeneralErrorCode
+  | DBErrorCode
+  | MigrationErrorCode
+  | CompatibilityErrorCode;
+
+export type ErrorTag = "General" | "Compatibility";
+
+// error.json stores the corresponding data, this will be used by Bytebase to construct the link and our doc website to generate
+// the content
+export type ErrorMeta = {
+  code: ErrorCode;
+  hash: string;
+  name: string;
+  description: string;
+  tagList: ErrorTag[];
+};
