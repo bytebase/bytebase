@@ -5,7 +5,91 @@
       :title="'Anomaly detection'"
       :description="'Bytebase periodically scans the managed resources and list the detected anomolies here. The list is refreshed roughly every 10 minutes.'"
     />
-    <div class="py-2 flex justify-between items-center">
+    <!-- This example requires Tailwind CSS v2.0+ -->
+    <div class="mt-4 space-y-4">
+      <div
+        v-for="(item, i) in [
+          databaseAnomalySummaryList,
+          instanceAnomalySummaryList,
+        ]"
+        :key="i"
+        class="space-y-2"
+      >
+        <h3 class="text-lg leading-6 font-medium text-main">
+          {{ i == 0 ? "Database" : "Instance" }}
+        </h3>
+        <dl
+          class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+          :class="`lg:grid-cols-${item.length}`"
+        >
+          <template v-for="(summary, index) in item" :key="index">
+            <div class="p-4 shadow rounded-lg overflow-hidden tooltip-wrapper">
+              <span class="text-sm tooltip"
+                >{{ summary.environmentName }} has
+                {{ summary.criticalCount }} CRITICAL,
+                {{ summary.highCount }} HIGH and
+                {{ summary.mediumCount }} MEDIUM anomalies</span
+              >
+              <dt class="textlabel">
+                {{ summary.environmentName }}
+              </dt>
+              <dd class="flex flex-row mt-1 text-xl text-main space-x-2">
+                <span class="flex flex-row items-center">
+                  <svg
+                    class="w-5 h-5 mr-1 text-error"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path></svg
+                  >{{ summary.criticalCount }}
+                </span>
+                <span class="flex flex-row items-center">
+                  <svg
+                    class="w-5 h-5 mr-1 text-warning"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    ></path></svg
+                  >{{ summary.highCount }}
+                </span>
+                <span class="flex flex-row items-center">
+                  <svg
+                    class="w-5 h-5 mr-1 text-info"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path></svg
+                  >{{ summary.mediumCount }}
+                </span>
+              </dd>
+            </div>
+          </template>
+        </dl>
+      </div>
+    </div>
+
+    <div class="mt-4 py-2 flex justify-between items-center">
       <BBTabFilter
         :tabItemList="tabItemList"
         :selectedIndex="state.selectedIndex"
@@ -43,7 +127,7 @@
 import { computed, reactive, watchEffect } from "vue-demi";
 import { useStore } from "vuex";
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, Database } from "../types";
+import { Anomaly, Database, EnvironmentId } from "../types";
 import {
   databaseSlug,
   instanceSlug,
@@ -56,6 +140,13 @@ import { cloneDeep } from "lodash";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
+
+type Summary = {
+  environmentName: string;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+};
 
 interface LocalState {
   selectedIndex: number;
@@ -174,6 +265,96 @@ export default {
       }
     );
 
+    const databaseAnomalySummaryList = computed((): Summary[] => {
+      const envMap: Map<EnvironmentId, Summary> = new Map();
+      for (const database of databaseList.value) {
+        let criticalCount = 0;
+        let highCount = 0;
+        let mediumCount = 0;
+        for (const anomaly of database.anomalyList) {
+          switch (anomaly.severity) {
+            case "CRITICAL":
+              criticalCount++;
+              break;
+            case "HIGH":
+              highCount++;
+              break;
+            case "MEDIUM":
+              mediumCount++;
+              break;
+          }
+        }
+        let summary = envMap.get(database.instance.environment.id);
+        if (summary) {
+          summary.criticalCount += criticalCount;
+          summary.highCount += highCount;
+          summary.mediumCount += mediumCount;
+        } else {
+          envMap.set(database.instance.environment.id, {
+            environmentName: database.instance.environment.name,
+            criticalCount,
+            highCount,
+            mediumCount,
+          });
+        }
+      }
+
+      const list: Summary[] = [];
+      for (const environment of environmentList.value) {
+        const summary = envMap.get(environment.id);
+        if (summary) {
+          list.push(summary);
+        }
+      }
+
+      return list.reverse();
+    });
+
+    const instanceAnomalySummaryList = computed((): Summary[] => {
+      const envMap: Map<EnvironmentId, Summary> = new Map();
+      for (const instance of instanceList.value) {
+        let criticalCount = 0;
+        let highCount = 0;
+        let mediumCount = 0;
+        for (const anomaly of instance.anomalyList) {
+          switch (anomaly.severity) {
+            case "CRITICAL":
+              criticalCount++;
+              break;
+            case "HIGH":
+              highCount++;
+              break;
+            case "MEDIUM":
+              mediumCount++;
+              break;
+          }
+        }
+        let summary = envMap.get(instance.environment.id);
+        if (summary) {
+          summary.criticalCount += criticalCount;
+          summary.highCount += highCount;
+          summary.mediumCount += mediumCount;
+        } else {
+          envMap.set(instance.environment.id, {
+            environmentName: instance.environment.name,
+            criticalCount,
+            highCount,
+            mediumCount,
+          });
+        }
+      }
+
+      const list: Summary[] = [];
+      for (const environment of environmentList.value) {
+        const summary = envMap.get(environment.id);
+        if (summary) {
+          list.push(summary);
+        }
+      }
+
+      return list.reverse();
+    });
+
     const tabItemList = computed((): BBTabFilterItem[] => {
       return [
         {
@@ -197,6 +378,8 @@ export default {
       state,
       databaseAnomalySectionList,
       instanceAnomalySectionList,
+      databaseAnomalySummaryList,
+      instanceAnomalySummaryList,
       tabItemList,
       changeSearchText,
     };
