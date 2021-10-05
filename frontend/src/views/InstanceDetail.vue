@@ -177,9 +177,19 @@ export default {
 
     const attentionText = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
-        return "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.";
+        return (
+          "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance." +
+          (isDBAOrOwner(currentUser.value.role)
+            ? ""
+            : " Please contact your DBA to configure it.")
+        );
       } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance. Please check the instance connection info is correct.";
+        return (
+          "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance." +
+          (isDBAOrOwner(currentUser.value.role)
+            ? " Please check the instance connection info is correct."
+            : " Please contact your DBA to configure it.")
+        );
       }
       return "";
     });
