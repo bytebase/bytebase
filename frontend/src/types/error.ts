@@ -43,12 +43,7 @@ export type ErrorCode =
 
 export type ErrorTag = "General" | "Compatibility";
 
-// error.json stores the corresponding data, this will be used by Bytebase to construct the link and our doc website to generate
-// the content
 export type ErrorMeta = {
   code: ErrorCode;
   hash: string;
-  name: string;
-  description: string;
-  tagList: ErrorTag[];
 };

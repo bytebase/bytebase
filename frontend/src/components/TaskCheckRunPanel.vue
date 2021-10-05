@@ -95,6 +95,7 @@ import {
   TaskCheckResult,
   ErrorMeta,
   ErrorCode,
+  ERROR_LIST,
 } from "../types";
 import errorJson from "../types/errorList.json";
 
@@ -120,8 +121,6 @@ export default {
     },
   },
   setup(props, ctx) {
-    const errorList: ErrorMeta[] = errorJson as ErrorMeta[];
-
     const statusIconClass = (status: TaskCheckStatus) => {
       switch (status) {
         case "SUCCESS":
@@ -160,7 +159,7 @@ export default {
     });
 
     const errorCodeLink = (code: ErrorCode): string => {
-      const error = errorList.find((item) => item.code == code);
+      const error = ERROR_LIST.find((item) => item.code == code);
       return error ? `https://bytebase.com/doc/error#${error.hash}` : "";
     };
 
