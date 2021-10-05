@@ -6,7 +6,7 @@
     <template v-if="issueStatus === `OPEN`">
       <span
         v-if="taskStatus === 'RUNNING'"
-        class="h-2 w-2 bg-info hover:bg-info-hover rounded-full"
+        class="h-2 w-2 bg-info rounded-full"
         style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
         aria-hidden="true"
       ></span>
@@ -18,7 +18,7 @@
       >
       <span
         v-else
-        class="h-1.5 w-1.5 bg-info hover:bg-info-hover rounded-full"
+        class="h-1.5 w-1.5 bg-info rounded-full"
         aria-hidden="true"
       ></span>
     </template>
@@ -85,22 +85,13 @@ export default {
       switch (props.issueStatus) {
         case "OPEN":
           if (props.taskStatus && props.taskStatus === "FAILED") {
-            return (
-              iconClass +
-              " bg-error text-white hover:text-white hover:bg-error-hover"
-            );
+            return iconClass + " bg-error text-white";
           }
-          return (
-            iconClass +
-            " bg-white border-2 border-info text-info hover:text-info-hover hover:border-info-hover"
-          );
+          return iconClass + " bg-white border-2 border-info text-info";
         case "CANCELED":
-          return (
-            iconClass +
-            " bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500"
-          );
+          return iconClass + " bg-white border-2 text-gray-400 border-gray-400";
         case "DONE":
-          return iconClass + " bg-success hover:bg-success-hover text-white";
+          return iconClass + " bg-success text-white";
       }
     };
 
