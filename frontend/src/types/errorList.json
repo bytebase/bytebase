@@ -1,0 +1,23 @@
+[
+  {
+    "code": 0,
+    "hash": "ok-0",
+    "name": "Ok",
+    "description": "Code indicating success",
+    "tagList": ["General"]
+  },
+  {
+    "code": 101,
+    "hash": "db-connection-101",
+    "name": "Failed to connect database",
+    "description": "Unable to connect database.",
+    "tagList": ["General"]
+  },
+  {
+    "code": 10001,
+    "hash": "drop-database-10001",
+    "name": "DROP DATABASE (backward incompatible migration)",
+    "description": "DROP DATABASE is a backward incompatible migration.",
+    "tagList": ["Compatibility"]
+  }
+]
