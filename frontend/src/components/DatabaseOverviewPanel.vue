@@ -4,10 +4,7 @@
       <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
         Anomalies
       </div>
-      <AnomalyTable
-        :mode="'DATABASE'"
-        :anomalySectionList="anomalySectionList"
-      />
+      <AnomalyTable :anomalySectionList="anomalySectionList" />
     </div>
     <div
       v-else

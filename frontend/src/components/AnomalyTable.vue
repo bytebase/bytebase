@@ -156,10 +156,6 @@ export default {
   name: "AnomalyTable",
   components: { CodeDiff },
   props: {
-    mode: {
-      required: true,
-      type: String as PropType<"INSTANCE" | "DATABASE">,
-    },
     anomalySectionList: {
       required: true,
       type: Object as PropType<BBTableSectionDataSource<Anomaly>[]>,
@@ -237,12 +233,6 @@ export default {
     const action = (anomaly: Anomaly): Action => {
       switch (anomaly.type) {
         case "bb.anomaly.instance.connection":
-          if (props.mode == "INSTANCE") {
-            return {
-              onClick: () => {},
-              title: "",
-            };
-          }
           return {
             onClick: () => {
               router.push({
@@ -255,12 +245,6 @@ export default {
             title: "Check instance",
           };
         case "bb.anomaly.instance.migration-schema":
-          if (props.mode == "INSTANCE") {
-            return {
-              onClick: () => {},
-              title: "",
-            };
-          }
           return {
             onClick: () => {
               router.push({
