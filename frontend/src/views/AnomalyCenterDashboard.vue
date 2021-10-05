@@ -29,12 +29,12 @@
     <AnomalyTable
       v-if="state.selectedIndex == DATABASE_TAB"
       :anomalySectionList="databaseAnomalySectionList"
-      :multiple="true"
+      :compactSection="false"
     />
     <AnomalyTable
       v-if="state.selectedIndex == INSTANCE_TAB"
       :anomalySectionList="instanceAnomalySectionList"
-      :multiple="true"
+      :compactSection="false"
     />
   </div>
 </template>
