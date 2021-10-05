@@ -110,16 +110,26 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <AnomalyTable
-      v-if="state.selectedIndex == DATABASE_TAB"
-      :anomalySectionList="databaseAnomalySectionList"
-      :compactSection="false"
-    />
-    <AnomalyTable
-      v-if="state.selectedIndex == INSTANCE_TAB"
-      :anomalySectionList="instanceAnomalySectionList"
-      :compactSection="false"
-    />
+    <template v-if="state.selectedIndex == DATABASE_TAB">
+      <AnomalyTable
+        v-if="databaseAnomalySectionList.length > 0"
+        :anomalySectionList="databaseAnomalySectionList"
+        :compactSection="false"
+      />
+      <div v-else class="text-center text-control-light">
+        Hooray, no database anomaly detected!
+      </div>
+    </template>
+    <template v-else>
+      <AnomalyTable
+        v-if="instanceAnomalySectionList.length > 0"
+        :anomalySectionList="instanceAnomalySectionList"
+        :compactSection="false"
+      />
+      <div v-else class="text-center text-control-light">
+        Hooray, no instance anomaly detected!
+      </div>
+    </template>
   </div>
 </template>
 
