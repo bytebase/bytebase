@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col px-4">
+  <div class="flex flex-col px-4 pb-4">
     <BBAttention
       :style="'INFO'"
       :title="'Anomaly detection'"
