@@ -52,22 +52,25 @@ type DBIndex struct {
 }
 
 type DBColumn struct {
-	Name         string
-	Position     int
-	Default      *string
-	Nullable     bool
-	Type         string
+	Name     string
+	Position int
+	Default  *string
+	Nullable bool
+	Type     string
+	// CharacterSet is only applicable to MySQL series.
 	CharacterSet string
 	Collation    string
 	Comment      string
 }
 
 type DBTable struct {
-	Name          string
-	CreatedTs     int64
-	UpdatedTs     int64
-	Type          string
-	Engine        string
+	Name      string
+	CreatedTs int64
+	UpdatedTs int64
+	Type      string
+	// Engine is only applicable to MySQL series.
+	Engine string
+	// Collation is only applicable to MySQL series.
 	Collation     string
 	RowCount      int64
 	DataSize      int64

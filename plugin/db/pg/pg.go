@@ -372,12 +372,14 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 			dbTable.Type = "BASE TABLE"
 			dbTable.RowCount = tbl.rowCount
-			for _, col := range tbl.columns {
+			for i, col := range tbl.columns {
 				var dbColumn db.DBColumn
 				dbColumn.Name = col.columnName
-				dbColumn.Type = col.dataType
+				dbColumn.Position = i + 1
 				dbColumn.Default = &col.columnDefault
+				dbColumn.Type = col.dataType
 				dbColumn.Nullable = col.isNullable
+				dbColumn.Collation = col.collationName
 				dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
 			}
 			indices := indicesMap[dbTable.Name]
@@ -933,6 +935,7 @@ type columnSchema struct {
 	characterMaximumLength string
 	columnDefault          string
 	isNullable             bool
+	collationName          string
 }
 
 // tableConstraint describes constraint schema of a pg table.
@@ -1265,7 +1268,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema, error) {
 	query := "" +
-		"SELECT column_name, data_type, character_maximum_length, column_default, is_nullable " +
+		"SELECT column_name, data_type, character_maximum_length, column_default, is_nullable, collation_name " +
 		"FROM INFORMATION_SCHEMA.COLUMNS " +
 		"WHERE table_schema=$1 AND table_name=$2;"
 	rows, err := txn.Query(query, schemaName, tableName)
@@ -1277,8 +1280,8 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 	var columns []*columnSchema
 	for rows.Next() {
 		var columnName, dataType, isNullable string
-		var characterMaximumLength, columnDefault sql.NullString
-		if err := rows.Scan(&columnName, &dataType, &characterMaximumLength, &columnDefault, &isNullable); err != nil {
+		var characterMaximumLength, columnDefault, collationName sql.NullString
+		if err := rows.Scan(&columnName, &dataType, &characterMaximumLength, &columnDefault, &isNullable, &collationName); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -1291,6 +1294,7 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			characterMaximumLength: characterMaximumLength.String,
 			columnDefault:          columnDefault.String,
 			isNullable:             isNullBool,
+			collationName:          collationName.String,
 		}
 		columns = append(columns, &c)
 	}
