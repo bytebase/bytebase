@@ -59,6 +59,7 @@ type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
 	ProjectId    int    `json:"projectId,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
+	Statement    string `json:"statement,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
 	Collation    string `json:"collation,omitempty"`
 }
