@@ -162,6 +162,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return err
 		}
 
+		if instancePatch.Host != nil || instancePatch.Port != nil || instancePatch.Username != nil || instancePatch.Password != nil {
+			// Try immediately sync the schema after updating any connection related info.
+			s.SyncSchema(instance)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
