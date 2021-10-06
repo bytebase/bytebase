@@ -116,10 +116,10 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		mi.IssueId = strconv.Itoa(issue.ID)
 	}
 
-	sql := strings.TrimSpace(payload.Statement)
+	statement := strings.TrimSpace(payload.Statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
-	if mi.Type != db.Baseline && sql == "" {
-		return true, nil, fmt.Errorf("empty sql statement")
+	if mi.Type != db.Baseline && statement == "" {
+		return true, nil, fmt.Errorf("empty statement")
 	}
 
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
@@ -137,7 +137,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		zap.String("database", databaseName),
 		zap.String("engine", mi.Engine.String()),
 		zap.String("type", mi.Type.String()),
-		zap.String("sql", sql),
+		zap.String("statement", statement),
 	)
 
 	setup, err := driver.NeedsSetupMigration(ctx)
@@ -148,7 +148,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
 	}
 
-	migrationId, schema, err := driver.ExecuteMigration(ctx, mi, sql)
+	migrationId, schema, err := driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return true, nil, err
 	}

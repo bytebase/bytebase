@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -39,6 +40,11 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, fmt.Errorf("invalid create database payload: %w", err)
 	}
 
+	statement := strings.TrimSpace(payload.Statement)
+	if statement == "" {
+		return true, nil, fmt.Errorf("empty create database statement")
+	}
+
 	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
 		return true, nil, err
 	}
@@ -50,19 +56,10 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 	defer driver.Close(ctx)
 
-	var statement string
-	switch instance.Engine {
-	case db.MySQL:
-		statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", payload.DatabaseName, payload.CharacterSet, payload.Collation)
-	case db.TiDB:
-		statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", payload.DatabaseName, payload.CharacterSet, payload.Collation)
-	case db.Postgres:
-		statement = fmt.Sprintf(`CREATE DATABASE "%s"`, payload.DatabaseName)
-	}
 	exec.l.Debug("Start creating database...",
 		zap.String("instance", instance.Name),
 		zap.String("database", payload.DatabaseName),
-		zap.String("sql", statement),
+		zap.String("statement", statement),
 	)
 
 	// Create a baseline migration history upon creating the database.

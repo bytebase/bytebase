@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -383,6 +384,19 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.CharacterSet = taskCreate.CharacterSet
 				payload.Collation = taskCreate.Collation
+				instanceFind := &api.InstanceFind{
+					ID: &taskCreate.InstanceId,
+				}
+				instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create database creation task, failed to fetch instance %w", err)
+				}
+				switch instance.Engine {
+				case db.MySQL, db.TiDB:
+					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+				case db.Postgres:
+					payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+				}
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
