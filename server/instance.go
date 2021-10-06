@@ -42,10 +42,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err == nil {
 			defer db.Close(context.Background())
 			db.SetupMigrationIfNeeded(context.Background())
+			// Try immediately sync the engine version and schema after instance creation.
+			s.SyncEngineVersionAndSchema(instance)
 		}
-
-		// Try immediately sync the engine version and schema after instance creation.
-		s.SyncEngineVersionAndSchema(instance)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
