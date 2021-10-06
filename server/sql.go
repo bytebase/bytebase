@@ -84,7 +84,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceId)).SetInternal(err)
 		}
 
-		resultSet := s.SyncSchema(instance)
+		resultSet := s.SyncEngineVersionAndSchema(instance)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
@@ -94,7 +94,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
+func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 	resultSet := &api.SqlResultSet{}
 	err := func() error {
 		driver, err := GetDatabaseDriver(instance, "", s.l)
@@ -103,6 +103,26 @@ func (s *Server) SyncSchema(instance *api.Instance) (rs *api.SqlResultSet) {
 		}
 		defer driver.Close(context.Background())
 
+		// Sync engine version
+		version, err := driver.GetVersion(context.Background())
+		if err != nil {
+			return err
+		}
+		// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
+		// to avoid changing the updated_ts
+		if version != instance.EngineVersion {
+			_, err := s.InstanceService.PatchInstance(context.Background(), &api.InstancePatch{
+				ID:            instance.ID,
+				UpdaterId:     api.SYSTEM_BOT_ID,
+				EngineVersion: &version,
+			})
+			if err != nil {
+				return err
+			}
+			instance.EngineVersion = version
+		}
+
+		// Sync schema
 		userList, schemaList, err := driver.SyncSchema(context.Background())
 		if err != nil {
 			resultSet.Error = err.Error()

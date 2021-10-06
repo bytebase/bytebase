@@ -470,7 +470,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
 		}
-		s.SyncSchema(instance)
+		s.SyncEngineVersionAndSchema(instance)
 	}
 
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:

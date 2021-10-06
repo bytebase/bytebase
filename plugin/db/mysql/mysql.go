@@ -112,18 +112,26 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 	return driver.db, nil
 }
 
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
-	// Query MySQL version
+func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	defer versionRow.Close()
 
 	var version string
 	versionRow.Next()
 	if err := versionRow.Scan(&version); err != nil {
+		return "", err
+	}
+	return version, nil
+}
+
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
+	// Query MySQL version
+	version, err := driver.GetVersion(ctx)
+	if err != nil {
 		return nil, nil, err
 	}
 	isMySQL8 := strings.HasPrefix(version, "8.0")
@@ -139,7 +147,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 
 	// Query user info
-	query = `
+	query := `
 	    SELECT
 			user,
 			host

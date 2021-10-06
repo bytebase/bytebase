@@ -77,7 +77,7 @@ func (s *SchemaSyncer) Run() error {
 							delete(runningTasks, instance.ID)
 							mu.Unlock()
 						}()
-						resultSet := s.server.SyncSchema(instance)
+						resultSet := s.server.SyncEngineVersionAndSchema(instance)
 						if resultSet.Error != "" {
 							s.l.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),

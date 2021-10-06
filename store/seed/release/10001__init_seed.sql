@@ -97,6 +97,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -109,6 +110,7 @@ VALUES
         101,
         'MySQL Test (Follow the "External Link" field to bring up the MySQL server)',
         'MYSQL',
+        '8.0.19',
         'host.docker.internal',
         '3306',
         'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'
@@ -175,6 +177,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -187,6 +190,7 @@ VALUES
         102,
         'MySQL Prod (Follow the "External Link" field to bring up the MySQL server)',
         'MYSQL',
+        '8.0.19',
         'host.docker.internal',
         '3306',
         'https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing'

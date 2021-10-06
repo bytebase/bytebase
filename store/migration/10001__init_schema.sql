@@ -341,6 +341,7 @@ CREATE TABLE instance (
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
     `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL', 'POSTGRES', 'TIDB')),
+    engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
     external_link TEXT NOT NULL DEFAULT ''

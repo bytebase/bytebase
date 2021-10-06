@@ -228,6 +228,7 @@ export const unknown = (
     updatedTs: 0,
     name: "<<Unknown instance>>",
     engine: "MYSQL",
+    engineVersion: "",
     host: "",
   };
 
@@ -577,6 +578,7 @@ export const empty = (
     updatedTs: 0,
     name: "",
     engine: "MYSQL",
+    engineVersion: "",
     host: "",
   };
 
