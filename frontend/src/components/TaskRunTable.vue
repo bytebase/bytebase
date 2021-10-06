@@ -169,9 +169,7 @@ export default {
     const commentLink = (taskRun: TaskRun): CommentLink => {
       if (taskRun.status == "DONE") {
         switch (taskRun.type) {
-          case "bb.task.database.create":
-          case "bb.task.database.schema.update":
-          case "bb.task.database.restore": {
+          case "bb.task.database.schema.update": {
             return {
               title: "View migration",
               link: `/db/${databaseSlug(
