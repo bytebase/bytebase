@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 export default {
   name: "BBCheckbox",
@@ -65,6 +65,12 @@ export default {
   },
   setup(props, ctx) {
     const on = ref(props.value);
+    watch(
+      () => props.value,
+      (cur, _) => {
+        on.value = cur;
+      }
+    );
     return { on };
   },
 };
