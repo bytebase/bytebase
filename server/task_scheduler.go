@@ -169,14 +169,14 @@ func (s *TaskScheduler) Run() error {
 									zap.String("type", string(task.Type)),
 									zap.Error(err),
 								)
-								bytes, err := json.Marshal(api.TaskRunResultPayload{
+								bytes, marshalErr := json.Marshal(api.TaskRunResultPayload{
 									Detail: err.Error(),
 								})
-								if err != nil {
+								if marshalErr != nil {
 									s.l.Error("Failed to marshal task run result",
 										zap.Int("task_id", task.ID),
 										zap.String("type", string(task.Type)),
-										zap.Error(err),
+										zap.Error(marshalErr),
 									)
 									return
 								}
