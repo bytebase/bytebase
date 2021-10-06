@@ -105,15 +105,7 @@
       <template v-if="showInstance">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           <span class="mr-1">Instance</span>
-          <template v-if="instance.engine == 'MYSQL'">
-            <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
-          </template>
-          <template v-if="instance.engine == 'POSTGRES'">
-            <img class="h-4 w-auto" src="../assets/db-postgres.png" alt="" />
-          </template>
-          <template v-else-if="instance.engine == 'TIDB'">
-            <img class="h-4 w-auto" src="../assets/db-tidb.png" />
-          </template>
+          <InstanceEngineIcon :instance="instance" />
         </h2>
         <router-link
           :to="`/instance/${instanceSlug(instance)}`"
@@ -210,6 +202,7 @@ import MemberSelect from "../components/MemberSelect.vue";
 import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import IssueSubscriberPanel from "../components/IssueSubscriberPanel.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { InputField } from "../plugins";
 import {
   Database,
@@ -270,6 +263,7 @@ export default {
     StageSelect,
     IssueStatusIcon,
     IssueSubscriberPanel,
+    InstanceEngineIcon,
   },
   setup(props, { emit }) {
     const store = useStore();

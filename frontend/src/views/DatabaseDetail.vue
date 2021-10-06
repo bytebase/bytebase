@@ -52,19 +52,7 @@
             </dd>
             <dt class="sr-only">Instance</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <template v-if="database.instance.engine == 'MYSQL'">
-                <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
-              </template>
-              <template v-if="database.instance.engine == 'POSTGRES'">
-                <img
-                  class="h-4 w-auto"
-                  src="../assets/db-postgres.png"
-                  alt=""
-                />
-              </template>
-              <template v-else-if="database.instance.engine == 'TIDB'">
-                <img class="h-4 w-auto" src="../assets/db-tidb.png" />
-              </template>
+              <InstanceEngineIcon :instance="database.instance" />
               <span class="ml-1 textlabel">Instance&nbsp;-&nbsp;</span>
               <router-link
                 :to="`/instance/${instanceSlug(database.instance)}`"
@@ -263,6 +251,7 @@ import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { consoleLink, idFromSlug, isDBAOrOwner } from "../utils";
 import {
   ProjectId,
@@ -309,6 +298,7 @@ export default {
     DatabaseOverviewPanel,
     DatabaseMigrationHistoryPanel,
     DatabaseBackupPanel,
+    InstanceEngineIcon,
   },
   setup(props, ctx) {
     const store = useStore();
