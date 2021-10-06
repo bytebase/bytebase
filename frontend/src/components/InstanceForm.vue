@@ -292,16 +292,39 @@ input[type="number"] {
           </div>
 
           <div class="sm:col-span-1 sm:col-start-1">
-            <label for="password" class="textlabel block"> Password </label>
+            <div class="flex flex-row items-center space-x-2">
+              <label for="password" class="textlabel block">Password</label>
+              <BBCheckbox
+                :title="'Empty'"
+                :value="state.useEmptyPassword"
+                @toggle="
+                  (on) => {
+                    state.useEmptyPassword = on;
+                  }
+                "
+              />
+            </div>
             <input
               id="password"
               name="password"
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              placeholder="YOUR_DB_PWD - write only"
-              :disabled="!allowEdit"
-              :value="create ? state.instance.password : state.updatedPassword"
+              :placeholder="
+                state.useEmptyPassword
+                  ? 'No password'
+                  : 'YOUR_DB_PWD - write only'
+              "
+              :disabled="!allowEdit || state.useEmptyPassword"
+              :value="
+                create
+                  ? state.useEmptyPassword
+                    ? ''
+                    : state.instance.password
+                  : state.useEmptyPassword
+                  ? ''
+                  : state.updatedPassword
+              "
               @input="
                 create
                   ? (state.instance.password = $event.target.value)
@@ -413,6 +436,7 @@ interface LocalState {
   instance: Instance | InstanceCreate;
   // Only used in non-create case.
   updatedPassword: string;
+  useEmptyPassword: boolean;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
   showCreateUserExample: boolean;
@@ -457,6 +481,7 @@ export default {
             username: "",
           },
       updatedPassword: "",
+      useEmptyPassword: false,
       showCreateInstanceWarningModal: false,
       createInstanceWarning: "",
       showCreateUserExample: props.create,
@@ -484,9 +509,11 @@ export default {
     });
 
     const valueChanged = computed(() => {
+      console.log("value", state.useEmptyPassword);
       return (
         !isEqual(state.instance, state.originalInstance) ||
-        !isEmpty(state.updatedPassword)
+        !isEmpty(state.updatedPassword) ||
+        state.useEmptyPassword
       );
     });
 
@@ -526,7 +553,8 @@ export default {
       const connectionInfo: ConnectionInfo = {
         engine: state.instance.engine,
         username: state.instance.username,
-        password: state.instance.password,
+        password: state.useEmptyPassword ? "" : state.instance.password,
+        useEmptyPassword: state.useEmptyPassword,
         host: state.instance.host,
         port: state.instance.port,
       };
@@ -548,10 +576,14 @@ export default {
     // Conceptually, data source is the proper place to store connnection info (thinking of DSN)
     const doCreate = () => {
       state.creatingOrUpdating = true;
+      if (state.useEmptyPassword) {
+        state.instance.password = "";
+      }
       store
         .dispatch("instance/createInstance", state.instance)
         .then((createdInstance) => {
           state.creatingOrUpdating = false;
+          state.useEmptyPassword = false;
           emit("dismiss");
 
           router.push(`/instance/${instanceSlug(createdInstance)}`);
@@ -568,7 +600,7 @@ export default {
     };
 
     const doUpdate = () => {
-      const patchedInstance: InstancePatch = {};
+      const patchedInstance: InstancePatch = { useEmptyPassword: false };
       if (state.instance.name != state.originalInstance!.name) {
         patchedInstance.name = state.instance.name;
       }
@@ -584,7 +616,9 @@ export default {
       if (state.instance.username != state.originalInstance!.username) {
         patchedInstance.username = state.instance.username;
       }
-      if (!isEmpty(state.updatedPassword)) {
+      if (state.useEmptyPassword) {
+        patchedInstance.useEmptyPassword = true;
+      } else if (!isEmpty(state.updatedPassword)) {
         patchedInstance.password = state.updatedPassword;
       }
 
@@ -600,6 +634,7 @@ export default {
           // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
           state.instance = cloneDeep(state.originalInstance!);
           state.updatedPassword = "";
+          state.useEmptyPassword = false;
 
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -624,8 +659,13 @@ export default {
         engine: state.instance.engine,
         username: state.instance.username,
         password: props.create
-          ? state.instance.password
+          ? state.useEmptyPassword
+            ? ""
+            : state.instance.password
+          : state.useEmptyPassword
+          ? ""
           : state.updatedPassword,
+        useEmptyPassword: state.useEmptyPassword,
         host: state.instance.host,
         port: state.instance.port,
         instanceId: props.create ? undefined : (state.instance as Instance).id,
