@@ -69,10 +69,11 @@ input[type="number"] {
       >
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
-            <template v-if="!create">
-              <InstanceEngineIcon class="mr-1" :instance="state.instance" />
-            </template>
             Instance Name&nbsp;<span style="color: red">*</span>
+            <template v-if="!create">
+              <InstanceEngineIcon class="ml-1" :instance="state.instance" />
+              <span class="ml-1">{{ state.instance.engineVersion }}</span>
+            </template>
           </label>
           <input
             required
