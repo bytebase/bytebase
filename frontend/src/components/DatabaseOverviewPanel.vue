@@ -3,6 +3,10 @@
     <div v-if="anomalySectionList.length > 0">
       <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
         Anomalies
+        <span class="ml-2 textinfolabel items-center flex"
+          >The list might be out of date and is refreshed roughly every 10
+          minutes</span
+        >
       </div>
       <AnomalyTable :anomalySectionList="anomalySectionList" />
     </div>
