@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -24,10 +23,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
 		}
 
-		z, offset := time.Now().Zone()
 		databaseCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		databaseCreate.TimezoneName = z
-		databaseCreate.TimezoneOffset = offset
 		instance, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceId})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)

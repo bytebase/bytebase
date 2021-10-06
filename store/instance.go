@@ -45,15 +45,13 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 
 	// Create * database
 	databaseCreate := &api.DatabaseCreate{
-		CreatorId:      create.CreatorId,
-		ProjectId:      api.DEFAULT_PROJECT_ID,
-		InstanceId:     instance.ID,
-		EnvironmentId:  instance.EnvironmentId,
-		Name:           api.ALL_DATABASE_NAME,
-		CharacterSet:   api.DEFAULT_CHARACTER_SET_NAME,
-		Collation:      api.DEFAULT_COLLATION_NAME,
-		TimezoneName:   "UTC",
-		TimezoneOffset: 0,
+		CreatorId:     create.CreatorId,
+		ProjectId:     api.DEFAULT_PROJECT_ID,
+		InstanceId:    instance.ID,
+		EnvironmentId: instance.EnvironmentId,
+		Name:          api.ALL_DATABASE_NAME,
+		CharacterSet:  api.DEFAULT_CHARACTER_SET_NAME,
+		Collation:     api.DEFAULT_COLLATION_NAME,
 	}
 	allDatabase, err := s.databaseService.CreateDatabaseTx(ctx, tx.Tx, databaseCreate)
 	if err != nil {
