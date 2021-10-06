@@ -209,13 +209,32 @@ input[type="number"] {
                 >Show how to create</span
               >
             </p>
+            <!-- Specify the fixed width so the create instance dialog width won't shift when switching engine types-->
             <div
               v-if="state.showCreateUserExample"
-              class="mt-2 text-sm text-main"
+              class="mt-2 text-sm text-main w-208"
             >
-              Below is an example to create user 'bytebase@%' with password
-              <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
-              with the needed privileges.
+              <template
+                v-if="
+                  state.instance.engine == 'MYSQL' ||
+                  state.instance.engine == 'TIDB'
+                "
+              >
+                Below is an example to create user 'bytebase@%' with password
+                <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
+                with the needed privileges.
+              </template>
+              <template v-if="state.instance.engine == 'POSTGRES'">
+                <BBAttention
+                  class="mb-1"
+                  :style="'WARN'"
+                  :title="'If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider\'s admin console. The created user will have provider specific semi-SUPERUSER privileges.'"
+                />
+                Below is an example to create user 'bytebase' with password
+                <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
+                with the needed privileges. If the connecting instance is
+                self-hosted, then you can grant SUPERUSER.
+              </template>
               <div class="mt-2 flex flex-row">
                 <span
                   class="
@@ -232,7 +251,7 @@ input[type="number"] {
                     whitespace-pre
                   "
                 >
-                  {{ GRANT_STATEMENT }}
+                  {{ grantStatement(state.instance.engine) }}
                 </span>
                 <button
                   tabindex="-1"
@@ -428,9 +447,6 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 
-const GRANT_STATEMENT =
-  "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
-
 interface LocalState {
   originalInstance?: Instance;
   instance: Instance | InstanceCreate;
@@ -534,6 +550,16 @@ export default {
           return "PostgreSQL";
         case "TIDB":
           return "TiDB";
+      }
+    };
+
+    const grantStatement = (type: EngineType): string => {
+      switch (type) {
+        case "MYSQL":
+        case "TIDB":
+          return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
+        case "POSTGRES":
+          return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
       }
     };
 
@@ -645,7 +671,7 @@ export default {
     };
 
     const copyGrantStatement = () => {
-      toClipboard(GRANT_STATEMENT).then(() => {
+      toClipboard(grantStatement(state.instance.engine)).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
@@ -693,7 +719,6 @@ export default {
     };
 
     return {
-      GRANT_STATEMENT,
       state,
       allowCreate,
       allowEdit,
@@ -701,6 +726,7 @@ export default {
       valueChanged,
       defaultPort,
       engineName,
+      grantStatement,
       toggleCreateUserExample,
       updateInstance,
       cancel,
