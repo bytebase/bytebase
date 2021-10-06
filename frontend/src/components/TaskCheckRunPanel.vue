@@ -93,11 +93,9 @@ import {
   TaskCheckStatus,
   TaskCheckRun,
   TaskCheckResult,
-  ErrorMeta,
   ErrorCode,
   ERROR_LIST,
 } from "../types";
-import errorJson from "../types/errorList.json";
 
 const columnList: BBTableColumn[] = [
   {
