@@ -77,7 +77,7 @@ func dumpDatabase(ctx context.Context, databaseType, username, password, hostnam
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer db.Close(ctx)
 
 	out := os.Stdout
 	if file != "" {
@@ -86,7 +86,7 @@ func dumpDatabase(ctx context.Context, databaseType, username, password, hostnam
 			return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
 		}
 	}
-	defer out.Close(ctx)
+	defer out.Close()
 
 	if err := db.Dump(ctx, database, out, schemaOnly); err != nil {
 		return fmt.Errorf("failed to create dump %s, got error: %w", file, err)
