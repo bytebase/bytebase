@@ -52,7 +52,8 @@
             </dd>
             <dt class="sr-only">Instance</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+              <InstanceEngineIcon :instance="database.instance" />
+              <span class="ml-1 textlabel">Instance&nbsp;-&nbsp;</span>
               <router-link
                 :to="`/instance/${instanceSlug(database.instance)}`"
                 class="normal-link"
@@ -191,6 +192,7 @@ import { computed } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { bytesToString, consoleLink, idFromSlug } from "../utils";
 import { isEmpty } from "lodash";
 
@@ -206,7 +208,7 @@ export default {
       type: String,
     },
   },
-  components: { ColumnTable, IndexTable },
+  components: { ColumnTable, IndexTable, InstanceEngineIcon },
   setup(props, ctx) {
     const store = useStore();
 
