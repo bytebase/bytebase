@@ -72,12 +72,10 @@ type DatabaseCreate struct {
 	EnvironmentId int
 
 	// Domain specific fields
-	Name           string `jsonapi:"attr,name"`
-	CharacterSet   string `jsonapi:"attr,characterSet"`
-	Collation      string `jsonapi:"attr,collation"`
-	IssueId        int    `jsonapi:"attr,issueId"`
-	TimezoneName   string
-	TimezoneOffset int
+	Name         string `jsonapi:"attr,name"`
+	CharacterSet string `jsonapi:"attr,characterSet"`
+	Collation    string `jsonapi:"attr,collation"`
+	IssueId      int    `jsonapi:"attr,issueId"`
 }
 
 type DatabaseFind struct {

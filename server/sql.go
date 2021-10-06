@@ -354,17 +354,14 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 				} else {
 					// Case 2, only appear in the synced db schema
-					z, offset := time.Now().Zone()
 					databaseCreate := &api.DatabaseCreate{
-						CreatorId:      api.SYSTEM_BOT_ID,
-						ProjectId:      api.DEFAULT_PROJECT_ID,
-						InstanceId:     instance.ID,
-						EnvironmentId:  instance.EnvironmentId,
-						Name:           schema.Name,
-						CharacterSet:   schema.CharacterSet,
-						Collation:      schema.Collation,
-						TimezoneName:   z,
-						TimezoneOffset: offset,
+						CreatorId:     api.SYSTEM_BOT_ID,
+						ProjectId:     api.DEFAULT_PROJECT_ID,
+						InstanceId:    instance.ID,
+						EnvironmentId: instance.EnvironmentId,
+						Name:          schema.Name,
+						CharacterSet:  schema.CharacterSet,
+						Collation:     schema.Collation,
 					}
 					database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 					if err != nil {

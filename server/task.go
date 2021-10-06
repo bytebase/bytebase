@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -441,17 +440,14 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid instance ID: %v", task.InstanceId)
 		}
-		z, offset := time.Now().Zone()
 		databaseCreate := &api.DatabaseCreate{
-			CreatorId:      taskStatusPatch.UpdaterId,
-			ProjectId:      payload.ProjectId,
-			InstanceId:     task.InstanceId,
-			EnvironmentId:  instance.EnvironmentId,
-			Name:           payload.DatabaseName,
-			CharacterSet:   payload.CharacterSet,
-			Collation:      payload.Collation,
-			TimezoneName:   z,
-			TimezoneOffset: offset,
+			CreatorId:     taskStatusPatch.UpdaterId,
+			ProjectId:     payload.ProjectId,
+			InstanceId:    task.InstanceId,
+			EnvironmentId: instance.EnvironmentId,
+			Name:          payload.DatabaseName,
+			CharacterSet:  payload.CharacterSet,
+			Collation:     payload.Collation,
 		}
 		_, err = s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
