@@ -188,6 +188,8 @@ export default {
             link: `/instance/${instanceSlug(props.task.instance)}`,
           };
         } else if (
+          taskRun.code == MigrationErrorCode.MIGRAITON_ALREADY_APPLIED ||
+          taskRun.code == MigrationErrorCode.MGIRATION_OUT_OF_ORDER ||
           taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING
         ) {
           return {
