@@ -180,6 +180,12 @@ export default {
             name: database.name,
             path: `/db/${databaseSlug}`,
           });
+          if (migrationHistory) {
+            list.push({
+              name: "Migration",
+              path: `/db/${databaseSlug}#migration-history`,
+            });
+          }
         }
       } else if (versionControlSlug) {
         list.push({

@@ -684,12 +684,9 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
-                    return (
-                      "Migration - " +
-                      store.getters["instance/migrationHistoryById"](
-                        idFromSlug(slug)
-                      ).version
-                    );
+                    return store.getters["instance/migrationHistoryById"](
+                      idFromSlug(slug)
+                    ).version;
                   },
                   allowBookmark: true,
                 },
