@@ -3,7 +3,7 @@
   <nav class="px-2">
     <router-link to="/" class="outline-item group flex items-center px-2 py-2">
       <svg
-        class="w-6 h-6 mr-2"
+        class="w-5 h-5 mr-2"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -23,7 +23,7 @@
       class="outline-item group flex items-center px-2 py-2"
     >
       <svg
-        class="w-6 h-6 mr-2"
+        class="w-5 h-5 mr-2"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
