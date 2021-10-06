@@ -162,7 +162,7 @@
           <div class="textinfolabel">
             {{
               state.showDiff
-                ? "The schema diff prev (left) vs new (right)"
+                ? "Prev (left) vs This version (right)"
                 : "The schema snapshot recorded after applying this migration version"
             }}
           </div>
