@@ -70,24 +70,7 @@ input[type="number"] {
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             <template v-if="!create">
-              <img
-                v-if="state.instance.engine == 'MYSQL'"
-                class="h-6 w-auto mr-2"
-                src="../assets/db-mysql.png"
-                alt=""
-              />
-              <img
-                v-if="state.instance.engine == 'POSTGRES'"
-                class="h-6 w-auto mr-2"
-                src="../assets/db-postgres.png"
-                alt=""
-              />
-              <img
-                v-else-if="state.instance.engine == 'TIDB'"
-                class="h-6 w-auto mr-2"
-                src="../assets/db-tidb.png"
-                alt=""
-              />
+              <InstanceEngineIcon class="mr-1" :instance="state.instance" />
             </template>
             Instance Name&nbsp;<span style="color: red">*</span>
           </label>
@@ -407,6 +390,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { instanceSlug, isDBAOrOwner, isDev } from "../utils";
 import {
   Instance,
@@ -448,7 +432,7 @@ export default {
       type: Object as PropType<Instance>,
     },
   },
-  components: { EnvironmentSelect },
+  components: { EnvironmentSelect, InstanceEngineIcon },
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

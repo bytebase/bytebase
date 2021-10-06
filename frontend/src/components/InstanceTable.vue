@@ -9,21 +9,7 @@
   >
     <template v-slot:body="{ rowData: instance }">
       <BBTableCell :leftPadding="4" class="w-4">
-        <img
-          v-if="instance.engine == 'MYSQL'"
-          class="h-6 w-auto"
-          src="../assets/db-mysql.png"
-        />
-        <img
-          v-if="instance.engine == 'POSTGRES'"
-          class="h-6 w-auto"
-          src="../assets/db-postgres.png"
-        />
-        <img
-          v-else-if="instance.engine == 'TIDB'"
-          class="h-6 w-auto"
-          src="../assets/db-tidb.png"
-        />
+        <InstanceEngineIcon :instance="instance" />
       </BBTableCell>
       <BBTableCell class="w-32">
         {{ instanceName(instance) }}
@@ -70,6 +56,7 @@ import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
+import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { urlfy, instanceSlug, environmentName } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 
@@ -80,7 +67,7 @@ interface LocalState {
 
 export default {
   name: "InstanceTable",
-  components: {},
+  components: { InstanceEngineIcon },
   props: {
     instanceList: {
       required: true,

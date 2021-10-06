@@ -74,15 +74,7 @@
       </BBTableCell>
       <BBTableCell v-if="showInstanceColumn" class="w-32">
         <div class="flex flex-row items-center space-x-1">
-          <template v-if="database.instance.engine == 'MYSQL'">
-            <img class="h-4 w-auto" src="../assets/db-mysql.png" alt="" />
-          </template>
-          <template v-if="database.instance.engine == 'POSTGRES'">
-            <img class="h-4 w-auto" src="../assets/db-postgres.png" alt="" />
-          </template>
-          <template v-else-if="database.instance.engine == 'TIDB'">
-            <img class="h-4 w-auto" src="../assets/db-tidb.png" />
-          </template>
+          <InstanceEngineIcon :instance="database.instance" />
           <span>{{ instanceName(database.instance) }}</span>
         </div>
       </BBTableCell>
@@ -126,6 +118,7 @@ import { useRouter } from "vue-router";
 import { consoleLink, databaseSlug, isDBAOrOwner } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
+import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { cloneDeep, isEmpty } from "lodash";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
@@ -227,7 +220,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 export default {
   name: "DatabaseTable",
   emits: ["select-database"],
-  components: {},
+  components: { InstanceEngineIcon },
   props: {
     bordered: {
       default: true,
