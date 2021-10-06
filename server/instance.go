@@ -161,9 +161,14 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return err
 		}
 
+		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 		if instancePatch.Host != nil || instancePatch.Port != nil || instancePatch.Username != nil || instancePatch.Password != nil {
-			// Try immediately sync the engine version and schema after updating any connection related info.
-			s.SyncEngineVersionAndSchema(instance)
+			db, err := GetDatabaseDriver(instance, "", s.l)
+			if err == nil {
+				defer db.Close(context.Background())
+				db.SetupMigrationIfNeeded(context.Background())
+				s.SyncEngineVersionAndSchema(instance)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
