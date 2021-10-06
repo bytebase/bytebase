@@ -44,8 +44,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			db.SetupMigrationIfNeeded(context.Background())
 		}
 
-		// Try immediately sync the schema after instance creation.
-		s.SyncSchema(instance)
+		// Try immediately sync the engine version and schema after instance creation.
+		s.SyncEngineVersionAndSchema(instance)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
@@ -163,8 +163,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		if instancePatch.Host != nil || instancePatch.Port != nil || instancePatch.Username != nil || instancePatch.Password != nil {
-			// Try immediately sync the schema after updating any connection related info.
-			s.SyncSchema(instance)
+			// Try immediately sync the engine version and schema after updating any connection related info.
+			s.SyncEngineVersionAndSchema(instance)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

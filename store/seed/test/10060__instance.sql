@@ -6,6 +6,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -18,6 +19,7 @@ VALUES
         5001,
         'Localhost Dev MySQL',
         'MYSQL',
+        '8.0.19',
         '127.0.0.1',
         '3306',
         'bytebase.com'
@@ -31,6 +33,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -43,6 +46,7 @@ VALUES
         5002,
         'On-premises Integration MySQL',
         'MYSQL',
+        '8.0.19',
         'mysql.integration.example.com',
         '3306',
         'bytebase.com'
@@ -56,6 +60,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -68,6 +73,7 @@ VALUES
         5003,
         'On-premises Staging MySQL',
         'MYSQL',
+        '8.0.19',
         'mysql.staging.example.com',
         '3306',
         'bytebase.com'
@@ -81,6 +87,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -93,6 +100,7 @@ VALUES
         5004,
         'On-premises Prod MySQL',
         'MYSQL',
+        '8.0.19',
         'mysql.prod.example.com',
         '3306',
         'bytebase.com'
@@ -106,6 +114,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -118,6 +127,7 @@ VALUES
         5001,
         'Localhost Dev PostgreSQL',
         'POSTGRES',
+        '13.0',
         '127.0.0.1',
         '5432',
         ""
@@ -131,6 +141,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -143,6 +154,7 @@ VALUES
         5001,
         'Localhost Dev TiDB',
         'TIDB',
+        '5.7.25-TiDB-v5.2.1',
         '127.0.0.1',
         '4000',
         ""
@@ -157,6 +169,7 @@ INSERT INTO
         environment_id,
         name,
         `engine`,
+        engine_version,
         host,
         port,
         external_link
@@ -170,6 +183,7 @@ VALUES
         5004,
         'Retired Prod MySQL',
         'MYSQL',
+        '5.7.25',
         'mysql.retired.example.com',
         '3306',
         ""

@@ -308,6 +308,7 @@ type Driver interface {
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
+	GetVersion(ctx context.Context) (string, error)
 	SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error)
 	Execute(ctx context.Context, statement string) error
 

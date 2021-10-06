@@ -109,7 +109,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 
 	// Sync database schema after restore is completed.
-	server.SyncSchema(targetDatabase.Instance)
+	server.SyncEngineVersionAndSchema(targetDatabase.Instance)
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),

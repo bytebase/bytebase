@@ -24,6 +24,7 @@ export type Instance = {
   // Domain specific fields
   name: string;
   engine: EngineType;
+  engineVersion: string;
   externalLink?: string;
   host: string;
   port?: string;

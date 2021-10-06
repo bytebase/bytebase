@@ -26,12 +26,13 @@ type Instance struct {
 	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
 
 	// Domain specific fields
-	Name         string  `jsonapi:"attr,name"`
-	Engine       db.Type `jsonapi:"attr,engine"`
-	ExternalLink string  `jsonapi:"attr,externalLink"`
-	Host         string  `jsonapi:"attr,host"`
-	Port         string  `jsonapi:"attr,port"`
-	Username     string  `jsonapi:"attr,username"`
+	Name          string  `jsonapi:"attr,name"`
+	Engine        db.Type `jsonapi:"attr,engine"`
+	EngineVersion string  `jsonapi:"attr,engineVersion"`
+	ExternalLink  string  `jsonapi:"attr,externalLink"`
+	Host          string  `jsonapi:"attr,host"`
+	Port          string  `jsonapi:"attr,port"`
+	Username      string  `jsonapi:"attr,username"`
 	// Password is not returned to the client
 	Password string
 }
@@ -78,12 +79,13 @@ type InstancePatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name         *string `jsonapi:"attr,name"`
-	ExternalLink *string `jsonapi:"attr,externalLink"`
-	Host         *string `jsonapi:"attr,host"`
-	Port         *string `jsonapi:"attr,port"`
-	Username     *string `jsonapi:"attr,username"`
-	Password     *string `jsonapi:"attr,password"`
+	Name          *string `jsonapi:"attr,name"`
+	EngineVersion *string
+	ExternalLink  *string `jsonapi:"attr,externalLink"`
+	Host          *string `jsonapi:"attr,host"`
+	Port          *string `jsonapi:"attr,port"`
+	Username      *string `jsonapi:"attr,username"`
+	Password      *string `jsonapi:"attr,password"`
 }
 
 // Instance migration schema status
