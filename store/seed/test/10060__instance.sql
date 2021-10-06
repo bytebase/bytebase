@@ -22,7 +22,7 @@ VALUES
         '8.0.19',
         '127.0.0.1',
         '3306',
-        'bytebase.com'
+        'bytebase.com/database/mysql'
     );
 
 INSERT INTO
@@ -49,7 +49,7 @@ VALUES
         '8.0.19',
         'mysql.integration.example.com',
         '3306',
-        'bytebase.com'
+        'bytebase.com/database/mysql'
     );
 
 INSERT INTO
@@ -76,7 +76,7 @@ VALUES
         '8.0.19',
         'mysql.staging.example.com',
         '3306',
-        'bytebase.com'
+        'bytebase.com/database/mysql'
     );
 
 INSERT INTO
@@ -103,7 +103,7 @@ VALUES
         '8.0.19',
         'mysql.prod.example.com',
         '3306',
-        'bytebase.com'
+        'bytebase.com/database/mysql'
     );
 
 INSERT INTO
@@ -130,7 +130,7 @@ VALUES
         '13.0',
         '127.0.0.1',
         '5432',
-        ""
+        "bytebase.com/database/postgres"
     );
 
 INSERT INTO
@@ -157,7 +157,7 @@ VALUES
         '5.7.25-TiDB-v5.2.1',
         '127.0.0.1',
         '4000',
-        ""
+        "bytebase.com/database/tidb"
     );
 
 INSERT INTO
@@ -186,5 +186,5 @@ VALUES
         '5.7.25',
         'mysql.retired.example.com',
         '3306',
-        ""
+        "bytebase.com/database/mysql"
     );
