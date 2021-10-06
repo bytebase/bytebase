@@ -44,11 +44,13 @@ func (s *SchemaSyncer) Run() error {
 					}
 				}()
 
+				ctx := context.Background()
+
 				rowStatus := api.Normal
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				list, err := s.server.InstanceService.FindInstanceList(context.Background(), instanceFind)
+				list, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instances", zap.Error(err))
 					return
@@ -63,7 +65,7 @@ func (s *SchemaSyncer) Run() error {
 					runningTasks[instance.ID] = true
 					mu.Unlock()
 
-					if err := s.server.ComposeInstanceRelationship(context.Background(), instance); err != nil {
+					if err := s.server.ComposeInstanceRelationship(ctx, instance); err != nil {
 						s.l.Error("Failed to sync instance",
 							zap.Int("id", instance.ID),
 							zap.String("name", instance.Name),
@@ -77,7 +79,7 @@ func (s *SchemaSyncer) Run() error {
 							delete(runningTasks, instance.ID)
 							mu.Unlock()
 						}()
-						resultSet := s.server.SyncEngineVersionAndSchema(instance)
+						resultSet := s.server.SyncEngineVersionAndSchema(ctx, instance)
 						if resultSet.Error != "" {
 							s.l.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),

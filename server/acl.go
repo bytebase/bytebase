@@ -25,6 +25,7 @@ func GetRoleContextKey() string {
 
 func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		ctx := context.Background()
 		// Skips auth, actuator, plan
 		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/actuator") || strings.HasPrefix(c.Path(), "/api/plan") {
 			return next(c)
@@ -41,7 +42,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		memberFind := &api.MemberFind{
 			PrincipalId: &principalId,
 		}
-		member, err := s.MemberService.FindMember(context.Background(), memberFind)
+		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalId))
@@ -69,7 +70,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 					activityFind := &api.ActivityFind{
 						ID: &activityId,
 					}
-					activity, err := s.ActivityService.FindActivity(context.Background(), activityFind)
+					activity, err := s.ActivityService.FindActivity(ctx, activityFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityId))
@@ -90,7 +91,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 					bookmarkFind := &api.BookmarkFind{
 						ID: &bookmarkId,
 					}
-					bookmark, err := s.BookmarkService.FindBookmark(context.Background(), bookmarkFind)
+					bookmark, err := s.BookmarkService.FindBookmark(ctx, bookmarkFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Bookmark ID not found: %d", bookmarkId))
@@ -111,7 +112,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 					inboxFind := &api.InboxFind{
 						ID: &inboxId,
 					}
-					inbox, err := s.InboxService.FindInbox(context.Background(), inboxFind)
+					inbox, err := s.InboxService.FindInbox(ctx, inboxFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Inbox ID not found: %d", inboxId))

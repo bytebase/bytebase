@@ -9,22 +9,22 @@ import (
 func (s *Server) ComposeRepositoryRelationship(ctx context.Context, repository *api.Repository) error {
 	var err error
 
-	repository.Creator, err = s.ComposePrincipalById(context.Background(), repository.CreatorId)
+	repository.Creator, err = s.ComposePrincipalById(ctx, repository.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	repository.Updater, err = s.ComposePrincipalById(context.Background(), repository.UpdaterId)
+	repository.Updater, err = s.ComposePrincipalById(ctx, repository.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	repository.VCS, err = s.ComposeVCSById(context.Background(), repository.VCSId)
+	repository.VCS, err = s.ComposeVCSById(ctx, repository.VCSId)
 	if err != nil {
 		return err
 	}
 
-	repository.Project, err = s.ComposeProjectlById(context.Background(), repository.ProjectId)
+	repository.Project, err = s.ComposeProjectlById(ctx, repository.ProjectId)
 	if err != nil {
 		return err
 	}

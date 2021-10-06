@@ -85,7 +85,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 // backupDatabase will take a backup of a database.
 func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := GetDatabaseDriver(instance, databaseName, exec.l)
+	driver, err := GetDatabaseDriver(ctx, instance, databaseName, exec.l)
 	if err != nil {
 		return err
 	}
@@ -124,19 +124,19 @@ func getAndCreateBackupPath(dataDir string, database *api.Database, name string)
 	return filepath.Join(dir, fmt.Sprintf("%s.sql", name)), nil
 }
 
-func getMigrationVersion(database *api.Database, logger *zap.Logger) (string, error) {
-	driver, err := GetDatabaseDriver(database.Instance, database.Name, logger)
+func getMigrationVersion(ctx context.Context, database *api.Database, logger *zap.Logger) (string, error) {
+	driver, err := GetDatabaseDriver(ctx, database.Instance, database.Name, logger)
 	if err != nil {
 		return "", err
 	}
-	defer driver.Close(context.Background())
+	defer driver.Close(ctx)
 
 	limit := 1
 	find := &db.MigrationHistoryFind{
 		Database: &database.Name,
 		Limit:    &limit,
 	}
-	list, err := driver.FindMigrationHistoryList(context.Background(), find)
+	list, err := driver.FindMigrationHistoryList(ctx, find)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch migration history list: %w", err)
 	}

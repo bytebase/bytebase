@@ -46,14 +46,16 @@ func (s *BackupRunner) Run() error {
 						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
+
+				ctx := context.Background()
+
 				// Find all databases that need a backup in this hour.
 				t := time.Now().UTC().Truncate(time.Hour)
-
 				match := &api.BackupSettingsMatch{
 					Hour:      t.Hour(),
 					DayOfWeek: int(t.Weekday()),
 				}
-				list, err := s.server.BackupService.FindBackupSettingsMatch(context.Background(), match)
+				list, err := s.server.BackupService.FindBackupSettingsMatch(ctx, match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
 					return
@@ -71,7 +73,7 @@ func (s *BackupRunner) Run() error {
 					databaseFind := &api.DatabaseFind{
 						ID: &backupSetting.DatabaseId,
 					}
-					database, err := s.server.ComposeDatabaseByFind(context.Background(), databaseFind)
+					database, err := s.server.ComposeDatabaseByFind(ctx, databaseFind)
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
@@ -92,7 +94,7 @@ func (s *BackupRunner) Run() error {
 							delete(runningTasks, backupSettingId)
 							mu.Unlock()
 						}()
-						if err := s.scheduleBackupTask(database, backupName); err != nil {
+						if err := s.scheduleBackupTask(ctx, database, backupName); err != nil {
 							s.l.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
 								zap.String("error", err.Error()))
@@ -108,14 +110,14 @@ func (s *BackupRunner) Run() error {
 	return nil
 }
 
-func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName string) error {
+func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string) error {
 	path, err := getAndCreateBackupPath(s.server.dataDir, database, backupName)
 	if err != nil {
 		return err
 	}
 
 	// Store the migration history version if exists.
-	migrationHistoryVersion, err := getMigrationVersion(database, s.l)
+	migrationHistoryVersion, err := getMigrationVersion(ctx, database, s.l)
 	if err != nil {
 		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 	}
@@ -130,7 +132,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		StorageBackend:          api.BackupStorageBackendLocal,
 		Path:                    path,
 	}
-	backup, err := s.server.BackupService.CreateBackup(context.Background(), backupCreate)
+	backup, err := s.server.BackupService.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			// Automatic backup already exists.
@@ -147,7 +149,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		return fmt.Errorf("failed to create task payload: %w", err)
 	}
 
-	createdPipeline, err := s.server.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
+	createdPipeline, err := s.server.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
 		Name:      backupName,
 		CreatorId: backupCreate.CreatorId,
 	})
@@ -155,7 +157,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		return fmt.Errorf("failed to create pipeline: %w", err)
 	}
 
-	createdStage, err := s.server.StageService.CreateStage(context.Background(), &api.StageCreate{
+	createdStage, err := s.server.StageService.CreateStage(ctx, &api.StageCreate{
 		Name:          backupName,
 		EnvironmentId: database.Instance.EnvironmentId,
 		PipelineId:    createdPipeline.ID,
@@ -165,7 +167,7 @@ func (s *BackupRunner) scheduleBackupTask(database *api.Database, backupName str
 		return fmt.Errorf("failed to create stage: %w", err)
 	}
 
-	_, err = s.server.TaskService.CreateTask(context.Background(), &api.TaskCreate{
+	_, err = s.server.TaskService.CreateTask(ctx, &api.TaskCreate{
 		Name:       backupName,
 		PipelineId: createdPipeline.ID,
 		StageId:    createdStage.ID,

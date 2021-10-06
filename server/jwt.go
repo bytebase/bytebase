@@ -209,6 +209,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 
 		// We either have a valid access token or we will attempt to generate new access token and refresh token
 		if err == nil {
+			ctx := context.Background()
 			principalId, err := strconv.Atoi(claims.Subject)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")
@@ -218,7 +219,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 			principalFind := &api.PrincipalFind{
 				ID: &principalId,
 			}
-			user, err := p.FindPrincipal(context.Background(), principalFind)
+			user, err := p.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", principalId))

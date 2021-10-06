@@ -20,12 +20,13 @@ import (
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.POST("/project", func(c echo.Context) error {
+		ctx := context.Background()
 		projectCreate := &api.ProjectCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
 		projectCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		project, err := s.ProjectService.CreateProject(context.Background(), projectCreate)
+		project, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
@@ -40,12 +41,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			PrincipalId: projectCreate.CreatorId,
 		}
 
-		_, err = s.ProjectMemberService.CreateProjectMember(context.Background(), projectMember)
+		_, err = s.ProjectMemberService.CreateProjectMember(ctx, projectMember)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
+		if err := s.ComposeProjectRelationship(ctx, project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch relationship after creating project").SetInternal(err)
 		}
 
@@ -57,6 +58,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project", func(c echo.Context) error {
+		ctx := context.Background()
 		projectFind := &api.ProjectFind{}
 		if userIdStr := c.QueryParam("user"); userIdStr != "" {
 			userId, err := strconv.Atoi(userIdStr)
@@ -69,13 +71,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
 		}
-		list, err := s.ProjectService.FindProjectList(context.Background(), projectFind)
+		list, err := s.ProjectService.FindProjectList(ctx, projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
 		for _, project := range list {
-			if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
+			if err := s.ComposeProjectRelationship(ctx, project); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
 			}
 		}
@@ -88,12 +90,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:projectId", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
 		}
 
-		project, err := s.ComposeProjectlById(context.Background(), id)
+		project, err := s.ComposeProjectlById(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -109,6 +112,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectId", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -122,7 +126,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
 		}
 
-		project, err := s.ProjectService.PatchProject(context.Background(), projectPatch)
+		project, err := s.ProjectService.PatchProject(ctx, projectPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -130,7 +134,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectRelationship(context.Background(), project); err != nil {
+		if err := s.ComposeProjectRelationship(ctx, project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated project relationship: %v", project.Name)).SetInternal(err)
 		}
 
@@ -143,6 +147,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	// When we link the repository with the project, we will also change the project workflow type to VCS
 	g.POST("/project/:projectId/repository", func(c echo.Context) error {
+		ctx := context.Background()
 		repositoryCreate := &api.RepositoryCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
@@ -159,7 +164,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		vcsFind := &api.VCSFind{
 			ID: &repositoryCreate.VCSId,
 		}
-		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
+		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSId))
@@ -208,7 +213,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
-		repository, err := s.RepositoryService.CreateRepository(context.Background(), repositoryCreate)
+		repository, err := s.RepositoryService.CreateRepository(ctx, repositoryCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project %d has already linked repository", repositoryCreate.ProjectId))
@@ -216,7 +221,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		if err := s.ComposeRepositoryRelationship(context.Background(), repository); err != nil {
+		if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
@@ -231,6 +236,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	// 1. repository also contains project, which would cause circular dependency when composing it.
 	// 2. repository info is only needed when fetching a particular project by id, thus it's unnecessary to include it in the project list response.
 	g.GET("/project/:projectId/repository", func(c echo.Context) error {
+		ctx := context.Background()
 		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -239,7 +245,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			ProjectId: &projectId,
 		}
-		list, err := s.RepositoryService.FindRepositoryList(context.Background(), repositoryFind)
+		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectId)).SetInternal(err)
 		}
@@ -250,7 +256,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, repository := range list {
-			if err := s.ComposeRepositoryRelationship(context.Background(), repository); err != nil {
+			if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 			}
 		}
@@ -264,6 +270,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	// When we unlink the repository with the project, we will also change the project workflow type to UI
 	g.PATCH("/project/:projectId/repository", func(c echo.Context) error {
+		ctx := context.Background()
 		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -297,7 +304,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			ProjectId: &projectId,
 		}
-		list, err := s.RepositoryService.FindRepositoryList(context.Background(), repositoryFind)
+		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectId)).SetInternal(err)
 		}
@@ -311,7 +318,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repository := list[0]
 		repositoryPatch.ID = repository.ID
-		updatedRepository, err := s.RepositoryService.PatchRepository(context.Background(), repositoryPatch)
+		updatedRepository, err := s.RepositoryService.PatchRepository(ctx, repositoryPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectId)).SetInternal(err)
 		}
@@ -320,7 +327,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			vcsFind := &api.VCSFind{
 				ID: &repository.VCSId,
 			}
-			vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
+			vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectId)).SetInternal(err)
 			}
@@ -358,7 +365,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeRepositoryRelationship(context.Background(), updatedRepository); err != nil {
+		if err := s.ComposeRepositoryRelationship(ctx, updatedRepository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to updating repository for project").SetInternal(err)
 		}
 
@@ -371,6 +378,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	// When we unlink the repository with the project, we will also change the project workflow type to UI
 	g.DELETE("/project/:projectId/repository", func(c echo.Context) error {
+		ctx := context.Background()
 		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -379,7 +387,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			ProjectId: &projectId,
 		}
-		list, err := s.RepositoryService.FindRepositoryList(context.Background(), repositoryFind)
+		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectId)).SetInternal(err)
 		}
@@ -395,7 +403,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		vcsFind := &api.VCSFind{
 			ID: &repository.VCSId,
 		}
-		vcs, err := s.VCSService.FindVCS(context.Background(), vcsFind)
+		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectId)).SetInternal(err)
 		}
@@ -404,7 +412,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			ProjectId: projectId,
 			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
-		if err := s.RepositoryService.DeleteRepository(context.Background(), repositoryDelete); err != nil {
+		if err := s.RepositoryService.DeleteRepository(ctx, repositoryDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectId)).SetInternal(err)
 		}
 
@@ -455,12 +463,12 @@ func (s *Server) ComposeProjectlById(ctx context.Context, id int) (*api.Project,
 func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project) error {
 	var err error
 
-	project.Creator, err = s.ComposePrincipalById(context.Background(), project.CreatorId)
+	project.Creator, err = s.ComposePrincipalById(ctx, project.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	project.Updater, err = s.ComposePrincipalById(context.Background(), project.UpdaterId)
+	project.Updater, err = s.ComposePrincipalById(ctx, project.UpdaterId)
 	if err != nil {
 		return err
 	}

@@ -39,14 +39,14 @@ var (
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			return dumpDatabase(databaseType, username, password, hostname, port, database, file, tlsCfg, schemaOnly)
+			return dumpDatabase(context.Background(), databaseType, username, password, hostname, port, database, file, tlsCfg, schemaOnly)
 		},
 	}
 )
 
 // dumpDatabase exports the schema of a database instance.
 // When file isn't specified, the schema will be exported to stdout.
-func dumpDatabase(databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig, schemaOnly bool) error {
+func dumpDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig, schemaOnly bool) error {
 	var dbType db.Type
 	switch databaseType {
 	case "mysql":
@@ -61,6 +61,7 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, fi
 	}
 
 	db, err := db.Open(
+		ctx,
 		dbType,
 		db.DriverConfig{Logger: logger},
 		db.ConnectionConfig{
@@ -76,7 +77,7 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, fi
 	if err != nil {
 		return err
 	}
-	defer db.Close(context.Background())
+	defer db.Close()
 
 	out := os.Stdout
 	if file != "" {
@@ -85,9 +86,9 @@ func dumpDatabase(databaseType, username, password, hostname, port, database, fi
 			return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
 		}
 	}
-	defer out.Close()
+	defer out.Close(ctx)
 
-	if err := db.Dump(context.Background(), database, out, schemaOnly); err != nil {
+	if err := db.Dump(ctx, database, out, schemaOnly); err != nil {
 		return fmt.Errorf("failed to create dump %s, got error: %w", file, err)
 	}
 	return nil

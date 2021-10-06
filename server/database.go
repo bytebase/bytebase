@@ -18,6 +18,7 @@ import (
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	g.POST("/database", func(c echo.Context) error {
+		ctx := context.Background()
 		databaseCreate := &api.DatabaseCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databaseCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
@@ -27,13 +28,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 		databaseCreate.TimezoneName = z
 		databaseCreate.TimezoneOffset = offset
-		instance, err := s.InstanceService.FindInstance(context.Background(), &api.InstanceFind{ID: &databaseCreate.InstanceId})
+		instance, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceId})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 		}
 		databaseCreate.EnvironmentId = instance.EnvironmentId
 
-		database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
+		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Database name already exists: %s", databaseCreate.Name))
@@ -41,7 +42,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
 		}
 
-		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
+		if err := s.ComposeDatabaseRelationship(ctx, database); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created database relationship").SetInternal(err)
 		}
 
@@ -53,6 +54,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database", func(c echo.Context) error {
+		ctx := context.Background()
 		databaseFind := &api.DatabaseFind{}
 		if instanceIdStr := c.QueryParam("instance"); instanceIdStr != "" {
 			instanceId, err := strconv.Atoi(instanceIdStr)
@@ -69,7 +71,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			databaseFind.ProjectId = &projectId
 		}
-		list, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
+		list, err := s.ComposeDatabaseListByFind(ctx, databaseFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
 		}
@@ -105,6 +107,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -113,7 +116,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		database, err := s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -129,6 +132,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/database/:id", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -146,7 +150,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// the old project and new project.
 		var existingDatabase *api.Database
 		if databasePatch.ProjectId != nil {
-			existingDatabase, err = s.DatabaseService.FindDatabase(context.Background(), &api.DatabaseFind{
+			existingDatabase, err = s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{
 				ID: &databasePatch.ID,
 			})
 			if err != nil {
@@ -157,7 +161,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		}
 
-		database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
+		database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -165,7 +169,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
+		if err := s.ComposeDatabaseRelationship(ctx, database); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated database relationship: %v", database.Name)).SetInternal(err)
 		}
 
@@ -176,7 +180,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseName: database.Name,
 			})
 			if err == nil {
-				existingDatabase.Project, err = s.ComposeProjectlById(context.Background(), existingDatabase.ProjectId)
+				existingDatabase.Project, err = s.ComposeProjectlById(ctx, existingDatabase.ProjectId)
 				if err == nil {
 					activityCreate := &api.ActivityCreate{
 						CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
@@ -187,7 +191,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 							database.Name, database.Project.Name),
 						Payload: string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 				}
 
 				if err != nil {
@@ -209,7 +213,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 							existingDatabase.Name, existingDatabase.Project.Name),
 						Payload: string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
 						s.l.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", database.ID),
@@ -230,6 +234,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/table", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -238,7 +243,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		database, err := s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -249,7 +254,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		tableFind := &api.TableFind{
 			DatabaseId: &id,
 		}
-		tableList, err := s.TableService.FindTableList(context.Background(), tableFind)
+		tableList, err := s.TableService.FindTableList(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table list for database id: %d", id)).SetInternal(err)
 		}
@@ -260,7 +265,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseId: &id,
 				TableId:    &table.ID,
 			}
-			table.ColumnList, err = s.ColumnService.FindColumnList(context.Background(), columnFind)
+			table.ColumnList, err = s.ColumnService.FindColumnList(ctx, columnFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
@@ -269,7 +274,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseId: &id,
 				TableId:    &table.ID,
 			}
-			table.IndexList, err = s.IndexService.FindIndexList(context.Background(), indexFind)
+			table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
@@ -283,6 +288,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/table/:tableName", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -291,7 +297,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		database, err := s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -304,7 +310,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseId: &id,
 			Name:       &tableName,
 		}
-		table, err := s.TableService.FindTable(context.Background(), tableFind)
+		table, err := s.TableService.FindTable(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
@@ -315,7 +321,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseId: &id,
 			TableId:    &table.ID,
 		}
-		table.ColumnList, err = s.ColumnService.FindColumnList(context.Background(), columnFind)
+		table.ColumnList, err = s.ColumnService.FindColumnList(ctx, columnFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
@@ -324,7 +330,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseId: &id,
 			TableId:    &table.ID,
 		}
-		table.IndexList, err = s.IndexService.FindIndexList(context.Background(), indexFind)
+		table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}
@@ -337,6 +343,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.POST("/database/:id/backup", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -351,7 +358,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		database, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		database, err := s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -364,20 +371,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		version, err := getMigrationVersion(database, s.l)
+		version, err := getMigrationVersion(ctx, database, s.l)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get migration history for database %q", database.Name)).SetInternal(err)
 		}
 		backupCreate.MigrationHistoryVersion = version
 
-		backup, err := s.BackupService.CreateBackup(context.Background(), backupCreate)
+		backup, err := s.BackupService.CreateBackup(ctx, backupCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
 		}
-		if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
+		if err := s.ComposeBackupRelationship(ctx, backup); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 		}
 
@@ -389,7 +396,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task payload").SetInternal(err)
 		}
 
-		createdPipeline, err := s.PipelineService.CreatePipeline(context.Background(), &api.PipelineCreate{
+		createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
 			Name:      fmt.Sprintf("backup-pipeline-%s", backup.Name),
 			CreatorId: backupCreate.CreatorId,
 		})
@@ -397,7 +404,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup pipeline").SetInternal(err)
 		}
 
-		createdStage, err := s.StageService.CreateStage(context.Background(), &api.StageCreate{
+		createdStage, err := s.StageService.CreateStage(ctx, &api.StageCreate{
 			Name:          fmt.Sprintf("backup-stage-%s", backup.Name),
 			EnvironmentId: database.Instance.EnvironmentId,
 			PipelineId:    createdPipeline.ID,
@@ -407,7 +414,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup stage").SetInternal(err)
 		}
 
-		_, err = s.TaskService.CreateTask(context.Background(), &api.TaskCreate{
+		_, err = s.TaskService.CreateTask(ctx, &api.TaskCreate{
 			Name:       fmt.Sprintf("backup-task-%s", backup.Name),
 			PipelineId: createdPipeline.ID,
 			StageId:    createdStage.ID,
@@ -430,6 +437,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/backup", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -438,7 +446,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		_, err = s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -449,13 +457,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		backupFind := &api.BackupFind{
 			DatabaseId: &id,
 		}
-		backupList, err := s.BackupService.FindBackupList(context.Background(), backupFind)
+		backupList, err := s.BackupService.FindBackupList(ctx, backupFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
 		}
 
 		for _, backup := range backupList {
-			if err := s.ComposeBackupRelationship(context.Background(), backup); err != nil {
+			if err := s.ComposeBackupRelationship(ctx, backup); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 			}
 		}
@@ -468,6 +476,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/database/:id/backupsetting", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -482,7 +491,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		db, err := s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		db, err := s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -491,7 +500,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupSettingUpsert.EnvironmentId = db.Instance.Environment.ID
 
-		backupSetting, err := s.BackupService.UpsertBackupSetting(context.Background(), backupSettingUpsert)
+		backupSetting, err := s.BackupService.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
 		}
@@ -504,6 +513,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/backupsetting", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -512,7 +522,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
 		}
-		_, err = s.ComposeDatabaseByFind(context.Background(), databaseFind)
+		_, err = s.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -523,7 +533,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		backupSettingFind := &api.BackupSettingFind{
 			DatabaseId: &id,
 		}
-		backupSetting, err := s.BackupService.FindBackupSetting(context.Background(), backupSettingFind)
+		backupSetting, err := s.BackupService.FindBackupSetting(ctx, backupSettingFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
@@ -544,7 +554,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 }
 
 func (s *Server) ComposeDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	database, err := s.DatabaseService.FindDatabase(context.Background(), find)
+	database, err := s.DatabaseService.FindDatabase(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -557,13 +567,13 @@ func (s *Server) ComposeDatabaseByFind(ctx context.Context, find *api.DatabaseFi
 }
 
 func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
-	list, err := s.DatabaseService.FindDatabaseList(context.Background(), find)
+	list, err := s.DatabaseService.FindDatabaseList(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, database := range list {
-		if err := s.ComposeDatabaseRelationship(context.Background(), database); err != nil {
+		if err := s.ComposeDatabaseRelationship(ctx, database); err != nil {
 			return nil, err
 		}
 	}
@@ -574,28 +584,28 @@ func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.Databa
 func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database) error {
 	var err error
 
-	database.Creator, err = s.ComposePrincipalById(context.Background(), database.CreatorId)
+	database.Creator, err = s.ComposePrincipalById(ctx, database.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	database.Updater, err = s.ComposePrincipalById(context.Background(), database.UpdaterId)
+	database.Updater, err = s.ComposePrincipalById(ctx, database.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	database.Project, err = s.ComposeProjectlById(context.Background(), database.ProjectId)
+	database.Project, err = s.ComposeProjectlById(ctx, database.ProjectId)
 	if err != nil {
 		return err
 	}
 
-	database.Instance, err = s.ComposeInstanceById(context.Background(), database.InstanceId)
+	database.Instance, err = s.ComposeInstanceById(ctx, database.InstanceId)
 	if err != nil {
 		return err
 	}
 
 	if database.SourceBackupId != 0 {
-		database.SourceBackup, err = s.ComposeBackupByID(context.Background(), database.SourceBackupId)
+		database.SourceBackup, err = s.ComposeBackupByID(ctx, database.SourceBackupId)
 		if err != nil {
 			return err
 		}
@@ -604,7 +614,7 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	database.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	database.AnomalyList, err = s.AnomalyService.FindAnomalyList(context.Background(), &api.AnomalyFind{
+	database.AnomalyList, err = s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
 		DatabaseId: &database.ID,
 	})
@@ -612,11 +622,11 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 	for _, anomaly := range database.AnomalyList {
-		anomaly.Creator, err = s.ComposePrincipalById(context.Background(), anomaly.CreatorId)
+		anomaly.Creator, err = s.ComposePrincipalById(ctx, anomaly.CreatorId)
 		if err != nil {
 			return err
 		}
-		anomaly.Updater, err = s.ComposePrincipalById(context.Background(), anomaly.UpdaterId)
+		anomaly.Updater, err = s.ComposePrincipalById(ctx, anomaly.UpdaterId)
 		if err != nil {
 			return err
 		}
@@ -658,8 +668,9 @@ func (s *Server) ComposeBackupRelationship(ctx context.Context, backup *api.Back
 
 // Retrieve db.Driver connection.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func GetDatabaseDriver(instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+func GetDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
 	driver, err := db.Open(
+		ctx,
 		instance.Engine,
 		db.DriverConfig{Logger: logger},
 		db.ConnectionConfig{

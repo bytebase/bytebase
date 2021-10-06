@@ -14,6 +14,7 @@ import (
 
 func (s *Server) registerInboxRoutes(g *echo.Group) {
 	g.GET("/inbox", func(c echo.Context) error {
+		ctx := context.Background()
 		inboxFind := &api.InboxFind{}
 		userIdStr := c.QueryParams().Get("user")
 		if userIdStr != "" {
@@ -31,13 +32,13 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			}
 			inboxFind.ReadCreatedAfterTs = &createdTs
 		}
-		list, err := s.InboxService.FindInboxList(context.Background(), inboxFind)
+		list, err := s.InboxService.FindInboxList(ctx, inboxFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch inbox list").SetInternal(err)
 		}
 
 		for _, inbox := range list {
-			if err := s.ComposeActivityRelationship(context.Background(), inbox.Activity); err != nil {
+			if err := s.ComposeActivityRelationship(ctx, inbox.Activity); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox activity relationship: %v", inbox.Activity.ID)).SetInternal(err)
 			}
 		}
@@ -50,6 +51,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 	})
 
 	g.GET("/inbox/summary", func(c echo.Context) error {
+		ctx := context.Background()
 		userIdStr := c.QueryParams().Get("user")
 		if userIdStr == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Missing query parameter user")
@@ -59,7 +61,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIdStr)).SetInternal(err)
 		}
 
-		summary, err := s.InboxService.FindInboxSummary(context.Background(), userId)
+		summary, err := s.InboxService.FindInboxSummary(ctx, userId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox summary for user ID: %d", userId)).SetInternal(err)
 		}
@@ -68,6 +70,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/inbox/:inboxId", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("inboxId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("inboxId"))).SetInternal(err)
@@ -80,7 +83,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch inbox request").SetInternal(err)
 		}
 
-		inbox, err := s.InboxService.PatchInbox(context.Background(), inboxPatch)
+		inbox, err := s.InboxService.PatchInbox(ctx, inboxPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", id))
@@ -88,7 +91,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeActivityRelationship(context.Background(), inbox.Activity); err != nil {
+		if err := s.ComposeActivityRelationship(ctx, inbox.Activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated inbox activity relationship: %v", inbox.ID)).SetInternal(err)
 		}
 

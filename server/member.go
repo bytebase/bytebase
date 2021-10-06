@@ -15,6 +15,7 @@ import (
 
 func (s *Server) registerMemberRoutes(g *echo.Group) {
 	g.POST("/member", func(c echo.Context) error {
+		ctx := context.Background()
 		memberCreate := &api.MemberCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create member request").SetInternal(err)
@@ -22,7 +23,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		memberCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 
-		member, err := s.MemberService.CreateMember(context.Background(), memberCreate)
+		member, err := s.MemberService.CreateMember(ctx, memberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member for user ID already exists: %d", memberCreate.PrincipalId))
@@ -35,7 +36,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			principalFind := &api.PrincipalFind{
 				ID: &member.PrincipalId,
 			}
-			user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+			user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", member.PrincipalId))
@@ -60,13 +61,13 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
 			}
-			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating member: %d", member.ID)).SetInternal(err)
 			}
 		}
 
-		if err := s.ComposeMemberRelationship(context.Background(), member); err != nil {
+		if err := s.ComposeMemberRelationship(ctx, member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created member relationship").SetInternal(err)
 		}
 
@@ -78,14 +79,15 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 
 	g.GET("/member", func(c echo.Context) error {
+		ctx := context.Background()
 		memberFind := &api.MemberFind{}
-		list, err := s.MemberService.FindMemberList(context.Background(), memberFind)
+		list, err := s.MemberService.FindMemberList(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
 		}
 
 		for _, member := range list {
-			if err := s.ComposeMemberRelationship(context.Background(), member); err != nil {
+			if err := s.ComposeMemberRelationship(ctx, member); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", member.ID)).SetInternal(err)
 			}
 		}
@@ -98,6 +100,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/member/:id", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -106,7 +109,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			ID: &id,
 		}
-		member, err := s.MemberService.FindMember(context.Background(), memberFind)
+		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find member ID: %d", id))
@@ -122,7 +125,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
 		}
 
-		updatedMember, err := s.MemberService.PatchMember(context.Background(), memberPatch)
+		updatedMember, err := s.MemberService.PatchMember(ctx, memberPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))
@@ -135,7 +138,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			principalFind := &api.PrincipalFind{
 				ID: &updatedMember.PrincipalId,
 			}
-			user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+			user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", updatedMember.PrincipalId))
@@ -161,7 +164,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
 				}
-				_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
@@ -186,14 +189,14 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
 				}
-				_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
 			}
 		}
 
-		if err := s.ComposeMemberRelationship(context.Background(), updatedMember); err != nil {
+		if err := s.ComposeMemberRelationship(ctx, updatedMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated member relationship: %v", updatedMember.ID)).SetInternal(err)
 		}
 
@@ -213,12 +216,12 @@ func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Memb
 		return err
 	}
 
-	member.Updater, err = s.ComposePrincipalById(context.Background(), member.UpdaterId)
+	member.Updater, err = s.ComposePrincipalById(ctx, member.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	member.Principal, err = s.ComposePrincipalById(context.Background(), member.PrincipalId)
+	member.Principal, err = s.ComposePrincipalById(ctx, member.PrincipalId)
 	if err != nil {
 		return err
 	}

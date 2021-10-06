@@ -11,6 +11,7 @@ import (
 
 func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
+		ctx := context.Background()
 		serverInfo := api.ServerInfo{
 			Version:   s.version,
 			Readonly:  s.readonly,
@@ -24,7 +25,7 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 		find := &api.MemberFind{
 			Role: &findRole,
 		}
-		list, err := s.MemberService.FindMemberList(context.Background(), find)
+		list, err := s.MemberService.FindMemberList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch admin setup status").SetInternal(err)
 		}

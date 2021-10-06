@@ -16,6 +16,7 @@ import (
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
+		ctx := context.Background()
 		issueCreate := &api.IssueCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
@@ -59,7 +60,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		issue, err := s.CreateIssue(context.Background(), issueCreate, c.Get(GetPrincipalIdContextKey()).(int))
+		issue, err := s.CreateIssue(ctx, issueCreate, c.Get(GetPrincipalIdContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
@@ -69,7 +70,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				IssueId:      issue.ID,
 				SubscriberId: subscriberId,
 			}
-			_, err := s.IssueSubscriberService.CreateIssueSubscriber(context.Background(), subscriberCreate)
+			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberId, issue.ID)).SetInternal(err)
 			}
@@ -83,6 +84,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue", func(c echo.Context) error {
+		ctx := context.Background()
 		issueFind := &api.IssueFind{}
 		projectIdStr := c.QueryParams().Get("project")
 		if projectIdStr != "" {
@@ -114,13 +116,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			issueFind.PrincipalId = &userId
 		}
-		list, err := s.IssueService.FindIssueList(context.Background(), issueFind)
+		list, err := s.IssueService.FindIssueList(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
 		for _, issue := range list {
-			if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {
+			if err := s.ComposeIssueRelationship(ctx, issue); err != nil {
 				return err
 			}
 		}
@@ -133,12 +135,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue/:issueId", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("issueId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueById(context.Background(), id)
+		issue, err := s.ComposeIssueById(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -154,6 +157,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/issue/:issueId", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("issueId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
@@ -170,7 +174,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issueFind := &api.IssueFind{
 			ID: &id,
 		}
-		issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
+		issue, err := s.IssueService.FindIssue(ctx, issueFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
@@ -178,7 +182,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
 
-		updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+		updatedIssue, err := s.IssueService.PatchIssue(ctx, issuePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue ID: %v", id)).SetInternal(err)
 		}
@@ -229,7 +233,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(payload),
 			}
-			_, err := s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+			_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 				issue: issue,
 			})
 			if err != nil {
@@ -237,7 +241,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue); err != nil {
+		if err := s.ComposeIssueRelationship(ctx, updatedIssue); err != nil {
 			return err
 		}
 
@@ -249,6 +253,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/issue/:issueId/status", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("issueId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
@@ -262,7 +267,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueById(context.Background(), id)
+		issue, err := s.ComposeIssueById(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -270,7 +275,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
 
-		updatedIssue, err := s.ChangeIssueStatus(context.Background(), issue, issueStatusPatch.Status, issueStatusPatch.UpdaterId, issueStatusPatch.Comment)
+		updatedIssue, err := s.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterId, issueStatusPatch.Comment)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
@@ -280,7 +285,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
-		if err := s.ComposeIssueRelationship(context.Background(), updatedIssue); err != nil {
+		if err := s.ComposeIssueRelationship(ctx, updatedIssue); err != nil {
 			return err
 		}
 
@@ -296,7 +301,7 @@ func (s *Server) ComposeIssueById(ctx context.Context, id int) (*api.Issue, erro
 	issueFind := &api.IssueFind{
 		ID: &id,
 	}
-	issue, err := s.IssueService.FindIssue(context.Background(), issueFind)
+	issue, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		return nil, err
 	}
@@ -311,17 +316,17 @@ func (s *Server) ComposeIssueById(ctx context.Context, id int) (*api.Issue, erro
 func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue) error {
 	var err error
 
-	issue.Creator, err = s.ComposePrincipalById(context.Background(), issue.CreatorId)
+	issue.Creator, err = s.ComposePrincipalById(ctx, issue.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	issue.Updater, err = s.ComposePrincipalById(context.Background(), issue.UpdaterId)
+	issue.Updater, err = s.ComposePrincipalById(ctx, issue.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	issue.Assignee, err = s.ComposePrincipalById(context.Background(), issue.AssigneeId)
+	issue.Assignee, err = s.ComposePrincipalById(ctx, issue.AssigneeId)
 	if err != nil {
 		return err
 	}
@@ -329,7 +334,7 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueId: &issue.ID,
 	}
-	list, err := s.IssueSubscriberService.FindIssueSubscriberList(context.Background(), issueSubscriberFind)
+	list, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
@@ -339,12 +344,12 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 		issue.SubscriberIdList = append(issue.SubscriberIdList, subscriber.SubscriberId)
 	}
 
-	issue.Project, err = s.ComposeProjectlById(context.Background(), issue.ProjectId)
+	issue.Project, err = s.ComposeProjectlById(ctx, issue.ProjectId)
 	if err != nil {
 		return err
 	}
 
-	issue.Pipeline, err = s.ComposePipelineById(context.Background(), issue.PipelineId)
+	issue.Pipeline, err = s.ComposePipelineById(ctx, issue.PipelineId)
 	if err != nil {
 		return err
 	}
@@ -362,7 +367,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	for _, stageCreate := range issueCreate.Pipeline.StageList {
 		stageCreate.CreatorId = creatorId
 		stageCreate.PipelineId = createdPipeline.ID
-		createdStage, err := s.StageService.CreateStage(context.Background(), &stageCreate)
+		createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stage for issue. Error %w", err)
 		}
@@ -408,7 +413,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				}
 				taskCreate.Payload = string(bytes)
 			}
-			_, err := s.TaskService.CreateTask(context.Background(), &taskCreate)
+			_, err := s.TaskService.CreateTask(ctx, &taskCreate)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
 			}
@@ -417,7 +422,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 
 	issueCreate.CreatorId = creatorId
 	issueCreate.PipelineId = createdPipeline.ID
-	issue, err := s.IssueService.CreateIssue(context.Background(), issueCreate)
+	issue, err := s.IssueService.CreateIssue(ctx, issueCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create issue. Error %w", err)
 	}
@@ -440,7 +445,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		Level:       api.ACTIVITY_INFO,
 		Payload:     string(bytes),
 	}
-	_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 		issue: issue,
 	})
 	if err != nil {
@@ -470,7 +475,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			Comment:     fmt.Sprintf("Created rollback issue %q", issue.Name),
 			Payload:     string(bytes),
 		}
-		_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 			issue: rollbackIssue,
 		})
 		if err != nil {
@@ -478,11 +483,11 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if err := s.ComposeIssueRelationship(context.Background(), issue); err != nil {
+	if err := s.ComposeIssueRelationship(ctx, issue); err != nil {
 		return nil, err
 	}
 
-	if _, err := s.ScheduleNextTaskIfNeeded(context.Background(), issue.Pipeline); err != nil {
+	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 
@@ -511,7 +516,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.ChangeTaskStatus(context.Background(), task, api.TaskCanceled, updaterId); err != nil {
+					if _, err := s.ChangeTaskStatus(ctx, task, api.TaskCanceled, updaterId); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
@@ -525,7 +530,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		UpdaterId: updaterId,
 		Status:    &pipelineStatus,
 	}
-	if _, err := s.PipelineService.PatchPipeline(context.Background(), pipelinePatch); err != nil {
+	if _, err := s.PipelineService.PatchPipeline(ctx, pipelinePatch); err != nil {
 		return nil, fmt.Errorf("failed to update issue status: %v, failed to update pipeline status: %w", issue.Name, err)
 	}
 
@@ -534,7 +539,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		UpdaterId: updaterId,
 		Status:    &newStatus,
 	}
-	updatedIssue, err := s.IssueService.PatchIssue(context.Background(), issuePatch)
+	updatedIssue, err := s.IssueService.PatchIssue(ctx, issuePatch)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			return nil, fmt.Errorf("failed to update issue status: %v, error: %w", issue.Name, err)
@@ -560,7 +565,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Payload:     string(payload),
 	}
 
-	_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{
+	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 		issue: updatedIssue,
 	})
 	if err != nil {
@@ -576,7 +581,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 			ReceiverId: issue.CreatorId,
 			ActivityId: activity_id,
 		}
-		_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
+		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 		if err != nil {
 			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorId, err)
 		}
@@ -587,7 +592,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 			ReceiverId: issue.AssigneeId,
 			ActivityId: activity_id,
 		}
-		_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
+		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 		if err != nil {
 			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeId, err)
 		}
@@ -599,7 +604,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 				ReceiverId: subscriberId,
 				ActivityId: activity_id,
 			}
-			_, err := s.InboxService.CreateInbox(context.Background(), inboxCreate)
+			_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 			if err != nil {
 				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriberId, err)
 			}

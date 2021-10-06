@@ -40,13 +40,13 @@ var (
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			return restoreDatabase(databaseType, username, password, hostname, port, database, file, tlsCfg)
+			return restoreDatabase(context.Background(), databaseType, username, password, hostname, port, database, file, tlsCfg)
 		},
 	}
 )
 
 // restoreDatabase restores the schema of a database instance.
-func restoreDatabase(databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig) error {
+func restoreDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig) error {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
@@ -67,6 +67,7 @@ func restoreDatabase(databaseType, username, password, hostname, port, database,
 		return fmt.Errorf("database type %q not supported; supported types: mysql, pg", databaseType)
 	}
 	db, err := db.Open(
+		ctx,
 		dbType,
 		db.DriverConfig{Logger: logger},
 		db.ConnectionConfig{
@@ -82,9 +83,9 @@ func restoreDatabase(databaseType, username, password, hostname, port, database,
 	if err != nil {
 		return err
 	}
-	defer db.Close(context.Background())
+	defer db.Close(ctx)
 
-	if err := db.Restore(context.Background(), sc); err != nil {
+	if err := db.Restore(ctx, sc); err != nil {
 		return fmt.Errorf("failed to restore from database dump %s got error: %w", file, err)
 	}
 	return nil

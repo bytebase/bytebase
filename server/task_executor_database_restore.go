@@ -58,7 +58,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	sourceDatabaseFind := &api.DatabaseFind{
 		ID: &backup.DatabaseId,
 	}
-	sourceDatabase, err := server.ComposeDatabaseByFind(context.Background(), sourceDatabaseFind)
+	sourceDatabase, err := server.ComposeDatabaseByFind(ctx, sourceDatabaseFind)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
 	}
@@ -67,7 +67,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		InstanceId: &task.InstanceId,
 		Name:       &payload.DatabaseName,
 	}
-	targetDatabase, err := server.ComposeDatabaseByFind(context.Background(), targetDatabaseFind)
+	targetDatabase, err := server.ComposeDatabaseByFind(ctx, targetDatabaseFind)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			return true, nil, fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
@@ -104,12 +104,12 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		UpdaterId:      api.SYSTEM_BOT_ID,
 		SourceBackupId: &backup.ID,
 	}
-	if _, err = server.DatabaseService.PatchDatabase(context.Background(), databasePatch); err != nil {
+	if _, err = server.DatabaseService.PatchDatabase(ctx, databasePatch); err != nil {
 		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
 	}
 
 	// Sync database schema after restore is completed.
-	server.SyncEngineVersionAndSchema(targetDatabase.Instance)
+	server.SyncEngineVersionAndSchema(ctx, targetDatabase.Instance)
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
@@ -120,7 +120,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 // restoreDatabase will restore the database from a backup
 func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := GetDatabaseDriver(instance, databaseName, exec.l)
+	driver, err := GetDatabaseDriver(ctx, instance, databaseName, exec.l)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success
 func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) (int64, string, error) {
-	targetDriver, err := GetDatabaseDriver(targetDatabase.Instance, targetDatabase.Name, logger)
+	targetDriver, err := GetDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, logger)
 	if err != nil {
 		return -1, "", err
 	}

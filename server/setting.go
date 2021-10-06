@@ -18,8 +18,9 @@ var (
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
+		ctx := context.Background()
 		find := &api.SettingFind{}
-		list, err := s.SettingService.FindSettingList(context.Background(), find)
+		list, err := s.SettingService.FindSettingList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch setting list").SetInternal(err)
 		}
@@ -35,7 +36,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		for _, setting := range filteredList {
-			if err := s.ComposeSettingRelationship(context.Background(), setting); err != nil {
+			if err := s.ComposeSettingRelationship(ctx, setting); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch setting relationship: %v", setting.Name)).SetInternal(err)
 			}
 		}
@@ -48,6 +49,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/setting/:name", func(c echo.Context) error {
+		ctx := context.Background()
 		settingPatch := &api.SettingPatch{
 			Name:      api.SettingName(c.Param("name")),
 			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
@@ -56,7 +58,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update setting request").SetInternal(err)
 		}
 
-		setting, err := s.SettingService.PatchSetting(context.Background(), settingPatch)
+		setting, err := s.SettingService.PatchSetting(ctx, settingPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Setting name not found: %s", settingPatch.Name))
@@ -80,7 +82,7 @@ func (s *Server) ComposeSettingRelationship(ctx context.Context, setting *api.Se
 		return err
 	}
 
-	setting.Updater, err = s.ComposePrincipalById(context.Background(), setting.UpdaterId)
+	setting.Updater, err = s.ComposePrincipalById(ctx, setting.UpdaterId)
 	if err != nil {
 		return err
 	}

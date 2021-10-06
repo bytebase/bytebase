@@ -49,8 +49,10 @@ func (s *AnomalyScanner) Run() error {
 					}
 				}()
 
+				ctx := context.Background()
+
 				environmentFind := &api.EnvironmentFind{}
-				environmentList, err := s.server.EnvironmentService.FindEnvironmentList(context.Background(), environmentFind)
+				environmentList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
@@ -58,7 +60,7 @@ func (s *AnomalyScanner) Run() error {
 
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
 				for _, env := range environmentList {
-					policy, err := s.server.PolicyService.GetBackupPlanPolicy(context.Background(), env.ID)
+					policy, err := s.server.PolicyService.GetBackupPlanPolicy(ctx, env.ID)
 					if err != nil {
 						s.l.Error("Failed to retrieve backup policy",
 							zap.String("environment", env.Name),
@@ -72,7 +74,7 @@ func (s *AnomalyScanner) Run() error {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				instanceList, err := s.server.InstanceService.FindInstanceList(context.Background(), instanceFind)
+				instanceList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
@@ -88,7 +90,7 @@ func (s *AnomalyScanner) Run() error {
 						}
 					}
 
-					if err := s.server.ComposeInstanceAdminDataSource(context.Background(), instance); err != nil {
+					if err := s.server.ComposeInstanceAdminDataSource(ctx, instance); err != nil {
 						s.l.Error("Failed to retrieve instance admin connection info",
 							zap.String("instance", instance.Name),
 							zap.Error(err))
@@ -116,12 +118,12 @@ func (s *AnomalyScanner) Run() error {
 							mu.Unlock()
 						}()
 
-						s.checkInstanceAnomaly(context.Background(), instance)
+						s.checkInstanceAnomaly(ctx, instance)
 
 						databaseFind := &api.DatabaseFind{
 							InstanceId: &instance.ID,
 						}
-						dbList, err := s.server.DatabaseService.FindDatabaseList(context.Background(), databaseFind)
+						dbList, err := s.server.DatabaseService.FindDatabaseList(ctx, databaseFind)
 						if err != nil {
 							s.l.Error("Failed to retrieve database list",
 								zap.String("instance", instance.Name),
@@ -129,8 +131,8 @@ func (s *AnomalyScanner) Run() error {
 							return
 						}
 						for _, database := range dbList {
-							s.checkDatabaseAnomaly(context.Background(), instance, database)
-							s.checkBackupAnomaly(context.Background(), instance, database, backupPlanPolicyMap)
+							s.checkDatabaseAnomaly(ctx, instance, database)
+							s.checkBackupAnomaly(ctx, instance, database, backupPlanPolicyMap)
 						}
 					}(instance)
 
@@ -147,7 +149,7 @@ func (s *AnomalyScanner) Run() error {
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
-	driver, err := GetDatabaseDriver(instance, "", s.l)
+	driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
 
 	// Check connection
 	if err != nil {
@@ -227,7 +229,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 }
 
 func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := GetDatabaseDriver(instance, database.Name, s.l)
+	driver, err := GetDatabaseDriver(ctx, instance, database.Name, s.l)
 
 	// Check connection
 	if err != nil {

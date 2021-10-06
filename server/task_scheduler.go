@@ -49,12 +49,14 @@ func (s *TaskScheduler) Run() error {
 					}
 				}()
 
+				ctx := context.Background()
+
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.Pipeline_Open
 				pipelineFind := &api.PipelineFind{
 					Status: &pipelineStatus,
 				}
-				pipelineList, err := s.server.PipelineService.FindPipelineList(context.Background(), pipelineFind)
+				pipelineList, err := s.server.PipelineService.FindPipelineList(ctx, pipelineFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
 					return
@@ -63,7 +65,7 @@ func (s *TaskScheduler) Run() error {
 					if pipeline.ID == api.ONBOARDING_PIPELINE_ID {
 						continue
 					}
-					if err := s.server.ComposePipelineRelationship(context.Background(), pipeline); err != nil {
+					if err := s.server.ComposePipelineRelationship(ctx, pipeline); err != nil {
 						s.l.Error("Failed to fetch pipeline relationship",
 							zap.Int("id", pipeline.ID),
 							zap.String("name", pipeline.Name),
@@ -72,7 +74,7 @@ func (s *TaskScheduler) Run() error {
 						continue
 					}
 
-					if _, err := s.server.ScheduleNextTaskIfNeeded(context.Background(), pipeline); err != nil {
+					if _, err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
 						s.l.Error("Failed to schedule next running task",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),
@@ -85,7 +87,7 @@ func (s *TaskScheduler) Run() error {
 				taskFind := &api.TaskFind{
 					StatusList: &taskStatusList,
 				}
-				taskList, err := s.server.TaskService.FindTaskList(context.Background(), taskFind)
+				taskList, err := s.server.TaskService.FindTaskList(ctx, taskFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
@@ -108,7 +110,7 @@ func (s *TaskScheduler) Run() error {
 
 					// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
 					// We may optimize this in the future since only some relationship info is needed by the executor
-					if err := s.server.ComposeTaskRelationship(context.Background(), task); err != nil {
+					if err := s.server.ComposeTaskRelationship(ctx, task); err != nil {
 						s.l.Error("Failed to fetch task relationship",
 							zap.Int("id", task.ID),
 							zap.String("name", task.Name),
@@ -131,7 +133,7 @@ func (s *TaskScheduler) Run() error {
 							delete(runningTasks, task.ID)
 							mu.Unlock()
 						}()
-						done, result, err := executor.RunOnce(context.Background(), s.server, task)
+						done, result, err := executor.RunOnce(ctx, s.server, task)
 						if done {
 							if err == nil {
 								bytes, err := json.Marshal(*result)
@@ -152,7 +154,7 @@ func (s *TaskScheduler) Run() error {
 									Code:      &code,
 									Result:    &result,
 								}
-								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
+								_, err = s.server.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 								if err != nil {
 									s.l.Error("Failed to mark task as DONE",
 										zap.Int("id", task.ID),
@@ -187,7 +189,7 @@ func (s *TaskScheduler) Run() error {
 									Code:      &code,
 									Result:    &result,
 								}
-								_, err = s.server.ChangeTaskStatusWithPatch(context.Background(), task, taskStatusPatch)
+								_, err = s.server.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 								if err != nil {
 									s.l.Error("Failed to mark task as FAILED",
 										zap.Int("id", task.ID),
@@ -248,7 +250,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		instanceFind := &api.InstanceFind{
 			ID: &task.InstanceId,
 		}
-		instance, err := s.server.InstanceService.FindInstance(context.Background(), instanceFind)
+		instance, err := s.server.InstanceService.FindInstance(ctx, instanceFind)
 		if err != nil {
 			return nil, err
 		}

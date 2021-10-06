@@ -57,7 +57,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 	if payload.VCSPushEvent == nil {
 		mi.Engine = db.UI
-		creator, err := server.ComposePrincipalById(context.Background(), task.CreatorId)
+		creator, err := server.ComposePrincipalById(ctx, task.CreatorId)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -76,7 +76,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		repositoryFind := &api.RepositoryFind{
 			ProjectId: &task.Database.ProjectId,
 		}
-		repository, err = server.RepositoryService.FindRepository(context.Background(), repositoryFind)
+		repository, err = server.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
@@ -126,11 +126,11 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, err
 	}
 
-	driver, err := GetDatabaseDriver(task.Instance, databaseName, exec.l)
+	driver, err := GetDatabaseDriver(ctx, task.Instance, databaseName, exec.l)
 	if err != nil {
 		return true, nil, err
 	}
-	defer driver.Close(context.Background())
+	defer driver.Close(ctx)
 
 	exec.l.Debug("Start sql migration...",
 		zap.String("instance", task.Instance.Name),
@@ -159,7 +159,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		repository.VCS, err = server.ComposeVCSById(context.Background(), repository.VCSId)
+		repository.VCS, err = server.ComposeVCSById(ctx, repository.VCSId)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
@@ -214,7 +214,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 				Payload: string(payload),
 			}
 
-			_, err = server.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			_, err = server.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				exec.l.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),

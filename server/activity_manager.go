@@ -57,7 +57,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		}
 
 		if postInbox {
-			if err := m.s.PostInboxIssueActivity(context.Background(), meta.issue, activity.ID); err != nil {
+			if err := m.s.PostInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
 				return nil, err
 			}
 		}
@@ -66,7 +66,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			ProjectId:    &meta.issue.ProjectId,
 			ActivityType: &create.Type,
 		}
-		hookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(context.Background(), hookFind)
+		hookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(ctx, hookFind)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
@@ -87,7 +87,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			principalFind := &api.PrincipalFind{
 				ID: &create.CreatorId,
 			}
-			updater, err := m.s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+			updater, err := m.s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 			}
@@ -139,7 +139,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 									principalFind := &api.PrincipalFind{
 										ID: &oldId,
 									}
-									oldAssignee, err = m.s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+									oldAssignee, err = m.s.PrincipalService.FindPrincipal(ctx, principalFind)
 									if err != nil {
 										m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 											zap.String("issue_name", meta.issue.Name),
@@ -161,7 +161,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 									principalFind := &api.PrincipalFind{
 										ID: &newId,
 									}
-									newAssignee, err = m.s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+									newAssignee, err = m.s.PrincipalService.FindPrincipal(ctx, principalFind)
 									if err != nil {
 										m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 											zap.String("issue_name", meta.issue.Name),
@@ -198,7 +198,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 						taskFind := &api.TaskFind{
 							ID: &update.TaskId,
 						}
-						task, err := m.s.TaskService.FindTask(context.Background(), taskFind)
+						task, err := m.s.TaskService.FindTask(ctx, taskFind)
 						if err != nil {
 							m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 								zap.String("issue_name", meta.issue.Name),

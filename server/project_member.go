@@ -15,6 +15,7 @@ import (
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	g.POST("/project/:projectId/member", func(c echo.Context) error {
+		ctx := context.Background()
 		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -28,7 +29,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project membership request").SetInternal(err)
 		}
 
-		projectMember, err := s.ProjectMemberService.CreateProjectMember(context.Background(), projectMemberCreate)
+		projectMember, err := s.ProjectMemberService.CreateProjectMember(ctx, projectMemberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, "User is already a project member")
@@ -36,7 +37,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project member").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember); err != nil {
+		if err := s.ComposeProjectMemberRelationship(ctx, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created project membership relationship").SetInternal(err)
 		}
 
@@ -49,7 +50,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Comment: fmt.Sprintf("Granted %s to %s (%s).",
 					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
 			}
-			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				s.l.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectId),
@@ -68,6 +69,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectId/member/:memberId", func(c echo.Context) error {
+		ctx := context.Background()
 		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -78,7 +80,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberId"))).SetInternal(err)
 		}
 
-		existingProjectMember, err := s.ProjectMemberService.FindProjectMember(context.Background(), &api.ProjectMemberFind{ID: &id})
+		existingProjectMember, err := s.ProjectMemberService.FindProjectMember(ctx, &api.ProjectMemberFind{ID: &id})
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
@@ -94,7 +96,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)
 		}
 
-		projectMember, err := s.ProjectMemberService.PatchProjectMember(context.Background(), projectMemberPatch)
+		projectMember, err := s.ProjectMemberService.PatchProjectMember(ctx, projectMemberPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
@@ -102,7 +104,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project membership ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectMemberRelationship(context.Background(), projectMember); err != nil {
+		if err := s.ComposeProjectMemberRelationship(ctx, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project membership relationship").SetInternal(err)
 		}
 
@@ -115,7 +117,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Comment: fmt.Sprintf("Changed %s (%s) from %s to %s.",
 					projectMember.Principal.Name, projectMember.Principal.Email, existingProjectMember.Role, projectMember.Role),
 			}
-			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				s.l.Warn("Failed to create project activity after updating member role",
 					zap.Int("project_id", projectId),
@@ -135,6 +137,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/project/:projectId/member/:memberId", func(c echo.Context) error {
+		ctx := context.Background()
 		projectId, err := strconv.Atoi(c.Param("projectId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
@@ -145,7 +148,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberId"))).SetInternal(err)
 		}
 
-		projectMember, err := s.ProjectMemberService.FindProjectMember(context.Background(), &api.ProjectMemberFind{ID: &id})
+		projectMember, err := s.ProjectMemberService.FindProjectMember(ctx, &api.ProjectMemberFind{ID: &id})
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
@@ -157,7 +160,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
-		err = s.ProjectMemberService.DeleteProjectMember(context.Background(), projectMemberDelete)
+		err = s.ProjectMemberService.DeleteProjectMember(ctx, projectMemberDelete)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
@@ -166,7 +169,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		{
-			projectMember.Principal, err = s.ComposePrincipalById(context.Background(), projectMember.PrincipalId)
+			projectMember.Principal, err = s.ComposePrincipalById(ctx, projectMember.PrincipalId)
 			if err == nil {
 				activityCreate := &api.ActivityCreate{
 					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
@@ -176,7 +179,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Comment: fmt.Sprintf("Revoked %s from %s (%s).",
 						projectMember.Role, projectMember.Principal.Name, projectMember.Principal.Email),
 				}
-				_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			}
 			if err != nil {
 				s.l.Warn("Failed to create project activity after deleting member",
@@ -214,17 +217,17 @@ func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projec
 func (s *Server) ComposeProjectMemberRelationship(ctx context.Context, projectMember *api.ProjectMember) error {
 	var err error
 
-	projectMember.Creator, err = s.ComposePrincipalById(context.Background(), projectMember.CreatorId)
+	projectMember.Creator, err = s.ComposePrincipalById(ctx, projectMember.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Updater, err = s.ComposePrincipalById(context.Background(), projectMember.UpdaterId)
+	projectMember.Updater, err = s.ComposePrincipalById(ctx, projectMember.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Principal, err = s.ComposePrincipalById(context.Background(), projectMember.PrincipalId)
+	projectMember.Principal, err = s.ComposePrincipalById(ctx, projectMember.PrincipalId)
 	if err != nil {
 		return err
 	}

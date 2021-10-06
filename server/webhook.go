@@ -27,6 +27,7 @@ var (
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
+		ctx := context.Background()
 		var b []byte
 		b, err := io.ReadAll(c.Request().Body)
 		if err != nil {
@@ -47,7 +48,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			WebhookEndpointId: &webhookEndpointId,
 		}
-		repository, err := s.RepositoryService.FindRepository(context.Background(), repositoryFind)
+		repository, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointId))
@@ -55,7 +56,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointId)).SetInternal(err)
 		}
 
-		if err := s.ComposeRepositoryRelationship(context.Background(), repository); err != nil {
+		if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 		}
 
@@ -140,7 +141,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
 						s.l.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
 					}
@@ -175,7 +176,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					ProjectId: &repository.ProjectId,
 					Name:      &mi.Database,
 				}
-				databaseList, err := s.ComposeDatabaseListByFind(context.Background(), databaseFind)
+				databaseList, err := s.ComposeDatabaseListByFind(ctx, databaseFind)
 				if err != nil {
 					createIgnoredFileActivity(fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database))
 					continue
@@ -228,7 +229,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 						// Load pipeline approval policy per environment.
 						if _, ok := pipelineApprovalByEnv[database.Instance.EnvironmentId]; !ok {
-							p, err := s.PolicyService.GetPipelineApprovalPolicy(context.Background(), database.Instance.EnvironmentId)
+							p, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentId)
 							if err != nil {
 								createIgnoredFileActivity(fmt.Errorf("failed to find pipeline approval policy for environment %v", database.Instance.EnvironmentId))
 								continue
@@ -291,7 +292,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					AssigneeId:  api.SYSTEM_BOT_ID,
 				}
 
-				issue, err := s.CreateIssue(context.Background(), issueCreate, api.SYSTEM_BOT_ID)
+				issue, err := s.CreateIssue(ctx, issueCreate, api.SYSTEM_BOT_ID)
 				if err != nil {
 					s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
 						zap.String("file", added))
@@ -319,7 +320,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 					}

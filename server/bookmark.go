@@ -14,6 +14,7 @@ import (
 
 func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	g.POST("/bookmark", func(c echo.Context) error {
+		ctx := context.Background()
 		bookmarkCreate := &api.BookmarkCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, bookmarkCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create bookmark request").SetInternal(err)
@@ -21,7 +22,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 
 		bookmarkCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
 
-		bookmark, err := s.BookmarkService.CreateBookmark(context.Background(), bookmarkCreate)
+		bookmark, err := s.BookmarkService.CreateBookmark(ctx, bookmarkCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Bookmark already exists: %s", bookmarkCreate.Link))
@@ -29,7 +30,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create bookmark").SetInternal(err)
 		}
 
-		if err := s.ComposeBookmarkRelationship(context.Background(), bookmark); err != nil {
+		if err := s.ComposeBookmarkRelationship(ctx, bookmark); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created bookmark relationship").SetInternal(err)
 		}
 
@@ -41,17 +42,18 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 
 	g.GET("/bookmark", func(c echo.Context) error {
+		ctx := context.Background()
 		creatorId := c.Get(GetPrincipalIdContextKey()).(int)
 		bookmarkFind := &api.BookmarkFind{
 			CreatorId: &creatorId,
 		}
-		list, err := s.BookmarkService.FindBookmarkList(context.Background(), bookmarkFind)
+		list, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch bookmark list").SetInternal(err)
 		}
 
 		for _, bookmark := range list {
-			if err := s.ComposeBookmarkRelationship(context.Background(), bookmark); err != nil {
+			if err := s.ComposeBookmarkRelationship(ctx, bookmark); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch bookmark relationship: %v", bookmark.Name)).SetInternal(err)
 			}
 		}
@@ -64,6 +66,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/bookmark/:bookmarkId", func(c echo.Context) error {
+		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("bookmarkId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("bookmarkId"))).SetInternal(err)
@@ -73,7 +76,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
 		}
-		err = s.BookmarkService.DeleteBookmark(context.Background(), bookmarkDelete)
+		err = s.BookmarkService.DeleteBookmark(ctx, bookmarkDelete)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", id))
@@ -95,7 +98,7 @@ func (s *Server) ComposeBookmarkRelationship(ctx context.Context, bookmark *api.
 		return err
 	}
 
-	bookmark.Updater, err = s.ComposePrincipalById(context.Background(), bookmark.UpdaterId)
+	bookmark.Updater, err = s.ComposePrincipalById(ctx, bookmark.UpdaterId)
 	if err != nil {
 		return err
 	}
