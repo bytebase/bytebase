@@ -44,11 +44,11 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := GetDatabaseDriver(task.Instance, "", exec.l)
+	driver, err := GetDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
 		return true, nil, err
 	}
-	defer driver.Close(context.Background())
+	defer driver.Close(ctx)
 
 	var statement string
 	switch instance.Engine {
@@ -77,7 +77,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Description:    "Create database",
 		CreateDatabase: true,
 	}
-	creator, err := server.ComposePrincipalById(context.Background(), task.CreatorId)
+	creator, err := server.ComposePrincipalById(ctx, task.CreatorId)
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.

@@ -15,6 +15,7 @@ import (
 
 func (s *Server) registerSqlRoutes(g *echo.Group) {
 	g.POST("/sql/ping", func(c echo.Context) error {
+		ctx := context.Background()
 		connectionInfo := &api.ConnectionInfo{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
@@ -26,7 +27,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		// not transfer the password back to client, thus the client will pass the instanceId to
 		// let server retrieve the password.
 		if password == "" && connectionInfo.InstanceId != nil {
-			adminPassword, err := s.FindInstanceAdminPasswordById(context.Background(), *connectionInfo.InstanceId)
+			adminPassword, err := s.FindInstanceAdminPasswordById(ctx, *connectionInfo.InstanceId)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceId)).SetInternal(err)
 			}
@@ -34,6 +35,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		}
 
 		db, err := db.Open(
+			ctx,
 			connectionInfo.Engine,
 			db.DriverConfig{Logger: s.l},
 			db.ConnectionConfig{
@@ -57,8 +59,8 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			}
 			resultSet.Error = fmt.Errorf("failed to connect %q for user %q (using password: %s), %w", hostPort, connectionInfo.Username, usePassword, err).Error()
 		} else {
-			defer db.Close(context.Background())
-			if err := db.Ping(context.Background()); err != nil {
+			defer db.Close(ctx)
+			if err := db.Ping(ctx); err != nil {
 				resultSet.Error = err.Error()
 			}
 		}
@@ -71,12 +73,13 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 	})
 
 	g.POST("/sql/syncschema", func(c echo.Context) error {
+		ctx := context.Background()
 		sync := &api.SqlSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(context.Background(), sync.InstanceId)
+		instance, err := s.ComposeInstanceById(ctx, sync.InstanceId)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceId))
@@ -84,7 +87,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceId)).SetInternal(err)
 		}
 
-		resultSet := s.SyncEngineVersionAndSchema(instance)
+		resultSet := s.SyncEngineVersionAndSchema(ctx, instance)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
@@ -94,24 +97,24 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.SqlResultSet) {
+func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SqlResultSet) {
 	resultSet := &api.SqlResultSet{}
 	err := func() error {
-		driver, err := GetDatabaseDriver(instance, "", s.l)
+		driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return err
 		}
-		defer driver.Close(context.Background())
+		defer driver.Close(ctx)
 
 		// Sync engine version
-		version, err := driver.GetVersion(context.Background())
+		version, err := driver.GetVersion(ctx)
 		if err != nil {
 			return err
 		}
 		// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
 		// to avoid changing the updated_ts
 		if version != instance.EngineVersion {
-			_, err := s.InstanceService.PatchInstance(context.Background(), &api.InstancePatch{
+			_, err := s.InstanceService.PatchInstance(ctx, &api.InstancePatch{
 				ID:            instance.ID,
 				UpdaterId:     api.SYSTEM_BOT_ID,
 				EngineVersion: &version,
@@ -123,12 +126,12 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 		}
 
 		// Sync schema
-		userList, schemaList, err := driver.SyncSchema(context.Background())
+		userList, schemaList, err := driver.SyncSchema(ctx)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-				createTable, err := s.TableService.CreateTable(context.Background(), tableCreate)
+				createTable, err := s.TableService.CreateTable(ctx, tableCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
@@ -139,7 +142,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 			}
 
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
-				_, err := s.ColumnService.CreateColumn(context.Background(), columnCreate)
+				_, err := s.ColumnService.CreateColumn(ctx, columnCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
@@ -150,7 +153,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 			}
 
 			var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
-				_, err := s.IndexService.CreateIndex(context.Background(), indexCreate)
+				_, err := s.IndexService.CreateIndex(ctx, indexCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
@@ -188,7 +191,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 						TableId:    &upsertedTable.ID,
 						Name:       &column.Name,
 					}
-					_, err := s.ColumnService.FindColumn(context.Background(), columnFind)
+					_, err := s.ColumnService.FindColumn(ctx, columnFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							columnCreate := &api.ColumnCreate{
@@ -221,7 +224,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
-					_, err := s.IndexService.FindIndex(context.Background(), indexFind)
+					_, err := s.IndexService.FindIndex(ctx, indexFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							indexCreate := &api.IndexCreate{
@@ -250,7 +253,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 			instanceUserFind := &api.InstanceUserFind{
 				InstanceId: instance.ID,
 			}
-			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(context.Background(), instanceUserFind)
+			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
 			}
@@ -263,7 +266,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 					Name:       user.Name,
 					Grant:      user.Grant,
 				}
-				_, err := s.InstanceUserService.UpsertInstanceUser(context.Background(), userUpsert)
+				_, err := s.InstanceUserService.UpsertInstanceUser(ctx, userUpsert)
 				if err != nil {
 					return fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
 				}
@@ -283,7 +286,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 					userDelete := &api.InstanceUserDelete{
 						ID: user.ID,
 					}
-					err := s.InstanceUserService.DeleteInstanceUser(context.Background(), userDelete)
+					err := s.InstanceUserService.DeleteInstanceUser(ctx, userDelete)
 					if err != nil {
 						return fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
 					}
@@ -304,7 +307,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 			databaseFind := &api.DatabaseFind{
 				InstanceId: &instance.ID,
 			}
-			dbList, err := s.DatabaseService.FindDatabaseList(context.Background(), databaseFind)
+			dbList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
 			if err != nil {
 				return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
 			}
@@ -327,7 +330,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
 					}
-					database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
+					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
@@ -338,7 +341,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 					tableDelete := &api.TableDelete{
 						DatabaseId: database.ID,
 					}
-					err = s.TableService.DeleteTable(context.Background(), tableDelete)
+					err = s.TableService.DeleteTable(ctx, tableDelete)
 					if err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, database.Name, err)
 					}
@@ -363,7 +366,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 						TimezoneName:   z,
 						TimezoneOffset: offset,
 					}
-					database, err := s.DatabaseService.CreateDatabase(context.Background(), databaseCreate)
+					database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 					if err != nil {
 						if common.ErrorCode(err) == common.Conflict {
 							return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
@@ -398,7 +401,7 @@ func (s *Server) SyncEngineVersionAndSchema(instance *api.Instance) (rs *api.Sql
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
 					}
-					database, err := s.DatabaseService.PatchDatabase(context.Background(), databasePatch)
+					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)

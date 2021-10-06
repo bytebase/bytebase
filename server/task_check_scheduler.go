@@ -49,12 +49,14 @@ func (s *TaskCheckScheduler) Run() error {
 					}
 				}()
 
+				ctx := context.Background()
+
 				// Inspect all running task checks
 				taskCheckRunStatusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
 				taskCheckRunFind := &api.TaskCheckRunFind{
 					StatusList: &taskCheckRunStatusList,
 				}
-				taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(context.Background(), taskCheckRunFind)
+				taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
@@ -85,7 +87,7 @@ func (s *TaskCheckScheduler) Run() error {
 							delete(runningTaskChecks, taskCheckRun.ID)
 							mu.Unlock()
 						}()
-						checkResultList, err := executor.Run(context.Background(), s.server, taskCheckRun)
+						checkResultList, err := executor.Run(ctx, s.server, taskCheckRun)
 
 						if err == nil {
 							bytes, err := json.Marshal(api.TaskCheckRunResultPayload{
@@ -108,7 +110,7 @@ func (s *TaskCheckScheduler) Run() error {
 								Code:      common.Ok,
 								Result:    string(bytes),
 							}
-							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(context.Background(), taskCheckRunStatusPatch)
+							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
 								s.l.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
@@ -144,7 +146,7 @@ func (s *TaskCheckScheduler) Run() error {
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),
 							}
-							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(context.Background(), taskCheckRunStatusPatch)
+							_, err = s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
 								s.l.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
@@ -185,7 +187,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		databaseFind := &api.DatabaseFind{
 			ID: task.DatabaseId,
 		}
-		database, err := s.server.ComposeDatabaseByFind(context.Background(), databaseFind)
+		database, err := s.server.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			return nil, err
 		}

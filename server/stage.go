@@ -10,7 +10,7 @@ func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId in
 	stageFind := &api.StageFind{
 		PipelineId: &pipelineId,
 	}
-	stageList, err := s.StageService.FindStageList(context.Background(), stageFind)
+	stageList, err := s.StageService.FindStageList(ctx, stageFind)
 	if err != nil {
 		return nil, err
 	}
@@ -26,22 +26,22 @@ func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId in
 
 func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage) error {
 	var err error
-	stage.Creator, err = s.ComposePrincipalById(context.Background(), stage.CreatorId)
+	stage.Creator, err = s.ComposePrincipalById(ctx, stage.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	stage.Updater, err = s.ComposePrincipalById(context.Background(), stage.UpdaterId)
+	stage.Updater, err = s.ComposePrincipalById(ctx, stage.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	stage.Environment, err = s.ComposeEnvironmentById(context.Background(), stage.EnvironmentId)
+	stage.Environment, err = s.ComposeEnvironmentById(ctx, stage.EnvironmentId)
 	if err != nil {
 		return err
 	}
 
-	stage.TaskList, err = s.ComposeTaskListByPipelineAndStageId(context.Background(), stage.PipelineId, stage.ID)
+	stage.TaskList, err = s.ComposeTaskListByPipelineAndStageId(ctx, stage.PipelineId, stage.ID)
 	if err != nil {
 		return err
 	}

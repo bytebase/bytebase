@@ -15,6 +15,7 @@ import (
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
 	g.POST("/auth/login", func(c echo.Context) error {
+		ctx := context.Background()
 		login := &api.Login{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
@@ -23,7 +24,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		principalFind := &api.PrincipalFind{
 			Email: &login.Email,
 		}
-		user, err := s.PrincipalService.FindPrincipal(context.Background(), principalFind)
+		user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
@@ -34,7 +35,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			PrincipalId: &user.ID,
 		}
-		member, err := s.MemberService.FindMember(context.Background(), memberFind)
+		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", login.Email))
@@ -74,6 +75,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 
 	g.POST("/auth/signup", func(c echo.Context) error {
+		ctx := context.Background()
 		signup := &api.Signup{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, signup); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted signup request").SetInternal(err)
@@ -92,7 +94,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			PasswordHash: string(passwordHash),
 		}
 
-		user, err := s.PrincipalService.CreatePrincipal(context.Background(), principalCreate)
+		user, err := s.PrincipalService.CreatePrincipal(ctx, principalCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signup.Email))
@@ -104,7 +106,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		find := &api.MemberFind{
 			Role: &findRole,
 		}
-		list, err := s.MemberService.FindMemberList(context.Background(), find)
+		list, err := s.MemberService.FindMemberList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
 		}
@@ -121,7 +123,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			PrincipalId: user.ID,
 		}
 
-		member, err := s.MemberService.CreateMember(context.Background(), memberCreate)
+		member, err := s.MemberService.CreateMember(ctx, memberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signup.Email))
@@ -147,7 +149,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
 			}
-			_, err = s.ActivityManager.CreateActivity(context.Background(), activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create member: %d", member.ID)).SetInternal(err)
 			}

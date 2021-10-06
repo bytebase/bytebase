@@ -199,7 +199,7 @@ func start() {
 	}()
 
 	// Execute program.
-	if err := m.Run(); err != nil {
+	if err := m.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
 			m.l.Error(err.Error())
 			m.Close()
@@ -231,7 +231,7 @@ func newMain() *main {
 	}
 }
 
-func initSetting(settingService api.SettingService) (*config, error) {
+func initSetting(ctx context.Context, settingService api.SettingService) (*config, error) {
 	result := &config{}
 	{
 		configCreate := &api.SettingCreate{
@@ -240,7 +240,7 @@ func initSetting(settingService api.SettingService) (*config, error) {
 			Value:       common.RandomString(SECRET_LENGTH),
 			Description: "Random string used to sign the JWT auth token.",
 		}
-		config, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
+		config, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +254,7 @@ func initSetting(settingService api.SettingService) (*config, error) {
 			Value:       "",
 			Description: "URL for the external console (e.g. phpMyAdmin).",
 		}
-		_, err := settingService.CreateSettingIfNotExist(context.Background(), configCreate)
+		_, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
 		if err != nil {
 			return nil, err
 		}
@@ -263,14 +263,14 @@ func initSetting(settingService api.SettingService) (*config, error) {
 	return result, nil
 }
 
-func (m *main) Run() error {
+func (m *main) Run(ctx context.Context) error {
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
 	settingService := store.NewSettingService(m.l, db)
-	config, err := initSetting(settingService)
+	config, err := initSetting(ctx, settingService)
 	if err != nil {
 		return fmt.Errorf("failed to init config: %w", err)
 	}

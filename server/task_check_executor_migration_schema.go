@@ -28,12 +28,12 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
 
-	instance, err := server.ComposeInstanceById(context.Background(), task.InstanceId)
+	instance, err := server.ComposeInstanceById(ctx, task.InstanceId)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}
 
-	driver, err := GetDatabaseDriver(instance, "", exec.l)
+	driver, err := GetDatabaseDriver(ctx, instance, "", exec.l)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

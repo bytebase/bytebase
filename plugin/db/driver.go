@@ -303,7 +303,7 @@ type ConnectionContext struct {
 type Driver interface {
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
-	Open(dbType Type, config ConnectionConfig, ctx ConnectionContext) (Driver, error)
+	Open(ctx context.Context, dbType Type, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
@@ -346,7 +346,7 @@ func Register(dbType Type, f DriverFunc) {
 }
 
 // Open opens a database specified by its database driver type and connection config
-func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, ctx ConnectionContext) (Driver, error) {
+func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
@@ -354,13 +354,13 @@ func Open(dbType Type, driverConfig DriverConfig, connectionConfig ConnectionCon
 		return nil, fmt.Errorf("db: unknown driver %v", dbType)
 	}
 
-	driver, err := f(driverConfig).Open(dbType, connectionConfig, ctx)
+	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig, connCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := driver.Ping(context.Background()); err != nil {
-		driver.Close(context.Background())
+	if err := driver.Ping(ctx); err != nil {
+		driver.Close(ctx)
 		return nil, err
 	}
 

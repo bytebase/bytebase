@@ -10,7 +10,7 @@ func (s *Server) ComposePipelineById(ctx context.Context, id int) (*api.Pipeline
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
-	pipeline, err := s.PipelineService.FindPipeline(context.Background(), pipelineFind)
+	pipeline, err := s.PipelineService.FindPipeline(ctx, pipelineFind)
 	if err != nil {
 		return nil, err
 	}
@@ -25,17 +25,17 @@ func (s *Server) ComposePipelineById(ctx context.Context, id int) (*api.Pipeline
 func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
-	pipeline.Creator, err = s.ComposePrincipalById(context.Background(), pipeline.CreatorId)
+	pipeline.Creator, err = s.ComposePrincipalById(ctx, pipeline.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	pipeline.Updater, err = s.ComposePrincipalById(context.Background(), pipeline.UpdaterId)
+	pipeline.Updater, err = s.ComposePrincipalById(ctx, pipeline.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	pipeline.StageList, err = s.ComposeStageListByPipelineId(context.Background(), pipeline.ID)
+	pipeline.StageList, err = s.ComposeStageListByPipelineId(ctx, pipeline.ID)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 				if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SYSTEM_BOT_ID, skipIfAlreadyTerminated); err != nil {
 					return nil, err
 				}
-				updatedTask, err := s.TaskScheduler.ScheduleIfNeeded(context.Background(), task)
+				updatedTask, err := s.TaskScheduler.ScheduleIfNeeded(ctx, task)
 				if err != nil {
 					return nil, err
 				}

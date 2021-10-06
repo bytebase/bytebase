@@ -193,7 +193,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 	activityFind := &api.ActivityFind{
 		ID: &activityId,
 	}
-	inbox.Activity, err = s.activityService.FindActivity(context.Background(), activityFind)
+	inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -307,7 +307,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 		activityFind := &api.ActivityFind{
 			ID: &activityId,
 		}
-		inbox.Activity, err = s.activityService.FindActivity(context.Background(), activityFind)
+		inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
 		if err != nil {
 			return nil, FormatError(err)
 		}

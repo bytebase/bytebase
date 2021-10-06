@@ -36,7 +36,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
 
-	driver, err := GetDatabaseDriver(database.Instance, database.Name, exec.l)
+	driver, err := GetDatabaseDriver(ctx, database.Instance, database.Name, exec.l)
 	if err != nil {
 		return []api.TaskCheckResult{
 			{

@@ -203,7 +203,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
-func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if (config.TlsConfig.SslCert == "" && config.TlsConfig.SslKey != "") ||
 		(config.TlsConfig.SslCert != "" && config.TlsConfig.SslKey == "") {
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
@@ -230,7 +230,7 @@ func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.Co
 	}
 	driver.db = db
 	driver.baseDSN = dsn
-	driver.connectionCtx = ctx
+	driver.connectionCtx = connCtx
 
 	return driver, nil
 }

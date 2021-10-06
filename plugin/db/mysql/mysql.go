@@ -51,7 +51,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
-func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -86,8 +86,8 @@ func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.Co
 	}
 	driver.l.Debug("Opening MySQL driver",
 		zap.String("dsn", loggedDSN),
-		zap.String("environment", ctx.EnvironmentName),
-		zap.String("database", ctx.InstanceName),
+		zap.String("environment", connCtx.EnvironmentName),
+		zap.String("database", connCtx.InstanceName),
 	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -95,7 +95,7 @@ func (driver *Driver) Open(dbType db.Type, config db.ConnectionConfig, ctx db.Co
 	}
 	driver.dbType = dbType
 	driver.db = db
-	driver.connectionCtx = ctx
+	driver.connectionCtx = connCtx
 
 	return driver, nil
 }

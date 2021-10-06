@@ -13,6 +13,7 @@ import (
 
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	g.PATCH("/policy/environment/:environmentId", func(c echo.Context) error {
+		ctx := context.Background()
 		environmentID, err := strconv.Atoi(c.Param("environmentId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -30,12 +31,12 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
 
-		policy, err := s.PolicyService.UpsertPolicy(context.Background(), policyUpsert)
+		policy, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
 		}
 
-		if err := s.ComposePolicyRelationship(context.Background(), policy); err != nil {
+		if err := s.ComposePolicyRelationship(ctx, policy); err != nil {
 			return err
 		}
 
@@ -47,6 +48,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 
 	g.GET("/policy/environment/:environmentId", func(c echo.Context) error {
+		ctx := context.Background()
 		environmentID, err := strconv.Atoi(c.Param("environmentId"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -59,12 +61,12 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyFind.Type = &pType
 		policyFind.EnvironmentId = &environmentID
 
-		policy, err := s.PolicyService.FindPolicy(context.Background(), policyFind)
+		policy, err := s.PolicyService.FindPolicy(ctx, policyFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy for type %q", pType)).SetInternal(err)
 		}
 
-		if err := s.ComposePolicyRelationship(context.Background(), policy); err != nil {
+		if err := s.ComposePolicyRelationship(ctx, policy); err != nil {
 			return err
 		}
 
@@ -79,17 +81,17 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 func (s *Server) ComposePolicyRelationship(ctx context.Context, policy *api.Policy) error {
 	var err error
 
-	policy.Creator, err = s.ComposePrincipalById(context.Background(), policy.CreatorId)
+	policy.Creator, err = s.ComposePrincipalById(ctx, policy.CreatorId)
 	if err != nil {
 		return err
 	}
 
-	policy.Updater, err = s.ComposePrincipalById(context.Background(), policy.UpdaterId)
+	policy.Updater, err = s.ComposePrincipalById(ctx, policy.UpdaterId)
 	if err != nil {
 		return err
 	}
 
-	policy.Environment, err = s.ComposeEnvironmentById(context.Background(), policy.EnvironmentId)
+	policy.Environment, err = s.ComposeEnvironmentById(ctx, policy.EnvironmentId)
 	if err != nil {
 		return err
 	}
