@@ -22,11 +22,11 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		}
 
 		password := connectionInfo.Password
-		// Instance detail page has a Test Connection button, if user doesn't input new password, we
-		// want the connection to use the existing password to test the connection, however, we do
-		// not transfer the password back to client, thus the client will pass the instanceId to
-		// let server retrieve the password.
-		if password == "" && connectionInfo.InstanceId != nil {
+		// Instance detail page has a Test Connection button, if user doesn't input new password and doesn't specify
+		// to use empty password, we want the connection to use the existing password to test the connection, however,
+		// we do not transfer the password back to client, thus the client will pass the instanceId to let server
+		// retrieve the password.
+		if password == "" && !connectionInfo.UseEmptyPassword && connectionInfo.InstanceId != nil {
 			adminPassword, err := s.FindInstanceAdminPasswordById(ctx, *connectionInfo.InstanceId)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceId)).SetInternal(err)
@@ -49,15 +49,11 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 
 		resultSet := &api.SqlResultSet{}
 		if err != nil {
-			usePassword := "YES"
-			if connectionInfo.Password == "" {
-				usePassword = "NO"
-			}
 			hostPort := connectionInfo.Host
 			if connectionInfo.Port != "" {
 				hostPort += ":" + connectionInfo.Port
 			}
-			resultSet.Error = fmt.Errorf("failed to connect %q for user %q (using password: %s), %w", hostPort, connectionInfo.Username, usePassword, err).Error()
+			resultSet.Error = fmt.Errorf("failed to connect %q for user %q, %w", hostPort, connectionInfo.Username, err).Error()
 		} else {
 			defer db.Close(ctx)
 			if err := db.Ping(ctx); err != nil {

@@ -79,13 +79,14 @@ type InstancePatch struct {
 	UpdaterId int
 
 	// Domain specific fields
-	Name          *string `jsonapi:"attr,name"`
-	EngineVersion *string
-	ExternalLink  *string `jsonapi:"attr,externalLink"`
-	Host          *string `jsonapi:"attr,host"`
-	Port          *string `jsonapi:"attr,port"`
-	Username      *string `jsonapi:"attr,username"`
-	Password      *string `jsonapi:"attr,password"`
+	Name             *string `jsonapi:"attr,name"`
+	EngineVersion    *string
+	ExternalLink     *string `jsonapi:"attr,externalLink"`
+	Host             *string `jsonapi:"attr,host"`
+	Port             *string `jsonapi:"attr,port"`
+	Username         *string `jsonapi:"attr,username"`
+	Password         *string `jsonapi:"attr,password"`
+	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
 }
 
 // Instance migration schema status

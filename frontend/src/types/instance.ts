@@ -79,6 +79,7 @@ export type InstancePatch = {
   port?: string;
   username?: string;
   password?: string;
+  useEmptyPassword: boolean;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

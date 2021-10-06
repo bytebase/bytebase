@@ -127,7 +127,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if instancePatch.Username != nil || instancePatch.Password != nil {
+		if instancePatch.Username != nil || instancePatch.Password != nil || instancePatch.UseEmptyPassword {
 			instanceFind := &api.InstanceFind{
 				ID: &id,
 			}
@@ -153,7 +153,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				ID:        adminDataSource.ID,
 				UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
 				Username:  instancePatch.Username,
-				Password:  instancePatch.Password,
+			}
+			if instancePatch.Password != nil {
+				dataSourcePatch.Password = instancePatch.Password
+			} else if instancePatch.UseEmptyPassword {
+				password := ""
+				dataSourcePatch.Password = &password
 			}
 			_, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
 			if err != nil {

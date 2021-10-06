@@ -7,12 +7,13 @@ import (
 )
 
 type ConnectionInfo struct {
-	Engine     db.Type `jsonapi:"attr,engine"`
-	Host       string  `jsonapi:"attr,host"`
-	Port       string  `jsonapi:"attr,port"`
-	Username   string  `jsonapi:"attr,username"`
-	Password   string  `jsonapi:"attr,password"`
-	InstanceId *int    `jsonapi:"attr,instanceId"`
+	Engine           db.Type `jsonapi:"attr,engine"`
+	Host             string  `jsonapi:"attr,host"`
+	Port             string  `jsonapi:"attr,port"`
+	Username         string  `jsonapi:"attr,username"`
+	Password         string  `jsonapi:"attr,password"`
+	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
+	InstanceId       *int    `jsonapi:"attr,instanceId"`
 }
 
 type SqlSyncSchema struct {
