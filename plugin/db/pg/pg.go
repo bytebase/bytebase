@@ -387,6 +387,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			var dbTable db.DBTable
 			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 			dbTable.Type = "BASE TABLE"
+			dbTable.Comment = tbl.comment
 			dbTable.RowCount = tbl.rowCount
 			dbTable.DataSize = tbl.tableSizeByte
 			dbTable.IndexSize = tbl.indexSizeByte
@@ -424,8 +425,6 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			var dbTable db.DBTable
 			dbTable.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
 			dbTable.Type = "VIEW"
-			// Use comment for view statement.
-			dbTable.Comment = view.Statement()
 
 			schema.TableList = append(schema.TableList, dbTable)
 		}
@@ -945,6 +944,7 @@ type tableSchema struct {
 	schemaName    string
 	name          string
 	tableowner    string
+	comment       string
 	rowCount      int64
 	tableSizeByte int64
 	indexSizeByte int64
@@ -1280,8 +1280,8 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 }
 
 func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	query := fmt.Sprintf("SELECT COUNT(1) FROM %s.%s;", tbl.schemaName, tbl.name)
-	rows, err := txn.Query(query)
+	countQuery := fmt.Sprintf("SELECT COUNT(1) FROM %s.%s;", tbl.schemaName, tbl.name)
+	rows, err := txn.Query(countQuery)
 	if err != nil {
 		return err
 	}
@@ -1291,9 +1291,23 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		if err := rows.Scan(&tbl.rowCount); err != nil {
 			return err
 		}
-		return nil
 	}
-	return fmt.Errorf("query %q returned multiple rows", query)
+
+	commentQuery := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", tbl.schemaName, tbl.name)
+	crows, err := txn.Query(commentQuery)
+	if err != nil {
+		return err
+	}
+	defer crows.Close()
+
+	for crows.Next() {
+		var comment sql.NullString
+		if err := crows.Scan(&comment); err != nil {
+			return err
+		}
+		tbl.comment = comment.String
+	}
+	return nil
 }
 
 // getTableColumns gets the columns of a table.
