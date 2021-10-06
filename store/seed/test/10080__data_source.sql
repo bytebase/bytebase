@@ -165,7 +165,7 @@ VALUES
         8007,
         1,
         1,
-        6006,
+        6007,
         7019,
         'Admin data source',
         'ADMIN',
