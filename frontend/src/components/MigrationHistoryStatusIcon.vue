@@ -5,7 +5,7 @@
   >
     <template v-if="status === `PENDING`">
       <span
-        class="h-2 w-2 bg-info hover:bg-info-hover rounded-full"
+        class="h-2 w-2 bg-info rounded-full"
         style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
         aria-hidden="true"
       ></span>
@@ -46,12 +46,9 @@ export default {
       let iconClass = "w-5 h-5";
       switch (props.status) {
         case "PENDING":
-          return (
-            iconClass +
-            " bg-white border-2 border-info text-info hover:text-info-hover hover:border-info-hover"
-          );
+          return iconClass + " bg-white border-2 border-info text-info";
         case "DONE":
-          return iconClass + " bg-success hover:bg-success-hover text-white";
+          return iconClass + " bg-success text-white";
       }
     };
 
