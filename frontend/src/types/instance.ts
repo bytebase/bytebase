@@ -7,6 +7,26 @@ import { VCSPushEvent } from "./vcs";
 
 export type EngineType = "MYSQL" | "POSTGRES" | "TIDB";
 
+export function defaultCharset(type: EngineType): string {
+  switch (type) {
+    case "MYSQL":
+    case "TIDB":
+      return "utf8mb4";
+    case "POSTGRES":
+      return "UTF8";
+  }
+}
+
+export function defaultCollation(type: EngineType): string {
+  switch (type) {
+    case "MYSQL":
+    case "TIDB":
+      return "utf8mb4_general_ci";
+    case "POSTGRES":
+      return "en_US.UTF-8";
+  }
+}
+
 export type Instance = {
   id: InstanceId;
 

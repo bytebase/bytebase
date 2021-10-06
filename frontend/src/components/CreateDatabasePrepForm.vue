@@ -47,7 +47,11 @@
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <div class="flex flex-row items-center">
+        <div class="flex flex-row items-center space-x-1">
+          <InstanceEngineIcon
+            v-if="state.instanceId"
+            :instance="selectedInstance"
+          />
           <label for="instance" class="textlabel">
             Instance <span class="text-red-600">*</span>
           </label>
@@ -66,29 +70,25 @@
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="charset" class="textlabel">
-          Character set <span class="text-red-600">*</span>
-        </label>
+        <label for="charset" class="textlabel"> Character set </label>
         <input
-          required
           id="charset"
           name="charset"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="defaultCharset(selectedInstance.engine)"
           v-model="state.characterSet"
         />
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="collation" class="textlabel">
-          Collation <span class="text-red-600">*</span>
-        </label>
+        <label for="collation" class="textlabel"> Collation </label>
         <input
-          required
           id="collation"
           name="collation"
           type="text"
           class="textfield mt-1 w-full"
+          :placeholder="defaultCollation(selectedInstance.engine)"
           v-model="state.collation"
         />
       </div>
@@ -145,6 +145,7 @@ import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import MemberSelect from "../components/MemberSelect.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import {
   EnvironmentId,
   InstanceId,
@@ -154,6 +155,9 @@ import {
   PrincipalId,
   Backup,
   StageCreate,
+  defaultCharset,
+  defaultCollation,
+  unknown,
 } from "../types";
 import { isDBAOrOwner, issueSlug } from "../utils";
 
@@ -190,6 +194,7 @@ export default {
     EnvironmentSelect,
     ProjectSelect,
     MemberSelect,
+    InstanceEngineIcon,
   },
   setup(props, { emit }) {
     const store = useStore();
@@ -226,8 +231,8 @@ export default {
       projectId: props.projectId,
       environmentId: props.environmentId,
       instanceId: props.instanceId,
-      characterSet: "utf8mb4",
-      collation: "utf8mb4_general_ci",
+      characterSet: "",
+      collation: "",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 
@@ -242,8 +247,6 @@ export default {
         state.projectId &&
         state.environmentId &&
         state.instanceId &&
-        !isEmpty(state.characterSet) &&
-        !isEmpty(state.collation) &&
         state.assigneeId
       );
     });
@@ -261,6 +264,12 @@ export default {
     // If instance has been specified, then we disallow changing it.
     const allowEditInstance = computed(() => {
       return !props.instanceId;
+    });
+
+    const selectedInstance = computed(() => {
+      return state.instanceId
+        ? store.getters["instance/instanceById"](state.instanceId)
+        : unknown("INSTANCE");
     });
 
     const selectProject = (projectId: ProjectId) => {
@@ -302,8 +311,12 @@ export default {
               statement: ``,
               rollbackStatement: "",
               databaseName: state.databaseName,
-              characterSet: state.characterSet,
-              collation: state.collation,
+              characterSet:
+                state.characterSet ||
+                defaultCharset(selectedInstance.value.engine),
+              collation:
+                state.collation ||
+                defaultCollation(selectedInstance.value.engine),
             },
           ],
         },
@@ -360,12 +373,15 @@ export default {
     };
 
     return {
+      defaultCharset,
+      defaultCollation,
       state,
       isReservedName,
       allowCreate,
       allowEditProject,
       allowEditEnvironment,
       allowEditInstance,
+      selectedInstance,
       showAssigneeSelect,
       selectProject,
       selectEnvironment,
