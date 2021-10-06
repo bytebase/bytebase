@@ -342,15 +342,15 @@ input[type="number"] {
     <!-- Action Button Group -->
     <div class="pt-4">
       <!-- Create button group -->
-      <div v-if="create" class="flex justify-between">
+      <div v-if="create" class="flex justify-end items-center">
         <div>
-          <BBSpin v-if="state.creating" :title="'Creating...'" />
+          <BBSpin v-if="state.creatingOrUpdating" :title="'Creating...'" />
         </div>
-        <div>
+        <div class="ml-2">
           <button
             type="button"
             class="btn-normal py-2 px-4"
-            :disabled="state.creating"
+            :disabled="state.creatingOrUpdating"
             @click.prevent="cancel"
           >
             Cancel
@@ -358,7 +358,7 @@ input[type="number"] {
           <button
             type="button"
             class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-            :disabled="!allowCreate || state.creating"
+            :disabled="!allowCreate || state.creatingOrUpdating"
             @click.prevent="tryCreate"
           >
             Create
@@ -366,12 +366,15 @@ input[type="number"] {
         </div>
       </div>
       <!-- Update button group -->
-      <div v-else class="flex justify-end">
+      <div v-else class="flex justify-end items-center">
+        <div>
+          <BBSpin v-if="state.creatingOrUpdating" :title="'Updating...'" />
+        </div>
         <button
           v-if="allowEdit"
           type="button"
-          class="btn-normal ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!valueChanged"
+          class="btn-normal ml-2 inline-flex justify-center py-2 px-4"
+          :disabled="!valueChanged || state.creatingOrUpdating"
           @click.prevent="doUpdate"
         >
           Update
@@ -428,7 +431,7 @@ interface LocalState {
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
   showCreateUserExample: boolean;
-  creating: boolean;
+  creatingOrUpdating: boolean;
 }
 
 export default {
@@ -472,7 +475,7 @@ export default {
       showCreateInstanceWarningModal: false,
       createInstanceWarning: "",
       showCreateUserExample: props.create,
-      creating: false,
+      creatingOrUpdating: false,
     });
 
     const allowCreate = computed(() => {
@@ -559,11 +562,11 @@ export default {
     // stored in that data source object instead of in the instance self.
     // Conceptually, data source is the proper place to store connnection info (thinking of DSN)
     const doCreate = () => {
-      state.creating = true;
+      state.creatingOrUpdating = true;
       store
         .dispatch("instance/createInstance", state.instance)
         .then((createdInstance) => {
-          state.creating = false;
+          state.creatingOrUpdating = false;
           emit("dismiss");
 
           router.push(`/instance/${instanceSlug(createdInstance)}`);
@@ -600,12 +603,14 @@ export default {
         patchedInstance.password = state.updatedPassword;
       }
 
+      state.creatingOrUpdating = true;
       store
         .dispatch("instance/patchInstance", {
           instanceId: (state.instance as Instance).id,
           instancePatch: patchedInstance,
         })
         .then((instance) => {
+          state.creatingOrUpdating = false;
           state.originalInstance = instance;
           // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
           state.instance = cloneDeep(state.originalInstance!);

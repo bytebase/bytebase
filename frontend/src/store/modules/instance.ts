@@ -267,12 +267,18 @@ const actions = {
     }
   ) {
     const data = (
-      await axios.patch(`/api/instance/${instanceId}`, {
-        data: {
-          type: "instancePatch",
-          attributes: instancePatch,
+      await axios.patch(
+        `/api/instance/${instanceId}`,
+        {
+          data: {
+            type: "instancePatch",
+            attributes: instancePatch,
+          },
         },
-      })
+        {
+          timeout: CREATE_MIGRATION_SCHEMA_TIMEOUT,
+        }
+      )
     ).data;
     const updatedInstance = convert(data.data, data.included, rootGetters);
 
