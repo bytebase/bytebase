@@ -35,7 +35,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			for _, taskCreate := range stageCreate.TaskList {
 				if taskCreate.Type == api.TaskDatabaseCreate {
 					if taskCreate.Statement != "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement cannot be set.")
+						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement should not be set.")
 					}
 					if taskCreate.DatabaseName == "" {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
@@ -43,7 +43,17 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 					if taskCreate.CharacterSet == "" {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
 					}
-					if taskCreate.Collation == "" {
+					instanceFind := &api.InstanceFind{
+						ID: &taskCreate.InstanceId,
+					}
+					instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue.").SetInternal(err)
+					}
+					// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
+					// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
+					// install it.
+					if instance.Engine != db.Postgres && taskCreate.Collation == "" {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
 					}
 				} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
@@ -380,7 +390,6 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			if taskCreate.Type == api.TaskDatabaseCreate {
 				payload := api.TaskDatabaseCreatePayload{}
 				payload.ProjectId = issueCreate.ProjectId
-				// Statement is derived in the task executor.
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.CharacterSet = taskCreate.CharacterSet
 				payload.Collation = taskCreate.Collation
@@ -395,7 +404,11 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				case db.MySQL, db.TiDB:
 					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
 				case db.Postgres:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+					if taskCreate.Collation == "" {
+						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q", taskCreate.DatabaseName, taskCreate.CharacterSet)
+					} else {
+						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+					}
 				}
 				bytes, err := json.Marshal(payload)
 				if err != nil {

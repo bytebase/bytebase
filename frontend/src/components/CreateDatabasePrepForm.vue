@@ -88,7 +88,9 @@
           name="collation"
           type="text"
           class="textfield mt-1 w-full"
-          :placeholder="defaultCollation(selectedInstance.engine)"
+          :placeholder="
+            defaultCollation(selectedInstance.engine) || 'Charset default'
+          "
           v-model="state.collation"
         />
       </div>
