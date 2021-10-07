@@ -17,23 +17,11 @@ import (
 type Type string
 
 const (
-	MySQL    Type = "MYSQL"
-	Postgres Type = "POSTGRES"
-	TiDB     Type = "TIDB"
+	ClickHouse Type = "CLICKHOUSE"
+	MySQL      Type = "MYSQL"
+	Postgres   Type = "POSTGRES"
+	TiDB       Type = "TIDB"
 )
-
-func (e Type) String() string {
-	switch e {
-	case MySQL:
-		return "MYSQL"
-	case Postgres:
-		return "POSTGRES"
-	case TiDB:
-		return "TIDB"
-	}
-
-	return "UNKNOWN"
-}
 
 type DBUser struct {
 	Name  string

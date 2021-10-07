@@ -340,7 +340,7 @@ CREATE TABLE instance (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL', 'POSTGRES', 'TIDB')),
+    `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE')),
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
