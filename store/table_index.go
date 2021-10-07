@@ -82,27 +82,6 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	return list[0], nil
 }
 
-// PatchIndex updates an existing index by ID.
-// Returns ENOTFOUND if index does not exist.
-func (s *IndexService) PatchIndex(ctx context.Context, patch *api.IndexPatch) (*api.Index, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	index, err := s.patchIndex(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return index, nil
-}
-
 // createIndex creates a new index.
 func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.IndexCreate) (*api.Index, error) {
 	// Insert row into index.
@@ -240,52 +219,4 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 	}
 
 	return list, nil
-}
-
-// patchIndex updates a index by ID. Returns the new state of the index after update.
-func (s *IndexService) patchIndex(ctx context.Context, tx *Tx, patch *api.IndexPatch) (*api.Index, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE idx
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, `type`, `unique`, visible, comment"+`
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var index api.Index
-		if err := row.Scan(
-			&index.ID,
-			&index.CreatorId,
-			&index.CreatedTs,
-			&index.UpdaterId,
-			&index.UpdatedTs,
-			&index.DatabaseId,
-			&index.TableId,
-			&index.Name,
-			&index.Expression,
-			&index.Position,
-			&index.Type,
-			&index.Unique,
-			&index.Visible,
-			&index.Comment,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &index, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("index ID not found: %d", patch.ID)}
 }
