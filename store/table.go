@@ -82,27 +82,6 @@ func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api
 	return list[0], nil
 }
 
-// PatchTable updates an existing table by ID.
-// Returns ENOTFOUND if table does not exist.
-func (s *TableService) PatchTable(ctx context.Context, patch *api.TablePatch) (*api.Table, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	table, err := s.patchTable(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return table, nil
-}
-
 // DeleteTable deletes an existing table by ID.
 // Returns ENOTFOUND if table does not exist.
 func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete) error {
@@ -264,55 +243,6 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 	}
 
 	return list, nil
-}
-
-// patchTable updates a table by ID. Returns the new state of the table after update.
-func (s *TableService) patchTable(ctx context.Context, tx *Tx, patch *api.TablePatch) (*api.Table, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE tbl
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, row_count, data_size, index_size, data_free, create_options, comment"+`
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var table api.Table
-		if err := row.Scan(
-			&table.ID,
-			&table.CreatorId,
-			&table.CreatedTs,
-			&table.UpdaterId,
-			&table.UpdatedTs,
-			&table.DatabaseId,
-			&table.Name,
-			&table.Type,
-			&table.Engine,
-			&table.Collation,
-			&table.RowCount,
-			&table.DataSize,
-			&table.IndexSize,
-			&table.DataFree,
-			&table.CreateOptions,
-			&table.Comment,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		return &table, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("table ID not found: %d", patch.ID)}
 }
 
 // deleteTable permanently deletes tables from a database.
