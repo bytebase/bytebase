@@ -1117,12 +1117,12 @@ func (seq *sequencePgSchema) Statement() string {
 	if seq.minimumValue == "" {
 		s += fmt.Sprintf("    MINVALUE %s\n", seq.minimumValue)
 	} else {
-		s += fmt.Sprintf("    NO MINVALUE\n")
+		s += "    NO MINVALUE\n"
 	}
 	if seq.maximumValue == "" {
 		s += fmt.Sprintf("    MAXVALUE %s\n", seq.maximumValue)
 	} else {
-		s += fmt.Sprintf("    NO MAXVALUE\n")
+		s += "    NO MAXVALUE\n"
 	}
 	s += fmt.Sprintf("    CACHE %s", seq.cache)
 	switch seq.cycleOption {
@@ -1282,8 +1282,7 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 		tbl.columns = columns
 
 		key := fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
-		v, _ := constraints[key]
-		tbl.constraints = v
+		tbl.constraints = constraints[key]
 	}
 	return tables, nil
 }
@@ -1409,8 +1408,7 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 		}
 		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
 		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
-		v, _ := ret[key]
-		ret[key] = append(v, &constraint)
+		ret[key] = append(ret[key], &constraint)
 	}
 	return ret, nil
 }
