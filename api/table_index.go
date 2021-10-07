@@ -67,17 +67,8 @@ func (find *IndexFind) String() string {
 	return string(str)
 }
 
-type IndexPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
-}
-
 type IndexService interface {
 	CreateIndex(ctx context.Context, create *IndexCreate) (*Index, error)
 	FindIndexList(ctx context.Context, find *IndexFind) ([]*Index, error)
 	FindIndex(ctx context.Context, find *IndexFind) (*Index, error)
-	PatchIndex(ctx context.Context, patch *IndexPatch) (*Index, error)
 }
