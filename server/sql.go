@@ -164,6 +164,8 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				// Table
 				tableCreate := &api.TableCreate{
 					CreatorId:     api.SYSTEM_BOT_ID,
+					CreatedTs:     table.CreatedTs,
+					UpdatedTs:     table.UpdatedTs,
 					DatabaseId:    database.ID,
 					Name:          table.Name,
 					Type:          table.Type,
