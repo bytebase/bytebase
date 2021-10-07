@@ -411,6 +411,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 					dbIndex.Position = i + 1
 					dbIndex.Type = idx.methodType
 					dbIndex.Unique = idx.unique
+					dbIndex.Comment = idx.comment
 					dbTable.IndexList = append(dbTable.IndexList, dbIndex)
 				}
 			}
@@ -991,6 +992,7 @@ type indexSchema struct {
 	// methodType such as btree.
 	methodType        string
 	columnExpressions []string
+	comment           string
 }
 
 // sequencePgSchema describes the schema of a pg sequence.
@@ -1483,7 +1485,31 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		indices = append(indices, &idx)
 	}
 
+	for _, idx := range indices {
+		if err = getIndex(txn, idx); err != nil {
+			return nil, fmt.Errorf("getPgView(%q, %q) got error %v", idx.schemaName, idx.name, err)
+		}
+	}
+
 	return indices, nil
+}
+
+func getIndex(txn *sql.Tx, idx *indexSchema) error {
+	commentQuery := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", idx.schemaName, idx.name)
+	crows, err := txn.Query(commentQuery)
+	if err != nil {
+		return err
+	}
+	defer crows.Close()
+
+	for crows.Next() {
+		var comment sql.NullString
+		if err := crows.Scan(&comment); err != nil {
+			return err
+		}
+		idx.comment = comment.String
+	}
+	return nil
 }
 
 func getIndexMethodType(stmt string) string {
