@@ -281,6 +281,8 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	return updatedTask, nil
 }
 
+// Returns true only if there is NO warning and error. User can still manualy run the task if there is warning.
+// But this method is used for gating the automatic run, so we are more cautious here.
 func passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
@@ -310,7 +312,7 @@ func passCheck(ctx context.Context, server *Server, task *api.Task, checkType ap
 		return false, err
 	}
 	for _, result := range checkResult.ResultList {
-		if result.Status == api.TaskCheckStatusError {
+		if result.Status == api.TaskCheckStatusError || result.Status == api.TaskCheckStatusWarn {
 			server.l.Debug("Task is waiting for check to pass",
 				zap.Int("task_id", task.ID),
 				zap.String("task_name", task.Name),
