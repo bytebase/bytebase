@@ -74,14 +74,6 @@ func (find *TableFind) String() string {
 	return string(str)
 }
 
-type TablePatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
-}
-
 type TableDelete struct {
 	// Related fields
 	DatabaseId int
@@ -91,6 +83,5 @@ type TableService interface {
 	CreateTable(ctx context.Context, create *TableCreate) (*Table, error)
 	FindTableList(ctx context.Context, find *TableFind) ([]*Table, error)
 	FindTable(ctx context.Context, find *TableFind) (*Table, error)
-	PatchTable(ctx context.Context, patch *TablePatch) (*Table, error)
 	DeleteTable(ctx context.Context, delete *TableDelete) error
 }
