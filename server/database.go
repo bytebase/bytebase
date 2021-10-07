@@ -346,6 +346,47 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/database/:id/view", func(c echo.Context) error {
+		ctx := context.Background()
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: &id,
+		}
+		database, err := s.ComposeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+
+		viewFind := &api.ViewFind{
+			DatabaseId: &id,
+		}
+		viewList, err := s.ViewService.FindViewList(ctx, viewFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database id: %d", id)).SetInternal(err)
+		}
+
+		for _, view := range viewList {
+			view.Database = database
+
+			if err := s.ComposeViewRelationship(ctx, view); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose view relationship").SetInternal(err)
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, viewList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch view list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.POST("/database/:id/backup", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
@@ -648,6 +689,21 @@ func (s *Server) ComposeTableRelationship(ctx context.Context, table *api.Table)
 	}
 
 	table.Updater, err = s.ComposePrincipalById(ctx, table.UpdaterId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) ComposeViewRelationship(ctx context.Context, view *api.View) error {
+	var err error
+
+	view.Creator, err = s.ComposePrincipalById(ctx, view.CreatorId)
+	if err != nil {
+		return err
+	}
+
+	view.Updater, err = s.ComposePrincipalById(ctx, view.UpdaterId)
 	if err != nil {
 		return err
 	}

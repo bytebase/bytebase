@@ -47,6 +47,8 @@ export type DatabaseId = IdType;
 
 export type TableId = IdType;
 
+export type ViewId = IdType;
+
 export type ColumnId = IdType;
 
 export type TableIndexId = IdType;

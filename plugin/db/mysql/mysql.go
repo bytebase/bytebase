@@ -366,6 +366,13 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 
 	// dbName -> tableList map
 	tableMap := make(map[string][]db.DBTable)
+	type ViewInfo struct {
+		createdTs int64
+		updatedTs int64
+		comment   string
+	}
+	// dbName/viewName -> ViewInfo
+	viewInfoMap := make(map[string]ViewInfo)
 	for tableRows.Next() {
 		var dbName string
 		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
@@ -389,20 +396,70 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			return nil, nil, err
 		}
 
-		if tableCollation.Valid {
-			table.Collation = tableCollation.String
+		if table.Type == "BASE TABLE" {
+			if tableCollation.Valid {
+				table.Collation = tableCollation.String
+			}
+
+			key := fmt.Sprintf("%s/%s", dbName, table.Name)
+			table.ColumnList = columnMap[key]
+			table.IndexList = indexMap[key]
+
+			tableList, ok := tableMap[dbName]
+			if ok {
+				tableMap[dbName] = append(tableList, table)
+			} else {
+				list := make([]db.DBTable, 0)
+				tableMap[dbName] = append(list, table)
+			}
+		} else if table.Type == "VIEW" {
+			viewInfoMap[fmt.Sprintf("%s/%s", dbName, table.Name)] = ViewInfo{
+				createdTs: table.CreatedTs,
+				updatedTs: table.UpdatedTs,
+				comment:   table.Comment,
+			}
+		}
+	}
+
+	// Query view info
+	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query = `
+			SELECT
+				TABLE_SCHEMA, 
+				TABLE_NAME,
+				VIEW_DEFINITION
+			FROM information_schema.VIEWS
+			WHERE ` + viewWhere
+	viewRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer viewRows.Close()
+
+	// dbName -> viewList map
+	viewMap := make(map[string][]db.DBView)
+	for viewRows.Next() {
+		var dbName string
+		var view db.DBView
+		if err := viewRows.Scan(
+			&dbName,
+			&view.Name,
+			&view.Definition,
+		); err != nil {
+			return nil, nil, err
 		}
 
-		key := fmt.Sprintf("%s/%s", dbName, table.Name)
-		table.ColumnList = columnMap[key]
-		table.IndexList = indexMap[key]
+		info := viewInfoMap[fmt.Sprintf("%s/%s", dbName, view.Name)]
+		view.CreatedTs = info.createdTs
+		view.UpdatedTs = info.updatedTs
+		view.Comment = info.comment
 
-		tableList, ok := tableMap[dbName]
+		viewList, ok := viewMap[dbName]
 		if ok {
-			tableMap[dbName] = append(tableList, table)
+			viewMap[dbName] = append(viewList, view)
 		} else {
-			list := make([]db.DBTable, 0)
-			tableMap[dbName] = append(list, table)
+			list := make([]db.DBView, 0)
+			viewMap[dbName] = append(list, view)
 		}
 	}
 
@@ -433,6 +490,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		}
 
 		schema.TableList = tableMap[schema.Name]
+		schema.ViewList = viewMap[schema.Name]
 
 		schemaList = append(schemaList, &schema)
 	}

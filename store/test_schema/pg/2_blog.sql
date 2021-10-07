@@ -36,6 +36,7 @@ CREATE INDEX bytebase_test_blog_post_name ON public.post(name);
 CREATE INDEX bytebase_test_blog_post_created_ts ON public.post(created_ts);
 
 COMMENT ON COLUMN public.post.name is 'name of the post';
+COMMENT ON INDEX bytebase_test_blog_post_name is 'name index of post';
 
 CREATE TABLE public.comment (
 	id SERIAL PRIMARY KEY,
@@ -59,6 +60,8 @@ FROM
 ORDER BY
 	like_count DESC
 LIMIT 10;
+
+COMMENT ON VIEW top_like_post is 'view to select top 10 most liked posts';
 
 -- Procedure
 CREATE PROCEDURE public.add_coin (author_id INT, count INT)

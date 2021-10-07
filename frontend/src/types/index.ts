@@ -32,3 +32,4 @@ export * from "./store";
 export * from "./table";
 export * from "./tableIndex";
 export * from "./vcs";
+export * from "./view";
