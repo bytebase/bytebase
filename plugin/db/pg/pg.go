@@ -399,6 +399,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 				dbColumn.Type = col.dataType
 				dbColumn.Nullable = col.isNullable
 				dbColumn.Collation = col.collationName
+				dbColumn.Comment = col.comment
 				dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
 			}
 			indices := indicesMap[dbTable.Name]
@@ -962,6 +963,7 @@ type columnSchema struct {
 	columnDefault          string
 	isNullable             bool
 	collationName          string
+	comment                string
 }
 
 // tableConstraint describes constraint schema of a pg table.
@@ -1312,10 +1314,26 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema, error) {
-	query := "" +
-		"SELECT column_name, data_type, ordinal_position, character_maximum_length, column_default, is_nullable, collation_name " +
-		"FROM INFORMATION_SCHEMA.COLUMNS " +
-		"WHERE table_schema=$1 AND table_name=$2;"
+	query := `
+	SELECT
+		cols.column_name,
+		cols.data_type,
+		cols.ordinal_position,
+		cols.character_maximum_length,
+		cols.column_default,
+		cols.is_nullable,
+		cols.collation_name,
+		(
+			SELECT
+					pg_catalog.col_description(c.oid, cols.ordinal_position::int)
+			FROM pg_catalog.pg_class c
+			WHERE
+					c.oid     = (SELECT cols.table_name::regclass::oid) AND
+					cols.table_schema=c.relnamespace::regnamespace::text AND 
+					cols.table_name = c.relname
+		) as column_comment
+	FROM INFORMATION_SCHEMA.COLUMNS AS cols
+	WHERE table_schema=$1 AND table_name=$2;`
 	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
@@ -1325,9 +1343,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 	var columns []*columnSchema
 	for rows.Next() {
 		var columnName, dataType, isNullable string
-		var characterMaximumLength, columnDefault, collationName sql.NullString
+		var characterMaximumLength, columnDefault, collationName, comment sql.NullString
 		var ordinalPosition int
-		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName); err != nil {
+		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &comment); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -1342,6 +1360,7 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			columnDefault:          columnDefault.String,
 			isNullable:             isNullBool,
 			collationName:          collationName.String,
+			comment:                comment.String,
 		}
 		columns = append(columns, &c)
 	}
