@@ -42,6 +42,7 @@ type Server struct {
 	DatabaseService        api.DatabaseService
 	TableService           api.TableService
 	ColumnService          api.ColumnService
+	ViewService            api.ViewService
 	IndexService           api.IndexService
 	DataSourceService      api.DataSourceService
 	BackupService          api.BackupService

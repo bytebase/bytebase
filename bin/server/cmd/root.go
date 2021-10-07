@@ -293,6 +293,7 @@ func (m *main) Run(ctx context.Context) error {
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
+	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.IssueService = store.NewIssueService(m.l, db, s.CacheService)
 	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)

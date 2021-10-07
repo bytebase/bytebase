@@ -1,4 +1,4 @@
-import { EnvironmentId, MigrationHistoryId, Policy, PolicyType } from ".";
+import { EnvironmentId, MigrationHistoryId, Policy, PolicyType, View } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
@@ -126,6 +126,10 @@ export interface DatabaseState {
 
 export interface TableState {
   tableListByDatabaseId: Map<DatabaseId, Table[]>;
+}
+
+export interface ViewState {
+  viewListByDatabaseId: Map<DatabaseId, View[]>;
 }
 
 export interface BackupState {

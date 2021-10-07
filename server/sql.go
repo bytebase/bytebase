@@ -138,6 +138,17 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return createTable, nil
 			}
 
+			var createView = func(database *api.Database, viewCreate *api.ViewCreate) (*api.View, error) {
+				createView, err := s.ViewService.CreateView(ctx, viewCreate)
+				if err != nil {
+					if common.ErrorCode(err) == common.Conflict {
+						return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", instance.Name, database.Name, viewCreate.Name)
+					}
+					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
+				}
+				return createView, nil
+			}
+
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
 				_, err := s.ColumnService.CreateColumn(ctx, columnCreate)
 				if err != nil {
@@ -249,6 +260,24 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
+			var recreateViewSchema = func(database *api.Database, view db.DBView) error {
+				// View
+				viewCreate := &api.ViewCreate{
+					CreatorId:  api.SYSTEM_BOT_ID,
+					CreatedTs:  view.CreatedTs,
+					UpdatedTs:  view.UpdatedTs,
+					DatabaseId: database.ID,
+					Name:       view.Name,
+					Definition: view.Definition,
+					Comment:    view.Comment,
+				}
+				_, err := createView(database, viewCreate)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+
 			instanceUserFind := &api.InstanceUserFind{
 				InstanceId: instance.ID,
 			}
@@ -351,6 +380,21 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 							return err
 						}
 					}
+
+					viewDelete := &api.ViewDelete{
+						DatabaseId: database.ID,
+					}
+					err = s.ViewService.DeleteView(ctx, viewDelete)
+					if err != nil {
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, database.Name, err)
+					}
+
+					for _, view := range schema.ViewList {
+						err = recreateViewSchema(database, view)
+						if err != nil {
+							return err
+						}
+					}
 				} else {
 					// Case 2, only appear in the synced db schema
 					databaseCreate := &api.DatabaseCreate{
@@ -372,6 +416,13 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 
 					for _, table := range schema.TableList {
 						err = recreateTableSchema(database, table)
+						if err != nil {
+							return err
+						}
+					}
+
+					for _, view := range schema.ViewList {
+						err = recreateViewSchema(database, view)
 						if err != nil {
 							return err
 						}

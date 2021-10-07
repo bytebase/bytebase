@@ -574,6 +574,44 @@ WHERE
 
 END;
 
+-- vw stores the view for a particular database
+-- data is synced periodically from the instance
+CREATE TABLE vw (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    definition TEXT NOT NULL,
+    comment TEXT NOT NULL,
+    UNIQUE(database_id, name)
+);
+
+CREATE INDEX idx_vw_database_id ON vw(database_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('vw', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_vw_modification_time`
+AFTER
+UPDATE
+    ON `vw` FOR EACH ROW BEGIN
+UPDATE
+    `vw`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

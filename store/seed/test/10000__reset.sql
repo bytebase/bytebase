@@ -48,6 +48,9 @@ DELETE FROM
     data_source;
 
 DELETE FROM
+    vw;
+
+DELETE FROM
     idx;
 
 DELETE FROM

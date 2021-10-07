@@ -86,16 +86,10 @@
 
     <div class="pt-6">
       <div class="text-lg leading-6 font-medium text-main mb-4">Tables</div>
-      <TableTable
-        :mode="'TABLE'"
-        :tableList="tableList.filter((item) => item.type == 'BASE TABLE')"
-      />
+      <TableTable :tableList="tableList" />
 
       <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">Views</div>
-      <TableTable
-        :mode="'VIEW'"
-        :tableList="tableList.filter((item) => item.type == 'VIEW')"
-      />
+      <ViewTable :viewList="viewList" />
     </div>
 
     <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -211,6 +205,7 @@ import AnomalyTable from "../components/AnomalyTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
+import ViewTable from "../components/ViewTable.vue";
 import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash";
@@ -233,6 +228,7 @@ export default {
     DataSourceConnectionPanel,
     DataSourceTable,
     TableTable,
+    ViewTable,
   },
   setup(props, ctx) {
     const store = useStore();
@@ -247,6 +243,12 @@ export default {
     };
 
     watchEffect(prepareTableList);
+
+    const prepareViewList = () => {
+      store.dispatch("view/fetchViewListByDatabaseId", props.database.id);
+    };
+
+    watchEffect(prepareViewList);
 
     const anomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
@@ -267,6 +269,10 @@ export default {
 
     const tableList = computed(() => {
       return store.getters["table/tableListByDatabaseId"](props.database.id);
+    });
+
+    const viewList = computed(() => {
+      return store.getters["view/viewListByDatabaseId"](props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -359,6 +365,7 @@ export default {
       state,
       anomalySectionList,
       tableList,
+      viewList,
       hasDataSourceFeature,
       allowConfigInstance,
       allowViewDataSource,

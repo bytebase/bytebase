@@ -35,6 +35,7 @@ import task from "./modules/task";
 // Following states are persisted in local storage
 import uistate from "./modules/uistate";
 import vcs from "./modules/vcs";
+import view from "./modules/view";
 
 const isProd = import.meta.env.NODE_ENV == "production";
 
@@ -71,6 +72,7 @@ export const store: Store<any> = createStore({
     task,
     uistate,
     vcs,
+    view,
     anomaly,
   },
   strict: !isProd,

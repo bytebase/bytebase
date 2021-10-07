@@ -28,6 +28,14 @@ type DBUser struct {
 	Grant string
 }
 
+type DBView struct {
+	Name       string
+	CreatedTs  int64
+	UpdatedTs  int64
+	Definition string
+	Comment    string
+}
+
 type DBIndex struct {
 	Name string
 	// This could refer to a column or an expression
@@ -78,6 +86,7 @@ type DBSchema struct {
 	Collation    string
 	UserList     []DBUser
 	TableList    []DBTable
+	ViewList     []DBView
 }
 
 var (

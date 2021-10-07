@@ -9,6 +9,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -424,11 +425,14 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			return nil, nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
 		}
 		for _, view := range views {
-			var dbTable db.DBTable
-			dbTable.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
-			dbTable.Type = "VIEW"
+			var dbView db.DBView
+			dbView.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
+			// Postgres does not store
+			dbView.CreatedTs = time.Now().Unix()
+			dbView.Definition = view.definition
+			dbView.Comment = view.comment
 
-			schema.TableList = append(schema.TableList, dbTable)
+			schema.ViewList = append(schema.ViewList, dbView)
 		}
 
 		if err := txn.Commit(); err != nil {
@@ -979,7 +983,8 @@ type tableConstraint struct {
 type viewSchema struct {
 	schemaName string
 	name       string
-	statement  string
+	definition string
+	comment    string
 }
 
 // indexSchema describes the schema of a pg index.
@@ -1095,7 +1100,7 @@ func (v *viewSchema) Statement() string {
 		"-- View structure for %s.%s\n"+
 		"--\n"+
 		"CREATE VIEW %s.%s AS\n%s\n\n",
-		v.schemaName, v.name, v.schemaName, v.name, v.statement)
+		v.schemaName, v.name, v.schemaName, v.name, v.definition)
 }
 
 // Statement returns the create statement of a sequence.
@@ -1413,7 +1418,7 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 	query := "" +
-		"SELECT table_schema, table_name FROM information_schema.views " +
+		"SELECT table_schema, table_name, view_definition FROM information_schema.views " +
 		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
 	var views []*viewSchema
 	rows, err := txn.Query(query)
@@ -1424,7 +1429,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 	for rows.Next() {
 		var view viewSchema
-		if err := rows.Scan(&view.schemaName, &view.name); err != nil {
+		if err := rows.Scan(&view.schemaName, &view.name, &view.definition); err != nil {
 			return nil, err
 		}
 		view.schemaName, view.name = quoteIdentifier(view.schemaName), quoteIdentifier(view.name)
@@ -1441,7 +1446,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf("SELECT pg_get_viewdef('%s.%s', true);", view.schemaName, view.name)
+	query := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -1449,12 +1454,13 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		if err := rows.Scan(&view.statement); err != nil {
+		var comment sql.NullString
+		if err := rows.Scan(&comment); err != nil {
 			return err
 		}
-		return nil
+		view.comment = comment.String
 	}
-	return fmt.Errorf("query %q returned multiple rows", query)
+	return nil
 }
 
 // getIndices gets all indices of a database.
