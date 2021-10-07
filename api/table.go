@@ -39,6 +39,8 @@ type TableCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	CreatorId int
+	CreatedTs int
+	UpdatedTs int
 
 	// Related fields
 	DatabaseId int

@@ -109,7 +109,9 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO tbl (
 			creator_id,
+			created_ts,
 			updater_id,
+			updated_ts,
 			database_id,
 			name,
 			`+"`type`,"+`
@@ -122,11 +124,13 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			create_options,
 			comment
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, row_count, data_size, index_size, data_free, create_options, comment"+`
 	`,
 		create.CreatorId,
+		create.CreatedTs,
 		create.CreatorId,
+		create.UpdatedTs,
 		create.DatabaseId,
 		create.Name,
 		create.Type,
