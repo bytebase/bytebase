@@ -1487,7 +1487,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 	for _, idx := range indices {
 		if err = getIndex(txn, idx); err != nil {
-			return nil, fmt.Errorf("getPgView(%q, %q) got error %v", idx.schemaName, idx.name, err)
+			return nil, fmt.Errorf("getIndex(%q, %q) got error %v", idx.schemaName, idx.name, err)
 		}
 	}
 
