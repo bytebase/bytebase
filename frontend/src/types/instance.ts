@@ -22,8 +22,11 @@ export function defaultCollation(type: EngineType): string {
     case "MYSQL":
     case "TIDB":
       return "utf8mb4_general_ci";
+    // For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
+    // If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
+    // install it.
     case "POSTGRES":
-      return "en_US.UTF-8";
+      return "";
   }
 }
 
