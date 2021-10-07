@@ -19,7 +19,7 @@
       <BBTableCell class="w-8">
         {{ column.nullable }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell v-if="engine != 'POSTGRES'" class="w-8">
         {{ column.characterSet }}
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -35,9 +35,9 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { Column } from "../types";
+import { Column, EngineType } from "../types";
 
-const COLUMN_LIST: BBTableColumn[] = [
+const NORMAL_COLUMN_LIST: BBTableColumn[] = [
   {
     title: "Name",
   },
@@ -61,6 +61,27 @@ const COLUMN_LIST: BBTableColumn[] = [
   },
 ];
 
+const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
+  {
+    title: "Name",
+  },
+  {
+    title: "Type",
+  },
+  {
+    title: "Default",
+  },
+  {
+    title: "Nullable",
+  },
+  {
+    title: "Collation",
+  },
+  {
+    title: "Comment",
+  },
+];
+
 export default {
   name: "ColumnTable",
   components: {},
@@ -69,10 +90,15 @@ export default {
       required: true,
       type: Object as PropType<Column[]>,
     },
+    engine: {
+      required: true,
+      type: String as PropType<EngineType>,
+    },
   },
   setup(props, ctx) {
     return {
-      COLUMN_LIST,
+      COLUMN_LIST:
+        props.engine == "POSTGRES" ? POSTGRES_COLUMN_LIST : NORMAL_COLUMN_LIST,
     };
   },
 };

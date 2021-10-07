@@ -143,7 +143,11 @@
 
             <div class="col-span-1 col-start-1">
               <dt class="text-sm font-medium text-control-light">
-                Character set
+                {{
+                  database.instance.engine == "POSTGRES"
+                    ? "Encoding"
+                    : "Character set"
+                }}
               </dt>
               <dd class="mt-1 text-sm text-main">
                 {{ database.characterSet }}
@@ -176,7 +180,10 @@
 
       <div class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">Columns</div>
-        <ColumnTable :columnList="table.columnList" />
+        <ColumnTable
+          :columnList="table.columnList"
+          :engine="database.instance.engine"
+        />
       </div>
 
       <div class="mt-6 px-6">
