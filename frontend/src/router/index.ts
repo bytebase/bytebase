@@ -596,18 +596,6 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "db/new",
-            name: "workspace.database.create",
-            meta: {
-              title: () => "Create database",
-            },
-            components: {
-              content: () => import("../views/DatabaseCreate.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "db/grant",
             name: "workspace.database.grant",
             meta: {
@@ -992,10 +980,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (databaseSlug) {
-    if (
-      databaseSlug.toLowerCase() == "new" ||
-      databaseSlug.toLowerCase() == "grant"
-    ) {
+    if (databaseSlug.toLowerCase() == "grant") {
       next();
       return;
     }
