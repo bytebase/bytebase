@@ -274,6 +274,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
+
+			if err := s.ComposeTableRelationship(ctx, table); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -329,6 +333,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
+		}
+
+		if err := s.ComposeTableRelationship(ctx, table); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -628,6 +636,21 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 		}
 	}
 
+	return nil
+}
+
+func (s *Server) ComposeTableRelationship(ctx context.Context, table *api.Table) error {
+	var err error
+
+	table.Creator, err = s.ComposePrincipalById(ctx, table.CreatorId)
+	if err != nil {
+		return err
+	}
+
+	table.Updater, err = s.ComposePrincipalById(ctx, table.UpdaterId)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
