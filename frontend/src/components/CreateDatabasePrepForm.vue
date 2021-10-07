@@ -70,7 +70,11 @@
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="charset" class="textlabel"> Character set </label>
+        <label for="charset" class="textlabel">
+          {{
+            selectedInstance.engine == "POSTGRES" ? "Encoding" : "Character set"
+          }}</label
+        >
         <input
           id="charset"
           name="charset"
@@ -88,9 +92,7 @@
           name="collation"
           type="text"
           class="textfield mt-1 w-full"
-          :placeholder="
-            defaultCollation(selectedInstance.engine) || 'Charset default'
-          "
+          :placeholder="defaultCollation(selectedInstance.engine) || 'default'"
           v-model="state.collation"
         />
       </div>
