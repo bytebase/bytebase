@@ -18,12 +18,18 @@
 - [x] Classic UI based schema migraiton (SQL Review)
 - [x] Detailed migration history
 - [x] Backup and restore
+- [x] Anomaly center
+- [x] Environment policy
+  - Approval policy
+  - Backup schedule enforcement
+- [x] Schema drift detection
+- [x] Backward compatibility schema change check
 - [x] Role-based access control (RBAC)
 - [x] MySQL support
+- [x] PostgreSQL support
 - [x] TiDB support
 - [x] GitLab CE/EE support
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
-- [ ] PostgreSQL support
 - [ ] GitLab.com support
 - [ ] GitHub support
 
@@ -48,13 +54,13 @@
 ### Run on localhost:8080
 
 ```bash
-docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.6.0 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.7.0 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.6.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.7.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 🕊 Interested in contributing?
