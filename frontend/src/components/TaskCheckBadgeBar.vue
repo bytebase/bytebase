@@ -107,7 +107,12 @@
 
 <script lang="ts">
 import { computed, PropType, reactive, watch } from "vue";
-import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../types";
+import {
+  TaskCheckRun,
+  TaskCheckRunStatus,
+  TaskCheckStatus,
+  TaskCheckType,
+} from "../types";
 
 interface LocalState {
   selectedTaskCheckRun?: TaskCheckRun;
@@ -217,7 +222,26 @@ export default {
           result.push(run);
         }
       }
-      return result;
+
+      return result.sort((a: TaskCheckRun, b: TaskCheckRun) => {
+        // Put likely failure first.
+        const taskCheckRunTypeOrder = (type: TaskCheckType) => {
+          switch (type) {
+            case "bb.task-check.database.statement.compatibility":
+              return 0;
+            case "bb.task-check.database.statement.syntax":
+              return 1;
+            case "bb.task-check.database.connect":
+              return 2;
+            case "bb.task-check.instance.migration-schema":
+              return 3;
+            case "bb.task-check.database.statement.fake-advise":
+              return 100;
+          }
+        };
+
+        return taskCheckRunTypeOrder(a.type) - taskCheckRunTypeOrder(b.type);
+      });
     });
 
     // Returns the most severe status
