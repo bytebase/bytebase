@@ -45,8 +45,6 @@
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
 
-**Checkout [docs.bytebase.com](https://docs.bytebase.com) for more details**
-
 ## Installation
 
 [Detailed installation guide](https://docs.bytebase.com/install/docker)
@@ -62,6 +60,16 @@ docker run --init --name bytebase --restart always --publish 8080:8080 --volume 
 ```bash
 docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.7.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
+
+## 📕 Docs
+
+### User doc https://docs.bytebase.com
+
+In particular, get familar with various product concept such as [data model](https://docs.bytebase.com/concepts/data-model), [roles and permissions](https://docs.bytebase.com/concepts/roles-and-permissions) and etc.
+
+### Design doc
+
+https://github.com/bytebase/bytebase/tree/main/docs/design
 
 ## 🕊 Interested in contributing?
 
