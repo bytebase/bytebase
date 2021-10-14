@@ -49,6 +49,9 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
+		if member.RowStatus == api.Archived {
+			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
+		}
 
 		// If the requests is trying to PATCH/DELETE herself, we will change the method signature to
 		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
