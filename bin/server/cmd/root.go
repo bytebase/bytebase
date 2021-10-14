@@ -264,7 +264,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 }
 
 func (m *main) Run(ctx context.Context) error {
-	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly)
+	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
