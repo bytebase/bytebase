@@ -81,12 +81,14 @@ type DBTable struct {
 }
 
 type DBSchema struct {
-	Name         string
+	Name string
+	// CharacterSet is only applicable to MySQL/Postgres series.
 	CharacterSet string
-	Collation    string
-	UserList     []DBUser
-	TableList    []DBTable
-	ViewList     []DBView
+	// Collation is only applicable to MySQL/Postgres series.
+	Collation string
+	UserList  []DBUser
+	TableList []DBTable
+	ViewList  []DBView
 }
 
 var (
