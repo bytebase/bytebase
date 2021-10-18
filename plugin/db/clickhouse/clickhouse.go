@@ -11,6 +11,7 @@ import (
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
 )
 
@@ -110,8 +111,19 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 }
 
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
-	// TODO(spinningbot): implement it.
-	return "", nil
+	query := "SELECT VERSION()"
+	versionRow, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	defer versionRow.Close()
+
+	var version string
+	versionRow.Next()
+	if err := versionRow.Scan(&version); err != nil {
+		return "", err
+	}
+	return version, nil
 }
 
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
