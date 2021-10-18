@@ -147,7 +147,35 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		return nil, nil, err
 	}
 
-	return userList, nil, nil
+	// Query db info
+	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query := `
+		SELECT
+			name
+		FROM system.databases
+		WHERE ` + where
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	schemaList := make([]*db.DBSchema, 0)
+	for rows.Next() {
+		var schema db.DBSchema
+		if err := rows.Scan(
+			&schema.Name,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		schemaList = append(schemaList, &schema)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return userList, schemaList, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
