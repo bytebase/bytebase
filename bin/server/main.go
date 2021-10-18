@@ -6,6 +6,8 @@ import (
 
 	"github.com/bytebase/bytebase/bin/server/cmd"
 
+	// Register clickhouse driver
+	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
 	// Register mysql driver
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
 	// Register postgres driver
