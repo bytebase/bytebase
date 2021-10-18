@@ -150,62 +150,14 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 
 	// Query user info
-	query := `
-	    SELECT
-			user,
-			host
-		FROM mysql.user
-		WHERE user NOT LIKE 'mysql.%'
-	`
-	userList := make([]*db.DBUser, 0)
-	userRows, err := driver.db.QueryContext(ctx, query)
-
+	userList, err := driver.getUserList(ctx)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
-	}
-	defer userRows.Close()
-
-	for userRows.Next() {
-		var user string
-		var host string
-		if err := userRows.Scan(
-			&user,
-			&host,
-		); err != nil {
-			return nil, nil, err
-		}
-
-		// Uses single quote instead of backtick to escape because this is a string
-		// instead of table (which should use backtick instead). MySQL actually works
-		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-		name := fmt.Sprintf("'%s'@'%s'", user, host)
-		query = fmt.Sprintf("SHOW GRANTS FOR %s", name)
-		grantRows, err := driver.db.QueryContext(ctx,
-			query,
-		)
-		if err != nil {
-			return nil, nil, util.FormatErrorWithQuery(err, query)
-		}
-		defer grantRows.Close()
-
-		grantList := []string{}
-		for grantRows.Next() {
-			var grant string
-			if err := grantRows.Scan(&grant); err != nil {
-				return nil, nil, err
-			}
-			grantList = append(grantList, grant)
-		}
-
-		userList = append(userList, &db.DBUser{
-			Name:  name,
-			Grant: strings.Join(grantList, "\n"),
-		})
+		return nil, nil, err
 	}
 
 	// Query index info
 	indexWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	query = `
+	query := `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -499,6 +451,63 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 
 	return userList, schemaList, err
+}
+
+func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
+	// Query user info
+	query := `
+	  SELECT
+			user,
+			host
+		FROM mysql.user
+		WHERE user NOT LIKE 'mysql.%'
+	`
+	userList := make([]*db.DBUser, 0)
+	userRows, err := driver.db.QueryContext(ctx, query)
+
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer userRows.Close()
+
+	for userRows.Next() {
+		var user string
+		var host string
+		if err := userRows.Scan(
+			&user,
+			&host,
+		); err != nil {
+			return nil, err
+		}
+
+		// Uses single quote instead of backtick to escape because this is a string
+		// instead of table (which should use backtick instead). MySQL actually works
+		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
+		name := fmt.Sprintf("'%s'@'%s'", user, host)
+		query = fmt.Sprintf("SHOW GRANTS FOR %s", name)
+		grantRows, err := driver.db.QueryContext(ctx,
+			query,
+		)
+		if err != nil {
+			return nil, util.FormatErrorWithQuery(err, query)
+		}
+		defer grantRows.Close()
+
+		grantList := []string{}
+		for grantRows.Next() {
+			var grant string
+			if err := grantRows.Scan(&grant); err != nil {
+				return nil, err
+			}
+			grantList = append(grantList, grant)
+		}
+
+		userList = append(userList, &db.DBUser{
+			Name:  name,
+			Grant: strings.Join(grantList, "\n"),
+		})
+	}
+	return userList, nil
 }
 
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
