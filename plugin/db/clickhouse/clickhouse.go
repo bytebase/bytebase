@@ -19,6 +19,10 @@ import (
 var migrationSchema string
 
 var (
+	systemDatabases = map[string]bool{
+		"system": true,
+	}
+
 	_ db.Driver = (*Driver)(nil)
 )
 
@@ -127,8 +131,76 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 }
 
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
-	// TODO(spinningbot): implement it.
-	return nil, nil, nil
+	excludedDatabaseList := []string{
+		// Skip our internal "bytebase" database
+		"'bytebase'",
+	}
+
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+	}
+
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return userList, nil, nil
+}
+
+func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
+	// Query user info
+	// host_ip isn't used for user identifier.
+	query := `
+	  SELECT
+			name
+		FROM system.users
+	`
+	userList := make([]*db.DBUser, 0)
+	userRows, err := driver.db.QueryContext(ctx, query)
+
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer userRows.Close()
+
+	for userRows.Next() {
+		var user string
+		if err := userRows.Scan(
+			&user,
+		); err != nil {
+			return nil, err
+		}
+
+		// Uses single quote instead of backtick to escape because this is a string
+		// instead of table (which should use backtick instead). MySQL actually works
+		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
+		query = fmt.Sprintf("SHOW GRANTS FOR %s", user)
+		grantRows, err := driver.db.QueryContext(ctx,
+			query,
+		)
+		if err != nil {
+			return nil, util.FormatErrorWithQuery(err, query)
+		}
+		defer grantRows.Close()
+
+		grantList := []string{}
+		for grantRows.Next() {
+			var grant string
+			if err := grantRows.Scan(&grant); err != nil {
+				return nil, err
+			}
+			grantList = append(grantList, grant)
+		}
+
+		userList = append(userList, &db.DBUser{
+			Name:  user,
+			Grant: strings.Join(grantList, "\n"),
+		})
+	}
+	return userList, nil
 }
 
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
