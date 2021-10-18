@@ -224,7 +224,8 @@ func (db *DB) migrate() error {
 
 	db.l.Info(fmt.Sprintf("Current schema version before migration: %d.%d", major, minor))
 
-	if major != MAJOR_SCHEMA_VERSION {
+	// major version is 0 when the store isn't yet setup for the first time.
+	if major != 0 && major != MAJOR_SCHEMA_VERSION {
 		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, MAJOR_SCHEMA_VERSION, db.releaseVersion)
 	}
 
