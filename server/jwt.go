@@ -126,6 +126,7 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 	// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 	cookie.HttpOnly = true
 	cookie.Secure = true
+	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
 }
 
@@ -147,6 +148,7 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	cookie.Expires = expiration
 	cookie.Path = "/"
 	cookie.Secure = true
+	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
 }
 
