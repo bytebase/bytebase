@@ -79,7 +79,8 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	if err != nil {
 		return -1, "", err
 	}
-	if version != nil {
+	// Clickhouse will always return non-nil version with empty string.
+	if version != nil && len(*version) > 0 {
 		return -1, "", common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
 	}
 
@@ -142,20 +143,26 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 		if err := rows.Err(); err != nil {
 			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
 		}
+		// Clickhouse sql driver doesn't support taking now() as prepared value.
+		now := time.Now().Unix()
 		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
 			insertedID,
 			m.Creator,
+			now,
 			m.Creator,
+			now,
 			m.ReleaseVersion,
 			m.Namespace,
 			sequence,
 			m.Engine,
 			m.Type,
+			"PENDING",
 			m.Version,
 			m.Description,
 			statement,
 			prevSchemaBuf.String(),
 			prevSchemaBuf.String(),
+			0,
 			m.IssueId,
 			m.Payload,
 		)
@@ -299,7 +306,7 @@ func checkOutofOrderVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, nam
 	queryParams := &db.QueryParams{DatabaseType: dbType}
 	queryParams.AddParam("namespace", namespace)
 	queryParams.AddParam("engine", engine.String())
-	queryParams.AddParam("? < version", version)
+	queryParams.AddParam("version > ?", version)
 	query := `
 		SELECT MIN(version) FROM ` +
 		tablePrefix + `migration_history ` +

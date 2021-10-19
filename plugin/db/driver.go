@@ -414,6 +414,8 @@ func (p *QueryParams) QueryString() string {
 		return mysqlQuery(p.Names)
 	case TiDB:
 		return mysqlQuery(p.Names)
+	case ClickHouse:
+		return mysqlQuery(p.Names)
 	case Postgres:
 		return pgQuery(p.Names)
 	}
