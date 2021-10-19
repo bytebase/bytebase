@@ -249,12 +249,40 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Migration related
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	// TODO(spinningbot): implement it.
-	return false, nil
+	const query = `
+		SELECT
+			1
+		FROM system.tables
+		WHERE database = 'bytebase' AND name = 'migration_history'
+	`
+	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
-	// TODO(spinningbot): implement it.
+	setup, err := driver.NeedsSetupMigration(ctx)
+	if err != nil {
+		return nil
+	}
+
+	if setup {
+		driver.l.Info("Bytebase migration schema not found, creating schema...",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
+		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
+			driver.l.Error("Failed to initialize migration schema.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
+			return util.FormatErrorWithQuery(err, migrationSchema)
+		}
+		driver.l.Info("Successfully created migration schema.",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
+	}
+
 	return nil
 }
 
@@ -265,7 +293,29 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	return nil, nil
+	baseQuery := `
+	SELECT
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		schema_prev,
+		execution_duration,
+		issue_id,
+		payload
+		FROM bytebase.migration_history `
+	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, baseQuery)
 }
 
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
