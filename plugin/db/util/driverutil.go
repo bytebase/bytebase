@@ -107,7 +107,7 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	insertedId := int64(-1)
+	insertedID := int64(-1)
 	if dbType == db.Postgres {
 		tx.QueryRowContext(ctx, args.InsertHistoryQuery,
 			m.Creator,
@@ -124,7 +124,44 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 			prevSchemaBuf.String(),
 			m.IssueId,
 			m.Payload,
-		).Scan(&insertedId)
+		).Scan(&insertedID)
+	} else if dbType == db.ClickHouse {
+		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.migration_history"
+		rows, err := tx.QueryContext(ctx, maxIDQuery)
+		if err != nil {
+			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			if err := rows.Scan(
+				&insertedID,
+			); err != nil {
+				return -1, "", FormatErrorWithQuery(err, maxIDQuery)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
+		}
+		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
+			insertedID,
+			m.Creator,
+			m.Creator,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			prevSchemaBuf.String(),
+			prevSchemaBuf.String(),
+			m.IssueId,
+			m.Payload,
+		)
+		if err != nil {
+			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+		}
 	} else {
 		res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
 			m.Creator,
@@ -147,7 +184,7 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
 		}
 
-		insertedId, err = res.LastInsertId()
+		insertedID, err = res.LastInsertId()
 		if err != nil {
 			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
 		}
@@ -197,7 +234,7 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	_, err = afterTx.ExecContext(ctx, args.UpdateHistoryQuery,
 		duration,
 		afterSchemaBuf.String(),
-		insertedId,
+		insertedID,
 	)
 
 	if err != nil {
@@ -208,7 +245,7 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 		return -1, "", err
 	}
 
-	return insertedId, afterSchemaBuf.String(), nil
+	return insertedID, afterSchemaBuf.String(), nil
 }
 
 func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
