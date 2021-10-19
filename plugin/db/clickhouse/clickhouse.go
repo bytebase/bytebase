@@ -320,7 +320,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		issue_id,
 		payload
 	)
-	VALUES (?, now(), ?, now(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 	updateHistoryQuery := `
 		ALTER TABLE
@@ -336,7 +336,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		UpdateHistoryQuery: updateHistoryQuery,
 		TablePrefix:        "bytebase.",
 	}
-	return util.ExecuteMigration(ctx, db.MySQL, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, db.ClickHouse, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
