@@ -288,8 +288,45 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 // ExecuteMigration will execute the migration for MySQL.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	// TODO(spinningbot): implement it.
-	return 0, "", nil
+	insertHistoryQuery := `
+	INSERT INTO bytebase.migration_history (
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		schema_prev,
+		execution_duration,
+		issue_id,
+		payload
+	)
+	VALUES (?, now(), ?, now(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	updateHistoryQuery := `
+		ALTER TABLE
+			bytebase.migration_history
+		UPDATE
+			status = 'DONE',
+			execution_duration = ?,
+		` + "`schema` = ?" + `
+		WHERE id = ?
+	`
+	args := util.MigrationExecutionArgs{
+		InsertHistoryQuery: insertHistoryQuery,
+		UpdateHistoryQuery: updateHistoryQuery,
+		TablePrefix:        "bytebase.",
+	}
+	return util.ExecuteMigration(ctx, db.MySQL, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
