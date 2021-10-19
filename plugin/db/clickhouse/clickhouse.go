@@ -238,13 +238,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
+	err = driver.ExecuteStatement(ctx, tx, statement)
 
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 
 	return err
+}
+
+func (driver *Driver) ExecuteStatement(ctx context.Context, tx *sql.Tx, statement string) error {
+	stmts := db.SplitStatements(statement)
+	for _, stmt := range stmts {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Migration related
@@ -269,7 +279,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
-		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
+		if err := driver.Execute(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
