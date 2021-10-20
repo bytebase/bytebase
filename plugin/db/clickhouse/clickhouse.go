@@ -147,9 +147,116 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		return nil, nil, err
 	}
 
+	// Query column info
+	columnWhere := fmt.Sprintf("LOWER(database) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query := `
+			SELECT
+				database,
+				table,
+				name, 
+				position,
+				default_expression,
+				type,
+				comment
+			FROM system.columns
+			WHERE ` + columnWhere
+	columnRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer columnRows.Close()
+
+	// dbName/tableName -> columnList map
+	columnMap := make(map[string][]db.DBColumn)
+	for columnRows.Next() {
+		var dbName string
+		var tableName string
+		var column db.DBColumn
+		if err := columnRows.Scan(
+			&dbName,
+			&tableName,
+			&column.Name,
+			&column.Position,
+			&column.Default,
+			&column.Type,
+			&column.Comment,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		key := fmt.Sprintf("%s/%s", dbName, tableName)
+		tableList, ok := columnMap[key]
+		if ok {
+			columnMap[key] = append(tableList, column)
+		} else {
+			list := make([]db.DBColumn, 0)
+			columnMap[key] = append(list, column)
+		}
+	}
+
+	// Query table info
+	tableWhere := fmt.Sprintf("LOWER(database) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query = `
+			SELECT
+				database, 
+				name,
+				engine,
+				total_rows,
+				create_table_query,
+				comment
+			FROM system.tables
+			WHERE ` + tableWhere
+	tableRows, err := driver.db.QueryContext(ctx, query)
+	// metadata_modification_time, total_rows, total_bytes, lifetime_rows, lifetime_bytes
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer tableRows.Close()
+
+	// dbName -> tableList map
+	tableMap := make(map[string][]db.DBTable)
+	// dbName -> viewList map
+	viewMap := make(map[string][]db.DBView)
+
+	for tableRows.Next() {
+		var dbName, name, engine, definition, comment string
+		var rowCount sql.NullInt64
+		if err := tableRows.Scan(
+			&dbName,
+			&name,
+			&engine,
+			&rowCount,
+			&definition,
+			&comment,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		if engine == "View" {
+			var view db.DBView
+			view.Name = name
+			view.Definition = definition
+			view.Comment = comment
+			viewMap[dbName] = append(viewMap[dbName], view)
+		} else {
+			var table db.DBTable
+			table.Type = "BASE TABLE"
+			table.Name = name
+			table.Engine = engine
+			table.Comment = comment
+			if rowCount.Valid {
+				table.RowCount = rowCount.Int64
+			}
+			key := fmt.Sprintf("%s/%s", dbName, name)
+			table.ColumnList = columnMap[key]
+			tableMap[dbName] = append(tableMap[dbName], table)
+		}
+	}
+
+	schemaList := make([]*db.DBSchema, 0)
 	// Query db info
 	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	query := `
+	query = `
 		SELECT
 			name
 		FROM system.databases
@@ -159,8 +266,6 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
-
-	schemaList := make([]*db.DBSchema, 0)
 	for rows.Next() {
 		var schema db.DBSchema
 		if err := rows.Scan(
@@ -168,6 +273,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		); err != nil {
 			return nil, nil, err
 		}
+		schema.TableList = tableMap[schema.Name]
+		schema.ViewList = viewMap[schema.Name]
 
 		schemaList = append(schemaList, &schema)
 	}
