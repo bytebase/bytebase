@@ -525,7 +525,6 @@ export default {
     });
 
     const valueChanged = computed(() => {
-      console.log("value", state.useEmptyPassword);
       return (
         !isEqual(state.instance, state.originalInstance) ||
         !isEmpty(state.updatedPassword) ||
