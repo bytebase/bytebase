@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
 	"github.com/bytebase/bytebase/common"
@@ -203,12 +204,13 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 				name,
 				engine,
 				total_rows,
+				total_bytes,
+				metadata_modification_time,
 				create_table_query,
 				comment
 			FROM system.tables
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, query)
-	// metadata_modification_time, total_rows, total_bytes, lifetime_rows, lifetime_bytes
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -221,12 +223,15 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 
 	for tableRows.Next() {
 		var dbName, name, engine, definition, comment string
-		var rowCount sql.NullInt64
+		var rowCount, totalBytes sql.NullInt64
+		var lastUpdatedTime time.Time
 		if err := tableRows.Scan(
 			&dbName,
 			&name,
 			&engine,
 			&rowCount,
+			&totalBytes,
+			&lastUpdatedTime,
 			&definition,
 			&comment,
 		); err != nil {
@@ -236,6 +241,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		if engine == "View" {
 			var view db.DBView
 			view.Name = name
+			view.UpdatedTs = lastUpdatedTime.Unix()
 			view.Definition = definition
 			view.Comment = comment
 			viewMap[dbName] = append(viewMap[dbName], view)
@@ -248,6 +254,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			if rowCount.Valid {
 				table.RowCount = rowCount.Int64
 			}
+			if totalBytes.Valid {
+				table.DataSize = totalBytes.Int64
+			}
+			table.UpdatedTs = lastUpdatedTime.Unix()
 			key := fmt.Sprintf("%s/%s", dbName, name)
 			table.ColumnList = columnMap[key]
 			tableMap[dbName] = append(tableMap[dbName], table)
