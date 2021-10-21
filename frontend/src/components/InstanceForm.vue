@@ -313,7 +313,10 @@ input[type="number"] {
           <div class="sm:col-span-1 sm:col-start-1">
             <div class="flex flex-row items-center space-x-2">
               <label for="password" class="textlabel block">Password</label>
+              <!-- In create mode, user can leave the password field empty and create the instance,
+              so there is no need to show the checkbox. -->
               <BBCheckbox
+                v-if="!create"
                 :title="'Empty'"
                 :value="state.useEmptyPassword"
                 @toggle="
