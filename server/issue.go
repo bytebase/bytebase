@@ -409,6 +409,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 					} else {
 						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
 					}
+				case db.ClickHouse:
+					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s`", taskCreate.DatabaseName)
 				}
 				bytes, err := json.Marshal(payload)
 				if err != nil {
