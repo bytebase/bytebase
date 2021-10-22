@@ -5,10 +5,11 @@ import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
-export type EngineType = "MYSQL" | "POSTGRES" | "TIDB";
+export type EngineType = "CLICKHOUSE" | "MYSQL" | "POSTGRES" | "TIDB";
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
+    case "CLICKHOUSE":
     case "MYSQL":
     case "TIDB":
       return "utf8mb4";
@@ -19,6 +20,7 @@ export function defaultCharset(type: EngineType): string {
 
 export function defaultCollation(type: EngineType): string {
   switch (type) {
+    case "CLICKHOUSE":
     case "MYSQL":
     case "TIDB":
       return "utf8mb4_general_ci";
