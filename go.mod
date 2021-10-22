@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.16
 
 require (
-	github.com/ClickHouse/clickhouse-go v1.5.1 // indirect
+	github.com/ClickHouse/clickhouse-go v1.5.1
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/casbin/casbin/v2 v2.29.2
 	github.com/go-sql-driver/mysql v1.6.0
