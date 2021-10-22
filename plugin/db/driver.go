@@ -421,17 +421,3 @@ func (p *QueryParams) QueryString() string {
 	}
 	return ""
 }
-
-// SplitStatements will split the sql statements into multiple statement parts.
-// TODO(spinningbot): making this more robust.
-func SplitStatements(stmt string) []string {
-	stmts := strings.Split(stmt, ";")
-	var ret []string
-	for _, stmt := range stmts {
-		stmt = strings.Trim(stmt, " \n")
-		if len(stmt) > 0 {
-			ret = append(ret, stmt)
-		}
-	}
-	return ret
-}

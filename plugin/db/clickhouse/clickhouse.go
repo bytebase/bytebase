@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pingcap/parser"
 	"go.uber.org/zap"
 )
 
@@ -366,7 +367,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 }
 
 func (driver *Driver) ExecuteStatement(ctx context.Context, tx *sql.Tx, statement string) error {
-	stmts := db.SplitStatements(statement)
+	p := parser.New()
+	root, _, err := p.Parse(statement, "", "")
+	if err != nil {
+		return err
+	}
+	var stmts []string
+	for _, node := range root {
+		stmts = append(stmts, node.Text())
+	}
+
 	for _, stmt := range stmts {
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return err
