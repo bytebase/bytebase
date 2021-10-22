@@ -2,6 +2,11 @@
   <div class="tooltip-wrapper">
     <span class="tooltip">{{ instance.engineVersion }}</span>
     <img
+      v-if="instance.engine == 'CLICKHOUSE'"
+      class="h-4 w-auto"
+      src="../assets/db-clickhouse.png"
+    />
+    <img
       v-if="instance.engine == 'MYSQL'"
       class="h-4 w-auto"
       src="../assets/db-mysql.png"

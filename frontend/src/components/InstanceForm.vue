@@ -17,7 +17,7 @@ input[type="number"] {
     <div class="space-y-6 divide-y divide-block-border px-1">
       <div v-if="create" class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template
-          v-for="(engine, index) in ['MYSQL', 'POSTGRES', 'TIDB']"
+          v-for="(engine, index) in ['MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE']"
           :key="index"
         >
           <div
@@ -38,7 +38,7 @@ input[type="number"] {
               <template v-if="engine == 'MYSQL'">
                 <img class="h-8 w-auto" src="../assets/db-mysql.png" alt="" />
               </template>
-              <template v-if="engine == 'POSTGRES'">
+              <template v-else-if="engine == 'POSTGRES'">
                 <img
                   class="h-8 w-auto"
                   src="../assets/db-postgres.png"
@@ -47,6 +47,13 @@ input[type="number"] {
               </template>
               <template v-else-if="engine == 'TIDB'">
                 <img class="h-8 w-auto" src="../assets/db-tidb.png" />
+              </template>
+              <template v-else-if="engine == 'CLICKHOUSE'">
+                <img
+                  class="h-8 w-auto"
+                  src="../assets/db-clickhouse.png"
+                  alt=""
+                />
               </template>
               <p class="mt-1 text-center textlabel">
                 {{ engineName(engine) }}
@@ -216,6 +223,7 @@ input[type="number"] {
             >
               <template
                 v-if="
+                  state.instance.engine == 'CLICKHOUSE' ||
                   state.instance.engine == 'MYSQL' ||
                   state.instance.engine == 'TIDB'
                 "
@@ -305,6 +313,9 @@ input[type="number"] {
               type="text"
               class="textfield mt-1 w-full"
               :disabled="!allowEdit"
+              :placeholder="
+                state.instance.engine == 'CLICKHOUSE' ? 'default' : ''
+              "
               :value="state.instance.username"
               @input="state.instance.username = $event.target.value"
             />
@@ -313,7 +324,10 @@ input[type="number"] {
           <div class="sm:col-span-1 sm:col-start-1">
             <div class="flex flex-row items-center space-x-2">
               <label for="password" class="textlabel block">Password</label>
+              <!-- In create mode, user can leave the password field empty and create the instance,
+              so there is no need to show the checkbox. -->
               <BBCheckbox
+                v-if="!create"
                 :title="'Empty'"
                 :value="state.useEmptyPassword"
                 @toggle="
@@ -525,7 +539,6 @@ export default {
     });
 
     const valueChanged = computed(() => {
-      console.log("value", state.useEmptyPassword);
       return (
         !isEqual(state.instance, state.originalInstance) ||
         !isEmpty(state.updatedPassword) ||
@@ -534,7 +547,9 @@ export default {
     });
 
     const defaultPort = computed(() => {
-      if (state.instance.engine == "POSTGRES") {
+      if (state.instance.engine == "CLICKHOUSE") {
+        return "9000";
+      } else if (state.instance.engine == "POSTGRES") {
         return "5432";
       } else if (state.instance.engine == "TIDB") {
         return "4000";
@@ -544,6 +559,8 @@ export default {
 
     const engineName = (type: EngineType): string => {
       switch (type) {
+        case "CLICKHOUSE":
+          return "ClickHouse";
         case "MYSQL":
           return "MySQL";
         case "POSTGRES":
@@ -555,6 +572,7 @@ export default {
 
     const grantStatement = (type: EngineType): string => {
       switch (type) {
+        case "CLICKHOUSE":
         case "MYSQL":
         case "TIDB":
           return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
