@@ -490,7 +490,7 @@ VALUES
         0
     );
 
--- Database for prod environment archived mysql instance 6007
+-- Database for dev environment TiDB instance 6007
 INSERT INTO
     db (
         id,
@@ -510,6 +510,34 @@ VALUES
         101,
         101,
         6007,
+        1,
+        '*',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        0
+    );
+
+-- Database for prod environment archived mysql instance 6099
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts
+    )
+VALUES
+    (
+        7099,
+        101,
+        101,
+        6099,
         3001,
         '*',
         'utf8mb4',
