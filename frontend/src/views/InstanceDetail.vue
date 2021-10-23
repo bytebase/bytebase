@@ -28,14 +28,24 @@
               }
             "
           />
-          <button
-            v-if="allowEdit"
-            type="button"
-            class="btn-normal"
-            @click.prevent="syncSchema"
-          >
-            Sync Now
-          </button>
+          <div class="flex space-x-4">
+            <button
+              v-if="allowEdit"
+              type="button"
+              class="btn-normal"
+              @click.prevent="syncSchema"
+            >
+              Sync Now
+            </button>
+            <button
+              v-if="instance.rowStatus == 'NORMAL'"
+              type="button"
+              class="btn-primary"
+              @click.prevent="createDatabase"
+            >
+              New Database
+            </button>
+          </div>
         </div>
         <DatabaseTable
           v-if="state.selectedIndex == DATABASE_TAB"
@@ -89,6 +99,18 @@
     @cancel="state.showCreateMigrationSchemaModal = false"
   >
   </BBAlert>
+
+  <BBModal
+    v-if="state.showCreateDatabaseModal"
+    :title="'Create database'"
+    @close="state.showCreateDatabaseModal = false"
+  >
+    <CreateDatabasePrepForm
+      :environmentId="instance.environment.id"
+      :instanceId="instance.id"
+      @dismiss="state.showCreateDatabaseModal = false"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -100,6 +122,7 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
+import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   Anomaly,
   Database,
@@ -118,6 +141,7 @@ interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
   showCreateMigrationSchemaModal: boolean;
   creatingMigrationSchema: boolean;
+  showCreateDatabaseModal: boolean;
 }
 
 export default {
@@ -128,6 +152,7 @@ export default {
     DataSourceTable,
     InstanceUserTable,
     InstanceForm,
+    CreateDatabasePrepForm,
   },
   props: {
     instanceSlug: {
@@ -145,6 +170,7 @@ export default {
       migrationSetupStatus: "OK",
       showCreateMigrationSchemaModal: false,
       creatingMigrationSchema: false,
+      showCreateDatabaseModal: false,
     });
 
     const instance = computed((): Instance => {
@@ -337,6 +363,10 @@ export default {
         });
     };
 
+    const createDatabase = () => {
+      state.showCreateDatabaseModal = true;
+    };
+
     return {
       DATABASE_TAB,
       USER_TAB,
@@ -354,6 +384,7 @@ export default {
       doRestore,
       doCreateMigrationSchema,
       syncSchema,
+      createDatabase,
     };
   },
 };
