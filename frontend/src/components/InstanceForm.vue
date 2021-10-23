@@ -658,6 +658,7 @@ export default {
 
     const doUpdate = () => {
       const patchedInstance: InstancePatch = { useEmptyPassword: false };
+      let connectionInfoChanged = false;
       if (state.instance.name != state.originalInstance!.name) {
         patchedInstance.name = state.instance.name;
       }
@@ -666,17 +667,22 @@ export default {
       }
       if (state.instance.host != state.originalInstance!.host) {
         patchedInstance.host = state.instance.host;
+        connectionInfoChanged = true;
       }
       if (state.instance.port != state.originalInstance!.port) {
         patchedInstance.port = state.instance.port;
+        connectionInfoChanged = true;
       }
       if (state.instance.username != state.originalInstance!.username) {
         patchedInstance.username = state.instance.username;
+        connectionInfoChanged = true;
       }
       if (state.useEmptyPassword) {
         patchedInstance.useEmptyPassword = true;
+        connectionInfoChanged = true;
       } else if (!isEmpty(state.updatedPassword)) {
         patchedInstance.password = state.updatedPassword;
+        connectionInfoChanged = true;
       }
 
       state.creatingOrUpdating = true;
@@ -698,6 +704,14 @@ export default {
             style: "SUCCESS",
             title: `Successfully updated instance '${instance.name}'.`,
           });
+
+          // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
+          if (connectionInfoChanged) {
+            store.dispatch(
+              "database/fetchDatabaseListByInstanceId",
+              instance.id
+            );
+          }
         });
     };
 
