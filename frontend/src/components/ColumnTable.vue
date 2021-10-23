@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
+    :columnList="columnNameList"
     :dataSource="columnList"
     :showHeader="true"
     :leftBordered="true"
@@ -19,10 +19,13 @@
       <BBTableCell class="w-8">
         {{ column.nullable }}
       </BBTableCell>
-      <BBTableCell v-if="engine != 'POSTGRES'" class="w-8">
+      <BBTableCell
+        v-if="engine != 'POSTGRES' && engine != 'CLICKHOUSE'"
+        class="w-8"
+      >
         {{ column.characterSet }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell v-if="engine != 'CLICKHOUSE'" class="w-8">
         {{ column.collation }}
       </BBTableCell>
       <BBTableCell class="w-16">
@@ -33,7 +36,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Column, EngineType } from "../types";
 
@@ -82,6 +85,24 @@ const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
   },
 ];
 
+const CLICKHOUSE_COLUMN_LIST: BBTableColumn[] = [
+  {
+    title: "Name",
+  },
+  {
+    title: "Type",
+  },
+  {
+    title: "Default",
+  },
+  {
+    title: "Nullable",
+  },
+  {
+    title: "Comment",
+  },
+];
+
 export default {
   name: "ColumnTable",
   components: {},
@@ -96,9 +117,18 @@ export default {
     },
   },
   setup(props, ctx) {
+    const columnNameList = computed(() => {
+      switch (props.engine) {
+        case "POSTGRES":
+          return POSTGRES_COLUMN_LIST;
+        case "CLICKHOUSE":
+          return CLICKHOUSE_COLUMN_LIST;
+        default:
+          return NORMAL_COLUMN_LIST;
+      }
+    });
     return {
-      COLUMN_LIST:
-        props.engine == "POSTGRES" ? POSTGRES_COLUMN_LIST : NORMAL_COLUMN_LIST,
+      columnNameList,
     };
   },
 };

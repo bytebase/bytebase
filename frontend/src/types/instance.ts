@@ -10,6 +10,7 @@ export type EngineType = "CLICKHOUSE" | "MYSQL" | "POSTGRES" | "TIDB";
 export function defaultCharset(type: EngineType): string {
   switch (type) {
     case "CLICKHOUSE":
+      return "";
     case "MYSQL":
     case "TIDB":
       return "utf8mb4";
@@ -21,6 +22,7 @@ export function defaultCharset(type: EngineType): string {
 export function defaultCollation(type: EngineType): string {
   switch (type) {
     case "CLICKHOUSE":
+      return "";
     case "MYSQL":
     case "TIDB":
       return "utf8mb4_general_ci";
