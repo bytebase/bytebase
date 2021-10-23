@@ -74,7 +74,7 @@
             <template v-if="database.sourceBackup">
               <dt class="sr-only">Parent</dt>
               <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
-                <span class="textlabel">Restored&nbsp;-&nbsp;</span>
+                <span class="textlabel">Restored&nbsp;from&nbsp;</span>
                 <router-link
                   :to="`/db/${database.sourceBackup.databaseId}`"
                   class="normal-link"
@@ -84,7 +84,7 @@
                     >{{ database.name }} is restored from another database
                     backup</span
                   >
-                  Parent database
+                  database backup
                 </router-link>
               </dd>
             </template>
