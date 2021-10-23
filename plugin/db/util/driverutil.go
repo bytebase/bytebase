@@ -57,6 +57,13 @@ func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
 			s = ""
 		}
 	}
+	// Apply the remaining content.
+	if s != "" {
+		if err := f(s); err != nil {
+			return fmt.Errorf("execute query %q failed: %v", s, err)
+		}
+	}
+
 	if err := sc.Err(); err != nil {
 		return err
 	}
