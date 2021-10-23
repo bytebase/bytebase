@@ -33,25 +33,27 @@
 
     <!-- Description list -->
     <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4">
-      <div class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{
-            database.instance.engine == "POSTGRES"
-              ? "Encoding"
-              : "Character set"
-          }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ database.characterSet }}
-        </dd>
-      </div>
+      <template v-if="database.instance.engine != 'CLICKHOUSE'">
+        <div class="col-span-1 col-start-1">
+          <dt class="text-sm font-medium text-control-light">
+            {{
+              database.instance.engine == "POSTGRES"
+                ? "Encoding"
+                : "Character set"
+            }}
+          </dt>
+          <dd class="mt-1 text-sm text-main">
+            {{ database.characterSet }}
+          </dd>
+        </div>
 
-      <div class="col-span-1">
-        <dt class="text-sm font-medium text-control-light">Collation</dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ database.collation }}
-        </dd>
-      </div>
+        <div class="col-span-1">
+          <dt class="text-sm font-medium text-control-light">Collation</dt>
+          <dd class="mt-1 text-sm text-main">
+            {{ database.collation }}
+          </dd>
+        </div>
+      </template>
 
       <div class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">Sync status</dt>

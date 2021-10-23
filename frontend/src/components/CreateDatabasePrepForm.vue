@@ -69,33 +69,39 @@
         </div>
       </div>
 
-      <div class="col-span-2 col-start-2 w-64">
-        <label for="charset" class="textlabel">
-          {{
-            selectedInstance.engine == "POSTGRES" ? "Encoding" : "Character set"
-          }}</label
-        >
-        <input
-          id="charset"
-          name="charset"
-          type="text"
-          class="textfield mt-1 w-full"
-          :placeholder="defaultCharset(selectedInstance.engine)"
-          v-model="state.characterSet"
-        />
-      </div>
+      <template v-if="selectedInstance.engine != 'CLICKHOUSE'">
+        <div class="col-span-2 col-start-2 w-64">
+          <label for="charset" class="textlabel">
+            {{
+              selectedInstance.engine == "POSTGRES"
+                ? "Encoding"
+                : "Character set"
+            }}</label
+          >
+          <input
+            id="charset"
+            name="charset"
+            type="text"
+            class="textfield mt-1 w-full"
+            :placeholder="defaultCharset(selectedInstance.engine)"
+            v-model="state.characterSet"
+          />
+        </div>
 
-      <div class="col-span-2 col-start-2 w-64">
-        <label for="collation" class="textlabel"> Collation </label>
-        <input
-          id="collation"
-          name="collation"
-          type="text"
-          class="textfield mt-1 w-full"
-          :placeholder="defaultCollation(selectedInstance.engine) || 'default'"
-          v-model="state.collation"
-        />
-      </div>
+        <div class="col-span-2 col-start-2 w-64">
+          <label for="collation" class="textlabel"> Collation </label>
+          <input
+            id="collation"
+            name="collation"
+            type="text"
+            class="textfield mt-1 w-full"
+            :placeholder="
+              defaultCollation(selectedInstance.engine) || 'default'
+            "
+            v-model="state.collation"
+          />
+        </div>
+      </template>
 
       <div v-if="showAssigneeSelect" class="col-span-2 col-start-2 w-64">
         <label for="user" class="textlabel">
