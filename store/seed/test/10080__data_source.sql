@@ -169,6 +169,31 @@ VALUES
         7019,
         'Admin data source',
         'ADMIN',
+        '',
+        ''
+    );
+
+INSERT INTO
+    data_source (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        database_id,
+        name,
+        TYPE,
+        username,
+        PASSWORD
+    )
+VALUES
+    (
+        8099,
+        1,
+        1,
+        6099,
+        7099,
+        'Admin data source',
+        'ADMIN',
         'admin',
         'Prod12345'
     );

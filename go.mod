@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.16
 
 require (
-	github.com/ClickHouse/clickhouse-go v1.5.1 // indirect
+	github.com/ClickHouse/clickhouse-go v1.5.1
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/casbin/casbin/v2 v2.29.2
 	github.com/go-sql-driver/mysql v1.6.0
@@ -12,7 +12,7 @@ require (
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
-	github.com/labstack/echo/v4 v4.2.2
+	github.com/labstack/echo/v4 v4.6.1
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v2.0.1+incompatible
 	github.com/pingcap/parser v0.0.0-20200623164729-3a18f1e5dceb
@@ -21,8 +21,7 @@ require (
 	github.com/spf13/cobra v1.2.0
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0
-	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 )
 
 // tidb pulls in the old sqlite3 v2.0.1+incompatible which doesn't support the latest sqlite3 feature such as RETURNING.
