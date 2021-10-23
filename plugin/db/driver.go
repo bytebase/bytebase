@@ -29,7 +29,8 @@ type DBUser struct {
 }
 
 type DBView struct {
-	Name       string
+	Name string
+	// CreatedTs isn't supported for ClickHouse.
 	CreatedTs  int64
 	UpdatedTs  int64
 	Definition string
@@ -43,7 +44,7 @@ type DBIndex struct {
 	Position   int
 	Type       string
 	Unique     bool
-	// Visible is only applicable to MySQL series.
+	// Visible isn't supported for Postgres.
 	Visible bool
 	Comment string
 }
@@ -52,39 +53,45 @@ type DBColumn struct {
 	Name     string
 	Position int
 	Default  *string
+	// Nullable isn't supported for ClickHouse.
 	Nullable bool
 	Type     string
-	// CharacterSet is only applicable to MySQL series.
+	// CharacterSet isn't supported for Postgres, ClickHouse..
 	CharacterSet string
-	Collation    string
-	Comment      string
+	// Collation isn't supported for ClickHouse.
+	Collation string
+	Comment   string
 }
 
 type DBTable struct {
-	Name      string
+	Name string
+	// CreatedTs isn't supported for ClickHouse.
 	CreatedTs int64
 	UpdatedTs int64
 	Type      string
-	// Engine is only applicable to MySQL series.
+	// Engine isn't supported for Postgres.
 	Engine string
-	// Collation is only applicable to MySQL series.
+	// Collation isn't supported for Postgres, ClickHouse.
 	Collation string
 	RowCount  int64
 	DataSize  int64
+	// IndexSize isn't ClickHouse.
 	IndexSize int64
-	// DataFree is only applicable to MySQL series.
-	DataFree      int64
+	// DataFree isn't supported for Postgres, ClickHouse.
+	DataFree int64
+	// CreateOptions isn't supported for Postgres, ClickHouse.
 	CreateOptions string
 	Comment       string
 	ColumnList    []DBColumn
-	IndexList     []DBIndex
+	// IndexList isn't supported for ClickHouse.
+	IndexList []DBIndex
 }
 
 type DBSchema struct {
 	Name string
-	// CharacterSet is only applicable to MySQL/Postgres series.
+	// CharacterSet isn't supported for ClickHouse.
 	CharacterSet string
-	// Collation is only applicable to MySQL/Postgres series.
+	// Collation isn't supported for ClickHouse.
 	Collation string
 	UserList  []DBUser
 	TableList []DBTable
