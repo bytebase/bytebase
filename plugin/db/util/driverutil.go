@@ -26,11 +26,30 @@ func FormatErrorWithQuery(err error, query string) error {
 func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
 	s := ""
 	delimiter := false
+	comment := false
 	for sc.Scan() {
 		line := sc.Text()
 
 		execute := false
 		switch {
+		case strings.HasPrefix(line, "/*"):
+			if strings.Contains(line, "*/") {
+				if !strings.HasSuffix(line, "*/") {
+					return fmt.Errorf("`*/` must be the end of the line; new statement should start as a new line")
+				}
+			} else {
+				comment = true
+			}
+			continue
+		case comment && !strings.Contains(line, "*/"):
+			// Skip the line when in comment mode.
+			continue
+		case comment && strings.Contains(line, "*/"):
+			if !strings.HasSuffix(line, "*/") {
+				return fmt.Errorf("`*/` must be the end of the line; new statement should start as a new line")
+			}
+			comment = false
+			continue
 		case s == "" && line == "":
 			continue
 		case strings.HasPrefix(line, "--"):
