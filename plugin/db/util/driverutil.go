@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"database/sql"
@@ -19,6 +20,47 @@ const (
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
+}
+
+// ApplyMultiStatements will apply the splitted statements from scanner.
+func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
+	s := ""
+	delimiter := false
+	for sc.Scan() {
+		line := sc.Text()
+
+		execute := false
+		switch {
+		case s == "" && line == "":
+			continue
+		case strings.HasPrefix(line, "--"):
+			continue
+		case line == "DELIMITER ;;":
+			delimiter = true
+			continue
+		case line == "DELIMITER ;" && delimiter:
+			delimiter = false
+			execute = true
+		case strings.HasSuffix(line, ";"):
+			s = s + line + "\n"
+			if !delimiter {
+				execute = true
+			}
+		default:
+			s = s + line + "\n"
+			continue
+		}
+		if execute {
+			if err := f(s); err != nil {
+				return fmt.Errorf("execute query %q failed: %v", s, err)
+			}
+			s = ""
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.

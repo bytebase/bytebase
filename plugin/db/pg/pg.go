@@ -712,46 +712,14 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 	defer txn.Rollback()
 
-	s := ""
-	tokenName := ""
-	for sc.Scan() {
-		line := sc.Text()
-
-		execute := false
-
-		switch {
-		case s == "" && line == "":
-			continue
-		case strings.HasPrefix(line, "--"):
-			continue
-		case tokenName != "":
-			if strings.Contains(line, tokenName) {
-				tokenName = ""
-			}
-		default:
-			token := asToken.FindString(line)
-			if token != "" {
-				identifier := token[3:]
-				rest := line[strings.Index(line, identifier)+len(identifier):]
-				if !strings.Contains(rest, identifier) {
-					tokenName = identifier
-				}
-			}
+	f := func(stmt string) error {
+		if _, err := txn.Exec(stmt); err != nil {
+			return err
 		}
-		s = s + line + "\n"
-		if strings.HasSuffix(line, ";") && tokenName == "" {
-			execute = true
-		}
-
-		if execute {
-			_, err := txn.Exec(s)
-			if err != nil {
-				return fmt.Errorf("execute query %q failed: %v", s, err)
-			}
-			s = ""
-		}
+		return nil
 	}
-	if err := sc.Err(); err != nil {
+
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
 		return err
 	}
 

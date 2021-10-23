@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/pingcap/parser"
 	"go.uber.org/zap"
 )
 
@@ -357,32 +356,22 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	err = driver.ExecuteStatement(ctx, tx, statement)
+	f := func(stmt string) error {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+		return nil
+	}
+	sc := bufio.NewScanner(strings.NewReader(statement))
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
+		return err
+	}
 
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 
 	return err
-}
-
-func (driver *Driver) ExecuteStatement(ctx context.Context, tx *sql.Tx, statement string) error {
-	p := parser.New()
-	root, _, err := p.Parse(statement, "", "")
-	if err != nil {
-		return err
-	}
-	var stmts []string
-	for _, node := range root {
-		stmts = append(stmts, node.Text())
-	}
-
-	for _, stmt := range stmts {
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Migration related
@@ -679,41 +668,14 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 	defer txn.Rollback()
 
-	s := ""
-	delimiter := false
-	for sc.Scan() {
-		line := sc.Text()
-
-		execute := false
-		switch {
-		case s == "" && line == "":
-			continue
-		case strings.HasPrefix(line, "--"):
-			continue
-		case line == "DELIMITER ;;":
-			delimiter = true
-			continue
-		case line == "DELIMITER ;" && delimiter:
-			delimiter = false
-			execute = true
-		case strings.HasSuffix(line, ";"):
-			s = s + line + "\n"
-			if !delimiter {
-				execute = true
-			}
-		default:
-			s = s + line + "\n"
-			continue
+	f := func(stmt string) error {
+		if _, err := txn.Exec(stmt); err != nil {
+			return err
 		}
-		if execute {
-			_, err := txn.Exec(s)
-			if err != nil {
-				return fmt.Errorf("execute query %q failed: %v", s, err)
-			}
-			s = ""
-		}
+		return nil
 	}
-	if err := sc.Err(); err != nil {
+
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
 		return err
 	}
 
