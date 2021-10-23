@@ -223,7 +223,6 @@ input[type="number"] {
             >
               <template
                 v-if="
-                  state.instance.engine == 'CLICKHOUSE' ||
                   state.instance.engine == 'MYSQL' ||
                   state.instance.engine == 'TIDB'
                 "
@@ -231,6 +230,19 @@ input[type="number"] {
                 Below is an example to create user 'bytebase@%' with password
                 <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
                 with the needed privileges.
+              </template>
+              <template v-else-if="state.instance.engine == 'CLICKHOUSE'">
+                Below is an example to create user 'bytebase' with password
+                <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
+                with the needed privileges. First you need to enable
+                <a
+                  class="normal-link"
+                  href="https://clickhouse.com/docs/en/operations/access-rights/#access-control-usage"
+                  target="__blank"
+                >
+                  ClickHouse SQL-driven workflow</a
+                >
+                and then run the following query to create the user.
               </template>
               <template v-if="state.instance.engine == 'POSTGRES'">
                 <BBAttention
@@ -573,6 +585,7 @@ export default {
     const grantStatement = (type: EngineType): string => {
       switch (type) {
         case "CLICKHOUSE":
+          return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
         case "MYSQL":
         case "TIDB":
           return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
