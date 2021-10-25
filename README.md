@@ -1,14 +1,10 @@
 <p align="center">
-<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/frontend/src/assets/logo.svg" height="56px" /></a>
-</p>
-
-<p align="center">
 <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
 </p>
 
 <p align="center">
-<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/main.webp" height="400px" /></a>
+<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/main.webp" /></a>
 </p>
 
 [Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
