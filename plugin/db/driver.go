@@ -20,6 +20,7 @@ const (
 	ClickHouse Type = "CLICKHOUSE"
 	MySQL      Type = "MYSQL"
 	Postgres   Type = "POSTGRES"
+	Snowflake  Type = "SNOWFLAKE"
 	TiDB       Type = "TIDB"
 )
 
@@ -422,6 +423,8 @@ func (p *QueryParams) QueryString() string {
 	case TiDB:
 		return mysqlQuery(p.Names)
 	case ClickHouse:
+		return mysqlQuery(p.Names)
+	case Snowflake:
 		return mysqlQuery(p.Names)
 	case Postgres:
 		return pgQuery(p.Names)
