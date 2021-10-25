@@ -61,6 +61,19 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 								fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", taskCreate.Collation),
 							)
 						}
+					} else if instance.Engine == db.Snowflake {
+						if taskCreate.CharacterSet != "" {
+							return echo.NewHTTPError(
+								http.StatusBadRequest,
+								fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", taskCreate.CharacterSet),
+							)
+						}
+						if taskCreate.Collation != "" {
+							return echo.NewHTTPError(
+								http.StatusBadRequest,
+								fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", taskCreate.Collation),
+							)
+						}
 					} else {
 						if taskCreate.CharacterSet == "" {
 							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
@@ -427,6 +440,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 					}
 				case db.ClickHouse:
 					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s`", taskCreate.DatabaseName)
+				case db.Snowflake:
+					payload.Statement = fmt.Sprintf("CREATE DATABASE %s", taskCreate.DatabaseName)
 				}
 				bytes, err := json.Marshal(payload)
 				if err != nil {
