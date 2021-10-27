@@ -17,7 +17,13 @@ input[type="number"] {
     <div class="space-y-6 divide-y divide-block-border px-1">
       <div v-if="create" class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template
-          v-for="(engine, index) in ['MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE']"
+          v-for="(engine, index) in [
+            'MYSQL',
+            'POSTGRES',
+            'TIDB',
+            'SNOWFLAKE',
+            'CLICKHOUSE',
+          ]"
           :key="index"
         >
           <div
@@ -47,6 +53,13 @@ input[type="number"] {
               </template>
               <template v-else-if="engine == 'TIDB'">
                 <img class="h-8 w-auto" src="../assets/db-tidb.png" />
+              </template>
+              <template v-else-if="engine == 'SNOWFLAKE'">
+                <img
+                  class="h-8 w-auto"
+                  src="../assets/db-snowflake.png"
+                  alt=""
+                />
               </template>
               <template v-else-if="engine == 'CLICKHOUSE'">
                 <img
@@ -563,6 +576,8 @@ export default {
         return "9000";
       } else if (state.instance.engine == "POSTGRES") {
         return "5432";
+      } else if (state.instance.engine == "SNOWFLAKE") {
+        return "";
       } else if (state.instance.engine == "TIDB") {
         return "4000";
       }
@@ -577,6 +592,8 @@ export default {
           return "MySQL";
         case "POSTGRES":
           return "PostgreSQL";
+        case "SNOWFLAKE":
+          return "Snowflake";
         case "TIDB":
           return "TiDB";
       }
@@ -586,6 +603,8 @@ export default {
       switch (type) {
         case "CLICKHOUSE":
           return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
+        case "SNOWFLAKE":
+          return "";
         case "MYSQL":
         case "TIDB":
           return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";

@@ -5,11 +5,17 @@ import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
-export type EngineType = "CLICKHOUSE" | "MYSQL" | "POSTGRES" | "TIDB";
+export type EngineType =
+  | "CLICKHOUSE"
+  | "MYSQL"
+  | "POSTGRES"
+  | "SNOWFLAKE"
+  | "TIDB";
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
     case "CLICKHOUSE":
+    case "SNOWFLAKE":
       return "";
     case "MYSQL":
     case "TIDB":
@@ -22,6 +28,7 @@ export function defaultCharset(type: EngineType): string {
 export function defaultCollation(type: EngineType): string {
   switch (type) {
     case "CLICKHOUSE":
+    case "SNOWFLAKE":
       return "";
     case "MYSQL":
     case "TIDB":

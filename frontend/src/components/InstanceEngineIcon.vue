@@ -17,6 +17,11 @@
       src="../assets/db-postgres.png"
     />
     <img
+      v-if="instance.engine == 'SNOWFLAKE'"
+      class="h-4 w-auto"
+      src="../assets/db-snowflake.png"
+    />
+    <img
       v-else-if="instance.engine == 'TIDB'"
       class="h-4 w-auto"
       src="../assets/db-tidb.png"
