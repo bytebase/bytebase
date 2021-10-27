@@ -239,6 +239,49 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		if err != nil {
 			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
 		}
+	} else if dbType == db.Snowflake {
+		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
+		rows, err := tx.QueryContext(ctx, maxIDQuery)
+		if err != nil {
+			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
+		}
+		defer rows.Close()
+		var id sql.NullInt64
+		for rows.Next() {
+			if err := rows.Scan(
+				&id,
+			); err != nil {
+				return -1, "", FormatErrorWithQuery(err, maxIDQuery)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
+		}
+		if id.Valid {
+			insertedID = id.Int64
+		} else {
+			insertedID = 1
+		}
+
+		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			prevSchemaBuf.String(),
+			prevSchemaBuf.String(),
+			m.IssueId,
+			m.Payload,
+		)
+		if err != nil {
+			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
+		}
 	} else {
 		res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
 			m.Creator,

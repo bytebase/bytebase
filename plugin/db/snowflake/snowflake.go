@@ -23,6 +23,8 @@ var (
 		"information_schema": true,
 	}
 	bytebaseDatabase = "BYTEBASE"
+	sysAdminRole     = "SYSADMIN"
+	accountAdminRole = "ACCOUNTADMIN"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -101,9 +103,21 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
+func (driver *Driver) UseRole(ctx context.Context, role string) error {
+	query := fmt.Sprintf("USE ROLE %s", role)
+	if _, err := driver.db.ExecContext(ctx, query); err != nil {
+		return util.FormatErrorWithQuery(err, query)
+	}
+	return nil
+}
+
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	// TODO(spinningbot): implement it.
 	// Query user info
+	if err := driver.UseRole(ctx, accountAdminRole); err != nil {
+		return nil, nil, err
+	}
+
 	userList, err := driver.getUserList(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -131,21 +145,14 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 }
 
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
-	tx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
+	if err := driver.UseRole(ctx, accountAdminRole); err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-
-	if _, err = tx.ExecContext(ctx, "Use ROLE accountadmin"); err != nil {
-		return nil, err
-	}
-
 	query := `
 		SELECT 
 			DATABASE_NAME
 		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -170,23 +177,13 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 	// Query user info
-	tx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err = tx.ExecContext(ctx, "Use ROLE accountadmin"); err != nil {
-		return nil, err
-	}
-
 	query := `
 	  SELECT
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
 	`
 	userList := make([]*db.DBUser, 0)
-	userRows, err := tx.QueryContext(ctx, query)
+	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -211,6 +208,9 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 }
 
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+		return nil
+	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -287,6 +287,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
+		// Should use role SYSADMIN.
 		if err := driver.Execute(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
@@ -306,8 +307,58 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 // ExecuteMigration will execute the migration for MySQL.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	// TODO(spinningbot): implement it.
-	return int64(0), "", nil
+	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+		return int64(0), "", err
+	}
+	insertHistoryQuery := `
+		INSERT INTO bytebase.public.migration_history (
+			created_by,
+			created_ts,
+			updated_by,
+			updated_ts,
+			release_version,
+			namespace,
+			sequence,
+			engine,
+			type,
+			status,
+			version,
+			description,
+			statement,
+			schema,
+			schema_prev,
+			execution_duration,
+			issue_id,
+			payload
+		)
+		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	updateHistoryAsDoneQuery := `
+		UPDATE
+			bytebase.public.migration_history
+		SET
+			status = 'DONE',
+			execution_duration = ?,
+			schema = ?
+		WHERE id = ?
+	`
+
+	updateHistoryAsFailedQuery := `
+		UPDATE
+			bytebase.public.migration_history
+		SET
+			status = 'FAILED',
+			execution_duration = ?
+		WHERE id = ?
+	`
+
+	args := util.MigrationExecutionArgs{
+		InsertHistoryQuery:         insertHistoryQuery,
+		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
+		TablePrefix:                "bytebase.public.",
+	}
+	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
