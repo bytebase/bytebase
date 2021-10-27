@@ -519,8 +519,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 	_, err = tx.ExecContext(ctx, statement)
 
-	if err := tx.Commit(); err != nil {
-		return err
+	if err == nil {
+		if err := tx.Commit(); err != nil {
+			return err
+		}
 	}
 
 	return err
