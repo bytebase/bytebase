@@ -107,7 +107,44 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	if err != nil {
 		return nil, nil, err
 	}
-	return userList, nil, nil
+
+	// Query db info
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err = tx.ExecContext(ctx, "Use ROLE accountadmin"); err != nil {
+		return nil, nil, err
+	}
+
+	query := `
+		SELECT 
+			DATABASE_NAME
+		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
+	rows, err := tx.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	schemaList := make([]*db.DBSchema, 0)
+	for rows.Next() {
+		var schema db.DBSchema
+		if err := rows.Scan(
+			&schema.Name,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		schemaList = append(schemaList, &schema)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return userList, schemaList, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {

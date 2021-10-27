@@ -90,9 +90,9 @@ type DBTable struct {
 
 type DBSchema struct {
 	Name string
-	// CharacterSet isn't supported for ClickHouse.
+	// CharacterSet isn't supported for ClickHouse, Snowflake.
 	CharacterSet string
-	// Collation isn't supported for ClickHouse.
+	// Collation isn't supported for ClickHouse, Snowflake.
 	Collation string
 	UserList  []DBUser
 	TableList []DBTable
