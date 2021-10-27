@@ -152,6 +152,7 @@ type MigrationStatus string
 const (
 	Pending MigrationStatus = "PENDING"
 	Done    MigrationStatus = "DONE"
+	Failed  MigrationStatus = "FAILED"
 )
 
 func (e MigrationStatus) String() string {
@@ -160,6 +161,8 @@ func (e MigrationStatus) String() string {
 		return "PENDING"
 	case Done:
 		return "DONE"
+	case Failed:
+		return "FAILED"
 	}
 	return "UNKNOWN"
 }

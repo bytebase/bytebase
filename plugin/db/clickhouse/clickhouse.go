@@ -439,7 +439,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
-	updateHistoryQuery := `
+	updateHistoryAsDoneQuery := `
 		ALTER TABLE
 			bytebase.migration_history
 		UPDATE
@@ -448,12 +448,22 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		` + "`schema` = ?" + `
 		WHERE id = ?
 	`
+	updateHistoryAsFailedQuery := `
+		ALTER TABLE
+			bytebase.migration_history
+		UPDATE
+			status = 'FAILED',
+			execution_duration = ?
+		WHERE id = ?
+	`
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery: insertHistoryQuery,
-		UpdateHistoryQuery: updateHistoryQuery,
-		TablePrefix:        "bytebase.",
+		InsertHistoryQuery:         insertHistoryQuery,
+		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
+		TablePrefix:                "bytebase.",
 	}
-	return util.ExecuteMigration(ctx, db.ClickHouse, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

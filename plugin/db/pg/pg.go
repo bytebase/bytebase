@@ -625,7 +625,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10, $11, $12, 0, $13, $14)
 	RETURNING id
 `
-	updateHistoryQuery := `
+	updateHistoryAsDoneQuery := `
 	UPDATE
 		migration_history
 	SET
@@ -635,12 +635,22 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	WHERE id = $3
 `
 
+	updateHistoryAsFailedQuery := `
+	UPDATE
+		migration_history
+	SET
+    status = 'FAILED',
+	  execution_duration = $1
+	WHERE id = $2
+`
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery: insertHistoryQuery,
-		UpdateHistoryQuery: updateHistoryQuery,
-		TablePrefix:        "",
+		InsertHistoryQuery:         insertHistoryQuery,
+		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
+		TablePrefix:                "",
 	}
-	return util.ExecuteMigration(ctx, db.Postgres, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
