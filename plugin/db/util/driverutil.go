@@ -276,11 +276,10 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 	if statement != "" {
 		// Switch to the database if we're creating a new database
 		if !m.CreateDatabase {
-			d, err := driver.GetDbConnection(ctx, m.Database)
+			_, err := driver.GetDbConnection(ctx, m.Database)
 			if err != nil {
 				return -1, "", err
 			}
-			sqldb = d
 		}
 		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
 		if err = driver.Execute(ctx, statement); err != nil {
