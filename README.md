@@ -9,26 +9,44 @@
 
 [Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
 
-- :heavy_check_mark: Web-based schema change and management workspace for teams
-- :heavy_check_mark: Version control based schema migration (Database-as-Code)
-- :heavy_check_mark: Classic UI based schema migraiton (SQL Review)
-- :heavy_check_mark: Detailed migration history
-- :heavy_check_mark: Backup and restore
-- :heavy_check_mark: Anomaly center
-- :heavy_check_mark: Environment policy
-  - Approval policy
-  - Backup schedule enforcement
-- :heavy_check_mark: Schema drift detection
-- :heavy_check_mark: Backward compatibility schema change check
-- :heavy_check_mark: Role-based access control (RBAC)
-- :heavy_check_mark: MySQL support
-- :heavy_check_mark: PostgreSQL support
-- :heavy_check_mark: TiDB support
-- :heavy_check_mark: ClickHouse support
-- :heavy_check_mark: GitLab CE/EE support
-- :heavy_check_mark: Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
-- [ ] GitLab.com support
-- [ ] GitHub support
+:heavy_check_mark: Web-based schema change and management workspace for teams
+
+:heavy_check_mark: Version control based schema migration (Database-as-Code)
+
+:heavy_check_mark: Classic UI based schema migraiton (SQL Review)
+
+:heavy_check_mark: Detailed migration history
+
+:heavy_check_mark: Backup and restore
+
+:heavy_check_mark: Anomaly center
+
+:heavy_check_mark: Environment policy
+
+- Approval policy
+- Backup schedule enforcement
+
+:heavy_check_mark: Schema drift detection
+
+:heavy_check_mark: Backward compatibility schema change check
+
+:heavy_check_mark: Role-based access control (RBAC)
+
+:heavy_check_mark: MySQL support
+
+:heavy_check_mark: PostgreSQL support
+
+:heavy_check_mark: TiDB support
+
+:heavy_check_mark: ClickHouse support
+
+:heavy_check_mark: GitLab CE/EE support
+
+:heavy_check_mark: Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
+
+[ ] GitLab.com support
+
+[ ] GitHub support
 
 <figcaption align = "center">Fig.1 - Dashboard</figcaption>
 
