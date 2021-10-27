@@ -25,6 +25,13 @@
         />
       </svg>
     </template>
+    <template v-else-if="status === `FAILED`">
+      <span
+        class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
+        aria-hidden="true"
+        >!</span
+      >
+    </template>
   </span>
 </template>
 
@@ -49,6 +56,8 @@ export default {
           return iconClass + " bg-white border-2 border-info text-info";
         case "DONE":
           return iconClass + " bg-success text-white";
+        case "FAILED":
+          return iconClass + " bg-error text-white";
       }
     };
 

@@ -24,7 +24,7 @@ CREATE TABLE migration_history (
     type TEXT NOT NULL CHECK (type in ('BASELINE', 'MIGRATE', 'BRANCH')),
     -- PostgreSQL can't do cross database transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
-    status TEXT NOT NULL CHECK (status in ('PENDING', 'DONE')),
+    status TEXT NOT NULL CHECK (status in ('PENDING', 'DONE', 'FAILED')),
     -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,

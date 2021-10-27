@@ -595,7 +595,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
 `
-	updateHistoryQuery := `
+	updateHistoryAsDoneQuery := `
 	UPDATE
 		bytebase.migration_history
 	SET
@@ -604,12 +604,23 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	` + "`schema` = ?" + `
 	WHERE id = ?
 	`
+
+	updateHistoryAsFailedQuery := `
+	UPDATE
+		bytebase.migration_history
+	SET
+		status = 'FAILED',
+		execution_duration = ?
+	WHERE id = ?
+	`
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery: insertHistoryQuery,
-		UpdateHistoryQuery: updateHistoryQuery,
-		TablePrefix:        "bytebase.",
+		InsertHistoryQuery:         insertHistoryQuery,
+		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
+		TablePrefix:                "bytebase.",
 	}
-	return util.ExecuteMigration(ctx, db.MySQL, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, db.MySQL, driver, m, statement, args)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

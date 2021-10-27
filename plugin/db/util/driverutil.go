@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"go.uber.org/zap"
 )
 
 const (
@@ -106,14 +107,15 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 
 // MigrationExecutionArgs includes the arguments for ExecuteMigration().
 type MigrationExecutionArgs struct {
-	InsertHistoryQuery string
-	UpdateHistoryQuery string
-	TablePrefix        string
+	InsertHistoryQuery         string
+	UpdateHistoryAsDoneQuery   string
+	UpdateHistoryAsFailedQuery string
+	TablePrefix                string
 }
 
 // ExecuteMigration will execute the database migration.
 // Returns the created migraiton history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (int64, string, error) {
+func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryId int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
@@ -269,10 +271,56 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 		return -1, "", err
 	}
 
+	startedTs := time.Now().Unix()
+
+	// If we have already started migration, there will be a PENDING migration record. Upon returning,
+	// we will update that record to DONE or FAILED depending on whether error occurs.
+	defer func() (myErr error) {
+		defer func() {
+			if myErr != nil {
+				l.Error("Failed to update migration history record",
+					zap.Error(myErr),
+					zap.Int64("migration_id", insertedID),
+				)
+			}
+		}()
+
+		migrationDuration := time.Now().Unix() - startedTs
+		afterSqldb, tmpErr := driver.GetDbConnection(ctx, bytebaseDatabase)
+		if tmpErr != nil {
+			return
+		}
+		afterTx, tmpErr := afterSqldb.BeginTx(ctx, nil)
+		if tmpErr != nil {
+			return
+		}
+		defer afterTx.Rollback()
+
+		if resErr == nil {
+			// Upon success, update the migration history as 'DONE', execution_duration, updated schema.
+			_, tmpErr = afterTx.ExecContext(ctx, args.UpdateHistoryAsDoneQuery,
+				migrationDuration,
+				updatedSchema,
+				insertedID,
+			)
+		} else {
+			// Otherwise, update the migration history as 'FAILED', exeuction_duration
+			_, tmpErr = afterTx.ExecContext(ctx, args.UpdateHistoryAsFailedQuery,
+				migrationDuration,
+				insertedID,
+			)
+		}
+
+		if tmpErr != nil {
+			return tmpErr
+		}
+
+		return afterTx.Commit()
+	}()
+
 	// Phase 3 - Executing migration
 	// Branch migration type always has empty sql.
 	// Baseline migration type could also has empty sql when the database is newly created.
-	startedTs := time.Now().Unix()
 	if statement != "" {
 		// Switch to the database if we're creating a new database
 		if !m.CreateDatabase {
@@ -286,36 +334,11 @@ func ExecuteMigration(ctx context.Context, dbType db.Type, driver db.Driver, m *
 			return -1, "", formatError(err)
 		}
 	}
-	duration := time.Now().Unix() - startedTs
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if err = driver.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return -1, "", formatError(err)
-	}
-
-	// Phase 5 - Update the migration history with 'DONE', execution_duration, updated schema.
-	afterSqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
-	if err != nil {
-		return -1, "", err
-	}
-	afterTx, err := afterSqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return -1, "", err
-	}
-	defer afterTx.Rollback()
-	_, err = afterTx.ExecContext(ctx, args.UpdateHistoryQuery,
-		duration,
-		afterSchemaBuf.String(),
-		insertedID,
-	)
-
-	if err != nil {
-		return -1, "", FormatErrorWithQuery(err, args.UpdateHistoryQuery)
-	}
-
-	if err := afterTx.Commit(); err != nil {
-		return -1, "", err
 	}
 
 	return insertedID, afterSchemaBuf.String(), nil
