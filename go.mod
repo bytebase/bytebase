@@ -8,6 +8,7 @@ require (
 	github.com/casbin/casbin/v2 v2.29.2
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
@@ -18,6 +19,7 @@ require (
 	github.com/pingcap/parser v0.0.0-20200623164729-3a18f1e5dceb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
+	github.com/snowflakedb/gosnowflake v1.6.3 // indirect
 	github.com/spf13/cobra v1.2.0
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0
