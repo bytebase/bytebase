@@ -179,7 +179,6 @@ var (
 		"-- PostgreSQL database structure for %s\n" +
 		"--\n"
 	useDatabaseFmt             = "\\connect %s;\n\n"
-	asToken                    = regexp.MustCompile("(AS )[$]([a-z]+)[$]")
 	bytebaseDatabase           = "bytebase"
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
