@@ -18,9 +18,9 @@
         <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-48" :title="columnList[4].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-32" :title="columnList[6].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
       </template>
       <template v-else>
@@ -31,9 +31,9 @@
         />
         <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-48" :title="columnList[3].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-32" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
       </template>
     </template>
@@ -63,8 +63,17 @@
           </router-link>
         </template>
       </BBTableCell>
-      <BBTableCell>
-        {{ history.description }}
+      <BBTableCell class="tooltip-wrapper">
+        <span
+          v-if="history.statement.length > 100"
+          class="tooltip whitespace-pre-wrap"
+          >{{ history.statement }}</span
+        >
+        {{
+          history.statement.length > 100
+            ? history.statement.substring(0, 100) + "..."
+            : history.statement
+        }}
       </BBTableCell>
       <BBTableCell>
         {{ secondsToString(history.executionDuration) }}
@@ -106,7 +115,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Issue",
       },
       {
-        title: "Description",
+        title: "SQL",
       },
       {
         title: "Duration",
@@ -130,7 +139,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Issue",
       },
       {
-        title: "Description",
+        title: "SQL",
       },
       {
         title: "Duration",
