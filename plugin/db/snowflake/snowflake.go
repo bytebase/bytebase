@@ -102,12 +102,54 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
 	// TODO(spinningbot): implement it.
-	return nil, nil, nil
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return userList, nil, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
-	// TODO(spinningbot): implement it.
-	return nil, nil
+	// Query user info
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err = tx.ExecContext(ctx, "Use ROLE accountadmin"); err != nil {
+		return nil, err
+	}
+
+	query := `
+	  SELECT
+			name
+		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
+	`
+	userList := make([]*db.DBUser, 0)
+	userRows, err := tx.QueryContext(ctx, query)
+
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer userRows.Close()
+
+	for userRows.Next() {
+		var name string
+		if err := userRows.Scan(
+			&name,
+		); err != nil {
+			return nil, err
+		}
+
+		userList = append(userList, &db.DBUser{
+			Name: name,
+			// TODO(spinningbot): show grants.
+			Grant: "",
+		})
+	}
+	return userList, nil
 }
 
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
