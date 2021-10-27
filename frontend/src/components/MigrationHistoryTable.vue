@@ -22,7 +22,6 @@
         <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
         <BBTableHeaderCell class="w-32" :title="columnList[6].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[8].title" />
       </template>
       <template v-else>
         <BBTableHeaderCell
@@ -36,7 +35,6 @@
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell class="w-32" :title="columnList[5].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
       </template>
     </template>
     <template v-slot:body="{ rowData: history }">
@@ -48,9 +46,11 @@
       </BBTableCell>
       <BBTableCell :leftPadding="mode == 'DATABASE' ? 0 : 4">
         {{ history.version }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ history.type }}
+        <span
+          v-if="history.type == 'BASELINE' || history.type == 'BRANCH'"
+          class="textinfolabel"
+          >({{ history.type }})</span
+        >
       </BBTableCell>
       <BBTableCell>
         <template v-if="history.issueId">
@@ -103,9 +103,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "Version",
       },
       {
-        title: "Type",
-      },
-      {
         title: "Issue",
       },
       {
@@ -128,9 +125,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
       { title: "" },
       {
         title: "Version",
-      },
-      {
-        title: "Type",
       },
       {
         title: "Issue",
