@@ -38,13 +38,13 @@
       </template>
     </template>
     <template v-slot:body="{ rowData: history }">
-      <BBTableCell>
+      <BBTableCell :leftPadding="4">
         <MigrationHistoryStatusIcon :status="history.status" />
       </BBTableCell>
-      <BBTableCell v-if="mode == 'DATABASE'" :leftPadding="4">
+      <BBTableCell v-if="mode == 'DATABASE'">
         {{ history.engine }}
       </BBTableCell>
-      <BBTableCell :leftPadding="mode == 'DATABASE' ? 0 : 4">
+      <BBTableCell>
         {{ history.version }}
         <span
           v-if="history.type == 'BASELINE' || history.type == 'BRANCH'"
