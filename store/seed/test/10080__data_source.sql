@@ -187,6 +187,31 @@ INSERT INTO
     )
 VALUES
     (
+        8008,
+        1,
+        1,
+        6008,
+        7020,
+        'Admin data source',
+        'ADMIN',
+        '',
+        ''
+    );
+
+INSERT INTO
+    data_source (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        database_id,
+        name,
+        TYPE,
+        username,
+        PASSWORD
+    )
+VALUES
+    (
         8099,
         1,
         1,

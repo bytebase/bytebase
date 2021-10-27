@@ -190,6 +190,33 @@ VALUES
 INSERT INTO
     instance (
         id,
+        creator_id,
+        updater_id,
+        environment_id,
+        name,
+        `engine`,
+        engine_version,
+        host,
+        port,
+        external_link
+    )
+VALUES
+    (
+        6008,
+        101,
+        101,
+        5001,
+        'Localhost Dev Snowflake',
+        'SNOWFLAKE',
+        '21.10.2.15',
+        '127.0.0.1',
+        '',
+        "bytebase.com/database/snowflake"
+    );
+
+INSERT INTO
+    instance (
+        id,
         row_status,
         creator_id,
         updater_id,

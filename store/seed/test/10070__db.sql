@@ -490,7 +490,7 @@ VALUES
         0
     );
 
--- Database for dev environment TiDB instance 6007
+-- Database for dev environment ClickHouse instance 6007
 INSERT INTO
     db (
         id,
@@ -514,6 +514,34 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        'OK',
+        0
+    );
+
+-- Database for dev environment Snowflake instance 6008
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts
+    )
+VALUES
+    (
+        7020,
+        101,
+        101,
+        6008,
+        1,
+        '*',
+        '',
+        '',
         'OK',
         0
     );
