@@ -12,6 +12,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
 	// Register postgres driver
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
+	// Register snowflake driver
+	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
 
 	// Register fake advisor
 	_ "github.com/bytebase/bytebase/plugin/advisor/fake"

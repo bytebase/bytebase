@@ -5,10 +5,13 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	_ "github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
 )
 
@@ -42,8 +45,31 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	// TODO(spinningbot): implement it.
-	return nil, nil
+	prefixParts, loggedPrefixParts := []string{config.Username}, []string{config.Username}
+	if config.Password != "" {
+		prefixParts = append(prefixParts, config.Password)
+		loggedPrefixParts = append(loggedPrefixParts, "<<redacted password>>")
+	}
+	// Host can also be account e.g. xma12345.
+	suffixParts := []string{config.Host}
+	// TODO(spinningbot): support port later. suffixParts = append(suffixParts, config.Port)
+
+	dsn := fmt.Sprintf("%s@%s/%s", strings.Join(prefixParts, ":"), strings.Join(suffixParts, ":"), config.Database)
+	loggedDSN := fmt.Sprintf("%s@%s/%s", strings.Join(loggedPrefixParts, ":"), strings.Join(suffixParts, ":"), config.Database)
+	driver.l.Debug("Opening Snowflake driver",
+		zap.String("dsn", loggedDSN),
+		zap.String("environment", connCtx.EnvironmentName),
+		zap.String("database", connCtx.InstanceName),
+	)
+	db, err := sql.Open("snowflake", dsn)
+	if err != nil {
+		panic(err)
+	}
+	driver.dbType = dbType
+	driver.db = db
+	driver.connectionCtx = connCtx
+
+	return driver, nil
 }
 
 func (driver *Driver) Close(ctx context.Context) error {
