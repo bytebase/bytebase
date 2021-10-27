@@ -24,6 +24,7 @@
 - [x] MySQL support
 - [x] PostgreSQL support
 - [x] TiDB support
+- [x] ClickHouse support
 - [x] GitLab CE/EE support
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
 - [ ] GitLab.com support
