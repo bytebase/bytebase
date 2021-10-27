@@ -11,7 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	_ "github.com/snowflakedb/gosnowflake"
+	snow "github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +22,7 @@ var (
 	systemSchemas = map[string]bool{
 		"information_schema": true,
 	}
+	bytebaseDatabase = "BYTEBASE"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -109,14 +110,35 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 
 	// Query db info
-	tx, err := driver.db.BeginTx(ctx, nil)
+	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	var schemaList []*db.DBSchema
+	for _, database := range databases {
+		if database == bytebaseDatabase {
+			continue
+		}
+
+		var schema db.DBSchema
+		schema.Name = database
+
+		schemaList = append(schemaList, &schema)
+	}
+
+	return userList, schemaList, nil
+}
+
+func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	if _, err = tx.ExecContext(ctx, "Use ROLE accountadmin"); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	query := `
@@ -125,26 +147,25 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
-	schemaList := make([]*db.DBSchema, 0)
+	var databases []string
 	for rows.Next() {
-		var schema db.DBSchema
+		var name string
 		if err := rows.Scan(
-			&schema.Name,
+			&name,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		schemaList = append(schemaList, &schema)
+		databases = append(databases, name)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	return userList, schemaList, nil
+	return databases, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
@@ -196,7 +217,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
+	count := 0
+	f := func(stmt string) error {
+		count++
+		return nil
+	}
+	sc := bufio.NewScanner(strings.NewReader(statement))
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
+		return err
+	}
+
+	mctx, err := snow.WithMultiStatement(ctx, count)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(mctx, statement); err != nil {
+		return err
+	}
 
 	if err := tx.Commit(); err != nil {
 		return err
@@ -207,8 +244,36 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Migration related
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	// TODO(spinningbot): implement it.
-	return false, nil
+	exist, err := driver.hasBytebaseDatabase(ctx)
+	if err != nil {
+		return false, err
+	}
+	if !exist {
+		return true, nil
+	}
+
+	const query = `
+		SELECT 
+		    1
+		FROM BYTEBASE.INFORMATION_SCHEMA.TABLES
+		WHERE TABLE_SCHEMA='PUBLIC' AND TABLE_NAME = 'MIGRATION_HISTORY'
+	`
+	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
+}
+
+func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
+	databases, err := driver.getDatabases(ctx)
+	if err != nil {
+		return false, err
+	}
+	exist := false
+	for _, database := range databases {
+		if database == bytebaseDatabase {
+			exist = true
+			break
+		}
+	}
+	return exist, nil
 }
 
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
@@ -222,7 +287,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
-		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
+		if err := driver.Execute(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
