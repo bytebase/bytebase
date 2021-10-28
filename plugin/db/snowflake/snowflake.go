@@ -137,11 +137,70 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 
 		var schema db.DBSchema
 		schema.Name = database
+		tableList, viewList, err := driver.syncTableSchema(ctx, database)
+		if err != nil {
+			return nil, nil, err
+		}
+		schema.TableList, schema.ViewList = tableList, viewList
 
 		schemaList = append(schemaList, &schema)
 	}
 
 	return userList, schemaList, nil
+}
+
+func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]db.DBTable, []db.DBView, error) {
+	// Query table info
+	var excludedSchemaList []string
+
+	// Skip all system schemas.
+	for k := range systemSchemas {
+		excludedSchemaList = append(excludedSchemaList, fmt.Sprintf("'%s'", k))
+	}
+	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
+	query := fmt.Sprintf(`
+		SELECT
+			TABLE_SCHEMA, 
+			TABLE_NAME,
+			DATE_PART(EPOCH_SECOND, CREATED),
+			DATE_PART(EPOCH_SECOND, LAST_ALTERED),
+			TABLE_TYPE,
+			ROW_COUNT,
+			BYTES,
+			IFNULL(COMMENT, '')
+		FROM %s.INFORMATION_SCHEMA.TABLES
+		WHERE TABLE_TYPE = 'BASE TABLE' AND %s`, database, tableWhere)
+	tableRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer tableRows.Close()
+
+	var tables []db.DBTable
+	for tableRows.Next() {
+		var schemaName, tableName string
+		var table db.DBTable
+		if err := tableRows.Scan(
+			&schemaName,
+			&tableName,
+			&table.CreatedTs,
+			&table.UpdatedTs,
+			&table.Type,
+			&table.RowCount,
+			&table.DataSize,
+			&table.Comment,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		table.Name = fmt.Sprintf("%s.%s", schemaName, tableName)
+		tables = append(tables, table)
+	}
+	if err := tableRows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return tables, nil, nil
 }
 
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
