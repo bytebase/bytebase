@@ -157,8 +157,61 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 	for k := range systemSchemas {
 		excludedSchemaList = append(excludedSchemaList, fmt.Sprintf("'%s'", k))
 	}
-	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
+	excludeWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
+
+	// Query column info
 	query := fmt.Sprintf(`
+		SELECT
+			TABLE_SCHEMA,
+			TABLE_NAME,
+			IFNULL(COLUMN_NAME, ''), 
+			ORDINAL_POSITION,
+			COLUMN_DEFAULT,
+			IS_NULLABLE,
+			DATA_TYPE,
+			IFNULL(CHARACTER_SET_NAME, ''),
+			IFNULL(COLLATION_NAME, ''),
+			IFNULL(COMMENT, '')
+		FROM %s.INFORMATION_SCHEMA.COLUMNS
+		WHERE %s`, database, excludeWhere)
+	columnRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer columnRows.Close()
+
+	// schemaName.tableName -> columnList map
+	columnMap := make(map[string][]db.DBColumn)
+	for columnRows.Next() {
+		var schemaName string
+		var tableName string
+		var nullable string
+		var defaultStr sql.NullString
+		var column db.DBColumn
+		if err := columnRows.Scan(
+			&schemaName,
+			&tableName,
+			&column.Name,
+			&column.Position,
+			&defaultStr,
+			&nullable,
+			&column.Type,
+			&column.CharacterSet,
+			&column.Collation,
+			&column.Comment,
+		); err != nil {
+			return nil, nil, err
+		}
+
+		if defaultStr.Valid {
+			column.Default = &defaultStr.String
+		}
+
+		key := fmt.Sprintf("%s.%s", schemaName, tableName)
+		columnMap[key] = append(columnMap[key], column)
+	}
+
+	query = fmt.Sprintf(`
 		SELECT
 			TABLE_SCHEMA, 
 			TABLE_NAME,
@@ -169,7 +222,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 			BYTES,
 			IFNULL(COMMENT, '')
 		FROM %s.INFORMATION_SCHEMA.TABLES
-		WHERE TABLE_TYPE = 'BASE TABLE' AND %s`, database, tableWhere)
+		WHERE TABLE_TYPE = 'BASE TABLE' AND %s`, database, excludeWhere)
 	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
@@ -194,6 +247,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		}
 
 		table.Name = fmt.Sprintf("%s.%s", schemaName, tableName)
+		table.ColumnList = columnMap[table.Name]
 		tables = append(tables, table)
 	}
 	if err := tableRows.Err(); err != nil {
@@ -209,7 +263,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		IFNULL(VIEW_DEFINITION, ''),
 		IFNULL(COMMENT, '')
 	FROM %s.INFORMATION_SCHEMA.VIEWS
-	WHERE %s`, database, tableWhere)
+	WHERE %s`, database, excludeWhere)
 	viewRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
