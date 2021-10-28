@@ -157,7 +157,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 	for k := range systemSchemas {
 		excludedSchemaList = append(excludedSchemaList, fmt.Sprintf("'%s'", k))
 	}
-	tableWhere := fmt.Sprintf("TABLE_SCHEMA NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
+	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
 	query := fmt.Sprintf(`
 		SELECT
 			TABLE_SCHEMA, 
@@ -200,7 +200,51 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		return nil, nil, err
 	}
 
-	return tables, nil, nil
+	query = fmt.Sprintf(`
+	SELECT
+		TABLE_SCHEMA, 
+		TABLE_NAME,
+		DATE_PART(EPOCH_SECOND, CREATED),
+		DATE_PART(EPOCH_SECOND, LAST_ALTERED),
+		IFNULL(VIEW_DEFINITION, ''),
+		IFNULL(COMMENT, '')
+	FROM %s.INFORMATION_SCHEMA.VIEWS
+	WHERE %s`, database, tableWhere)
+	viewRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer viewRows.Close()
+
+	var views []db.DBView
+	for viewRows.Next() {
+		var schemaName, viewName string
+		var createdTs, updatedTs sql.NullInt64
+		var view db.DBView
+		if err := viewRows.Scan(
+			&schemaName,
+			&viewName,
+			&createdTs,
+			&updatedTs,
+			&view.Definition,
+			&view.Comment,
+		); err != nil {
+			return nil, nil, err
+		}
+		view.Name = fmt.Sprintf("%s.%s", schemaName, viewName)
+		if createdTs.Valid {
+			view.CreatedTs = createdTs.Int64
+		}
+		if updatedTs.Valid {
+			view.UpdatedTs = updatedTs.Int64
+		}
+		views = append(views, view)
+	}
+	if err := viewRows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return tables, views, nil
 }
 
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
