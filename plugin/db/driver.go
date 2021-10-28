@@ -70,21 +70,21 @@ type DBTable struct {
 	CreatedTs int64
 	UpdatedTs int64
 	Type      string
-	// Engine isn't supported for Postgres.
+	// Engine isn't supported for Postgres, Snowflake.
 	Engine string
-	// Collation isn't supported for Postgres, ClickHouse.
+	// Collation isn't supported for Postgres, ClickHouse, Snowflake.
 	Collation string
 	RowCount  int64
 	DataSize  int64
-	// IndexSize isn't ClickHouse.
+	// IndexSize isn't ClickHouse, Snowflake.
 	IndexSize int64
-	// DataFree isn't supported for Postgres, ClickHouse.
+	// DataFree isn't supported for Postgres, ClickHouse, Snowflake.
 	DataFree int64
-	// CreateOptions isn't supported for Postgres, ClickHouse.
+	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake.
 	CreateOptions string
 	Comment       string
 	ColumnList    []DBColumn
-	// IndexList isn't supported for ClickHouse.
+	// IndexList isn't supported for ClickHouse, Snowflake.
 	IndexList []DBIndex
 }
 
