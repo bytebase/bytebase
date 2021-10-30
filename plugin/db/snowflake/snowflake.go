@@ -383,15 +383,6 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 }
 
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
-		return nil
-	}
-	tx, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	count := 0
 	f := func(stmt string) error {
 		count++
@@ -402,6 +393,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 
+	if count <= 0 {
+		return nil
+	}
+
+	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+		return nil
+	}
+	tx, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	mctx, err := snow.WithMultiStatement(ctx, count)
 	if err != nil {
 		return err
