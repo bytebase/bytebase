@@ -9,7 +9,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	snow "github.com/snowflakedb/gosnowflake"
@@ -593,33 +592,28 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
-	dbNames, err := getDatabasesTxn(ctx, txn)
-	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
-	}
-
 	var dumpableDbNames []string
 	if database != "" {
-		exist := false
-		for _, n := range dbNames {
-			if n == database {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
-		}
 		dumpableDbNames = []string{database}
 	} else {
+		dbNames, err := getDatabasesTxn(ctx, txn)
+		if err != nil {
+			return fmt.Errorf("failed to get databases: %s", err)
+		}
 		for _, dbName := range dbNames {
 			dumpableDbNames = append(dumpableDbNames, dbName)
 		}
 	}
 
+	// Use ACCOUNTADMIN role to dump database;
+	if _, err := txn.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
+		return err
+	}
+
 	for _, dbName := range dumpableDbNames {
 		// includeCreateDatabaseStmt should be false if dumping a single database.
 		dumpSingleDatabase := len(dumpableDbNames) == 1
+		dbName = strings.ToUpper(dbName)
 		if err := dumpOneDatabase(ctx, txn, dbName, out, schemaOnly, dumpSingleDatabase); err != nil {
 			return err
 		}
@@ -637,7 +631,7 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 		return err
 	}
 
-	query := fmt.Sprintf(`SELECT GET_DDL('DATABASE', '%s')`, database)
+	query := fmt.Sprintf(`SELECT GET_DDL('DATABASE', '%s', true)`, database)
 	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return util.FormatErrorWithQuery(err, query)
@@ -656,17 +650,34 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 		return err
 	}
 
-	// If dumpSingleDatabase, we should replace `create or replace database` statement with `use` statement.
+	// Transform1: if dumpSingleDatabase, we should remove `create or replace database` statement.
 	if dumpSingleDatabase {
 		lines := strings.Split(databaseDDL, "\n")
-		if len(lines) > 0 {
-			// First line is the create database statement.
-			lines[0] = fmt.Sprintf(useDatabaseFmt, database)
+		if len(lines) >= 2 {
+			lines = lines[2:]
 		}
 		databaseDDL = strings.Join(lines, "\n")
 	}
-	// Replace all `create or replace ` with `create ` to not break existing schema by any chance.
-	databaseDDL = strings.ReplaceAll(databaseDDL, "create or replace ", "create ")
+
+	// Transform2: remove "create or replace schema PUBLIC;\n\n" because it's created by default.
+	schemaStmt := fmt.Sprintf("create or replace schema %s.PUBLIC;", database)
+	databaseDDL = strings.ReplaceAll(databaseDDL, schemaStmt+"\n\n", "")
+	// If this is the last statement.
+	databaseDDL = strings.ReplaceAll(databaseDDL, schemaStmt, "")
+
+	var lines []string
+	for _, line := range strings.Split(databaseDDL, "\n") {
+		if strings.HasPrefix(strings.ToLower(line), "create ") {
+			// Transform3: Remove "DEMO_DB." quantifier.
+			line = strings.ReplaceAll(line, fmt.Sprintf(" %s.", database), " ")
+
+			// Transform4 (Important!): replace all `create or replace ` with `create ` to not break existing schema by any chance.
+			line = strings.ReplaceAll(line, "create or replace ", "create ")
+		}
+		lines = append(lines, line)
+	}
+	databaseDDL = strings.Join(lines, "\n")
+
 	if _, err := io.WriteString(out, databaseDDL); err != nil {
 		return err
 	}
