@@ -481,7 +481,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// ExecuteMigration will execute the migration for MySQL.
+// ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
 		return int64(0), "", err
@@ -560,7 +560,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase.public.migration_history `
-	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, db.Snowflake, driver, find, baseQuery)
 }
 
 // Dump and restore
