@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	snow "github.com/snowflakedb/gosnowflake"
@@ -112,7 +113,6 @@ func (driver *Driver) UseRole(ctx context.Context, role string) error {
 }
 
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
-	// TODO(spinningbot): implement it.
 	// Query user info
 	if err := driver.UseRole(ctx, accountAdminRole); err != nil {
 		return nil, nil, err
@@ -302,14 +302,33 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 }
 
 func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
-	if err := driver.UseRole(ctx, accountAdminRole); err != nil {
+	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	databases, err := getDatabasesTxn(ctx, txn)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return databases, nil
+}
+
+func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
 		return nil, err
 	}
 	query := `
 		SELECT 
 			DATABASE_NAME
 		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -544,12 +563,141 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, baseQuery)
 }
 
+// Dump and restore
+const (
+	databaseHeaderFmt = "" +
+		"--\n" +
+		"-- Snowflake database structure for %s\n" +
+		"--\n"
+	useDatabaseFmt = "use %s;"
+)
+
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
-	// TODO(spinningbot): implement it.
+	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
+func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+	// Find all dumpable databases
+	dbNames, err := getDatabasesTxn(ctx, txn)
+	if err != nil {
+		return fmt.Errorf("failed to get databases: %s", err)
+	}
+
+	var dumpableDbNames []string
+	if database != "" {
+		exist := false
+		for _, n := range dbNames {
+			if n == database {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
+		}
+		dumpableDbNames = []string{database}
+	} else {
+		for _, dbName := range dbNames {
+			dumpableDbNames = append(dumpableDbNames, dbName)
+		}
+	}
+
+	for _, dbName := range dumpableDbNames {
+		// includeCreateDatabaseStmt should be false if dumping a single database.
+		dumpSingleDatabase := len(dumpableDbNames) == 1
+		if err := dumpOneDatabase(ctx, txn, dbName, out, schemaOnly, dumpSingleDatabase); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// dumpOneDatabase will dump the database DDL schema for a database.
+// Note: this operation is not supported on shared databases, e.g. SNOWFLAKE_SAMPLE_DATA.
+func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool, dumpSingleDatabase bool) error {
+	// Database header.
+	header := fmt.Sprintf(databaseHeaderFmt, database)
+	if _, err := io.WriteString(out, header); err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf(`SELECT GET_DDL('DATABASE', '%s')`, database)
+	rows, err := txn.QueryContext(ctx, query)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var databaseDDL string
+	for rows.Next() {
+		if err := rows.Scan(
+			&databaseDDL,
+		); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	// If dumpSingleDatabase, we should replace `create or replace database` statement with `use` statement.
+	if dumpSingleDatabase {
+		lines := strings.Split(databaseDDL, "\n")
+		if len(lines) > 0 {
+			// First line is the create database statement.
+			lines[0] = fmt.Sprintf(useDatabaseFmt, database)
+		}
+		databaseDDL = strings.Join(lines, "\n")
+	}
+	// Replace all `create or replace ` with `create ` to not break existing schema by any chance.
+	databaseDDL = strings.ReplaceAll(databaseDDL, "create or replace ", "create ")
+	if _, err := io.WriteString(out, databaseDDL); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	// TODO(spinningbot): implement it.
+	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+		return nil
+	}
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	f := func(stmt string) error {
+		if _, err := txn.Exec(stmt); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }
