@@ -417,11 +417,6 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.PipelineId = createdPipeline.ID
 			taskCreate.StageId = createdStage.ID
 			if taskCreate.Type == api.TaskDatabaseCreate {
-				payload := api.TaskDatabaseCreatePayload{}
-				payload.ProjectId = issueCreate.ProjectId
-				payload.DatabaseName = taskCreate.DatabaseName
-				payload.CharacterSet = taskCreate.CharacterSet
-				payload.Collation = taskCreate.Collation
 				instanceFind := &api.InstanceFind{
 					ID: &taskCreate.InstanceId,
 				}
@@ -429,6 +424,17 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				if err != nil {
 					return nil, fmt.Errorf("failed to create database creation task, failed to fetch instance %w", err)
 				}
+
+				// Snowflake needs to use upper case of DatabaseName.
+				if instance.Engine == db.Snowflake {
+					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
+				}
+				payload := api.TaskDatabaseCreatePayload{}
+				payload.ProjectId = issueCreate.ProjectId
+				payload.DatabaseName = taskCreate.DatabaseName
+				payload.CharacterSet = taskCreate.CharacterSet
+				payload.Collation = taskCreate.Collation
+
 				switch instance.Engine {
 				case db.MySQL, db.TiDB:
 					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
