@@ -373,8 +373,33 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
-	// Query user info
 	query := `
+		SELECT
+			GRANTEE_NAME,
+			ROLE
+		FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_USERS
+`
+	grants := make(map[string][]string)
+
+	grantRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer grantRows.Close()
+
+	for grantRows.Next() {
+		var name, role string
+		if err := grantRows.Scan(
+			&name,
+			&role,
+		); err != nil {
+			return nil, err
+		}
+		grants[name] = append(grants[name], role)
+	}
+
+	// Query user info
+	query = `
 	  SELECT
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
@@ -396,9 +421,8 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 		}
 
 		userList = append(userList, &db.DBUser{
-			Name: name,
-			// TODO(spinningbot): show grants.
-			Grant: "",
+			Name:  name,
+			Grant: strings.Join(grants[name], ", "),
 		})
 	}
 	return userList, nil
