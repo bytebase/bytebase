@@ -345,6 +345,40 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("USE ROLE %s", accountAdminRole)); err != nil {
 		return nil, err
 	}
+
+	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
+	inboundDatabases := make(map[string]bool)
+	shareRows, err := tx.Query("SHOW SHARES;")
+	if err != nil {
+		return nil, err
+	}
+	defer shareRows.Close()
+
+	cols, err := shareRows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	// created_on, kind, name, database_name.
+	if len(cols) < 4 {
+		return nil, nil
+	}
+	values := make([]*sql.NullString, len(cols))
+	ptrs := make([]interface{}, len(cols))
+	for i := 0; i < len(cols); i++ {
+		ptrs[i] = &values[i]
+	}
+	for shareRows.Next() {
+		if err := shareRows.Scan(ptrs...); err != nil {
+			return nil, err
+		}
+		if values[1].String == "INBOUND" {
+			inboundDatabases[values[3].String] = true
+		}
+	}
+	if err := shareRows.Err(); err != nil {
+		return nil, err
+	}
+
 	query := `
 		SELECT 
 			DATABASE_NAME
@@ -364,7 +398,9 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 			return nil, err
 		}
 
-		databases = append(databases, name)
+		if _, ok := inboundDatabases[name]; !ok {
+			databases = append(databases, name)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
