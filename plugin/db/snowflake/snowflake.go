@@ -53,12 +53,34 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		prefixParts = append(prefixParts, config.Password)
 		loggedPrefixParts = append(loggedPrefixParts, "<<redacted password>>")
 	}
-	// Host can also be account e.g. xma12345.
-	suffixParts := []string{config.Host}
-	// TODO(spinningbot): support port later. suffixParts = append(suffixParts, config.Port)
 
-	dsn := fmt.Sprintf("%s@%s/%s", strings.Join(prefixParts, ":"), strings.Join(suffixParts, ":"), config.Database)
-	loggedDSN := fmt.Sprintf("%s@%s/%s", strings.Join(loggedPrefixParts, ":"), strings.Join(suffixParts, ":"), config.Database)
+	var account, host string
+	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
+	if strings.Contains(config.Host, "@") {
+		parts := strings.Split(config.Host, "@")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("driver.Open() has invalid host %q", config.Host)
+		}
+		account, host = parts[0], parts[1]
+	} else {
+		account = config.Host
+	}
+
+	var params []string
+	var suffix string
+	if host != "" {
+		suffix = fmt.Sprintf("%s:%s", host, config.Port)
+		params = append(params, fmt.Sprintf("account=%s", account))
+	} else {
+		suffix = account
+	}
+
+	dsn := fmt.Sprintf("%s@%s/%s", strings.Join(prefixParts, ":"), suffix, config.Database)
+	loggedDSN := fmt.Sprintf("%s@%s/%s", strings.Join(loggedPrefixParts, ":"), suffix, config.Database)
+	if len(params) > 0 {
+		dsn = fmt.Sprintf("%s?%s", dsn, strings.Join(params, "&"))
+		loggedDSN = fmt.Sprintf("%s?%s", loggedDSN, strings.Join(params, "&"))
+	}
 	driver.l.Debug("Opening Snowflake driver",
 		zap.String("dsn", loggedDSN),
 		zap.String("environment", connCtx.EnvironmentName),
