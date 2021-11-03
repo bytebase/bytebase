@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row items-center text-control">
+  <div class="flex flex-row items-center text-control text-sm">
     <svg
       class="animate-spin h-5 w-5 mr-1 text-blue-600"
       xmlns="http://www.w3.org/2000/svg"
