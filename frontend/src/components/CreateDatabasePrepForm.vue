@@ -69,7 +69,12 @@
         </div>
       </div>
 
-      <template v-if="selectedInstance.engine != 'CLICKHOUSE'">
+      <template
+        v-if="
+          selectedInstance.engine != 'CLICKHOUSE' &&
+          selectedInstance.engine != 'SNOWFLAKE'
+        "
+      >
         <div class="col-span-2 col-start-2 w-64">
           <label for="charset" class="textlabel">
             {{

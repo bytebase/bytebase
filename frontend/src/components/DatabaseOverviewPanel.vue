@@ -33,7 +33,12 @@
 
     <!-- Description list -->
     <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4">
-      <template v-if="database.instance.engine != 'CLICKHOUSE'">
+      <template
+        v-if="
+          database.instance.engine != 'CLICKHOUSE' &&
+          database.instance.engine != 'SNOWFLAKE'
+        "
+      >
         <div class="col-span-1 col-start-1">
           <dt class="text-sm font-medium text-control-light">
             {{

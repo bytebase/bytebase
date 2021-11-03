@@ -76,7 +76,7 @@ type DBTable struct {
 	Collation string
 	RowCount  int64
 	DataSize  int64
-	// IndexSize isn't ClickHouse, Snowflake.
+	// IndexSize isn't supported for ClickHouse, Snowflake.
 	IndexSize int64
 	// DataFree isn't supported for Postgres, ClickHouse, Snowflake.
 	DataFree int64
