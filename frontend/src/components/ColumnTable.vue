@@ -20,12 +20,19 @@
         {{ column.nullable }}
       </BBTableCell>
       <BBTableCell
-        v-if="engine != 'POSTGRES' && engine != 'CLICKHOUSE'"
+        v-if="
+          engine != 'POSTGRES' &&
+          engine != 'CLICKHOUSE' &&
+          engine != 'SNOWFLAKE'
+        "
         class="w-8"
       >
         {{ column.characterSet }}
       </BBTableCell>
-      <BBTableCell v-if="engine != 'CLICKHOUSE'" class="w-8">
+      <BBTableCell
+        v-if="engine != 'CLICKHOUSE' && engine != 'SNOWFLAKE'"
+        class="w-8"
+      >
         {{ column.collation }}
       </BBTableCell>
       <BBTableCell class="w-16">
@@ -85,7 +92,7 @@ const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
   },
 ];
 
-const CLICKHOUSE_COLUMN_LIST: BBTableColumn[] = [
+const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST: BBTableColumn[] = [
   {
     title: "Name",
   },
@@ -122,7 +129,8 @@ export default {
         case "POSTGRES":
           return POSTGRES_COLUMN_LIST;
         case "CLICKHOUSE":
-          return CLICKHOUSE_COLUMN_LIST;
+        case "SNOWFLAKE":
+          return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST;
         default:
           return NORMAL_COLUMN_LIST;
       }

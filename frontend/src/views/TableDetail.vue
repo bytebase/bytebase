@@ -115,7 +115,10 @@
               <dt class="text-sm font-medium text-control-light">Engine</dt>
               <dd class="mt-1 text-sm text-main">
                 {{
-                  database.instance.engine == "POSTGRES" ? "n/a" : table.engine
+                  database.instance.engine == "POSTGRES" ||
+                  database.instance.engine == "SNOWFLAKE"
+                    ? "n/a"
+                    : table.engine
                 }}
               </dd>
             </div>
@@ -139,11 +142,21 @@
             <div class="col-span-1">
               <dt class="text-sm font-medium text-control-light">Index size</dt>
               <dd class="mt-1 text-sm text-main">
-                {{ bytesToString(table.indexSize) }}
+                {{
+                  database.instance.engine == "CLICKHOUSE" ||
+                  database.instance.engine == "SNOWFLAKE"
+                    ? "n/a"
+                    : bytesToString(table.indexSize)
+                }}
               </dd>
             </div>
 
-            <template v-if="database.instance.engine != 'CLICKHOUSE'">
+            <template
+              v-if="
+                database.instance.engine != 'CLICKHOUSE' &&
+                database.instance.engine != 'SNOWFLAKE'
+              "
+            >
               <div class="col-span-1 col-start-1">
                 <dt class="text-sm font-medium text-control-light">
                   {{
@@ -196,7 +209,7 @@
         />
       </div>
 
-      <div class="mt-6 px-6">
+      <div v-if="database.instance.engine != 'SNOWFLAKE'" class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">Indexes</div>
         <IndexTable :indexList="table.indexList" />
       </div>
