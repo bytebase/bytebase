@@ -438,6 +438,7 @@ input[type="number"] {
               @click.prevent="testConnection"
               type="button"
               class="btn-normal whitespace-nowrap items-center"
+              :disabled="!state.instance.host"
             >
               Test Connection
             </button>
