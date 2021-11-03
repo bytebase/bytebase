@@ -36,7 +36,7 @@ input[type="number"] {
               hover:bg-control-bg-hover
               cursor-pointer
             "
-            @click.capture="state.instance.engine = engine"
+            @click.capture="changeInstanceEngine(engine)"
           >
             <div class="flex flex-col items-center">
               <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
@@ -136,19 +136,35 @@ input[type="number"] {
 
         <div class="sm:col-span-3 sm:col-start-1">
           <label for="host" class="textlabel block">
-            Host or Socket <span style="color: red">*</span>
+            <template v-if="state.instance.engine == 'SNOWFLAKE'">
+              Account name <span style="color: red">*</span>
+            </template>
+            <template v-else>
+              Host or Socket <span style="color: red">*</span>
+            </template>
           </label>
           <input
             required
             type="text"
             id="host"
             name="host"
-            placeholder="e.g. host.docker.internal | <<ip>> | <<local socket>>"
+            :placeholder="
+              state.instance.engine == 'SNOWFLAKE'
+                ? 'your Snowflake account name'
+                : 'e.g. host.docker.internal | <<ip>> | <<local socket>>'
+            "
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
             :value="state.instance.host"
             @input="updateInstance('host', $event.target.value)"
           />
+          <div
+            v-if="state.instance.engine == 'SNOWFLAKE'"
+            class="mt-2 textinfolabel"
+          >
+            For proxy server, append @PROXY_HOST and specify PROXY_PORT in the
+            port
+          </div>
         </div>
 
         <div class="sm:col-span-1">
@@ -168,12 +184,18 @@ input[type="number"] {
         <!--Do not show external link on create to reduce cognitive load-->
         <div v-if="!create" class="sm:col-span-3 sm:col-start-1">
           <label for="externallink" class="textlabel inline-flex">
-            <span class="">External Link</span>
+            <span class="">
+              {{
+                state.instance.engine == "SNOWFLAKE"
+                  ? "Snowflake Web Console"
+                  : "External Link"
+              }}</span
+            >
             <button
               class="ml-1 btn-icon"
-              :disabled="state.instance.externalLink?.trim().length == 0"
+              :disabled="instanceLink(state.instance)?.trim().length == 0"
               @click.prevent="
-                window.open(urlfy(state.instance.externalLink), '_blank')
+                window.open(urlfy(instanceLink(state.instance)), '_blank')
               "
             >
               <svg
@@ -192,21 +214,34 @@ input[type="number"] {
               </svg>
             </button>
           </label>
-          <div class="mt-1 textinfolabel">
-            The external console URL managing this instance (e.g. AWS RDS
-            console, your in-house DB instance console)
-          </div>
-          <input
-            required
-            id="externallink"
-            name="externallink"
-            type="text"
-            class="textfield mt-1 w-full"
-            placeholder="https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false"
-            :disabled="!allowEdit"
-            :value="state.instance.externalLink"
-            @input="updateInstance('externalLink', $event.target.value)"
-          />
+          <template v-if="state.instance.engine == 'SNOWFLAKE'">
+            <input
+              required
+              id="externallink"
+              name="externallink"
+              type="text"
+              class="textfield mt-1 w-full"
+              disabled="true"
+              :value="instanceLink(state.instance)"
+            />
+          </template>
+          <template v-else>
+            <div class="mt-1 textinfolabel">
+              The external console URL managing this instance (e.g. AWS RDS
+              console, your in-house DB instance console)
+            </div>
+            <input
+              required
+              id="externallink"
+              name="externallink"
+              type="text"
+              class="textfield mt-1 w-full"
+              placeholder="https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false"
+              :disabled="!allowEdit"
+              :value="state.instance.externalLink"
+              @input="updateInstance('externalLink', $event.target.value)"
+            />
+          </template>
         </div>
       </div>
       <!-- Read/Write Connection Info -->
@@ -257,7 +292,7 @@ input[type="number"] {
                 >
                 and then run the following query to create the user.
               </template>
-              <template v-if="state.instance.engine == 'POSTGRES'">
+              <template v-else-if="state.instance.engine == 'POSTGRES'">
                 <BBAttention
                   class="mb-1"
                   :style="'WARN'"
@@ -267,6 +302,12 @@ input[type="number"] {
                 <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
                 with the needed privileges. If the connecting instance is
                 self-hosted, then you can grant SUPERUSER.
+              </template>
+              <template v-else-if="state.instance.engine == 'SNOWFLAKE'">
+                Below is an example to create user 'bytebase' with password
+                <span class="text-red-600">YOUR_DB_PWD</span> for
+                <span class="text-red-600">YOUR_COMPUTE_WAREHOUSE</span> and
+                grant the user with the needed privileges.
               </template>
               <div class="mt-2 flex flex-row">
                 <span
@@ -577,7 +618,7 @@ export default {
       } else if (state.instance.engine == "POSTGRES") {
         return "5432";
       } else if (state.instance.engine == "SNOWFLAKE") {
-        return "";
+        return "443";
       } else if (state.instance.engine == "TIDB") {
         return "4000";
       }
@@ -604,13 +645,39 @@ export default {
         case "CLICKHOUSE":
           return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
         case "SNOWFLAKE":
-          return "";
+          return "CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'\nDEFAULT_ROLE = \"ACCOUNTADMIN\"\nDEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';\n\nGRANT ROLE \"ACCOUNTADMIN\" TO USER bytebase;";
         case "MYSQL":
         case "TIDB":
           return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
         case "POSTGRES":
           return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
       }
+    };
+
+    const instanceLink = (instance: Instance): string => {
+      if (instance.engine == "SNOWFLAKE") {
+        if (instance.host) {
+          return `https://${
+            instance.host.split("@")[0]
+          }.snowflakecomputing.com/console`;
+        }
+      }
+      return instance.host;
+    };
+
+    // The default host name is 127.0.0.1 which is not applicable to Snowflake, so we change
+    // the host name between 127.0.0.1 and "" if user hasn't changed default yet.
+    const changeInstanceEngine = (engine: EngineType) => {
+      if (engine == "SNOWFLAKE") {
+        if (state.instance.host == "127.0.0.1") {
+          state.instance.host = "";
+        }
+      } else {
+        if (!state.instance.host) {
+          state.instance.host = "127.0.0.1";
+        }
+      }
+      state.instance.engine = engine;
     };
 
     const toggleCreateUserExample = () => {
@@ -791,6 +858,8 @@ export default {
       defaultPort,
       engineName,
       grantStatement,
+      instanceLink,
+      changeInstanceEngine,
       toggleCreateUserExample,
       updateInstance,
       cancel,

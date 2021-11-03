@@ -26,7 +26,7 @@
         <button
           v-if="instance.externalLink?.trim().length != 0"
           class="btn-icon"
-          @click.stop="window.open(urlfy(instance.externalLink), '_blank')"
+          @click.stop="window.open(urlfy(instanceLink(instance)), '_blank')"
         >
           <svg
             class="w-4 h-4"
@@ -89,7 +89,7 @@ export default {
           title: "Environment",
         },
         {
-          title: "Host:Port",
+          title: "Address",
         },
         {
           title: "External link",
@@ -112,11 +112,23 @@ export default {
       return environmentName(store.getters["environment/environmentById"](id));
     };
 
+    const instanceLink = (instance: Instance): string => {
+      if (instance.engine == "SNOWFLAKE") {
+        if (instance.host) {
+          return `https://${
+            instance.host.split("@")[0]
+          }.snowflakecomputing.com/console`;
+        }
+      }
+      return instance.host;
+    };
+
     return {
       state,
       urlfy,
       clickInstance,
       environmentNameFromId,
+      instanceLink,
     };
   },
 };
