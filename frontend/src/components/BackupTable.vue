@@ -85,8 +85,14 @@
         }}
       </BBTableCell>
       <BBTableCell>
-        <div class="normal-link" @click.prevent="gotoMigrationHistory(backup)">
-          {{ backup.migrationHistoryVersion }}
+        <div class="flex flex-row space-x-2">
+          <div
+            class="normal-link"
+            @click.prevent="gotoMigrationHistory(backup)"
+          >
+            {{ backup.migrationHistoryVersion }}
+          </div>
+          <BBSpin v-if="state.loadingMigrationHistory" />
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -192,6 +198,7 @@ const NON_EDIT_COLUMN_LIST: BBTableColumn[] = [
 interface LocalState {
   showRestoreBackupModal: boolean;
   restoredBackup?: Backup;
+  loadingMigrationHistory: boolean;
 }
 
 export default {
@@ -217,6 +224,7 @@ export default {
 
     const state = reactive<LocalState>({
       showRestoreBackupModal: false,
+      loadingMigrationHistory: false,
     });
 
     const backupSectionList = computed(() => {
@@ -263,6 +271,7 @@ export default {
     };
 
     const gotoMigrationHistory = (backup: Backup) => {
+      state.loadingMigrationHistory = true;
       store
         .dispatch("instance/fetchMigrationHistoryByVersion", {
           instanceId: props.database.instance.id,
@@ -270,17 +279,24 @@ export default {
           version: backup.migrationHistoryVersion,
         })
         .then((history: MigrationHistory) => {
-          router.push({
-            name: "workspace.database.history.detail",
-            params: {
-              databaseSlug: databaseSlug(props.database),
-              migrationHistorySlug: migrationHistorySlug(
-                history.id,
-                history.version
-              ),
-            },
-            hash: "#schema",
-          });
+          router
+            .push({
+              name: "workspace.database.history.detail",
+              params: {
+                databaseSlug: databaseSlug(props.database),
+                migrationHistorySlug: migrationHistorySlug(
+                  history.id,
+                  history.version
+                ),
+              },
+              hash: "#schema",
+            })
+            .then(() => {
+              state.loadingMigrationHistory = false;
+            });
+        })
+        .catch(() => {
+          state.loadingMigrationHistory = false;
         });
     };
 
