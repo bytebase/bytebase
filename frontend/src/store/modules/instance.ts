@@ -11,6 +11,7 @@ import {
   InstanceMigration,
   InstancePatch,
   InstanceState,
+  INSTANCE_OPERATION_TIMEOUT,
   MigrationHistory,
   MigrationHistoryId,
   ResourceIdentifier,
@@ -20,9 +21,6 @@ import {
   unknown,
 } from "../../types";
 import { InstanceUser } from "../../types/InstanceUser";
-
-// Create migration schema might take a while (e.g TiDB)
-const CREATE_MIGRATION_SCHEMA_TIMEOUT = 30000;
 
 function convert(
   instance: ResourceObject,
@@ -242,7 +240,7 @@ const actions = {
           },
         },
         {
-          timeout: CREATE_MIGRATION_SCHEMA_TIMEOUT,
+          timeout: INSTANCE_OPERATION_TIMEOUT,
         }
       )
     ).data;
@@ -276,7 +274,7 @@ const actions = {
           },
         },
         {
-          timeout: CREATE_MIGRATION_SCHEMA_TIMEOUT,
+          timeout: INSTANCE_OPERATION_TIMEOUT,
         }
       )
     ).data;
@@ -320,7 +318,9 @@ const actions = {
     instanceId: InstanceId
   ): Promise<InstanceMigration> {
     const data = (
-      await axios.get(`/api/instance/${instanceId}/migration/status`)
+      await axios.get(`/api/instance/${instanceId}/migration/status`, {
+        timeout: INSTANCE_OPERATION_TIMEOUT,
+      })
     ).data.data;
 
     return {
@@ -335,7 +335,7 @@ const actions = {
   ): Promise<SqlResultSet> {
     const data = (
       await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
-        timeout: CREATE_MIGRATION_SCHEMA_TIMEOUT,
+        timeout: INSTANCE_OPERATION_TIMEOUT,
       })
     ).data.data;
 
@@ -354,7 +354,10 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`
+        `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`,
+        {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        }
       )
     ).data;
     const migrationHistory = convertMigrationHistory(data.data);
@@ -380,7 +383,10 @@ const actions = {
   ) {
     const data = (
       await axios.get(
-        `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`
+        `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`,
+        {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        }
       )
     ).data.data;
     const historyList = data.map((history: ResourceObject) => {
@@ -415,7 +421,11 @@ const actions = {
     if (limit) {
       url += `&limit=${limit}`;
     }
-    const data = (await axios.get(url)).data.data;
+    const data = (
+      await axios.get(url, {
+        timeout: INSTANCE_OPERATION_TIMEOUT,
+      })
+    ).data.data;
     const historyList = data.map((history: ResourceObject) => {
       return convertMigrationHistory(history);
     });

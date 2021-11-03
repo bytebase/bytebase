@@ -2,6 +2,7 @@ import axios from "axios";
 import {
   ConnectionInfo,
   InstanceId,
+  INSTANCE_OPERATION_TIMEOUT,
   ResourceObject,
   SqlResultSet,
 } from "../../types";
@@ -35,14 +36,20 @@ const actions = {
   },
   async syncSchema({ dispatch }: any, instanceId: InstanceId) {
     const data = (
-      await axios.post(`/api/sql/syncschema`, {
-        data: {
-          type: "sqlSyncSchema",
-          attributes: {
-            instanceId,
+      await axios.post(
+        `/api/sql/syncschema`,
+        {
+          data: {
+            type: "sqlSyncSchema",
+            attributes: {
+              instanceId,
+            },
           },
         },
-      })
+        {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        }
+      )
     ).data.data;
 
     const resultSet = convert(data);

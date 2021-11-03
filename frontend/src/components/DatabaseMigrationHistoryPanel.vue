@@ -1,6 +1,16 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <div class="text-lg leading-6 font-medium text-main">
+    <div
+      class="
+        flex flex-row
+        items-center
+        text-lg
+        leading-6
+        font-medium
+        text-main
+        space-x-2
+      "
+    >
       Migration History
       <button
         v-if="allowEdit"
@@ -11,6 +21,9 @@
       >
         Establish new baseline
       </button>
+      <div>
+        <BBSpin v-if="state.loading" :title="'Refreshing history ...'" />
+      </div>
     </div>
     <MigrationHistoryTable
       v-if="state.migrationSetupStatus == 'OK'"
@@ -61,6 +74,7 @@ import { templateForType } from "../plugins";
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
   showBaselineModal: boolean;
+  loading: boolean;
 }
 
 export default {
@@ -83,21 +97,33 @@ export default {
     const state = reactive<LocalState>({
       migrationSetupStatus: "OK",
       showBaselineModal: false,
+      loading: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareMigrationHistoryList = () => {
+      state.loading = true;
       store
         .dispatch("instance/checkMigrationSetup", props.database.instance.id)
         .then((migration: InstanceMigration) => {
           state.migrationSetupStatus = migration.status;
           if (state.migrationSetupStatus == "OK") {
-            store.dispatch("instance/fetchMigrationHistory", {
-              instanceId: props.database.instance.id,
-              databaseName: props.database.name,
-            });
+            store
+              .dispatch("instance/fetchMigrationHistory", {
+                instanceId: props.database.instance.id,
+                databaseName: props.database.name,
+              })
+              .then(() => {
+                state.loading = false;
+              })
+              .catch(() => {
+                state.loading = false;
+              });
           }
+        })
+        .catch(() => {
+          state.loading = false;
         });
     };
 
