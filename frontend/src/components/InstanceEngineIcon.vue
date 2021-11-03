@@ -7,17 +7,17 @@
       src="../assets/db-clickhouse.png"
     />
     <img
-      v-if="instance.engine == 'MYSQL'"
+      v-else-if="instance.engine == 'MYSQL'"
       class="h-4 w-auto"
       src="../assets/db-mysql.png"
     />
     <img
-      v-if="instance.engine == 'POSTGRES'"
+      v-else-if="instance.engine == 'POSTGRES'"
       class="h-4 w-auto"
       src="../assets/db-postgres.png"
     />
     <img
-      v-if="instance.engine == 'SNOWFLAKE'"
+      v-else-if="instance.engine == 'SNOWFLAKE'"
       class="h-4 w-auto"
       src="../assets/db-snowflake.png"
     />
