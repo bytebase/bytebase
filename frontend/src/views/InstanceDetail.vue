@@ -28,7 +28,10 @@
               }
             "
           />
-          <div class="flex space-x-4">
+          <div class="flex items-center space-x-4">
+            <div>
+              <BBSpin v-if="state.syncingSchema" :title="'Syncing ...'" />
+            </div>
             <button
               v-if="allowEdit"
               type="button"
@@ -142,6 +145,7 @@ interface LocalState {
   showCreateMigrationSchemaModal: boolean;
   creatingMigrationSchema: boolean;
   showCreateDatabaseModal: boolean;
+  syncingSchema: boolean;
 }
 
 export default {
@@ -171,6 +175,7 @@ export default {
       showCreateMigrationSchemaModal: false,
       creatingMigrationSchema: false,
       showCreateDatabaseModal: false,
+      syncingSchema: false,
     });
 
     const instance = computed((): Instance => {
@@ -342,9 +347,11 @@ export default {
     };
 
     const syncSchema = () => {
+      state.syncingSchema = true;
       store
         .dispatch("sql/syncSchema", instance.value.id)
         .then((resultSet: SqlResultSet) => {
+          state.syncingSchema = false;
           if (resultSet.error) {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
@@ -360,6 +367,9 @@ export default {
               description: resultSet.error,
             });
           }
+        })
+        .catch(() => {
+          state.syncingSchema = false;
         });
     };
 

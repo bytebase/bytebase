@@ -41,6 +41,12 @@ export const POST_CHANGE_POLL_INTERVAL = 1000;
 // Add jitter to avoid timer from different clients converging to the same polling frequency.
 export const POLL_JITTER = 5000;
 
+// It may take a while to perform instance related operations since we are
+// connecting the remote instance. And certain operations just take longer for
+// a particular database type due to its unique property (e.g. create migration schema
+// is a heavier operation in TiDB than traditional RDBMS).
+export const INSTANCE_OPERATION_TIMEOUT = 30000;
+
 // RowStatus
 export type RowStatus = "NORMAL" | "ARCHIVED";
 
