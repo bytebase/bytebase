@@ -416,15 +416,14 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.CreatorId = creatorId
 			taskCreate.PipelineId = createdPipeline.ID
 			taskCreate.StageId = createdStage.ID
+			instanceFind := &api.InstanceFind{
+				ID: &taskCreate.InstanceId,
+			}
+			instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
+			}
 			if taskCreate.Type == api.TaskDatabaseCreate {
-				instanceFind := &api.InstanceFind{
-					ID: &taskCreate.InstanceId,
-				}
-				instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create database creation task, failed to fetch instance %w", err)
-				}
-
 				// Snowflake needs to use upper case of DatabaseName.
 				if instance.Engine == db.Snowflake {
 					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
@@ -470,6 +469,10 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				}
 				taskCreate.Payload = string(bytes)
 			} else if taskCreate.Type == api.TaskDatabaseRestore {
+				// Snowflake needs to use upper case of DatabaseName.
+				if instance.Engine == db.Snowflake {
+					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
+				}
 				payload := api.TaskDatabaseRestorePayload{}
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.BackupId = *taskCreate.BackupId
@@ -479,8 +482,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				}
 				taskCreate.Payload = string(bytes)
 			}
-			_, err := s.TaskService.CreateTask(ctx, &taskCreate)
-			if err != nil {
+			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
 				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
 			}
 		}
