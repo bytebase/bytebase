@@ -324,13 +324,13 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 }
 
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
-	excludedDatabases := map[string]bool{
+	excludedDatabaseList := map[string]bool{
 		// Skip our internal "bytebase" database
 		"bytebase": true,
 	}
 	// Skip all system databases
 	for k := range systemDatabases {
-		excludedDatabases[k] = true
+		excludedDatabaseList[k] = true
 	}
 
 	// Query user info
@@ -348,7 +348,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	schemaList := make([]*db.DBSchema, 0)
 	for _, database := range databases {
 		dbName := database.name
-		if _, ok := excludedDatabases[dbName]; ok {
+		if _, ok := excludedDatabaseList[dbName]; ok {
 			continue
 		}
 
