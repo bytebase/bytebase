@@ -328,6 +328,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		// Skip our internal "bytebase" database
 		"bytebase": true,
 		// Skip internal databases from cloud service providers
+		// see https://github.com/bytebase/bytebase/issues/30
 		// aws
 		"rdsadmin": true,
 		// gcp
