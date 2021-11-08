@@ -327,6 +327,12 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	excludedDatabaseList := map[string]bool{
 		// Skip our internal "bytebase" database
 		"bytebase": true,
+		// Skip internal databases from cloud service providers
+		// see https://github.com/bytebase/bytebase/issues/30
+		// aws
+		"rdsadmin": true,
+		// gcp
+		"cloudsql": true,
 	}
 	// Skip all system databases
 	for k := range systemDatabases {
