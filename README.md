@@ -24,6 +24,7 @@
 - [x] MySQL support
 - [x] PostgreSQL support
 - [x] TiDB support
+- [x] Snowflake support
 - [x] ClickHouse support
 - [x] GitLab CE/EE support
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
@@ -49,13 +50,13 @@
 ### Run on localhost:8080
 
 ```bash
-docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.7.2 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.8.0 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.7.2 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.8.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 📕 Docs
