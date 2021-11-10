@@ -125,7 +125,8 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 	cookie.Path = "/"
 	// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 	cookie.HttpOnly = true
-	cookie.Secure = true
+	// For now, we allow bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
+	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
 }
@@ -136,7 +137,6 @@ func removeTokenCookie(c echo.Context, name string) {
 	cookie.Value = ""
 	cookie.Expires = time.Unix(0, 0)
 	cookie.Path = "/"
-	cookie.Secure = true
 	c.SetCookie(cookie)
 }
 
@@ -147,7 +147,8 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	cookie.Value = strconv.Itoa(user.ID)
 	cookie.Expires = expiration
 	cookie.Path = "/"
-	cookie.Secure = true
+	// For now, we allow bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
+	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
 }
