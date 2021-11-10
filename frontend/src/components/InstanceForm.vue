@@ -666,16 +666,19 @@ export default {
       return instance.host;
     };
 
-    // The default host name is 127.0.0.1 which is not applicable to Snowflake, so we change
-    // the host name between 127.0.0.1 and "" if user hasn't changed default yet.
+    // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
+    // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
     const changeInstanceEngine = (engine: EngineType) => {
       if (engine == "SNOWFLAKE") {
-        if (state.instance.host == "127.0.0.1") {
+        if (
+          state.instance.host == "127.0.0.1" ||
+          state.instance.host == "host.docker.internal"
+        ) {
           state.instance.host = "";
         }
       } else {
         if (!state.instance.host) {
-          state.instance.host = "127.0.0.1";
+          state.instance.host = isDev() ? "127.0.0.1" : "host.docker.internal";
         }
       }
       state.instance.engine = engine;
