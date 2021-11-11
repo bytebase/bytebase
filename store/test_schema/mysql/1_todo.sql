@@ -19,5 +19,5 @@ CREATE TABLE bytebase_test_todo.todo (
 	updated_ts BIGINT NOT NULL,
 	FOREIGN KEY (author_id) REFERENCES author (id) ON DELETE CASCADE,
 	INDEX (name) COMMENT 'index on todo.name',
-	INDEX (created_ts) COMMENT 'index on todo.created_ts',
+	INDEX (created_ts) COMMENT 'index on todo.created_ts'
 );
