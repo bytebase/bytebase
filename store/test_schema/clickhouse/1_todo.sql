@@ -16,7 +16,7 @@ CREATE TABLE bytebase_test_todo.todo (
     name String COMMENT 'name of the todo',
     content String,
     author_id UUID,
-    created_ts BIGINT NOT NULL,
+    created_ts Int64 NOT NULL,
     updated_ts Int64 NOT NULL,
     INDEX index_name (name) TYPE minmax GRANULARITY 4,
     INDEX index_created_ts (created_ts) TYPE minmax GRANULARITY 4
