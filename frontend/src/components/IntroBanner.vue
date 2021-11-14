@@ -5,7 +5,8 @@
       <h2 class="text-xl text-main">
         Bytebase is for DBAs and Developers to collaborate on database schemas
         changes. One can construct a single pipeline to propagate the schema
-        change across multiple environments. Follow the
+        change across multiple environments. One can also store the schemas in
+        VCS and trigger a new pipeline upon commit push. Follow the
         <span class="text-accent">Quickstart</span> on the bottom left to get
         familar with the product. If you encounter problems, visit
         <a class="normal-link" href="https://docs.bytebase.com" target="__blank"
