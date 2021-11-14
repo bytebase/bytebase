@@ -104,6 +104,10 @@ export default {
 
     const resetQuickstart = () => {
       store.dispatch("uistate/saveIntroStateByKey", {
+        key: "general.overview",
+        newState: false,
+      });
+      store.dispatch("uistate/saveIntroStateByKey", {
         key: "bookmark.create",
         newState: false,
       });
