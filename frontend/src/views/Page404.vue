@@ -1,35 +1,9 @@
 <template>
   <!-- This example requires Tailwind CSS v2.0+ -->
-  <div
-    class="
-      bg-white
-      px-4
-      py-16
-      sm:px-6 sm:py-24
-      md:grid md:place-items-center
-      lg:px-8
-    "
-  >
+  <div class="bg-white px-4 sm:px-6 md:grid md:place-items-center lg:px-8">
     <div class="max-w-max mx-auto">
       <main class="sm:flex">
-        <p class="text-4xl font-extrabold text-accent sm:text-5xl">404</p>
         <div class="sm:ml-6">
-          <div class="sm:border-l sm:border-block-border sm:pl-6">
-            <h1
-              class="
-                text-4xl
-                font-extrabold
-                text-main
-                tracking-tight
-                sm:text-5xl
-              "
-            >
-              Page not found
-            </h1>
-            <p class="mt-1 text-base text-control-light">
-              Please check the URL in the address bar and try again.
-            </p>
-          </div>
           <div
             class="
               mt-6
@@ -45,6 +19,7 @@
         </div>
       </main>
     </div>
+    <img class="overflow-hidden" src="../assets/illustration/404.webp" alt="" />
   </div>
 </template>
 
