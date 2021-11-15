@@ -1,25 +1,29 @@
 <template>
-  <div class="min-h-screen flex">
-    <div class="hidden bg-main lg:block relative w-0 flex-1">
-      <!-- <img
+  <div class="min-h-screen overflow-hidden flex">
+    <div class="hidden bg-white lg:block relative w-0 flex-1">
+      <img
+        v-if="route == 'auth.signin'"
         class="absolute inset-0 h-full w-full object-cover"
-        src="../../assets/signin-splash.jpeg"
+        src="../assets/illustration/signin.webp"
         alt=""
-      /> -->
-      <div class="absolute top-0 right-0 p-8">
-        <h1 class="text-right text-4xl font-semibold tracking-tight space-y-2">
-          <span class="block text-white">Simple systems work</span>
-          <span class="block text-white">complex don't</span>
-        </h1>
-        <p
-          class="mt-6 text-right text-xl font-medium tracking-tight text-white"
-        >
-          Jim Gray
-        </p>
-      </div>
+      />
+      <img
+        v-else-if="route == 'auth.signup'"
+        class="absolute inset-0 h-full w-full object-cover"
+        src="../assets/illustration/signup.webp"
+        alt=""
+      />
     </div>
     <div
-      class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 lg:w-1/2 xl:px-24"
+      class="
+        flex-1 flex flex-col
+        justify-center
+        py-12
+        px-4
+        sm:px-6
+        lg:flex-none lg:px-20 lg:w-1/2
+        xl:px-24
+      "
     >
       <router-view />
     </div>
@@ -27,9 +31,22 @@
 </template>
 
 <script lang="ts">
+import { computed } from "vue-demi";
+import { useRouter } from "vue-router";
+
 export default {
-  name: "SettingLayout",
+  name: "SplashLayout",
   components: {},
-  setup(props, ctx) {},
+  setup(props, ctx) {
+    const router = useRouter();
+
+    const route = computed(() => {
+      return router.currentRoute.value.name;
+    });
+
+    return {
+      route,
+    };
+  },
 };
 </script>
