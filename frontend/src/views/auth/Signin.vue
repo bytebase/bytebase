@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img class="h-12 w-auto" src="../../assets/logo.svg" alt="Bytebase" />
+      <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         Sign in to your account
       </h2>
