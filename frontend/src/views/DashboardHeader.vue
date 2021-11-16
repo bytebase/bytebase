@@ -7,7 +7,7 @@
           class="select-none"
           active-class=""
           exact-active-class=""
-          ><img class="h-12 w-auto" src="../assets/logo.svg" alt="Bytebase"
+          ><img class="h-12 w-auto" src="../assets/logo-full.svg" alt="Bytebase"
         /></router-link>
       </div>
       <div class="hidden sm:block">
