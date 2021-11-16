@@ -7,6 +7,12 @@
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
 </p>
 
+<p align="center" >
+<a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
+   <image width="20%" src="https://gitpod.io/button/open-in-gitpod.svg" />
+</a>
+</p>
+
 [Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
 
 - [x] Web-based schema change and management workspace for teams
@@ -77,7 +83,14 @@ https://github.com/bytebase/bytebase/tree/main/docs/design
 
 ## 🏗 Development
 
-Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start working on the code:
+<p align="center" >
+<a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
+    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
+</a>
+</p>
+
+Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start
+working on the code:
 
 1. It has no external dependency.
 1. It requires zero config.
