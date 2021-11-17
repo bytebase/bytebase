@@ -11,6 +11,7 @@
       >
         {{ rollback ? "Rollback SQL" : "SQL" }}
         <span v-if="create && !rollback" class="text-red-600">*</span>
+        <span class="text-accent">{{ hintForSQL }}</span>
         <span
           v-if="!create && !rollback && migrationType == 'BASELINE'"
           class="text-accent"
@@ -192,6 +193,10 @@ export default {
     showApplyStatement: {
       required: true,
       type: Boolean,
+    },
+    hintForSQL: {
+      required: false,
+      type: String,
     },
   },
   components: {},

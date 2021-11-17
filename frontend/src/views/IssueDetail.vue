@@ -123,6 +123,8 @@
           >
             <IssueSidebar
               :issue="issue"
+              :database="database"
+              :instance="instance"
               :create="state.create"
               :selectedStage="selectedStage"
               :inputFieldList="issueTemplate.inputFieldList"
@@ -150,6 +152,7 @@
                    list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
               <template v-if="state.create">
                 <IssueTaskStatementPanel
+                  :hintForSQL="hintForSQL"
                   :statement="selectedStatement"
                   :create="state.create"
                   :allowEdit="true"
@@ -167,6 +170,7 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
+                    :hintForSQL="hintForSQL"
                     :statement="statement(stage)"
                     :create="state.create"
                     :allowEdit="allowEditStatement"
@@ -247,6 +251,7 @@ import {
   watchEffect,
   reactive,
   ref,
+  ComputedRef,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -281,6 +286,7 @@ import {
   IssuePatch,
   PrincipalId,
   Database,
+  Instance,
   Environment,
   Stage,
   StageId,
@@ -1171,9 +1177,50 @@ export default {
       return count > 1;
     });
 
+    const database = computed((): Database | undefined => {
+      const temp = selectedStage as unknown;
+      if (create) {
+        const stage = temp as ComputedRef<StageCreate>;
+        const databaseId = stage.value.taskList[0].databaseId;
+        if (databaseId) {
+          return store.getters["database/databaseById"](databaseId);
+        }
+
+        return undefined;
+      }
+      const stage = temp as ComputedRef<Stage>;
+      return stage.value.taskList[0].database;
+    });
+
+    const instance = computed((): Instance => {
+      const temp = selectedStage as unknown;
+      if (create) {
+        // If database is available, then we derive the instance from database because we always fetch database's instance.
+        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
+        if (database.value) {
+          return database.value.instance;
+        }
+        const stage = temp as StageCreate;
+        return store.getters["instance/instanceById"](
+          stage.taskList[0].instanceId
+        );
+      }
+      const stage = temp as Stage;
+      return stage.taskList[0].instance;
+    });
+
+    const hintForSQL = computed(() => {
+      return instance.value.engine === "SNOWFLAKE"
+        ? ` your are altering a snowflake database, please add <schema> before each tabel altered`
+        : "";
+    });
+
     return {
       state,
       issue,
+      database,
+      instance,
+      hintForSQL,
       updateName,
       updateDescription,
       updateStatement,
