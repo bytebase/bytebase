@@ -2,7 +2,7 @@
 
 1. Put more thought on data modeling and naming.
 1. Write comment and use English.
-1. If the change is beyong trivial, write informative PR title and description.
+1. If the change is beyond trivial, write informative PR title and description.
 
 
 # How to build a feature

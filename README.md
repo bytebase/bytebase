@@ -121,6 +121,10 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
 
+### Coding guideline
+
+[Here](https://github.com/bytebase/bytebase/tree/main/docs/coding-guide.md)
+
 ## Notice
 
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
