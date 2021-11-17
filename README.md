@@ -7,7 +7,8 @@
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
 </p>
 
-[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
+[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and
+version control management tool for developers and DBAs.
 
 - [x] Web-based schema change and management workspace for teams
 - [x] Version control based schema migration (Database-as-Code)
@@ -16,8 +17,8 @@
 - [x] Backup and restore
 - [x] Anomaly center
 - [x] Environment policy
-  - Approval policy
-  - Backup schedule enforcement
+    - Approval policy
+    - Backup schedule enforcement
 - [x] Schema drift detection
 - [x] Backward compatibility schema change check
 - [x] Role-based access control (RBAC)
@@ -63,7 +64,9 @@ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.b
 
 ### User doc https://docs.bytebase.com
 
-In particular, get familar with various product concept such as [data model](https://docs.bytebase.com/concepts/data-model), [roles and permissions](https://docs.bytebase.com/concepts/roles-and-permissions) and etc.
+In particular, get familar with various product concept such
+as [data model](https://docs.bytebase.com/concepts/data-model)
+, [roles and permissions](https://docs.bytebase.com/concepts/roles-and-permissions) and etc.
 
 ### Design doc
 
@@ -71,13 +74,23 @@ https://github.com/bytebase/bytebase/tree/main/docs/design
 
 ## 🕊 Interested in contributing?
 
-1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+1. Checkout issues tagged
+   with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+   .
 
-1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/), you can add/improve content there.
+1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/), you can add/improve
+   content there.
 
 ## 🏗 Development
 
-Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start working on the code:
+<div style="text-align: center" >
+<a href="https://gitpod.io/#https://github.com/bytebase/bytebase/tree/feat/gitpod">
+    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
+</a>
+</div>
+
+Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start
+working on the code:
 
 1. It has no external dependency.
 1. It requires zero config.
@@ -99,27 +112,28 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 ### Steps
 
-1.  Install [Air](https://github.com/cosmtrek/air#installation)
+1. Install [Air](https://github.com/cosmtrek/air#installation)
 
-1.  Pull source
+1. Pull source
 
-    ```bash
-    git clone https://github.com/bytebase/bytebase
-    ```
+   ```bash
+   git clone https://github.com/bytebase/bytebase
+   ```
 
-1.  Start backend using air (with live reload)
+1. Start backend using air (with live reload)
 
-    ```bash
-    air -c scripts/.air.toml
-    ```
+   ```bash
+   air -c scripts/.air.toml
+   ```
 
-1.  Start frontend (with live reload)
+1. Start frontend (with live reload)
 
-    ```bash
-    cd frontend && yarn && yarn dev
-    ```
+   ```bash
+   cd frontend && yarn && yarn dev
+   ```
 
-Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
+Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live
+reload.
 
 ## Notice
 
@@ -128,4 +142,5 @@ Bytebase should now be running at https://localhost:3000 and change either front
 
 ## We are hiring
 
-We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
+We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out
+our [jobs page](https://bytebase.com/jobs).
