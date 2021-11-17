@@ -152,12 +152,11 @@
                    list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :hintForSQL="hintForSQL"
+                  :sqlHint="sqlHint"
                   :statement="selectedStatement"
                   :create="state.create"
                   :allowEdit="true"
                   :rollback="false"
-                  :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateStatement"
                   @apply-statement-to-other-stages="applyStatementToOtherStages"
@@ -170,12 +169,11 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :hintForSQL="hintForSQL"
+                    :sqlHint="sqlHint"
                     :statement="statement(stage)"
                     :create="state.create"
                     :allowEdit="allowEditStatement"
                     :rollback="false"
-                    :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                   />
@@ -188,11 +186,11 @@
             >
               <template v-if="state.create">
                 <IssueTaskStatementPanel
+                  :sqlHint="sqlHint"
                   :statement="selectedRollbackStatement"
                   :create="state.create"
                   :allowEdit="false"
                   :rollback="true"
-                  :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
                   @apply-statement-to-other-stages="
@@ -207,11 +205,11 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
+                    :sqlHint="sqlHint"
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
                     :allowEdit="false"
                     :rollback="true"
-                    :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateRollbackStatement"
                   />
@@ -1180,15 +1178,15 @@ export default {
     const database = computed((): Database | undefined => {
       const temp = selectedStage as unknown;
       if (create) {
-          const stage = temp as ComputedRef<StageCreate>;        
-          const databaseId = stage.value.taskList[0].databaseId;
-          if (databaseId) {
-            return store.getters["database/databaseById"](databaseId);
-          }
-        
-          return undefined;
+        const stage = temp as ComputedRef<StageCreate>;
+        const databaseId = stage.value.taskList[0].databaseId;
+        if (databaseId) {
+          return store.getters["database/databaseById"](databaseId);
+        }
+
+        return undefined;
       }
-      const stage = temp as ComputedRef<Stage>;      
+      const stage = temp as ComputedRef<Stage>;
       return stage.value.taskList[0].database;
     });
 
@@ -1200,19 +1198,23 @@ export default {
         if (database.value) {
           return database.value.instance;
         }
-        const stage = temp as ComputedRef<StageCreate>;;
+        const stage = temp as ComputedRef<StageCreate>;
         return store.getters["instance/instanceById"](
           stage.value.taskList[0].instanceId
         );
       }
-      const stage = temp as  ComputedRef<Stage>;
+      const stage = temp as ComputedRef<Stage>;
       return stage.value.taskList[0].instance;
     });
 
-    const hintForSQL = computed(() => {
-      return instance.value.engine === "SNOWFLAKE" && create
-        ? ` your are altering a snowflake database, please add <schema> before each tabel altered`
-        : "";
+    const sqlHint = computed(() => {
+      if (!create && selectedMigrateType.value == "BASELINE") {
+        return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
+      }
+      if (instance.value.engine === "SNOWFLAKE" && create) {
+        return `This is a snowflake database and you should specify <schema>`;
+      }
+      return "";
     });
 
     return {
@@ -1220,7 +1222,7 @@ export default {
       issue,
       database,
       instance,
-      hintForSQL,
+      sqlHint,
       updateName,
       updateDescription,
       updateStatement,

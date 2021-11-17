@@ -286,7 +286,6 @@ export default {
     };
 
     const databaseName = computed((): string | undefined => {
-      console.log("askjdbasjhdb", props.database);
       if (props.database) {
         return props.database.name;
       }

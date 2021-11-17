@@ -11,13 +11,9 @@
       >
         {{ rollback ? "Rollback SQL" : "SQL" }}
         <span v-if="create && !rollback" class="text-red-600">*</span>
-        <span class="text-accent">{{ hintForSQL }}</span>
-        <span
-          v-if="!create && !rollback && migrationType == 'BASELINE'"
-          class="text-accent"
-          >(This is a baseline migration and bytebase won't apply the SQL to the
-          database, it will only record a baseline history)</span
-        >
+        <span class="text-accent" v-if="sqlHint && !rollback">{{
+          `(${sqlHint})`
+        }}</span>
       </div>
       <button
         v-if="showApplyStatement"
@@ -186,15 +182,11 @@ export default {
       required: true,
       type: Boolean,
     },
-    migrationType: {
-      required: true,
-      type: String as PropType<MigrationType>,
-    },
     showApplyStatement: {
       required: true,
       type: Boolean,
     },
-    hintForSQL: {
+    sqlHint: {
       required: false,
       type: String,
     },
