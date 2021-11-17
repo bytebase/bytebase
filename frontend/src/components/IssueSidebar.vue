@@ -255,11 +255,11 @@ export default {
     },
     database: {
       required: true,
-      type: Object as PropType<ComputedRef<Database> | ComputedRef<undefined>>,
+      type: Object as PropType<Database | undefined>,
     },
     instance: {
       required: true,
-      type: Object as PropType<ComputedRef<Instance>>,
+      type: Object as PropType<Instance>,
     },
   },
   components: {
@@ -286,8 +286,9 @@ export default {
     };
 
     const databaseName = computed((): string | undefined => {
-      if (props.database.value) {
-        return props.database.value.name;
+      console.log("askjdbasjhdb", props.database);
+      if (props.database) {
+        return props.database.name;
       }
 
       const stage = props.selectedStage as Stage;

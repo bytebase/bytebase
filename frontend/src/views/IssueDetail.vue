@@ -1180,15 +1180,15 @@ export default {
     const database = computed((): Database | undefined => {
       const temp = selectedStage as unknown;
       if (create) {
-        const stage = temp as ComputedRef<StageCreate>;
-        const databaseId = stage.value.taskList[0].databaseId;
-        if (databaseId) {
-          return store.getters["database/databaseById"](databaseId);
-        }
-
-        return undefined;
+          const stage = temp as ComputedRef<StageCreate>;        
+          const databaseId = stage.value.taskList[0].databaseId;
+          if (databaseId) {
+            return store.getters["database/databaseById"](databaseId);
+          }
+        
+          return undefined;
       }
-      const stage = temp as ComputedRef<Stage>;
+      const stage = temp as ComputedRef<Stage>;      
       return stage.value.taskList[0].database;
     });
 
@@ -1200,17 +1200,17 @@ export default {
         if (database.value) {
           return database.value.instance;
         }
-        const stage = temp as StageCreate;
+        const stage = temp as ComputedRef<StageCreate>;;
         return store.getters["instance/instanceById"](
-          stage.taskList[0].instanceId
+          stage.value.taskList[0].instanceId
         );
       }
-      const stage = temp as Stage;
-      return stage.taskList[0].instance;
+      const stage = temp as  ComputedRef<Stage>;
+      return stage.value.taskList[0].instance;
     });
 
     const hintForSQL = computed(() => {
-      return instance.value.engine === "SNOWFLAKE"
+      return instance.value.engine === "SNOWFLAKE" && create
         ? ` your are altering a snowflake database, please add <schema> before each tabel altered`
         : "";
     });
