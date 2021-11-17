@@ -123,6 +123,8 @@
           >
             <IssueSidebar
               :issue="issue"
+              :database="database"
+              :instance="instance"
               :create="state.create"
               :selectedStage="selectedStage"
               :inputFieldList="issueTemplate.inputFieldList"
@@ -150,11 +152,11 @@
                    list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
               <template v-if="state.create">
                 <IssueTaskStatementPanel
+                  :sqlHint="sqlHint(false)"
                   :statement="selectedStatement"
                   :create="state.create"
                   :allowEdit="true"
                   :rollback="false"
-                  :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateStatement"
                   @apply-statement-to-other-stages="applyStatementToOtherStages"
@@ -167,11 +169,11 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
+                    :sqlHint="sqlHint(false)"
                     :statement="statement(stage)"
                     :create="state.create"
                     :allowEdit="allowEditStatement"
                     :rollback="false"
-                    :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                   />
@@ -184,11 +186,11 @@
             >
               <template v-if="state.create">
                 <IssueTaskStatementPanel
+                  :sqlHint="sqlHint(true)"
                   :statement="selectedRollbackStatement"
                   :create="state.create"
                   :allowEdit="false"
                   :rollback="true"
-                  :migrationType="selectedMigrateType"
                   :showApplyStatement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
                   @apply-statement-to-other-stages="
@@ -203,11 +205,11 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
+                    :sqlHint="sqlHint(true)"
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
                     :allowEdit="false"
                     :rollback="true"
-                    :migrationType="selectedMigrateType"
                     :showApplyStatement="showIssueTaskStatementApply"
                     @update-statement="updateRollbackStatement"
                   />
@@ -247,6 +249,7 @@ import {
   watchEffect,
   reactive,
   ref,
+  ComputedRef,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -281,6 +284,7 @@ import {
   IssuePatch,
   PrincipalId,
   Database,
+  Instance,
   Environment,
   Stage,
   StageId,
@@ -1171,9 +1175,54 @@ export default {
       return count > 1;
     });
 
+    const database = computed((): Database | undefined => {
+      const temp = selectedStage as unknown;
+      if (create) {
+        const stage = temp as ComputedRef<StageCreate>;
+        const databaseId = stage.value.taskList[0].databaseId;
+        if (databaseId) {
+          return store.getters["database/databaseById"](databaseId);
+        }
+
+        return undefined;
+      }
+      const stage = temp as ComputedRef<Stage>;
+      return stage.value.taskList[0].database;
+    });
+
+    const instance = computed((): Instance => {
+      const temp = selectedStage as unknown;
+      if (create) {
+        // If database is available, then we derive the instance from database because we always fetch database's instance.
+        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
+        if (database.value) {
+          return database.value.instance;
+        }
+        const stage = temp as ComputedRef<StageCreate>;
+        return store.getters["instance/instanceById"](
+          stage.value.taskList[0].instanceId
+        );
+      }
+      const stage = temp as ComputedRef<Stage>;
+      return stage.value.taskList[0].instance;
+    });
+
+    const sqlHint = (isRollBack: Boolean): string | undefined => {
+      if (!isRollBack && !create && selectedMigrateType.value == "BASELINE") {
+        return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
+      }
+      if (!isRollBack && instance.value.engine === "SNOWFLAKE") {
+        return `Use <<schema>>.<<table>> to specify a Snowflake table`;
+      }
+      return undefined;
+    };
+
     return {
       state,
       issue,
+      database,
+      instance,
+      sqlHint,
       updateName,
       updateDescription,
       updateStatement,
