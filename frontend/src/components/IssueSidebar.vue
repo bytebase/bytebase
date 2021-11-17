@@ -191,7 +191,7 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
@@ -253,14 +253,6 @@ export default {
       required: true,
       type: Boolean,
     },
-    database: {
-      required: true,
-      type: Object as PropType<ComputedRef<Database> | ComputedRef<undefined>>,
-    },
-    instance: {
-      required: true,
-      type: Object as PropType<ComputedRef<Instance>>,
-    },
   },
   components: {
     DatabaseSelect,
@@ -285,9 +277,24 @@ export default {
       return props.issue.payload[field.id];
     };
 
+    const database = computed((): Database | undefined => {
+      if (props.create) {
+        const stage = props.selectedStage as StageCreate;
+        if (stage.taskList[0].databaseId) {
+          return store.getters["database/databaseById"](
+            stage.taskList[0].databaseId
+          );
+        }
+        return undefined;
+      }
+
+      const stage = props.selectedStage as Stage;
+      return stage.taskList[0].database;
+    });
+
     const databaseName = computed((): string | undefined => {
-      if (props.database.value) {
-        return props.database.value.name;
+      if (database.value) {
+        return database.value.name;
       }
 
       const stage = props.selectedStage as Stage;
@@ -304,6 +311,22 @@ export default {
         ).databaseName;
       }
       return undefined;
+    });
+
+    const instance = computed((): Instance => {
+      if (props.create) {
+        // If database is available, then we derive the instance from database because we always fetch database's instance.
+        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
+        if (database.value) {
+          return database.value.instance;
+        }
+        const stage = props.selectedStage as StageCreate;
+        return store.getters["instance/instanceById"](
+          stage.taskList[0].instanceId
+        );
+      }
+      const stage = props.selectedStage as Stage;
+      return stage.taskList[0].instance;
     });
 
     const environment = computed((): Environment => {
@@ -381,19 +404,16 @@ export default {
     });
 
     const clickDatabase = () => {
-      if (props.database.value) {
+      if (database.value) {
         router.push({
           name: "workspace.database.detail",
           params: {
-            databaseSlug: databaseSlug(props.database.value),
+            databaseSlug: databaseSlug(database.value),
           },
         });
       } else {
         store
-          .dispatch(
-            "database/fetchDatabaseListByInstanceId",
-            props.instance.value.id
-          )
+          .dispatch("database/fetchDatabaseListByInstanceId", instance.value.id)
           .then((list: Database[]) => {
             for (const database of list) {
               if (database.name == databaseName.value) {
@@ -415,6 +435,8 @@ export default {
       state,
       fieldValue,
       environment,
+      instance,
+      database,
       databaseName,
       project,
       showInstance,
