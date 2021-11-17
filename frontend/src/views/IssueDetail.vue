@@ -152,7 +152,7 @@
                    list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :sqlHint="sqlHint"
+                  :sqlHint="sqlHint(false)"
                   :statement="selectedStatement"
                   :create="state.create"
                   :allowEdit="true"
@@ -169,7 +169,7 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :sqlHint="sqlHint"
+                    :sqlHint="sqlHint(false)"
                     :statement="statement(stage)"
                     :create="state.create"
                     :allowEdit="allowEditStatement"
@@ -186,7 +186,7 @@
             >
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :sqlHint="sqlHint"
+                  :sqlHint="sqlHint(true)"
                   :statement="selectedRollbackStatement"
                   :create="state.create"
                   :allowEdit="false"
@@ -205,7 +205,7 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :sqlHint="sqlHint"
+                    :sqlHint="sqlHint(true)"
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
                     :allowEdit="false"
@@ -1207,15 +1207,15 @@ export default {
       return stage.value.taskList[0].instance;
     });
 
-    const sqlHint = computed(() => {
-      if (!create && selectedMigrateType.value == "BASELINE") {
+    const sqlHint = (isRollBack: Boolean): string | undefined => {
+      if (!isRollBack && !create && selectedMigrateType.value == "BASELINE") {
         return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
       }
-      if (instance.value.engine === "SNOWFLAKE" && create) {
-        return `This is a snowflake database and you should specify <schema>`;
+      if (!isRollBack && instance.value.engine === "SNOWFLAKE") {
+        return `Use <<schema>>.<<table>> to specify a Snowflake table`;
       }
-      return "";
-    });
+      return undefined;
+    };
 
     return {
       state,
