@@ -28,16 +28,19 @@ All in all, figure out the schema/data model first before moving forward and use
 
 We prefer the async review workflow since we can't always IM the other side.
 
-The review workflow is like ping-pong between the author and reviewer. To streamline the process, please leave explicit comment to indicate you have finished your part and request the other side to take action. You can install [Neat](https://neat.run/) to subscribe GitHub notification, make sure to watch the bytebase repository.
+The review workflow is like ping-pong between the author and reviewer. To streamline the process, please leave explicit comment to indicate you have finished your part and request the other side to take action.
 
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/codereview1.png)
+
+You can install [Neat](https://neat.run/) to subscribe GitHub notification, make sure to watch the bytebase repository.
 
 ## Common reviewer term
-* LGTM (Looks Good To Me): short note while approving the CL.
+* LGTM (Looks Good To Me): short note while approving the PR.
 
-* Needs more work: require the reviewer to refine the CL.
+* Needs more work: require the reviewer to refine the PR.
 
 * Request more info: require the reviewer to provide more info.
 
 ## Common author term
 
-PTAL (Please Take Another Look): request the reviewer to take another look after addressing the review comments.
+* PTAL (Please Take Another Look): request the reviewer to take another look after addressing the review comments.
