@@ -256,6 +256,7 @@
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
             <Breadcrumb />
           </div>
+          <IntroBanner v-if="showIntro" />
           <div v-if="quickActionList.length > 0" class="mx-4 mt-4">
             <QuickActionPanel :quickActionList="quickActionList" />
           </div>
@@ -279,6 +280,7 @@ import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
+import IntroBanner from "../components/IntroBanner.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
@@ -292,6 +294,7 @@ export default {
   name: "BodyLayout",
   components: {
     Breadcrumb,
+    IntroBanner,
     Quickstart,
     QuickActionPanel,
   },
@@ -353,6 +356,10 @@ export default {
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
+    const showIntro = computed(() => {
+      return !store.getters["uistate/introStateByKey"]("general.overview");
+    });
+
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
       return (
@@ -373,6 +380,7 @@ export default {
       state,
       quickActionList,
       showBreadcrumb,
+      showIntro,
       showQuickstart,
       version,
     };

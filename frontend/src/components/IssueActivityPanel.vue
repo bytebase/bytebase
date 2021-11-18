@@ -34,7 +34,7 @@
                       >
                         <img
                           class="mt-1"
-                          src="../assets/logo-imageonly.svg"
+                          src="../assets/logo-icon.svg"
                           alt="Bytebase"
                         />
                       </div>

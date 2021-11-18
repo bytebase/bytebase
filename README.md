@@ -1,5 +1,5 @@
 <p align="center">
-<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/main.webp" /></a>
+<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/banner.webp" /></a>
 </p>
 
 <p align="center">
@@ -50,13 +50,13 @@
 ### Run on localhost:8080
 
 ```bash
-docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.8.0 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.8.1 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.8.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.8.1 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 📕 Docs
@@ -120,6 +120,10 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
     ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
+
+### Coding guideline
+
+[Here](https://github.com/bytebase/bytebase/tree/main/docs/coding-guide.md)
 
 ## Notice
 
