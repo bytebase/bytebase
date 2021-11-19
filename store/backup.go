@@ -421,7 +421,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 		ON CONFLICT(database_id) DO UPDATE SET
 				enabled = excluded.enabled,
 				hour = excluded.hour,
-				day_of_week = excluded.day_of_week
+				day_of_week = excluded.day_of_week,
 				hook_url = excluded.hook_url
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`, hook_url
 		`,
