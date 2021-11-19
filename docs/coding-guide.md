@@ -13,6 +13,7 @@ If you are working on an end-to-end feature including both backend and frontend,
 
 1. If it requires schema change, design the schema first (you may need to discuss with peers).
 1. Design the API, our [API style guide](https://github.com/bytebase/bytebase/blob/main/docs/api-style-guide.md).
+1. Golang code follows [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md).
 1. Finish the rest.
 
 Ideally, you will split the schema change, API change and the rest into separate PRs. If you put them together, then if the schema requires a change after the review, it will end up with a lot of code changes. For obvious schema changes, you can still choose to put them in a single PR.
