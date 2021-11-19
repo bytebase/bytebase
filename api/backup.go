@@ -162,7 +162,7 @@ type BackupSetting struct {
 	Enabled   bool   `jsonapi:"attr,enabled"`
 	Hour      int    `jsonapi:"attr,hour"`
 	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
-	URL       string `jsonapi:"attr,url"`
+	HookURL   string `jsonapi:"attr,hook_url"`
 }
 
 // BackupSettingFind is the message to get a backup settings.
@@ -191,7 +191,7 @@ type BackupSettingUpsert struct {
 	Enabled   bool   `jsonapi:"attr,enabled"`
 	Hour      int    `jsonapi:"attr,hour"`
 	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
-	URL       string `jsonapi:"attr,url"`
+	HookURL   string `jsonapi:"attr,hook_url"`
 }
 
 // BackupSettingsMatch is the message to find backup settings matching the conditions.

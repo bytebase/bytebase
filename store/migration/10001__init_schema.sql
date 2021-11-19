@@ -717,7 +717,8 @@ CREATE TABLE backup_setting (
         -1 <= day_of_week
         AND day_of_week < 7
     ),
-    url TEXT NOT NULL
+    -- hook_url is the callback webhook url which will be requested after a successful database backup.
+    hook_url TEXT NOT NULL
 );
 
 CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
