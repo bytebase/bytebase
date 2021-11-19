@@ -75,6 +75,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 			DatabaseId: database.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),
+			HookURL:    "",
 		}
 		switch backupPlanPolicy.Schedule {
 		case api.BackupPlanPolicyScheduleDaily:
