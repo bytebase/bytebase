@@ -324,7 +324,8 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 			database_id,
 			enabled,
 			hour,
-			day_of_week
+			day_of_week,
+			hook_url
 		FROM backup_setting
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -348,6 +349,7 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
+			&backupSetting.HookURL,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -412,14 +414,16 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 			database_id,
 			`+"`enabled`,"+`
 			hour,
-			day_of_week
+			day_of_week,
+			hook_url
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(database_id) DO UPDATE SET
 				enabled = excluded.enabled,
 				hour = excluded.hour,
 				day_of_week = excluded.day_of_week
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`
+				hook_url = excluded.hook_url
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`, hook_url
 		`,
 		upsert.UpdaterId,
 		upsert.UpdaterId,
@@ -427,6 +431,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 		upsert.Enabled,
 		upsert.Hour,
 		upsert.DayOfWeek,
+		upsert.HookURL,
 	)
 
 	if err != nil {
@@ -446,6 +451,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 		&backupSetting.Enabled,
 		&backupSetting.Hour,
 		&backupSetting.DayOfWeek,
+		&backupSetting.HookURL,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -471,7 +477,8 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 			database_id,
 			enabled,
 			hour,
-			day_of_week
+			day_of_week,
+			hook_url
 		FROM backup_setting
 		WHERE
 			enabled = 1
@@ -504,6 +511,7 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
+			&backupSetting.HookURL,
 		); err != nil {
 			return nil, FormatError(err)
 		}
