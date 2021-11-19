@@ -417,7 +417,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 			day_of_week,
 			url
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(database_id) DO UPDATE SET
 				enabled = excluded.enabled,
 				hour = excluded.hour,
