@@ -159,10 +159,11 @@ type BackupSetting struct {
 	Database *Database
 
 	// Domain specific fields
-	Enabled   bool   `jsonapi:"attr,enabled"`
-	Hour      int    `jsonapi:"attr,hour"`
-	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
-	HookURL   string `jsonapi:"attr,hook_url"`
+	Enabled   bool `jsonapi:"attr,enabled"`
+	Hour      int  `jsonapi:"attr,hour"`
+	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
+	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
+	HookURL string `jsonapi:"attr,hook_url"`
 }
 
 // BackupSettingFind is the message to get a backup settings.

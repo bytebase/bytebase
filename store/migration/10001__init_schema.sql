@@ -717,7 +717,7 @@ CREATE TABLE backup_setting (
         -1 <= day_of_week
         AND day_of_week < 7
     ),
-    -- hook_url is the callback webhook url which will be requested after a successful database backup.
+    -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
 
