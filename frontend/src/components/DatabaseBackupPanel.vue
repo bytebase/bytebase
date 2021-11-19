@@ -313,6 +313,7 @@ export default {
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
+        hookURL: "",
       };
       store
         .dispatch("backup/upsertBackupSetting", {
