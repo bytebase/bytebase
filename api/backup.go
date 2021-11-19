@@ -159,9 +159,10 @@ type BackupSetting struct {
 	Database *Database
 
 	// Domain specific fields
-	Enabled   bool `jsonapi:"attr,enabled"`
-	Hour      int  `jsonapi:"attr,hour"`
-	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
+	Enabled   bool   `jsonapi:"attr,enabled"`
+	Hour      int    `jsonapi:"attr,hour"`
+	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
+	URL       string `jsonapi:"attr,url"`
 }
 
 // BackupSettingFind is the message to get a backup settings.
@@ -187,9 +188,10 @@ type BackupSettingUpsert struct {
 	EnvironmentId int
 
 	// Domain specific fields
-	Enabled   bool `jsonapi:"attr,enabled"`
-	Hour      int  `jsonapi:"attr,hour"`
-	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
+	Enabled   bool   `jsonapi:"attr,enabled"`
+	Hour      int    `jsonapi:"attr,hour"`
+	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
+	URL       string `jsonapi:"attr,url"`
 }
 
 // BackupSettingsMatch is the message to find backup settings matching the conditions.

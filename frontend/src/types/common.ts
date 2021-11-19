@@ -278,6 +278,7 @@ export const unknown = (
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
+    url: "",
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -628,6 +629,7 @@ export const empty = (
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
+    url: "",
   };
 
   const EMPTY_PIPELINE: Pipeline = {
