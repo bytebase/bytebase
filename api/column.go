@@ -9,14 +9,14 @@ type Column struct {
 	ID int `jsonapi:"primary,column"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	CreatedTs int64 `json:"createdTs"`
-	UpdaterId int
+	UpdaterID int
 	UpdatedTs int64 `json:"updatedTs"`
 
 	// Related fields
-	DatabaseId int
-	TableId    int
+	DatabaseID int
+	TableID    int
 
 	// Domain specific fields
 	Name         string  `json:"name"`
@@ -32,11 +32,11 @@ type Column struct {
 type ColumnCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	DatabaseId int
-	TableId    int
+	DatabaseID int
+	TableID    int
 
 	// Domain specific fields
 	Name         string
@@ -53,8 +53,8 @@ type ColumnFind struct {
 	ID *int
 
 	// Related fields
-	DatabaseId *int
-	TableId    *int
+	DatabaseID *int
+	TableID    *int
 
 	// Domain specific fields
 	Name *string
@@ -73,7 +73,7 @@ type ColumnPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 }
 
 type ColumnService interface {

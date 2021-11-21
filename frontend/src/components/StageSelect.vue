@@ -8,7 +8,7 @@
     "
   >
     <template v-for="(stage, index) in pipeline.stageList" :key="index">
-      <option :value="stage.id" :selected="stage.id == state.selectedId">
+      <option :value="stage.id" :selected="stage.id == state.selectedID">
         {{ isActiveStage(stage.id) ? stage.name + " (active)" : stage.name }}
       </option>
     </template>
@@ -17,11 +17,11 @@
 
 <script lang="ts">
 import { PropType, reactive, watch } from "vue";
-import { UNKNOWN_ID, Pipeline, StageId } from "../types";
+import { UNKNOWN_ID, Pipeline, StageID } from "../types";
 import { activeStage } from "../utils";
 
 interface LocalState {
-  selectedId: number;
+  selectedID: number;
 }
 
 export default {
@@ -33,26 +33,26 @@ export default {
       required: true,
       type: Object as PropType<Pipeline>,
     },
-    selectedId: {
+    selectedID: {
       default: UNKNOWN_ID,
       type: Number,
     },
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedID: props.selectedID,
     });
 
     watch(
-      () => props.selectedId,
+      () => props.selectedID,
       (cur, _) => {
-        state.selectedId = cur;
+        state.selectedID = cur;
       }
     );
 
-    const isActiveStage = (stageId: StageId): boolean => {
+    const isActiveStage = (stageID: StageID): boolean => {
       const stage = activeStage(props.pipeline);
-      return stage.id == stageId;
+      return stage.id == stageID;
     };
 
     return {

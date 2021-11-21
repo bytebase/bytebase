@@ -1,74 +1,74 @@
 // Use number as the ID type, though the ID type could be transparent to the client and just
 // use string, however, that requires server to do string to int conversion since we store
 // ID as auto incremental int in the database.
-export type IdType = number;
+export type IDType = number;
 
-export type ExecutionId = IdType;
+export type ExecutionID = IDType;
 
-export type PrincipalId = IdType;
+export type PrincipalID = IDType;
 
-export type MemberId = IdType;
+export type MemberID = IDType;
 
-export type SettingId = IdType;
+export type SettingID = IDType;
 
-export type BookmarkId = IdType;
+export type BookmarkID = IDType;
 
-export type PolicyId = IdType;
+export type PolicyID = IDType;
 
-export type ProjectId = IdType;
+export type ProjectID = IDType;
 
-export type ProjectWebhookId = IdType;
+export type ProjectWebhookID = IDType;
 
-export type IssueId = IdType;
+export type IssueID = IDType;
 
-export type PipelineId = IdType;
+export type PipelineID = IDType;
 
-export type StageId = IdType;
+export type StageID = IDType;
 
-export type TaskId = IdType;
+export type TaskID = IDType;
 
-export type TaskRunId = IdType;
+export type TaskRunID = IDType;
 
-export type TaskCheckRunId = IdType;
+export type TaskCheckRunID = IDType;
 
-export type ActivityId = IdType;
+export type ActivityID = IDType;
 
-export type InboxId = IdType;
+export type InboxID = IDType;
 
-export type EnvironmentId = IdType;
+export type EnvironmentID = IDType;
 
-export type InstanceId = IdType;
+export type InstanceID = IDType;
 
-export type InstanceUserId = IdType;
+export type InstanceUserID = IDType;
 
-export type DataSourceId = IdType;
+export type DataSourceID = IDType;
 
-export type DatabaseId = IdType;
+export type DatabaseID = IDType;
 
-export type TableId = IdType;
+export type TableID = IDType;
 
-export type ViewId = IdType;
+export type ViewID = IDType;
 
-export type ColumnId = IdType;
+export type ColumnID = IDType;
 
-export type TableIndexId = IdType;
+export type TableIndexID = IDType;
 
-export type VCSId = IdType;
+export type VCSID = IDType;
 
-export type RepositoryId = IdType;
+export type RepositoryID = IDType;
 
-export type MigrationHistoryId = IdType;
+export type MigrationHistoryID = IDType;
 
-export type BackupId = IdType;
+export type BackupID = IDType;
 
-export type BackupSettingId = IdType;
+export type BackupSettingID = IDType;
 
-export type AnomalyId = IdType;
+export type AnomalyID = IDType;
 
-export type CommandId = IdType;
-export type CommandRegisterId = IdType;
+export type CommandID = IDType;
+export type CommandRegisterID = IDType;
 
 // This references to the object id, which can be used as a container.
 // Currently, only issue can be used a container.
 // The type is used by Activity and Message
-export type ContainerId = IssueId;
+export type ContainerID = IssueID;

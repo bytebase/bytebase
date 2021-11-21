@@ -93,8 +93,8 @@ func createIssueSubscriber(ctx context.Context, tx *Tx, create *api.IssueSubscri
 		VALUES (?, ?)
 		RETURNING issue_id, subscriber_id
 	`,
-		create.IssueId,
-		create.SubscriberId,
+		create.IssueID,
+		create.SubscriberID,
 	)
 
 	if err != nil {
@@ -105,8 +105,8 @@ func createIssueSubscriber(ctx context.Context, tx *Tx, create *api.IssueSubscri
 	row.Next()
 	var issueSubscriber api.IssueSubscriber
 	if err := row.Scan(
-		&issueSubscriber.IssueId,
-		&issueSubscriber.SubscriberId,
+		&issueSubscriber.IssueID,
+		&issueSubscriber.SubscriberID,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -117,10 +117,10 @@ func createIssueSubscriber(ctx context.Context, tx *Tx, create *api.IssueSubscri
 func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscriberFind) (_ []*api.IssueSubscriber, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.IssueId; v != nil {
+	if v := find.IssueID; v != nil {
 		where, args = append(where, "issue_id = ?"), append(args, *v)
 	}
-	if v := find.SubscriberId; v != nil {
+	if v := find.SubscriberID; v != nil {
 		where, args = append(where, "subscriber_id = ?"), append(args, *v)
 	}
 
@@ -142,8 +142,8 @@ func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscri
 	for rows.Next() {
 		var issueSubscriber api.IssueSubscriber
 		if err := rows.Scan(
-			&issueSubscriber.IssueId,
-			&issueSubscriber.SubscriberId,
+			&issueSubscriber.IssueID,
+			&issueSubscriber.SubscriberID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -160,14 +160,14 @@ func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscri
 // deleteIssueSubscriber permanently deletes a issueSubscriber by ID.
 func deleteIssueSubscriber(ctx context.Context, tx *Tx, delete *api.IssueSubscriberDelete) error {
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueId, delete.SubscriberId)
+	result, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueID, delete.SubscriberID)
 	if err != nil {
 		return FormatError(err)
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("subscriber %d not found in issue %d", delete.SubscriberId, delete.IssueId)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("subscriber %d not found in issue %d", delete.SubscriberID, delete.IssueID)}
 	}
 
 	return nil

@@ -13,11 +13,11 @@ import (
 )
 
 func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
-	g.POST("/issue/:issueId/subscriber", func(c echo.Context) error {
+	g.POST("/issue/:issueID/subscriber", func(c echo.Context) error {
 		ctx := context.Background()
-		issueId, err := strconv.Atoi(c.Param("issueId"))
+		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
 		issueSubscriberCreate := &api.IssueSubscriberCreate{}
@@ -25,18 +25,18 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issueSubscriber request").SetInternal(err)
 		}
 
-		issueSubscriberCreate.IssueId = issueId
+		issueSubscriberCreate.IssueID = issueID
 
 		issueSubscriber, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, issueSubscriberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Subscriber %d already exists in issue %d", issueSubscriberCreate.SubscriberId, issueSubscriberCreate.IssueId))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Subscriber %d already exists in issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberId, issueSubscriberCreate.IssueId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
 		if err := s.ComposeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberCreate.SubscriberId, issueSubscriberCreate.IssueId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -46,24 +46,24 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/issue/:issueId/subscriber", func(c echo.Context) error {
+	g.GET("/issue/:issueID/subscriber", func(c echo.Context) error {
 		ctx := context.Background()
-		issueId, err := strconv.Atoi(c.Param("issueId"))
+		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
 		issueSubscriberFind := &api.IssueSubscriberFind{
-			IssueId: &issueId,
+			IssueID: &issueID,
 		}
 		list, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issueId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issueID)).SetInternal(err)
 		}
 
 		for _, issueSubscriber := range list {
 			if err := s.ComposeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberId, issueSubscriber.IssueId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
 			}
 		}
 
@@ -74,28 +74,28 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/issue/:issueId/subscriber/:subscriberId", func(c echo.Context) error {
+	g.DELETE("/issue/:issueID/subscriber/:subscriberID", func(c echo.Context) error {
 		ctx := context.Background()
-		issueId, err := strconv.Atoi(c.Param("issueId"))
+		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
-		subscriberId, err := strconv.Atoi(c.Param("subscriberId"))
+		subscriberID, err := strconv.Atoi(c.Param("subscriberID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Subscriber ID is not a number: %s", c.Param("subscriberId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Subscriber ID is not a number: %s", c.Param("subscriberID"))).SetInternal(err)
 		}
 
 		issueSubscriberDelete := &api.IssueSubscriberDelete{
-			IssueId:      issueId,
-			SubscriberId: subscriberId,
+			IssueID:      issueID,
+			SubscriberID: subscriberID,
 		}
 		err = s.IssueSubscriberService.DeleteIssueSubscriber(ctx, issueSubscriberDelete)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Subscriber %d not found in issue %d", subscriberId, issueId))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Subscriber %d not found in issue %d", subscriberID, issueID))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete subscriber %d from issue %d", subscriberId, issueId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete subscriber %d from issue %d", subscriberID, issueID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -107,7 +107,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 func (s *Server) ComposeIssueSubscriberRelationship(ctx context.Context, issueSubscriber *api.IssueSubscriber) error {
 	var err error
 
-	issueSubscriber.Subscriber, err = s.ComposePrincipalById(ctx, issueSubscriber.SubscriberId)
+	issueSubscriber.Subscriber, err = s.ComposePrincipalByID(ctx, issueSubscriber.SubscriberID)
 	if err != nil {
 		return err
 	}

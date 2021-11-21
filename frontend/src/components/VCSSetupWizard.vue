@@ -36,7 +36,7 @@ import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
 import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import {
-  isValidVCSApplicationIdOrSecret,
+  isValidVCSApplicationIDOrSecret,
   VCSConfig,
   VCSCreate,
   VCS,
@@ -82,7 +82,7 @@ export default {
         type: "GITLAB_SELF_HOST",
         name: "GitLab self-host",
         instanceURL: "",
-        applicationId: "",
+        applicationID: "",
         secret: "",
       },
       currentStep: 0,
@@ -94,7 +94,7 @@ export default {
         if (state.config.type == "GITLAB_SELF_HOST") {
           const oAuthConfig: OAuthConfig = {
             endpoint: `${state.config.instanceURL}/oauth/token`,
-            applicationId: state.config.applicationId,
+            applicationID: state.config.applicationID,
             secret: state.config.secret,
             redirectURL: redirectURL(),
           };
@@ -122,8 +122,8 @@ export default {
         return isURL(state.config.instanceURL);
       } else if (state.currentStep == OAUTH_INFO_STEP) {
         return (
-          isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
-          isValidVCSApplicationIdOrSecret(state.config.secret)
+          isValidVCSApplicationIDOrSecret(state.config.applicationID) &&
+          isValidVCSApplicationIDOrSecret(state.config.secret)
         );
       }
       return true;
@@ -152,7 +152,7 @@ export default {
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
         const newWindow = openWindowForOAuth(
           `${state.config.instanceURL}/oauth/authorize`,
-          state.config.applicationId
+          state.config.applicationID
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {

@@ -102,7 +102,7 @@ export default {
           refreshToken: "",
         },
         repositoryInfo: {
-          externalId: "",
+          externalID: "",
           name: "",
           fullPath: "",
           webURL: "",
@@ -139,8 +139,8 @@ export default {
     const tryFinishSetup = (allowFinishCallback: () => void) => {
       const createFunc = () => {
         const repositoryCreate: RepositoryCreate = {
-          vcsId: state.config.vcs.id,
-          projectId: props.project.id,
+          vcsID: state.config.vcs.id,
+          projectID: props.project.id,
           name: state.config.repositoryInfo.name,
           fullPath: state.config.repositoryInfo.fullPath,
           webURL: state.config.repositoryInfo.webURL,
@@ -148,7 +148,7 @@ export default {
           baseDirectory: state.config.repositoryConfig.baseDirectory,
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
-          externalId: state.config.repositoryInfo.externalId,
+          externalID: state.config.repositoryInfo.externalID,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
@@ -167,7 +167,7 @@ export default {
         // Though the delete can succeed while the create fails, this is rare, and
         // even it happens, user can still configure it again.
         store
-          .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
+          .dispatch("repository/deleteRepositoryByProjectID", props.project.id)
           .then(() => {
             createFunc();
           });

@@ -125,7 +125,7 @@ export default {
 
     const repositoryInfo = computed((): ExternalRepositoryInfo => {
       return {
-        externalId: props.repository.externalId,
+        externalID: props.repository.externalID,
         name: props.repository.name,
         fullPath: props.repository.fullPath,
         webURL: props.repository.webURL,
@@ -148,7 +148,7 @@ export default {
 
     const restoreToUIWorkflowType = () => {
       store
-        .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
+        .dispatch("repository/deleteRepositoryByProjectID", props.project.id)
         .then(() => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -185,8 +185,8 @@ export default {
           state.repositoryConfig.schemaPathTemplate;
       }
       store
-        .dispatch("repository/updateRepositoryByProjectId", {
-          projectId: props.project.id,
+        .dispatch("repository/updateRepositoryByProjectID", {
+          projectID: props.project.id,
           repositoryPatch,
         })
         .then(() => {

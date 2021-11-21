@@ -12,15 +12,15 @@ type Instance struct {
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentId int
+	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
 	// Anomalies are stored in a separate table, but just return here for convenience
 	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
@@ -40,10 +40,10 @@ type Instance struct {
 type InstanceCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	EnvironmentId int `jsonapi:"attr,environmentId"`
+	EnvironmentID int `jsonapi:"attr,environmentID"`
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`
@@ -76,7 +76,7 @@ type InstancePatch struct {
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Name             *string `jsonapi:"attr,name"`
@@ -139,7 +139,7 @@ type MigrationHistory struct {
 	SchemaPrev        string             `jsonapi:"attr,schemaPrev"`
 	ExecutionDuration int                `jsonapi:"attr,executionDuration"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future
-	IssueId string `jsonapi:"attr,issueId"`
+	IssueID string `jsonapi:"attr,issueID"`
 	Payload string `jsonapi:"attr,payload"`
 }
 

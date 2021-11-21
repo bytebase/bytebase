@@ -1,21 +1,21 @@
 // This is a facet of the underlying identity entity.
 // For now, there is only user type. In the future,
 
-import { PrincipalId } from "./id";
+import { PrincipalID } from "./id";
 import { RoleType } from "./member";
 
 // we may support application/bot identity.
 export type PrincipalType = "END_USER" | "SYSTEM_BOT";
 
 export type Principal = {
-  id: PrincipalId;
+  id: PrincipalID;
 
   // Standard fields
-  // Unlike other models, we use creatorId and updaterId instead of converting
+  // Unlike other models, we use creatorID and updaterID instead of converting
   // them to full principal object to avoid recursive issue.
-  creatorId: PrincipalId;
+  creatorID: PrincipalID;
   createdTs: number;
-  updaterId: PrincipalId;
+  updaterID: PrincipalID;
   updatedTs: number;
 
   // Domain specific fields

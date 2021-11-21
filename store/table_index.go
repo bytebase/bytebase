@@ -102,10 +102,10 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
 		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, `type`, `unique`, visible, comment"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.DatabaseId,
-		create.TableId,
+		create.CreatorID,
+		create.CreatorID,
+		create.DatabaseID,
+		create.TableID,
 		create.Name,
 		create.Expression,
 		create.Position,
@@ -124,12 +124,12 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 	var index api.Index
 	if err := row.Scan(
 		&index.ID,
-		&index.CreatorId,
+		&index.CreatorID,
 		&index.CreatedTs,
-		&index.UpdaterId,
+		&index.UpdaterID,
 		&index.UpdatedTs,
-		&index.DatabaseId,
-		&index.TableId,
+		&index.DatabaseID,
+		&index.TableID,
 		&index.Name,
 		&index.Expression,
 		&index.Position,
@@ -150,10 +150,10 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
-	if v := find.TableId; v != nil {
+	if v := find.TableID; v != nil {
 		where, args = append(where, "table_id = ?"), append(args, *v)
 	}
 	if v := find.Name; v != nil {
@@ -195,12 +195,12 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 		var index api.Index
 		if err := rows.Scan(
 			&index.ID,
-			&index.CreatorId,
+			&index.CreatorID,
 			&index.CreatedTs,
-			&index.UpdaterId,
+			&index.UpdaterID,
 			&index.UpdatedTs,
-			&index.DatabaseId,
-			&index.TableId,
+			&index.DatabaseID,
+			&index.TableID,
 			&index.Name,
 			&index.Expression,
 			&index.Position,

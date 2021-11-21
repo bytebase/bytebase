@@ -12,14 +12,14 @@ const getters = {
     (state: RouterState) =>
     (currentRoute: RouteLocationNormalized): RouterSlug => {
       {
-        // /u/:principalId
+        // /u/:principalID
         // Total 2 elements, 2nd element is the principal id
         const profileComponents = currentRoute.path.match(
           "/u/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (profileComponents[1]) {
           return {
-            principalId: parseInt(profileComponents[1]),
+            principalID: parseInt(profileComponents[1]),
           };
         }
       }
@@ -149,7 +149,7 @@ const getters = {
       }
 
       {
-        // /setting/version-control/:vcsId
+        // /setting/version-control/:vcsID
         // Total 2 elements, 2nd element is the version control system id
         const vcsComponents = currentRoute.path.match(
           "/setting/version-control/([0-9a-zA-Z_-]+)"

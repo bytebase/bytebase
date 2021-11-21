@@ -15,8 +15,8 @@ input[type="number"] {
 <template>
   <DataSourceMemberForm
     :dataSource="state.dataSource"
-    :principalId="state.granteeId"
-    :issueId="state.issueId"
+    :principalID="state.granteeID"
+    :issueID="state.issueID"
     @submit="submit"
     @cancel="cancel"
   />
@@ -27,13 +27,13 @@ import { reactive, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
-import { IssueId, PrincipalId, DataSource } from "../types";
+import { IssueID, PrincipalID, DataSource } from "../types";
 import { fullDataSourcePath } from "../utils";
 
 interface LocalState {
   dataSource?: DataSource;
-  granteeId?: PrincipalId;
-  issueId?: IssueId;
+  granteeID?: PrincipalID;
+  issueID?: IssueID;
 }
 
 export default {
@@ -61,16 +61,16 @@ export default {
     const dataSource =
       router.currentRoute.value.query.datasource &&
       router.currentRoute.value.query.database
-        ? await store.dispatch("dataSource/fetchDataSourceById", {
-            dataSourceId: router.currentRoute.value.query.datasource,
-            databaseId: router.currentRoute.value.query.database,
+        ? await store.dispatch("dataSource/fetchDataSourceByID", {
+            dataSourceID: router.currentRoute.value.query.datasource,
+            databaseID: router.currentRoute.value.query.database,
           })
         : undefined;
 
     const state = reactive<LocalState>({
       dataSource,
-      granteeId: router.currentRoute.value.query.grantee as PrincipalId,
-      issueId: router.currentRoute.value.query.issue as IssueId,
+      granteeID: router.currentRoute.value.query.grantee as PrincipalID,
+      issueID: router.currentRoute.value.query.issue as IssueID,
     });
 
     const cancel = () => {

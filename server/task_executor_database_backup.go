@@ -47,7 +47,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, err
 	}
 
-	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupId})
+	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
@@ -68,7 +68,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if _, err = server.BackupService.PatchBackup(ctx, &api.BackupPatch{
 		ID:        backup.ID,
 		Status:    newBackupStatus,
-		UpdaterId: api.SYSTEM_BOT_ID,
+		UpdaterID: api.SYSTEM_BOT_ID,
 		Comment:   comment,
 	}); err != nil {
 		return true, nil, fmt.Errorf("failed to patch backup: %w", err)

@@ -169,8 +169,8 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC')
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Name,
 		strings.ToUpper(create.Key),
 	)
@@ -185,9 +185,9 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 	if err := row.Scan(
 		&project.ID,
 		&project.RowStatus,
-		&project.CreatorId,
+		&project.CreatorID,
 		&project.CreatedTs,
-		&project.UpdaterId,
+		&project.UpdaterID,
 		&project.UpdatedTs,
 		&project.Name,
 		&project.Key,
@@ -209,7 +209,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
-	if v := find.PrincipalId; v != nil {
+	if v := find.PrincipalID; v != nil {
 		where, args = append(where, "id IN (SELECT project_id FROM project_member WHERE principal_id = ?)"), append(args, *v)
 	}
 
@@ -241,9 +241,9 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 		if err := rows.Scan(
 			&project.ID,
 			&project.RowStatus,
-			&project.CreatorId,
+			&project.CreatorID,
 			&project.CreatedTs,
-			&project.UpdaterId,
+			&project.UpdaterID,
 			&project.UpdatedTs,
 			&project.Name,
 			&project.Key,
@@ -265,7 +265,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 // patchProject updates a project by ID. Returns the new state of the project after update.
 func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
 	}
@@ -300,9 +300,9 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		if err := row.Scan(
 			&project.ID,
 			&project.RowStatus,
-			&project.CreatorId,
+			&project.CreatorID,
 			&project.CreatedTs,
-			&project.UpdaterId,
+			&project.UpdaterID,
 			&project.UpdatedTs,
 			&project.Name,
 			&project.Key,

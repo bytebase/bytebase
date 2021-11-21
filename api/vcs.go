@@ -11,10 +11,10 @@ type VCS struct {
 	ID int `jsonapi:"primary,vcs"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
@@ -23,14 +23,14 @@ type VCS struct {
 	Type          common.VCSType `jsonapi:"attr,type"`
 	InstanceURL   string         `jsonapi:"attr,instanceURL"`
 	ApiURL        string         `jsonapi:"attr,apiURL"`
-	ApplicationId string         `jsonapi:"attr,applicationId"`
+	ApplicationID string         `jsonapi:"attr,applicationID"`
 	Secret        string         `jsonapi:"attr,secret"`
 }
 
 type VCSCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Domain specific fields
 	Name        string         `jsonapi:"attr,name"`
@@ -38,7 +38,7 @@ type VCSCreate struct {
 	InstanceURL string         `jsonapi:"attr,instanceURL"`
 	// ApiURL derives from InstanceURL
 	ApiURL        string
-	ApplicationId string `jsonapi:"attr,applicationId"`
+	ApplicationID string `jsonapi:"attr,applicationID"`
 	Secret        string `jsonapi:"attr,secret"`
 }
 
@@ -59,11 +59,11 @@ type VCSPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Name          *string `jsonapi:"attr,name"`
-	ApplicationId *string `jsonapi:"attr,applicationId"`
+	ApplicationID *string `jsonapi:"attr,applicationID"`
 	Secret        *string `jsonapi:"attr,secret"`
 }
 
@@ -72,7 +72,7 @@ type VCSDelete struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
+	DeleterID int
 }
 
 type VCSService interface {

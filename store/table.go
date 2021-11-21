@@ -127,11 +127,11 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, row_count, data_size, index_size, data_free, create_options, comment"+`
 	`,
-		create.CreatorId,
+		create.CreatorID,
 		create.CreatedTs,
-		create.CreatorId,
+		create.CreatorID,
 		create.UpdatedTs,
-		create.DatabaseId,
+		create.DatabaseID,
 		create.Name,
 		create.Type,
 		create.Engine,
@@ -153,11 +153,11 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 	var table api.Table
 	if err := row.Scan(
 		&table.ID,
-		&table.CreatorId,
+		&table.CreatorID,
 		&table.CreatedTs,
-		&table.UpdaterId,
+		&table.UpdaterID,
 		&table.UpdatedTs,
-		&table.DatabaseId,
+		&table.DatabaseID,
 		&table.Name,
 		&table.Type,
 		&table.Engine,
@@ -181,7 +181,7 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
 	if v := find.Name; v != nil {
@@ -221,11 +221,11 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 		var table api.Table
 		if err := rows.Scan(
 			&table.ID,
-			&table.CreatorId,
+			&table.CreatorID,
 			&table.CreatedTs,
-			&table.UpdaterId,
+			&table.UpdaterID,
 			&table.UpdatedTs,
-			&table.DatabaseId,
+			&table.DatabaseID,
 			&table.Name,
 			&table.Type,
 			&table.Engine,
@@ -252,7 +252,7 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 // deleteTable permanently deletes tables from a database.
 func deleteTable(ctx context.Context, tx *Tx, delete *api.TableDelete) error {
 	// Remove row from database.
-	_, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = ?`, delete.DatabaseId)
+	_, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = ?`, delete.DatabaseID)
 	if err != nil {
 		return FormatError(err)
 	}

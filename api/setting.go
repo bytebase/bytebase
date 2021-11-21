@@ -20,10 +20,10 @@ type Setting struct {
 	ID int `jsonapi:"primary,setting"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
@@ -34,7 +34,7 @@ type Setting struct {
 }
 
 type SettingCreate struct {
-	CreatorId   int
+	CreatorID   int
 	Name        SettingName
 	Value       string
 	Description string
@@ -47,7 +47,7 @@ type SettingFind struct {
 type SettingPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	Name  SettingName
 	Value string `jsonapi:"attr,value"`

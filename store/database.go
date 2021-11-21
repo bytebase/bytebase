@@ -58,7 +58,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 }
 
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
-	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentId)
+	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +71,8 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	// Enable automatic backup setting based on backup plan policy.
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterId:  api.SYSTEM_BOT_ID,
-			DatabaseId: database.ID,
+			UpdaterID:  api.SYSTEM_BOT_ID,
+			DatabaseID: database.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),
 			HookURL:    "",
@@ -199,10 +199,10 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')))
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.InstanceId,
-		create.ProjectId,
+		create.CreatorID,
+		create.CreatorID,
+		create.InstanceID,
+		create.ProjectID,
 		create.Name,
 		create.CharacterSet,
 		create.Collation,
@@ -217,12 +217,12 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 	var database api.Database
 	if err := row.Scan(
 		&database.ID,
-		&database.CreatorId,
+		&database.CreatorID,
 		&database.CreatedTs,
-		&database.UpdaterId,
+		&database.UpdaterID,
 		&database.UpdatedTs,
-		&database.InstanceId,
-		&database.ProjectId,
+		&database.InstanceID,
+		&database.ProjectID,
 		&database.Name,
 		&database.CharacterSet,
 		&database.Collation,
@@ -241,10 +241,10 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.InstanceId; v != nil {
+	if v := find.InstanceID; v != nil {
 		where, args = append(where, "instance_id = ?"), append(args, *v)
 	}
-	if v := find.ProjectId; v != nil {
+	if v := find.ProjectID; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 	if v := find.Name; v != nil {
@@ -285,12 +285,12 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 		var nullSourceBackupID sql.NullInt64
 		if err := rows.Scan(
 			&database.ID,
-			&database.CreatorId,
+			&database.CreatorID,
 			&database.CreatedTs,
-			&database.UpdaterId,
+			&database.UpdaterID,
 			&database.UpdatedTs,
-			&database.InstanceId,
-			&database.ProjectId,
+			&database.InstanceID,
+			&database.ProjectID,
 			&nullSourceBackupID,
 			&database.Name,
 			&database.CharacterSet,
@@ -301,7 +301,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			return nil, FormatError(err)
 		}
 		if nullSourceBackupID.Valid {
-			database.SourceBackupId = int(nullSourceBackupID.Int64)
+			database.SourceBackupID = int(nullSourceBackupID.Int64)
 		}
 
 		list = append(list, &database)
@@ -316,11 +316,11 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 // patchDatabase updates a database by ID. Returns the new state of the database after update.
 func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.DatabasePatch) (*api.Database, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
-	if v := patch.ProjectId; v != nil {
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
+	if v := patch.ProjectID; v != nil {
 		set, args = append(set, "project_id = ?"), append(args, *v)
 	}
-	if v := patch.SourceBackupId; v != nil {
+	if v := patch.SourceBackupID; v != nil {
 		set, args = append(set, "source_backup_id = ?"), append(args, *v)
 	}
 	if v := patch.SyncStatus; v != nil {
@@ -351,12 +351,12 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		var nullSourceBackupID sql.NullInt64
 		if err := row.Scan(
 			&database.ID,
-			&database.CreatorId,
+			&database.CreatorID,
 			&database.CreatedTs,
-			&database.UpdaterId,
+			&database.UpdaterID,
 			&database.UpdatedTs,
-			&database.InstanceId,
-			&database.ProjectId,
+			&database.InstanceID,
+			&database.ProjectID,
 			&nullSourceBackupID,
 			&database.Name,
 			&database.CharacterSet,
@@ -367,7 +367,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			return nil, FormatError(err)
 		}
 		if nullSourceBackupID.Valid {
-			database.SourceBackupId = int(nullSourceBackupID.Int64)
+			database.SourceBackupID = int(nullSourceBackupID.Int64)
 		}
 		return &database, nil
 	}

@@ -105,7 +105,7 @@
     @close="state.showCreateModal = false"
   >
     <DataSourceCreateForm
-      :instanceId="instance.id"
+      :instanceID="instance.id"
       :database="database"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
@@ -176,7 +176,7 @@ export default {
     const dataSourceSectionList = computed(() => {
       const databaseList = props.database
         ? [props.database]
-        : store.getters["database/databaseListByInstanceId"](props.instance.id);
+        : store.getters["database/databaseListByInstanceID"](props.instance.id);
       const dataSourceListByDatabase: Map<string, DataSource[]> = new Map();
       databaseList.forEach((database: Database) => {
         for (const dataSource of database.dataSourceList) {

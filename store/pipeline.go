@@ -149,8 +149,8 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 		VALUES (?, ?, ?, 'OPEN')
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`status`"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Name,
 	)
 
@@ -163,9 +163,9 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 	var pipeline api.Pipeline
 	if err := row.Scan(
 		&pipeline.ID,
-		&pipeline.CreatorId,
+		&pipeline.CreatorID,
 		&pipeline.CreatedTs,
-		&pipeline.UpdaterId,
+		&pipeline.UpdaterID,
 		&pipeline.UpdatedTs,
 		&pipeline.Name,
 		&pipeline.Status,
@@ -210,9 +210,9 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 		var pipeline api.Pipeline
 		if err := rows.Scan(
 			&pipeline.ID,
-			&pipeline.CreatorId,
+			&pipeline.CreatorID,
 			&pipeline.CreatedTs,
-			&pipeline.UpdaterId,
+			&pipeline.UpdaterID,
 			&pipeline.UpdatedTs,
 			&pipeline.Name,
 			&pipeline.Status,
@@ -232,7 +232,7 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 // patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
 func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {
 		set, args = append(set, "status = ?"), append(args, api.PipelineStatus(*v))
 	}
@@ -257,9 +257,9 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.
 		var pipeline api.Pipeline
 		if err := row.Scan(
 			&pipeline.ID,
-			&pipeline.CreatorId,
+			&pipeline.CreatorID,
 			&pipeline.CreatedTs,
-			&pipeline.UpdaterId,
+			&pipeline.UpdaterID,
 			&pipeline.UpdatedTs,
 			&pipeline.Name,
 			&pipeline.Status,

@@ -15,7 +15,7 @@
         {{ instanceName(instance) }}
       </BBTableCell>
       <BBTableCell class="w-16">
-        {{ environmentNameFromId(instance.environment.id) }}
+        {{ environmentNameFromID(instance.environment.id) }}
       </BBTableCell>
       <BBTableCell class="w-48">
         <template v-if="instance.port"
@@ -58,7 +58,7 @@ import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { urlfy, instanceSlug, environmentName } from "../utils";
-import { EnvironmentId, Instance } from "../types";
+import { EnvironmentID, Instance } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
@@ -108,8 +108,8 @@ export default {
       router.push(`/instance/${instanceSlug(instance)}`);
     };
 
-    const environmentNameFromId = function (id: EnvironmentId) {
-      return environmentName(store.getters["environment/environmentById"](id));
+    const environmentNameFromID = function (id: EnvironmentID) {
+      return environmentName(store.getters["environment/environmentByID"](id));
     };
 
     const instanceLink = (instance: Instance): string => {
@@ -127,7 +127,7 @@ export default {
       state,
       urlfy,
       clickInstance,
-      environmentNameFromId,
+      environmentNameFromID,
       instanceLink,
     };
   },

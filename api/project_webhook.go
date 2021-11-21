@@ -9,16 +9,16 @@ type ProjectWebhook struct {
 	ID int `jsonapi:"primary,projectWebhookMember"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	// Just returns ProjectId since it always operates within the project context
-	ProjectId int `jsonapi:"attr,projecId"`
+	// Just returns ProjectID since it always operates within the project context
+	ProjectID int `jsonapi:"attr,projecID"`
 
 	// Domain specific fields
 	Type         string   `jsonapi:"attr,type"`
@@ -30,10 +30,10 @@ type ProjectWebhook struct {
 type ProjectWebhookCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	ProjectId int
+	ProjectID int
 
 	// Domain specific fields
 	Type         string   `jsonapi:"attr,type"`
@@ -46,7 +46,7 @@ type ProjectWebhookFind struct {
 	ID *int
 
 	// Related fields
-	ProjectId    *int
+	ProjectID    *int
 	ActivityType *ActivityType
 }
 
@@ -63,7 +63,7 @@ type ProjectWebhookPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Name         *string `jsonapi:"attr,name"`
@@ -76,7 +76,7 @@ type ProjectWebhookDelete struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
+	DeleterID int
 }
 
 type ProjectWebhookTestResult struct {

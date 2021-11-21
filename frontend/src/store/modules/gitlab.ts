@@ -12,7 +12,7 @@ const getters = {};
 
 function convertGitLabProject(project: any): ExternalRepositoryInfo {
   return {
-    externalId: project.id.toString(),
+    externalID: project.id.toString(),
     name: project.name,
     fullPath: project.path_with_namespace,
     webURL: project.web_url,
@@ -32,7 +32,7 @@ const actions = {
   ): Promise<OAuthToken> {
     const data = (
       await axios.post(
-        `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
+        `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationID}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
       )
     ).data;
 

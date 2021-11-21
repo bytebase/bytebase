@@ -1,4 +1,4 @@
-import { EnvironmentId, MigrationHistoryId, Policy, PolicyType, View } from ".";
+import { EnvironmentID, MigrationHistoryID, Policy, PolicyType, View } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
@@ -8,14 +8,14 @@ import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
 import {
-  CommandId,
-  DatabaseId,
-  DataSourceId,
-  InstanceId,
-  IssueId,
-  PrincipalId,
-  ProjectId,
-  VCSId,
+  CommandID,
+  DatabaseID,
+  DataSourceID,
+  InstanceID,
+  IssueID,
+  PrincipalID,
+  ProjectID,
+  VCSID,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -58,25 +58,25 @@ export interface PrincipalState {
 }
 
 export interface BookmarkState {
-  bookmarkListByUser: Map<PrincipalId, Bookmark[]>;
+  bookmarkListByUser: Map<PrincipalID, Bookmark[]>;
 }
 
 export interface ActivityState {
-  activityListByUser: Map<PrincipalId, Activity[]>;
-  activityListByIssue: Map<IssueId, Activity[]>;
+  activityListByUser: Map<PrincipalID, Activity[]>;
+  activityListByIssue: Map<IssueID, Activity[]>;
 }
 
 export interface InboxState {
-  inboxListByUser: Map<PrincipalId, Inbox[]>;
-  inboxSummaryByUser: Map<PrincipalId, InboxSummary>;
+  inboxListByUser: Map<PrincipalID, Inbox[]>;
+  inboxSummaryByUser: Map<PrincipalID, InboxSummary>;
 }
 
 export interface IssueState {
-  issueById: Map<IssueId, Issue>;
+  issueByID: Map<IssueID, Issue>;
 }
 
 export interface IssueSubscriberState {
-  subscriberListByIssue: Map<IssueId, IssueSubscriber[]>;
+  subscriberListByIssue: Map<IssueID, IssueSubscriber[]>;
 }
 
 export interface PipelineState {}
@@ -86,15 +86,15 @@ export interface StageState {}
 export interface TaskState {}
 
 export interface PolicyState {
-  policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
+  policyMapByEnvironmentID: Map<EnvironmentID, Map<PolicyType, Policy>>;
 }
 
 export interface ProjectState {
-  projectById: Map<ProjectId, Project>;
+  projectByID: Map<ProjectID, Project>;
 }
 
 export interface ProjectWebhookState {
-  projectWebhookListByProjectId: Map<ProjectId, ProjectWebhook[]>;
+  projectWebhookListByProjectID: Map<ProjectID, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {
@@ -102,15 +102,15 @@ export interface EnvironmentState {
 }
 
 export interface InstanceState {
-  instanceById: Map<InstanceId, Instance>;
-  instanceUserListById: Map<InstanceId, InstanceUser[]>;
-  migrationHistoryById: Map<MigrationHistoryId, MigrationHistory>;
+  instanceByID: Map<InstanceID, Instance>;
+  instanceUserListByID: Map<InstanceID, InstanceUser[]>;
+  migrationHistoryByID: Map<MigrationHistoryID, MigrationHistory>;
   // The key is a concatenation of instance id and database name
-  migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
+  migrationHistoryListByIDAndDatabaseName: Map<string, MigrationHistory[]>;
 }
 
 export interface DataSourceState {
-  dataSourceById: Map<DataSourceId, DataSource>;
+  dataSourceByID: Map<DataSourceID, DataSource>;
 }
 
 export interface DatabaseState {
@@ -118,37 +118,37 @@ export interface DatabaseState {
   // In those cases, we will iterate through this map and compute the list on the fly.
   // We save it by instance because database belongs to instance and saving this way
   // follows that hierarchy.
-  databaseListByInstanceId: Map<InstanceId, Database[]>;
-  // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceId
-  // where updating databaseListByInstanceId will cause reloading project related UI due to reactivity
-  databaseListByProjectId: Map<ProjectId, Database[]>;
+  databaseListByInstanceID: Map<InstanceID, Database[]>;
+  // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceID
+  // where updating databaseListByInstanceID will cause reloading project related UI due to reactivity
+  databaseListByProjectID: Map<ProjectID, Database[]>;
 }
 
 export interface TableState {
-  tableListByDatabaseId: Map<DatabaseId, Table[]>;
+  tableListByDatabaseID: Map<DatabaseID, Table[]>;
 }
 
 export interface ViewState {
-  viewListByDatabaseId: Map<DatabaseId, View[]>;
+  viewListByDatabaseID: Map<DatabaseID, View[]>;
 }
 
 export interface BackupState {
-  backupListByDatabaseId: Map<DatabaseId, Backup[]>;
+  backupListByDatabaseID: Map<DatabaseID, Backup[]>;
 }
 
 export interface BackupSettingState {
-  backupSettingByDatabaseId: Map<DatabaseId, BackupSetting>;
+  backupSettingByDatabaseID: Map<DatabaseID, BackupSetting>;
 }
 
 export interface VCSState {
-  vcsById: Map<VCSId, VCS>;
+  vcsByID: Map<VCSID, VCS>;
 }
 
 export interface RepositoryState {
-  // repositoryListByVCSId are used in workspace version control panel, while repositoryByProjectId are used in project version control panel.
+  // repositoryListByVCSID are used in workspace version control panel, while repositoryByProjectID are used in project version control panel.
   // Because they are used separately, so we don't need to worry about repository inconsistency issue betweem them.
-  repositoryListByVCSId: Map<VCSId, Repository[]>;
-  repositoryByProjectId: Map<ProjectId, Repository>;
+  repositoryListByVCSID: Map<VCSID, Repository[]>;
+  repositoryByProjectID: Map<ProjectID, Repository>;
 }
 
 export interface AnomalyState {}
@@ -158,5 +158,5 @@ export interface NotificationState {
 }
 
 export interface CommandState {
-  commandListById: Map<CommandId, Command[]>;
+  commandListByID: Map<CommandID, Command[]>;
 }

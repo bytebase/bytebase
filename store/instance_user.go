@@ -99,9 +99,9 @@ func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUps
 			grant = excluded.grant
 		RETURNING id, instance_id, name, grant
 	`,
-		upsert.CreatorId,
-		upsert.CreatorId,
-		upsert.InstanceId,
+		upsert.CreatorID,
+		upsert.CreatorID,
+		upsert.InstanceID,
 		upsert.Name,
 		upsert.Grant,
 	)
@@ -115,7 +115,7 @@ func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUps
 	var instanceUser api.InstanceUser
 	if err := row.Scan(
 		&instanceUser.ID,
-		&instanceUser.InstanceId,
+		&instanceUser.InstanceID,
 		&instanceUser.Name,
 		&instanceUser.Grant,
 	); err != nil {
@@ -128,7 +128,7 @@ func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUps
 func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFind) (_ []*api.InstanceUser, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	where, args = append(where, "instance_id = ?"), append(args, find.InstanceId)
+	where, args = append(where, "instance_id = ?"), append(args, find.InstanceID)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT 
@@ -153,7 +153,7 @@ func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 		var instanceUser api.InstanceUser
 		if err := rows.Scan(
 			&instanceUser.ID,
-			&instanceUser.InstanceId,
+			&instanceUser.InstanceID,
 			&instanceUser.Name,
 			&instanceUser.Grant,
 		); err != nil {

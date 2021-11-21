@@ -1,4 +1,4 @@
-import { PipelineId } from "../id";
+import { PipelineID } from "../id";
 import { Principal } from "../principal";
 import { Stage, StageCreate } from "./stage";
 
@@ -25,7 +25,7 @@ import { Stage, StageCreate } from "./stage";
 export type PipelineStatus = "OPEN" | "DONE" | "CANCELED";
 
 export type Pipeline = {
-  id: PipelineId;
+  id: PipelineID;
 
   // Related fields
   stageList: Stage[];

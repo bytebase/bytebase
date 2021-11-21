@@ -2,11 +2,11 @@ import axios from "axios";
 import {
   Activity,
   Inbox,
-  InboxId,
+  InboxID,
   InboxPatch,
   InboxState,
   InboxSummary,
-  PrincipalId,
+  PrincipalID,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -17,13 +17,13 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Inbox {
-  const activityId = (inbox.relationships!.activity.data as ResourceIdentifier)
+  const activityID = (inbox.relationships!.activity.data as ResourceIdentifier)
     .id;
   let activity: Activity = unknown("ACTIVITY") as Activity;
-  activity.id = parseInt(activityId);
+  activity.id = parseInt(activityID);
 
   for (const item of includedList || []) {
-    if (item.type == "activity" && item.id == activityId) {
+    if (item.type == "activity" && item.id == activityID) {
       activity = rootGetters["activity/convert"](item, includedList);
     }
   }
@@ -43,15 +43,15 @@ const state: () => InboxState = () => ({
 const getters = {
   inboxListByUser:
     (state: InboxState) =>
-    (userId: PrincipalId): Inbox[] => {
-      return state.inboxListByUser.get(userId) || [];
+    (userID: PrincipalID): Inbox[] => {
+      return state.inboxListByUser.get(userID) || [];
     },
 
   inboxSummaryByUser:
     (state: InboxState) =>
-    (userId: PrincipalId): InboxSummary => {
+    (userID: PrincipalID): InboxSummary => {
       return (
-        state.inboxSummaryByUser.get(userId) || {
+        state.inboxSummaryByUser.get(userID) || {
           hasUnread: false,
           hasUnreadError: false,
         }
@@ -63,11 +63,11 @@ const actions = {
   async fetchInboxListByUser(
     { commit, rootGetters }: any,
     {
-      userId,
+      userID,
       readCreatedAfterTs,
-    }: { userId: PrincipalId; readCreatedAfterTs?: number }
+    }: { userID: PrincipalID; readCreatedAfterTs?: number }
   ) {
-    var url = `/api/inbox?user=${userId}`;
+    var url = `/api/inbox?user=${userID}`;
     if (readCreatedAfterTs) {
       url += `&created=${readCreatedAfterTs}`;
     }
@@ -76,24 +76,24 @@ const actions = {
       return convert(inbox, data.included, rootGetters);
     });
 
-    commit("setInboxListByUser", { userId, inboxList });
+    commit("setInboxListByUser", { userID, inboxList });
     return inboxList;
   },
 
-  async fetchInboxSummaryByUser({ commit }: any, userId: PrincipalId) {
-    const inboxSummary = (await axios.get(`/api/inbox/summary?user=${userId}`))
+  async fetchInboxSummaryByUser({ commit }: any, userID: PrincipalID) {
+    const inboxSummary = (await axios.get(`/api/inbox/summary?user=${userID}`))
       .data;
 
-    commit("setInboxSummaryByUser", { userId, inboxSummary });
+    commit("setInboxSummaryByUser", { userID, inboxSummary });
     return inboxSummary;
   },
 
   async patchInbox(
     { commit, rootGetters }: any,
-    { inboxId, inboxPatch }: { inboxId: InboxId; inboxPatch: InboxPatch }
+    { inboxID, inboxPatch }: { inboxID: InboxID; inboxPatch: InboxPatch }
   ) {
     const data = (
-      await axios.patch(`/api/inbox/${inboxId}`, {
+      await axios.patch(`/api/inbox/${inboxID}`, {
         data: {
           type: "inboxPatch",
           attributes: inboxPatch,
@@ -102,7 +102,7 @@ const actions = {
     ).data;
     const updatedInbox = convert(data.data, data.included, rootGetters);
 
-    commit("updateInboxById", { inboxId, inbox: updatedInbox });
+    commit("updateInboxByID", { inboxID, inbox: updatedInbox });
 
     return updatedInbox;
   },
@@ -112,41 +112,41 @@ const mutations = {
   setInboxListByUser(
     state: InboxState,
     {
-      userId,
+      userID,
       inboxList,
     }: {
-      userId: PrincipalId;
+      userID: PrincipalID;
       inboxList: Inbox[];
     }
   ) {
-    state.inboxListByUser.set(userId, inboxList);
+    state.inboxListByUser.set(userID, inboxList);
   },
 
   setInboxSummaryByUser(
     state: InboxState,
     {
-      userId,
+      userID,
       inboxSummary,
     }: {
-      userId: PrincipalId;
+      userID: PrincipalID;
       inboxSummary: InboxSummary;
     }
   ) {
-    state.inboxSummaryByUser.set(userId, inboxSummary);
+    state.inboxSummaryByUser.set(userID, inboxSummary);
   },
 
-  updateInboxById(
+  updateInboxByID(
     state: InboxState,
     {
-      inboxId,
+      inboxID,
       inbox,
     }: {
-      inboxId: InboxId;
+      inboxID: InboxID;
       inbox: Inbox;
     }
   ) {
     for (let [_, inboxList] of state.inboxListByUser) {
-      const i = inboxList.findIndex((item: Inbox) => item.id == inboxId);
+      const i = inboxList.findIndex((item: Inbox) => item.id == inboxID);
       if (i >= 0) {
         inboxList[i] = inbox;
       }

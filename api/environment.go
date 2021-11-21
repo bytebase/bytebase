@@ -10,10 +10,10 @@ type Environment struct {
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
@@ -25,7 +25,7 @@ type Environment struct {
 type EnvironmentCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
@@ -52,7 +52,7 @@ type EnvironmentPatch struct {
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Name  *string `jsonapi:"attr,name"`
@@ -64,7 +64,7 @@ type EnvironmentDelete struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
+	DeleterID int
 }
 
 type EnvironmentService interface {

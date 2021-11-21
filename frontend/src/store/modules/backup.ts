@@ -6,7 +6,7 @@ import {
   BackupSettingState,
   BackupSettingUpsert,
   BackupState,
-  DatabaseId,
+  DatabaseID,
   ResourceObject,
   unknown,
 } from "../../types";
@@ -34,8 +34,8 @@ function convertBackupSetting(
 }
 
 const state: () => BackupState = () => ({
-  backupListByDatabaseId: new Map(),
-  backupSettingByDatabaseId: new Map(),
+  backupListByDatabaseID: new Map(),
+  backupSettingByDatabaseID: new Map(),
 });
 
 const getters = {
@@ -45,16 +45,16 @@ const getters = {
       return convert(backup, includedList || [], rootGetters);
     },
 
-  backupListByDatabaseId:
+  backupListByDatabaseID:
     (state: BackupState) =>
-    (databaseId: DatabaseId): Backup[] => {
-      return state.backupListByDatabaseId.get(databaseId) || [];
+    (databaseID: DatabaseID): Backup[] => {
+      return state.backupListByDatabaseID.get(databaseID) || [];
     },
-  backupSettingByDatabaseId:
+  backupSettingByDatabaseID:
     (state: BackupSettingState) =>
-    (databaseId: DatabaseId): BackupSetting => {
+    (databaseID: DatabaseID): BackupSetting => {
       return (
-        state.backupSettingByDatabaseId.get(databaseId) ||
+        state.backupSettingByDatabaseID.get(databaseID) ||
         (unknown("BACKUP_SETTING") as BackupSetting)
       );
     },
@@ -64,12 +64,12 @@ const actions = {
   async createBackup(
     { commit, rootGetters }: any,
     {
-      databaseId,
+      databaseID,
       newBackup,
-    }: { databaseId: DatabaseId; newBackup: BackupCreate }
+    }: { databaseID: DatabaseID; newBackup: BackupCreate }
   ) {
     const data = (
-      await axios.post(`/api/database/${newBackup.databaseId}/backup`, {
+      await axios.post(`/api/database/${newBackup.databaseID}/backup`, {
         data: {
           type: "BackupCreate",
           attributes: newBackup,
@@ -82,8 +82,8 @@ const actions = {
       rootGetters
     );
 
-    commit("setBackupByDatabaseIdAndBackupName", {
-      databaseId: databaseId,
+    commit("setBackupByDatabaseIDAndBackupName", {
+      databaseID: databaseID,
       backupName: createdBackup.name,
       backup: createdBackup,
     });
@@ -91,24 +91,24 @@ const actions = {
     return createdBackup;
   },
 
-  async fetchBackupListByDatabaseId(
+  async fetchBackupListByDatabaseID(
     { commit, rootGetters }: any,
-    databaseId: DatabaseId
+    databaseID: DatabaseID
   ) {
-    const data = (await axios.get(`/api/database/${databaseId}/backup`)).data;
+    const data = (await axios.get(`/api/database/${databaseID}/backup`)).data;
     const backupList = data.data.map((backup: ResourceObject) => {
       return convert(backup, data.included, rootGetters);
     });
 
-    commit("setTableListByDatabaseId", { databaseId, backupList });
+    commit("setTableListByDatabaseID", { databaseID, backupList });
     return backupList;
   },
 
-  async fetchBackupSettingByDatabaseId(
+  async fetchBackupSettingByDatabaseID(
     { commit, rootGetters }: any,
-    databaseId: DatabaseId
+    databaseID: DatabaseID
   ) {
-    const data = (await axios.get(`/api/database/${databaseId}/backupsetting`))
+    const data = (await axios.get(`/api/database/${databaseID}/backupsetting`))
       .data;
     const backupSetting: BackupSetting = convertBackupSetting(
       data.data,
@@ -116,7 +116,7 @@ const actions = {
       rootGetters
     );
 
-    commit("upsertBackupSettingByDatabaseId", { databaseId, backupSetting });
+    commit("upsertBackupSettingByDatabaseID", { databaseID, backupSetting });
     return backupSetting;
   },
 
@@ -126,7 +126,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${newBackupSetting.databaseId}/backupsetting`,
+        `/api/database/${newBackupSetting.databaseID}/backupsetting`,
         {
           data: {
             type: "BackupSettingUpsert",
@@ -141,8 +141,8 @@ const actions = {
       rootGetters
     );
 
-    commit("upsertBackupSettingByDatabaseId", {
-      databaseId: newBackupSetting.databaseId,
+    commit("upsertBackupSettingByDatabaseID", {
+      databaseID: newBackupSetting.databaseID,
       backup: updatedBackupSetting,
     });
 
@@ -151,32 +151,32 @@ const actions = {
 };
 
 const mutations = {
-  setTableListByDatabaseId(
+  setTableListByDatabaseID(
     state: BackupState,
     {
-      databaseId,
+      databaseID,
       backupList,
     }: {
-      databaseId: DatabaseId;
+      databaseID: DatabaseID;
       backupList: Backup[];
     }
   ) {
-    state.backupListByDatabaseId.set(databaseId, backupList);
+    state.backupListByDatabaseID.set(databaseID, backupList);
   },
 
-  setBackupByDatabaseIdAndBackupName(
+  setBackupByDatabaseIDAndBackupName(
     state: BackupState,
     {
-      databaseId,
+      databaseID,
       backupName,
       backup,
     }: {
-      databaseId: DatabaseId;
+      databaseID: DatabaseID;
       backupName: string;
       backup: Backup;
     }
   ) {
-    const list = state.backupListByDatabaseId.get(databaseId);
+    const list = state.backupListByDatabaseID.get(databaseID);
     if (list) {
       const i = list.findIndex((item: Backup) => item.name == backupName);
       if (i != -1) {
@@ -185,21 +185,21 @@ const mutations = {
         list.push(backup);
       }
     } else {
-      state.backupListByDatabaseId.set(databaseId, [backup]);
+      state.backupListByDatabaseID.set(databaseID, [backup]);
     }
   },
 
-  upsertBackupSettingByDatabaseId(
+  upsertBackupSettingByDatabaseID(
     state: BackupSettingState,
     {
-      databaseId,
+      databaseID,
       backupSetting,
     }: {
-      databaseId: DatabaseId;
+      databaseID: DatabaseID;
       backupSetting: BackupSetting;
     }
   ) {
-    state.backupSettingByDatabaseId.set(databaseId, backupSetting);
+    state.backupSettingByDatabaseID.set(databaseID, backupSetting);
   },
 };
 

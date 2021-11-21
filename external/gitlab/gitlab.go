@@ -82,11 +82,11 @@ type FileCommit struct {
 	Branch        string `json:"branch"`
 	Content       string `json:"content"`
 	CommitMessage string `json:"commit_message"`
-	LastCommitId  string `json:"last_commit_id,omitempty"`
+	LastCommitID  string `json:"last_commit_id,omitempty"`
 }
 
 type File struct {
-	LastCommitId string `json:"last_commit_id"`
+	LastCommitID string `json:"last_commit_id"`
 }
 
 func POST(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {

@@ -33,7 +33,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		memberFind := &api.MemberFind{
-			PrincipalId: &user.ID,
+			PrincipalID: &user.ID,
 		}
 		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
@@ -87,7 +87,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		principalCreate := &api.PrincipalCreate{
-			CreatorId:    api.SYSTEM_BOT_ID,
+			CreatorID:    api.SYSTEM_BOT_ID,
 			Type:         api.EndUser,
 			Name:         signup.Name,
 			Email:        signup.Email,
@@ -117,10 +117,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			role = api.Owner
 		}
 		memberCreate := &api.MemberCreate{
-			CreatorId:   user.ID,
+			CreatorID:   user.ID,
 			Status:      api.Active,
 			Role:        role,
-			PrincipalId: user.ID,
+			PrincipalID: user.ID,
 		}
 
 		member, err := s.MemberService.CreateMember(ctx, memberCreate)
@@ -133,7 +133,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		{
 			bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
-				PrincipalId:    member.PrincipalId,
+				PrincipalID:    member.PrincipalID,
 				PrincipalName:  user.Name,
 				PrincipalEmail: user.Email,
 				MemberStatus:   member.Status,
@@ -143,8 +143,8 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
 			activityCreate := &api.ActivityCreate{
-				CreatorId:   user.ID,
-				ContainerId: member.ID,
+				CreatorID:   user.ID,
+				ContainerID: member.ID,
 				Type:        api.ActivityMemberCreate,
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),

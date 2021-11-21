@@ -127,9 +127,9 @@
     "
   >
     <CreateDatabasePrepForm
-      :projectId="database.project.id"
-      :environmentId="database.instance.environment.id"
-      :instanceId="database.instance.id"
+      :projectID="database.project.id"
+      :environmentID="database.instance.environment.id"
+      :instanceID="database.instance.id"
       :backup="state.restoredBackup"
       @dismiss="
         () => {
@@ -274,7 +274,7 @@ export default {
       state.loadingMigrationHistory = true;
       store
         .dispatch("instance/fetchMigrationHistoryByVersion", {
-          instanceId: props.database.instance.id,
+          instanceID: props.database.instance.id,
           databaseName: props.database.name,
           version: backup.migrationHistoryVersion,
         })

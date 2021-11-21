@@ -95,10 +95,10 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name`+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.PipelineId,
-		create.EnvironmentId,
+		create.CreatorID,
+		create.CreatorID,
+		create.PipelineID,
+		create.EnvironmentID,
 		create.Name,
 	)
 
@@ -111,12 +111,12 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 	var stage api.Stage
 	if err := row.Scan(
 		&stage.ID,
-		&stage.CreatorId,
+		&stage.CreatorID,
 		&stage.CreatedTs,
-		&stage.UpdaterId,
+		&stage.UpdaterID,
 		&stage.UpdatedTs,
-		&stage.PipelineId,
-		&stage.EnvironmentId,
+		&stage.PipelineID,
+		&stage.EnvironmentID,
 		&stage.Name,
 	); err != nil {
 		return nil, FormatError(err)
@@ -131,7 +131,7 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.PipelineId; v != nil {
+	if v := find.PipelineID; v != nil {
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
 
@@ -160,12 +160,12 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 		var stage api.Stage
 		if err := rows.Scan(
 			&stage.ID,
-			&stage.CreatorId,
+			&stage.CreatorID,
 			&stage.CreatedTs,
-			&stage.UpdaterId,
+			&stage.UpdaterID,
 			&stage.UpdatedTs,
-			&stage.PipelineId,
-			&stage.EnvironmentId,
+			&stage.PipelineID,
+			&stage.EnvironmentID,
 			&stage.Name,
 		); err != nil {
 			return nil, FormatError(err)

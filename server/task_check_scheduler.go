@@ -67,7 +67,7 @@ func (s *TaskCheckScheduler) Run() error {
 					if !ok {
 						s.l.Error("Skip running task check run with unknown type",
 							zap.Int("id", taskCheckRun.ID),
-							zap.Int("task_id", taskCheckRun.TaskId),
+							zap.Int("task_id", taskCheckRun.TaskID),
 							zap.String("type", string(taskCheckRun.Type)),
 						)
 						continue
@@ -96,7 +96,7 @@ func (s *TaskCheckScheduler) Run() error {
 							if err != nil {
 								s.l.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
-									zap.Int("task_id", taskCheckRun.TaskId),
+									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(err),
 								)
@@ -105,7 +105,7 @@ func (s *TaskCheckScheduler) Run() error {
 
 							taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
 								ID:        &taskCheckRun.ID,
-								UpdaterId: api.SYSTEM_BOT_ID,
+								UpdaterID: api.SYSTEM_BOT_ID,
 								Status:    api.TaskCheckRunDone,
 								Code:      common.Ok,
 								Result:    string(bytes),
@@ -114,7 +114,7 @@ func (s *TaskCheckScheduler) Run() error {
 							if err != nil {
 								s.l.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
-									zap.Int("task_id", taskCheckRun.TaskId),
+									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(err),
 								)
@@ -122,7 +122,7 @@ func (s *TaskCheckScheduler) Run() error {
 						} else {
 							s.l.Debug("Failed to run task check",
 								zap.Int("id", taskCheckRun.ID),
-								zap.Int("task_id", taskCheckRun.TaskId),
+								zap.Int("task_id", taskCheckRun.TaskID),
 								zap.String("type", string(taskCheckRun.Type)),
 								zap.Error(err),
 							)
@@ -132,7 +132,7 @@ func (s *TaskCheckScheduler) Run() error {
 							if marshalErr != nil {
 								s.l.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
-									zap.Int("task_id", taskCheckRun.TaskId),
+									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(marshalErr),
 								)
@@ -141,7 +141,7 @@ func (s *TaskCheckScheduler) Run() error {
 
 							taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
 								ID:        &taskCheckRun.ID,
-								UpdaterId: api.SYSTEM_BOT_ID,
+								UpdaterID: api.SYSTEM_BOT_ID,
 								Status:    api.TaskCheckRunFailed,
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),
@@ -150,7 +150,7 @@ func (s *TaskCheckScheduler) Run() error {
 							if err != nil {
 								s.l.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
-									zap.Int("task_id", taskCheckRun.TaskId),
+									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
 									zap.Error(err),
 								)
@@ -177,7 +177,7 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorId int, skipIfAlreadyTerminated bool) (*api.Task, error) {
+func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
@@ -185,7 +185,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		databaseFind := &api.DatabaseFind{
-			ID: task.DatabaseId,
+			ID: task.DatabaseID,
 		}
 		database, err := s.server.ComposeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
@@ -193,8 +193,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorId:               creatorId,
-			TaskId:                  task.ID,
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
 			Type:                    api.TaskCheckDatabaseConnect,
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
@@ -203,8 +203,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorId:               creatorId,
-			TaskId:                  task.ID,
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
 			Type:                    api.TaskCheckInstanceMigrationSchema,
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
@@ -224,8 +224,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
 			}
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorId:               creatorId,
-				TaskId:                  task.ID,
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
 				Type:                    api.TaskCheckDatabaseStatementSyntax,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
@@ -235,8 +235,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorId:               creatorId,
-				TaskId:                  task.ID,
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
 				Type:                    api.TaskCheckDatabaseStatementCompatibility,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
@@ -247,7 +247,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskId: &task.ID,
+			TaskID: &task.ID,
 		}
 		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
 		if err != nil {

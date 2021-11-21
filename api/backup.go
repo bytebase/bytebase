@@ -70,15 +70,15 @@ type Backup struct {
 	ID int `jsonapi:"primary,backup"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	DatabaseID int `jsonapi:"attr,databaseID"`
 
 	// Domain specific fields
 	Name           string               `jsonapi:"attr,name"`
@@ -95,10 +95,10 @@ type Backup struct {
 type BackupCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	DatabaseID int `jsonapi:"attr,databaseID"`
 
 	// Domain specific fields
 	Name                    string               `jsonapi:"attr,name"`
@@ -113,7 +113,7 @@ type BackupFind struct {
 	ID *int
 
 	// Related fields
-	DatabaseId *int
+	DatabaseID *int
 
 	// Domain specific fields
 	Name   *string
@@ -133,7 +133,7 @@ type BackupPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Status  string
@@ -145,15 +145,15 @@ type BackupSetting struct {
 	ID int `jsonapi:"primary,backupSetting"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	DatabaseID int `jsonapi:"attr,databaseID"`
 	// Do not return this to the client since the client always has the database context and fetching the
 	// database object and all its own related objects is a bit expensive.
 	Database *Database
@@ -171,7 +171,7 @@ type BackupSettingFind struct {
 	ID *int
 
 	// Related fields
-	DatabaseId *int
+	DatabaseID *int
 
 	// Domain specific fields
 }
@@ -181,12 +181,12 @@ type BackupSettingFind struct {
 type BackupSettingUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	// CreatorId is the ID of the creator.
-	UpdaterId int
+	// CreatorID is the ID of the creator.
+	UpdaterID int
 
 	// Related fields
-	DatabaseId    int `jsonapi:"attr,databaseId"`
-	EnvironmentId int
+	DatabaseID    int `jsonapi:"attr,databaseID"`
+	EnvironmentID int
 
 	// Domain specific fields
 	Enabled   bool   `jsonapi:"attr,enabled"`

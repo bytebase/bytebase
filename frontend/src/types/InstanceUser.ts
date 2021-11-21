@@ -1,10 +1,10 @@
-import { InstanceId, InstanceUserId } from "./id";
+import { InstanceID, InstanceUserID } from "./id";
 
 export type InstanceUser = {
-  id: InstanceUserId;
+  id: InstanceUserID;
 
   // Related fields
-  instanceId: InstanceId;
+  instanceID: InstanceID;
 
   // Domain specific fields
   name: string;

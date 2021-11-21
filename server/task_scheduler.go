@@ -149,7 +149,7 @@ func (s *TaskScheduler) Run() error {
 								result := string(bytes)
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
-									UpdaterId: api.SYSTEM_BOT_ID,
+									UpdaterID: api.SYSTEM_BOT_ID,
 									Status:    api.TaskDone,
 									Code:      &code,
 									Result:    &result,
@@ -184,7 +184,7 @@ func (s *TaskScheduler) Run() error {
 								result := string(bytes)
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
-									UpdaterId: api.SYSTEM_BOT_ID,
+									UpdaterID: api.SYSTEM_BOT_ID,
 									Status:    api.TaskFailed,
 									Code:      &code,
 									Result:    &result,
@@ -248,7 +248,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		}
 
 		instanceFind := &api.InstanceFind{
-			ID: &task.InstanceId,
+			ID: &task.InstanceID,
 		}
 		instance, err := s.server.InstanceService.FindInstance(ctx, instanceFind)
 		if err != nil {
@@ -286,7 +286,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 func passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskId:     &task.ID,
+		TaskID:     &task.ID,
 		Type:       &checkType,
 		StatusList: &statusList,
 		Latest:     true,

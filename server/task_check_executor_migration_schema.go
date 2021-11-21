@@ -21,14 +21,14 @@ type TaskCheckMigrationSchemaExecutor struct {
 
 func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	taskFind := &api.TaskFind{
-		ID: &taskCheckRun.TaskId,
+		ID: &taskCheckRun.TaskID,
 	}
 	task, err := server.TaskService.FindTask(ctx, taskFind)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
 
-	instance, err := server.ComposeInstanceById(ctx, task.InstanceId)
+	instance, err := server.ComposeInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

@@ -32,10 +32,10 @@ type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
@@ -50,7 +50,7 @@ type Pipeline struct {
 type PipelineCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
 	StageList []StageCreate `jsonapi:"attr,stageList"`
@@ -79,7 +79,7 @@ type PipelinePatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Status *PipelineStatus `jsonapi:"attr,status"`
