@@ -32,7 +32,7 @@ type VCSPushEvent struct {
 	BaseDirectory      string        `json:"baseDir"`
 	Ref                string        `json:"ref"`
 	RepositoryID       string        `json:"repositoryID"`
-	RepositoryURL      string        `json:"repositoryUrl"`
+	RepositoryURL      string        `json:"repositoryURL"`
 	RepositoryFullPath string        `json:"repositoryFullPath"`
 	AuthorName         string        `json:"authorName"`
 	FileCommit         VCSFileCommit `json:"fileCommit"`
