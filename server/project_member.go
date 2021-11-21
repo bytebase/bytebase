@@ -14,16 +14,16 @@ import (
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
-	g.POST("/project/:projectId/member", func(c echo.Context) error {
+	g.POST("/project/:projectID/member", func(c echo.Context) error {
 		ctx := context.Background()
-		projectId, err := strconv.Atoi(c.Param("projectId"))
+		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
 		projectMemberCreate := &api.ProjectMemberCreate{
-			ProjectId: projectId,
-			CreatorId: c.Get(GetPrincipalIdContextKey()).(int),
+			ProjectID: projectID,
+			CreatorID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project membership request").SetInternal(err)
@@ -43,8 +43,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		{
 			activityCreate := &api.ActivityCreate{
-				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-				ContainerId: projectId,
+				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberCreate,
 				Level:       api.ACTIVITY_INFO,
 				Comment: fmt.Sprintf("Granted %s to %s (%s).",
@@ -53,7 +53,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				s.l.Warn("Failed to create project activity after creating member",
-					zap.Int("project_id", projectId),
+					zap.Int("project_id", projectID),
 					zap.Int("principal_id", projectMember.Principal.ID),
 					zap.String("principal_name", projectMember.Principal.Name),
 					zap.String("role", projectMember.Role),
@@ -68,16 +68,16 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/project/:projectId/member/:memberId", func(c echo.Context) error {
+	g.PATCH("/project/:projectID/member/:memberID", func(c echo.Context) error {
 		ctx := context.Background()
-		projectId, err := strconv.Atoi(c.Param("projectId"))
+		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		id, err := strconv.Atoi(c.Param("memberId"))
+		id, err := strconv.Atoi(c.Param("memberID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
 
 		existingProjectMember, err := s.ProjectMemberService.FindProjectMember(ctx, &api.ProjectMemberFind{ID: &id})
@@ -90,7 +90,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberPatch := &api.ProjectMemberPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)
@@ -110,8 +110,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		{
 			activityCreate := &api.ActivityCreate{
-				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-				ContainerId: projectId,
+				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberRoleUpdate,
 				Level:       api.ACTIVITY_INFO,
 				Comment: fmt.Sprintf("Changed %s (%s) from %s to %s.",
@@ -120,7 +120,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				s.l.Warn("Failed to create project activity after updating member role",
-					zap.Int("project_id", projectId),
+					zap.Int("project_id", projectID),
 					zap.Int("principal_id", projectMember.Principal.ID),
 					zap.String("principal_name", projectMember.Principal.Name),
 					zap.String("old_role", existingProjectMember.Role),
@@ -136,16 +136,16 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/project/:projectId/member/:memberId", func(c echo.Context) error {
+	g.DELETE("/project/:projectID/member/:memberID", func(c echo.Context) error {
 		ctx := context.Background()
-		projectId, err := strconv.Atoi(c.Param("projectId"))
+		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		id, err := strconv.Atoi(c.Param("memberId"))
+		id, err := strconv.Atoi(c.Param("memberID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
 
 		projectMember, err := s.ProjectMemberService.FindProjectMember(ctx, &api.ProjectMemberFind{ID: &id})
@@ -158,7 +158,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberDelete := &api.ProjectMemberDelete{
 			ID:        id,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
+			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		err = s.ProjectMemberService.DeleteProjectMember(ctx, projectMemberDelete)
 		if err != nil {
@@ -169,11 +169,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		{
-			projectMember.Principal, err = s.ComposePrincipalById(ctx, projectMember.PrincipalId)
+			projectMember.Principal, err = s.ComposePrincipalByID(ctx, projectMember.PrincipalID)
 			if err == nil {
 				activityCreate := &api.ActivityCreate{
-					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-					ContainerId: projectId,
+					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+					ContainerID: projectID,
 					Type:        api.ActivityProjectMemberDelete,
 					Level:       api.ACTIVITY_INFO,
 					Comment: fmt.Sprintf("Revoked %s from %s (%s).",
@@ -183,7 +183,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 			if err != nil {
 				s.l.Warn("Failed to create project activity after deleting member",
-					zap.Int("project_id", projectId),
+					zap.Int("project_id", projectID),
 					zap.Int("principal_id", projectMember.Principal.ID),
 					zap.String("principal_name", projectMember.Principal.Name),
 					zap.String("role", projectMember.Role),
@@ -197,9 +197,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projectId int) ([]*api.ProjectMember, error) {
+func (s *Server) ComposeProjectMemberListByProjectID(ctx context.Context, projectID int) ([]*api.ProjectMember, error) {
 	projectMemberFind := &api.ProjectMemberFind{
-		ProjectId: &projectId,
+		ProjectID: &projectID,
 	}
 	projectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
 	if err != nil {
@@ -217,17 +217,17 @@ func (s *Server) ComposeProjectMemberListByProjectId(ctx context.Context, projec
 func (s *Server) ComposeProjectMemberRelationship(ctx context.Context, projectMember *api.ProjectMember) error {
 	var err error
 
-	projectMember.Creator, err = s.ComposePrincipalById(ctx, projectMember.CreatorId)
+	projectMember.Creator, err = s.ComposePrincipalByID(ctx, projectMember.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Updater, err = s.ComposePrincipalById(ctx, projectMember.UpdaterId)
+	projectMember.Updater, err = s.ComposePrincipalByID(ctx, projectMember.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Principal, err = s.ComposePrincipalById(ctx, projectMember.PrincipalId)
+	projectMember.Principal, err = s.ComposePrincipalByID(ctx, projectMember.PrincipalID)
 	if err != nil {
 		return err
 	}

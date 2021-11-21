@@ -71,27 +71,27 @@ func (s *BackupRunner) Run() error {
 					mu.Unlock()
 
 					databaseFind := &api.DatabaseFind{
-						ID: &backupSetting.DatabaseId,
+						ID: &backupSetting.DatabaseID,
 					}
 					database, err := s.server.ComposeDatabaseByFind(ctx, databaseFind)
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
-							zap.String("databaseID", fmt.Sprintf("%v", backupSetting.DatabaseId)),
+							zap.String("databaseID", fmt.Sprintf("%v", backupSetting.DatabaseID)),
 							zap.String("error", err.Error()))
 						continue
 					}
 					backupSetting.Database = database
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
-					go func(database *api.Database, backupSettingId int, backupName string) {
+					go func(database *api.Database, backupSettingID int, backupName string) {
 						s.l.Debug("Schedule auto backup",
 							zap.String("database", database.Name),
 							zap.String("backup", backupName),
 						)
 						defer func() {
 							mu.Lock()
-							delete(runningTasks, backupSettingId)
+							delete(runningTasks, backupSettingID)
 							mu.Unlock()
 						}()
 						if err := s.scheduleBackupTask(ctx, database, backupName); err != nil {
@@ -123,8 +123,8 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	backupCreate := &api.BackupCreate{
-		CreatorId:               api.SYSTEM_BOT_ID,
-		DatabaseId:              database.ID,
+		CreatorID:               api.SYSTEM_BOT_ID,
+		DatabaseID:              database.ID,
 		Name:                    backupName,
 		Status:                  api.BackupStatusPendingCreate,
 		Type:                    api.BackupTypeAutomatic,
@@ -142,7 +142,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
-		BackupId: backup.ID,
+		BackupID: backup.ID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 
 	createdPipeline, err := s.server.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
 		Name:      backupName,
-		CreatorId: backupCreate.CreatorId,
+		CreatorID: backupCreate.CreatorID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create pipeline: %w", err)
@@ -159,9 +159,9 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 
 	createdStage, err := s.server.StageService.CreateStage(ctx, &api.StageCreate{
 		Name:          backupName,
-		EnvironmentId: database.Instance.EnvironmentId,
-		PipelineId:    createdPipeline.ID,
-		CreatorId:     backupCreate.CreatorId,
+		EnvironmentID: database.Instance.EnvironmentID,
+		PipelineID:    createdPipeline.ID,
+		CreatorID:     backupCreate.CreatorID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create stage: %w", err)
@@ -169,14 +169,14 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 
 	_, err = s.server.TaskService.CreateTask(ctx, &api.TaskCreate{
 		Name:       backupName,
-		PipelineId: createdPipeline.ID,
-		StageId:    createdStage.ID,
-		InstanceId: database.InstanceId,
-		DatabaseId: &database.ID,
+		PipelineID: createdPipeline.ID,
+		StageID:    createdStage.ID,
+		InstanceID: database.InstanceID,
+		DatabaseID: &database.ID,
 		Status:     api.TaskPending,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),
-		CreatorId:  backupCreate.CreatorId,
+		CreatorID:  backupCreate.CreatorID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create task: %w", err)

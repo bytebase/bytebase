@@ -21,12 +21,12 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create member request").SetInternal(err)
 		}
 
-		memberCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		memberCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 
 		member, err := s.MemberService.CreateMember(ctx, memberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member for user ID already exists: %d", memberCreate.PrincipalId))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member for user ID already exists: %d", memberCreate.PrincipalID))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create member").SetInternal(err)
 		}
@@ -34,18 +34,18 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		// Record activity
 		{
 			principalFind := &api.PrincipalFind{
-				ID: &member.PrincipalId,
+				ID: &member.PrincipalID,
 			}
 			user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", member.PrincipalId))
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", member.PrincipalID))
 				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", member.PrincipalId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", member.PrincipalID)).SetInternal(err)
 			}
 
 			bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
-				PrincipalId:    member.PrincipalId,
+				PrincipalID:    member.PrincipalID,
 				PrincipalName:  user.Name,
 				PrincipalEmail: user.Email,
 				MemberStatus:   member.Status,
@@ -55,8 +55,8 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
 			activityCreate := &api.ActivityCreate{
-				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-				ContainerId: member.ID,
+				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				ContainerID: member.ID,
 				Type:        api.ActivityMemberCreate,
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(bytes),
@@ -119,7 +119,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		memberPatch := &api.MemberPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
@@ -136,19 +136,19 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		// Record activity
 		{
 			principalFind := &api.PrincipalFind{
-				ID: &updatedMember.PrincipalId,
+				ID: &updatedMember.PrincipalID,
 			}
 			user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", updatedMember.PrincipalId))
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", updatedMember.PrincipalID))
 				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", updatedMember.PrincipalId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", updatedMember.PrincipalID)).SetInternal(err)
 			}
 
 			if memberPatch.Role != nil {
 				bytes, err := json.Marshal(api.ActivityMemberRoleUpdatePayload{
-					PrincipalId:    updatedMember.PrincipalId,
+					PrincipalID:    updatedMember.PrincipalID,
 					PrincipalName:  user.Name,
 					PrincipalEmail: user.Email,
 					OldRole:        member.Role,
@@ -158,8 +158,8 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 				}
 				activityCreate := &api.ActivityCreate{
-					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-					ContainerId: updatedMember.ID,
+					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+					ContainerID: updatedMember.ID,
 					Type:        api.ActivityMemberRoleUpdate,
 					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
@@ -170,7 +170,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				}
 			} else if memberPatch.RowStatus != nil {
 				bytes, err := json.Marshal(api.ActivityMemberActivateDeactivatePayload{
-					PrincipalId:    updatedMember.PrincipalId,
+					PrincipalID:    updatedMember.PrincipalID,
 					PrincipalName:  user.Name,
 					PrincipalEmail: user.Email,
 					Role:           member.Role,
@@ -183,8 +183,8 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					theType = api.ActivityMemberDeactivate
 				}
 				activityCreate := &api.ActivityCreate{
-					CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-					ContainerId: updatedMember.ID,
+					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+					ContainerID: updatedMember.ID,
 					Type:        theType,
 					Level:       api.ACTIVITY_INFO,
 					Payload:     string(bytes),
@@ -211,17 +211,17 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member) error {
 	var err error
 
-	member.Creator, err = s.ComposePrincipalById(ctx, member.CreatorId)
+	member.Creator, err = s.ComposePrincipalByID(ctx, member.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	member.Updater, err = s.ComposePrincipalById(ctx, member.UpdaterId)
+	member.Updater, err = s.ComposePrincipalByID(ctx, member.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	member.Principal, err = s.ComposePrincipalById(ctx, member.PrincipalId)
+	member.Principal, err = s.ComposePrincipalByID(ctx, member.PrincipalID)
 	if err != nil {
 		return err
 	}

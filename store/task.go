@@ -126,7 +126,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 	var row *sql.Rows
 	var err error
 
-	if create.DatabaseId == nil {
+	if create.DatabaseID == nil {
 		row, err = tx.QueryContext(ctx, `
 		INSERT INTO task (
 			creator_id,
@@ -142,11 +142,11 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
-			create.CreatorId,
-			create.CreatorId,
-			create.PipelineId,
-			create.StageId,
-			create.InstanceId,
+			create.CreatorID,
+			create.CreatorID,
+			create.PipelineID,
+			create.StageID,
+			create.InstanceID,
 			create.Name,
 			create.Status,
 			create.Type,
@@ -169,12 +169,12 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
 	`,
-			create.CreatorId,
-			create.CreatorId,
-			create.PipelineId,
-			create.StageId,
-			create.InstanceId,
-			create.DatabaseId,
+			create.CreatorID,
+			create.CreatorID,
+			create.PipelineID,
+			create.StageID,
+			create.InstanceID,
+			create.DatabaseID,
 			create.Name,
 			create.Status,
 			create.Type,
@@ -189,19 +189,19 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 
 	row.Next()
 	var task api.Task
-	var databaseId sql.NullInt32
+	var databaseID sql.NullInt32
 	task.TaskRunList = []*api.TaskRun{}
 	task.TaskCheckRunList = []*api.TaskCheckRun{}
 	if err := row.Scan(
 		&task.ID,
-		&task.CreatorId,
+		&task.CreatorID,
 		&task.CreatedTs,
-		&task.UpdaterId,
+		&task.UpdaterID,
 		&task.UpdatedTs,
-		&task.PipelineId,
-		&task.StageId,
-		&task.InstanceId,
-		&databaseId,
+		&task.PipelineID,
+		&task.StageID,
+		&task.InstanceID,
+		&databaseID,
 		&task.Name,
 		&task.Status,
 		&task.Type,
@@ -210,9 +210,9 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		return nil, FormatError(err)
 	}
 
-	if databaseId.Valid {
-		val := int(databaseId.Int32)
-		task.DatabaseId = &val
+	if databaseID.Valid {
+		val := int(databaseID.Int32)
+		task.DatabaseID = &val
 	}
 
 	return &task, nil
@@ -236,10 +236,10 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.PipelineId; v != nil {
+	if v := find.PipelineID; v != nil {
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
-	if v := find.StageId; v != nil {
+	if v := find.StageID; v != nil {
 		where, args = append(where, "stage_id = ?"), append(args, *v)
 	}
 	if v := find.StatusList; v != nil {
@@ -281,14 +281,14 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		var task api.Task
 		if err := rows.Scan(
 			&task.ID,
-			&task.CreatorId,
+			&task.CreatorID,
 			&task.CreatedTs,
-			&task.UpdaterId,
+			&task.UpdaterID,
 			&task.UpdatedTs,
-			&task.PipelineId,
-			&task.StageId,
-			&task.InstanceId,
-			&task.DatabaseId,
+			&task.PipelineID,
+			&task.StageID,
+			&task.InstanceID,
+			&task.DatabaseID,
 			&task.Name,
 			&task.Status,
 			&task.Type,
@@ -298,7 +298,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		}
 
 		taskRunFind := &api.TaskRunFind{
-			TaskId: &task.ID,
+			TaskID: &task.ID,
 		}
 		task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
@@ -306,7 +306,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		}
 
 		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskId: &task.ID,
+			TaskID: &task.ID,
 		}
 		task.TaskCheckRunList, err = s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx.Tx, taskCheckRunFind)
 		if err != nil {
@@ -324,7 +324,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 // patchTask updates a task by ID. Returns the new state of the task after update.
 func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatch) (*api.Task, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Payload; v != nil {
 		set, args = append(set, "payload = ?"), append(args, *v)
 	}
@@ -348,14 +348,14 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 		var task api.Task
 		if err := row.Scan(
 			&task.ID,
-			&task.CreatorId,
+			&task.CreatorID,
 			&task.CreatedTs,
-			&task.UpdaterId,
+			&task.UpdaterID,
 			&task.UpdatedTs,
-			&task.PipelineId,
-			&task.StageId,
-			&task.InstanceId,
-			&task.DatabaseId,
+			&task.PipelineID,
+			&task.StageID,
+			&task.InstanceID,
+			&task.DatabaseID,
 			&task.Name,
 			&task.Status,
 			&task.Type,
@@ -385,7 +385,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 
 	if !(task.Status == api.TaskPendingApproval && patch.Status == api.TaskPending) {
 		taskRunFind := &api.TaskRunFind{
-			TaskId: &task.ID,
+			TaskID: &task.ID,
 			StatusList: &[]api.TaskRunStatus{
 				api.TaskRunRunning,
 			},
@@ -405,8 +405,8 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 
 		if patch.Status == api.TaskRunning {
 			taskRunCreate := &api.TaskRunCreate{
-				CreatorId: patch.UpdaterId,
-				TaskId:    task.ID,
+				CreatorID: patch.UpdaterID,
+				TaskID:    task.ID,
 				Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
 				Type:      task.Type,
 				Payload:   task.Payload,
@@ -417,8 +417,8 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		} else {
 			taskRunStatusPatch := &api.TaskRunStatusPatch{
 				ID:        &taskRun.ID,
-				UpdaterId: patch.UpdaterId,
-				TaskId:    &patch.ID,
+				UpdaterID: patch.UpdaterID,
+				TaskID:    &patch.ID,
 				Code:      patch.Code,
 				Result:    patch.Result,
 				Comment:   patch.Comment,
@@ -441,7 +441,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 
 	// Updates the task
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
 	args = append(args, patch.ID)
 
@@ -463,14 +463,14 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		var task api.Task
 		if err := row.Scan(
 			&task.ID,
-			&task.CreatorId,
+			&task.CreatorID,
 			&task.CreatedTs,
-			&task.UpdaterId,
+			&task.UpdaterID,
 			&task.UpdatedTs,
-			&task.PipelineId,
-			&task.StageId,
-			&task.InstanceId,
-			&task.DatabaseId,
+			&task.PipelineID,
+			&task.StageID,
+			&task.InstanceID,
+			&task.DatabaseID,
 			&task.Name,
 			&task.Status,
 			&task.Type,
@@ -480,7 +480,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		}
 
 		taskRunFind := &api.TaskRunFind{
-			TaskId: &task.ID,
+			TaskID: &task.ID,
 		}
 		task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
@@ -488,7 +488,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		}
 
 		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskId: &task.ID,
+			TaskID: &task.ID,
 		}
 		task.TaskCheckRunList, err = s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx.Tx, taskCheckRunFind)
 		if err != nil {

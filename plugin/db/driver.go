@@ -182,7 +182,7 @@ type MigrationInfo struct {
 	Status         MigrationStatus
 	Description    string
 	Creator        string
-	IssueId        string
+	IssueID        string
 	Payload        string
 	CreateDatabase bool
 }
@@ -282,7 +282,7 @@ type MigrationHistory struct {
 	Schema            string
 	SchemaPrev        string
 	ExecutionDuration int
-	IssueId           string
+	IssueID           string
 	Payload           string
 }
 

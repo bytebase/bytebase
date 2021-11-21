@@ -151,7 +151,7 @@ import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
+import { MemberID, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 
@@ -275,7 +275,7 @@ export default {
       // return !hasAdminFeature.value && isOwner(currentUser.value.role);
     });
 
-    const changeRole = (id: MemberId, role: RoleType) => {
+    const changeRole = (id: MemberID, role: RoleType) => {
       const memberPatch: MemberPatch = {
         role,
       };
@@ -285,7 +285,7 @@ export default {
       });
     };
 
-    const changeRowStatus = (id: MemberId, rowStatus: RowStatus) => {
+    const changeRowStatus = (id: MemberID, rowStatus: RowStatus) => {
       const memberPatch: MemberPatch = {
         rowStatus,
       };

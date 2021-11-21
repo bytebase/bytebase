@@ -52,7 +52,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		ctx := context.Background()
 		settingPatch := &api.SettingPatch{
 			Name:      api.SettingName(c.Param("name")),
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update setting request").SetInternal(err)
@@ -77,12 +77,12 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 func (s *Server) ComposeSettingRelationship(ctx context.Context, setting *api.Setting) error {
 	var err error
 
-	setting.Creator, err = s.ComposePrincipalById(ctx, setting.CreatorId)
+	setting.Creator, err = s.ComposePrincipalByID(ctx, setting.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	setting.Updater, err = s.ComposePrincipalById(ctx, setting.UpdaterId)
+	setting.Updater, err = s.ComposePrincipalByID(ctx, setting.UpdaterID)
 	if err != nil {
 		return err
 	}

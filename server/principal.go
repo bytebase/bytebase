@@ -22,7 +22,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create principal request").SetInternal(err)
 		}
 
-		principalCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		principalCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 		principalCreate.Type = api.EndUser
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(principalCreate.Password), bcrypt.DefaultCost)
 		if err != nil {
@@ -78,14 +78,14 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/principal/:principalId", func(c echo.Context) error {
+	g.GET("/principal/:principalID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("principalId"))
+		id, err := strconv.Atoi(c.Param("principalID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
-		principal, err := s.ComposePrincipalById(ctx, id)
+		principal, err := s.ComposePrincipalByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -100,16 +100,16 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/principal/:principalId", func(c echo.Context) error {
+	g.PATCH("/principal/:principalID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("principalId"))
+		id, err := strconv.Atoi(c.Param("principalID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
 		principalPatch := &api.PrincipalPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request").SetInternal(err)
@@ -142,7 +142,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposePrincipalById(ctx context.Context, id int) (*api.Principal, error) {
+func (s *Server) ComposePrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,
 	}
@@ -161,7 +161,7 @@ func (s *Server) ComposePrincipalRole(ctx context.Context, principal *api.Princi
 		principal.Role = api.Owner
 	} else {
 		memberFind := &api.MemberFind{
-			PrincipalId: &principal.ID,
+			PrincipalID: &principal.ID,
 		}
 		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {

@@ -15,26 +15,26 @@ const template: IssueTemplate = {
   type: "bb.issue.database.grant",
   buildIssue: (
     ctx: TemplateContext
-  ): Omit<IssueCreate, "projectId" | "creatorId"> => {
+  ): Omit<IssueCreate, "projectID" | "creatorID"> => {
     const payload: any = {};
 
     return {
       name: "Request database access",
       type: "bb.issue.database.grant",
       description: "",
-      assigneeId: UNKNOWN_ID,
+      assigneeID: UNKNOWN_ID,
       pipeline: {
         stageList: [
           {
             name: "Request database access",
-            environmentId: ctx.environmentList[0].id,
+            environmentID: ctx.environmentList[0].id,
             taskList: [
               {
                 name: "Request database access",
                 status: "PENDING_APPROVAL",
                 type: "bb.task.general",
-                instanceId: ctx.databaseList[0].instance.id,
-                databaseId: ctx.databaseList[0].id,
+                instanceID: ctx.databaseList[0].instance.id,
+                databaseID: ctx.databaseList[0].id,
                 statement: "",
                 rollbackStatement: "",
               },
@@ -77,21 +77,21 @@ const template: IssueTemplate = {
         const issue = ctx.issue as Issue;
         const database = issue.pipeline.stageList[0].taskList[0].database!;
         const readonly = issue.payload[INPUT_READ_ONLY_FIELD_ID];
-        let dataSourceId;
+        let dataSourceID;
         for (const dataSource of database.dataSourceList) {
           if (readonly && dataSource.type == "RO") {
-            dataSourceId = dataSource.id;
+            dataSourceID = dataSource.id;
             break;
           } else if (!readonly && dataSource.type == "RW") {
-            dataSourceId = dataSource.id;
+            dataSourceID = dataSource.id;
             break;
           }
         }
 
-        if (dataSourceId) {
+        if (dataSourceID) {
           queryParamList.push(`database=${database.id}`);
 
-          queryParamList.push(`datasource=${dataSourceId}`);
+          queryParamList.push(`datasource=${dataSourceID}`);
 
           queryParamList.push(`grantee=${issue.creator.id}`);
 

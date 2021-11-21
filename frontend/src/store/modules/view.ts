@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   Database,
-  DatabaseId,
+  DatabaseID,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -14,12 +14,12 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): View {
-  const databaseId = (view.relationships!.database.data as ResourceIdentifier)
+  const databaseID = (view.relationships!.database.data as ResourceIdentifier)
     .id;
 
   let database: Database = unknown("DATABASE") as Database;
   for (const item of includedList || []) {
-    if (item.type == "database" && item.id == databaseId) {
+    if (item.type == "database" && item.id == databaseID) {
       database = rootGetters["database/convert"](item, includedList);
       break;
     }
@@ -32,44 +32,44 @@ function convert(
 }
 
 const state: () => ViewState = () => ({
-  viewListByDatabaseId: new Map(),
+  viewListByDatabaseID: new Map(),
 });
 
 const getters = {
-  viewListByDatabaseId:
+  viewListByDatabaseID:
     (state: ViewState) =>
-    (databaseId: DatabaseId): View[] => {
-      return state.viewListByDatabaseId.get(databaseId) || [];
+    (databaseID: DatabaseID): View[] => {
+      return state.viewListByDatabaseID.get(databaseID) || [];
     },
 };
 
 const actions = {
-  async fetchViewListByDatabaseId(
+  async fetchViewListByDatabaseID(
     { commit, rootGetters }: any,
-    databaseId: DatabaseId
+    databaseID: DatabaseID
   ) {
-    const data = (await axios.get(`/api/database/${databaseId}/view`)).data;
+    const data = (await axios.get(`/api/database/${databaseID}/view`)).data;
     const viewList = data.data.map((view: ResourceObject) => {
       return convert(view, data.included, rootGetters);
     });
 
-    commit("setViewListByDatabaseId", { databaseId, viewList });
+    commit("setViewListByDatabaseID", { databaseID, viewList });
     return viewList;
   },
 };
 
 const mutations = {
-  setViewListByDatabaseId(
+  setViewListByDatabaseID(
     state: ViewState,
     {
-      databaseId,
+      databaseID,
       viewList,
     }: {
-      databaseId: DatabaseId;
+      databaseID: DatabaseID;
       viewList: View[];
     }
   ) {
-    state.viewListByDatabaseId.set(databaseId, viewList);
+    state.viewListByDatabaseID.set(databaseID, viewList);
   },
 };
 

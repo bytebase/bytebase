@@ -57,7 +57,7 @@ const (
 // json naming convention
 type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
-	ProjectId    int    `json:"projectId,omitempty"`
+	ProjectID    int    `json:"projectID,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
 	Statement    string `json:"statement,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
@@ -74,7 +74,7 @@ type TaskDatabaseSchemaUpdatePayload struct {
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
-	BackupId int `json:"backupId,omitempty"`
+	BackupID int `json:"backupID,omitempty"`
 }
 
 // TaskDatabaseRestorePayload is the task payload for database restore.
@@ -82,28 +82,28 @@ type TaskDatabaseRestorePayload struct {
 	// The database name we restore to. When we restore a backup to a new database, we only have the database name
 	// and don't have the database id upon constructing the task yet.
 	DatabaseName string `json:"databaseName,omitempty"`
-	BackupId     int    `json:"backupId,omitempty"`
+	BackupID     int    `json:"backupID,omitempty"`
 }
 
 type Task struct {
 	ID int `jsonapi:"primary,task"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	// Just returns PipelineId and StageId otherwise would cause circular dependency.
-	PipelineId int `jsonapi:"attr,pipelineId"`
-	StageId    int `jsonapi:"attr,stageId"`
-	InstanceId int
+	// Just returns PipelineID and StageID otherwise would cause circular dependency.
+	PipelineID int `jsonapi:"attr,pipelineID"`
+	StageID    int `jsonapi:"attr,stageID"`
+	InstanceID int
 	Instance   *Instance `jsonapi:"relation,instance"`
 	// Tasks like creating database may not have database.
-	DatabaseId       *int
+	DatabaseID       *int
 	Database         *Database       `jsonapi:"relation,database"`
 	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
 	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
@@ -118,14 +118,14 @@ type Task struct {
 type TaskCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	PipelineId int
-	StageId    int
-	InstanceId int `jsonapi:"attr,instanceId"`
+	PipelineID int
+	StageID    int
+	InstanceID int `jsonapi:"attr,instanceID"`
 	// Tasks like creating database may not have database.
-	DatabaseId *int `jsonapi:"attr,databaseId"`
+	DatabaseID *int `jsonapi:"attr,databaseID"`
 
 	// Domain specific fields
 	Name   string     `jsonapi:"attr,name"`
@@ -138,7 +138,7 @@ type TaskCreate struct {
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
-	BackupId          *int   `jsonapi:"attr,backupId"`
+	BackupID          *int   `jsonapi:"attr,backupID"`
 	VCSPushEvent      *common.VCSPushEvent
 	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
@@ -147,8 +147,8 @@ type TaskFind struct {
 	ID *int
 
 	// Related fields
-	PipelineId *int
-	StageId    *int
+	PipelineID *int
+	StageID    *int
 
 	// Domain specific fields
 	StatusList *[]TaskStatus
@@ -167,7 +167,7 @@ type TaskPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Statement *string `jsonapi:"attr,statement"`
@@ -179,7 +179,7 @@ type TaskStatusPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Status  TaskStatus `jsonapi:"attr,status"`

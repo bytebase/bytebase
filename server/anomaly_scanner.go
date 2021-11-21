@@ -82,7 +82,7 @@ func (s *AnomalyScanner) Run() error {
 
 				for _, instance := range instanceList {
 					for _, env := range environmentList {
-						if env.ID == instance.EnvironmentId {
+						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
@@ -121,7 +121,7 @@ func (s *AnomalyScanner) Run() error {
 						s.checkInstanceAnomaly(ctx, instance)
 
 						databaseFind := &api.DatabaseFind{
-							InstanceId: &instance.ID,
+							InstanceID: &instance.ID,
 						}
 						dbList, err := s.server.DatabaseService.FindDatabaseList(ctx, databaseFind)
 						if err != nil {
@@ -164,8 +164,8 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorId:  api.SYSTEM_BOT_ID,
-				InstanceId: instance.ID,
+				CreatorID:  api.SYSTEM_BOT_ID,
+				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
 				Payload:    string(payload),
 			})
@@ -180,7 +180,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 	} else {
 		defer driver.Close(ctx)
 		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			InstanceId: &instance.ID,
+			InstanceID: &instance.ID,
 			Type:       api.AnomalyInstanceConnection,
 		})
 		if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -202,8 +202,8 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 		} else {
 			if setup {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorId:  api.SYSTEM_BOT_ID,
-					InstanceId: instance.ID,
+					CreatorID:  api.SYSTEM_BOT_ID,
+					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
 				if err != nil {
@@ -214,7 +214,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				}
 			} else {
 				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					InstanceId: &instance.ID,
+					InstanceID: &instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -245,9 +245,9 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorId:  api.SYSTEM_BOT_ID,
-				InstanceId: instance.ID,
-				DatabaseId: &database.ID,
+				CreatorID:  api.SYSTEM_BOT_ID,
+				InstanceID: instance.ID,
+				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseConnection,
 				Payload:    string(payload),
 			})
@@ -263,7 +263,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 	} else {
 		defer driver.Close(ctx)
 		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			DatabaseId: &database.ID,
+			DatabaseID: &database.ID,
 			Type:       api.AnomalyDatabaseConnection,
 		})
 		if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -336,9 +336,9 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.Error(err))
 				} else {
 					_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-						CreatorId:  api.SYSTEM_BOT_ID,
-						InstanceId: instance.ID,
-						DatabaseId: &database.ID,
+						CreatorID:  api.SYSTEM_BOT_ID,
+						InstanceID: instance.ID,
+						DatabaseID: &database.ID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
 						Payload:    string(payload),
 					})
@@ -352,7 +352,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				}
 			} else {
 				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					DatabaseId: &database.ID,
+					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseConnection,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -371,7 +371,7 @@ SchemaDriftEnd:
 func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
 	schedule := api.BackupPlanPolicyScheduleUnset
 	backupSettingFind := &api.BackupSettingFind{
-		DatabaseId: &database.ID,
+		DatabaseID: &database.ID,
 	}
 	backupSetting, err := s.server.BackupService.FindBackupSetting(ctx, backupSettingFind)
 	if err != nil {
@@ -395,19 +395,19 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 	// Check backup policy violation
 	{
 		var backupPolicyAnomalyPayload *api.AnomalyDatabaseBackupPolicyViolationPayload
-		if policyMap[instance.EnvironmentId].Schedule != api.BackupPlanPolicyScheduleUnset {
-			if policyMap[instance.EnvironmentId].Schedule == api.BackupPlanPolicyScheduleDaily &&
+		if policyMap[instance.EnvironmentID].Schedule != api.BackupPlanPolicyScheduleUnset {
+			if policyMap[instance.EnvironmentID].Schedule == api.BackupPlanPolicyScheduleDaily &&
 				schedule != api.BackupPlanPolicyScheduleDaily {
 				backupPolicyAnomalyPayload = &api.AnomalyDatabaseBackupPolicyViolationPayload{
-					EnvironmentId:          instance.EnvironmentId,
-					ExpectedBackupSchedule: policyMap[instance.EnvironmentId].Schedule,
+					EnvironmentID:          instance.EnvironmentID,
+					ExpectedBackupSchedule: policyMap[instance.EnvironmentID].Schedule,
 					ActualBackupSchedule:   schedule,
 				}
-			} else if policyMap[instance.EnvironmentId].Schedule == api.BackupPlanPolicyScheduleWeekly &&
+			} else if policyMap[instance.EnvironmentID].Schedule == api.BackupPlanPolicyScheduleWeekly &&
 				schedule == api.BackupPlanPolicyScheduleUnset {
 				backupPolicyAnomalyPayload = &api.AnomalyDatabaseBackupPolicyViolationPayload{
-					EnvironmentId:          instance.EnvironmentId,
-					ExpectedBackupSchedule: policyMap[instance.EnvironmentId].Schedule,
+					EnvironmentID:          instance.EnvironmentID,
+					ExpectedBackupSchedule: policyMap[instance.EnvironmentID].Schedule,
 					ActualBackupSchedule:   schedule,
 				}
 			}
@@ -423,9 +423,9 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorId:  api.SYSTEM_BOT_ID,
-					InstanceId: instance.ID,
-					DatabaseId: &database.ID,
+					CreatorID:  api.SYSTEM_BOT_ID,
+					InstanceID: instance.ID,
+					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:    string(payload),
 				})
@@ -439,7 +439,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 			}
 		} else {
 			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseId: &database.ID,
+				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
@@ -468,7 +468,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 			if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
 				status := api.BackupStatusDone
 				backupFind := &api.BackupFind{
-					DatabaseId: &database.ID,
+					DatabaseID: &database.ID,
 					Status:     &status,
 				}
 				backupList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
@@ -507,9 +507,9 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorId:  api.SYSTEM_BOT_ID,
-					InstanceId: instance.ID,
-					DatabaseId: &database.ID,
+					CreatorID:  api.SYSTEM_BOT_ID,
+					InstanceID: instance.ID,
+					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupMissing,
 					Payload:    string(payload),
 				})
@@ -523,7 +523,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 			}
 		} else {
 			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseId: &database.ID,
+				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupMissing,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {

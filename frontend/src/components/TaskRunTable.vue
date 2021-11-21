@@ -175,7 +175,7 @@ export default {
               link: `/db/${databaseSlug(
                 props.task.database!
               )}/history/${migrationHistorySlug(
-                taskRun.result.migrationId!,
+                taskRun.result.migrationID!,
                 taskRun.result.version!
               )}`,
             };

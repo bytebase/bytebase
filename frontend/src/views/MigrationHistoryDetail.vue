@@ -33,10 +33,10 @@
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Issue&nbsp;-&nbsp;</span>
               <router-link
-                :to="`/issue/${migrationHistory.issueId}`"
+                :to="`/issue/${migrationHistory.issueID}`"
                 class="normal-link"
               >
-                {{ migrationHistory.issueId }}
+                {{ migrationHistory.issueID }}
               </router-link>
             </dd>
             <dt class="sr-only">Duration</dt>
@@ -228,7 +228,7 @@ export default {
     const store = useStore();
 
     const migrationHistory = computed((): MigrationHistory => {
-      return store.getters["instance/migrationHistoryById"](
+      return store.getters["instance/migrationHistoryByID"](
         idFromSlug(props.migrationHistorySlug)
       );
     });
@@ -239,7 +239,7 @@ export default {
     });
 
     const database = computed(() => {
-      return store.getters["database/databaseById"](
+      return store.getters["database/databaseByID"](
         idFromSlug(props.databaseSlug)
       );
     });

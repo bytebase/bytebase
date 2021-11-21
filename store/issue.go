@@ -145,14 +145,14 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, payload"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.ProjectId,
-		create.PipelineId,
+		create.CreatorID,
+		create.CreatorID,
+		create.ProjectID,
+		create.PipelineID,
 		create.Name,
 		create.Type,
 		create.Description,
-		create.AssigneeId,
+		create.AssigneeID,
 		create.Payload,
 	)
 
@@ -165,17 +165,17 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 	var issue api.Issue
 	if err := row.Scan(
 		&issue.ID,
-		&issue.CreatorId,
+		&issue.CreatorID,
 		&issue.CreatedTs,
-		&issue.UpdaterId,
+		&issue.UpdaterID,
 		&issue.UpdatedTs,
-		&issue.ProjectId,
-		&issue.PipelineId,
+		&issue.ProjectID,
+		&issue.PipelineID,
 		&issue.Name,
 		&issue.Status,
 		&issue.Type,
 		&issue.Description,
-		&issue.AssigneeId,
+		&issue.AssigneeID,
 		&issue.Payload,
 	); err != nil {
 		return nil, FormatError(err)
@@ -190,13 +190,13 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.PipelineId; v != nil {
+	if v := find.PipelineID; v != nil {
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
-	if v := find.ProjectId; v != nil {
+	if v := find.ProjectID; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
-	if v := find.PrincipalId; v != nil {
+	if v := find.PrincipalID; v != nil {
 		where = append(where, "(creator_id = ? OR assignee_id = ? OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = ?))")
 		args = append(args, *v)
 		args = append(args, *v)
@@ -244,17 +244,17 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		var issue api.Issue
 		if err := rows.Scan(
 			&issue.ID,
-			&issue.CreatorId,
+			&issue.CreatorID,
 			&issue.CreatedTs,
-			&issue.UpdaterId,
+			&issue.UpdaterID,
 			&issue.UpdatedTs,
-			&issue.ProjectId,
-			&issue.PipelineId,
+			&issue.ProjectID,
+			&issue.PipelineID,
 			&issue.Name,
 			&issue.Status,
 			&issue.Type,
 			&issue.Description,
-			&issue.AssigneeId,
+			&issue.AssigneeID,
 			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)
@@ -272,7 +272,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 // patchIssue updates a issue by ID. Returns the new state of the issue after update.
 func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssuePatch) (*api.Issue, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
@@ -282,7 +282,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	if v := patch.Description; v != nil {
 		set, args = append(set, "description = ?"), append(args, *v)
 	}
-	if v := patch.AssigneeId; v != nil {
+	if v := patch.AssigneeID; v != nil {
 		set, args = append(set, "assignee_id = ?"), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
@@ -313,17 +313,17 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		var issue api.Issue
 		if err := row.Scan(
 			&issue.ID,
-			&issue.CreatorId,
+			&issue.CreatorID,
 			&issue.CreatedTs,
-			&issue.UpdaterId,
+			&issue.UpdaterID,
 			&issue.UpdatedTs,
-			&issue.ProjectId,
-			&issue.PipelineId,
+			&issue.ProjectID,
+			&issue.PipelineID,
 			&issue.Name,
 			&issue.Status,
 			&issue.Type,
 			&issue.Description,
-			&issue.AssigneeId,
+			&issue.AssigneeID,
 			&issue.Payload,
 		); err != nil {
 			return nil, FormatError(err)

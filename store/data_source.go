@@ -125,10 +125,10 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.InstanceId,
-		create.DatabaseId,
+		create.CreatorID,
+		create.CreatorID,
+		create.InstanceID,
+		create.DatabaseID,
 		create.Name,
 		create.Type,
 		create.Username,
@@ -144,12 +144,12 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 	var dataSource api.DataSource
 	if err := row.Scan(
 		&dataSource.ID,
-		&dataSource.CreatorId,
+		&dataSource.CreatorID,
 		&dataSource.CreatedTs,
-		&dataSource.UpdaterId,
+		&dataSource.UpdaterID,
 		&dataSource.UpdatedTs,
-		&dataSource.InstanceId,
-		&dataSource.DatabaseId,
+		&dataSource.InstanceID,
+		&dataSource.DatabaseID,
 		&dataSource.Name,
 		&dataSource.Type,
 		&dataSource.Username,
@@ -164,10 +164,10 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find *api.DataSourceFind) (_ []*api.DataSource, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.InstanceId; v != nil {
+	if v := find.InstanceID; v != nil {
 		where, args = append(where, "instance_id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "`database_id` = ?"), append(args, *v)
 	}
 	if v := find.Type; v != nil {
@@ -202,12 +202,12 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 		var dataSource api.DataSource
 		if err := rows.Scan(
 			&dataSource.ID,
-			&dataSource.CreatorId,
+			&dataSource.CreatorID,
 			&dataSource.CreatedTs,
-			&dataSource.UpdaterId,
+			&dataSource.UpdaterID,
 			&dataSource.UpdatedTs,
-			&dataSource.InstanceId,
-			&dataSource.DatabaseId,
+			&dataSource.InstanceID,
+			&dataSource.DatabaseID,
 			&dataSource.Name,
 			&dataSource.Type,
 			&dataSource.Username,
@@ -228,7 +228,7 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 // patchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
 func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
 		set, args = append(set, "username = ?"), append(args, *v)
 	}
@@ -256,12 +256,12 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 		var dataSource api.DataSource
 		if err := row.Scan(
 			&dataSource.ID,
-			&dataSource.CreatorId,
+			&dataSource.CreatorID,
 			&dataSource.CreatedTs,
-			&dataSource.UpdaterId,
+			&dataSource.UpdaterID,
 			&dataSource.UpdatedTs,
-			&dataSource.InstanceId,
-			&dataSource.DatabaseId,
+			&dataSource.InstanceID,
+			&dataSource.DatabaseID,
 			&dataSource.Name,
 			&dataSource.Type,
 			&dataSource.Username,

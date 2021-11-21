@@ -124,9 +124,9 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, migration_history_version, path, comment"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.DatabaseId,
+		create.CreatorID,
+		create.CreatorID,
+		create.DatabaseID,
 		create.Name,
 		create.Status,
 		create.Type,
@@ -144,11 +144,11 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 	var backup api.Backup
 	if err := row.Scan(
 		&backup.ID,
-		&backup.CreatorId,
+		&backup.CreatorID,
 		&backup.CreatedTs,
-		&backup.UpdaterId,
+		&backup.UpdaterID,
 		&backup.UpdatedTs,
-		&backup.DatabaseId,
+		&backup.DatabaseID,
 		&backup.Name,
 		&backup.Status,
 		&backup.Type,
@@ -169,7 +169,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
 	if v := find.Name; v != nil {
@@ -209,11 +209,11 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 		var backup api.Backup
 		if err := rows.Scan(
 			&backup.ID,
-			&backup.CreatorId,
+			&backup.CreatorID,
 			&backup.CreatedTs,
-			&backup.UpdaterId,
+			&backup.UpdaterID,
 			&backup.UpdatedTs,
-			&backup.DatabaseId,
+			&backup.DatabaseID,
 			&backup.Name,
 			&backup.Status,
 			&backup.Type,
@@ -237,7 +237,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 // patchBackup updates a backup by ID. Returns the new state of the backup after update.
 func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.BackupPatch) (*api.Backup, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = ?"), append(args, patch.Status)
 	set, args = append(set, "comment = ?"), append(args, patch.Comment)
 
@@ -261,11 +261,11 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 		var backup api.Backup
 		if err := row.Scan(
 			&backup.ID,
-			&backup.CreatorId,
+			&backup.CreatorID,
 			&backup.CreatedTs,
-			&backup.UpdaterId,
+			&backup.UpdaterID,
 			&backup.UpdatedTs,
-			&backup.DatabaseId,
+			&backup.DatabaseID,
 			&backup.Name,
 			&backup.Status,
 			&backup.Type,
@@ -310,7 +310,7 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
 
@@ -341,11 +341,11 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 		var backupSetting api.BackupSetting
 		if err := rows.Scan(
 			&backupSetting.ID,
-			&backupSetting.CreatorId,
+			&backupSetting.CreatorID,
 			&backupSetting.CreatedTs,
-			&backupSetting.UpdaterId,
+			&backupSetting.UpdaterID,
 			&backupSetting.UpdatedTs,
-			&backupSetting.DatabaseId,
+			&backupSetting.DatabaseID,
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,
@@ -365,7 +365,7 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 
 // UpsertBackupSetting sets the backup settings for a database.
 func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
-	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, upsert.EnvironmentId)
+	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, upsert.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -425,9 +425,9 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 				hook_url = excluded.hook_url
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`, hook_url
 		`,
-		upsert.UpdaterId,
-		upsert.UpdaterId,
-		upsert.DatabaseId,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.DatabaseID,
 		upsert.Enabled,
 		upsert.Hour,
 		upsert.DayOfWeek,
@@ -443,11 +443,11 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 	var backupSetting api.BackupSetting
 	if err := row.Scan(
 		&backupSetting.ID,
-		&backupSetting.CreatorId,
+		&backupSetting.CreatorID,
 		&backupSetting.CreatedTs,
-		&backupSetting.UpdaterId,
+		&backupSetting.UpdaterID,
 		&backupSetting.UpdatedTs,
-		&backupSetting.DatabaseId,
+		&backupSetting.DatabaseID,
 		&backupSetting.Enabled,
 		&backupSetting.Hour,
 		&backupSetting.DayOfWeek,
@@ -503,11 +503,11 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 		var backupSetting api.BackupSetting
 		if err := rows.Scan(
 			&backupSetting.ID,
-			&backupSetting.CreatorId,
+			&backupSetting.CreatorID,
 			&backupSetting.CreatedTs,
-			&backupSetting.UpdaterId,
+			&backupSetting.UpdaterID,
 			&backupSetting.UpdatedTs,
-			&backupSetting.DatabaseId,
+			&backupSetting.DatabaseID,
 			&backupSetting.Enabled,
 			&backupSetting.Hour,
 			&backupSetting.DayOfWeek,

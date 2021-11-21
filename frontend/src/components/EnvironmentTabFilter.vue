@@ -30,7 +30,7 @@ export default {
   emits: ["select-environment"],
   components: {},
   props: {
-    selectedId: {
+    selectedID: {
       type: Number,
     },
   },
@@ -46,19 +46,19 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      selectedIndex: props.selectedId
+      selectedIndex: props.selectedID
         ? environmentList.value.findIndex(
-            (environment: Environment) => environment.id == props.selectedId
+            (environment: Environment) => environment.id == props.selectedID
           ) + 1
         : 0,
     });
 
     watch(
-      () => props.selectedId,
+      () => props.selectedID,
       () => {
-        state.selectedIndex = props.selectedId
+        state.selectedIndex = props.selectedID
           ? environmentList.value.findIndex(
-              (environment: Environment) => environment.id == props.selectedId
+              (environment: Environment) => environment.id == props.selectedID
             ) + 1
           : 0;
       }

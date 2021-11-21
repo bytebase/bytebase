@@ -28,9 +28,9 @@ type Principal struct {
 	ID int `jsonapi:"primary,principal"`
 
 	// Standard fields
-	CreatorId int   `jsonapi:"attr,creatorId"`
+	CreatorID int   `jsonapi:"attr,creatorID"`
 	CreatedTs int64 `jsonapi:"attr,createdTs"`
-	UpdaterId int   `jsonapi:"attr,updaterId"`
+	UpdaterID int   `jsonapi:"attr,updaterID"`
 	UpdatedTs int64 `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
@@ -49,9 +49,9 @@ type Principal struct {
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ID        int           `json:"id"`
-		CreatorId int           `json:"creatorId"`
+		CreatorID int           `json:"creatorID"`
 		CreatedTs int64         `json:"createdTs"`
-		UpdaterId int           `json:"updaterId"`
+		UpdaterID int           `json:"updaterID"`
 		UpdatedTs int64         `json:"updatedTs"`
 		Type      PrincipalType `json:"type"`
 		Name      string        `json:"name"`
@@ -59,9 +59,9 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		Role      Role          `json:"role"`
 	}{
 		ID:        p.ID,
-		CreatorId: p.CreatorId,
+		CreatorID: p.CreatorID,
 		CreatedTs: p.CreatedTs,
-		UpdaterId: p.UpdaterId,
+		UpdaterID: p.UpdaterID,
 		UpdatedTs: p.UpdatedTs,
 		Type:      p.Type,
 		Name:      p.Name,
@@ -74,7 +74,7 @@ type PrincipalCreate struct {
 	// Standard fields
 	// For signup, value is SYSTEM_BOT_ID
 	// For invite, value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Domain specific fields
 	Type         PrincipalType
@@ -104,7 +104,7 @@ type PrincipalPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Name         *string `jsonapi:"attr,name"`

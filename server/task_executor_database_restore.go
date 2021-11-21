@@ -50,13 +50,13 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, err
 	}
 
-	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupId})
+	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
 
 	sourceDatabaseFind := &api.DatabaseFind{
-		ID: &backup.DatabaseId,
+		ID: &backup.DatabaseID,
 	}
 	sourceDatabase, err := server.ComposeDatabaseByFind(ctx, sourceDatabaseFind)
 	if err != nil {
@@ -64,7 +64,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 
 	targetDatabaseFind := &api.DatabaseFind{
-		InstanceId: &task.InstanceId,
+		InstanceID: &task.InstanceID,
 		Name:       &payload.DatabaseName,
 	}
 	targetDatabase, err := server.ComposeDatabaseByFind(ctx, targetDatabaseFind)
@@ -90,7 +90,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	// TODO(tianzhou): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationId, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l)
+	migrationID, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l)
 	if err != nil {
 		return true, nil, err
 	}
@@ -101,8 +101,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
 	databasePatch := &api.DatabasePatch{
 		ID:             targetDatabase.ID,
-		UpdaterId:      api.SYSTEM_BOT_ID,
-		SourceBackupId: &backup.ID,
+		UpdaterID:      api.SYSTEM_BOT_ID,
+		SourceBackupID: &backup.ID,
 	}
 	if _, err = server.DatabaseService.PatchDatabase(ctx, databasePatch); err != nil {
 		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
@@ -113,7 +113,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
-		MigrationId: migrationId,
+		MigrationID: migrationID,
 		Version:     version,
 	}, nil
 }
@@ -156,7 +156,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	defer targetDriver.Close(ctx)
 
 	issueFind := &api.IssueFind{
-		PipelineId: &task.PipelineId,
+		PipelineID: &task.PipelineID,
 	}
 	issue, err := server.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
@@ -167,17 +167,17 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 
 	// Add a branch migration history record.
-	issueId := ""
+	issueID := ""
 	if issue != nil {
-		issueId = strconv.Itoa(issue.ID)
+		issueID = strconv.Itoa(issue.ID)
 	}
 	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.Name)
-	if sourceDatabase.InstanceId != targetDatabase.InstanceId {
+	if sourceDatabase.InstanceID != targetDatabase.InstanceID {
 		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
 	}
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskId(task.ID),
+		Version:        defaultMigrationVersionFromTaskID(task.ID),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,
@@ -185,12 +185,12 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		Type:           db.Branch,
 		Description:    description,
 		Creator:        task.Creator.Name,
-		IssueId:        issueId,
+		IssueID:        issueID,
 		Payload:        "",
 	}
-	migrationId, _, err := targetDriver.ExecuteMigration(ctx, m, "")
+	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
 		return -1, "", fmt.Errorf("failed to create migration history: %w", err)
 	}
-	return migrationId, m.Version, nil
+	return migrationID, m.Version, nil
 }

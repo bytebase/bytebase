@@ -36,7 +36,7 @@ export default {
     const prepareActivityList = () => {
       store
         .dispatch("activity/fetchActivityListForProject", {
-          projectId: props.project.id,
+          projectID: props.project.id,
         })
         .then((list) => {
           state.activityList = list;

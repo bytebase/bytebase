@@ -1,5 +1,5 @@
 import { RowStatus } from "./common";
-import { MemberId, PrincipalId } from "./id";
+import { MemberID, PrincipalID } from "./id";
 import { Principal } from "./principal";
 
 export type MemberStatus = "INVITED" | "ACTIVE";
@@ -7,7 +7,7 @@ export type MemberStatus = "INVITED" | "ACTIVE";
 export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
 export type Member = {
-  id: MemberId;
+  id: MemberID;
 
   // Standard fields
   rowStatus: RowStatus;
@@ -24,7 +24,7 @@ export type Member = {
 
 export type MemberCreate = {
   // Domain specific fields
-  principalId: PrincipalId;
+  principalID: PrincipalID;
   status: MemberStatus;
   role: RoleType;
 };

@@ -398,7 +398,7 @@
       "
     >
       <AlterSchemaPrepForm
-        :projectId="projectId"
+        :projectID="projectID"
         @dismiss="state.showModal = false"
       />
     </template>
@@ -406,7 +406,7 @@
       v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
     >
       <CreateDatabasePrepForm
-        :projectId="projectId"
+        :projectID="projectID"
         @dismiss="state.showModal = false"
       />
     </template>
@@ -421,7 +421,7 @@
       "
     >
       <TransferDatabaseForm
-        :projectId="projectId"
+        :projectID="projectID"
         @dismiss="state.showModal = false"
       />
     </template>
@@ -438,7 +438,7 @@ import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
+import { DEFAULT_PROJECT_ID, ProjectID, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 
 interface LocalState {
@@ -475,7 +475,7 @@ export default {
       quickActionType: "quickaction.bb.instance.create",
     });
 
-    const projectId = computed((): ProjectId | undefined => {
+    const projectID = computed((): ProjectID | undefined => {
       if (router.currentRoute.value.name == "workspace.project.detail") {
         const parts = router.currentRoute.value.path.split("/");
         return idFromSlug(parts[parts.length - 1]);
@@ -544,7 +544,7 @@ export default {
 
     return {
       state,
-      projectId,
+      projectID,
       createProject,
       goDefaultProject,
       transferDatabase,

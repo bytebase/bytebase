@@ -21,7 +21,7 @@ type TaskCheckDatabaseConnectExecutor struct {
 
 func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	taskFind := &api.TaskFind{
-		ID: &taskCheckRun.TaskId,
+		ID: &taskCheckRun.TaskID,
 	}
 	task, err := server.TaskService.FindTask(ctx, taskFind)
 	if err != nil {
@@ -29,7 +29,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	}
 
 	databaseFind := &api.DatabaseFind{
-		ID: task.DatabaseId,
+		ID: task.DatabaseID,
 	}
 	database, err := server.ComposeDatabaseByFind(ctx, databaseFind)
 	if err != nil {

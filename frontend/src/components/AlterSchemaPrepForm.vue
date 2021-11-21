@@ -1,6 +1,6 @@
 <template>
   <div class="mx-4 space-y-4 w-160">
-    <template v-if="projectId">
+    <template v-if="projectID">
       <div v-if="state.project.workflowType == 'VCS'" class="textlabel">
         This project has version control enabled and selecting database below
         will navigate you to the corresponding Git repository to create schema
@@ -32,7 +32,7 @@
     </template>
 
     <div
-      v-if="projectId && state.project.workflowType == 'UI'"
+      v-if="projectID && state.project.workflowType == 'UI'"
       class="mt-2 textlabel"
     >
       <div class="radio-set-row">
@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <template v-if="projectId && state.alterType == 'MULTI_DB'">
+    <template v-if="projectID && state.alterType == 'MULTI_DB'">
       <div class="textinfolabel">
         For each environment, your can select a database to alter its schema or
         just skip that environment. This allows you to compose a single pipeline
@@ -96,12 +96,12 @@
                     type="radio"
                     class="btn"
                     :checked="
-                      state.selectedDatabaseIdForEnvironment.get(
+                      state.selectedDatabaseIDForEnvironment.get(
                         environment.id
                       ) == database.id
                     "
                     @change="
-                      selectDatabaseIdForEnvironment(
+                      selectDatabaseIDForEnvironment(
                         database.id,
                         environment.id
                       )
@@ -154,11 +154,11 @@
                   type="radio"
                   class="btn"
                   :checked="
-                    state.selectedDatabaseIdForEnvironment.get(environment.id)
+                    state.selectedDatabaseIDForEnvironment.get(environment.id)
                       ? 0
                       : 1
                   "
-                  @input="clearDatabaseIdForEnvironment(environment.id)"
+                  @input="clearDatabaseIDForEnvironment(environment.id)"
                 />
                 <span class="ml-3 font-medium text-main">SKIP</span>
               </div>
@@ -169,7 +169,7 @@
     </template>
     <template v-else>
       <DatabaseTable
-        :mode="projectId ? 'PROJECT_SHORT' : 'ALL_SHORT'"
+        :mode="projectID ? 'PROJECT_SHORT' : 'ALL_SHORT'"
         :bordered="true"
         :customClick="true"
         :databaseList="databaseList"
@@ -205,10 +205,10 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import {
   baseDirectoryWebURL,
   Database,
-  DatabaseId,
-  EnvironmentId,
+  DatabaseID,
+  EnvironmentID,
   Project,
-  ProjectId,
+  ProjectID,
   Repository,
 } from "../types";
 import { sortDatabaseList } from "../utils";
@@ -219,15 +219,15 @@ type AlterType = "SINGLE_DB" | "MULTI_DB";
 interface LocalState {
   project?: Project;
   alterType: AlterType;
-  selectedDatabaseIdForEnvironment: Map<EnvironmentId, DatabaseId>;
+  selectedDatabaseIDForEnvironment: Map<EnvironmentID, DatabaseID>;
 }
 
 export default {
   name: "AlterSchemaPrepForm",
   emits: ["dismiss"],
   props: {
-    projectId: {
-      type: Number as PropType<ProjectId>,
+    projectID: {
+      type: Number as PropType<ProjectID>,
     },
   },
   components: {
@@ -254,11 +254,11 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      project: props.projectId
-        ? store.getters["project/projectById"](props.projectId)
+      project: props.projectID
+        ? store.getters["project/projectByID"](props.projectID)
         : undefined,
       alterType: "SINGLE_DB",
-      selectedDatabaseIdForEnvironment: new Map(),
+      selectedDatabaseIDForEnvironment: new Map(),
     });
 
     const environmentList = computed(() => {
@@ -267,12 +267,12 @@ export default {
 
     const databaseList = computed(() => {
       var list;
-      if (props.projectId) {
-        list = store.getters["database/databaseListByProjectId"](
-          props.projectId
+      if (props.projectID) {
+        list = store.getters["database/databaseListByProjectID"](
+          props.projectID
         );
       } else {
-        list = store.getters["database/databaseListByPrincipalId"](
+        list = store.getters["database/databaseListByPrincipalID"](
           currentUser.value.id
         );
       }
@@ -281,19 +281,19 @@ export default {
     });
 
     const allowGenerateMultiDb = computed(() => {
-      return state.selectedDatabaseIdForEnvironment.size > 0;
+      return state.selectedDatabaseIDForEnvironment.size > 0;
     });
 
     const generateMultDb = () => {
-      const databaseIdList: DatabaseId[] = [];
+      const databaseIDList: DatabaseID[] = [];
       for (var i = 0; i < environmentList.value.length; i++) {
         if (
-          state.selectedDatabaseIdForEnvironment.get(
+          state.selectedDatabaseIDForEnvironment.get(
             environmentList.value[i].id
           )
         ) {
-          databaseIdList.push(
-            state.selectedDatabaseIdForEnvironment.get(
+          databaseIDList.push(
+            state.selectedDatabaseIDForEnvironment.get(
               environmentList.value[i].id
             )!
           );
@@ -307,8 +307,8 @@ export default {
         query: {
           template: "bb.issue.database.schema.update",
           name: `Alter schema`,
-          project: props.projectId,
-          databaseList: databaseIdList.join(","),
+          project: props.projectID,
+          databaseList: databaseIDList.join(","),
         },
       });
     };
@@ -332,7 +332,7 @@ export default {
       } else if (database.project.workflowType == "VCS") {
         store
           .dispatch(
-            "repository/fetchRepositoryByProjectId",
+            "repository/fetchRepositoryByProjectID",
             database.project.id
           )
           .then((repository: Repository) => {
@@ -341,15 +341,15 @@ export default {
       }
     };
 
-    const selectDatabaseIdForEnvironment = (
-      databaseId: DatabaseId,
-      environmentId: EnvironmentId
+    const selectDatabaseIDForEnvironment = (
+      databaseID: DatabaseID,
+      environmentID: EnvironmentID
     ) => {
-      state.selectedDatabaseIdForEnvironment.set(environmentId, databaseId);
+      state.selectedDatabaseIDForEnvironment.set(environmentID, databaseID);
     };
 
-    const clearDatabaseIdForEnvironment = (environmentId: EnvironmentId) => {
-      state.selectedDatabaseIdForEnvironment.delete(environmentId);
+    const clearDatabaseIDForEnvironment = (environmentID: EnvironmentID) => {
+      state.selectedDatabaseIDForEnvironment.delete(environmentID);
     };
 
     const cancel = () => {
@@ -363,8 +363,8 @@ export default {
       allowGenerateMultiDb,
       generateMultDb,
       selectDatabase,
-      selectDatabaseIdForEnvironment,
-      clearDatabaseIdForEnvironment,
+      selectDatabaseIDForEnvironment,
+      clearDatabaseIDForEnvironment,
       cancel,
     };
   },

@@ -133,11 +133,11 @@
             class="mt-1 w-64"
             :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
-            :environmentId="environmentId"
-            :selectedId="fieldValue(field) || UNKNOWN_ID"
+            :environmentID="environmentID"
+            :selectedID="fieldValue(field) || UNKNOWN_ID"
             @select-database-id="
-              (databaseId) => {
-                trySaveCustomField(field, databaseId);
+              (databaseID) => {
+                trySaveCustomField(field, databaseID);
               }
             "
           />
@@ -169,8 +169,8 @@ import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { activeEnvironment, fullDatabasePath } from "../utils";
-import { OutputField, IssueBuiltinFieldId, IssueContext } from "../plugins";
-import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
+import { OutputField, IssueBuiltinFieldID, IssueContext } from "../plugins";
+import { DatabaseID, EnvironmentID, Issue, UNKNOWN_ID } from "../types";
 
 interface LocalState {}
 
@@ -200,7 +200,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentId = computed((): EnvironmentId => {
+    const environmentID = computed((): EnvironmentID => {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
@@ -257,7 +257,7 @@ export default {
 
     const trySaveCustomField = (
       field: OutputField,
-      value: string | DatabaseId
+      value: string | DatabaseID
     ) => {
       if (!isEqual(value, fieldValue(field))) {
         emit("update-custom-field", field, value);
@@ -267,7 +267,7 @@ export default {
     return {
       UNKNOWN_ID,
       state,
-      environmentId,
+      environmentID,
       fieldValue,
       issueContext,
       allowEditDatabase,

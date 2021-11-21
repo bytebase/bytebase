@@ -2,12 +2,12 @@ import axios from "axios";
 import {
   Activity,
   ActivityCreate,
-  ActivityId,
+  ActivityID,
   ActivityPatch,
   ActivityState,
-  IssueId,
-  PrincipalId,
-  ProjectId,
+  IssueID,
+  PrincipalID,
+  ProjectID,
   ResourceObject,
 } from "../../types";
 
@@ -41,40 +41,40 @@ const getters = {
 
   activityListByUser:
     (state: ActivityState) =>
-    (userId: PrincipalId): Activity[] => {
-      return state.activityListByUser.get(userId) || [];
+    (userID: PrincipalID): Activity[] => {
+      return state.activityListByUser.get(userID) || [];
     },
   activityListByIssue:
     (state: ActivityState) =>
-    (issueId: IssueId): Activity[] => {
-      return state.activityListByIssue.get(issueId) || [];
+    (issueID: IssueID): Activity[] => {
+      return state.activityListByIssue.get(issueID) || [];
     },
 };
 
 const actions = {
   async fetchActivityListForUser(
     { commit, rootGetters }: any,
-    userId: PrincipalId
+    userID: PrincipalID
   ) {
     const data = (await axios.get(`/api/activity`)).data;
     const activityList = data.data.map((activity: ResourceObject) => {
       return convert(activity, data.included, rootGetters);
     });
 
-    commit("setActivityListForUser", { userId, activityList });
+    commit("setActivityListForUser", { userID, activityList });
     return activityList;
   },
 
   async fetchActivityListForIssue(
     { commit, rootGetters }: any,
-    issueId: IssueId
+    issueID: IssueID
   ) {
-    const data = (await axios.get(`/api/activity?container=${issueId}`)).data;
+    const data = (await axios.get(`/api/activity?container=${issueID}`)).data;
     const activityList = data.data.map((activity: ResourceObject) => {
       return convert(activity, data.included, rootGetters);
     });
 
-    commit("setActivityListForIssue", { issueId, activityList });
+    commit("setActivityListForIssue", { issueID, activityList });
     return activityList;
   },
 
@@ -82,14 +82,14 @@ const actions = {
   async fetchActivityListForProject(
     { rootGetters }: any,
     {
-      projectId,
+      projectID,
       limit,
     }: {
-      projectId: ProjectId;
+      projectID: ProjectID;
       limit?: number;
     }
   ) {
-    var queryList = [`container=${projectId}`];
+    var queryList = [`container=${projectID}`];
     if (limit) {
       queryList.push(`limit=${limit}`);
     }
@@ -121,7 +121,7 @@ const actions = {
 
     // There might exist other activities happened since the last fetch, so we do a full refetch.
     if (newActivity.type.startsWith("bb.issue.")) {
-      dispatch("fetchActivityListForIssue", newActivity.containerId);
+      dispatch("fetchActivityListForIssue", newActivity.containerID);
     }
 
     return createdActivity;
@@ -130,10 +130,10 @@ const actions = {
   async updateComment(
     { dispatch, rootGetters }: any,
     {
-      activityId,
+      activityID,
       updatedComment,
     }: {
-      activityId: ActivityId;
+      activityID: ActivityID;
       updatedComment: string;
     }
   ) {
@@ -141,7 +141,7 @@ const actions = {
       comment: updatedComment,
     };
     const data = (
-      await axios.patch(`/api/activity/${activityId}`, {
+      await axios.patch(`/api/activity/${activityID}`, {
         data: {
           type: "activityPatch",
           attributes: activityPatch,
@@ -150,7 +150,7 @@ const actions = {
     ).data;
     const updatedActivity = convert(data.data, data.included, rootGetters);
 
-    dispatch("fetchActivityListForIssue", updatedActivity.containerId);
+    dispatch("fetchActivityListForIssue", updatedActivity.containerID);
 
     return updatedActivity;
   },
@@ -159,7 +159,7 @@ const actions = {
     await axios.delete(`/api/activity/${activity.id}`);
 
     if (activity.type.startsWith("bb.issue.")) {
-      dispatch("fetchActivityListForIssue", activity.containerId);
+      dispatch("fetchActivityListForIssue", activity.containerID);
     }
   },
 };
@@ -168,27 +168,27 @@ const mutations = {
   setActivityListForUser(
     state: ActivityState,
     {
-      userId,
+      userID,
       activityList,
     }: {
-      userId: PrincipalId;
+      userID: PrincipalID;
       activityList: Activity[];
     }
   ) {
-    state.activityListByUser.set(userId, activityList);
+    state.activityListByUser.set(userID, activityList);
   },
 
   setActivityListForIssue(
     state: ActivityState,
     {
-      issueId,
+      issueID,
       activityList,
     }: {
-      issueId: IssueId;
+      issueID: IssueID;
       activityList: Activity[];
     }
   ) {
-    state.activityListByIssue.set(issueId, activityList);
+    state.activityListByIssue.set(issueID, activityList);
   },
 };
 

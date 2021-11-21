@@ -1,11 +1,11 @@
 import axios from "axios";
 import {
-  PrincipalId,
+  PrincipalID,
   IssueSubscriber,
   IssueSubscriberState,
   ResourceObject,
   Principal,
-  IssueId,
+  IssueID,
 } from "../../types";
 
 function convert(
@@ -13,7 +13,7 @@ function convert(
   rootGetters: any
 ): IssueSubscriber {
   return {
-    issueId: issueSubscriber.attributes.issueId as IssueId,
+    issueID: issueSubscriber.attributes.issueID as IssueID,
     subscriber: issueSubscriber.attributes.subscriber as Principal,
   };
 }
@@ -25,23 +25,23 @@ const state: () => IssueSubscriberState = () => ({
 const getters = {
   subscriberListByIssue:
     (state: IssueSubscriberState) =>
-    (issueId: IssueId): IssueSubscriber[] => {
-      return state.subscriberListByIssue.get(issueId) || [];
+    (issueID: IssueID): IssueSubscriber[] => {
+      return state.subscriberListByIssue.get(issueID) || [];
     },
 };
 
 const actions = {
   async fetchSubscriberListByIssue(
     { commit, rootGetters }: any,
-    issueId: IssueId
+    issueID: IssueID
   ) {
     const subscriberList = (
-      await axios.get(`/api/issue/${issueId}/subscriber`)
+      await axios.get(`/api/issue/${issueID}/subscriber`)
     ).data.data.map((issueSubscriber: ResourceObject) => {
       return convert(issueSubscriber, rootGetters);
     });
-    commit("setSubscriberListByIssueId", {
-      issueId,
+    commit("setSubscriberListByIssueID", {
+      issueID,
       subscriberList,
     });
     return subscriberList;
@@ -50,20 +50,20 @@ const actions = {
   async createSubscriber(
     { commit, rootGetters }: any,
     {
-      issueId,
-      subscriberId,
+      issueID,
+      subscriberID,
     }: {
-      issueId: IssueId;
-      subscriberId: PrincipalId;
+      issueID: IssueID;
+      subscriberID: PrincipalID;
     }
   ) {
     const createdIssueSubscriber = convert(
       (
-        await axios.post(`/api/issue/${issueId}/subscriber`, {
+        await axios.post(`/api/issue/${issueID}/subscriber`, {
           data: {
             type: "issueSubscriber",
             attributes: {
-              subscriberId,
+              subscriberID,
             },
           },
         })
@@ -71,8 +71,8 @@ const actions = {
       rootGetters
     );
 
-    commit("upsertSubsriberListByIssueId", {
-      issueId,
+    commit("upsertSubsriberListByIssueID", {
+      issueID,
       subscriber: createdIssueSubscriber,
     });
 
@@ -82,44 +82,44 @@ const actions = {
   async deleteSubscriber(
     { commit }: any,
     {
-      issueId,
-      subscriberId,
+      issueID,
+      subscriberID,
     }: {
-      issueId: IssueId;
-      subscriberId: PrincipalId;
+      issueID: IssueID;
+      subscriberID: PrincipalID;
     }
   ) {
-    await axios.delete(`/api/issue/${issueId}/subscriber/${subscriberId}`);
+    await axios.delete(`/api/issue/${issueID}/subscriber/${subscriberID}`);
 
-    commit("deleteIssueSubscriberByIssueId", { issueId, subscriberId });
+    commit("deleteIssueSubscriberByIssueID", { issueID, subscriberID });
   },
 };
 
 const mutations = {
-  setSubscriberListByIssueId(
+  setSubscriberListByIssueID(
     state: IssueSubscriberState,
     {
-      issueId,
+      issueID,
       subscriberList,
     }: {
-      issueId: IssueId;
+      issueID: IssueID;
       subscriberList: IssueSubscriber[];
     }
   ) {
-    state.subscriberListByIssue.set(issueId, subscriberList);
+    state.subscriberListByIssue.set(issueID, subscriberList);
   },
 
-  upsertSubsriberListByIssueId(
+  upsertSubsriberListByIssueID(
     state: IssueSubscriberState,
     {
-      issueId,
+      issueID,
       subscriber,
     }: {
-      issueId: IssueId;
+      issueID: IssueID;
       subscriber: IssueSubscriber;
     }
   ) {
-    const list = state.subscriberListByIssue.get(issueId);
+    const list = state.subscriberListByIssue.get(issueID);
     if (list) {
       const i = list.findIndex(
         (item: IssueSubscriber) =>
@@ -131,24 +131,24 @@ const mutations = {
         list.push(subscriber);
       }
     } else {
-      state.subscriberListByIssue.set(issueId, [subscriber]);
+      state.subscriberListByIssue.set(issueID, [subscriber]);
     }
   },
 
-  deleteIssueSubscriberByIssueId(
+  deleteIssueSubscriberByIssueID(
     state: IssueSubscriberState,
     {
-      issueId,
-      subscriberId,
+      issueID,
+      subscriberID,
     }: {
-      issueId: IssueId;
-      subscriberId: PrincipalId;
+      issueID: IssueID;
+      subscriberID: PrincipalID;
     }
   ) {
-    const list = state.subscriberListByIssue.get(issueId);
+    const list = state.subscriberListByIssue.get(issueID);
     if (list) {
       const i = list.findIndex(
-        (item: IssueSubscriber) => item.subscriber.id == subscriberId
+        (item: IssueSubscriber) => item.subscriber.id == subscriberID
       );
       if (i != -1) {
         list.splice(i, 1);

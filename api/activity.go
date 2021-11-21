@@ -97,7 +97,7 @@ type ActivityIssueCreatePayload struct {
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	// If we create a rollback issue, this field records the issue id to be rolled back.
-	RollbackIssueId int `json:"rollbackIssueId,omitempty"`
+	RollbackIssueID int `json:"rollbackIssueID,omitempty"`
 }
 
 type ActivityIssueCommentCreatePayload struct {
@@ -106,7 +106,7 @@ type ActivityIssueCommentCreatePayload struct {
 }
 
 type ActivityIssueFieldUpdatePayload struct {
-	FieldId  IssueFieldId `json:"fieldId"`
+	FieldID  IssueFieldID `json:"fieldID"`
 	OldValue string       `json:"oldValue,omitempty"`
 	NewValue string       `json:"newValue,omitempty"`
 	// Used by inbox to display info without paying the join cost
@@ -121,7 +121,7 @@ type ActivityIssueStatusUpdatePayload struct {
 }
 
 type ActivityPipelineTaskStatusUpdatePayload struct {
-	TaskId    int        `json:"taskId"`
+	TaskID    int        `json:"taskID"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
@@ -130,16 +130,16 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 }
 
 type ActivityPipelineTaskFileCommitPayload struct {
-	TaskId             int    `json:"taskId"`
+	TaskID             int    `json:"taskID"`
 	VCSInstanceURL     string `json:"vcsInstanceUrl,omitempty"`
 	RepositoryFullPath string `json:"repositoryFullPath,omitempty"`
 	Branch             string `json:"branch,omitempty"`
 	FilePath           string `json:"filePath,omitempty"`
-	CommitId           string `json:"commitId,omitempty"`
+	CommitID           string `json:"commitID,omitempty"`
 }
 
 type ActivityMemberCreatePayload struct {
-	PrincipalId    int          `json:"principalId"`
+	PrincipalID    int          `json:"principalID"`
 	PrincipalName  string       `json:"principalName"`
 	PrincipalEmail string       `json:"principalEmail"`
 	MemberStatus   MemberStatus `json:"memberStatus"`
@@ -147,7 +147,7 @@ type ActivityMemberCreatePayload struct {
 }
 
 type ActivityMemberRoleUpdatePayload struct {
-	PrincipalId    int    `json:"principalId"`
+	PrincipalID    int    `json:"principalID"`
 	PrincipalName  string `json:"principalName"`
 	PrincipalEmail string `json:"principalEmail"`
 	OldRole        Role   `json:"oldRole"`
@@ -155,7 +155,7 @@ type ActivityMemberRoleUpdatePayload struct {
 }
 
 type ActivityMemberActivateDeactivatePayload struct {
-	PrincipalId    int    `json:"principalId"`
+	PrincipalID    int    `json:"principalID"`
 	PrincipalName  string `json:"principalName"`
 	PrincipalEmail string `json:"principalEmail"`
 	Role           Role   `json:"role"`
@@ -164,13 +164,13 @@ type ActivityMemberActivateDeactivatePayload struct {
 type ActivityProjectRepositoryPushPayload struct {
 	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
 	// Used by activity table to display info without paying the join cost
-	// IssueId/IssueName only exist if the push event leads to the issue creation.
-	IssueId   int    `json:"issueId,omitempty"`
+	// IssueID/IssueName only exist if the push event leads to the issue creation.
+	IssueID   int    `json:"issueID,omitempty"`
 	IssueName string `json:"issueName,omitempty"`
 }
 
 type ActivityProjectDatabaseTransferPayload struct {
-	DatabaseId int `json:"databaseId,omitempty"`
+	DatabaseID int `json:"databaseID,omitempty"`
 	// Used by activity table to display info without paying the join cost
 	DatabaseName string `json:"databaseName,omitempty"`
 }
@@ -179,16 +179,16 @@ type Activity struct {
 	ID int `jsonapi:"primary,activity"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 	// Related fields
 	// The object where this activity belongs
 	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-	ContainerId int `jsonapi:"attr,containerId"`
+	ContainerID int `jsonapi:"attr,containerID"`
 
 	// Domain specific fields
 	Type    ActivityType  `jsonapi:"attr,type"`
@@ -200,10 +200,10 @@ type Activity struct {
 type ActivityCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Domain specific fields
-	ContainerId int          `jsonapi:"attr,containerId"`
+	ContainerID int          `jsonapi:"attr,containerID"`
 	Type        ActivityType `jsonapi:"attr,type"`
 	Level       ActivityLevel
 	Comment     string `jsonapi:"attr,comment"`
@@ -214,7 +214,7 @@ type ActivityFind struct {
 	ID *int
 
 	// Domain specific fields
-	ContainerId *int
+	ContainerID *int
 	Limit       *int
 }
 
@@ -231,7 +231,7 @@ type ActivityPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Comment *string `jsonapi:"attr,comment"`
@@ -242,7 +242,7 @@ type ActivityDelete struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
+	DeleterID int
 }
 
 type ActivityService interface {

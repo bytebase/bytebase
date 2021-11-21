@@ -92,7 +92,7 @@ export default {
         props.config.code = payload.code;
         const oAuthConfig: OAuthConfig = {
           endpoint: `${state.selectedVCS!.instanceURL}/oauth/token`,
-          applicationId: state.selectedVCS!.applicationId,
+          applicationID: state.selectedVCS!.applicationID,
           secret: state.selectedVCS!.secret,
           redirectURL: redirectURL(),
         };
@@ -127,7 +127,7 @@ export default {
       state.selectedVCS = vcs;
       const newWindow = openWindowForOAuth(
         `${vcs.instanceURL}/oauth/authorize`,
-        vcs.applicationId
+        vcs.applicationID
       );
       if (newWindow) {
         window.addEventListener(OAuthWindowEvent, eventListener, false);

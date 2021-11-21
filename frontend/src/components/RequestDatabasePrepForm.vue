@@ -9,10 +9,10 @@
           class="mt-1"
           id="project"
           name="project"
-          :selectedId="state.projectId"
+          :selectedID="state.projectID"
           @select-project-id="
-            (projectId) => {
-              state.projectId = projectId;
+            (projectID) => {
+              state.projectID = projectID;
             }
           "
         />
@@ -26,16 +26,16 @@
           class="mt-1 w-full"
           id="environment"
           name="environment"
-          :selectedId="state.environmentId"
+          :selectedID="state.environmentID"
           @select-environment-id="
-            (environmentId) => {
-              state.environmentId = environmentId;
+            (environmentID) => {
+              state.environmentID = environmentID;
             }
           "
         />
       </div>
 
-      <template v-if="state.environmentId">
+      <template v-if="state.environmentID">
         <div class="col-span-2 col-start-1 w-64 space-y-2">
           <div class="hidden radio-set-row justify-between">
             <div class="radio">
@@ -81,12 +81,12 @@
             />
             <div v-else class="flex flex-row space-x-4">
               <DatabaseSelect
-                :selectedId="state.databaseId"
+                :selectedID="state.databaseID"
                 :mode="'ENVIRONMENT'"
-                :environmentId="state.environmentId"
+                :environmentID="state.environmentID"
                 @select-database-id="
-                  (databaseId) => {
-                    state.databaseId = databaseId;
+                  (databaseID) => {
+                    state.databaseID = databaseID;
                   }
                 "
               />
@@ -132,16 +132,16 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
+import { DatabaseID, EnvironmentID, ProjectID, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 
 interface LocalState {
-  environmentId: EnvironmentId;
-  projectId: ProjectId;
+  environmentID: EnvironmentID;
+  projectID: ProjectID;
   // Radio button only accept string value
   create: "ON" | "OFF";
   databaseName: string;
-  databaseId: DatabaseId;
+  databaseID: DatabaseID;
   readonly: boolean;
 }
 
@@ -171,11 +171,11 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      environmentId: UNKNOWN_ID,
-      projectId: UNKNOWN_ID,
+      environmentID: UNKNOWN_ID,
+      projectID: UNKNOWN_ID,
       create: "ON",
       databaseName: "",
-      databaseId: UNKNOWN_ID,
+      databaseID: UNKNOWN_ID,
       readonly: true,
     });
 
@@ -184,12 +184,12 @@ export default {
         return false;
       }
 
-      if (!state.databaseId) {
+      if (!state.databaseID) {
         return false;
       }
 
       return allowDatabaseAccess(
-        store.getters["database/databaseById"](state.databaseId),
+        store.getters["database/databaseByID"](state.databaseID),
         currentUser.value,
         state.readonly ? "RO" : "RW"
       );
@@ -197,10 +197,10 @@ export default {
 
     const allowRequest = computed(() => {
       return (
-        state.environmentId != UNKNOWN_ID &&
-        state.projectId != UNKNOWN_ID &&
+        state.environmentID != UNKNOWN_ID &&
+        state.projectID != UNKNOWN_ID &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
-          (state.create == "OFF" && state.databaseId != UNKNOWN_ID)) &&
+          (state.create == "OFF" && state.databaseID != UNKNOWN_ID)) &&
         !alreadyGranted.value
       );
     });
@@ -212,8 +212,8 @@ export default {
     const request = () => {
       emit("dismiss");
 
-      const environment = store.getters["environment/environmentById"](
-        state.environmentId
+      const environment = store.getters["environment/environmentByID"](
+        state.environmentID
       );
       if (state.create == "ON") {
         router.push({
@@ -224,14 +224,14 @@ export default {
           query: {
             template: "bb.issue.database.create",
             name: `[${environment.name}] Request new database '${state.databaseName}'`,
-            environment: state.environmentId,
-            project: state.projectId,
+            environment: state.environmentID,
+            project: state.projectID,
             databaseName: state.databaseName,
           },
         });
       } else {
-        const database = store.getters["database/databaseById"](
-          state.databaseId
+        const database = store.getters["database/databaseByID"](
+          state.databaseID
         );
         router.push({
           name: "workspace.issue.detail",
@@ -243,9 +243,9 @@ export default {
             name: `[${environment.name}] Request database '${database.name}' ${
               state.readonly ? "Readonly access" : "Read & Write access"
             }`,
-            environment: state.environmentId,
-            project: state.projectId,
-            databaseList: state.databaseId,
+            environment: state.environmentID,
+            project: state.projectID,
+            databaseList: state.databaseID,
             readonly: state.readonly ? "true" : "false",
           },
         });

@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func (s *Server) ComposePipelineById(ctx context.Context, id int) (*api.Pipeline, error) {
+func (s *Server) ComposePipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
@@ -25,17 +25,17 @@ func (s *Server) ComposePipelineById(ctx context.Context, id int) (*api.Pipeline
 func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
-	pipeline.Creator, err = s.ComposePrincipalById(ctx, pipeline.CreatorId)
+	pipeline.Creator, err = s.ComposePrincipalByID(ctx, pipeline.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	pipeline.Updater, err = s.ComposePrincipalById(ctx, pipeline.UpdaterId)
+	pipeline.Updater, err = s.ComposePrincipalByID(ctx, pipeline.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	pipeline.StageList, err = s.ComposeStageListByPipelineId(ctx, pipeline.ID)
+	pipeline.StageList, err = s.ComposeStageListByPipelineID(ctx, pipeline.ID)
 	if err != nil {
 		return err
 	}

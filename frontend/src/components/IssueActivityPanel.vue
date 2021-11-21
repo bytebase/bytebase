@@ -344,14 +344,14 @@
                       <span
                         v-if="
                           activity.type == 'bb.issue.create' &&
-                          activity.payload.rollbackIssueId
+                          activity.payload.rollbackIssueID
                         "
                       >
                         (rollback
                         <router-link
-                          :to="`/issue/${activity.payload.rollbackIssueId}`"
+                          :to="`/issue/${activity.payload.rollbackIssueID}`"
                           class="normal-link"
-                          >{{ `issue/${activity.payload.rollbackIssueId}` }}
+                          >{{ `issue/${activity.payload.rollbackIssueID}` }}
                         </router-link>
                         )
                       </span>
@@ -496,7 +496,7 @@
                       v-if="activity.type == 'bb.pipeline.task.file.commit'"
                     >
                       <a
-                        :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
+                        :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitID}`"
                         target="__blank"
                         class="normal-link flex flex-row items-center"
                         >View commit
@@ -631,14 +631,14 @@ import {
   ActivityTaskFileCommitPayload,
 } from "../types";
 import {
-  findTaskById,
+  findTaskByID,
   issueActivityActionSentence,
   issueSlug,
   sizeToFit,
   stageSlug,
   taskSlug,
 } from "../utils";
-import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
+import { IssueTemplate, IssueBuiltinFieldID } from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -746,8 +746,8 @@ export default {
       return list.filter((activity: Activity) => {
         if (activity.type == "bb.issue.field.update") {
           let containUserVisibleChange =
-            (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
-            IssueBuiltinFieldId.SUBSCRIBER_LIST;
+            (activity.payload as ActivityIssueFieldUpdatePayload).fieldID !=
+            IssueBuiltinFieldID.SUBSCRIBER_LIST;
           return containUserVisibleChange;
         }
         return true;
@@ -769,7 +769,7 @@ export default {
     const doCreateComment = () => {
       const createActivity: ActivityCreate = {
         type: "bb.issue.comment.create",
-        containerId: props.issue.id,
+        containerID: props.issue.id,
         comment: newComment.value,
       };
       store.dispatch("activity/createActivity", createActivity).then(() => {
@@ -808,7 +808,7 @@ export default {
     const doUpdateComment = () => {
       const activityPatch = store
         .dispatch("activity/updateComment", {
-          activityId: state.activeActivity!.id,
+          activityID: state.activeActivity!.id,
           updatedComment: editComment.value,
         })
         .then(() => {
@@ -870,7 +870,7 @@ export default {
         if (activity.type == "bb.pipeline.task.status.update") {
           if (props.issue.pipeline.id != EMPTY_ID) {
             const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-            const task = findTaskById(props.issue.pipeline, payload.taskId);
+            const task = findTaskByID(props.issue.pipeline, payload.taskID);
             var link = "";
             if (task.id != UNKNOWN_ID) {
               link = `/issue/${issueSlug(
@@ -924,7 +924,7 @@ export default {
           if (activity.creator.id != SYSTEM_BOT_ID) {
             // If creator is not the robot (which means we do NOT use task name in the subject),
             // then we append the task name here.
-            const task = findTaskById(props.issue.pipeline, payload.taskId);
+            const task = findTaskByID(props.issue.pipeline, payload.taskID);
             str += ` task ${task.name}`;
           }
           return str;

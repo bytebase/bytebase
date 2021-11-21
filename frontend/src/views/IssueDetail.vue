@@ -79,7 +79,7 @@
         :create="state.create"
         :pipeline="issue.pipeline"
         :selectedStage="selectedStage"
-        @select-stage-id="selectStageId"
+        @select-stage-id="selectStageID"
       />
       <div v-if="!state.create" class="px-4 py-4 md:flex md:flex-col border-b">
         <IssueStagePanel :stage="selectedStage" />
@@ -129,11 +129,11 @@
               :selectedStage="selectedStage"
               :inputFieldList="issueTemplate.inputFieldList"
               :allowEdit="allowEditSidebar"
-              @update-assignee-id="updateAssigneeId"
-              @add-subscriber-id="addSubscriberId"
-              @remove-subscriber-id="removeSubscriberId"
+              @update-assignee-id="updateAssigneeID"
+              @add-subscriber-id="addSubscriberID"
+              @remove-subscriber-id="removeSubscriberID"
               @update-custom-field="updateCustomField"
-              @select-stage-id="selectStageId"
+              @select-stage-id="selectStageID"
             />
           </div>
           <div class="lg:hidden border-t border-block-border" />
@@ -230,7 +230,7 @@
               <IssueActivityPanel
                 :issue="issue"
                 :issueTemplate="issueTemplate"
-                @add-subscriber-id="addSubscriberId"
+                @add-subscriber-id="addSubscriberID"
               />
             </section>
           </div>
@@ -264,7 +264,7 @@ import {
   activeStage,
   stageSlug,
   activeTask,
-  findTaskById,
+  findTaskByID,
 } from "../utils";
 import IssueHighlightPanel from "../components/IssueHighlightPanel.vue";
 import IssueStagePanel from "../components/IssueStagePanel.vue";
@@ -282,14 +282,14 @@ import {
   IssueCreate,
   IssueType,
   IssuePatch,
-  PrincipalId,
+  PrincipalID,
   Database,
   Instance,
   Environment,
   Stage,
-  StageId,
+  StageID,
   IssueStatus,
-  TaskId,
+  TaskID,
   TaskStatusPatch,
   TaskStatus,
   IssueStatusPatch,
@@ -303,7 +303,7 @@ import {
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   Project,
-  IssueId,
+  IssueID,
   MigrationType,
   TaskPatch,
   Policy,
@@ -393,7 +393,7 @@ export default {
 
       // Create rollback issue
       if (router.currentRoute.value.query.rollbackIssue) {
-        const rollbackIssue: Issue = store.getters["issue/issueById"](
+        const rollbackIssue: Issue = store.getters["issue/issueByID"](
           parseInt(router.currentRoute.value.query.rollbackIssue as string)
         );
 
@@ -466,7 +466,7 @@ export default {
               ) {
                 environmentList.push(stage.environment);
                 approvalPolicyList.push(
-                  store.getters["policy/policyByEnvironmentIdAndType"](
+                  store.getters["policy/policyByEnvironmentIDAndType"](
                     stage.environment.id,
                     "bb.policy.pipeline-approval"
                   )
@@ -492,7 +492,7 @@ export default {
                 currentUser: currentUser.value,
               }),
               name: "INVALID STATE, no applicable update schema task to rollback.",
-              projectId: UNKNOWN_ID,
+              projectID: UNKNOWN_ID,
             };
           } else {
             newIssue = {
@@ -504,12 +504,12 @@ export default {
                 rollbackStatementList,
                 currentUser: currentUser.value,
               }),
-              projectId: rollbackIssue.project.id,
+              projectID: rollbackIssue.project.id,
               name: `[Rollback] issue/${rollbackIssue.id} - ${rollbackIssue.name}`,
               description: rollbackIssue.description
                 ? `====Original issue description BEGIN====\n\n${rollbackIssue.description}\n\n====Original issue description END====\n\n`
                 : "",
-              assigneeId: rollbackIssue.assignee.id,
+              assigneeID: rollbackIssue.assignee.id,
             };
           }
         } else {
@@ -521,20 +521,20 @@ export default {
               currentUser: currentUser.value,
             }),
             name: title,
-            projectId: UNKNOWN_ID,
+            projectID: UNKNOWN_ID,
           };
         }
-        newIssue.rollbackIssueId = rollbackIssue.id;
+        newIssue.rollbackIssueID = rollbackIssue.id;
       }
       // Create issue from normal query parameter
       else {
         const databaseList: Database[] = [];
         if (router.currentRoute.value.query.databaseList) {
-          for (const databaseId of (
+          for (const databaseID of (
             router.currentRoute.value.query.databaseList as string
           ).split(","))
             databaseList.push(
-              store.getters["database/databaseById"](databaseId)
+              store.getters["database/databaseByID"](databaseID)
             );
         }
 
@@ -542,7 +542,7 @@ export default {
         const approvalPolicyList: Policy[] = [];
         if (router.currentRoute.value.query.environment) {
           environmentList.push(
-            store.getters["environment/environmentById"](
+            store.getters["environment/environmentByID"](
               router.currentRoute.value.query.environment
             )
           );
@@ -558,7 +558,7 @@ export default {
 
         for (const environment of environmentList) {
           approvalPolicyList.push(
-            store.getters["policy/policyByEnvironmentIdAndType"](
+            store.getters["policy/policyByEnvironmentIDAndType"](
               environment.id,
               "bb.policy.pipeline-approval"
             )
@@ -572,14 +572,14 @@ export default {
             databaseList,
             currentUser: currentUser.value,
           }),
-          projectId: router.currentRoute.value.query.project
+          projectID: router.currentRoute.value.query.project
             ? parseInt(router.currentRoute.value.query.project as string)
             : UNKNOWN_ID,
         };
 
         // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
         if (store.getters["actuator/isDemo"]()) {
-          newIssue.assigneeId = currentUser.value.id;
+          newIssue.assigneeID = currentUser.value.id;
         }
 
         if (router.currentRoute.value.query.name) {
@@ -590,7 +590,7 @@ export default {
             .description as string;
         }
         if (router.currentRoute.value.query.assignee) {
-          newIssue.assigneeId = parseInt(
+          newIssue.assigneeID = parseInt(
             router.currentRoute.value.query.assignee as string
           );
         }
@@ -623,7 +623,7 @@ export default {
       }
 
       state.pollIssueTimer = setTimeout(() => {
-        store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
+        store.dispatch("issue/fetchIssueByID", idFromSlug(props.issueSlug));
         pollIssue(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
       }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
@@ -677,7 +677,7 @@ export default {
     const issue = computed((): Issue | IssueCreate => {
       return state.create
         ? state.newIssue
-        : store.getters["issue/issueById"](idFromSlug(props.issueSlug));
+        : store.getters["issue/issueByID"](idFromSlug(props.issueSlug));
     });
 
     const issueTemplate = computed(
@@ -686,8 +686,8 @@ export default {
 
     const project = computed((): Project => {
       if (state.create) {
-        return store.getters["project/projectById"](
-          (issue.value as IssueCreate).projectId
+        return store.getters["project/projectByID"](
+          (issue.value as IssueCreate).projectID
         );
       }
       return (issue.value as Issue).project;
@@ -772,27 +772,27 @@ export default {
       }
     };
 
-    const updateAssigneeId = (newAssigneeId: PrincipalId) => {
+    const updateAssigneeID = (newAssigneeID: PrincipalID) => {
       if (state.create) {
-        state.newIssue!.assigneeId = newAssigneeId;
+        state.newIssue!.assigneeID = newAssigneeID;
       } else {
         patchIssue({
-          assigneeId: newAssigneeId,
+          assigneeID: newAssigneeID,
         });
       }
     };
 
-    const addSubscriberId = (subscriberId: PrincipalId) => {
+    const addSubscriberID = (subscriberID: PrincipalID) => {
       store.dispatch("issueSubscriber/createSubscriber", {
-        issueId: (issue.value as Issue).id,
-        subscriberId,
+        issueID: (issue.value as Issue).id,
+        subscriberID,
       });
     };
 
-    const removeSubscriberId = (subscriberId: PrincipalId) => {
+    const removeSubscriberID = (subscriberID: PrincipalID) => {
       store.dispatch("issueSubscriber/deleteSubscriber", {
-        issueId: (issue.value as Issue).id,
-        subscriberId,
+        issueID: (issue.value as Issue).id,
+        subscriberID,
       });
     };
 
@@ -842,7 +842,7 @@ export default {
 
       store
         .dispatch("issue/updateIssueStatus", {
-          issueId: (issue.value as Issue).id,
+          issueID: (issue.value as Issue).id,
           issueStatusPatch,
         })
         .then(() => {
@@ -856,7 +856,7 @@ export default {
       comment: string
     ) => {
       // Switch to the stage view containing this task
-      selectStageId(task.stage.id);
+      selectStageID(task.stage.id);
 
       const taskStatusPatch: TaskStatusPatch = {
         status: newStatus,
@@ -865,9 +865,9 @@ export default {
 
       store
         .dispatch("task/updateStatus", {
-          issueId: (issue.value as Issue).id,
-          pipelineId: (issue.value as Issue).pipeline.id,
-          taskId: task.id,
+          issueID: (issue.value as Issue).id,
+          pipelineID: (issue.value as Issue).pipeline.id,
+          taskID: task.id,
           taskStatusPatch,
         })
         .then(() => {
@@ -878,9 +878,9 @@ export default {
     const runTaskChecks = (task: Task) => {
       store
         .dispatch("task/runChecks", {
-          issueId: (issue.value as Issue).id,
-          pipelineId: (issue.value as Issue).pipeline.id,
-          taskId: task.id,
+          issueID: (issue.value as Issue).id,
+          pipelineID: (issue.value as Issue).pipeline.id,
+          taskID: task.id,
         })
         .then(() => {
           pollIssue(POST_CHANGE_POLL_INTERVAL);
@@ -893,7 +893,7 @@ export default {
     ) => {
       store
         .dispatch("issue/patchIssue", {
-          issueId: (issue.value as Issue).id,
+          issueID: (issue.value as Issue).id,
           issuePatch,
         })
         .then((updatedIssue) => {
@@ -907,15 +907,15 @@ export default {
     };
 
     const patchTask = (
-      taskId: TaskId,
+      taskID: TaskID,
       taskPatch: TaskPatch,
       postUpdated?: (updatedTask: Task) => void
     ) => {
       store
         .dispatch("task/patchTask", {
-          issueId: (issue.value as Issue).id,
-          pipelineId: (issue.value as Issue).pipeline.id,
-          taskId,
+          issueID: (issue.value as Issue).id,
+          pipelineID: (issue.value as Issue).pipeline.id,
+          taskID,
           taskPatch,
         })
         .then((updatedTask) => {
@@ -937,25 +937,25 @@ export default {
       const taskSlug = router.currentRoute.value.query.task as string;
       // For stage slug, we support both index based and id based.
       // Index based is used when creating the new task and is the one used when clicking the UI.
-      // Id based is used when the context only has access to the stage id (e.g. Task only contains StageId)
+      // Id based is used when the context only has access to the stage id (e.g. Task only contains StageID)
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
         if (index < issue.value.pipeline.stageList.length) {
           return issue.value.pipeline.stageList[index];
         }
-        const stageId = idFromSlug(stageSlug);
+        const stageID = idFromSlug(stageSlug);
         const stageList = (issue.value as Issue).pipeline.stageList;
         for (const stage of stageList) {
-          if (stage.id == stageId) {
+          if (stage.id == stageID) {
             return stage;
           }
         }
       } else if (!state.create && taskSlug) {
-        const taskId = idFromSlug(taskSlug);
+        const taskID = idFromSlug(taskSlug);
         const stageList = (issue.value as Issue).pipeline.stageList;
         for (const stage of stageList) {
           for (const task of stage.taskList) {
-            if (task.id == taskId) {
+            if (task.id == taskID) {
               return stage;
             }
           }
@@ -968,13 +968,13 @@ export default {
       return activeStage((issue.value as Issue).pipeline);
     });
 
-    const selectStageId = (stageId: StageId) => {
+    const selectStageID = (stageID: StageID) => {
       const stageList = issue.value.pipeline.stageList;
       const index = stageList.findIndex((item, index) => {
         if (state.create) {
-          return index == stageId;
+          return index == stageID;
         }
-        return (item as Stage).id == stageId;
+        return (item as Stage).id == stageID;
       });
       router.replace({
         name: "workspace.issue.detail",
@@ -1179,9 +1179,9 @@ export default {
       const temp = selectedStage as unknown;
       if (create) {
         const stage = temp as ComputedRef<StageCreate>;
-        const databaseId = stage.value.taskList[0].databaseId;
-        if (databaseId) {
-          return store.getters["database/databaseById"](databaseId);
+        const databaseID = stage.value.taskList[0].databaseID;
+        if (databaseID) {
+          return store.getters["database/databaseByID"](databaseID);
         }
 
         return undefined;
@@ -1194,13 +1194,13 @@ export default {
       const temp = selectedStage as unknown;
       if (create) {
         // If database is available, then we derive the instance from database because we always fetch database's instance.
-        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
+        // On the other hand, instance for stage.taskList[0].instanceID might not be loaded (e.g. when creating an update schema issue)
         if (database.value) {
           return database.value.instance;
         }
         const stage = temp as ComputedRef<StageCreate>;
-        return store.getters["instance/instanceById"](
-          stage.value.taskList[0].instanceId
+        return store.getters["instance/instanceByID"](
+          stage.value.taskList[0].instanceID
         );
       }
       const stage = temp as ComputedRef<Stage>;
@@ -1229,9 +1229,9 @@ export default {
       applyStatementToOtherStages,
       updateRollbackStatement,
       applyRollbackStatementToOtherStages,
-      updateAssigneeId,
-      addSubscriberId,
-      removeSubscriberId,
+      updateAssigneeID,
+      addSubscriberID,
+      removeSubscriberID,
       updateCustomField,
       doCreate,
       doRollback,
@@ -1243,7 +1243,7 @@ export default {
       issueTemplate,
       selectedStage,
       selectedTask,
-      selectStageId,
+      selectStageID,
       statement,
       rollbackStatement,
       selectedStatement,

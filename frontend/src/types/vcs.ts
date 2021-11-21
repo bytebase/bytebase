@@ -1,4 +1,4 @@
-import { VCSId } from "./id";
+import { VCSID } from "./id";
 import { Principal } from "./principal";
 
 export type VCSType = "GITLAB_SELF_HOST";
@@ -7,12 +7,12 @@ export interface VCSConfig {
   type: VCSType;
   name: string;
   instanceURL: string;
-  applicationId: string;
+  applicationID: string;
   secret: string;
 }
 
 export type VCS = {
-  id: VCSId;
+  id: VCSID;
 
   // Standard fields
   creator: Principal;
@@ -25,7 +25,7 @@ export type VCS = {
   type: VCSType;
   instanceURL: string;
   apiURL: string;
-  applicationId: string;
+  applicationID: string;
   secret: string;
 };
 
@@ -34,14 +34,14 @@ export type VCSCreate = {
   name: string;
   type: VCSType;
   instanceURL: string;
-  applicationId: string;
+  applicationID: string;
   secret: string;
 };
 
 export type VCSPatch = {
   // Domain specific fields
   name?: string;
-  applicationId?: string;
+  applicationID?: string;
   secret?: string;
 };
 
@@ -63,13 +63,13 @@ export type VCSFileCommit = {
 export type VCSPushEvent = {
   vcsType: VCSType;
   ref: string;
-  repositoryId: string;
+  repositoryID: string;
   repositoryUrl: string;
   repositoryFullPath: string;
   authorName: string;
   fileCommit: VCSFileCommit;
 };
 
-export function isValidVCSApplicationIdOrSecret(str: string): boolean {
+export function isValidVCSApplicationIDOrSecret(str: string): boolean {
   return /^[a-zA-Z0-9_]{64}$/.test(str);
 }

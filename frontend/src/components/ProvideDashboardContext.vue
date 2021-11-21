@@ -28,7 +28,7 @@ export default {
       store.dispatch("principal/fetchPrincipalList"),
       store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.
-      store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
+      store.dispatch("project/fetchProjectByID", DEFAULT_PROJECT_ID),
       store.dispatch("uistate/restoreState"),
     ]);
   },

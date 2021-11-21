@@ -140,9 +140,9 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, level, comment, payload"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.ContainerId,
+		create.CreatorID,
+		create.CreatorID,
+		create.ContainerID,
 		create.Type,
 		create.Level,
 		create.Comment,
@@ -158,11 +158,11 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 	var activity api.Activity
 	if err := row.Scan(
 		&activity.ID,
-		&activity.CreatorId,
+		&activity.CreatorID,
 		&activity.CreatedTs,
-		&activity.UpdaterId,
+		&activity.UpdaterID,
 		&activity.UpdatedTs,
-		&activity.ContainerId,
+		&activity.ContainerID,
 		&activity.Type,
 		&activity.Level,
 		&activity.Comment,
@@ -180,7 +180,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.ContainerId; v != nil {
+	if v := find.ContainerID; v != nil {
 		where, args = append(where, "container_id = ?"), append(args, *v)
 	}
 
@@ -216,11 +216,11 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		var activity api.Activity
 		if err := rows.Scan(
 			&activity.ID,
-			&activity.CreatorId,
+			&activity.CreatorID,
 			&activity.CreatedTs,
-			&activity.UpdaterId,
+			&activity.UpdaterID,
 			&activity.UpdatedTs,
-			&activity.ContainerId,
+			&activity.ContainerID,
 			&activity.Type,
 			&activity.Level,
 			&activity.Comment,
@@ -241,7 +241,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 // patchActivity updates a activity by ID. Returns the new state of the activity after update.
 func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.Activity, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Comment; v != nil {
 		set, args = append(set, "comment = ?"), append(args, api.Role(*v))
 	}
@@ -266,11 +266,11 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 		var activity api.Activity
 		if err := row.Scan(
 			&activity.ID,
-			&activity.CreatorId,
+			&activity.CreatorID,
 			&activity.CreatedTs,
-			&activity.UpdaterId,
+			&activity.UpdaterID,
 			&activity.UpdatedTs,
-			&activity.ContainerId,
+			&activity.ContainerID,
 			&activity.Type,
 			&activity.Level,
 			&activity.Comment,

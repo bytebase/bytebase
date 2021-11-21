@@ -111,7 +111,7 @@ export default {
           if (state.migrationSetupStatus == "OK") {
             store
               .dispatch("instance/fetchMigrationHistory", {
-                instanceId: props.database.instance.id,
+                instanceID: props.database.instance.id,
                 databaseName: props.database.name,
               })
               .then(() => {
@@ -162,7 +162,7 @@ export default {
           {
             title: "",
             list: store.getters[
-              "instance/migrationHistoryListByInstanceIdAndDatabaseName"
+              "instance/migrationHistoryListByInstanceIDAndDatabaseName"
             ](props.database.instance.id, props.database.name),
           },
         ];

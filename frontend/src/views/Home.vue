@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <div class="px-5 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
-        :selectedId="state.selectedEnvironment?.id"
+        :selectedID="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
       <BBTableSearch
@@ -87,7 +87,7 @@ export default {
       closedList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
+        ? store.getters["environment/environmentByID"](
             router.currentRoute.value.query.environment
           )
         : undefined,
@@ -106,7 +106,7 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
-            userId: currentUser.value.id,
+            userID: currentUser.value.id,
           })
           .then((issueList: Issue[]) => {
             state.assignedList = [];
@@ -118,7 +118,7 @@ export default {
               } else if (issue.creator.id === currentUser.value.id) {
                 state.createdList.push(issue);
               } else if (
-                issue.subscriberIdList.includes(currentUser.value.id)
+                issue.subscriberIDList.includes(currentUser.value.id)
               ) {
                 state.subscribeList.push(issue);
               }
@@ -128,7 +128,7 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
-            userId: currentUser.value.id,
+            userID: currentUser.value.id,
             limit: MAX_CLOSED_ISSUE_COUNT,
           })
           .then((issueList: Issue[]) => {
@@ -137,7 +137,7 @@ export default {
               if (
                 issue.creator.id === currentUser.value.id ||
                 issue.assignee?.id === currentUser.value.id ||
-                issue.subscriberIdList.includes(currentUser.value.id)
+                issue.subscriberIDList.includes(currentUser.value.id)
               ) {
                 state.closedList.push(issue);
               }

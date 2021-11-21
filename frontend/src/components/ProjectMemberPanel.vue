@@ -14,10 +14,10 @@
                 name="user"
                 :required="false"
                 :placeholder="'Select user'"
-                :selectedId="state.principalId"
+                :selectedID="state.principalID"
                 @select-principal-id="
-                  (principalId) => {
-                    state.principalId = principalId;
+                  (principalID) => {
+                    state.principalID = principalID;
                     clearValidationError();
                     validateMember();
                   }
@@ -91,7 +91,7 @@ import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
   DEFAULT_PROJECT_ID,
-  PrincipalId,
+  PrincipalID,
   Project,
   ProjectMember,
   ProjectMemberCreate,
@@ -101,7 +101,7 @@ import {
 import { isOwner, isProjectOwner } from "../utils";
 
 interface LocalState {
-  principalId: PrincipalId;
+  principalID: PrincipalID;
   role: ProjectRoleType;
   error: string;
 }
@@ -121,7 +121,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const state = reactive<LocalState>({
-      principalId: UNKNOWN_ID,
+      principalID: UNKNOWN_ID,
       role: "DEVELOPER",
       error: "",
     });
@@ -156,15 +156,15 @@ export default {
 
     const hasValidMember = computed(() => {
       return (
-        state.principalId != UNKNOWN_ID && validateInviteInternal().length == 0
+        state.principalID != UNKNOWN_ID && validateInviteInternal().length == 0
       );
     });
 
     const validateInviteInternal = (): string => {
-      if (state.principalId != UNKNOWN_ID) {
+      if (state.principalID != UNKNOWN_ID) {
         if (
           props.project.memberList.find((item: ProjectMember) => {
-            return item.principal.id == state.principalId;
+            return item.principal.id == state.principalID;
           })
         ) {
           return "Already a project member";
@@ -184,15 +184,15 @@ export default {
     const addMember = () => {
       // If admin feature is NOT enabled, then we set every member to OWNER role.
       const projectMember: ProjectMemberCreate = {
-        principalId: state.principalId,
+        principalID: state.principalID,
         role: hasAdminFeature.value ? state.role : "OWNER",
       };
-      const member = store.getters["member/memberByPrincipalId"](
-        state.principalId
+      const member = store.getters["member/memberByPrincipalID"](
+        state.principalID
       );
       store
         .dispatch("project/createdMember", {
-          projectId: props.project.id,
+          projectID: props.project.id,
           projectMember,
         })
         .then(() => {
@@ -203,7 +203,7 @@ export default {
           });
         });
 
-      state.principalId = UNKNOWN_ID;
+      state.principalID = UNKNOWN_ID;
       state.role = "DEVELOPER";
       state.error = "";
     };

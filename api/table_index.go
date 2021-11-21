@@ -9,14 +9,14 @@ type Index struct {
 	ID int `jsonapi:"primary,index"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	CreatedTs int64 `json:"createdTs"`
-	UpdaterId int
+	UpdaterID int
 	UpdatedTs int64 `json:"updatedTs"`
 
 	// Related fields
-	DatabaseId int
-	TableId    int
+	DatabaseID int
+	TableID    int
 
 	// Domain specific fields
 	Name       string `json:"name"`
@@ -31,11 +31,11 @@ type Index struct {
 type IndexCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	DatabaseId int
-	TableId    int
+	DatabaseID int
+	TableID    int
 
 	// Domain specific fields
 	Name       string
@@ -51,8 +51,8 @@ type IndexFind struct {
 	ID *int
 
 	// Related fields
-	DatabaseId *int
-	TableId    *int
+	DatabaseID *int
+	TableID    *int
 
 	// Domain specific fields
 	Name       *string

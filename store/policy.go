@@ -49,9 +49,9 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 		return nil, err
 	} else if len(list) == 0 {
 		ret = &api.Policy{
-			CreatorId:     api.SYSTEM_BOT_ID,
-			UpdaterId:     api.SYSTEM_BOT_ID,
-			EnvironmentId: *find.EnvironmentId,
+			CreatorID:     api.SYSTEM_BOT_ID,
+			UpdaterID:     api.SYSTEM_BOT_ID,
+			EnvironmentID: *find.EnvironmentID,
 			Type:          *find.Type,
 		}
 	} else if len(list) > 1 {
@@ -77,7 +77,7 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.EnvironmentId; v != nil {
+	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, "environment_id = ?"), append(args, *v)
 	}
 	if v := find.Type; v != nil {
@@ -109,11 +109,11 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 		var policy api.Policy
 		if err := rows.Scan(
 			&policy.ID,
-			&policy.CreatorId,
+			&policy.CreatorID,
 			&policy.CreatedTs,
-			&policy.UpdaterId,
+			&policy.UpdaterID,
 			&policy.UpdatedTs,
-			&policy.EnvironmentId,
+			&policy.EnvironmentID,
 			&policy.Type,
 			&policy.Payload,
 		); err != nil {
@@ -172,9 +172,9 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 				payload = excluded.payload
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, environment_id, type, payload
 		`,
-		upsert.UpdaterId,
-		upsert.UpdaterId,
-		upsert.EnvironmentId,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.EnvironmentID,
 		upsert.Type,
 		upsert.Payload,
 	)
@@ -188,11 +188,11 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 	var policy api.Policy
 	if err := row.Scan(
 		&policy.ID,
-		&policy.CreatorId,
+		&policy.CreatorID,
 		&policy.CreatedTs,
-		&policy.UpdaterId,
+		&policy.UpdaterID,
 		&policy.UpdatedTs,
-		&policy.EnvironmentId,
+		&policy.EnvironmentID,
 		&policy.Type,
 		&policy.Payload,
 	); err != nil {
@@ -206,7 +206,7 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 func (s *PolicyService) GetBackupPlanPolicy(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
 	pType := api.PolicyTypeBackupPlan
 	policy, err := s.FindPolicy(ctx, &api.PolicyFind{
-		EnvironmentId: &environmentID,
+		EnvironmentID: &environmentID,
 		Type:          &pType,
 	})
 	if err != nil {
@@ -219,7 +219,7 @@ func (s *PolicyService) GetBackupPlanPolicy(ctx context.Context, environmentID i
 func (s *PolicyService) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
 	pType := api.PolicyTypePipelineApproval
 	policy, err := s.FindPolicy(ctx, &api.PolicyFind{
-		EnvironmentId: &environmentID,
+		EnvironmentID: &environmentID,
 		Type:          &pType,
 	})
 	if err != nil {

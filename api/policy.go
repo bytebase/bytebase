@@ -47,15 +47,15 @@ type Policy struct {
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentId int
+	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
 
 	// Domain specific fields
@@ -68,7 +68,7 @@ type PolicyFind struct {
 	ID *int
 
 	// Related fields
-	EnvironmentId *int
+	EnvironmentID *int
 
 	// Domain specific fields
 	Type *PolicyType `jsonapi:"attr,type"`
@@ -79,11 +79,11 @@ type PolicyFind struct {
 type PolicyUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	// CreatorId is the ID of the creator.
-	UpdaterId int
+	// CreatorID is the ID of the creator.
+	UpdaterID int
 
 	// Related fields
-	EnvironmentId int
+	EnvironmentID int
 
 	// Domain specific fields
 	Type    PolicyType

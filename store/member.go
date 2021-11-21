@@ -44,7 +44,7 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalId, member); err != nil {
+	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +66,7 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 
 	if err == nil {
 		for _, member := range list {
-			if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalId, member); err != nil {
+			if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
 				return nil, err
 			}
 		}
@@ -79,9 +79,9 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 // Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
-	if find.PrincipalId != nil {
+	if find.PrincipalID != nil {
 		member := &api.Member{}
-		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalId, member)
+		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalID, member)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalId, list[0]); err != nil {
+	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalID, list[0]); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +130,7 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalId, member); err != nil {
+	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
 		return nil, err
 	}
 
@@ -151,11 +151,11 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Status,
 		create.Role,
-		create.PrincipalId,
+		create.PrincipalID,
 	)
 
 	if err != nil {
@@ -168,13 +168,13 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 	if err := row.Scan(
 		&member.ID,
 		&member.RowStatus,
-		&member.CreatorId,
+		&member.CreatorID,
 		&member.CreatedTs,
-		&member.UpdaterId,
+		&member.UpdaterID,
 		&member.UpdatedTs,
 		&member.Status,
 		&member.Role,
-		&member.PrincipalId,
+		&member.PrincipalID,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -188,7 +188,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.PrincipalId; v != nil {
+	if v := find.PrincipalID; v != nil {
 		where, args = append(where, "principal_id = ?"), append(args, *v)
 	}
 	if v := find.Role; v != nil {
@@ -222,13 +222,13 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		if err := rows.Scan(
 			&member.ID,
 			&member.RowStatus,
-			&member.CreatorId,
+			&member.CreatorID,
 			&member.CreatedTs,
-			&member.UpdaterId,
+			&member.UpdaterID,
 			&member.UpdatedTs,
 			&member.Status,
 			&member.Role,
-			&member.PrincipalId,
+			&member.PrincipalID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -245,7 +245,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 // patchMember updates a member by ID. Returns the new state of the member after update.
 func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Member, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
 	}
@@ -274,13 +274,13 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		if err := row.Scan(
 			&member.ID,
 			&member.RowStatus,
-			&member.CreatorId,
+			&member.CreatorID,
 			&member.CreatedTs,
-			&member.UpdaterId,
+			&member.UpdaterID,
 			&member.UpdatedTs,
 			&member.Status,
 			&member.Role,
-			&member.PrincipalId,
+			&member.PrincipalID,
 		); err != nil {
 			return nil, FormatError(err)
 		}

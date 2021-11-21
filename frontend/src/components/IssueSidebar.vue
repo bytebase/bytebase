@@ -23,11 +23,11 @@
       <div class="col-span-2">
         <MemberSelect
           :disabled="!allowEditAssignee"
-          :selectedId="create ? issue.assigneeId : issue.assignee?.id"
+          :selectedID="create ? issue.assigneeID : issue.assignee?.id"
           :allowedRoleList="['OWNER', 'DBA']"
           @select-principal-id="
-            (principalId) => {
-              $emit('update-assignee-id', principalId);
+            (principalID) => {
+              $emit('update-assignee-id', principalID);
             }
           "
         />
@@ -80,8 +80,8 @@
         <div class="col-span-2">
           <StageSelect
             :pipeline="issue.pipeline"
-            :selectedId="selectedStage.id"
-            @select-stage-id="(stageId) => $emit('select-stage-id', stageId)"
+            :selectedID="selectedStage.id"
+            @select-stage-id="(stageID) => $emit('select-stage-id', stageID)"
           />
         </div>
       </template>
@@ -181,10 +181,10 @@
       v-if="!create"
       :issue="issue"
       @add-subscriber-id="
-        (subscriberId) => $emit('add-subscriber-id', subscriberId)
+        (subscriberID) => $emit('add-subscriber-id', subscriberID)
       "
       @remove-subscriber-id="
-        (subscriberId) => $emit('remove-subscriber-id', subscriberId)
+        (subscriberID) => $emit('remove-subscriber-id', subscriberID)
       "
     />
   </aside>
@@ -309,8 +309,8 @@ export default {
     const environment = computed((): Environment => {
       if (props.create) {
         const stage = props.selectedStage as StageCreate;
-        return store.getters["environment/environmentById"](
-          stage.environmentId
+        return store.getters["environment/environmentByID"](
+          stage.environmentID
         );
       }
       const stage = props.selectedStage as Stage;
@@ -319,8 +319,8 @@ export default {
 
     const project = computed((): Project => {
       if (props.create) {
-        return store.getters["project/projectById"](
-          (props.issue as IssueCreate).projectId
+        return store.getters["project/projectByID"](
+          (props.issue as IssueCreate).projectID
         );
       }
       return (props.issue as Issue).project;
@@ -391,7 +391,7 @@ export default {
       } else {
         store
           .dispatch(
-            "database/fetchDatabaseListByInstanceId",
+            "database/fetchDatabaseListByInstanceID",
             props.instance.value.id
           )
           .then((list: Database[]) => {

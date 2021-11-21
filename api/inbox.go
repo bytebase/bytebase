@@ -26,22 +26,22 @@ type Inbox struct {
 	ID int `jsonapi:"primary,inbox"`
 
 	// Domain specific fields
-	ReceiverId int         `jsonapi:"attr,receiverId"`
+	ReceiverID int         `jsonapi:"attr,receiverID"`
 	Activity   *Activity   `jsonapi:"relation,activity"`
 	Status     InboxStatus `jsonapi:"attr,status"`
 }
 
 type InboxCreate struct {
 	// Domain specific fields
-	ReceiverId int
-	ActivityId int
+	ReceiverID int
+	ActivityID int
 }
 
 type InboxFind struct {
 	ID *int
 
 	// Domain specific fields
-	ReceiverId *int
+	ReceiverID *int
 	// If specified, then it will only fetch "UNREAD" item or "READ" item whose activity created after "CreatedAfterTs"
 	ReadCreatedAfterTs *int64
 }
@@ -75,5 +75,5 @@ type InboxService interface {
 	FindInboxList(ctx context.Context, find *InboxFind) ([]*Inbox, error)
 	FindInbox(ctx context.Context, find *InboxFind) (*Inbox, error)
 	PatchInbox(ctx context.Context, patch *InboxPatch) (*Inbox, error)
-	FindInboxSummary(ctx context.Context, principalId int) (*InboxSummary, error)
+	FindInboxSummary(ctx context.Context, principalID int) (*InboxSummary, error)
 }

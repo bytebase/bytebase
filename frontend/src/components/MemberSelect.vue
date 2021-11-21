@@ -6,7 +6,7 @@
     :disabled="disabled"
     @select-item="
       (principal) => {
-        state.selectedId = principal.id;
+        state.selectedID = principal.id;
         $emit('select-principal-id', parseInt(principal.id));
       }
     "
@@ -43,14 +43,14 @@ import PrincipalAvatar from "./PrincipalAvatar.vue";
 import {
   Member,
   Principal,
-  PrincipalId,
+  PrincipalID,
   RoleType,
   SYSTEM_BOT_ID,
 } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
-  selectedId?: PrincipalId;
+  selectedID?: PrincipalID;
   showMenu: boolean;
 }
 
@@ -59,7 +59,7 @@ export default {
   emits: ["select-principal-id"],
   components: { PrincipalAvatar },
   props: {
-    selectedId: {
+    selectedID: {
       type: Number,
     },
     disabled: {
@@ -81,7 +81,7 @@ export default {
   },
   setup(props, { emit }) {
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedID: props.selectedID,
       showMenu: false,
     });
     const store = useStore();
@@ -96,14 +96,14 @@ export default {
         });
       // If system bot is the selected ID (e.g. when issue is created by the bot on observing new sql file),
       // Then we add system bot to the list so it can display properly.
-      if (props.selectedId == SYSTEM_BOT_ID) {
-        list.unshift(store.getters["principal/principalById"](SYSTEM_BOT_ID));
+      if (props.selectedID == SYSTEM_BOT_ID) {
+        list.unshift(store.getters["principal/principalByID"](SYSTEM_BOT_ID));
       }
       return list.filter((item: Principal) => {
         // The previouly selected item might no longer be applicable.
         // e.g. The select limits to DBA only and the selected principal is no longer a DBA
         // in such case, we still show the item.
-        if (item.id == props.selectedId) {
+        if (item.id == props.selectedID) {
           return true;
         }
 
@@ -119,15 +119,15 @@ export default {
     });
 
     watch(
-      () => props.selectedId,
+      () => props.selectedID,
       (cur, _) => {
-        state.selectedId = cur;
+        state.selectedID = cur;
       }
     );
 
     const selectedPrincipal = computed(() =>
       principalList.value.find(
-        (principal: Principal) => principal.id == state.selectedId
+        (principal: Principal) => principal.id == state.selectedID
       )
     );
 

@@ -46,7 +46,7 @@ type AnomalyInstanceConnectionPayload struct {
 }
 
 type AnomalyDatabaseBackupPolicyViolationPayload struct {
-	EnvironmentId          int                      `json:"environmentId,omitempty"`
+	EnvironmentID          int                      `json:"environmentID,omitempty"`
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	ActualBackupSchedule   BackupPlanPolicySchedule `json:"actualSchedule,omitempty"`
 }
@@ -75,17 +75,17 @@ type Anomaly struct {
 	ID int `jsonapi:"primary,anomaly"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	InstanceId int `jsonapi:"attr,instanceId"`
-	// Instance anomaly doesn't have databaseId
-	DatabaseId *int `jsonapi:"attr,databaseId"`
+	InstanceID int `jsonapi:"attr,instanceID"`
+	// Instance anomaly doesn't have databaseID
+	DatabaseID *int `jsonapi:"attr,databaseID"`
 
 	// Domain specific fields
 	Type AnomalyType `jsonapi:"attr,type"`
@@ -96,11 +96,11 @@ type Anomaly struct {
 
 type AnomalyUpsert struct {
 	// Standard fields
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	InstanceId int
-	DatabaseId *int
+	InstanceID int
+	DatabaseID *int
 
 	// Domain specific fields
 	Type    AnomalyType `jsonapi:"attr,type"`
@@ -112,10 +112,10 @@ type AnomalyFind struct {
 	RowStatus *RowStatus
 
 	// Related fields
-	InstanceId *int
-	DatabaseId *int
+	InstanceID *int
+	DatabaseID *int
 	Type       *AnomalyType
-	// Only applicable if InstanceId is specified, if true, then we only return instance anomaly (database_id is NULL)
+	// Only applicable if InstanceID is specified, if true, then we only return instance anomaly (database_id is NULL)
 	InstanceOnly bool
 }
 
@@ -128,8 +128,8 @@ func (find *AnomalyFind) String() string {
 }
 
 type AnomalyArchive struct {
-	InstanceId *int
-	DatabaseId *int
+	InstanceID *int
+	DatabaseID *int
 	Type       AnomalyType
 }
 

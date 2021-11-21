@@ -355,7 +355,7 @@ export default {
     const createWebhook = () => {
       store
         .dispatch("projectWebhook/createProjectWebhook", {
-          projectId: props.project.id,
+          projectID: props.project.id,
           projectWebhookCreate: state.webhook,
         })
         .then((webhook: ProjectWebhook) => {
@@ -385,9 +385,9 @@ export default {
         projectWebhookPatch.activityList = state.webhook.activityList.join(",");
       }
       store
-        .dispatch("projectWebhook/updateProjectWebhookById", {
-          projectId: props.project.id,
-          projectWebhookId: (state.webhook as ProjectWebhook).id,
+        .dispatch("projectWebhook/updateProjectWebhookByID", {
+          projectID: props.project.id,
+          projectWebhookID: (state.webhook as ProjectWebhook).id,
           projectWebhookPatch,
         })
         .then((webhook: ProjectWebhook) => {
@@ -402,9 +402,9 @@ export default {
     const deleteWebhook = () => {
       const name = state.webhook.name;
       store
-        .dispatch("projectWebhook/deleteProjectWebhookById", {
-          projectId: props.project.id,
-          projectWebhookId: (state.webhook as ProjectWebhook).id,
+        .dispatch("projectWebhook/deleteProjectWebhookByID", {
+          projectID: props.project.id,
+          projectWebhookID: (state.webhook as ProjectWebhook).id,
         })
         .then(() => {
           store.dispatch("notification/pushNotification", {

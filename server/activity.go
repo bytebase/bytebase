@@ -22,18 +22,18 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		activityCreate.Level = api.ACTIVITY_INFO
-		activityCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		activityCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 		var foundIssue *api.Issue
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
 			issueFind := &api.IssueFind{
-				ID: &activityCreate.ContainerId,
+				ID: &activityCreate.ContainerID,
 			}
 			issue, err := s.IssueService.FindIssue(ctx, issueFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerId))
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerID))
 				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
 			}
 
 			bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
@@ -67,12 +67,12 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	g.GET("/activity", func(c echo.Context) error {
 		ctx := context.Background()
 		activityFind := &api.ActivityFind{}
-		if containerIdStr := c.QueryParams().Get("container"); containerIdStr != "" {
-			containerId, err := strconv.Atoi(containerIdStr)
+		if containerIDStr := c.QueryParams().Get("container"); containerIDStr != "" {
+			containerID, err := strconv.Atoi(containerIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter container is not a number: %s", containerIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter container is not a number: %s", containerIDStr)).SetInternal(err)
 			}
-			activityFind.ContainerId = &containerId
+			activityFind.ContainerID = &containerID
 		}
 		if limitStr := c.QueryParam("limit"); limitStr != "" {
 			limit, err := strconv.Atoi(limitStr)
@@ -99,16 +99,16 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/activity/:activityId", func(c echo.Context) error {
+	g.PATCH("/activity/:activityID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("activityId"))
+		id, err := strconv.Atoi(c.Param("activityID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)
 		}
 
 		activityPatch := &api.ActivityPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch activity request").SetInternal(err)
@@ -133,16 +133,16 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/activity/:activityId", func(c echo.Context) error {
+	g.DELETE("/activity/:activityID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("activityId"))
+		id, err := strconv.Atoi(c.Param("activityID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)
 		}
 
 		activityDelete := &api.ActivityDelete{
 			ID:        id,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
+			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		err = s.ActivityService.DeleteActivity(ctx, activityDelete)
 		if err != nil {
@@ -161,12 +161,12 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 func (s *Server) ComposeActivityRelationship(ctx context.Context, activity *api.Activity) error {
 	var err error
 
-	activity.Creator, err = s.ComposePrincipalById(ctx, activity.CreatorId)
+	activity.Creator, err = s.ComposePrincipalByID(ctx, activity.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	activity.Updater, err = s.ComposePrincipalById(ctx, activity.UpdaterId)
+	activity.Updater, err = s.ComposePrincipalByID(ctx, activity.UpdaterID)
 	if err != nil {
 		return err
 	}

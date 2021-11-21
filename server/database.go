@@ -23,12 +23,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
 		}
 
-		databaseCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
-		instance, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceId})
+		databaseCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		instance, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 		}
-		databaseCreate.EnvironmentId = instance.EnvironmentId
+		databaseCreate.EnvironmentID = instance.EnvironmentID
 
 		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
@@ -52,20 +52,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	g.GET("/database", func(c echo.Context) error {
 		ctx := context.Background()
 		databaseFind := &api.DatabaseFind{}
-		if instanceIdStr := c.QueryParam("instance"); instanceIdStr != "" {
-			instanceId, err := strconv.Atoi(instanceIdStr)
+		if instanceIDStr := c.QueryParam("instance"); instanceIDStr != "" {
+			instanceID, err := strconv.Atoi(instanceIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter instance is not a number: %s", instanceIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter instance is not a number: %s", instanceIDStr)).SetInternal(err)
 			}
-			databaseFind.InstanceId = &instanceId
+			databaseFind.InstanceID = &instanceID
 		}
-		projectIdStr := c.QueryParams().Get("project")
-		if projectIdStr != "" {
-			projectId, err := strconv.Atoi(projectIdStr)
+		projectIDStr := c.QueryParams().Get("project")
+		if projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIDStr)).SetInternal(err)
 			}
-			databaseFind.ProjectId = &projectId
+			databaseFind.ProjectID = &projectID
 		}
 		list, err := s.ComposeDatabaseListByFind(ctx, databaseFind)
 		if err != nil {
@@ -81,11 +81,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// - The database list left sidebar will only return databases related to the caller regardless of the caller's role.
 		// - The database list on the instance page will return all databases if the caller is Owner or DBA, but will only return
 		//   related databases if the caller is Developer.
-		if projectIdStr == "" && (databaseFind.InstanceId == nil || role == api.Developer) {
-			principalId := c.Get(GetPrincipalIdContextKey()).(int)
+		if projectIDStr == "" && (databaseFind.InstanceID == nil || role == api.Developer) {
+			principalID := c.Get(GetPrincipalIDContextKey()).(int)
 			for _, database := range list {
 				for _, projectMember := range database.Project.ProjectMemberList {
-					if projectMember.PrincipalId == principalId {
+					if projectMember.PrincipalID == principalID {
 						filteredList = append(filteredList, database)
 						break
 					}
@@ -136,7 +136,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		databasePatch := &api.DatabasePatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databasePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
@@ -145,7 +145,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// If we are transferring the database to a different project, then we create a project activity in both
 		// the old project and new project.
 		var existingDatabase *api.Database
-		if databasePatch.ProjectId != nil {
+		if databasePatch.ProjectID != nil {
 			existingDatabase, err = s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{
 				ID: &databasePatch.ID,
 			})
@@ -170,17 +170,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		// Create transferring database project activity.
-		if databasePatch.ProjectId != nil {
+		if databasePatch.ProjectID != nil {
 			bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
-				DatabaseId:   database.ID,
+				DatabaseID:   database.ID,
 				DatabaseName: database.Name,
 			})
 			if err == nil {
-				existingDatabase.Project, err = s.ComposeProjectlById(ctx, existingDatabase.ProjectId)
+				existingDatabase.Project, err = s.ComposeProjectlByID(ctx, existingDatabase.ProjectID)
 				if err == nil {
 					activityCreate := &api.ActivityCreate{
-						CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-						ContainerId: existingDatabase.ProjectId,
+						CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+						ContainerID: existingDatabase.ProjectID,
 						Type:        api.ActivityProjectDatabaseTransfer,
 						Level:       api.ACTIVITY_INFO,
 						Comment: fmt.Sprintf("Transferred out database %q to project %q.",
@@ -194,15 +194,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					s.l.Warn("Failed to create project activity after transferring database",
 						zap.Int("database_id", database.ID),
 						zap.String("database_name", database.Name),
-						zap.Int("old_project_id", existingDatabase.ProjectId),
-						zap.Int("new_project_id", database.ProjectId),
+						zap.Int("old_project_id", existingDatabase.ProjectID),
+						zap.Int("new_project_id", database.ProjectID),
 						zap.Error(err))
 				}
 
 				{
 					activityCreate := &api.ActivityCreate{
-						CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-						ContainerId: database.ProjectId,
+						CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+						ContainerID: database.ProjectID,
 						Type:        api.ActivityProjectDatabaseTransfer,
 						Level:       api.ACTIVITY_INFO,
 						Comment: fmt.Sprintf("Transferred in database %q from project %q.",
@@ -214,8 +214,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						s.l.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", database.ID),
 							zap.String("database_name", database.Name),
-							zap.Int("old_project_id", existingDatabase.ProjectId),
-							zap.Int("new_project_id", database.ProjectId),
+							zap.Int("old_project_id", existingDatabase.ProjectID),
+							zap.Int("new_project_id", database.ProjectID),
 							zap.Error(err))
 					}
 				}
@@ -248,7 +248,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		tableFind := &api.TableFind{
-			DatabaseId: &id,
+			DatabaseID: &id,
 		}
 		tableList, err := s.TableService.FindTableList(ctx, tableFind)
 		if err != nil {
@@ -258,8 +258,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		for _, table := range tableList {
 			table.Database = database
 			columnFind := &api.ColumnFind{
-				DatabaseId: &id,
-				TableId:    &table.ID,
+				DatabaseID: &id,
+				TableID:    &table.ID,
 			}
 			table.ColumnList, err = s.ColumnService.FindColumnList(ctx, columnFind)
 			if err != nil {
@@ -267,8 +267,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 
 			indexFind := &api.IndexFind{
-				DatabaseId: &id,
-				TableId:    &table.ID,
+				DatabaseID: &id,
+				TableID:    &table.ID,
 			}
 			table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
 			if err != nil {
@@ -307,7 +307,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		tableName := c.Param("tableName")
 		tableFind := &api.TableFind{
-			DatabaseId: &id,
+			DatabaseID: &id,
 			Name:       &tableName,
 		}
 		table, err := s.TableService.FindTable(ctx, tableFind)
@@ -318,8 +318,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		table.Database = database
 
 		columnFind := &api.ColumnFind{
-			DatabaseId: &id,
-			TableId:    &table.ID,
+			DatabaseID: &id,
+			TableID:    &table.ID,
 		}
 		table.ColumnList, err = s.ColumnService.FindColumnList(ctx, columnFind)
 		if err != nil {
@@ -327,8 +327,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		indexFind := &api.IndexFind{
-			DatabaseId: &id,
-			TableId:    &table.ID,
+			DatabaseID: &id,
+			TableID:    &table.ID,
 		}
 		table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
 		if err != nil {
@@ -365,7 +365,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		viewFind := &api.ViewFind{
-			DatabaseId: &id,
+			DatabaseID: &id,
 		}
 		viewList, err := s.ViewService.FindViewList(ctx, viewFind)
 		if err != nil {
@@ -398,7 +398,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create backup request").SetInternal(err)
 		}
-		backupCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		backupCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
@@ -434,7 +434,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		payload := api.TaskDatabaseBackupPayload{
-			BackupId: backup.ID,
+			BackupID: backup.ID,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -443,7 +443,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
 			Name:      fmt.Sprintf("backup-pipeline-%s", backup.Name),
-			CreatorId: backupCreate.CreatorId,
+			CreatorID: backupCreate.CreatorID,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup pipeline").SetInternal(err)
@@ -451,9 +451,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		createdStage, err := s.StageService.CreateStage(ctx, &api.StageCreate{
 			Name:          fmt.Sprintf("backup-stage-%s", backup.Name),
-			EnvironmentId: database.Instance.EnvironmentId,
-			PipelineId:    createdPipeline.ID,
-			CreatorId:     backupCreate.CreatorId,
+			EnvironmentID: database.Instance.EnvironmentID,
+			PipelineID:    createdPipeline.ID,
+			CreatorID:     backupCreate.CreatorID,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup stage").SetInternal(err)
@@ -461,14 +461,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		_, err = s.TaskService.CreateTask(ctx, &api.TaskCreate{
 			Name:       fmt.Sprintf("backup-task-%s", backup.Name),
-			PipelineId: createdPipeline.ID,
-			StageId:    createdStage.ID,
-			InstanceId: database.InstanceId,
-			DatabaseId: &database.ID,
+			PipelineID: createdPipeline.ID,
+			StageID:    createdStage.ID,
+			InstanceID: database.InstanceID,
+			DatabaseID: &database.ID,
 			Status:     api.TaskPending,
 			Type:       api.TaskDatabaseBackup,
 			Payload:    string(bytes),
-			CreatorId:  backupCreate.CreatorId,
+			CreatorID:  backupCreate.CreatorID,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task").SetInternal(err)
@@ -500,7 +500,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		backupFind := &api.BackupFind{
-			DatabaseId: &id,
+			DatabaseID: &id,
 		}
 		backupList, err := s.BackupService.FindBackupList(ctx, backupFind)
 		if err != nil {
@@ -531,7 +531,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set backup setting request").SetInternal(err)
 		}
-		backupSettingUpsert.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
+		backupSettingUpsert.UpdaterID = c.Get(GetPrincipalIDContextKey()).(int)
 
 		databaseFind := &api.DatabaseFind{
 			ID: &id,
@@ -543,7 +543,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
-		backupSettingUpsert.EnvironmentId = db.Instance.Environment.ID
+		backupSettingUpsert.EnvironmentID = db.Instance.Environment.ID
 
 		backupSetting, err := s.BackupService.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
@@ -576,7 +576,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		backupSettingFind := &api.BackupSettingFind{
-			DatabaseId: &id,
+			DatabaseID: &id,
 		}
 		backupSetting, err := s.BackupService.FindBackupSetting(ctx, backupSettingFind)
 		if err != nil {
@@ -629,28 +629,28 @@ func (s *Server) ComposeDatabaseListByFind(ctx context.Context, find *api.Databa
 func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.Database) error {
 	var err error
 
-	database.Creator, err = s.ComposePrincipalById(ctx, database.CreatorId)
+	database.Creator, err = s.ComposePrincipalByID(ctx, database.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	database.Updater, err = s.ComposePrincipalById(ctx, database.UpdaterId)
+	database.Updater, err = s.ComposePrincipalByID(ctx, database.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	database.Project, err = s.ComposeProjectlById(ctx, database.ProjectId)
+	database.Project, err = s.ComposeProjectlByID(ctx, database.ProjectID)
 	if err != nil {
 		return err
 	}
 
-	database.Instance, err = s.ComposeInstanceById(ctx, database.InstanceId)
+	database.Instance, err = s.ComposeInstanceByID(ctx, database.InstanceID)
 	if err != nil {
 		return err
 	}
 
-	if database.SourceBackupId != 0 {
-		database.SourceBackup, err = s.ComposeBackupByID(ctx, database.SourceBackupId)
+	if database.SourceBackupID != 0 {
+		database.SourceBackup, err = s.ComposeBackupByID(ctx, database.SourceBackupID)
 		if err != nil {
 			return err
 		}
@@ -661,17 +661,17 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 	rowStatus := api.Normal
 	database.AnomalyList, err = s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
-		DatabaseId: &database.ID,
+		DatabaseID: &database.ID,
 	})
 	if err != nil {
 		return err
 	}
 	for _, anomaly := range database.AnomalyList {
-		anomaly.Creator, err = s.ComposePrincipalById(ctx, anomaly.CreatorId)
+		anomaly.Creator, err = s.ComposePrincipalByID(ctx, anomaly.CreatorID)
 		if err != nil {
 			return err
 		}
-		anomaly.Updater, err = s.ComposePrincipalById(ctx, anomaly.UpdaterId)
+		anomaly.Updater, err = s.ComposePrincipalByID(ctx, anomaly.UpdaterID)
 		if err != nil {
 			return err
 		}
@@ -683,12 +683,12 @@ func (s *Server) ComposeDatabaseRelationship(ctx context.Context, database *api.
 func (s *Server) ComposeTableRelationship(ctx context.Context, table *api.Table) error {
 	var err error
 
-	table.Creator, err = s.ComposePrincipalById(ctx, table.CreatorId)
+	table.Creator, err = s.ComposePrincipalByID(ctx, table.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	table.Updater, err = s.ComposePrincipalById(ctx, table.UpdaterId)
+	table.Updater, err = s.ComposePrincipalByID(ctx, table.UpdaterID)
 	if err != nil {
 		return err
 	}
@@ -698,12 +698,12 @@ func (s *Server) ComposeTableRelationship(ctx context.Context, table *api.Table)
 func (s *Server) ComposeViewRelationship(ctx context.Context, view *api.View) error {
 	var err error
 
-	view.Creator, err = s.ComposePrincipalById(ctx, view.CreatorId)
+	view.Creator, err = s.ComposePrincipalByID(ctx, view.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	view.Updater, err = s.ComposePrincipalById(ctx, view.UpdaterId)
+	view.Updater, err = s.ComposePrincipalByID(ctx, view.UpdaterID)
 	if err != nil {
 		return err
 	}
@@ -730,11 +730,11 @@ func (s *Server) ComposeBackupByID(ctx context.Context, id int) (*api.Backup, er
 // ComposeBackupRelationship will compose the relationship of a backup.
 func (s *Server) ComposeBackupRelationship(ctx context.Context, backup *api.Backup) error {
 	var err error
-	backup.Creator, err = s.ComposePrincipalById(ctx, backup.CreatorId)
+	backup.Creator, err = s.ComposePrincipalByID(ctx, backup.CreatorID)
 	if err != nil {
 		return err
 	}
-	backup.Updater, err = s.ComposePrincipalById(ctx, backup.UpdaterId)
+	backup.Updater, err = s.ComposePrincipalByID(ctx, backup.UpdaterID)
 	if err != nil {
 		return err
 	}

@@ -115,10 +115,10 @@ export default {
 
     const actionLink = (activity: Activity): string => {
       if (activity.type.startsWith("bb.issue.")) {
-        return `/issue/${activity.containerId}`;
+        return `/issue/${activity.containerID}`;
       } else if (activity.type == "bb.pipeline.task.status.update") {
         const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-        return `/issue/${activity.containerId}?task=${payload.taskId}`;
+        return `/issue/${activity.containerID}?task=${payload.taskID}`;
       }
 
       return "";
@@ -189,7 +189,7 @@ export default {
       if (inbox.status == "UNREAD") {
         store
           .dispatch("inbox/patchInbox", {
-            inboxId: inbox.id,
+            inboxID: inbox.id,
             inboxPatch: {
               status: "READ",
             },

@@ -34,17 +34,17 @@ type DataSource struct {
 	ID int `jsonapi:"primary,dataSource"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	// Just returns InstanceId and DatabaseId otherwise would cause circular dependency.
-	InstanceId int `jsonapi:"attr,instanceId"`
-	DatabaseId int `jsonapi:"attr,databaseId"`
+	// Just returns InstanceID and DatabaseID otherwise would cause circular dependency.
+	InstanceID int `jsonapi:"attr,instanceID"`
+	DatabaseID int `jsonapi:"attr,databaseID"`
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`
@@ -56,11 +56,11 @@ type DataSource struct {
 type DataSourceCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	InstanceId int
-	DatabaseId int
+	InstanceID int
+	DatabaseID int
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`
@@ -71,8 +71,8 @@ type DataSourceCreate struct {
 
 type DataSourceFind struct {
 	// Related fields
-	InstanceId *int
-	DatabaseId *int
+	InstanceID *int
+	DatabaseID *int
 
 	// Domain specific fields
 	Type *DataSourceType
@@ -91,7 +91,7 @@ type DataSourcePatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Username *string `jsonapi:"attr,username"`

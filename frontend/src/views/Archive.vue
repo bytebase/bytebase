@@ -82,7 +82,7 @@ export default {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
         store.dispatch("project/fetchProjectListByUser", {
-          userId: currentUser.value.id,
+          userID: currentUser.value.id,
           rowStatusList: ["ARCHIVED"],
         });
       }
