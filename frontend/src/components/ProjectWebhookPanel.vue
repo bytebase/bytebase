@@ -75,7 +75,7 @@ export default {
 
     const prepareProjectWebhookList = () => {
       store.dispatch(
-        "projectWebhook/fetchProjectWebhookListByProjectId",
+        "projectWebhook/fetchProjectWebhookListByProjectID",
         props.project.id
       );
     };
@@ -83,7 +83,7 @@ export default {
     watchEffect(prepareProjectWebhookList);
 
     const projectWebhookList = computed(() => {
-      return store.getters["projectWebhook/projectWebhookListByProjectId"](
+      return store.getters["projectWebhook/projectWebhookListByProjectID"](
         props.project.id
       );
     });

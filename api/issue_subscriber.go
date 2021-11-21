@@ -4,27 +4,27 @@ import "context"
 
 type IssueSubscriber struct {
 	// Domain specific fields
-	IssueId      int `jsonapi:"attr,issueId"`
-	SubscriberId int
+	IssueID      int `jsonapi:"attr,issueID"`
+	SubscriberID int
 	Subscriber   *Principal `jsonapi:"attr,subscriber"`
 }
 
 type IssueSubscriberCreate struct {
 	// Domain specific fields
-	IssueId      int
-	SubscriberId int `jsonapi:"attr,subscriberId"`
+	IssueID      int
+	SubscriberID int `jsonapi:"attr,subscriberID"`
 }
 
 type IssueSubscriberFind struct {
 	// Domain specific fields
-	IssueId      *int
-	SubscriberId *int
+	IssueID      *int
+	SubscriberID *int
 }
 
 type IssueSubscriberDelete struct {
 	// Domain specific fields
-	IssueId      int
-	SubscriberId int
+	IssueID      int
+	SubscriberID int
 }
 
 type IssueSubscriberService interface {

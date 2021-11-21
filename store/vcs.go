@@ -141,13 +141,13 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Name,
 		create.Type,
 		create.InstanceURL,
 		create.ApiURL,
-		create.ApplicationId,
+		create.ApplicationID,
 		create.Secret,
 	)
 
@@ -160,15 +160,15 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 	var vcs api.VCS
 	if err := row.Scan(
 		&vcs.ID,
-		&vcs.CreatorId,
+		&vcs.CreatorID,
 		&vcs.CreatedTs,
-		&vcs.UpdaterId,
+		&vcs.UpdaterID,
 		&vcs.UpdatedTs,
 		&vcs.Name,
 		&vcs.Type,
 		&vcs.InstanceURL,
 		&vcs.ApiURL,
-		&vcs.ApplicationId,
+		&vcs.ApplicationID,
 		&vcs.Secret,
 	); err != nil {
 		return nil, FormatError(err)
@@ -212,15 +212,15 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 		var vcs api.VCS
 		if err := rows.Scan(
 			&vcs.ID,
-			&vcs.CreatorId,
+			&vcs.CreatorID,
 			&vcs.CreatedTs,
-			&vcs.UpdaterId,
+			&vcs.UpdaterID,
 			&vcs.UpdatedTs,
 			&vcs.Name,
 			&vcs.Type,
 			&vcs.InstanceURL,
 			&vcs.ApiURL,
-			&vcs.ApplicationId,
+			&vcs.ApplicationID,
 			&vcs.Secret,
 		); err != nil {
 			return nil, FormatError(err)
@@ -238,11 +238,11 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 // patchVCS updates a vcs by ID. Returns the new state of the vcs after update.
 func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
-	if v := patch.ApplicationId; v != nil {
+	if v := patch.ApplicationID; v != nil {
 		set, args = append(set, "application_id = ?"), append(args, *v)
 	}
 	if v := patch.Secret; v != nil {
@@ -268,15 +268,15 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 		var vcs api.VCS
 		if err := row.Scan(
 			&vcs.ID,
-			&vcs.CreatorId,
+			&vcs.CreatorID,
 			&vcs.CreatedTs,
-			&vcs.UpdaterId,
+			&vcs.UpdaterID,
 			&vcs.UpdatedTs,
 			&vcs.Name,
 			&vcs.Type,
 			&vcs.InstanceURL,
 			&vcs.ApiURL,
-			&vcs.ApplicationId,
+			&vcs.ApplicationID,
 			&vcs.Secret,
 		); err != nil {
 			return nil, FormatError(err)

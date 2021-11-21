@@ -65,7 +65,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// Create a baseline migration history upon creating the database.
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskId(task.ID),
+		Version:        defaultMigrationVersionFromTaskID(task.ID),
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,
@@ -74,7 +74,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Description:    "Create database",
 		CreateDatabase: true,
 	}
-	creator, err := server.ComposePrincipalById(ctx, task.CreatorId)
+	creator, err := server.ComposePrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.
@@ -87,7 +87,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	issueFind := &api.IssueFind{
-		PipelineId: &task.PipelineId,
+		PipelineID: &task.PipelineID,
 	}
 	issue, err := server.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
@@ -98,17 +98,17 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 			zap.Error(err),
 		)
 	} else {
-		mi.IssueId = strconv.Itoa(issue.ID)
+		mi.IssueID = strconv.Itoa(issue.ID)
 	}
 
-	migrationId, _, err := driver.ExecuteMigration(ctx, mi, statement)
+	migrationID, _, err := driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return true, nil, err
 	}
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
-		MigrationId: migrationId,
+		MigrationID: migrationID,
 		Version:     mi.Version,
 	}, nil
 }

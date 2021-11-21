@@ -37,15 +37,15 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		}
 
 		// Gets principal id from the context.
-		principalId := c.Get(GetPrincipalIdContextKey()).(int)
+		principalID := c.Get(GetPrincipalIDContextKey()).(int)
 
 		memberFind := &api.MemberFind{
-			PrincipalId: &principalId,
+			PrincipalID: &principalID,
 		}
 		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalId))
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalID))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
@@ -57,72 +57,72 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
 		if method == "PATCH" || method == "DELETE" {
 			if strings.HasPrefix(c.Path(), "/api/principal") {
-				pathPrincipalId := c.Param("principalId")
-				if pathPrincipalId != "" {
-					if pathPrincipalId == strconv.Itoa(principalId) {
+				pathPrincipalID := c.Param("principalID")
+				if pathPrincipalID != "" {
+					if pathPrincipalID == strconv.Itoa(principalID) {
 						method = method + "_SELF"
 					}
 				}
 			} else if strings.HasPrefix(c.Path(), "/api/activity") {
-				activityIdStr := c.Param("activityId")
-				if activityIdStr != "" {
-					activityId, err := strconv.Atoi(activityIdStr)
+				activityIDStr := c.Param("activityID")
+				if activityIDStr != "" {
+					activityID, err := strconv.Atoi(activityIDStr)
 					if err != nil {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s", activityIdStr))
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s", activityIDStr))
 					}
 					activityFind := &api.ActivityFind{
-						ID: &activityId,
+						ID: &activityID,
 					}
 					activity, err := s.ActivityService.FindActivity(ctx, activityFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
-							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityId))
+							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityID))
 						}
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 					}
-					if activity.CreatorId == principalId {
+					if activity.CreatorID == principalID {
 						method = method + "_SELF"
 					}
 				}
 			} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
-				bookmarkIdStr := c.Param("bookmarkId")
-				if bookmarkIdStr != "" {
-					bookmarkId, err := strconv.Atoi(bookmarkIdStr)
+				bookmarkIDStr := c.Param("bookmarkID")
+				if bookmarkIDStr != "" {
+					bookmarkID, err := strconv.Atoi(bookmarkIDStr)
 					if err != nil {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s", bookmarkIdStr))
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s", bookmarkIDStr))
 					}
 					bookmarkFind := &api.BookmarkFind{
-						ID: &bookmarkId,
+						ID: &bookmarkID,
 					}
 					bookmark, err := s.BookmarkService.FindBookmark(ctx, bookmarkFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
-							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Bookmark ID not found: %d", bookmarkId))
+							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID))
 						}
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 					}
-					if bookmark.CreatorId == principalId {
+					if bookmark.CreatorID == principalID {
 						method = method + "_SELF"
 					}
 				}
 			} else if strings.HasPrefix(c.Path(), "/api/inbox") {
-				inboxIdStr := c.Param("inboxId")
-				if inboxIdStr != "" {
-					inboxId, err := strconv.Atoi(inboxIdStr)
+				inboxIDStr := c.Param("inboxID")
+				if inboxIDStr != "" {
+					inboxID, err := strconv.Atoi(inboxIDStr)
 					if err != nil {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIdStr))
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr))
 					}
 					inboxFind := &api.InboxFind{
-						ID: &inboxId,
+						ID: &inboxID,
 					}
 					inbox, err := s.InboxService.FindInbox(ctx, inboxFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
-							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Inbox ID not found: %d", inboxId))
+							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Inbox ID not found: %d", inboxID))
 						}
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 					}
-					if inbox.ReceiverId == principalId {
+					if inbox.ReceiverID == principalID {
 						method = method + "_SELF"
 					}
 				}
@@ -145,7 +145,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 
 		if !pass {
 			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				fmt.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalId, role))
+				fmt.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
 		}
 
 		// Stores role into context.

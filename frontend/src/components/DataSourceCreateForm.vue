@@ -41,12 +41,12 @@
           <div v-else class="flex flex-row justify-between space-x-2">
             <DatabaseSelect
               class="mt-1 w-full"
-              :selectedId="state.dataSource.databaseId"
+              :selectedID="state.dataSource.databaseID"
               :mode="'INSTANCE'"
-              :instanceId="instanceId"
+              :instanceID="instanceID"
               @select-database-id="
-                (databaseId) => {
-                  updateDataSource('databaseId', databaseId);
+                (databaseID) => {
+                  updateDataSource('databaseID', databaseID);
                 }
               "
             />
@@ -170,7 +170,7 @@ export default {
   name: "DataSourceCreateForm",
   emits: ["create", "cancel"],
   props: {
-    instanceId: {
+    instanceID: {
       required: true,
       type: Number,
     },
@@ -191,8 +191,8 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
-        databaseId: props.database ? props.database.id : UNKNOWN_ID,
-        instanceId: props.instanceId,
+        databaseID: props.database ? props.database.id : UNKNOWN_ID,
+        instanceID: props.instanceID,
         memberList: [],
       },
       showPassword: false,

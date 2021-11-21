@@ -26,41 +26,41 @@ type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	// Just returns ProjectId otherwise would cause circular dependency.
-	ProjectId int `jsonapi:"attr,projectId"`
+	// Just returns ProjectID otherwise would cause circular dependency.
+	ProjectID int `jsonapi:"attr,projectID"`
 
 	// Domain specific fields
 	Role        string `jsonapi:"attr,role"`
-	PrincipalId int
+	PrincipalID int
 	Principal   *Principal `jsonapi:"attr,principal"`
 }
 
 type ProjectMemberCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	ProjectId int
+	ProjectID int
 
 	// Domain specific fields
 	Role        ProjectRole `jsonapi:"attr,role"`
-	PrincipalId int         `jsonapi:"attr,principalId"`
+	PrincipalID int         `jsonapi:"attr,principalID"`
 }
 
 type ProjectMemberFind struct {
 	ID *int
 
 	// Related fields
-	ProjectId *int
+	ProjectID *int
 }
 
 func (find *ProjectMemberFind) String() string {
@@ -76,7 +76,7 @@ type ProjectMemberPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
@@ -87,7 +87,7 @@ type ProjectMemberDelete struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	DeleterId int
+	DeleterID int
 }
 
 type ProjectMemberService interface {

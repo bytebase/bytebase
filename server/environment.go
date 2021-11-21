@@ -21,7 +21,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create environment request").SetInternal(err)
 		}
 
-		environmentCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		environmentCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 
 		environment, err := s.EnvironmentService.CreateEnvironment(ctx, environmentCreate)
 		if err != nil {
@@ -76,7 +76,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		environmentPatch := &api.EnvironmentPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, environmentPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch environment request").SetInternal(err)
@@ -110,7 +110,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		for _, item := range patchList {
 			environmentPatch, _ := item.(*api.EnvironmentPatch)
-			environmentPatch.UpdaterId = c.Get(GetPrincipalIdContextKey()).(int)
+			environmentPatch.UpdaterID = c.Get(GetPrincipalIDContextKey()).(int)
 			_, err = s.EnvironmentService.PatchEnvironment(ctx, environmentPatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
@@ -140,7 +140,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeEnvironmentById(ctx context.Context, id int) (*api.Environment, error) {
+func (s *Server) ComposeEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	environmentFind := &api.EnvironmentFind{
 		ID: &id,
 	}
@@ -159,12 +159,12 @@ func (s *Server) ComposeEnvironmentById(ctx context.Context, id int) (*api.Envir
 func (s *Server) ComposeEnvironmentRelationship(ctx context.Context, environment *api.Environment) error {
 	var err error
 
-	environment.Creator, err = s.ComposePrincipalById(ctx, environment.CreatorId)
+	environment.Creator, err = s.ComposePrincipalByID(ctx, environment.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	environment.Updater, err = s.ComposePrincipalById(ctx, environment.UpdaterId)
+	environment.Updater, err = s.ComposePrincipalByID(ctx, environment.UpdaterID)
 	if err != nil {
 		return err
 	}

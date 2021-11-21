@@ -6,9 +6,9 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId int) ([]*api.Stage, error) {
+func (s *Server) ComposeStageListByPipelineID(ctx context.Context, pipelineID int) ([]*api.Stage, error) {
 	stageFind := &api.StageFind{
-		PipelineId: &pipelineId,
+		PipelineID: &pipelineID,
 	}
 	stageList, err := s.StageService.FindStageList(ctx, stageFind)
 	if err != nil {
@@ -26,22 +26,22 @@ func (s *Server) ComposeStageListByPipelineId(ctx context.Context, pipelineId in
 
 func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage) error {
 	var err error
-	stage.Creator, err = s.ComposePrincipalById(ctx, stage.CreatorId)
+	stage.Creator, err = s.ComposePrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	stage.Updater, err = s.ComposePrincipalById(ctx, stage.UpdaterId)
+	stage.Updater, err = s.ComposePrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	stage.Environment, err = s.ComposeEnvironmentById(ctx, stage.EnvironmentId)
+	stage.Environment, err = s.ComposeEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return err
 	}
 
-	stage.TaskList, err = s.ComposeTaskListByPipelineAndStageId(ctx, stage.PipelineId, stage.ID)
+	stage.TaskList, err = s.ComposeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
 	if err != nil {
 		return err
 	}

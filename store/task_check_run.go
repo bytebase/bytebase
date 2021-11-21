@@ -41,7 +41,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 		statusList = append(statusList, api.TaskCheckRunCanceled)
 	}
 	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskId:     &create.TaskId,
+		TaskID:     &create.TaskID,
 		Type:       &create.Type,
 		StatusList: &statusList,
 	}
@@ -70,7 +70,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 		if runningCount > 1 {
 			// Normally, this should not happen, if it occurs, emit a warning
 			s.l.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),
-				zap.Int("task_id", create.TaskId),
+				zap.Int("task_id", create.TaskID),
 				zap.String("task_check_type", string(create.Type)),
 			)
 		}
@@ -104,9 +104,9 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 		VALUES (?, ?, ?, 'RUNNING', ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.TaskId,
+		create.CreatorID,
+		create.CreatorID,
+		create.TaskID,
 		create.Type,
 		create.Comment,
 		create.Payload,
@@ -121,11 +121,11 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 	var taskCheckRun api.TaskCheckRun
 	if err := row.Scan(
 		&taskCheckRun.ID,
-		&taskCheckRun.CreatorId,
+		&taskCheckRun.CreatorID,
 		&taskCheckRun.CreatedTs,
-		&taskCheckRun.UpdaterId,
+		&taskCheckRun.UpdaterID,
 		&taskCheckRun.UpdatedTs,
-		&taskCheckRun.TaskId,
+		&taskCheckRun.TaskID,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
 		&taskCheckRun.Code,
@@ -203,7 +203,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 // PatchTaskCheckRunStatusTx updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
 func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
 	set, args = append(set, "code = ?"), append(args, patch.Code)
 	set, args = append(set, "result = ?"), append(args, patch.Result)
@@ -232,11 +232,11 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 	var taskCheckRun api.TaskCheckRun
 	if err := row.Scan(
 		&taskCheckRun.ID,
-		&taskCheckRun.CreatorId,
+		&taskCheckRun.CreatorID,
 		&taskCheckRun.CreatedTs,
-		&taskCheckRun.UpdaterId,
+		&taskCheckRun.UpdaterID,
 		&taskCheckRun.UpdatedTs,
-		&taskCheckRun.TaskId,
+		&taskCheckRun.TaskID,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
 		&taskCheckRun.Code,
@@ -256,7 +256,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.TaskId; v != nil {
+	if v := find.TaskID; v != nil {
 		where, args = append(where, "task_id = ?"), append(args, *v)
 	}
 	if v := find.Type; v != nil {
@@ -305,11 +305,11 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 		var taskCheckRun api.TaskCheckRun
 		if err := rows.Scan(
 			&taskCheckRun.ID,
-			&taskCheckRun.CreatorId,
+			&taskCheckRun.CreatorID,
 			&taskCheckRun.CreatedTs,
-			&taskCheckRun.UpdaterId,
+			&taskCheckRun.UpdaterID,
 			&taskCheckRun.UpdatedTs,
-			&taskCheckRun.TaskId,
+			&taskCheckRun.TaskID,
 			&taskCheckRun.Status,
 			&taskCheckRun.Type,
 			&taskCheckRun.Code,

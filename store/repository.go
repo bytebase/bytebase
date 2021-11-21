@@ -131,8 +131,8 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 	// Updates the project workflow_type to "VCS"
 	workflowType := api.VCS_WORKFLOW
 	projectPatch := api.ProjectPatch{
-		ID:           create.ProjectId,
-		UpdaterId:    create.CreatorId,
+		ID:           create.ProjectID,
+		UpdaterID:    create.CreatorID,
 		WorkflowType: &workflowType,
 	}
 	if _, err := s.projectService.PatchProjectTx(ctx, tx.Tx, &projectPatch); err != nil {
@@ -165,10 +165,10 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.VCSId,
-		create.ProjectId,
+		create.CreatorID,
+		create.CreatorID,
+		create.VCSID,
+		create.ProjectID,
 		create.Name,
 		create.FullPath,
 		create.WebURL,
@@ -176,10 +176,10 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		create.BaseDirectory,
 		create.FilePathTemplate,
 		create.SchemaPathTemplate,
-		create.ExternalId,
-		create.ExternalWebhookId,
+		create.ExternalID,
+		create.ExternalWebhookID,
 		create.WebhookURLHost,
-		create.WebhookEndpointId,
+		create.WebhookEndpointID,
 		create.WebhookSecretToken,
 		create.AccessToken,
 		create.ExpiresTs,
@@ -195,12 +195,12 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 	var repository api.Repository
 	if err := row.Scan(
 		&repository.ID,
-		&repository.CreatorId,
+		&repository.CreatorID,
 		&repository.CreatedTs,
-		&repository.UpdaterId,
+		&repository.UpdaterID,
 		&repository.UpdatedTs,
-		&repository.VCSId,
-		&repository.ProjectId,
+		&repository.VCSID,
+		&repository.ProjectID,
 		&repository.Name,
 		&repository.FullPath,
 		&repository.WebURL,
@@ -208,10 +208,10 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 		&repository.BaseDirectory,
 		&repository.FilePathTemplate,
 		&repository.SchemaPathTemplate,
-		&repository.ExternalId,
-		&repository.ExternalWebhookId,
+		&repository.ExternalID,
+		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,
-		&repository.WebhookEndpointId,
+		&repository.WebhookEndpointID,
 		&repository.WebhookSecretToken,
 		&repository.AccessToken,
 		&repository.ExpiresTs,
@@ -229,13 +229,13 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.VCSId; v != nil {
+	if v := find.VCSID; v != nil {
 		where, args = append(where, "vcs_id = ?"), append(args, *v)
 	}
-	if v := find.ProjectId; v != nil {
+	if v := find.ProjectID; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
-	if v := find.WebhookEndpointId; v != nil {
+	if v := find.WebhookEndpointID; v != nil {
 		where, args = append(where, "webhook_endpoint_id = ?"), append(args, *v)
 	}
 
@@ -278,12 +278,12 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 		var repository api.Repository
 		if err := rows.Scan(
 			&repository.ID,
-			&repository.CreatorId,
+			&repository.CreatorID,
 			&repository.CreatedTs,
-			&repository.UpdaterId,
+			&repository.UpdaterID,
 			&repository.UpdatedTs,
-			&repository.VCSId,
-			&repository.ProjectId,
+			&repository.VCSID,
+			&repository.ProjectID,
 			&repository.Name,
 			&repository.FullPath,
 			&repository.WebURL,
@@ -291,10 +291,10 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
 			&repository.SchemaPathTemplate,
-			&repository.ExternalId,
-			&repository.ExternalWebhookId,
+			&repository.ExternalID,
+			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
-			&repository.WebhookEndpointId,
+			&repository.WebhookEndpointID,
 			&repository.WebhookSecretToken,
 			&repository.AccessToken,
 			&repository.ExpiresTs,
@@ -315,7 +315,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 // patchRepository updates a repository by ID. Returns the new state of the repository after update.
 func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*api.Repository, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {
 		set, args = append(set, "branch_filter = ?"), append(args, *v)
 	}
@@ -349,12 +349,12 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 		var repository api.Repository
 		if err := row.Scan(
 			&repository.ID,
-			&repository.CreatorId,
+			&repository.CreatorID,
 			&repository.CreatedTs,
-			&repository.UpdaterId,
+			&repository.UpdaterID,
 			&repository.UpdatedTs,
-			&repository.VCSId,
-			&repository.ProjectId,
+			&repository.VCSID,
+			&repository.ProjectID,
 			&repository.Name,
 			&repository.FullPath,
 			&repository.WebURL,
@@ -362,10 +362,10 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
 			&repository.SchemaPathTemplate,
-			&repository.ExternalId,
-			&repository.ExternalWebhookId,
+			&repository.ExternalID,
+			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
-			&repository.WebhookEndpointId,
+			&repository.WebhookEndpointID,
 			&repository.WebhookSecretToken,
 			&repository.AccessToken,
 			&repository.ExpiresTs,
@@ -385,8 +385,8 @@ func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete
 	// Updates the project workflow_type to "UI"
 	workflowType := api.UI_WORKFLOW
 	projectPatch := api.ProjectPatch{
-		ID:           delete.ProjectId,
-		UpdaterId:    delete.DeleterId,
+		ID:           delete.ProjectID,
+		UpdaterID:    delete.DeleterID,
 		WorkflowType: &workflowType,
 	}
 	if _, err := s.projectService.PatchProjectTx(ctx, tx.Tx, &projectPatch); err != nil {
@@ -394,14 +394,14 @@ func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete
 	}
 
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectId)
+	result, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectID)
 	if err != nil {
 		return FormatError(err)
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository not found for project ID: %d", delete.ProjectId)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository not found for project ID: %d", delete.ProjectID)}
 	}
 
 	return nil

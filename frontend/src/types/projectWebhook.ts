@@ -1,5 +1,5 @@
 import { ActivityType } from "./activity";
-import { MemberId, ProjectId } from "./id";
+import { MemberID, ProjectID } from "./id";
 import { Principal } from "./principal";
 
 type ProjectWebhookTypeItem = {
@@ -77,10 +77,10 @@ export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: ProjectWebhookActivityItem[] = [
 
 // Project Member
 export type ProjectWebhook = {
-  id: MemberId;
+  id: MemberID;
 
   // Related fields
-  projectId: ProjectId;
+  projectID: ProjectID;
 
   // Standard fields
   creator: Principal;

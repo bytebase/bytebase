@@ -3,7 +3,7 @@
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
-        :selectedId="state.selectedEnvironment?.id"
+        :selectedID="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
       <div class="flex flex-row space-x-4">
@@ -24,7 +24,7 @@
         </button>
         <MemberSelect
           v-if="scopeByPrincipal"
-          :selectedId="state.selectedPrincipalId"
+          :selectedID="state.selectedPrincipalID"
           @select-principal-id="selectPrincipal"
         />
         <BBTableSearch
@@ -51,7 +51,7 @@ import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
-import { Environment, Issue, PrincipalId, ProjectId } from "../types";
+import { Environment, Issue, PrincipalID, ProjectID } from "../types";
 import { computed, onMounted, watchEffect } from "@vue/runtime-core";
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -62,9 +62,9 @@ interface LocalState {
   openList: Issue[];
   closedList: Issue[];
   searchText: string;
-  selectedPrincipalId: PrincipalId;
+  selectedPrincipalID: PrincipalID;
   selectedEnvironment?: Environment;
-  selectedProjectId?: ProjectId;
+  selectedProjectID?: ProjectID;
 }
 
 export default {
@@ -98,13 +98,13 @@ export default {
       openList: [],
       closedList: [],
       searchText: "",
-      selectedPrincipalId: currentUser.value.id,
+      selectedPrincipalID: currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
+        ? store.getters["environment/environmentByID"](
             router.currentRoute.value.query.environment
           )
         : undefined,
-      selectedProjectId: router.currentRoute.value.query.project
+      selectedProjectID: router.currentRoute.value.query.project
         ? parseInt(router.currentRoute.value.query.project as string)
         : undefined,
     });
@@ -115,8 +115,8 @@ export default {
     });
 
     const project = computed(() => {
-      if (state.selectedProjectId) {
-        return store.getters["project/projectById"](state.selectedProjectId);
+      if (state.selectedProjectID) {
+        return store.getters["project/projectByID"](state.selectedProjectID);
       }
       return undefined;
     });
@@ -128,8 +128,8 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
-            userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
-            projectId: state.selectedProjectId,
+            userID: scopeByPrincipal ? state.selectedPrincipalID : undefined,
+            projectID: state.selectedProjectID,
           })
           .then((issueList: Issue[]) => {
             state.openList = issueList;
@@ -140,8 +140,8 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
-            userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
-            projectId: state.selectedProjectId,
+            userID: scopeByPrincipal ? state.selectedPrincipalID : undefined,
+            projectID: state.selectedProjectID,
           })
           .then((issueList: Issue[]) => {
             state.closedList = issueList;
@@ -209,13 +209,13 @@ export default {
       }
     };
 
-    const selectPrincipal = (principalId: PrincipalId) => {
-      state.selectedPrincipalId = principalId;
+    const selectPrincipal = (principalID: PrincipalID) => {
+      state.selectedPrincipalID = principalID;
       router.replace({
         name: "workspace.issue",
         query: {
           ...router.currentRoute.value.query,
-          user: principalId,
+          user: principalID,
         },
       });
     };

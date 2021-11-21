@@ -135,11 +135,11 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.ProjectId,
+		create.CreatorID,
+		create.CreatorID,
+		create.ProjectID,
 		create.Role,
-		create.PrincipalId,
+		create.PrincipalID,
 	)
 
 	if err != nil {
@@ -151,13 +151,13 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 	var projectMember api.ProjectMember
 	if err := row.Scan(
 		&projectMember.ID,
-		&projectMember.CreatorId,
+		&projectMember.CreatorID,
 		&projectMember.CreatedTs,
-		&projectMember.UpdaterId,
+		&projectMember.UpdaterID,
 		&projectMember.UpdatedTs,
-		&projectMember.ProjectId,
+		&projectMember.ProjectID,
 		&projectMember.Role,
-		&projectMember.PrincipalId,
+		&projectMember.PrincipalID,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -171,7 +171,7 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.ProjectId; v != nil {
+	if v := find.ProjectID; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
@@ -200,13 +200,13 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 		var projectMember api.ProjectMember
 		if err := rows.Scan(
 			&projectMember.ID,
-			&projectMember.CreatorId,
+			&projectMember.CreatorID,
 			&projectMember.CreatedTs,
-			&projectMember.UpdaterId,
+			&projectMember.UpdaterID,
 			&projectMember.UpdatedTs,
-			&projectMember.ProjectId,
+			&projectMember.ProjectID,
 			&projectMember.Role,
-			&projectMember.PrincipalId,
+			&projectMember.PrincipalID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -223,7 +223,7 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 // patchProjectMember updates a projectMember by ID. Returns the new state of the projectMember after update.
 func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Role; v != nil {
 		set, args = append(set, "role = ?"), append(args, api.Role(*v))
 	}
@@ -248,13 +248,13 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		var projectMember api.ProjectMember
 		if err := row.Scan(
 			&projectMember.ID,
-			&projectMember.CreatorId,
+			&projectMember.CreatorID,
 			&projectMember.CreatedTs,
-			&projectMember.UpdaterId,
+			&projectMember.UpdaterID,
 			&projectMember.UpdatedTs,
-			&projectMember.ProjectId,
+			&projectMember.ProjectID,
 			&projectMember.Role,
-			&projectMember.PrincipalId,
+			&projectMember.PrincipalID,
 		); err != nil {
 			return nil, FormatError(err)
 		}

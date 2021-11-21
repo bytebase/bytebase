@@ -171,8 +171,8 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 		VALUES (?, ?, ?, ?)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`order`"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Name,
 		order+1,
 	)
@@ -187,9 +187,9 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 	if err := row2.Scan(
 		&environment.ID,
 		&environment.RowStatus,
-		&environment.CreatorId,
+		&environment.CreatorID,
 		&environment.CreatedTs,
-		&environment.UpdaterId,
+		&environment.UpdaterID,
 		&environment.UpdatedTs,
 		&environment.Name,
 		&environment.Order,
@@ -236,9 +236,9 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 		if err := rows.Scan(
 			&environment.ID,
 			&environment.RowStatus,
-			&environment.CreatorId,
+			&environment.CreatorID,
 			&environment.CreatedTs,
-			&environment.UpdaterId,
+			&environment.UpdaterID,
 			&environment.UpdatedTs,
 			&environment.Name,
 			&environment.Order,
@@ -258,7 +258,7 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 // patchEnvironment updates a environment by ID. Returns the new state of the environment after update.
 func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
 	}
@@ -290,9 +290,9 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 		if err := row.Scan(
 			&environment.ID,
 			&environment.RowStatus,
-			&environment.CreatorId,
+			&environment.CreatorID,
 			&environment.CreatedTs,
-			&environment.UpdaterId,
+			&environment.UpdaterID,
 			&environment.UpdatedTs,
 			&environment.Name,
 			&environment.Order,

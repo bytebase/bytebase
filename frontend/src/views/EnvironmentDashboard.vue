@@ -162,14 +162,14 @@ export default {
     onMounted(() => {
       store.dispatch("command/registerCommand", {
         id: "bb.environment.create",
-        registerId: "environment.dashboard",
+        registerID: "environment.dashboard",
         run: () => {
           createEnvironment();
         },
       });
       store.dispatch("command/registerCommand", {
         id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
+        registerID: "environment.dashboard",
         run: () => {
           startReorder();
         },
@@ -191,11 +191,11 @@ export default {
     onUnmounted(() => {
       store.dispatch("command/unregisterCommand", {
         id: "bb.environment.create",
-        registerId: "environment.dashboard",
+        registerID: "environment.dashboard",
       });
       store.dispatch("command/unregisterCommand", {
         id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
+        registerID: "environment.dashboard",
       });
     });
 
@@ -242,12 +242,12 @@ export default {
         .then((environment: Environment) => {
           Promise.all([
             store.dispatch("policy/upsertPolicyByEnvironmentAndType", {
-              environmentId: environment.id,
+              environmentID: environment.id,
               type: "bb.policy.pipeline-approval",
               policyUpsert: { payload: approvalPolicy.payload },
             }),
             store.dispatch("policy/upsertPolicyByEnvironmentAndType", {
-              environmentId: environment.id,
+              environmentID: environment.id,
               type: "bb.policy.backup-plan",
               policyUpsert: { payload: backupPolicy.payload },
             }),

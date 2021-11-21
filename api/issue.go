@@ -54,34 +54,34 @@ func (e IssueType) String() string {
 }
 
 // It has to be string type because the id for stage field contain multiple parts.
-type IssueFieldId string
+type IssueFieldID string
 
 const (
-	IssueFieldName           IssueFieldId = "1"
-	IssueFieldStatus         IssueFieldId = "2"
-	IssueFieldAssignee       IssueFieldId = "3"
-	IssueFieldDescription    IssueFieldId = "4"
-	IssueFieldProject        IssueFieldId = "5"
-	IssueFieldSubscriberList IssueFieldId = "6"
-	IssueFieldSql            IssueFieldId = "7"
-	IssueFieldRollbackSql    IssueFieldId = "8"
+	IssueFieldName           IssueFieldID = "1"
+	IssueFieldStatus         IssueFieldID = "2"
+	IssueFieldAssignee       IssueFieldID = "3"
+	IssueFieldDescription    IssueFieldID = "4"
+	IssueFieldProject        IssueFieldID = "5"
+	IssueFieldSubscriberList IssueFieldID = "6"
+	IssueFieldSql            IssueFieldID = "7"
+	IssueFieldRollbackSql    IssueFieldID = "8"
 )
 
 type Issue struct {
 	ID int `jsonapi:"primary,issue"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	ProjectId  int
+	ProjectID  int
 	Project    *Project `jsonapi:"relation,project"`
-	PipelineId int
+	PipelineID int
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 
 	// Domain specific fields
@@ -89,29 +89,29 @@ type Issue struct {
 	Status           IssueStatus `jsonapi:"attr,status"`
 	Type             IssueType   `jsonapi:"attr,type"`
 	Description      string      `jsonapi:"attr,description"`
-	AssigneeId       int         `jsonapi:"attr,assigneeId"`
+	AssigneeID       int         `jsonapi:"attr,assigneeID"`
 	Assignee         *Principal  `jsonapi:"attr,assignee"`
-	SubscriberIdList []int       `jsonapi:"attr,subscriberIdList"`
+	SubscriberIDList []int       `jsonapi:"attr,subscriberIDList"`
 	Payload          string      `jsonapi:"attr,payload"`
 }
 
 type IssueCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	ProjectId  int `jsonapi:"attr,projectId"`
-	PipelineId int
+	ProjectID  int `jsonapi:"attr,projectID"`
+	PipelineID int
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
 	Name              string    `jsonapi:"attr,name"`
 	Type              IssueType `jsonapi:"attr,type"`
 	Description       string    `jsonapi:"attr,description"`
-	AssigneeId        int       `jsonapi:"attr,assigneeId"`
-	SubscriberIdList  []int     `jsonapi:"attr,subscriberIdList"`
-	RollbackIssueId   *int      `jsonapi:"attr,rollbackIssueId"`
+	AssigneeID        int       `jsonapi:"attr,assigneeID"`
+	SubscriberIDList  []int     `jsonapi:"attr,subscriberIDList"`
+	RollbackIssueID   *int      `jsonapi:"attr,rollbackIssueID"`
 	Payload           string    `jsonapi:"attr,payload"`
 }
 
@@ -119,12 +119,12 @@ type IssueFind struct {
 	ID *int
 
 	// Related fields
-	ProjectId *int
+	ProjectID *int
 
 	// Domain specific fields
-	PipelineId *int
-	// Find issue where principalId is either creator, assignee or subscriber
-	PrincipalId *int
+	PipelineID *int
+	// Find issue where principalID is either creator, assignee or subscriber
+	PrincipalID *int
 	StatusList  *[]IssueStatus
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
@@ -143,14 +143,14 @@ type IssuePatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
 	// Status is only set manualy via IssueStatusPatch
 	Status      *IssueStatus
 	Description *string `jsonapi:"attr,description"`
-	AssigneeId  *int    `jsonapi:"attr,assigneeId"`
+	AssigneeID  *int    `jsonapi:"attr,assigneeID"`
 	Payload     *string `jsonapi:"attr,payload"`
 }
 
@@ -159,7 +159,7 @@ type IssueStatusPatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Status  IssueStatus `jsonapi:"attr,status"`

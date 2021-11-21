@@ -106,7 +106,7 @@ func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*
 }
 
 // FindInboxSummary returns the inbox summary for a particular principal
-func (s *InboxService) FindInboxSummary(ctx context.Context, principalId int) (*api.InboxSummary, error) {
+func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -116,7 +116,7 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalId int) (*
 	row, err := tx.QueryContext(ctx, `
 		SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = ? AND status = 'UNREAD')
 	`,
-		principalId,
+		principalID,
 	)
 
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalId int) (*
 		row2, err := tx.QueryContext(ctx, `
 		SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = ? AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')
 	`,
-			principalId,
+			principalID,
 		)
 
 		if err != nil {
@@ -169,8 +169,8 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 		VALUES (?, ?, 'UNREAD')
 		RETURNING id, receiver_id, activity_id, `+"`status`"+`
 	`,
-		create.ReceiverId,
-		create.ActivityId,
+		create.ReceiverID,
+		create.ActivityID,
 	)
 
 	if err != nil {
@@ -180,18 +180,18 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 
 	row.Next()
 	var inbox api.Inbox
-	var activityId int
+	var activityID int
 	if err := row.Scan(
 		&inbox.ID,
-		&inbox.ReceiverId,
-		&activityId,
+		&inbox.ReceiverID,
+		&activityID,
 		&inbox.Status,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
 	activityFind := &api.ActivityFind{
-		ID: &activityId,
+		ID: &activityID,
 	}
 	inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
 	if err != nil {
@@ -208,7 +208,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 	if v := find.ID; v != nil {
 		where, args = append(where, "inbox.id = ?"), append(args, *v)
 	}
-	if v := find.ReceiverId; v != nil {
+	if v := find.ReceiverID; v != nil {
 		where, args = append(where, "receiver_id = ?"), append(args, *v)
 	}
 	if v := find.ReadCreatedAfterTs; v != nil {
@@ -247,14 +247,14 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 		inbox.Activity = &api.Activity{}
 		if err := rows.Scan(
 			&inbox.ID,
-			&inbox.ReceiverId,
+			&inbox.ReceiverID,
 			&inbox.Status,
 			&inbox.Activity.ID,
-			&inbox.Activity.CreatorId,
+			&inbox.Activity.CreatorID,
 			&inbox.Activity.CreatedTs,
-			&inbox.Activity.UpdaterId,
+			&inbox.Activity.UpdaterID,
 			&inbox.Activity.UpdatedTs,
-			&inbox.Activity.ContainerId,
+			&inbox.Activity.ContainerID,
 			&inbox.Activity.Type,
 			&inbox.Activity.Level,
 			&inbox.Activity.Comment,
@@ -294,18 +294,18 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 
 	if row.Next() {
 		var inbox api.Inbox
-		var activityId int
+		var activityID int
 		if err := row.Scan(
 			&inbox.ID,
-			&inbox.ReceiverId,
-			&activityId,
+			&inbox.ReceiverID,
+			&activityID,
 			&inbox.Status,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
 		activityFind := &api.ActivityFind{
-			ID: &activityId,
+			ID: &activityID,
 		}
 		inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
 		if err != nil {

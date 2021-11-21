@@ -35,20 +35,20 @@ type Database struct {
 	ID int `jsonapi:"primary,database"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	ProjectId      int
+	ProjectID      int
 	Project        *Project `jsonapi:"relation,project"`
-	InstanceId     int
+	InstanceID     int
 	Instance       *Instance     `jsonapi:"relation,instance"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
-	SourceBackupId int
+	SourceBackupID int
 	SourceBackup   *Backup `jsonapi:"relation,sourceBackup"`
 	// Anomalies are stored in a separate table, but just return here for convenience
 	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
@@ -64,26 +64,26 @@ type Database struct {
 type DatabaseCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	ProjectId     int `jsonapi:"attr,projectId"`
-	InstanceId    int `jsonapi:"attr,instanceId"`
-	EnvironmentId int
+	ProjectID     int `jsonapi:"attr,projectID"`
+	InstanceID    int `jsonapi:"attr,instanceID"`
+	EnvironmentID int
 
 	// Domain specific fields
 	Name         string `jsonapi:"attr,name"`
 	CharacterSet string `jsonapi:"attr,characterSet"`
 	Collation    string `jsonapi:"attr,collation"`
-	IssueId      int    `jsonapi:"attr,issueId"`
+	IssueID      int    `jsonapi:"attr,issueID"`
 }
 
 type DatabaseFind struct {
 	ID *int
 
 	// Related fields
-	InstanceId *int
-	ProjectId  *int
+	InstanceID *int
+	ProjectID  *int
 
 	// Domain specific fields
 	Name               *string
@@ -103,11 +103,11 @@ type DatabasePatch struct {
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Related fields
-	ProjectId      *int `jsonapi:"attr,projectId"`
-	SourceBackupId *int
+	ProjectID      *int `jsonapi:"attr,projectID"`
+	SourceBackupID *int
 
 	// Domain specific fields
 	SyncStatus           *SyncStatus

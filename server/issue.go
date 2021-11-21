@@ -27,7 +27,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		// since we are not creating pipeline/stage list/task list in a single transaction.
 		// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
 		// quite unlikely so we will live with it for now.
-		if issueCreate.AssigneeId == api.UNKNOWN_ID {
+		if issueCreate.AssigneeID == api.UNKNOWN_ID {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 		}
 
@@ -41,7 +41,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
 					}
 					instanceFind := &api.InstanceFind{
-						ID: &taskCreate.InstanceId,
+						ID: &taskCreate.InstanceID,
 					}
 					instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
 					if err != nil {
@@ -93,26 +93,26 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 					if taskCreate.DatabaseName == "" {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
 					}
-					if taskCreate.BackupId == nil {
+					if taskCreate.BackupID == nil {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, backup missing")
 					}
 				}
 			}
 		}
 
-		issue, err := s.CreateIssue(ctx, issueCreate, c.Get(GetPrincipalIdContextKey()).(int))
+		issue, err := s.CreateIssue(ctx, issueCreate, c.Get(GetPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
 
-		for _, subscriberId := range issueCreate.SubscriberIdList {
+		for _, subscriberID := range issueCreate.SubscriberIDList {
 			subscriberCreate := &api.IssueSubscriberCreate{
-				IssueId:      issue.ID,
-				SubscriberId: subscriberId,
+				IssueID:      issue.ID,
+				SubscriberID: subscriberID,
 			}
 			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberId, issue.ID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
 			}
 		}
 
@@ -126,13 +126,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := context.Background()
 		issueFind := &api.IssueFind{}
-		projectIdStr := c.QueryParams().Get("project")
-		if projectIdStr != "" {
-			projectId, err := strconv.Atoi(projectIdStr)
+		projectIDStr := c.QueryParams().Get("project")
+		if projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project query parameter is not a number: %s", projectIDStr)).SetInternal(err)
 			}
-			issueFind.ProjectId = &projectId
+			issueFind.ProjectID = &projectID
 		}
 		if issueStatusListStr := c.QueryParam("status"); issueStatusListStr != "" {
 			statusList := []api.IssueStatus{}
@@ -148,13 +148,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			issueFind.Limit = &limit
 		}
-		userIdStr := c.QueryParams().Get("user")
-		if userIdStr != "" {
-			userId, err := strconv.Atoi(userIdStr)
+		userIDStr := c.QueryParams().Get("user")
+		if userIDStr != "" {
+			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("user query parameter is not a number: %s", userIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("user query parameter is not a number: %s", userIDStr)).SetInternal(err)
 			}
-			issueFind.PrincipalId = &userId
+			issueFind.PrincipalID = &userID
 		}
 		list, err := s.IssueService.FindIssueList(ctx, issueFind)
 		if err != nil {
@@ -174,14 +174,14 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/issue/:issueId", func(c echo.Context) error {
+	g.GET("/issue/:issueID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("issueId"))
+		id, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueById(ctx, id)
+		issue, err := s.ComposeIssueByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -196,16 +196,16 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/issue/:issueId", func(c echo.Context) error {
+	g.PATCH("/issue/:issueID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("issueId"))
+		id, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
 		issuePatch := &api.IssuePatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue request").SetInternal(err)
@@ -230,7 +230,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		payloadList := [][]byte{}
 		if issuePatch.Name != nil && *issuePatch.Name != issue.Name {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-				FieldId:   api.IssueFieldName,
+				FieldID:   api.IssueFieldName,
 				OldValue:  issue.Name,
 				NewValue:  *issuePatch.Name,
 				IssueName: issue.Name,
@@ -242,7 +242,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		if issuePatch.Description != nil && *issuePatch.Description != issue.Description {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-				FieldId:   api.IssueFieldDescription,
+				FieldID:   api.IssueFieldDescription,
 				OldValue:  issue.Description,
 				NewValue:  *issuePatch.Description,
 				IssueName: issue.Name,
@@ -252,11 +252,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			payloadList = append(payloadList, payload)
 		}
-		if issuePatch.AssigneeId != nil && *issuePatch.AssigneeId != issue.AssigneeId {
+		if issuePatch.AssigneeID != nil && *issuePatch.AssigneeID != issue.AssigneeID {
 			payload, err := json.Marshal(api.ActivityIssueFieldUpdatePayload{
-				FieldId:   api.IssueFieldAssignee,
-				OldValue:  strconv.Itoa(issue.AssigneeId),
-				NewValue:  strconv.Itoa(*issuePatch.AssigneeId),
+				FieldID:   api.IssueFieldAssignee,
+				OldValue:  strconv.Itoa(issue.AssigneeID),
+				NewValue:  strconv.Itoa(*issuePatch.AssigneeID),
 				IssueName: issue.Name,
 			})
 			if err != nil {
@@ -267,8 +267,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		for _, payload := range payloadList {
 			activityCreate := &api.ActivityCreate{
-				CreatorId:   c.Get(GetPrincipalIdContextKey()).(int),
-				ContainerId: issue.ID,
+				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				ContainerID: issue.ID,
 				Type:        api.ActivityIssueFieldUpdate,
 				Level:       api.ACTIVITY_INFO,
 				Payload:     string(payload),
@@ -292,22 +292,22 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/issue/:issueId/status", func(c echo.Context) error {
+	g.PATCH("/issue/:issueID/status", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("issueId"))
+		id, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
 		issueStatusPatch := &api.IssueStatusPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueById(ctx, id)
+		issue, err := s.ComposeIssueByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -315,7 +315,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
 
-		updatedIssue, err := s.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterId, issueStatusPatch.Comment)
+		updatedIssue, err := s.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
@@ -337,7 +337,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeIssueById(ctx context.Context, id int) (*api.Issue, error) {
+func (s *Server) ComposeIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	issueFind := &api.IssueFind{
 		ID: &id,
 	}
@@ -356,40 +356,40 @@ func (s *Server) ComposeIssueById(ctx context.Context, id int) (*api.Issue, erro
 func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue) error {
 	var err error
 
-	issue.Creator, err = s.ComposePrincipalById(ctx, issue.CreatorId)
+	issue.Creator, err = s.ComposePrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	issue.Updater, err = s.ComposePrincipalById(ctx, issue.UpdaterId)
+	issue.Updater, err = s.ComposePrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	issue.Assignee, err = s.ComposePrincipalById(ctx, issue.AssigneeId)
+	issue.Assignee, err = s.ComposePrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return err
 	}
 
 	issueSubscriberFind := &api.IssueSubscriberFind{
-		IssueId: &issue.ID,
+		IssueID: &issue.ID,
 	}
 	list, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
 
-	issue.SubscriberIdList = []int{}
+	issue.SubscriberIDList = []int{}
 	for _, subscriber := range list {
-		issue.SubscriberIdList = append(issue.SubscriberIdList, subscriber.SubscriberId)
+		issue.SubscriberIDList = append(issue.SubscriberIDList, subscriber.SubscriberID)
 	}
 
-	issue.Project, err = s.ComposeProjectlById(ctx, issue.ProjectId)
+	issue.Project, err = s.ComposeProjectlByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
 
-	issue.Pipeline, err = s.ComposePipelineById(ctx, issue.PipelineId)
+	issue.Pipeline, err = s.ComposePipelineByID(ctx, issue.PipelineID)
 	if err != nil {
 		return err
 	}
@@ -397,27 +397,27 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
-func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorId int) (*api.Issue, error) {
-	issueCreate.Pipeline.CreatorId = creatorId
+func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+	issueCreate.Pipeline.CreatorID = creatorID
 	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pipeline for issue. Error %w", err)
 	}
 
 	for _, stageCreate := range issueCreate.Pipeline.StageList {
-		stageCreate.CreatorId = creatorId
-		stageCreate.PipelineId = createdPipeline.ID
+		stageCreate.CreatorID = creatorID
+		stageCreate.PipelineID = createdPipeline.ID
 		createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stage for issue. Error %w", err)
 		}
 
 		for _, taskCreate := range stageCreate.TaskList {
-			taskCreate.CreatorId = creatorId
-			taskCreate.PipelineId = createdPipeline.ID
-			taskCreate.StageId = createdStage.ID
+			taskCreate.CreatorID = creatorID
+			taskCreate.PipelineID = createdPipeline.ID
+			taskCreate.StageID = createdStage.ID
 			instanceFind := &api.InstanceFind{
-				ID: &taskCreate.InstanceId,
+				ID: &taskCreate.InstanceID,
 			}
 			instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
 			if err != nil {
@@ -429,7 +429,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
 				}
 				payload := api.TaskDatabaseCreatePayload{}
-				payload.ProjectId = issueCreate.ProjectId
+				payload.ProjectID = issueCreate.ProjectID
 				payload.DatabaseName = taskCreate.DatabaseName
 				payload.CharacterSet = taskCreate.CharacterSet
 				payload.Collation = taskCreate.Collation
@@ -475,7 +475,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				}
 				payload := api.TaskDatabaseRestorePayload{}
 				payload.DatabaseName = taskCreate.DatabaseName
-				payload.BackupId = *taskCreate.BackupId
+				payload.BackupID = *taskCreate.BackupID
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
@@ -488,8 +488,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	issueCreate.CreatorId = creatorId
-	issueCreate.PipelineId = createdPipeline.ID
+	issueCreate.CreatorID = creatorID
+	issueCreate.PipelineID = createdPipeline.ID
 	issue, err := s.IssueService.CreateIssue(ctx, issueCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create issue. Error %w", err)
@@ -498,8 +498,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Name,
 	}
-	if issueCreate.RollbackIssueId != nil {
-		createActivityPayload.RollbackIssueId = *issueCreate.RollbackIssueId
+	if issueCreate.RollbackIssueID != nil {
+		createActivityPayload.RollbackIssueID = *issueCreate.RollbackIssueID
 	}
 
 	bytes, err := json.Marshal(createActivityPayload)
@@ -507,8 +507,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
 	}
 	activityCreate := &api.ActivityCreate{
-		CreatorId:   creatorId,
-		ContainerId: issue.ID,
+		CreatorID:   creatorID,
+		ContainerID: issue.ID,
 		Type:        api.ActivityIssueCreate,
 		Level:       api.ACTIVITY_INFO,
 		Payload:     string(bytes),
@@ -521,9 +521,9 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	// If we are creating a rollback issue, then we will also post a comment on the original issue
-	if issueCreate.RollbackIssueId != nil {
+	if issueCreate.RollbackIssueID != nil {
 		issueFind := &api.IssueFind{
-			ID: issueCreate.RollbackIssueId,
+			ID: issueCreate.RollbackIssueID,
 		}
 		rollbackIssue, err := s.IssueService.FindIssue(ctx, issueFind)
 		if err != nil {
@@ -536,8 +536,8 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
 		}
 		activityCreate := &api.ActivityCreate{
-			CreatorId:   creatorId,
-			ContainerId: *issueCreate.RollbackIssueId,
+			CreatorID:   creatorID,
+			ContainerID: *issueCreate.RollbackIssueID,
 			Type:        api.ActivityIssueCommentCreate,
 			Level:       api.ACTIVITY_INFO,
 			Comment:     fmt.Sprintf("Created rollback issue %q", issue.Name),
@@ -562,7 +562,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterId int, comment string) (*api.Issue, error) {
+func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.Issue_Open:
@@ -584,7 +584,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.ChangeTaskStatus(ctx, task, api.TaskCanceled, updaterId); err != nil {
+					if _, err := s.ChangeTaskStatus(ctx, task, api.TaskCanceled, updaterID); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
@@ -594,8 +594,8 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 
 	pipelinePatch := &api.PipelinePatch{
-		ID:        issue.PipelineId,
-		UpdaterId: updaterId,
+		ID:        issue.PipelineID,
+		UpdaterID: updaterID,
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.PipelineService.PatchPipeline(ctx, pipelinePatch); err != nil {
@@ -604,7 +604,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 
 	issuePatch := &api.IssuePatch{
 		ID:        issue.ID,
-		UpdaterId: updaterId,
+		UpdaterID: updaterID,
 		Status:    &newStatus,
 	}
 	updatedIssue, err := s.IssueService.PatchIssue(ctx, issuePatch)
@@ -625,8 +625,8 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 
 	activityCreate := &api.ActivityCreate{
-		CreatorId:   updaterId,
-		ContainerId: issue.ID,
+		CreatorID:   updaterID,
+		ContainerID: issue.ID,
 		Type:        api.ActivityIssueStatusUpdate,
 		Level:       api.ACTIVITY_INFO,
 		Comment:     comment,
@@ -644,37 +644,37 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 }
 
 func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, activity_id int) error {
-	if issue.CreatorId != api.SYSTEM_BOT_ID {
+	if issue.CreatorID != api.SYSTEM_BOT_ID {
 		inboxCreate := &api.InboxCreate{
-			ReceiverId: issue.CreatorId,
-			ActivityId: activity_id,
+			ReceiverID: issue.CreatorID,
+			ActivityID: activity_id,
 		}
 		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 		if err != nil {
-			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorId, err)
+			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorID, err)
 		}
 	}
 
-	if issue.AssigneeId != api.SYSTEM_BOT_ID && issue.AssigneeId != issue.CreatorId {
+	if issue.AssigneeID != api.SYSTEM_BOT_ID && issue.AssigneeID != issue.CreatorID {
 		inboxCreate := &api.InboxCreate{
-			ReceiverId: issue.AssigneeId,
-			ActivityId: activity_id,
+			ReceiverID: issue.AssigneeID,
+			ActivityID: activity_id,
 		}
 		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 		if err != nil {
-			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeId, err)
+			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeID, err)
 		}
 	}
 
-	for _, subscriberId := range issue.SubscriberIdList {
-		if subscriberId != api.SYSTEM_BOT_ID && subscriberId != issue.CreatorId && subscriberId != issue.AssigneeId {
+	for _, subscriberID := range issue.SubscriberIDList {
+		if subscriberID != api.SYSTEM_BOT_ID && subscriberID != issue.CreatorID && subscriberID != issue.AssigneeID {
 			inboxCreate := &api.InboxCreate{
-				ReceiverId: subscriberId,
-				ActivityId: activity_id,
+				ReceiverID: subscriberID,
+				ActivityID: activity_id,
 			}
 			_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 			if err != nil {
-				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriberId, err)
+				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriberID, err)
 			}
 		}
 	}

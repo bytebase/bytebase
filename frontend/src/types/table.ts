@@ -1,6 +1,6 @@
 import { Column } from "./column";
 import { Database } from "./database";
-import { TableId } from "./id";
+import { TableID } from "./id";
 import { Principal } from "./principal";
 
 export type TableType = "BASE TABLE" | "VIEW";
@@ -8,7 +8,7 @@ export type TableEngineType = "InnoDB";
 
 // Table
 export type Table = {
-  id: TableId;
+  id: TableID;
 
   // Related fields
   database: Database;

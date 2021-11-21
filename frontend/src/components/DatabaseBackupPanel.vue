@@ -148,14 +148,14 @@ export default {
     });
 
     const prepareBackupList = () => {
-      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
+      store.dispatch("backup/fetchBackupListByDatabaseID", props.database.id);
     };
 
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
       store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
-        environmentId: props.database.instance.environment.id,
+        environmentID: props.database.instance.environment.id,
         type: "bb.policy.backup-plan",
       });
     };
@@ -171,7 +171,7 @@ export default {
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
       const list = cloneDeep(
-        store.getters["backup/backupListByDatabaseId"](props.database.id)
+        store.getters["backup/backupListByDatabaseID"](props.database.id)
       );
       return list.sort((a: Backup, b: Backup) => {
         if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
@@ -231,7 +231,7 @@ export default {
     });
 
     const backupPolicy = computed(() => {
-      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
+      const policy = store.getters["policy/policyByEnvironmentIDAndType"](
         props.database.instance.environment.id,
         "bb.policy.backup-plan"
       );
@@ -245,14 +245,14 @@ export default {
     const createBackup = (backupName: string) => {
       // Create backup
       const newBackup: BackupCreate = {
-        databaseId: props.database.id!,
+        databaseID: props.database.id!,
         name: backupName,
         status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
       };
       store.dispatch("backup/createBackup", {
-        databaseId: props.database.id,
+        databaseID: props.database.id,
         newBackup: newBackup,
       });
       pollBackups(POST_CHANGE_POLL_INTERVAL);
@@ -265,7 +265,7 @@ export default {
       }
       state.pollBackupsTimer = setTimeout(() => {
         store
-          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
+          .dispatch("backup/fetchBackupListByDatabaseID", props.database.id)
           .then((backups: Backup[]) => {
             var pending = false;
             for (let idx in backups) {
@@ -283,7 +283,7 @@ export default {
 
     const prepareBackupSetting = () => {
       store
-        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
+        .dispatch("backup/fetchBackupSettingByDatabaseID", props.database.id)
         .then((backupSetting: BackupSetting) => {
           // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
           if (backupSetting.id != UNKNOWN_ID) {
@@ -305,7 +305,7 @@ export default {
         DEFAULT_BACKUP_DAYOFWEEK
       );
       const newBackupSetting: BackupSettingUpsert = {
-        databaseId: props.database.id,
+        databaseID: props.database.id,
         enabled: on,
         hour: on ? hour : state.autoBackupHour,
         dayOfWeek: on

@@ -1,8 +1,8 @@
-import { Issue, StageId } from "../types";
+import { Issue, StageID } from "../types";
 
-export function stageName(issue: Issue, stageId: StageId): string {
+export function stageName(issue: Issue, stageID: StageID): string {
   for (const stage of issue.pipeline.stageList) {
-    if (stage.id == stageId) {
+    if (stage.id == stageID) {
       return stage.name;
     }
   }

@@ -207,7 +207,7 @@ interface LocalState {
 export default {
   name: "ProfileDashboard",
   props: {
-    principalId: {
+    principalID: {
       type: String,
     },
   },
@@ -250,9 +250,9 @@ export default {
     );
 
     const principal = computed(() => {
-      if (props.principalId) {
-        return store.getters["principal/principalById"](
-          parseInt(props.principalId)
+      if (props.principalID) {
+        return store.getters["principal/principalByID"](
+          parseInt(props.principalID)
         );
       }
       return currentUser.value;
@@ -304,7 +304,7 @@ export default {
     const saveEdit = () => {
       store
         .dispatch("principal/patchPrincipal", {
-          principalId: principal.value.id,
+          principalID: principal.value.id,
           principalPatch: state.editingPrincipal,
         })
         .then(() => {

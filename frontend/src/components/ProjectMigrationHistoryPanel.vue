@@ -95,7 +95,7 @@ export default {
             if (migration.status == "OK") {
               store
                 .dispatch("instance/fetchMigrationHistory", {
-                  instanceId: database.instance.id,
+                  instanceID: database.instance.id,
                   databaseName: database.name,
                   limit: MAX_MIGRAION_HISTORY_COUNT,
                 })

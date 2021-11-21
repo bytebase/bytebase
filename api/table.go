@@ -9,15 +9,15 @@ type Table struct {
 	ID int `jsonapi:"primary,table"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	DatabaseId int
+	DatabaseID int
 	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
@@ -38,12 +38,12 @@ type Table struct {
 type TableCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 	CreatedTs int64
 	UpdatedTs int64
 
 	// Related fields
-	DatabaseId int
+	DatabaseID int
 
 	// Domain specific fields
 	Name          string
@@ -62,7 +62,7 @@ type TableFind struct {
 	ID *int
 
 	// Related fields
-	DatabaseId *int
+	DatabaseID *int
 
 	// Domain specific fields
 	Name *string
@@ -78,7 +78,7 @@ func (find *TableFind) String() string {
 
 type TableDelete struct {
 	// Related fields
-	DatabaseId int
+	DatabaseID int
 }
 
 type TableService interface {

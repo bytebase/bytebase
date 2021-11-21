@@ -9,7 +9,7 @@ type InstanceUser struct {
 	ID int `jsonapi:"primary,instanceUser"`
 
 	// Related fields
-	InstanceId int `jsonapi:"attr,instanceId"`
+	InstanceID int `jsonapi:"attr,instanceID"`
 
 	// Domain specific fields
 	Name  string `jsonapi:"attr,name"`
@@ -18,10 +18,10 @@ type InstanceUser struct {
 
 type InstanceUserUpsert struct {
 	// Standard fields
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	InstanceId int
+	InstanceID int
 
 	// Domain specific fields
 	Name  string `jsonapi:"attr,name"`
@@ -29,7 +29,7 @@ type InstanceUserUpsert struct {
 }
 
 type InstanceUserFind struct {
-	InstanceId int
+	InstanceID int
 }
 
 func (find *InstanceUserFind) String() string {

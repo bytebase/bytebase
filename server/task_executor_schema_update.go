@@ -57,7 +57,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 	if payload.VCSPushEvent == nil {
 		mi.Engine = db.UI
-		creator, err := server.ComposePrincipalById(ctx, task.CreatorId)
+		creator, err := server.ComposePrincipalByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -68,13 +68,13 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		} else {
 			mi.Creator = creator.Name
 		}
-		mi.Version = defaultMigrationVersionFromTaskId(task.ID)
+		mi.Version = defaultMigrationVersionFromTaskID(task.ID)
 		mi.Database = databaseName
 		mi.Namespace = databaseName
 		mi.Description = task.Name
 	} else {
 		repositoryFind := &api.RepositoryFind{
-			ProjectId: &task.Database.ProjectId,
+			ProjectID: &task.Database.ProjectID,
 		}
 		repository, err = server.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
@@ -102,7 +102,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 
 	issueFind := &api.IssueFind{
-		PipelineId: &task.PipelineId,
+		PipelineID: &task.PipelineID,
 	}
 	issue, err := server.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
@@ -113,7 +113,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			zap.Error(err),
 		)
 	} else {
-		mi.IssueId = strconv.Itoa(issue.ID)
+		mi.IssueID = strconv.Itoa(issue.ID)
 	}
 
 	statement := strings.TrimSpace(payload.Statement)
@@ -148,7 +148,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
 	}
 
-	migrationId, schema, err := driver.ExecuteMigration(ctx, mi, statement)
+	migrationID, schema, err := driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return true, nil, err
 	}
@@ -159,7 +159,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		repository.VCS, err = server.ComposeVCSById(ctx, repository.VCSId)
+		repository.VCS, err = server.ComposeVCSByID(ctx, repository.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
@@ -171,10 +171,10 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageId)
+			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitId, err := writeBackLatestSchema(server, repository, payload.VCSPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(server, repository, payload.VCSPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -182,12 +182,12 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		// Create file commit activity
 		{
 			payload, err := json.Marshal(api.ActivityPipelineTaskFileCommitPayload{
-				TaskId:             task.ID,
+				TaskID:             task.ID,
 				VCSInstanceURL:     repository.VCS.InstanceURL,
 				RepositoryFullPath: payload.VCSPushEvent.RepositoryFullPath,
 				Branch:             branch,
 				FilePath:           latestSchemaFile,
-				CommitId:           commitId,
+				CommitID:           commitID,
 			})
 			if err != nil {
 				exec.l.Error("Failed to marshal file commit activity after writing back the latest schema",
@@ -198,13 +198,13 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 				)
 			}
 
-			containerId := task.PipelineId
+			containerID := task.PipelineID
 			if issue != nil {
-				containerId = issue.ID
+				containerID = issue.ID
 			}
 			activityCreate := &api.ActivityCreate{
-				CreatorId:   task.CreatorId,
-				ContainerId: containerId,
+				CreatorID:   task.CreatorID,
+				ContainerID: containerID,
 				Type:        api.ActivityPipelineTaskFileCommit,
 				Level:       api.ACTIVITY_INFO,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
@@ -233,7 +233,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      detail,
-		MigrationId: migrationId,
+		MigrationID: migrationID,
 		Version:     mi.Version,
 	}, nil
 }
@@ -241,7 +241,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
 func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent *common.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
-	filePath := fmt.Sprintf("projects/%s/repository/files/%s", repository.ExternalId, url.QueryEscape(latestSchemaFile))
+	filePath := fmt.Sprintf("projects/%s/repository/files/%s", repository.ExternalID, url.QueryEscape(latestSchemaFile))
 	getFilePath := filePath + "?ref=" + url.QueryEscape(branch)
 
 	getResp, err := gitlab.GET(
@@ -308,7 +308,7 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 			return "", fmt.Errorf("failed to unmarshal file response %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
 		}
 
-		schemaFileCommit.LastCommitId = file.LastCommitId
+		schemaFileCommit.LastCommitID = file.LastCommitID
 		body, err := json.Marshal(schemaFileCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
@@ -352,5 +352,5 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 	if err := json.NewDecoder(getResp.Body).Decode(file); err != nil {
 		return "", fmt.Errorf("failed to unmarshal file response %s after update, VCS instance: %s", filePath, repository.VCS.InstanceURL)
 	}
-	return file.LastCommitId, nil
+	return file.LastCommitID, nil
 }

@@ -20,7 +20,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create bookmark request").SetInternal(err)
 		}
 
-		bookmarkCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		bookmarkCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 
 		bookmark, err := s.BookmarkService.CreateBookmark(ctx, bookmarkCreate)
 		if err != nil {
@@ -43,9 +43,9 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 
 	g.GET("/bookmark", func(c echo.Context) error {
 		ctx := context.Background()
-		creatorId := c.Get(GetPrincipalIdContextKey()).(int)
+		creatorID := c.Get(GetPrincipalIDContextKey()).(int)
 		bookmarkFind := &api.BookmarkFind{
-			CreatorId: &creatorId,
+			CreatorID: &creatorID,
 		}
 		list, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
 		if err != nil {
@@ -65,16 +65,16 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/bookmark/:bookmarkId", func(c echo.Context) error {
+	g.DELETE("/bookmark/:bookmarkID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("bookmarkId"))
+		id, err := strconv.Atoi(c.Param("bookmarkID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("bookmarkId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("bookmarkID"))).SetInternal(err)
 		}
 
 		bookmarkDelete := &api.BookmarkDelete{
 			ID:        id,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
+			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		err = s.BookmarkService.DeleteBookmark(ctx, bookmarkDelete)
 		if err != nil {
@@ -93,12 +93,12 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 func (s *Server) ComposeBookmarkRelationship(ctx context.Context, bookmark *api.Bookmark) error {
 	var err error
 
-	bookmark.Creator, err = s.ComposePrincipalById(ctx, bookmark.CreatorId)
+	bookmark.Creator, err = s.ComposePrincipalByID(ctx, bookmark.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	bookmark.Updater, err = s.ComposePrincipalById(ctx, bookmark.UpdaterId)
+	bookmark.Updater, err = s.ComposePrincipalByID(ctx, bookmark.UpdaterID)
 	if err != nil {
 		return err
 	}

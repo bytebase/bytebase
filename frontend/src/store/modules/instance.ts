@@ -4,16 +4,16 @@ import {
   empty,
   EMPTY_ID,
   Environment,
-  EnvironmentId,
+  EnvironmentID,
   Instance,
   InstanceCreate,
-  InstanceId,
+  InstanceID,
   InstanceMigration,
   InstancePatch,
   InstanceState,
   INSTANCE_OPERATION_TIMEOUT,
   MigrationHistory,
-  MigrationHistoryId,
+  MigrationHistoryID,
   ResourceIdentifier,
   ResourceObject,
   RowStatus,
@@ -27,16 +27,16 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Instance {
-  const environmentId = (
+  const environmentID = (
     instance.relationships!.environment.data as ResourceIdentifier
   ).id;
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
-  environment.id = parseInt(environmentId);
+  environment.id = parseInt(environmentID);
 
-  const anomalyIdList = instance.relationships!.anomaly
+  const anomalyIDList = instance.relationships!.anomaly
     .data as ResourceIdentifier[];
   const anomalyList: Anomaly[] = [];
-  for (const item of anomalyIdList) {
+  for (const item of anomalyIDList) {
     const anomaly = unknown("ANOMALY") as Anomaly;
     anomaly.id = parseInt(item.id);
     anomalyList.push(anomaly);
@@ -63,7 +63,7 @@ function convert(
 
     if (
       item.type == "anomaly" &&
-      item.attributes.instanceId == instancePartial.id
+      item.attributes.instanceID == instancePartial.id
     ) {
       const i = anomalyList.findIndex(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
@@ -109,21 +109,21 @@ function convertMigrationHistory(history: ResourceObject): MigrationHistory {
   return {
     ...(history.attributes as Omit<
       MigrationHistory,
-      "id" | "issueId" | "payload"
+      "id" | "issueID" | "payload"
     >),
     id: parseInt(history.id),
-    // This issueId is special since it's stored in the migration history table
-    // and may refer to the issueId from the external system in the future.
-    issueId: parseInt(history.attributes.issueId as string),
+    // This issueID is special since it's stored in the migration history table
+    // and may refer to the issueID from the external system in the future.
+    issueID: parseInt(history.attributes.issueID as string),
     payload,
   };
 }
 
 const state: () => InstanceState = () => ({
-  instanceById: new Map(),
-  instanceUserListById: new Map(),
-  migrationHistoryById: new Map(),
-  migrationHistoryListByIdAndDatabaseName: new Map(),
+  instanceByID: new Map(),
+  instanceUserListByID: new Map(),
+  migrationHistoryByID: new Map(),
+  migrationHistoryListByIDAndDatabaseName: new Map(),
 });
 
 const getters = {
@@ -137,7 +137,7 @@ const getters = {
     (state: InstanceState) =>
     (rowStatusList?: RowStatus[]): Instance[] => {
       const list = [];
-      for (const [_, instance] of state.instanceById) {
+      for (const [_, instance] of state.instanceByID) {
         if (
           (!rowStatusList && instance.rowStatus == "NORMAL") ||
           (rowStatusList && rowStatusList.includes(instance.rowStatus))
@@ -150,45 +150,45 @@ const getters = {
       });
     },
 
-  instanceListByEnvironmentId:
+  instanceListByEnvironmentID:
     (state: InstanceState, getters: any) =>
-    (environmentId: EnvironmentId, rowStatusList?: RowStatus[]): Instance[] => {
+    (environmentID: EnvironmentID, rowStatusList?: RowStatus[]): Instance[] => {
       const list = getters["instanceList"](rowStatusList);
       return list.filter((item: Instance) => {
-        return item.environment.id == environmentId;
+        return item.environment.id == environmentID;
       });
     },
 
-  instanceById:
+  instanceByID:
     (state: InstanceState) =>
-    (instanceId: InstanceId): Instance => {
-      if (instanceId == EMPTY_ID) {
+    (instanceID: InstanceID): Instance => {
+      if (instanceID == EMPTY_ID) {
         return empty("INSTANCE") as Instance;
       }
 
       return (
-        state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
+        state.instanceByID.get(instanceID) || (unknown("INSTANCE") as Instance)
       );
     },
 
-  instanceUserListById:
+  instanceUserListByID:
     (state: InstanceState) =>
-    (instanceId: InstanceId): InstanceUser[] => {
-      return state.instanceUserListById.get(instanceId) || [];
+    (instanceID: InstanceID): InstanceUser[] => {
+      return state.instanceUserListByID.get(instanceID) || [];
     },
 
-  migrationHistoryById:
+  migrationHistoryByID:
     (state: InstanceState) =>
-    (migrationHistoryId: MigrationHistoryId): MigrationHistory | undefined => {
-      return state.migrationHistoryById.get(migrationHistoryId);
+    (migrationHistoryID: MigrationHistoryID): MigrationHistory | undefined => {
+      return state.migrationHistoryByID.get(migrationHistoryID);
     },
 
-  migrationHistoryListByInstanceIdAndDatabaseName:
+  migrationHistoryListByInstanceIDAndDatabaseName:
     (state: InstanceState) =>
-    (instanceId: InstanceId, databaseName: string): MigrationHistory[] => {
+    (instanceID: InstanceID, databaseName: string): MigrationHistory[] => {
       return (
-        state.migrationHistoryListByIdAndDatabaseName.get(
-          [instanceId, databaseName].join(".")
+        state.migrationHistoryListByIDAndDatabaseName.get(
+          [instanceID, databaseName].join(".")
         ) || []
       );
     },
@@ -212,15 +212,15 @@ const actions = {
     return instanceList;
   },
 
-  async fetchInstanceById(
+  async fetchInstanceByID(
     { commit, rootGetters }: any,
-    instanceId: InstanceId
+    instanceID: InstanceID
   ) {
-    const data = (await axios.get(`/api/instance/${instanceId}`)).data;
+    const data = (await axios.get(`/api/instance/${instanceID}`)).data;
     const instance = convert(data.data, data.included, rootGetters);
 
-    commit("setInstanceById", {
-      instanceId,
+    commit("setInstanceByID", {
+      instanceID,
       instance,
     });
     return instance;
@@ -246,8 +246,8 @@ const actions = {
     ).data;
     const createdInstance = convert(data.data, data.included, rootGetters);
 
-    commit("setInstanceById", {
-      instanceId: createdInstance.id,
+    commit("setInstanceByID", {
+      instanceID: createdInstance.id,
       instance: createdInstance,
     });
 
@@ -257,16 +257,16 @@ const actions = {
   async patchInstance(
     { commit, rootGetters }: any,
     {
-      instanceId,
+      instanceID,
       instancePatch,
     }: {
-      instanceId: InstanceId;
+      instanceID: InstanceID;
       instancePatch: InstancePatch;
     }
   ) {
     const data = (
       await axios.patch(
-        `/api/instance/${instanceId}`,
+        `/api/instance/${instanceID}`,
         {
           data: {
             type: "instancePatch",
@@ -280,34 +280,34 @@ const actions = {
     ).data;
     const updatedInstance = convert(data.data, data.included, rootGetters);
 
-    commit("setInstanceById", {
-      instanceId: updatedInstance.id,
+    commit("setInstanceByID", {
+      instanceID: updatedInstance.id,
       instance: updatedInstance,
     });
 
     return updatedInstance;
   },
 
-  async deleteInstanceById(
+  async deleteInstanceByID(
     { commit }: { state: InstanceState; commit: any },
-    instanceId: InstanceId
+    instanceID: InstanceID
   ) {
-    await axios.delete(`/api/instance/${instanceId}`);
+    await axios.delete(`/api/instance/${instanceID}`);
 
-    commit("deleteInstanceById", instanceId);
+    commit("deleteInstanceByID", instanceID);
   },
 
-  async fetchInstanceUserListById(
+  async fetchInstanceUserListByID(
     { commit, rootGetters }: any,
-    instanceId: InstanceId
+    instanceID: InstanceID
   ) {
-    const data = (await axios.get(`/api/instance/${instanceId}/user`)).data;
+    const data = (await axios.get(`/api/instance/${instanceID}/user`)).data;
     const instanceUserList = data.data.map((instanceUser: ResourceObject) => {
       return convertUser(instanceUser, data.included, rootGetters);
     });
 
-    commit("setInstanceUserListById", {
-      instanceId,
+    commit("setInstanceUserListByID", {
+      instanceID,
       instanceUserList,
     });
     return instanceUserList;
@@ -315,10 +315,10 @@ const actions = {
 
   async checkMigrationSetup(
     {}: any,
-    instanceId: InstanceId
+    instanceID: InstanceID
   ): Promise<InstanceMigration> {
     const data = (
-      await axios.get(`/api/instance/${instanceId}/migration/status`, {
+      await axios.get(`/api/instance/${instanceID}/migration/status`, {
         timeout: INSTANCE_OPERATION_TIMEOUT,
       })
     ).data.data;
@@ -331,10 +331,10 @@ const actions = {
 
   async createMigrationSetup(
     { rootGetters }: any,
-    instanceId: InstanceId
+    instanceID: InstanceID
   ): Promise<SqlResultSet> {
     const data = (
-      await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
+      await axios.post(`/api/instance/${instanceID}/migration`, undefined, {
         timeout: INSTANCE_OPERATION_TIMEOUT,
       })
     ).data.data;
@@ -342,19 +342,19 @@ const actions = {
     return rootGetters["sql/convert"](data);
   },
 
-  async fetchMigrationHistoryById(
+  async fetchMigrationHistoryByID(
     { commit, rootGetters }: any,
     {
-      instanceId,
-      migrationHistoryId,
+      instanceID,
+      migrationHistoryID,
     }: {
-      instanceId: InstanceId;
-      migrationHistoryId: MigrationHistoryId;
+      instanceID: InstanceID;
+      migrationHistoryID: MigrationHistoryID;
     }
   ) {
     const data = (
       await axios.get(
-        `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`,
+        `/api/instance/${instanceID}/migration/history/${migrationHistoryID}`,
         {
           timeout: INSTANCE_OPERATION_TIMEOUT,
         }
@@ -362,8 +362,8 @@ const actions = {
     ).data;
     const migrationHistory = convertMigrationHistory(data.data);
 
-    commit("setMigrationHistoryById", {
-      migrationHistoryId,
+    commit("setMigrationHistoryByID", {
+      migrationHistoryID,
       migrationHistory,
     });
     return migrationHistory;
@@ -372,18 +372,18 @@ const actions = {
   async fetchMigrationHistoryByVersion(
     { commit }: any,
     {
-      instanceId,
+      instanceID,
       databaseName,
       version,
     }: {
-      instanceId: InstanceId;
+      instanceID: InstanceID;
       databaseName: string;
       version: string;
     }
   ) {
     const data = (
       await axios.get(
-        `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`,
+        `/api/instance/${instanceID}/migration/history?database=${databaseName}&version=${version}`,
         {
           timeout: INSTANCE_OPERATION_TIMEOUT,
         }
@@ -394,8 +394,8 @@ const actions = {
     });
 
     if (historyList.length > 0) {
-      commit("setMigrationHistoryById", {
-        migrationHistoryId: historyList[0].id,
+      commit("setMigrationHistoryByID", {
+        migrationHistoryID: historyList[0].id,
         migrationHistory: historyList[0],
       });
       return historyList[0];
@@ -408,16 +408,16 @@ const actions = {
   async fetchMigrationHistory(
     { commit }: any,
     {
-      instanceId,
+      instanceID,
       databaseName,
       limit,
     }: {
-      instanceId: InstanceId;
+      instanceID: InstanceID;
       databaseName: string;
       limit?: number;
     }
   ): Promise<MigrationHistory> {
-    var url = `/api/instance/${instanceId}/migration/history?database=${databaseName}`;
+    var url = `/api/instance/${instanceID}/migration/history?database=${databaseName}`;
     if (limit) {
       url += `&limit=${limit}`;
     }
@@ -430,8 +430,8 @@ const actions = {
       return convertMigrationHistory(history);
     });
 
-    commit("setMigrationHistoryListByInstanceIdAndDatabaseName", {
-      instanceId,
+    commit("setMigrationHistoryListByInstanceIDAndDatabaseName", {
+      instanceID,
       databaseName,
       historyList,
     });
@@ -443,67 +443,67 @@ const actions = {
 const mutations = {
   setInstanceList(state: InstanceState, instanceList: Instance[]) {
     instanceList.forEach((instance) => {
-      state.instanceById.set(instance.id, instance);
+      state.instanceByID.set(instance.id, instance);
     });
   },
 
-  setInstanceById(
+  setInstanceByID(
     state: InstanceState,
     {
-      instanceId,
+      instanceID,
       instance,
     }: {
-      instanceId: InstanceId;
+      instanceID: InstanceID;
       instance: Instance;
     }
   ) {
-    state.instanceById.set(instanceId, instance);
+    state.instanceByID.set(instanceID, instance);
   },
 
-  deleteInstanceById(state: InstanceState, instanceId: InstanceId) {
-    state.instanceById.delete(instanceId);
+  deleteInstanceByID(state: InstanceState, instanceID: InstanceID) {
+    state.instanceByID.delete(instanceID);
   },
 
-  setInstanceUserListById(
+  setInstanceUserListByID(
     state: InstanceState,
     {
-      instanceId,
+      instanceID,
       instanceUserList,
     }: {
-      instanceId: InstanceId;
+      instanceID: InstanceID;
       instanceUserList: InstanceUser[];
     }
   ) {
-    state.instanceUserListById.set(instanceId, instanceUserList);
+    state.instanceUserListByID.set(instanceID, instanceUserList);
   },
 
-  setMigrationHistoryById(
+  setMigrationHistoryByID(
     state: InstanceState,
     {
-      migrationHistoryId,
+      migrationHistoryID,
       migrationHistory,
     }: {
-      migrationHistoryId: MigrationHistoryId;
+      migrationHistoryID: MigrationHistoryID;
       migrationHistory: MigrationHistory;
     }
   ) {
-    state.migrationHistoryById.set(migrationHistoryId, migrationHistory);
+    state.migrationHistoryByID.set(migrationHistoryID, migrationHistory);
   },
 
-  setMigrationHistoryListByInstanceIdAndDatabaseName(
+  setMigrationHistoryListByInstanceIDAndDatabaseName(
     state: InstanceState,
     {
-      instanceId,
+      instanceID,
       databaseName,
       historyList,
     }: {
-      instanceId: InstanceId;
+      instanceID: InstanceID;
       databaseName: string;
       historyList: MigrationHistory[];
     }
   ) {
-    state.migrationHistoryListByIdAndDatabaseName.set(
-      [instanceId, databaseName].join("."),
+    state.migrationHistoryListByIDAndDatabaseName.set(
+      [instanceID, databaseName].join("."),
       historyList
     );
   },

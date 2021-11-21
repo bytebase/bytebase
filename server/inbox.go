@@ -16,13 +16,13 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 	g.GET("/inbox", func(c echo.Context) error {
 		ctx := context.Background()
 		inboxFind := &api.InboxFind{}
-		userIdStr := c.QueryParams().Get("user")
-		if userIdStr != "" {
-			userId, err := strconv.Atoi(userIdStr)
+		userIDStr := c.QueryParams().Get("user")
+		if userIDStr != "" {
+			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 			}
-			inboxFind.ReceiverId = &userId
+			inboxFind.ReceiverID = &userID
 		}
 		createdAfterStr := c.QueryParams().Get("created")
 		if createdAfterStr != "" {
@@ -52,28 +52,28 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 
 	g.GET("/inbox/summary", func(c echo.Context) error {
 		ctx := context.Background()
-		userIdStr := c.QueryParams().Get("user")
-		if userIdStr == "" {
+		userIDStr := c.QueryParams().Get("user")
+		if userIDStr == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Missing query parameter user")
 		}
-		userId, err := strconv.Atoi(userIdStr)
+		userID, err := strconv.Atoi(userIDStr)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIdStr)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 		}
 
-		summary, err := s.InboxService.FindInboxSummary(ctx, userId)
+		summary, err := s.InboxService.FindInboxSummary(ctx, userID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox summary for user ID: %d", userId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox summary for user ID: %d", userID)).SetInternal(err)
 		}
 
 		return c.JSON(http.StatusOK, summary)
 	})
 
-	g.PATCH("/inbox/:inboxId", func(c echo.Context) error {
+	g.PATCH("/inbox/:inboxID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("inboxId"))
+		id, err := strconv.Atoi(c.Param("inboxID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("inboxId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("inboxID"))).SetInternal(err)
 		}
 
 		inboxPatch := &api.InboxPatch{

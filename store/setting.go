@@ -129,8 +129,8 @@ func createSetting(ctx context.Context, tx *Tx, create *api.SettingCreate) (*api
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING name, value, description
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Name,
 		create.Value,
 		create.Description,
@@ -184,9 +184,9 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 	for rows.Next() {
 		var setting api.Setting
 		if err := rows.Scan(
-			&setting.CreatorId,
+			&setting.CreatorID,
 			&setting.CreatedTs,
-			&setting.UpdaterId,
+			&setting.UpdaterID,
 			&setting.UpdatedTs,
 			&setting.Name,
 			&setting.Value,
@@ -207,7 +207,7 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 // patchSetting updates a setting by name. Returns the new state of the setting after update.
 func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Setting, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "value = ?"), append(args, patch.Value)
 
 	args = append(args, patch.Name)
@@ -229,9 +229,9 @@ func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Se
 	if row.Next() {
 		var setting api.Setting
 		if err := row.Scan(
-			&setting.CreatorId,
+			&setting.CreatorID,
 			&setting.CreatedTs,
-			&setting.UpdaterId,
+			&setting.UpdaterID,
 			&setting.UpdatedTs,
 			&setting.Name,
 			&setting.Value,
